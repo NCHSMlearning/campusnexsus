@@ -1534,7 +1534,7 @@
      ============================================================ -->
 <nav class="navbar" id="navbar">
     <div class="container">
-        <a href="index.html" class="logo">
+        <a href="home.htm" class="logo">
             Campus<span>Nexus</span>
             <span class="logo-gold">✦</span>
             <small>Digital Learning Platform</small>
@@ -2111,10 +2111,10 @@
      ============================================================ -->
 <script>
     // ============================================================
-    // HIDE .html EXTENSION IN URL
+    // HIDE .html OR .htm EXTENSION IN URL
     // ============================================================
-    if (window.location.pathname.endsWith('.html')) {
-        const cleanPath = window.location.pathname.replace(/\.html$/, '');
+    if (window.location.pathname.endsWith('.html') || window.location.pathname.endsWith('.htm')) {
+        const cleanPath = window.location.pathname.replace(/\.(html|htm)$/, '');
         window.history.replaceState({}, '', cleanPath);
     }
 
