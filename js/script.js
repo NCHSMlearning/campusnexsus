@@ -238,35 +238,21 @@ if ('IntersectionObserver' in window) {
 }
 
 // ============================================================
-// SUPABASE CONFIGURATION - CHECK IF ALREADY DEFINED
+// SUPABASE CONFIGURATION - FIXED
 // ============================================================
 const SUPABASE_URL = 'https://irahplkvocaakjxuisto.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlyYWhwbGt2b2NhYWtqeHVpc3RvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4ODY5ODQsImV4cCI6MjEwMzQ2Mjk4NH0.BFOwdRVDz4r1oYgUjm8zQbthqblGRq4c3WQWQaOhu7g';
 
-// Only initialize if supabase is not already defined
-if (typeof supabase === 'undefined') {
+// Initialize Supabase - always recreate it
+try {
     if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
-        try {
-            var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-            console.log('✅ Supabase initialized with realtime support');
-        } catch (error) {
-            console.error('❌ Supabase initialization failed:', error);
-            var supabase = {
-                from: () => ({ insert: () => Promise.resolve({ error: null }) }),
-                channel: () => ({ on: () => ({ subscribe: () => {} }) }),
-                removeChannel: () => {}
-            };
-        }
+        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        console.log('✅ Supabase initialized successfully');
     } else {
-        console.warn('⚠️ Supabase library not loaded');
-        var supabase = {
-            from: () => ({ insert: () => Promise.resolve({ error: null }) }),
-            channel: () => ({ on: () => ({ subscribe: () => {} }) }),
-            removeChannel: () => {}
-        };
+        console.warn('⚠️ Supabase library not loaded yet, waiting...');
     }
-} else {
-    console.log('✅ Supabase already initialized');
+} catch (error) {
+    console.error('❌ Supabase initialization failed:', error);
 }
 
 // ============================================================
@@ -282,26 +268,23 @@ let visitorName = null;
 let visitorEmail = null;
 let messageSubscription = null;
 let isAgentOnline = false;
-let chatMode = 'bot'; // 'bot' or 'agent'
+let chatMode = 'bot';
 let chatStarted = false;
 
 // ============================================================
 // PRE-CHAT FORM FUNCTIONS
 // ============================================================
 
-// Start chat with visitor info
 function startChatWithInfo(name, email) {
     visitorName = name || document.getElementById('visitorNameInput')?.value?.trim() || 'Anonymous Visitor';
     visitorEmail = email || document.getElementById('visitorEmailInput')?.value?.trim() || '';
     
-    // Save to localStorage
     localStorage.setItem('campusnexus_visitor_name', visitorName);
     localStorage.setItem('campusnexus_visitor_email', visitorEmail);
     
-    // Update chat session with visitor info
-    updateVisitorInfo(visitorName, visitorEmail);
+    // Create chat session first
+    createChatSession(visitorName, visitorEmail);
     
-    // Hide pre-chat form, show chat
     const preChatForm = document.getElementById('preChatForm');
     const chatMessagesContainer = document.getElementById('chatMessagesContainer');
     const quickReplies = document.getElementById('quickReplies');
@@ -314,19 +297,42 @@ function startChatWithInfo(name, email) {
     
     chatStarted = true;
     
-    // Add welcome message with visitor name
     addChatMessage('bot', `👋 Welcome <strong>${visitorName}</strong>! I'm here to help you. What can I assist you with today?`);
     
-    // Initialize chat if not done
     if (!visitorId || !currentChatId) {
         initializeChat();
     }
     
-    // Subscribe to messages
     subscribeToMessages();
+    checkAgentStatus();
 }
 
-// Update visitor info in Supabase
+async function createChatSession(name, email) {
+    visitorId = getVisitorId();
+    currentChatId = 'chat_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+    localStorage.setItem('campusnexus_chat_id', currentChatId);
+    
+    try {
+        const ip = await getVisitorIP();
+        const { error } = await supabase
+            .from('chat_sessions')
+            .insert([{
+                chat_id: currentChatId,
+                visitor_id: visitorId,
+                visitor_ip: ip,
+                visitor_page: window.location.href,
+                visitor_name: name,
+                visitor_email: email,
+                status: 'active',
+                created_at: new Date().toISOString()
+            }]);
+        
+        if (error) console.error('Error creating chat session:', error);
+    } catch (error) {
+        console.error('Supabase error:', error);
+    }
+}
+
 async function updateVisitorInfo(name, email) {
     if (!visitorId || !currentChatId) return;
     
@@ -345,13 +351,11 @@ async function updateVisitorInfo(name, email) {
     }
 }
 
-// Check if visitor already provided info
 function checkVisitorInfo() {
     const savedName = localStorage.getItem('campusnexus_visitor_name');
     const savedEmail = localStorage.getItem('campusnexus_visitor_email');
     
     if (savedName && savedName !== 'Anonymous Visitor') {
-        // Visitor already provided info - show chat directly
         setTimeout(() => {
             startChatWithInfo(savedName, savedEmail);
         }, 500);
@@ -366,50 +370,7 @@ function checkVisitorInfo() {
 async function initializeChat() {
     visitorId = getVisitorId();
     currentChatId = localStorage.getItem('campusnexus_chat_id');
-    const savedName = localStorage.getItem('campusnexus_visitor_name') || 'Anonymous';
-    const savedEmail = localStorage.getItem('campusnexus_visitor_email') || '';
     
-    if (!currentChatId) {
-        currentChatId = 'chat_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
-        localStorage.setItem('campusnexus_chat_id', currentChatId);
-        
-        try {
-            const ip = await getVisitorIP();
-            const { error } = await supabase
-                .from('chat_sessions')
-                .insert([{
-                    chat_id: currentChatId,
-                    visitor_id: visitorId,
-                    visitor_ip: ip,
-                    visitor_page: window.location.href,
-                    visitor_name: savedName,
-                    visitor_email: savedEmail,
-                    status: 'active',
-                    created_at: new Date().toISOString()
-                }]);
-            
-            if (error) console.error('Error creating chat session:', error);
-        } catch (error) {
-            console.error('Supabase error:', error);
-        }
-    } else {
-        // Update existing session with visitor info if not already set
-        try {
-            const { error } = await supabase
-                .from('chat_sessions')
-                .update({
-                    visitor_name: savedName,
-                    visitor_email: savedEmail
-                })
-                .eq('chat_id', currentChatId);
-            
-            if (error) console.error('Error updating visitor info:', error);
-        } catch (error) {
-            console.error('Supabase error:', error);
-        }
-    }
-    
-    // If chat already started, load history
     if (chatStarted) {
         await loadChatHistory();
         subscribeToMessages();
@@ -443,8 +404,9 @@ async function getVisitorIP() {
         return 'unknown';
     }
 }
+
 // ============================================================
-// CHECK AGENT STATUS - UPDATED
+// CHECK AGENT STATUS
 // ============================================================
 async function checkAgentStatus() {
     try {
@@ -460,17 +422,15 @@ async function checkAgentStatus() {
             console.error('❌ Error checking agent status:', error);
             isAgentOnline = false;
             updateStatusIndicator();
-            updateAgentStatusBadge(); // Add this
+            updateAgentStatusBadge();
             return;
         }
         
         isAgentOnline = data && data.length > 0;
-        
         console.log('📊 Agent online:', isAgentOnline);
         
-        // Update all UI elements
         updateStatusIndicator();
-        updateAgentStatusBadge(); // This now updates the button
+        updateAgentStatusBadge();
         
         if (isAgentOnline && chatMode === 'agent') {
             updateChatHeaderForAgent();
@@ -480,13 +440,10 @@ async function checkAgentStatus() {
         console.error('❌ Error checking agent status:', error);
         isAgentOnline = false;
         updateStatusIndicator();
-        updateAgentStatusBadge(); // Add this
+        updateAgentStatusBadge();
     }
 }
 
-// ============================================================
-// UPDATE STATUS INDICATOR
-// ============================================================
 function updateStatusIndicator() {
     const statusIndicator = document.getElementById('chatStatusIndicator');
     const agentStatus = document.getElementById('agentStatus');
@@ -500,58 +457,42 @@ function updateStatusIndicator() {
     }
 }
 
-// ============================================================
-// UPDATE AGENT STATUS BADGE - FIXED
-// ============================================================
 function updateAgentStatusBadge() {
     const agentBadge = document.getElementById('agentStatusBadge');
     const liveIndicator = document.getElementById('liveIndicator');
     const agentAvailability = document.getElementById('agentAvailability');
     const modeAgentBtn = document.getElementById('modeAgentBtn');
     
-    // Update the dot badge
     if (agentBadge) {
         agentBadge.style.background = isAgentOnline ? '#2ecc71' : '#f39c12';
     }
     
-    // Update live indicator if it exists (for older version)
     if (liveIndicator) {
         liveIndicator.className = 'mode-indicator ' + (isAgentOnline ? 'live' : 'offline');
     }
     
-    // Update availability text if it exists
     if (agentAvailability) {
         agentAvailability.textContent = isAgentOnline ? '🟢' : '🔴';
     }
     
-    // Update the Live Agent button text with status
     if (modeAgentBtn) {
-        const statusText = isAgentOnline ? '🟢 Online' : '🔴 Offline';
-        // Find the text node and update it
-        const existingText = modeAgentBtn.textContent;
-        if (existingText) {
-            // Keep the icon and update the status
-            const iconText = '👤 Live Agent';
-            modeAgentBtn.innerHTML = `
-                ${iconText}
-                <span id="agentStatusBadge" style="
-                    display: inline-block;
-                    width: 8px;
-                    height: 8px;
-                    border-radius: 50%;
-                    background: ${isAgentOnline ? '#2ecc71' : '#f39c12'};
-                    margin-left: 4px;
-                "></span>
-                <span style="font-size: 10px; color: ${isAgentOnline ? '#2ecc71' : '#f39c12'}; margin-left: 4px;">
-                    ${isAgentOnline ? 'Online' : 'Away'}
-                </span>
-            `;
-        }
+        modeAgentBtn.innerHTML = `
+            👤 Live Agent
+            <span id="agentStatusBadge" style="
+                display: inline-block;
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                background: ${isAgentOnline ? '#2ecc71' : '#f39c12'};
+                margin-left: 4px;
+            "></span>
+            <span style="font-size: 10px; color: ${isAgentOnline ? '#2ecc71' : '#f39c12'}; margin-left: 4px;">
+                ${isAgentOnline ? 'Online' : 'Away'}
+            </span>
+        `;
     }
 }
-// ============================================================
-// UPDATE CHAT HEADER FOR AGENT
-// ============================================================
+
 function updateChatHeaderForAgent() {
     const header = document.querySelector('.campus-chat-header div');
     if (header) {
@@ -567,7 +508,7 @@ function updateChatHeaderForAgent() {
 }
 
 // ============================================================
-// ADD MODE SELECTOR TO CHAT - UPDATED
+// ADD MODE SELECTOR TO CHAT
 // ============================================================
 function addModeSelector() {
     const quickReplies = document.getElementById('quickReplies');
@@ -641,6 +582,8 @@ function setChatMode(mode) {
     
     const botBtn = document.getElementById('modeBotBtn');
     const agentBtn = document.getElementById('modeAgentBtn');
+    
+    if (!botBtn || !agentBtn) return;
     
     if (mode === 'bot') {
         botBtn.style.background = '#D4A843';
@@ -722,7 +665,6 @@ async function loadChatHistory() {
         
         if (data && data.length > 0) {
             const messagesContainer = document.getElementById('campusChatMessages');
-            // Don't clear if using pre-chat form
             if (!document.getElementById('preChatForm') || document.getElementById('preChatForm').style.display === 'none') {
                 messagesContainer.innerHTML = '';
             }
@@ -829,17 +771,16 @@ function toggleCampusChat() {
             const notification = document.getElementById('chatNotification');
             if (notification) notification.style.display = 'none';
             
-            // If chat hasn't started and visitor info exists, start chat
             if (!chatStarted) {
                 const hasInfo = checkVisitorInfo();
                 if (!hasInfo) {
-                    // Focus on name input if pre-chat form is visible
                     const nameInput = document.getElementById('visitorNameInput');
                     if (nameInput) setTimeout(() => nameInput.focus(), 300);
                 }
             } else {
                 const input = document.getElementById('campusChatInput');
                 if (input) input.focus();
+                setTimeout(() => scrollChatToBottom(), 100);
             }
             
             localStorage.setItem('campusChatOpen', 'true');
@@ -876,7 +817,25 @@ function handleCampusChatKey(event) {
 }
 
 // ============================================================
-// SEND CHAT MESSAGE
+// SCROLL CHAT TO BOTTOM
+// ============================================================
+function scrollChatToBottom() {
+    const containers = [
+        document.getElementById('chatMessagesContainer'),
+        document.getElementById('campusChatMessages'),
+        document.querySelector('.campus-chat-messages')
+    ];
+    
+    for (const container of containers) {
+        if (container) {
+            container.scrollTop = container.scrollHeight;
+            break;
+        }
+    }
+}
+
+// ============================================================
+// SEND CHAT MESSAGE - FIXED
 // ============================================================
 async function sendCampusChatMessage() {
     const input = document.getElementById('campusChatInput');
@@ -885,11 +844,9 @@ async function sendCampusChatMessage() {
     const message = input.value.trim();
     if (!message) return;
     
-    // If chat hasn't started, start it
     if (!chatStarted) {
         const hasInfo = checkVisitorInfo();
         if (!hasInfo) {
-            // Show pre-chat form
             const preChatForm = document.getElementById('preChatForm');
             if (preChatForm) preChatForm.style.display = 'block';
             return;
@@ -899,10 +856,50 @@ async function sendCampusChatMessage() {
     addChatMessage('user', message);
     input.value = '';
     
-    if (!visitorId || !currentChatId) {
-        await initializeChat();
+    if (!visitorId) {
+        visitorId = getVisitorId();
     }
     
+    if (!currentChatId) {
+        currentChatId = 'chat_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+        localStorage.setItem('campusnexus_chat_id', currentChatId);
+    }
+    
+    // Check if supabase is ready
+    if (typeof supabase === 'undefined' || typeof supabase.from !== 'function') {
+        console.warn('⚠️ Supabase not ready');
+        return;
+    }
+    
+    // Ensure chat session exists
+    try {
+        const { data: existingSession } = await supabase
+            .from('chat_sessions')
+            .select('chat_id')
+            .eq('chat_id', currentChatId)
+            .limit(1);
+        
+        if (!existingSession || existingSession.length === 0) {
+            console.log('📝 Creating new chat session:', currentChatId);
+            const ip = await getVisitorIP();
+            await supabase
+                .from('chat_sessions')
+                .insert([{
+                    chat_id: currentChatId,
+                    visitor_id: visitorId,
+                    visitor_ip: ip,
+                    visitor_page: window.location.href,
+                    visitor_name: localStorage.getItem('campusnexus_visitor_name') || 'Anonymous',
+                    visitor_email: localStorage.getItem('campusnexus_visitor_email') || '',
+                    status: 'active',
+                    created_at: new Date().toISOString()
+                }]);
+        }
+    } catch (error) {
+        console.error('Error with chat session:', error);
+    }
+    
+    // Save message
     try {
         const { error } = await supabase
             .from('chat_messages')
@@ -931,10 +928,9 @@ async function sendCampusChatMessage() {
 }
 
 // ============================================================
-// ADD CHAT MESSAGE
+// ADD CHAT MESSAGE - WITH AUTO-SCROLL
 // ============================================================
 function addChatMessage(type, content, timestamp) {
-    // Find the messages container - check if pre-chat form is visible
     let container = document.getElementById('chatMessagesContainer');
     if (!container) {
         container = document.getElementById('campusChatMessages');
@@ -946,7 +942,6 @@ function addChatMessage(type, content, timestamp) {
         return;
     }
     
-    // Make sure chat container is visible
     if (container.style.display === 'none') {
         container.style.display = 'block';
     }
@@ -966,7 +961,10 @@ function addChatMessage(type, content, timestamp) {
     `;
     
     container.appendChild(messageDiv);
-    container.scrollTop = container.scrollHeight;
+    
+    setTimeout(() => {
+        scrollChatToBottom();
+    }, 50);
 }
 
 // ============================================================
@@ -1056,7 +1054,7 @@ function showTypingIndicator() {
         </div>
     `;
     container.appendChild(typingDiv);
-    container.scrollTop = container.scrollHeight;
+    scrollChatToBottom();
 }
 
 function hideTypingIndicator() {
@@ -1065,7 +1063,7 @@ function hideTypingIndicator() {
 }
 
 // ============================================================
-// CREATE CHAT WIDGET (Fallback with Pre-Chat Form)
+// CREATE CHAT WIDGET
 // ============================================================
 function createChatWidget() {
     if (document.getElementById('campusChatWidget')) return;
@@ -1094,7 +1092,6 @@ function createChatWidget() {
                 <span id="agentStatus">| Auto-reply enabled</span>
             </div>
             <div class="campus-chat-messages" id="campusChatMessages">
-                <!-- Pre-Chat Form -->
                 <div class="campus-chat-message bot" id="preChatForm">
                     <div class="campus-msg-bubble" style="width: 100%; max-width: 320px;">
                         <div class="campus-msg-sender">🎓 CampusNexus Support</div>
@@ -1118,7 +1115,6 @@ function createChatWidget() {
                         </div>
                     </div>
                 </div>
-                <!-- Chat messages container -->
                 <div id="chatMessagesContainer" style="display: none;"></div>
             </div>
             <div class="chat-quick-replies" id="quickReplies" style="display: none;">
@@ -1140,7 +1136,7 @@ function createChatWidget() {
 }
 
 // ============================================================
-// INITIALIZE CHAT ON PAGE LOAD - COMPLETE
+// INITIALIZE CHAT ON PAGE LOAD
 // ============================================================
 document.addEventListener('DOMContentLoaded', function() {
     if (!document.getElementById('campusChatWidget')) {
@@ -1152,7 +1148,6 @@ document.addEventListener('DOMContentLoaded', function() {
         chatMode = savedMode;
     }
     
-    // Check if visitor already provided info
     const hasInfo = checkVisitorInfo();
     
     setTimeout(() => {
@@ -1205,37 +1200,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 7000);
     }
     
-    // ============================================================
-    // PERIODIC AGENT STATUS CHECK
-    // ============================================================
-    // Check agent status every 30 seconds
+    // Check agent status periodically
     setInterval(() => {
         checkAgentStatus();
     }, 30000);
     
-    // Check agent status when chat is toggled open
-    const chatToggle = document.getElementById('campusChatToggle');
-    if (chatToggle) {
-        const originalOnClick = chatToggle.onclick;
-        chatToggle.addEventListener('click', function() {
-            setTimeout(() => {
-                checkAgentStatus();
-            }, 500);
-        });
-    }
-    
-    // Check agent status when switching to agent mode
-    const modeAgentBtn = document.getElementById('modeAgentBtn');
-    if (modeAgentBtn) {
-        modeAgentBtn.addEventListener('click', function() {
-            setTimeout(() => {
-                checkAgentStatus();
-            }, 300);
-        });
-    }
-    
     console.log('🔄 Agent status check scheduled (every 30s)');
 });
+
 // ============================================================
 // SERVICE WORKER REGISTRATION (PWA)
 // ============================================================
