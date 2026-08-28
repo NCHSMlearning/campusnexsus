@@ -238,36 +238,35 @@ if ('IntersectionObserver' in window) {
 }
 
 // ============================================================
-// SUPABASE CONFIGURATION
+// SUPABASE CONFIGURATION - CHECK IF ALREADY DEFINED
 // ============================================================
 const SUPABASE_URL = 'https://irahplkvocaakjxuisto.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlyYWhwbGt2b2NhYWtqeHVpc3RvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4ODY5ODQsImV4cCI6MjEwMzQ2Mjk4NH0.BFOwdRVDz4r1oYgUjm8zQbthqblGRq4c3WQWQaOhu7g';
 
-// Initialize Supabase client
-let supabase;
-if (typeof window.supabase !== 'undefined') {
-    try {
-        if (typeof supabase === 'undefined' || typeof supabase.channel !== 'function') {
-            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// Only initialize if supabase is not already defined
+if (typeof supabase === 'undefined') {
+    if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
+        try {
+            var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
             console.log('✅ Supabase initialized with realtime support');
-        } else {
-            console.log('✅ Supabase already initialized');
+        } catch (error) {
+            console.error('❌ Supabase initialization failed:', error);
+            var supabase = {
+                from: () => ({ insert: () => Promise.resolve({ error: null }) }),
+                channel: () => ({ on: () => ({ subscribe: () => {} }) }),
+                removeChannel: () => {}
+            };
         }
-    } catch (error) {
-        console.error('❌ Supabase initialization failed:', error);
-        supabase = {
+    } else {
+        console.warn('⚠️ Supabase library not loaded');
+        var supabase = {
             from: () => ({ insert: () => Promise.resolve({ error: null }) }),
             channel: () => ({ on: () => ({ subscribe: () => {} }) }),
             removeChannel: () => {}
         };
     }
 } else {
-    console.warn('⚠️ Supabase library not loaded');
-    supabase = {
-        from: () => ({ insert: () => Promise.resolve({ error: null }) }),
-        channel: () => ({ on: () => ({ subscribe: () => {} }) }),
-        removeChannel: () => {}
-    };
+    console.log('✅ Supabase already initialized');
 }
 
 // ============================================================
@@ -384,7 +383,6 @@ function addModeSelector() {
     const quickReplies = document.getElementById('quickReplies');
     if (!quickReplies) return;
     
-    // Check if mode selector already exists
     if (document.getElementById('chatModeSelector')) return;
     
     const modeSelector = document.createElement('div');
@@ -436,7 +434,6 @@ function addModeSelector() {
         </button>
     `;
     
-    // Insert after quick replies
     quickReplies.parentNode.insertBefore(modeSelector, quickReplies.nextSibling);
 }
 
@@ -457,13 +454,11 @@ function setChatMode(mode) {
         agentBtn.style.color = '#94a3b8';
         agentBtn.style.borderColor = 'rgba(255,255,255,0.1)';
         
-        // Add bot indicator
         const statusIndicator = document.getElementById('chatStatusIndicator');
         if (statusIndicator) {
             statusIndicator.innerHTML = '<span>🤖 Bot Mode</span><span id="agentStatus">| Auto-reply enabled</span>';
         }
         
-        // Show bot indicator in header
         const header = document.querySelector('.campus-chat-header div');
         if (header) {
             header.innerHTML = `
@@ -475,7 +470,6 @@ function setChatMode(mode) {
             `;
         }
         
-        // Add system message
         addChatMessage('bot', '🤖 Switched to <strong>Bot Mode</strong>. I\'ll answer your questions automatically!');
         
     } else {
@@ -486,7 +480,6 @@ function setChatMode(mode) {
         botBtn.style.color = '#94a3b8';
         botBtn.style.borderColor = 'rgba(255,255,255,0.1)';
         
-        // Update status based on agent availability
         const statusIndicator = document.getElementById('chatStatusIndicator');
         if (statusIndicator) {
             if (isAgentOnline) {
@@ -496,7 +489,6 @@ function setChatMode(mode) {
             }
         }
         
-        // Show agent indicator in header
         const header = document.querySelector('.campus-chat-header div');
         if (header) {
             header.innerHTML = `
@@ -516,7 +508,6 @@ function setChatMode(mode) {
         }
     }
     
-    // Save mode preference
     localStorage.setItem('campusnexus_chat_mode', mode);
 }
 
@@ -586,7 +577,6 @@ function subscribeToMessages() {
                     const msg = payload.new;
                     if (msg.sender === 'agent') {
                         addChatMessage('bot', '👤 <strong>Agent:</strong> ' + msg.message, msg.created_at);
-                        // Show notification if chat is closed
                         const chatWindow = document.getElementById('campusChatWindow');
                         const notification = document.getElementById('chatNotification');
                         if (chatWindow && !chatWindow.classList.contains('open') && notification) {
@@ -595,7 +585,6 @@ function subscribeToMessages() {
                         }
                         playNotificationSound();
                     } else if (msg.sender === 'bot' && chatMode === 'bot') {
-                        // Only show bot messages if in bot mode
                         addChatMessage('bot', msg.message, msg.created_at);
                     }
                 }
@@ -611,7 +600,7 @@ function subscribeToMessages() {
 // ============================================================
 function playNotificationSound() {
     try {
-        const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFh4qJhY6Kh4mMh4+Jh4mNh5KLh4mJh5OJg4eNhpGJg4uLhpOKhoeJiJONgoiHhI+KhI2KiZSMhIeKiZWNgoeIiZSNg4eKiZSNg4aKiJWOg4eKiJSNg4aKiZaNhIiKiZaOhoiKiZePh4mKipePiIqKi5mQh4qJi5qRiImKi5uRioaKipyTioaKipyTh4eLi52UhoaKjJ6VhoaKjJ2VhoaLjZ6VhoaLjZ2VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6V');
+        const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFh4qJhY6Kh4mMh4+Jh4mNh5KLh4mJh5OJg4eNhpGJg4uLhpOKhoeJiJONgoiHhI+KhI2KiZSMhIeKiZWNgoeIiZSNg4eKiZSNg4aKiJWOg4eKiJSNg4aKiZaNhIiKiZaOhoiKiZePh4mKipePiIqKi5mQh4qJi5qRiImKi5uRioaKipyTioaKipyTh4eLi52UhoaKjJ6VhoaKjJ2VhoaLjZ6VhoaLjZ2VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6VhoaLjZ6V');
         audio.volume = 0.3;
         audio.play().catch(() => {});
     } catch(e) {}
@@ -642,7 +631,6 @@ function toggleCampusChat() {
             if (input) input.focus();
             localStorage.setItem('campusChatOpen', 'true');
             
-            // Initialize chat if not done
             if (!currentChatId) {
                 initializeChat();
             }
@@ -684,7 +672,6 @@ async function sendCampusChatMessage() {
     const message = input.value.trim();
     if (!message) return;
     
-    // Add message to UI
     addChatMessage('user', message);
     input.value = '';
     
@@ -692,7 +679,6 @@ async function sendCampusChatMessage() {
         await initializeChat();
     }
     
-    // Save message to Supabase
     try {
         const { error } = await supabase
             .from('chat_messages')
@@ -709,11 +695,9 @@ async function sendCampusChatMessage() {
         console.error('Supabase error:', error);
     }
     
-    // Process based on mode
     if (chatMode === 'bot') {
         processBotResponse(message);
     } else {
-        // Agent mode - show waiting message
         if (isAgentOnline) {
             addChatMessage('bot', '👤 Your message has been sent to a live agent. They will respond shortly...');
         } else {
@@ -723,7 +707,7 @@ async function sendCampusChatMessage() {
 }
 
 // ============================================================
-// ADD CHAT MESSAGE TO UI
+// ADD CHAT MESSAGE
 // ============================================================
 function addChatMessage(type, content, timestamp) {
     const container = document.getElementById('campusChatMessages');
@@ -799,7 +783,6 @@ function processBotResponse(message) {
         hideTypingIndicator();
         addChatMessage('bot', response);
         
-        // Save bot response to Supabase
         if (visitorId && currentChatId) {
             try {
                 supabase
@@ -913,22 +896,18 @@ document.addEventListener('DOMContentLoaded', function() {
         createChatWidget();
     }
     
-    // Restore chat mode preference
     const savedMode = localStorage.getItem('campusnexus_chat_mode');
     if (savedMode) {
         chatMode = savedMode;
     }
     
-    // Initialize chat
     setTimeout(() => {
         initializeChat();
-        // Set mode after initialization
         setTimeout(() => {
             setChatMode(chatMode);
         }, 500);
     }, 500);
     
-    // Check if chat was previously open
     const wasOpen = localStorage.getItem('campusChatOpen');
     if (wasOpen === 'true') {
         const chatWindow = document.getElementById('campusChatWindow');
@@ -944,7 +923,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Auto-open chat for new visitors
     if (!localStorage.getItem('campusChatVisited')) {
         setTimeout(() => {
             const chatWindow = document.getElementById('campusChatWindow');
