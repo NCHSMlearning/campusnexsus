@@ -105,7 +105,7 @@
     </div>
 </nav>
 
-<!-- Mobile Menu -->
+<!-- ===== MOBILE MENU ===== -->
 <div class="mobile-menu-backdrop" id="mobileMenuBackdrop"></div>
 <div class="mobile-menu" id="mobileMenu">
     <ul>
@@ -168,7 +168,6 @@
             </div>
         </div>
         <div class="hero-image">
-            <!-- Poster-style hero image with floating chips -->
             <div class="poster-frame" id="posterFrame">
                 <div class="poster-edge-glow"></div>
                 <img src="images/campus/hero-students.jpg" 
@@ -627,7 +626,6 @@
 <!-- ============================================================
      MODALS (Contact, Demo, Terms, Privacy)
      ============================================================ -->
-
 <!-- Contact Modal -->
 <div class="page-modal" id="contactModal">
     <div class="modal-content">
@@ -1118,11 +1116,10 @@
      ============================================================ -->
 <script>
 // ============================================================
-// SUPABASE CONFIGURATION
+// SUPABASE CONFIGURATION - YOUR CREDENTIALS
 // ============================================================
-// REPLACE THESE WITH YOUR SUPABASE CREDENTIALS
-const SUPABASE_URL = 'https://your-project-id.supabase.co';
-const SUPABASE_KEY = 'your-supabase-anon-key';
+const SUPABASE_URL = 'https://irahplkvocaakjxuisto.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlyYWhwbGt2b2NhYWtqeHVpc3RvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4ODY5ODQsImV4cCI6MjEwMzQ2Mjk4NH0.BFOwdRVDz4r1oYgUjm8zQbthqblGRq4c3WQWQaOhu7g';
 
 // Initialize Supabase client
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -1170,13 +1167,11 @@ async function saveMessageToSupabase(message, sender = 'visitor') {
 
         if (error) {
             console.error('Error saving message:', error);
-            // Fallback to localStorage if Supabase fails
             saveMessageToLocal(message, sender);
         }
         return data;
     } catch (error) {
         console.error('Supabase error:', error);
-        // Fallback to localStorage
         saveMessageToLocal(message, sender);
     }
 }
@@ -1207,17 +1202,14 @@ async function loadChatHistory() {
 
         if (error) {
             console.error('Error loading history:', error);
-            // Load from localStorage fallback
             loadLocalHistory();
             return;
         }
 
         if (data && data.length > 0) {
-            // Clear welcome message
             const messagesContainer = document.getElementById('campusChatMessages');
             messagesContainer.innerHTML = '';
             
-            // Add all messages from Supabase
             data.forEach(msg => {
                 addChatMessage(msg.sender === 'visitor' ? 'user' : 'bot', msg.message);
             });
@@ -1258,10 +1250,8 @@ function subscribeToMessages() {
                 filter: `visitor_id=eq.${visitorId}`
             },
             (payload) => {
-                // Only add if message is from bot/admin
                 if (payload.new.sender !== 'visitor') {
                     addChatMessage('bot', payload.new.message);
-                    // Update notification
                     if (!isChatOpen) {
                         document.getElementById('chatNotification').style.display = 'block';
                     }
@@ -1285,7 +1275,6 @@ async function toggleCampusChat() {
         notification.style.display = 'none';
         localStorage.setItem('campusChatOpen', 'true');
         
-        // Load history if not loaded
         if (!currentChatId) {
             await initializeChat();
         }
@@ -1298,7 +1287,6 @@ async function initializeChat() {
     visitorId = getVisitorId();
     currentChatId = 'chat_' + Date.now();
     
-    // Create chat session in Supabase
     try {
         const { data, error } = await supabase
             .from('chat_sessions')
@@ -1320,10 +1308,7 @@ async function initializeChat() {
         console.error('Error:', error);
     }
     
-    // Load history
     await loadChatHistory();
-    
-    // Subscribe to new messages
     subscribeToMessages();
 }
 
@@ -1354,14 +1339,10 @@ async function sendCampusChatMessage() {
     const message = input.value.trim();
     if (!message) return;
     
-    // Add user message to UI
     addChatMessage('user', message);
     input.value = '';
     
-    // Save to Supabase
     await saveMessageToSupabase(message, 'visitor');
-    
-    // Process message with bot
     processBotResponse(message);
 }
 
@@ -1418,10 +1399,8 @@ async function processBotResponse(message) {
         responseKey = 'pos';
     }
     
-    // Add typing indicator
     showTypingIndicator();
     
-    // Simulate bot thinking
     setTimeout(async () => {
         hideTypingIndicator();
         const response = botResponses[responseKey];
@@ -1464,10 +1443,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     visitorId = getVisitorId();
     currentChatId = 'chat_' + Date.now();
     
-    // Initialize chat session
     await initializeChat();
     
-    // Check if chat was open
     const wasOpen = localStorage.getItem('campusChatOpen');
     if (wasOpen === 'true') {
         document.getElementById('campusChatWindow').classList.add('open');
@@ -1475,7 +1452,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         document.getElementById('chatNotification').style.display = 'none';
     }
     
-    // Auto-open chat after 7 seconds on first visit
     if (!localStorage.getItem('campusChatVisited')) {
         setTimeout(() => {
             if (!document.getElementById('campusChatWindow').classList.contains('open')) {
@@ -1489,267 +1465,8 @@ document.addEventListener('DOMContentLoaded', async function() {
 });
 
 // ============================================================
-// SUPABASE TABLE SCHEMA (Run in Supabase SQL Editor)
+// SERVICE WORKER REGISTRATION (PWA)
 // ============================================================
-/*
--- Create chat_sessions table
-CREATE TABLE chat_sessions (
-    id SERIAL PRIMARY KEY,
-    chat_id TEXT UNIQUE NOT NULL,
-    visitor_id TEXT NOT NULL,
-    visitor_ip TEXT,
-    visitor_page TEXT,
-    status TEXT DEFAULT 'active',
-    assigned_agent TEXT,
-    created_at TIMESTAMP DEFAULT NOW(),
-    closed_at TIMESTAMP
-);
-
--- Create chat_messages table
-CREATE TABLE chat_messages (
-    id SERIAL PRIMARY KEY,
-    chat_id TEXT NOT NULL,
-    visitor_id TEXT NOT NULL,
-    sender TEXT NOT NULL,
-    message TEXT NOT NULL,
-    is_read BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT NOW()
-);
-
--- Create chat_agents table
-CREATE TABLE chat_agents (
-    id SERIAL PRIMARY KEY,
-    email TEXT UNIQUE NOT NULL,
-    name TEXT NOT NULL,
-    password TEXT NOT NULL,
-    is_online BOOLEAN DEFAULT FALSE,
-    last_seen TIMESTAMP DEFAULT NOW()
-);
-
--- Enable Row Level Security
-ALTER TABLE chat_sessions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE chat_messages ENABLE ROW LEVEL SECURITY;
-ALTER TABLE chat_agents ENABLE ROW LEVEL SECURITY;
-
--- Create policies for public access
-CREATE POLICY "Allow insert for visitors" ON chat_sessions FOR INSERT WITH CHECK (true);
-CREATE POLICY "Allow select for visitors" ON chat_sessions FOR SELECT USING (true);
-CREATE POLICY "Allow insert for messages" ON chat_messages FOR INSERT WITH CHECK (true);
-CREATE POLICY "Allow select for messages" ON chat_messages FOR SELECT USING (true);
-
--- Enable realtime subscriptions
-ALTER PUBLICATION supabase_realtime ADD TABLE chat_sessions;
-ALTER PUBLICATION supabase_realtime ADD TABLE chat_messages;
-*/
-</script>
-
-<!-- External JavaScript -->
-<script src="js/script.js"></script>
-
-<!-- ============================================================
-     ADDITIONAL JAVASCRIPT FOR ENHANCEMENTS
-     ============================================================ -->
-<script>
-// ============================================================
-// EXISTING SITE FUNCTIONALITY (Nav, Modals, Animations, etc.)
-// ============================================================
-
-document.addEventListener('DOMContentLoaded', function(){
-    // ===== MOBILE MENU =====
-    const hamburger = document.getElementById('menuToggle');
-    const mobileMenu = document.getElementById('mobileMenu');
-    const backdrop = document.getElementById('mobileMenuBackdrop');
-
-    function openMobileMenu() {
-        mobileMenu.classList.add('open');
-        backdrop.classList.add('open');
-        hamburger.innerHTML = '<i class="fas fa-times"></i>';
-    }
-
-    function closeMobileMenu() {
-        mobileMenu.classList.remove('open');
-        backdrop.classList.remove('open');
-        hamburger.innerHTML = '<i class="fas fa-bars"></i>';
-    }
-    window.closeMobileMenu = closeMobileMenu;
-
-    if (hamburger) {
-        hamburger.addEventListener('click', function() {
-            if (mobileMenu.classList.contains('open')) {
-                closeMobileMenu();
-            } else {
-                openMobileMenu();
-            }
-        });
-    }
-
-    if (backdrop) {
-        backdrop.addEventListener('click', closeMobileMenu);
-    }
-
-    // ===== SCROLL PROGRESS BAR =====
-    const progressBar = document.getElementById('scrollProgress');
-    if (progressBar) {
-        window.addEventListener('scroll', function() {
-            const scrollTop = window.scrollY;
-            const docHeight = document.documentElement.scrollHeight - window.innerHeight;
-            const progress = (scrollTop / docHeight) * 100;
-            progressBar.style.width = progress + '%';
-        });
-    }
-
-    // ===== BACK TO TOP BUTTON =====
-    const backToTopBtn = document.getElementById('backToTop');
-    if (backToTopBtn) {
-        window.addEventListener('scroll', function() {
-            if (window.scrollY > 500) {
-                backToTopBtn.classList.add('visible');
-            } else {
-                backToTopBtn.classList.remove('visible');
-            }
-        });
-
-        backToTopBtn.addEventListener('click', function() {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        });
-    }
-
-    // ===== STATS COUNTER ANIMATION =====
-    const counters = document.querySelectorAll('.stats-section .number, .hero-stats .number');
-    const speed = 200;
-
-    function animateCounter(counter) {
-        const target = parseInt(counter.getAttribute('data-count'));
-        const increment = target / speed;
-        let current = 0;
-
-        const updateCounter = () => {
-            current += increment;
-            if (current < target) {
-                counter.textContent = Math.ceil(current);
-                requestAnimationFrame(updateCounter);
-            } else {
-                counter.textContent = target + (target > 1000 ? '+' : '');
-            }
-        };
-        updateCounter();
-    }
-
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                const counter = entry.target.querySelector('.number');
-                if (counter && counter.textContent === '0') {
-                    animateCounter(counter);
-                }
-            }
-        });
-    }, { threshold: 0.5 });
-
-    document.querySelectorAll('.stat-item, .hero-stats .stat-item').forEach(el => {
-        observer.observe(el);
-    });
-
-    // ===== SCROLL REVEAL ANIMATIONS =====
-    const revealElements = document.querySelectorAll('.feature-card, .step, .testimonial-card, .pricing-card, .pos-feature');
-    const revealObserver = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.classList.add('revealed');
-            }
-        });
-    }, { threshold: 0.1 });
-
-    revealElements.forEach(el => {
-        el.classList.add('reveal-hidden');
-        revealObserver.observe(el);
-    });
-
-    // ===== POSTER TILT EFFECT =====
-    const posterFrame = document.getElementById('posterFrame');
-    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const isTouch = window.matchMedia('(hover: none)').matches;
-
-    if (posterFrame && !prefersReduced && !isTouch) {
-        const scene = posterFrame.closest('.hero-image');
-        if (scene) {
-            scene.addEventListener('mousemove', function(e) {
-                const rect = scene.getBoundingClientRect();
-                const px = (e.clientX - rect.left) / rect.width - 0.5;
-                const py = (e.clientY - rect.top) / rect.height - 0.5;
-                posterFrame.style.transform = 'rotateY(' + (px * 8) + 'deg) rotateX(' + (py * -8) + 'deg) translateZ(0)';
-            });
-            scene.addEventListener('mouseleave', function() {
-                posterFrame.style.transform = 'rotateY(0deg) rotateX(0deg)';
-            });
-        }
-    }
-
-    // ===== NAVBAR SCROLL EFFECT =====
-    const navbar = document.getElementById('navbar');
-    window.addEventListener('scroll', function() {
-        if (window.scrollY > 50) {
-            navbar.classList.add('scrolled');
-        } else {
-            navbar.classList.remove('scrolled');
-        }
-    });
-
-    // ===== DARK MODE TOGGLE =====
-    const themeToggle = document.getElementById('themeToggle');
-    const themeIcon = document.getElementById('themeIcon');
-    const themeLabel = document.getElementById('themeLabel');
-
-    if (themeToggle) {
-        themeToggle.addEventListener('click', function() {
-            document.body.classList.toggle('dark-mode');
-            const isDark = document.body.classList.contains('dark-mode');
-            themeIcon.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
-            themeLabel.textContent = isDark ? 'Light' : 'Dark';
-        });
-    }
-
-    // ===== MODAL FUNCTIONS =====
-    window.openModal = function(modalId) {
-        const modal = document.getElementById(modalId);
-        if (modal) {
-            modal.style.display = 'block';
-            document.body.style.overflow = 'hidden';
-        }
-    };
-
-    window.closeModal = function(modalId) {
-        const modal = document.getElementById(modalId);
-        if (modal) {
-            modal.style.display = 'none';
-            document.body.style.overflow = '';
-        }
-    };
-
-    // Close modal on backdrop click
-    document.querySelectorAll('.page-modal').forEach(modal => {
-        modal.addEventListener('click', function(e) {
-            if (e.target === this) {
-                this.style.display = 'none';
-                document.body.style.overflow = '';
-            }
-        });
-    });
-
-    // Close modal on Escape key
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-            document.querySelectorAll('.page-modal').forEach(modal => {
-                if (modal.style.display === 'block') {
-                    modal.style.display = 'none';
-                    document.body.style.overflow = '';
-                }
-            });
-        }
-    });
-});
-
-// ===== SERVICE WORKER REGISTRATION (PWA) =====
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', function() {
         navigator.serviceWorker.register('/sw.js')
