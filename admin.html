@@ -1,0 +1,1934 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CampusNexus - Admin Dashboard + Visitor Tracking</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        /* ============================================================
+           ADMIN DASHBOARD STYLES
+           ============================================================ */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #0A3D62;
+            --primary-dark: #052e1f;
+            --secondary: #10b981;
+            --secondary-light: #34d399;
+            --gold: #d4af37;
+            --gold-light: #f0d060;
+            --gray-50: #f8fafc;
+            --gray-100: #f1f5f9;
+            --gray-200: #e2e8f0;
+            --gray-300: #cbd5e1;
+            --gray-400: #94a3b8;
+            --gray-500: #64748b;
+            --gray-600: #475569;
+            --gray-700: #334155;
+            --gray-800: #1e293b;
+            --gray-900: #0f172a;
+            --red: #ef4444;
+            --orange: #f59e0b;
+            --blue: #3b82f6;
+            --radius: 12px;
+            --shadow: 0 1px 3px rgba(0,0,0,0.06);
+            --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1);
+            --shadow-xl: 0 20px 25px -5px rgba(0,0,0,0.15);
+            --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--gray-50);
+            color: var(--gray-800);
+            min-height: 100vh;
+        }
+
+        /* ===== ADMIN LAYOUT ===== */
+        .admin-container {
+            display: grid;
+            grid-template-columns: 240px 1fr;
+            min-height: 100vh;
+        }
+
+        /* ===== SIDEBAR ===== */
+        .sidebar {
+            background: var(--gray-900);
+            color: #fff;
+            padding: 24px 16px;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow-y: auto;
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar .logo {
+            font-size: 1.4rem;
+            font-weight: 800;
+            padding-bottom: 24px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            margin-bottom: 24px;
+        }
+
+        .sidebar .logo span {
+            color: var(--gold);
+        }
+
+        .sidebar .logo small {
+            display: block;
+            font-size: 0.6rem;
+            font-weight: 400;
+            opacity: 0.5;
+            margin-top: 2px;
+        }
+
+        .sidebar-nav {
+            list-style: none;
+        }
+
+        .sidebar-nav li {
+            margin-bottom: 4px;
+        }
+
+        .sidebar-nav li a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+            border-radius: var(--radius);
+            color: rgba(255,255,255,0.7);
+            text-decoration: none;
+            transition: var(--transition);
+            font-weight: 500;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        .sidebar-nav li a:hover {
+            background: rgba(255,255,255,0.05);
+            color: #fff;
+        }
+
+        .sidebar-nav li a.active {
+            background: rgba(212, 175, 55, 0.15);
+            color: var(--gold);
+        }
+
+        .sidebar-nav li a i {
+            width: 20px;
+            text-align: center;
+            font-size: 1rem;
+        }
+
+        .sidebar-nav .badge {
+            margin-left: auto;
+            background: var(--red);
+            color: #fff;
+            padding: 1px 8px;
+            border-radius: 999px;
+            font-size: 0.65rem;
+            font-weight: 700;
+        }
+
+        .sidebar-nav .badge.green {
+            background: var(--secondary);
+        }
+
+        .sidebar-nav .badge.orange {
+            background: var(--orange);
+        }
+
+        .sidebar-footer {
+            margin-top: 32px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .sidebar-footer a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+            border-radius: var(--radius);
+            color: rgba(255,255,255,0.5);
+            text-decoration: none;
+            transition: var(--transition);
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+
+        .sidebar-footer a:hover {
+            color: #fff;
+        }
+
+        .sidebar-footer .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+        }
+
+        .sidebar-footer .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+
+        .sidebar-footer .user-name {
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .sidebar-footer .user-role {
+            font-size: 0.7rem;
+            opacity: 0.5;
+        }
+
+        /* ===== MAIN CONTENT ===== */
+        .main-content {
+            padding: 24px 32px;
+            overflow-x: hidden;
+        }
+
+        /* ===== TOP BAR ===== */
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .topbar-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .topbar-left h1 {
+            font-size: 1.4rem;
+            font-weight: 700;
+        }
+
+        .topbar-left .page-subtitle {
+            color: var(--gray-500);
+            font-size: 0.85rem;
+        }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .topbar-right .status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8rem;
+            color: var(--gray-500);
+            padding: 6px 14px;
+            background: #fff;
+            border-radius: 999px;
+            box-shadow: var(--shadow);
+        }
+
+        .topbar-right .status .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--secondary);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        .topbar-right .btn {
+            padding: 8px 16px;
+            border-radius: var(--radius);
+            border: none;
+            background: var(--primary);
+            color: #fff;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .topbar-right .btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .topbar-right .btn-outline {
+            background: transparent;
+            border: 1px solid var(--gray-200);
+            color: var(--gray-600);
+        }
+
+        .topbar-right .btn-outline:hover {
+            background: var(--gray-100);
+        }
+
+        .topbar-right .btn-danger {
+            background: var(--red);
+        }
+
+        .topbar-right .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        /* ===== TABS ===== */
+        .tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 24px;
+            background: #fff;
+            padding: 4px;
+            border-radius: var(--radius);
+            border: 1px solid var(--gray-200);
+            flex-wrap: wrap;
+        }
+
+        .tabs .tab {
+            padding: 8px 20px;
+            border-radius: var(--radius);
+            border: none;
+            background: transparent;
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: var(--gray-500);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .tabs .tab:hover {
+            background: var(--gray-100);
+            color: var(--gray-700);
+        }
+
+        .tabs .tab.active {
+            background: var(--primary);
+            color: #fff;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* ===== STATS CARDS ===== */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .stat-card {
+            background: #fff;
+            padding: 20px 24px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            border: 1px solid var(--gray-200);
+            transition: var(--transition);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .stat-card .stat-label {
+            font-size: 0.75rem;
+            color: var(--gray-500);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+
+        .stat-card .stat-number {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--gray-900);
+            margin: 4px 0 2px;
+        }
+
+        .stat-card .stat-change {
+            font-size: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .stat-card .stat-change.up {
+            color: var(--secondary);
+        }
+
+        .stat-card .stat-change.down {
+            color: var(--red);
+        }
+
+        .stat-card .stat-icon {
+            float: right;
+            font-size: 1.6rem;
+            opacity: 0.2;
+            color: var(--primary);
+        }
+
+        /* ===== SECTION HEADER ===== */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .section-header h2 {
+            font-size: 1rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-header .filters {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .section-header .filters select,
+        .section-header .filters input {
+            padding: 6px 12px;
+            border-radius: var(--radius);
+            border: 1px solid var(--gray-200);
+            font-size: 0.8rem;
+            background: #fff;
+            color: var(--gray-700);
+        }
+
+        .section-header .filters input {
+            min-width: 180px;
+        }
+
+        /* ===== TABLE ===== */
+        .table-container {
+            background: #fff;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            border: 1px solid var(--gray-200);
+            overflow: hidden;
+            margin-bottom: 24px;
+        }
+
+        .table-container table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table-container th {
+            background: var(--gray-50);
+            padding: 12px 16px;
+            text-align: left;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--gray-500);
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .table-container td {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--gray-100);
+            font-size: 0.85rem;
+            vertical-align: middle;
+        }
+
+        .table-container tr:hover td {
+            background: var(--gray-50);
+        }
+
+        .table-container tr:last-child td {
+            border-bottom: none;
+        }
+
+        .visitor-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.75rem;
+            color: #fff;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 10px;
+            border-radius: 999px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        .status-badge.online {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--secondary);
+        }
+
+        .status-badge.offline {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--red);
+        }
+
+        .status-badge.idle {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--orange);
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .status-dot.online {
+            background: var(--secondary);
+        }
+
+        .status-dot.offline {
+            background: var(--red);
+        }
+
+        .status-dot.idle {
+            background: var(--orange);
+        }
+
+        /* ===== CHAT LIST ===== */
+        .chat-list {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .chat-item {
+            padding: 14px 20px;
+            border-bottom: 1px solid var(--gray-100);
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            gap: 14px;
+            align-items: center;
+            transition: var(--transition);
+            cursor: pointer;
+        }
+
+        .chat-item:hover {
+            background: var(--gray-50);
+        }
+
+        .chat-item.unread {
+            background: rgba(16, 185, 129, 0.03);
+            border-left: 3px solid var(--secondary);
+        }
+
+        .chat-item .chat-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .chat-item .chat-info {
+            min-width: 0;
+        }
+
+        .chat-item .chat-info .chat-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .chat-item .chat-info .chat-name .online-dot {
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--secondary);
+            margin-left: 6px;
+        }
+
+        .chat-item .chat-info .chat-message-preview {
+            font-size: 0.82rem;
+            color: var(--gray-500);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 280px;
+        }
+
+        .chat-item .chat-info .chat-meta {
+            display: flex;
+            gap: 12px;
+            font-size: 0.68rem;
+            color: var(--gray-400);
+            margin-top: 2px;
+            flex-wrap: wrap;
+        }
+
+        .chat-item .chat-time {
+            font-size: 0.68rem;
+            color: var(--gray-400);
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .chat-item .chat-actions {
+            display: flex;
+            gap: 4px;
+            flex-shrink: 0;
+        }
+
+        .chat-item .chat-actions button {
+            padding: 3px 10px;
+            border-radius: var(--radius);
+            border: none;
+            font-size: 0.65rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .chat-item .chat-actions .btn-reply {
+            background: var(--secondary);
+            color: #fff;
+        }
+
+        .chat-item .chat-actions .btn-reply:hover {
+            background: var(--secondary-light);
+        }
+
+        .chat-item .chat-actions .btn-close {
+            background: #fee2e2;
+            color: var(--red);
+        }
+
+        .chat-item .chat-actions .btn-close:hover {
+            background: #fecaca;
+        }
+
+        /* ===== CHAT REPLY MODAL ===== */
+        .chat-reply-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .chat-reply-modal.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .chat-reply-modal .modal-box {
+            background: #fff;
+            border-radius: var(--radius);
+            max-width: 600px;
+            width: 100%;
+            max-height: 85vh;
+            padding: 28px;
+            box-shadow: var(--shadow-xl);
+            overflow-y: auto;
+        }
+
+        .chat-reply-modal .modal-box .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .chat-reply-modal .modal-box .modal-header h3 {
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        .chat-reply-modal .modal-box .modal-header .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--gray-400);
+            transition: var(--transition);
+        }
+
+        .chat-reply-modal .modal-box .modal-header .close-btn:hover {
+            color: var(--gray-800);
+            transform: rotate(90deg);
+        }
+
+        .chat-reply-modal .modal-box .visitor-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: var(--gray-50);
+            border-radius: var(--radius);
+            margin-bottom: 12px;
+        }
+
+        .chat-reply-modal .modal-box .visitor-info .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+        }
+
+        .chat-reply-modal .modal-box .visitor-info .details .name {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .chat-reply-modal .modal-box .visitor-info .details .page {
+            font-size: 0.75rem;
+            color: var(--gray-500);
+        }
+
+        .chat-reply-modal .modal-box .chat-history {
+            max-height: 280px;
+            overflow-y: auto;
+            margin-bottom: 12px;
+            padding: 12px;
+            background: var(--gray-50);
+            border-radius: var(--radius);
+        }
+
+        .chat-reply-modal .modal-box .chat-history .msg {
+            margin-bottom: 8px;
+            padding: 8px 12px;
+            border-radius: var(--radius);
+            max-width: 85%;
+        }
+
+        .chat-reply-modal .modal-box .chat-history .msg.visitor {
+            background: #fff;
+            border: 1px solid var(--gray-200);
+            margin-right: auto;
+        }
+
+        .chat-reply-modal .modal-box .chat-history .msg.agent {
+            background: var(--primary);
+            color: #fff;
+            margin-left: auto;
+        }
+
+        .chat-reply-modal .modal-box .chat-history .msg .time {
+            font-size: 0.6rem;
+            opacity: 0.6;
+            display: block;
+            margin-top: 2px;
+        }
+
+        .chat-reply-modal .modal-box .reply-area {
+            display: flex;
+            gap: 8px;
+        }
+
+        .chat-reply-modal .modal-box .reply-area textarea {
+            flex: 1;
+            padding: 10px 14px;
+            border-radius: var(--radius);
+            border: 1px solid var(--gray-200);
+            resize: none;
+            font-family: inherit;
+            font-size: 0.9rem;
+            min-height: 50px;
+            transition: var(--transition);
+        }
+
+        .chat-reply-modal .modal-box .reply-area textarea:focus {
+            outline: none;
+            border-color: var(--secondary);
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+        }
+
+        .chat-reply-modal .modal-box .reply-area .send-btn {
+            padding: 10px 18px;
+            border-radius: var(--radius);
+            border: none;
+            background: var(--secondary);
+            color: #fff;
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--transition);
+            height: fit-content;
+        }
+
+        .chat-reply-modal .modal-box .reply-area .send-btn:hover {
+            background: var(--secondary-light);
+            transform: translateY(-2px);
+        }
+
+        .quick-replies {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+
+        .quick-replies button {
+            padding: 3px 12px;
+            border-radius: 999px;
+            border: 1px solid var(--gray-200);
+            background: #fff;
+            font-size: 0.72rem;
+            cursor: pointer;
+            transition: var(--transition);
+            color: var(--gray-600);
+        }
+
+        .quick-replies button:hover {
+            background: var(--gray-100);
+            border-color: var(--secondary);
+            color: var(--secondary);
+        }
+
+        /* ===== EMPTY STATE ===== */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--gray-500);
+        }
+
+        .empty-state i {
+            font-size: 2.5rem;
+            color: var(--gray-300);
+            margin-bottom: 10px;
+        }
+
+        .empty-state h3 {
+            font-size: 1rem;
+            color: var(--gray-700);
+        }
+
+        .empty-state p {
+            font-size: 0.85rem;
+            max-width: 400px;
+            margin: 4px auto 0;
+        }
+
+        /* ===== LOADING ===== */
+        .loading {
+            display: flex;
+            justify-content: center;
+            padding: 30px;
+        }
+
+        .loading .spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid var(--gray-200);
+            border-top-color: var(--secondary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 1024px) {
+            .admin-container {
+                grid-template-columns: 200px 1fr;
+            }
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .admin-container {
+                grid-template-columns: 1fr;
+            }
+            .sidebar {
+                display: none;
+                position: fixed;
+                width: 280px;
+                z-index: 1000;
+                transform: translateX(-100%);
+            }
+            .sidebar.open {
+                display: block;
+                transform: translateX(0);
+            }
+            .main-content {
+                padding: 16px;
+            }
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            .topbar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .topbar-right {
+                flex-wrap: wrap;
+            }
+            .section-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .section-header .filters {
+                flex-wrap: wrap;
+            }
+            .section-header .filters input {
+                min-width: 100%;
+            }
+            .table-container {
+                overflow-x: auto;
+            }
+            .chat-item {
+                grid-template-columns: 1fr;
+                gap: 6px;
+            }
+            .chat-item .chat-actions {
+                justify-content: flex-start;
+            }
+            .chat-item .chat-info .chat-message-preview {
+                max-width: 100%;
+            }
+            .chat-reply-modal .modal-box {
+                padding: 16px;
+                margin: 10px;
+            }
+            .chat-reply-modal .modal-box .reply-area {
+                flex-direction: column;
+            }
+            .mobile-menu-toggle {
+                display: block !important;
+            }
+            .tabs .tab {
+                padding: 6px 12px;
+                font-size: 0.75rem;
+            }
+        }
+
+        .mobile-menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--gray-700);
+        }
+
+        /* Sidebar overlay */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            z-index: 999;
+        }
+
+        .sidebar-overlay.open {
+            display: block;
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--gray-100);
+            border-radius: 999px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--gray-300);
+            border-radius: 999px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--gray-400);
+        }
+    </style>
+</head>
+<body>
+
+<div class="admin-container">
+    <!-- ===== SIDEBAR OVERLAY (Mobile) ===== -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+    <!-- ===== SIDEBAR ===== -->
+    <aside class="sidebar" id="sidebar">
+        <div class="logo">
+            Campus<span>Nexus</span>
+            <small>Admin Dashboard</small>
+        </div>
+
+        <ul class="sidebar-nav">
+            <li><a href="#" class="active" onclick="switchTab('visitors')"><i class="fas fa-address-card"></i> Visitors <span class="badge" id="visitorBadge">0</span></a></li>
+            <li><a href="#" onclick="switchTab('chats')"><i class="fas fa-comments"></i> Live Chats <span class="badge green" id="chatBadge">0</span></a></li>
+            <li><a href="#" onclick="switchTab('analytics')"><i class="fas fa-chart-bar"></i> Analytics</a></li>
+            <li><a href="#"><i class="fas fa-users"></i> Agents</a></li>
+            <li><a href="#"><i class="fas fa-cog"></i> Settings</a></li>
+        </ul>
+
+        <div class="sidebar-footer">
+            <div class="user-info">
+                <div class="user-avatar">A</div>
+                <div>
+                    <div class="user-name">Admin</div>
+                    <div class="user-role">Super Admin</div>
+                </div>
+            </div>
+            <a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</a>
+        </div>
+    </aside>
+
+    <!-- ===== MAIN CONTENT ===== -->
+    <main class="main-content">
+        <!-- Top Bar -->
+        <header class="topbar">
+            <div class="topbar-left">
+                <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div>
+                    <h1>Dashboard</h1>
+                    <span class="page-subtitle">Monitor visitors and chats in real-time</span>
+                </div>
+            </div>
+            <div class="topbar-right">
+                <span class="status">
+                    <span class="dot"></span>
+                    <span id="agentStatusText">Online</span>
+                </span>
+                <button class="btn" onclick="refreshAll()">
+                    <i class="fas fa-sync"></i> Refresh
+                </button>
+                <button class="btn btn-outline" onclick="toggleStatus()">
+                    <i class="fas fa-power-off"></i> <span id="statusToggleText">Go Offline</span>
+                </button>
+                <button class="btn btn-danger" onclick="clearAllData()">
+                    <i class="fas fa-trash"></i> Clear
+                </button>
+            </div>
+        </header>
+
+        <!-- Stats -->
+        <section class="stats-grid" id="statsGrid">
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-address-card"></i></div>
+                <div class="stat-label">Total Visitors</div>
+                <div class="stat-number" id="totalVisitors">0</div>
+                <div class="stat-change up"><i class="fas fa-arrow-up"></i> Today</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-comment"></i></div>
+                <div class="stat-label">Active Chats</div>
+                <div class="stat-number" id="activeChats">0</div>
+                <div class="stat-change up"><i class="fas fa-arrow-up"></i> Live now</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-clock"></i></div>
+                <div class="stat-label">Avg Response Time</div>
+                <div class="stat-number" id="avgResponse">0s</div>
+                <div class="stat-change up"><i class="fas fa-arrow-up"></i> Good</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-star"></i></div>
+                <div class="stat-label">Satisfaction Rate</div>
+                <div class="stat-number" id="satisfactionRate">0%</div>
+                <div class="stat-change up"><i class="fas fa-arrow-up"></i> Great!</div>
+            </div>
+        </section>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('visitors')" data-tab="visitors">
+                <i class="fas fa-address-card"></i> Visitors <span class="badge" id="tabVisitorBadge">0</span>
+            </button>
+            <button class="tab" onclick="switchTab('chats')" data-tab="chats">
+                <i class="fas fa-comments"></i> Live Chats <span class="badge green" id="tabChatBadge">0</span>
+            </button>
+            <button class="tab" onclick="switchTab('analytics')" data-tab="analytics">
+                <i class="fas fa-chart-bar"></i> Analytics
+            </button>
+        </div>
+
+        <!-- ===== TAB 1: VISITORS ===== -->
+        <div class="tab-content active" id="tabVisitors">
+            <div class="section-header">
+                <h2><i class="fas fa-address-card" style="color: var(--secondary);"></i> Visitor History</h2>
+                <div class="filters">
+                    <input type="text" placeholder="Search visitors..." id="searchVisitors" oninput="filterVisitors()">
+                    <select id="visitorFilter" onchange="filterVisitors()">
+                        <option value="all">All Visitors</option>
+                        <option value="online">Online</option>
+                        <option value="offline">Offline</option>
+                        <option value="idle">Idle</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Visitor</th>
+                            <th>IP Address</th>
+                            <th>Page Viewed</th>
+                            <th>Status</th>
+                            <th>First Seen</th>
+                            <th>Last Seen</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="visitorTableBody">
+                        <tr>
+                            <td colspan="7">
+                                <div class="loading"><div class="spinner"></div></div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ===== TAB 2: LIVE CHATS ===== -->
+        <div class="tab-content" id="tabChats">
+            <div class="section-header">
+                <h2><i class="fas fa-comment-dots" style="color: var(--secondary);"></i> Active Conversations</h2>
+                <div class="filters">
+                    <input type="text" placeholder="Search chats..." id="searchChats" oninput="filterChats()">
+                    <select id="chatFilter" onchange="filterChats()">
+                        <option value="all">All Chats</option>
+                        <option value="active">Active</option>
+                        <option value="pending">Pending</option>
+                        <option value="closed">Closed</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="chat-list" id="chatList">
+                <div class="loading"><div class="spinner"></div></div>
+            </div>
+        </div>
+
+        <!-- ===== TAB 3: ANALYTICS ===== -->
+        <div class="tab-content" id="tabAnalytics">
+            <div class="section-header">
+                <h2><i class="fas fa-chart-bar" style="color: var(--gold);"></i> Visitor Analytics</h2>
+            </div>
+
+            <div class="stats-grid" style="grid-template-columns: repeat(2, 1fr);">
+                <div class="stat-card">
+                    <div class="stat-label">Most Active Hour</div>
+                    <div class="stat-number" id="peakHour">--</div>
+                    <div class="stat-change up">Peak engagement</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Top Country</div>
+                    <div class="stat-number" id="topCountry">--</div>
+                    <div class="stat-change up">Most visitors from</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Most Viewed Page</div>
+                    <div class="stat-number" id="topPage" style="font-size:1.2rem;">--</div>
+                    <div class="stat-change up">Popular content</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Avg Session Duration</div>
+                    <div class="stat-number" id="avgSession">--</div>
+                    <div class="stat-change up">Engagement</div>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Device Type</th>
+                            <th>Visitors</th>
+                            <th>Percentage</th>
+                        </tr>
+                    </thead>
+                    <tbody id="deviceStatsBody">
+                        <tr>
+                            <td colspan="3">
+                                <div class="loading"><div class="spinner"></div></div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- ===== CHAT REPLY MODAL ===== -->
+<div class="chat-reply-modal" id="chatReplyModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3><i class="fas fa-reply" style="color: var(--secondary);"></i> Reply to Visitor</h3>
+            <button class="close-btn" onclick="closeReplyModal()">&times;</button>
+        </div>
+
+        <div class="visitor-info" id="visitorInfo">
+            <div class="avatar" id="visitorAvatar">V</div>
+            <div class="details">
+                <div class="name" id="visitorName">Visitor Name</div>
+                <div class="page" id="visitorPage">Viewing: /home</div>
+            </div>
+        </div>
+
+        <div class="chat-history" id="chatHistory">
+            <!-- Chat history loaded here -->
+        </div>
+
+        <div class="quick-replies">
+            <button onclick="insertQuickReply('Hello! How can I help you today?')">👋 Greeting</button>
+            <button onclick="insertQuickReply('I\'ll look into that for you right away.')">🔍 Checking</button>
+            <button onclick="insertQuickReply('Thank you for your message. Our team will assist you shortly.')">⏳ Hold</button>
+            <button onclick="insertQuickReply('I\'ve resolved this issue. Is there anything else I can help with?')">✅ Resolved</button>
+        </div>
+
+        <div class="reply-area">
+            <textarea id="replyMessage" placeholder="Type your reply here..." rows="2"></textarea>
+            <button class="send-btn" onclick="sendReply()">
+                <i class="fas fa-paper-plane"></i> Send
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+// ============================================================
+// SUPABASE CONFIGURATION
+// ============================================================
+const SUPABASE_URL = 'https://irahplkvocaakjxuisto.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlyYWhwbGt2b2NhYWtqeHVpc3RvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4ODY5ODQsImV4cCI6MjEwMzQ2Mjk4NH0.BFOwdRVDz4r1oYgUjm8zQbthqblGRq4c3WQWQaOhu7g';
+
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ============================================================
+// STATE
+// ============================================================
+let allVisitors = [];
+let allChats = [];
+let currentChatId = null;
+let agentOnline = true;
+let chatSubscriptions = [];
+let currentTab = 'visitors';
+
+// ============================================================
+// DOM REFS
+// ============================================================
+const visitorTableBody = document.getElementById('visitorTableBody');
+const chatList = document.getElementById('chatList');
+const totalVisitorsEl = document.getElementById('totalVisitors');
+const activeChatsEl = document.getElementById('activeChats');
+const avgResponseEl = document.getElementById('avgResponse');
+const satisfactionRateEl = document.getElementById('satisfactionRate');
+const visitorBadge = document.getElementById('visitorBadge');
+const chatBadge = document.getElementById('chatBadge');
+const tabVisitorBadge = document.getElementById('tabVisitorBadge');
+const tabChatBadge = document.getElementById('tabChatBadge');
+const searchVisitors = document.getElementById('searchVisitors');
+const visitorFilter = document.getElementById('visitorFilter');
+const searchChats = document.getElementById('searchChats');
+const chatFilter = document.getElementById('chatFilter');
+
+// ============================================================
+// TAB SWITCHING
+// ============================================================
+function switchTab(tab) {
+    currentTab = tab;
+
+    // Update tabs
+    document.querySelectorAll('.tab').forEach(el => {
+        el.classList.toggle('active', el.dataset.tab === tab);
+    });
+
+    // Update content
+    document.querySelectorAll('.tab-content').forEach(el => {
+        el.classList.remove('active');
+    });
+    document.getElementById(`tab${tab.charAt(0).toUpperCase() + tab.slice(1)}`).classList.add('active');
+
+    // Update sidebar
+    document.querySelectorAll('.sidebar-nav a').forEach(el => {
+        el.classList.remove('active');
+    });
+
+    // Load data based on tab
+    if (tab === 'visitors') loadVisitors();
+    else if (tab === 'chats') loadChats();
+    else if (tab === 'analytics') loadAnalytics();
+}
+
+// ============================================================
+// LOAD VISITORS
+// ============================================================
+async function loadVisitors() {
+    try {
+        const { data, error } = await supabase
+            .from('visitor_sessions')
+            .select('*')
+            .order('last_active', { ascending: false })
+            .limit(100);
+
+        if (error) throw error;
+
+        allVisitors = data || [];
+        renderVisitors();
+        updateStats();
+    } catch (error) {
+        console.error('Error loading visitors:', error);
+        visitorTableBody.innerHTML = `
+            <tr>
+                <td colspan="7">
+                    <div class="empty-state">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <h3>Error loading visitors</h3>
+                        <p>${error.message}</p>
+                        <button onclick="loadVisitors()" style="margin-top:8px;padding:6px 16px;border-radius:8px;border:none;background:var(--secondary);color:#fff;cursor:pointer;">Retry</button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }
+}
+
+// ============================================================
+// RENDER VISITORS
+// ============================================================
+function renderVisitors() {
+    const filter = visitorFilter.value;
+    const search = searchVisitors.value.toLowerCase();
+
+    let filtered = allVisitors.filter(v => {
+        if (filter !== 'all' && v.status !== filter) return false;
+        if (search) {
+            const id = (v.visitor_id || '').toLowerCase();
+            const page = (v.current_page || '').toLowerCase();
+            const country = (v.country || '').toLowerCase();
+            return id.includes(search) || page.includes(search) || country.includes(search);
+        }
+        return true;
+    });
+
+    if (filtered.length === 0) {
+        visitorTableBody.innerHTML = `
+            <tr>
+                <td colspan="7">
+                    <div class="empty-state">
+                        <i class="fas fa-user-slash"></i>
+                        <h3>No visitors found</h3>
+                        <p>Visitors will appear here when they visit your site.</p>
+                    </div>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    const colors = ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444'];
+
+    visitorTableBody.innerHTML = filtered.map((v, index) => {
+        const initials = (v.visitor_id || 'V').slice(0, 2).toUpperCase();
+        const status = v.status || 'offline';
+        const statusClass = status === 'online' ? 'online' : status === 'idle' ? 'idle' : 'offline';
+        const color = colors[index % colors.length];
+        const time = new Date(v.last_active).toLocaleString();
+        const firstSeen = new Date(v.started_at).toLocaleString();
+        const pageUrl = v.current_page || '/';
+
+        return `
+            <tr>
+                <td>
+                    <span class="visitor-avatar" style="background:${color}">${initials}</span>
+                    ${v.visitor_id || 'Anonymous'}
+                </td>
+                <td>${v.ip_address || 'N/A'}</td>
+                <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${pageUrl}">
+                    ${pageUrl.length > 50 ? pageUrl.slice(0, 50) + '...' : pageUrl}
+                </td>
+                <td>
+                    <span class="status-badge ${statusClass}">
+                        <span class="status-dot ${statusClass}"></span>
+                        ${status}
+                    </span>
+                </td>
+                <td>${firstSeen}</td>
+                <td>${time}</td>
+                <td>
+                    <button class="btn" style="padding:4px 12px;font-size:0.7rem;background:var(--secondary);" onclick="viewVisitor('${v.visitor_id}')">
+                        <i class="fas fa-eye"></i> View
+                    </button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+
+    // Update badges
+    const online = allVisitors.filter(v => v.status === 'online').length;
+    visitorBadge.textContent = online;
+    tabVisitorBadge.textContent = allVisitors.length;
+}
+
+// ============================================================
+// LOAD CHATS
+// ============================================================
+async function loadChats() {
+    try {
+        const { data, error } = await supabase
+            .from('chat_sessions')
+            .select(`
+                *,
+                messages:chat_messages(*)
+            `)
+            .order('created_at', { ascending: false })
+            .limit(50);
+
+        if (error) throw error;
+
+        allChats = data || [];
+        renderChats();
+        updateStats();
+    } catch (error) {
+        console.error('Error loading chats:', error);
+        chatList.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-exclamation-circle"></i>
+                <h3>Error loading chats</h3>
+                <p>${error.message}</p>
+            </div>
+        `;
+    }
+}
+
+// ============================================================
+// RENDER CHATS
+// ============================================================
+function renderChats() {
+    const filter = chatFilter.value;
+    const search = searchChats.value.toLowerCase();
+
+    let filtered = allChats.filter(chat => {
+        if (filter !== 'all' && chat.status !== filter) return false;
+        if (search) {
+            const name = (chat.visitor_name || 'Anonymous Visitor').toLowerCase();
+            const messages = chat.messages || [];
+            const msgText = messages.map(m => m.message || '').join(' ').toLowerCase();
+            return name.includes(search) || msgText.includes(search);
+        }
+        return true;
+    });
+
+    if (filtered.length === 0) {
+        chatList.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-comment-slash"></i>
+                <h3>No conversations yet</h3>
+                <p>Visitors will appear here when they start chatting.</p>
+            </div>
+        `;
+        return;
+    }
+
+    const colors = ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444'];
+
+    chatList.innerHTML = filtered.map((chat, index) => {
+        const isUnread = chat.messages && chat.messages.some(m => !m.is_read && m.sender === 'visitor');
+        const lastMsg = chat.messages && chat.messages.length > 0 ? chat.messages[chat.messages.length - 1] : null;
+        const initials = (chat.visitor_name || 'Anonymous Visitor').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+        const time = new Date(chat.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const color = colors[index % colors.length];
+        const statusColor = chat.status === 'active' ? 'var(--secondary)' : chat.status === 'pending' ? 'var(--orange)' : 'var(--gray-400)';
+
+        return `
+            <div class="chat-item ${isUnread ? 'unread' : ''}" data-chatid="${chat.chat_id}" onclick="openReplyModal('${chat.chat_id}')">
+                <div class="chat-avatar" style="background:${color}">${initials || 'V'}</div>
+                <div class="chat-info">
+                    <div class="chat-name">
+                        ${chat.visitor_name || 'Anonymous Visitor'}
+                        ${chat.status === 'active' ? '<span class="online-dot"></span>' : ''}
+                    </div>
+                    <div class="chat-message-preview">${lastMsg ? lastMsg.message : 'No messages yet'}</div>
+                    <div class="chat-meta">
+                        <span>${chat.visitor_page || 'Unknown page'}</span>
+                        <span>•</span>
+                        <span>${chat.messages ? chat.messages.length : 0} messages</span>
+                        <span>•</span>
+                        <span style="color:${statusColor}">${chat.status}</span>
+                    </div>
+                </div>
+                <div class="chat-time">${time}</div>
+            </div>
+        `;
+    }).join('');
+
+    // Update badges
+    const active = allChats.filter(c => c.status === 'active').length;
+    chatBadge.textContent = active;
+    tabChatBadge.textContent = allChats.length;
+}
+
+// ============================================================
+// UPDATE STATS
+// ============================================================
+function updateStats() {
+    const active = allChats.filter(c => c.status === 'active').length;
+    const total = allVisitors.length;
+
+    totalVisitorsEl.textContent = total;
+    activeChatsEl.textContent = active;
+
+    // Calc avg response time (mock)
+    const times = allChats.flatMap(c => c.messages || []).filter(m => m.sender === 'agent');
+    if (times.length > 0) {
+        const avg = Math.floor(Math.random() * 30) + 10;
+        avgResponseEl.textContent = `${avg}s`;
+    } else {
+        avgResponseEl.textContent = 'N/A';
+    }
+
+    // Satisfaction rate (mock)
+    const rate = Math.floor(Math.random() * 20) + 80;
+    satisfactionRateEl.textContent = `${rate}%`;
+}
+
+// ============================================================
+// FILTER FUNCTIONS
+// ============================================================
+function filterVisitors() { renderVisitors(); }
+function filterChats() { renderChats(); }
+
+// ============================================================
+// VIEW VISITOR DETAILS
+// ============================================================
+function viewVisitor(visitorId) {
+    alert(`Viewing details for visitor: ${visitorId}\n\nThis feature is coming soon!`);
+}
+
+// ============================================================
+// OPEN REPLY MODAL
+// ============================================================
+async function openReplyModal(chatId) {
+    currentChatId = chatId;
+    const chat = allChats.find(c => c.chat_id === chatId);
+    if (!chat) return;
+
+    // Set visitor info
+    document.getElementById('visitorAvatar').textContent = (chat.visitor_name || 'Anonymous Visitor').slice(0, 2).toUpperCase();
+    document.getElementById('visitorName').textContent = chat.visitor_name || 'Anonymous Visitor';
+    document.getElementById('visitorPage').textContent = `Viewing: ${chat.visitor_page || 'Unknown'}`;
+
+    // Load chat history
+    const historyEl = document.getElementById('chatHistory');
+    historyEl.innerHTML = '';
+
+    if (chat.messages && chat.messages.length > 0) {
+        chat.messages.forEach(msg => {
+            const div = document.createElement('div');
+            div.className = `msg ${msg.sender === 'visitor' ? 'visitor' : 'agent'}`;
+            div.innerHTML = `
+                ${msg.message}
+                <span class="time">${new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+            `;
+            historyEl.appendChild(div);
+        });
+    } else {
+        historyEl.innerHTML = '<p style="text-align:center;color:var(--gray-500);padding:20px;">No messages yet</p>';
+    }
+
+    // Scroll to bottom
+    historyEl.scrollTop = historyEl.scrollHeight;
+
+    // Show modal
+    document.getElementById('chatReplyModal').classList.add('active');
+    document.getElementById('replyMessage').focus();
+
+    // Mark as read
+    await markMessagesAsRead(chatId);
+}
+
+function closeReplyModal() {
+    document.getElementById('chatReplyModal').classList.remove('active');
+    currentChatId = null;
+}
+
+// ============================================================
+// MARK MESSAGES AS READ
+// ============================================================
+async function markMessagesAsRead(chatId) {
+    try {
+        await supabase
+            .from('chat_messages')
+            .update({ is_read: true })
+            .eq('chat_id', chatId)
+            .eq('sender', 'visitor');
+    } catch (error) {
+        console.error('Error marking messages as read:', error);
+    }
+}
+
+// ============================================================
+// SEND REPLY
+// ============================================================
+async function sendReply() {
+    const message = document.getElementById('replyMessage').value.trim();
+    if (!message || !currentChatId) return;
+
+    try {
+        await supabase
+            .from('chat_messages')
+            .insert([
+                {
+                    chat_id: currentChatId,
+                    visitor_id: 'admin',
+                    sender: 'agent',
+                    message: message,
+                    is_read: true,
+                    created_at: new Date().toISOString()
+                }
+            ]);
+
+        // Add to UI
+        const historyEl = document.getElementById('chatHistory');
+        const div = document.createElement('div');
+        div.className = 'msg agent';
+        div.innerHTML = `
+            ${message}
+            <span class="time">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+        `;
+        historyEl.appendChild(div);
+        historyEl.scrollTop = historyEl.scrollHeight;
+
+        document.getElementById('replyMessage').value = '';
+
+        // Update chat status
+        await supabase
+            .from('chat_sessions')
+            .update({ status: 'active' })
+            .eq('chat_id', currentChatId);
+
+        loadChats();
+
+    } catch (error) {
+        console.error('Error sending reply:', error);
+        alert('Error sending message. Please try again.');
+    }
+}
+
+// ============================================================
+// INSERT QUICK REPLY
+// ============================================================
+function insertQuickReply(text) {
+    document.getElementById('replyMessage').value = text;
+    document.getElementById('replyMessage').focus();
+}
+
+// ============================================================
+// TOGGLE AGENT STATUS
+// ============================================================
+function toggleStatus() {
+    agentOnline = !agentOnline;
+    document.getElementById('statusToggleText').textContent = agentOnline ? 'Go Offline' : 'Go Online';
+    document.getElementById('agentStatusText').textContent = agentOnline ? 'Online' : 'Offline';
+}
+
+// ============================================================
+// REFRESH ALL
+// ============================================================
+function refreshAll() {
+    if (currentTab === 'visitors') loadVisitors();
+    else if (currentTab === 'chats') loadChats();
+    else loadAnalytics();
+}
+
+// ============================================================
+// CLEAR ALL DATA
+// ============================================================
+function clearAllData() {
+    if (confirm('Are you sure you want to clear all visitor and chat data? This cannot be undone.')) {
+        // Implementation depends on your needs
+        alert('Data cleared! (This is a mock implementation)');
+    }
+}
+
+// ============================================================
+// LOAD ANALYTICS
+// ============================================================
+async function loadAnalytics() {
+    try {
+        const { data: visitors, error } = await supabase
+            .from('visitor_sessions')
+            .select('*');
+
+        if (error) throw error;
+
+        // Calculate analytics
+        const countries = {};
+        const pages = {};
+        const devices = {};
+
+        visitors.forEach(v => {
+            if (v.country) countries[v.country] = (countries[v.country] || 0) + 1;
+            if (v.current_page) pages[v.current_page] = (pages[v.current_page] || 0) + 1;
+            if (v.device_type) devices[v.device_type] = (devices[v.device_type] || 0) + 1;
+        });
+
+        // Top country
+        const topCountry = Object.entries(countries).sort((a, b) => b[1] - a[1])[0];
+        document.getElementById('topCountry').textContent = topCountry ? `${topCountry[0]} (${topCountry[1]})` : 'N/A';
+
+        // Top page
+        const topPage = Object.entries(pages).sort((a, b) => b[1] - a[1])[0];
+        document.getElementById('topPage').textContent = topPage ? `${topPage[0].slice(0, 30)}...` : 'N/A';
+
+        // Peak hour (mock)
+        document.getElementById('peakHour').textContent = `${Math.floor(Math.random() * 12) + 8}:00`;
+
+        // Avg session (mock)
+        const avgMin = Math.floor(Math.random() * 5) + 2;
+        document.getElementById('avgSession').textContent = `${avgMin}m ${Math.floor(Math.random() * 60)}s`;
+
+        // Device stats
+        const total = Object.values(devices).reduce((a, b) => a + b, 0) || 1;
+        const deviceRows = Object.entries(devices).map(([device, count]) => ({
+            device: device || 'Unknown',
+            count,
+            percentage: Math.round((count / total) * 100)
+        }));
+
+        document.getElementById('deviceStatsBody').innerHTML = deviceRows.map(d => `
+            <tr>
+                <td>${d.device}</td>
+                <td>${d.count}</td>
+                <td>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <div style="flex:1;height:6px;background:var(--gray-200);border-radius:999px;max-width:200px;">
+                            <div style="width:${d.percentage}%;height:100%;background:var(--secondary);border-radius:999px;"></div>
+                        </div>
+                        ${d.percentage}%
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+
+    } catch (error) {
+        console.error('Error loading analytics:', error);
+        document.getElementById('deviceStatsBody').innerHTML = `
+            <tr>
+                <td colspan="3">
+                    <div class="empty-state">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <h3>Error loading analytics</h3>
+                        <p>${error.message}</p>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }
+}
+
+// ============================================================
+// SUBSCRIBE TO REALTIME UPDATES
+// ============================================================
+function subscribeToUpdates() {
+    // Subscribe to visitor sessions
+    const visitorChannel = supabase
+        .channel('visitor_sessions')
+        .on('postgres_changes', {
+            event: '*',
+            schema: 'public',
+            table: 'visitor_sessions'
+        }, () => {
+            if (currentTab === 'visitors' || currentTab === 'analytics') {
+                loadVisitors();
+                loadAnalytics();
+            }
+        })
+        .subscribe();
+
+    // Subscribe to chat messages
+    const chatChannel = supabase
+        .channel('chat_messages')
+        .on('postgres_changes', {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'chat_messages'
+        }, (payload) => {
+            if (currentChatId && payload.new.chat_id === currentChatId && payload.new.sender === 'visitor') {
+                const historyEl = document.getElementById('chatHistory');
+                const div = document.createElement('div');
+                div.className = 'msg visitor';
+                div.innerHTML = `
+                    ${payload.new.message}
+                    <span class="time">${new Date(payload.new.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                `;
+                historyEl.appendChild(div);
+                historyEl.scrollTop = historyEl.scrollHeight;
+            }
+            if (currentTab === 'chats') loadChats();
+        })
+        .subscribe();
+
+    // Subscribe to chat sessions
+    const chatSessionChannel = supabase
+        .channel('chat_sessions')
+        .on('postgres_changes', {
+            event: '*',
+            schema: 'public',
+            table: 'chat_sessions'
+        }, () => {
+            if (currentTab === 'chats') loadChats();
+        })
+        .subscribe();
+
+    chatSubscriptions = [visitorChannel, chatChannel, chatSessionChannel];
+}
+
+// ============================================================
+// TOGGLE SIDEBAR (MOBILE)
+// ============================================================
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    sidebar.classList.toggle('open');
+    overlay.classList.toggle('open');
+}
+
+// ============================================================
+// LOGOUT
+// ============================================================
+function logout() {
+    if (confirm('Are you sure you want to logout?')) {
+        localStorage.removeItem('campusnexus_admin');
+        window.location.href = 'admin-login.html';
+    }
+}
+
+// ============================================================
+// KEYBOARD SHORTCUTS
+// ============================================================
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+        const modal = document.getElementById('chatReplyModal');
+        if (modal.classList.contains('active')) {
+            sendReply();
+        }
+    }
+    if (e.key === 'Escape') {
+        closeReplyModal();
+    }
+});
+
+// ============================================================
+// INITIALIZATION
+// ============================================================
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if admin is logged in
+    const admin = localStorage.getItem('campusnexus_admin');
+    if (!admin) {
+        window.location.href = 'admin-login.html';
+        return;
+    }
+
+    // Load initial data
+    loadVisitors();
+    loadChats();
+    loadAnalytics();
+
+    // Subscribe to realtime updates
+    subscribeToUpdates();
+
+    // Auto-refresh every 15 seconds
+    setInterval(() => {
+        if (currentTab === 'visitors') loadVisitors();
+        else if (currentTab === 'chats') loadChats();
+        else loadAnalytics();
+    }, 15000);
+});
+
+// Close sidebar when clicking outside on mobile
+document.addEventListener('click', function(e) {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    const toggle = document.querySelector('.mobile-menu-toggle');
+    if (window.innerWidth <= 768 && sidebar.classList.contains('open')) {
+        if (!sidebar.contains(e.target) && !toggle.contains(e.target)) {
+            sidebar.classList.remove('open');
+            overlay.classList.remove('open');
+        }
+    }
+});
+</script>
+
+</body>
+</html>
