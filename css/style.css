@@ -2170,4 +2170,37 @@ body.dark-mode .page-modal {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(212, 168, 67, 0.3);
 }
+/* Force scrolling container */
+#chatMessagesContainer,
+#campusChatMessages {
+    flex: 1 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    max-height: 350px !important;
+    min-height: 200px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    padding: 16px 20px !important;
+    background: #0F1A2A !important;
+    scroll-behavior: smooth !important;
+}
 
+/* Messages should not shrink */
+.campus-chat-message {
+    flex-shrink: 0 !important;
+    max-width: 85% !important;
+    animation: fadeIn 0.3s ease !important;
+}
+
+/* Message animation */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
