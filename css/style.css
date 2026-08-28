@@ -2156,3 +2156,17 @@ body.dark-mode .page-modal {
         grid-template-columns: 1fr;
     }
 }
+/* Pre-chat form styles */
+#visitorInfoForm input:focus {
+    border-color: #D4A843 !important;
+    box-shadow: 0 0 0 3px rgba(212, 168, 67, 0.1);
+}
+
+#visitorInfoForm input::placeholder {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+#visitorInfoForm button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(212, 168, 67, 0.3);
+}
