@@ -7,29 +7,66 @@
     
     <!-- SEO Meta Tags -->
     <meta name="description" content="CampusNexus is the ultimate digital learning platform for nursing, TVET, and higher learning institutions. Transform your institution today.">
-    <meta name="keywords" content="learning management system, digital learning, nursing education, TVET, campus management">
+    <meta name="keywords" content="learning management system, digital learning, nursing education, TVET, campus management, POS system, student management">
     <meta name="author" content="Nakuru College of Health Sciences and Management">
     <meta name="robots" content="index, follow">
     
     <!-- Canonical URL -->
-    <link rel="canonical" href="http://campusnexus.co.ke/">
+    <link rel="canonical" href="https://campusnexus.co.ke/">
     
     <!-- Open Graph -->
     <meta property="og:title" content="CampusNexus - Digital Learning Platform">
-    <meta property="og:description" content="One secure platform for learning, assessments, attendance, and academic management.">
+    <meta property="og:description" content="One secure platform for learning, assessments, attendance, and academic management. Plus integrated POS for campus shops and canteens.">
     <meta property="og:type" content="website">
-    <meta property="og:url" content="http://campusnexus.co.ke/">
+    <meta property="og:url" content="https://campusnexus.co.ke/">
     <meta property="og:image" content="https://raw.githubusercontent.com/NCHSMlearning/e-learning/main/images/Logo_NCHSM.png">
     
-    <!-- Favicon -->
-    <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/NCHSMlearning/e-learning/main/images/Logo_NCHSM.png">
+    <!-- PWA Support -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#0A1628">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="CampusNexus">
+    <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/images/icon-192.png">
+    <link rel="shortcut icon" href="/favicon.ico">
     
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome (for icons) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    
+    <!-- Supabase Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <!-- External CSS -->
     <link rel="stylesheet" href="css/style.css">
+    
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "EducationalOrganization",
+      "name": "CampusNexus",
+      "alternateName": "CampusNexus Digital Learning Platform",
+      "url": "https://campusnexus.co.ke",
+      "logo": "https://campusnexus.co.ke/images/logo.png",
+      "description": "Next generation digital learning platform for nursing, TVET, and higher learning institutions across Africa. Includes integrated POS system for campus shops.",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "Kiamunyi Off Nakuru - Kabarak Rd",
+        "addressLocality": "Nakuru",
+        "addressCountry": "KE"
+      },
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "contactType": "customer support",
+        "email": "support@campusnexus.com",
+        "telephone": "+254790969743"
+      }
+    }
+    </script>
 </head>
 <body>
 
@@ -42,6 +79,7 @@
 <nav class="navbar" id="navbar">
     <div class="container">
         <a href="/" class="logo">
+            <img src="images/logo-icon.png" alt="CampusNexus" style="height:36px;width:auto;margin-right:6px;" onerror="this.style.display='none'">
             Campus<span>Nexus</span>
             <span class="logo-gold">✦</span>
             <small>Digital Learning Platform</small>
@@ -54,6 +92,7 @@
             <li><a href="#pricing">Packages</a></li>
             <li><a href="#how-it-works">How It Works</a></li>
             <li><a href="#testimonials">Testimonials</a></li>
+            <li><a href="#pos">POS System</a></li>
             <li><a href="#" onclick="openModal('contactModal')">Contact</a></li>
             <li>
                 <button class="theme-toggle-btn" id="themeToggle" aria-label="Toggle theme">
@@ -61,10 +100,24 @@
                     <span id="themeLabel">Dark</span>
                 </button>
             </li>
-            <li><a href="login.html" class="btn-primary"><i class="fas fa-sign-in-alt"></i> Login</a></li>
+            <li><a href="#" onclick="openModal('demoModal')" class="btn-primary"><i class="fas fa-calendar-check"></i> Book Demo</a></li>
         </ul>
     </div>
 </nav>
+
+<!-- Mobile Menu -->
+<div class="mobile-menu-backdrop" id="mobileMenuBackdrop"></div>
+<div class="mobile-menu" id="mobileMenu">
+    <ul>
+        <li><a href="#features" onclick="closeMobileMenu()">Features</a></li>
+        <li><a href="#pricing" onclick="closeMobileMenu()">Packages</a></li>
+        <li><a href="#how-it-works" onclick="closeMobileMenu()">How It Works</a></li>
+        <li><a href="#testimonials" onclick="closeMobileMenu()">Testimonials</a></li>
+        <li><a href="#pos" onclick="closeMobileMenu()">POS System</a></li>
+        <li><a href="#" onclick="openModal('contactModal');closeMobileMenu()">Contact</a></li>
+        <li><a href="#" onclick="openModal('demoModal');closeMobileMenu()" class="btn-primary" style="display:inline-block;text-align:center;width:100%;">Book Demo</a></li>
+    </ul>
+</div>
 
 <!-- ============================================================
      HERO SECTION
@@ -80,8 +133,8 @@
             </h1>
             <p>One secure platform for learning, assessments, attendance, communication, and academic management. Built for Nursing, TVET, and Higher Learning Institutions across Africa.</p>
             <div class="hero-buttons">
-                <a href="login.html" class="btn-primary">
-                    <i class="fas fa-sign-in-alt"></i> Student Login
+                <a href="#" onclick="openModal('demoModal')" class="btn-primary">
+                    <i class="fas fa-calendar-check"></i> Book a Demo
                 </a>
                 <a href="#pricing" class="btn-secondary">
                     <i class="fas fa-tag"></i> View Packages
@@ -111,44 +164,27 @@
                 <span><i class="fas fa-mobile-alt"></i> Mobile-friendly</span>
                 <span><i class="fas fa-smile"></i> Easy to use</span>
                 <span><i class="fas fa-heartbeat"></i> Health-focused</span>
+                <span><i class="fas fa-store"></i> POS Ready</span>
             </div>
         </div>
         <div class="hero-image">
-            <div class="mockup-header">
-                <span><i class="fas fa-graduation-cap"></i> NCHSM Portal v2.1</span>
-                <span class="mockup-user"><i class="fas fa-user"></i> Kevin Matoka · HOD</span>
+            <!-- Poster-style hero image with floating chips -->
+            <div class="poster-frame" id="posterFrame">
+                <div class="poster-edge-glow"></div>
+                <img src="images/campus/hero-students.jpg" 
+                     alt="Students learning at Nakuru College of Health Sciences" 
+                     class="hero-img"
+                     loading="lazy"
+                     onerror="this.src='https://via.placeholder.com/700x500/0A1628/D4A843?text=CampusNexus'">
+                <div class="poster-sheen"></div>
             </div>
-            <div class="mockup-grid">
-                <div class="card">
-                    <i class="fas fa-calendar-check"></i>
-                    <span class="value">92%</span>
-                    <span class="label">Attendance</span>
-                </div>
-                <div class="card">
-                    <i class="fas fa-star"></i>
-                    <span class="value">1,450</span>
-                    <span class="label">Total Points</span>
-                </div>
-                <div class="card">
-                    <i class="fas fa-book"></i>
-                    <span class="value">8</span>
-                    <span class="label">Active Courses</span>
-                </div>
-                <div class="card">
-                    <i class="fas fa-clock"></i>
-                    <span class="value">5</span>
-                    <span class="label">Day Streak</span>
-                </div>
-                <div class="card">
-                    <i class="fas fa-file-alt"></i>
-                    <span class="value">4</span>
-                    <span class="label">Upcoming Exams</span>
-                </div>
-                <div class="card">
-                    <i class="fas fa-level-up-alt"></i>
-                    <span class="value">Lv. 3</span>
-                    <span class="label">Level</span>
-                </div>
+            <div class="float-chip chip-a">
+                <i class="fas fa-check-circle" style="color:var(--gold);"></i>
+                <div><div class="fc-label">Attendance Today</div><div class="fc-val">92%</div></div>
+            </div>
+            <div class="float-chip chip-b">
+                <i class="fas fa-graduation-cap" style="color:var(--gold);"></i>
+                <div><div class="fc-label">Active Courses</div><div class="fc-val">8</div></div>
             </div>
         </div>
     </div>
@@ -229,12 +265,103 @@
                 <h3>Support Tickets</h3>
                 <p>Manage urgent tickets and provide timely support.</p>
             </div>
+            <div class="feature-card highlight-card">
+                <div class="icon-wrapper" style="background:linear-gradient(135deg,var(--gold),var(--gold-light));"><i class="fas fa-store" style="color:var(--primary);"></i></div>
+                <h3>Integrated POS System</h3>
+                <p>Complete point-of-sale for campus shops, canteens, and bookstores. Syncs with student accounts and inventory.</p>
+                <span class="feature-badge">New!</span>
+            </div>
+            <div class="feature-card">
+                <div class="icon-wrapper"><i class="fas fa-phone-alt"></i></div>
+                <h3>Mobile App Ready</h3>
+                <p>Access CampusNexus on any device with our PWA-enabled mobile experience.</p>
+            </div>
         </div>
     </div>
 </section>
 
 <!-- ============================================================
-     📦 PRICING / PACKAGES SECTION
+     POS SYSTEM SECTION
+     ============================================================ -->
+<section class="pos-section" id="pos">
+    <div class="container">
+        <div class="section-header">
+            <div class="subtitle-badge"><i class="fas fa-store"></i> Integrated POS</div>
+            <h2>Campus <span>Point of Sale</span> System</h2>
+            <p>Manage your campus shops, canteens, and bookstores from the same platform.</p>
+        </div>
+        <div class="pos-grid">
+            <div class="pos-feature">
+                <div class="pos-icon"><i class="fas fa-shopping-cart"></i></div>
+                <h3>Student Account Sync</h3>
+                <p>Link purchases to student accounts. Track spending and generate statements.</p>
+            </div>
+            <div class="pos-feature">
+                <div class="pos-icon"><i class="fas fa-boxes"></i></div>
+                <h3>Inventory Management</h3>
+                <p>Real-time stock tracking, low-stock alerts, and bulk restock capabilities.</p>
+            </div>
+            <div class="pos-feature">
+                <div class="pos-icon"><i class="fas fa-print"></i></div>
+                <h3>Receipt Printing</h3>
+                <p>Print or email receipts automatically. Track all transactions.</p>
+            </div>
+            <div class="pos-feature">
+                <div class="pos-icon"><i class="fas fa-chart-pie"></i></div>
+                <h3>Sales Analytics</h3>
+                <p>Real-time sales data, top products, and revenue reports.</p>
+            </div>
+            <div class="pos-feature">
+                <div class="pos-icon"><i class="fas fa-mobile-alt"></i></div>
+                <h3>Mobile POS</h3>
+                <p>Use on tablets or smartphones anywhere on campus.</p>
+            </div>
+            <div class="pos-feature">
+                <div class="pos-icon"><i class="fas fa-credit-card"></i></div>
+                <h3>Multiple Payment Methods</h3>
+                <p>Cash, M-Pesa, Student Cards, and Bank Transfers supported.</p>
+            </div>
+        </div>
+        <div class="pos-demo">
+            <div class="pos-preview">
+                <div class="pos-preview-header">
+                    <span><i class="fas fa-store"></i> Campus Store POS</span>
+                    <span class="pos-live">Live</span>
+                </div>
+                <div class="pos-preview-body">
+                    <div class="pos-items">
+                        <div class="pos-item">
+                            <span class="item-name">Textbook - Nursing Basics</span>
+                            <span class="item-qty">x2</span>
+                            <span class="item-price">KES 1,200</span>
+                        </div>
+                        <div class="pos-item">
+                            <span class="item-name">Lab Coat</span>
+                            <span class="item-qty">x1</span>
+                            <span class="item-price">KES 850</span>
+                        </div>
+                        <div class="pos-item">
+                            <span class="item-name">Stethoscope</span>
+                            <span class="item-qty">x1</span>
+                            <span class="item-price">KES 2,500</span>
+                        </div>
+                    </div>
+                    <div class="pos-total">
+                        <span>Total</span>
+                        <span class="pos-total-amount">KES 4,550</span>
+                    </div>
+                    <div class="pos-actions">
+                        <button class="pos-btn">Payment</button>
+                        <button class="pos-btn pos-btn-secondary">Print Receipt</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================================
+     PRICING / PACKAGES SECTION
      ============================================================ -->
 <section class="pricing" id="pricing">
     <div class="container">
@@ -258,9 +385,9 @@
                     <li><i class="fas fa-check"></i> Course Management</li>
                     <li><i class="fas fa-check"></i> Attendance Tracking</li>
                     <li><i class="fas fa-check"></i> Exam Management</li>
+                    <li><i class="fas fa-check"></i> Basic POS Access</li>
                     <li><i class="fas fa-times"></i> Staff Training</li>
                     <li><i class="fas fa-times"></i> IT Support</li>
-                    <li><i class="fas fa-times"></i> Cybersecurity</li>
                 </ul>
                 <a href="#" class="btn-pricing basic" onclick="openModal('demoModal')">
                     <i class="fas fa-shopping-cart"></i> Get Started
@@ -282,9 +409,9 @@
                     <li><i class="fas fa-check"></i> Course Management</li>
                     <li><i class="fas fa-check"></i> Attendance Tracking</li>
                     <li><i class="fas fa-check"></i> Exam Management</li>
+                    <li><i class="fas fa-check"></i> Full POS System</li>
                     <li><i class="fas fa-check"></i> Staff Training Included</li>
                     <li><i class="fas fa-times"></i> IT Support</li>
-                    <li><i class="fas fa-times"></i> Cybersecurity</li>
                 </ul>
                 <a href="#" class="btn-pricing standard" onclick="openModal('demoModal')">
                     <i class="fas fa-shopping-cart"></i> Get Started
@@ -305,9 +432,9 @@
                     <li><i class="fas fa-check"></i> Course Management</li>
                     <li><i class="fas fa-check"></i> Attendance Tracking</li>
                     <li><i class="fas fa-check"></i> Exam Management</li>
+                    <li><i class="fas fa-check"></i> Full POS + Inventory</li>
                     <li><i class="fas fa-check"></i> Staff & Student Training</li>
                     <li><i class="fas fa-check"></i> IT Support Included</li>
-                    <li><i class="fas fa-check"></i> Basic Cybersecurity</li>
                 </ul>
                 <a href="#" class="btn-pricing premium" onclick="openModal('demoModal')">
                     <i class="fas fa-shopping-cart"></i> Get Started
@@ -363,31 +490,32 @@
             <p>Real feedback from real people using CampusNexus.</p>
         </div>
         <div class="testimonial-grid">
-            <!-- Testimonial 1 -->
             <div class="testimonial-card">
-                <div class="author-img">KM</div>
+                <div class="author-img">
+                    <img src="images/staff/kevin-matoka.jpg" alt="Kevin Matoka" loading="lazy" onerror="this.style.display='none';this.parentElement.textContent='KM'">
+                </div>
                 <div class="stars">⭐⭐⭐⭐⭐</div>
-                <p class="quote">CampusNexus has revolutionized how we manage our academic programs. The platform is intuitive, comprehensive, and has significantly improved our operational efficiency. I highly recommend it to any institution looking to digitize their learning experience.</p>
+                <p class="quote">CampusNexus has revolutionized how we manage our academic programs. The platform is intuitive, comprehensive, and has significantly improved our operational efficiency.</p>
                 <p class="author">Kevin Matoka Tiong'i</p>
-                <p class="title">Head of Department, Nakuru College of Health Sciences and Management</p>
+                <p class="title">Head of Department, NCHSM</p>
             </div>
-
-            <!-- Testimonial 2 -->
             <div class="testimonial-card">
-                <div class="author-img">PO</div>
+                <div class="author-img">
+                    <img src="images/staff/peter-onkundi.jpg" alt="Peter Onkundi" loading="lazy" onerror="this.style.display='none';this.parentElement.textContent='PO'">
+                </div>
                 <div class="stars">⭐⭐⭐⭐⭐</div>
-                <p class="quote">The platform's practical approach to skills training has been exceptional. Our students are more engaged, and the ability to track attendance and performance in real-time has transformed our skills lab operations.</p>
+                <p class="quote">The platform's practical approach to skills training has been exceptional. Our students are more engaged, and tracking attendance in real-time has transformed our operations.</p>
                 <p class="author">Peter Onkundi</p>
-                <p class="title">Skills Lab Coordinator, Nakuru College of Health Sciences and Management</p>
+                <p class="title">Skills Lab Coordinator, NCHSM</p>
             </div>
-
-            <!-- Testimonial 3 -->
             <div class="testimonial-card">
-                <div class="author-img">JM</div>
+                <div class="author-img">
+                    <img src="images/staff/dr-jane-mwangi.jpg" alt="Dr. Jane Mwangi" loading="lazy" onerror="this.style.display='none';this.parentElement.textContent='JM'">
+                </div>
                 <div class="stars">⭐⭐⭐⭐⭐</div>
-                <p class="quote">This platform has transformed how we deliver education. Our students are more engaged and our lecturers are more efficient. The attendance tracking and exam features alone have saved us countless hours.</p>
+                <p class="quote">This platform has transformed how we deliver education. The attendance tracking and exam features alone have saved us countless hours.</p>
                 <p class="author">Dr. Jane Mwangi</p>
-                <p class="title">Principal, Nakuru College of Health Sciences</p>
+                <p class="title">Principal, NCHSM</p>
             </div>
         </div>
     </div>
@@ -414,7 +542,7 @@
                 <li><a href="#pricing"><i class="fas fa-tags"></i> Packages</a></li>
                 <li><a href="#how-it-works"><i class="fas fa-question-circle"></i> How It Works</a></li>
                 <li><a href="#testimonials"><i class="fas fa-comments"></i> Testimonials</a></li>
-                <li><a href="login.html"><i class="fas fa-sign-in-alt"></i> Login</a></li>
+                <li><a href="#pos"><i class="fas fa-store"></i> POS System</a></li>
             </ul>
         </div>
         <div class="link-group">
@@ -454,6 +582,12 @@
                 <i class="fas fa-tag"></i> View Packages
             </a>
         </div>
+        <div class="cta-trust">
+            <span><i class="fas fa-check-circle"></i> Free setup</span>
+            <span><i class="fas fa-check-circle"></i> No credit card required</span>
+            <span><i class="fas fa-check-circle"></i> 24/7 support</span>
+            <span><i class="fas fa-check-circle"></i> PWA mobile ready</span>
+        </div>
     </div>
 </section>
 
@@ -463,6 +597,7 @@
 <footer class="footer">
     <div class="container">
         <div class="logo" style="color: #fff;">
+            <img src="images/logo-icon.png" alt="CampusNexus" style="height:32px;width:auto;margin-right:8px;" onerror="this.style.display='none'">
             Campus<span style="color: var(--secondary);">Nexus</span>
             <span style="color: var(--gold);">✦</span>
             <small style="color: rgba(255,255,255,0.5);">Digital Learning Platform</small>
@@ -472,10 +607,11 @@
             <a href="#pricing">Packages</a>
             <a href="#how-it-works">How It Works</a>
             <a href="#testimonials">Testimonials</a>
+            <a href="#pos">POS System</a>
             <a href="#" onclick="openModal('contactModal')">Contact</a>
             <a href="#" onclick="openModal('termsModal')">Terms</a>
             <a href="#" onclick="openModal('privacyModal')">Privacy</a>
-            <a href="login.html"><i class="fas fa-sign-in-alt"></i> Login</a>
+            <a href="#" onclick="openModal('demoModal')"><i class="fas fa-calendar-check"></i> Book Demo</a>
         </div>
         <div class="copyright">
             &copy; 2026 CampusNexus. All rights reserved. | Nakuru College of Health Sciences and Management
@@ -489,7 +625,7 @@
 </button>
 
 <!-- ============================================================
-     MODALS
+     MODALS (Contact, Demo, Terms, Privacy)
      ============================================================ -->
 
 <!-- Contact Modal -->
@@ -529,6 +665,7 @@
         <ul>
             <li>✅ Live walkthrough of the platform</li>
             <li>✅ Customized to your institution's needs</li>
+            <li>✅ POS system demonstration</li>
             <li>✅ Q&A session with our experts</li>
             <li>✅ No obligation - just see what's possible</li>
         </ul>
@@ -613,8 +750,1018 @@
     </div>
 </div>
 
+<!-- ============================================================
+     CAMPUSNEXUS CHAT WITH SUPABASE INTEGRATION
+     ============================================================ -->
+<style>
+/* Chat Widget Styles */
+.campus-chat-widget {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    z-index: 9999;
+}
+
+.campus-chat-toggle {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #D4A843, #F0D080);
+    border: none;
+    color: #0A1628;
+    font-size: 28px;
+    cursor: pointer;
+    box-shadow: 0 8px 32px rgba(212, 168, 67, 0.4);
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.campus-chat-toggle:hover {
+    transform: scale(1.1);
+    box-shadow: 0 12px 40px rgba(212, 168, 67, 0.5);
+}
+
+.chat-notification {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: #e74c3c;
+    color: white;
+    border-radius: 50%;
+    padding: 2px 8px;
+    font-size: 12px;
+    font-weight: 700;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+.campus-chat-window {
+    display: none;
+    position: absolute;
+    bottom: 80px;
+    right: 0;
+    width: 380px;
+    height: 520px;
+    background: #0A1628;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    overflow: hidden;
+    animation: slideUp 0.3s ease;
+}
+
+.campus-chat-window.open {
+    display: flex;
+    flex-direction: column;
+}
+
+.campus-chat-header {
+    padding: 16px 20px;
+    background: linear-gradient(135deg, #D4A843, #F0D080);
+    color: #0A1628;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 700;
+    font-size: 16px;
+}
+
+.campus-chat-header .chat-status {
+    font-size: 12px;
+    font-weight: 400;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.campus-chat-header .chat-status .online-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #2ecc71;
+    display: inline-block;
+    animation: pulse 2s infinite;
+}
+
+.campus-chat-header button {
+    background: none;
+    border: none;
+    color: #0A1628;
+    font-size: 22px;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: 0.3s;
+}
+
+.campus-chat-header button:hover {
+    opacity: 1;
+}
+
+.campus-chat-messages {
+    flex: 1;
+    padding: 16px 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background: #0F1A2A;
+}
+
+.campus-chat-message {
+    display: flex;
+    flex-direction: column;
+    max-width: 80%;
+}
+
+.campus-chat-message.user {
+    align-items: flex-end;
+    margin-left: auto;
+}
+
+.campus-chat-message.bot {
+    align-items: flex-start;
+}
+
+.campus-msg-bubble {
+    padding: 10px 14px;
+    border-radius: 12px;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.campus-chat-message.bot .campus-msg-bubble {
+    background: #1A2A3A;
+    color: #E8EDF3;
+    border-bottom-left-radius: 4px;
+}
+
+.campus-chat-message.user .campus-msg-bubble {
+    background: linear-gradient(135deg, #D4A843, #F0D080);
+    color: #0A1628;
+    border-bottom-right-radius: 4px;
+}
+
+.campus-msg-time {
+    font-size: 10px;
+    opacity: 0.5;
+    margin-top: 4px;
+    display: block;
+}
+
+.campus-msg-sender {
+    font-size: 11px;
+    font-weight: 600;
+    margin-bottom: 3px;
+    opacity: 0.7;
+}
+
+.campus-chat-input {
+    padding: 12px 16px;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    display: flex;
+    gap: 8px;
+    background: #0A1628;
+}
+
+.campus-chat-input input {
+    flex: 1;
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.05);
+    color: white;
+    outline: none;
+    font-size: 14px;
+}
+
+.campus-chat-input input::placeholder {
+    color: rgba(255,255,255,0.3);
+}
+
+.campus-chat-input input:focus {
+    border-color: #D4A843;
+}
+
+.campus-chat-input button {
+    padding: 10px 18px;
+    border-radius: 8px;
+    border: none;
+    background: linear-gradient(135deg, #D4A843, #F0D080);
+    color: #0A1628;
+    cursor: pointer;
+    font-weight: 700;
+    transition: all 0.3s ease;
+}
+
+.campus-chat-input button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(212, 168, 67, 0.3);
+}
+
+.chat-quick-replies {
+    display: flex;
+    gap: 6px;
+    padding: 8px 16px 12px;
+    flex-wrap: wrap;
+    background: #0A1628;
+    border-top: 1px solid rgba(255,255,255,0.03);
+}
+
+.chat-quick-replies button {
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 1px solid rgba(212, 168, 67, 0.3);
+    background: transparent;
+    color: #D4A843;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.chat-quick-replies button:hover {
+    background: rgba(212, 168, 67, 0.1);
+    border-color: #D4A843;
+}
+
+.chat-status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: rgba(46, 204, 113, 0.1);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    font-size: 12px;
+    color: #2ecc71;
+}
+
+.chat-status-indicator .typing-dots {
+    display: inline-flex;
+    gap: 3px;
+}
+
+.chat-status-indicator .typing-dots span {
+    width: 6px;
+    height: 6px;
+    background: #2ecc71;
+    border-radius: 50%;
+    animation: typingBounce 1.4s infinite both;
+}
+
+.chat-status-indicator .typing-dots span:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.chat-status-indicator .typing-dots span:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes typingBounce {
+    0%, 60%, 100% { transform: translateY(0); }
+    30% { transform: translateY(-4px); }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Mobile Responsive */
+@media (max-width: 480px) {
+    .campus-chat-window {
+        width: calc(100vw - 40px);
+        height: 60vh;
+        right: -10px;
+        bottom: 70px;
+    }
+    
+    .campus-chat-toggle {
+        width: 56px;
+        height: 56px;
+        font-size: 24px;
+    }
+}
+</style>
+
+<!-- Chat Widget HTML -->
+<div class="campus-chat-widget">
+    <!-- Chat Toggle Button -->
+    <button class="campus-chat-toggle" id="campusChatToggle" onclick="toggleCampusChat()">
+        <i class="fas fa-comment-dots"></i>
+        <span class="chat-notification" id="chatNotification">1</span>
+    </button>
+    
+    <!-- Chat Window -->
+    <div class="campus-chat-window" id="campusChatWindow">
+        <!-- Header -->
+        <div class="campus-chat-header">
+            <div>
+                <i class="fas fa-graduation-cap" style="margin-right: 8px;"></i> 
+                CampusNexus Support
+                <span class="chat-status">
+                    <span class="online-dot"></span> Online
+                </span>
+            </div>
+            <button onclick="closeCampusChat()">✕</button>
+        </div>
+        
+        <!-- Chat Status -->
+        <div class="chat-status-indicator" id="chatStatusIndicator">
+            <span>🟢 Connected</span>
+            <span id="agentStatus">| Agent online</span>
+        </div>
+        
+        <!-- Messages -->
+        <div class="campus-chat-messages" id="campusChatMessages">
+            <div class="campus-chat-message bot">
+                <div class="campus-msg-bubble">
+                    <div class="campus-msg-sender">🎓 CampusNexus Bot</div>
+                    Hello! 👋 Welcome to CampusNexus.<br>
+                    How can I help you today?
+                    <span class="campus-msg-time">Just now</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick Replies -->
+        <div class="chat-quick-replies" id="quickReplies">
+            <button onclick="sendQuickReply('I need help with login')">🔑 Login Help</button>
+            <button onclick="sendQuickReply('I want to book a demo')">📅 Book Demo</button>
+            <button onclick="sendQuickReply('I have a question about pricing')">💰 Pricing</button>
+            <button onclick="sendQuickReply('I need technical support')">🛠️ Support</button>
+        </div>
+        
+        <!-- Input -->
+        <div class="campus-chat-input">
+            <input type="text" id="campusChatInput" placeholder="Type your message..." onkeypress="handleCampusChatKey(event)">
+            <button onclick="sendCampusChatMessage()">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================
+     CHAT JAVASCRIPT - SUPABASE INTEGRATION
+     ============================================================ -->
+<script>
+// ============================================================
+// SUPABASE CONFIGURATION
+// ============================================================
+// REPLACE THESE WITH YOUR SUPABASE CREDENTIALS
+const SUPABASE_URL = 'https://your-project-id.supabase.co';
+const SUPABASE_KEY = 'your-supabase-anon-key';
+
+// Initialize Supabase client
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ============================================================
+// CHAT STATE
+// ============================================================
+let chatMessages = [];
+let currentChatId = null;
+let isChatOpen = false;
+let visitorId = null;
+let messageSubscription = null;
+
+// Generate unique visitor ID
+function generateVisitorId() {
+    return 'visitor_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+}
+
+// Get or create visitor ID
+function getVisitorId() {
+    let id = localStorage.getItem('campusnexus_visitor_id');
+    if (!id) {
+        id = generateVisitorId();
+        localStorage.setItem('campusnexus_visitor_id', id);
+    }
+    return id;
+}
+
+// ============================================================
+// SAVE MESSAGE TO SUPABASE
+// ============================================================
+async function saveMessageToSupabase(message, sender = 'visitor') {
+    try {
+        const { data, error } = await supabase
+            .from('chat_messages')
+            .insert([
+                {
+                    chat_id: currentChatId,
+                    visitor_id: visitorId,
+                    sender: sender,
+                    message: message,
+                    created_at: new Date().toISOString()
+                }
+            ]);
+
+        if (error) {
+            console.error('Error saving message:', error);
+            // Fallback to localStorage if Supabase fails
+            saveMessageToLocal(message, sender);
+        }
+        return data;
+    } catch (error) {
+        console.error('Supabase error:', error);
+        // Fallback to localStorage
+        saveMessageToLocal(message, sender);
+    }
+}
+
+// ============================================================
+// LOCAL STORAGE FALLBACK
+// ============================================================
+function saveMessageToLocal(message, sender) {
+    const localMessages = JSON.parse(localStorage.getItem('campusChatMessages') || '[]');
+    localMessages.push({
+        sender: sender,
+        message: message,
+        timestamp: new Date().toISOString()
+    });
+    localStorage.setItem('campusChatMessages', JSON.stringify(localMessages));
+}
+
+// ============================================================
+// GET CHAT HISTORY FROM SUPABASE
+// ============================================================
+async function loadChatHistory() {
+    try {
+        const { data, error } = await supabase
+            .from('chat_messages')
+            .select('*')
+            .eq('visitor_id', visitorId)
+            .order('created_at', { ascending: true });
+
+        if (error) {
+            console.error('Error loading history:', error);
+            // Load from localStorage fallback
+            loadLocalHistory();
+            return;
+        }
+
+        if (data && data.length > 0) {
+            // Clear welcome message
+            const messagesContainer = document.getElementById('campusChatMessages');
+            messagesContainer.innerHTML = '';
+            
+            // Add all messages from Supabase
+            data.forEach(msg => {
+                addChatMessage(msg.sender === 'visitor' ? 'user' : 'bot', msg.message);
+            });
+        }
+    } catch (error) {
+        console.error('Error loading history:', error);
+        loadLocalHistory();
+    }
+}
+
+function loadLocalHistory() {
+    const localMessages = JSON.parse(localStorage.getItem('campusChatMessages') || '[]');
+    if (localMessages.length > 0) {
+        const messagesContainer = document.getElementById('campusChatMessages');
+        messagesContainer.innerHTML = '';
+        localMessages.forEach(msg => {
+            addChatMessage(msg.sender === 'visitor' ? 'user' : 'bot', msg.message);
+        });
+    }
+}
+
+// ============================================================
+// SUBSCRIBE TO NEW MESSAGES (Realtime)
+// ============================================================
+function subscribeToMessages() {
+    if (messageSubscription) {
+        messageSubscription.unsubscribe();
+    }
+
+    messageSubscription = supabase
+        .channel('chat_messages')
+        .on(
+            'postgres_changes',
+            {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'chat_messages',
+                filter: `visitor_id=eq.${visitorId}`
+            },
+            (payload) => {
+                // Only add if message is from bot/admin
+                if (payload.new.sender !== 'visitor') {
+                    addChatMessage('bot', payload.new.message);
+                    // Update notification
+                    if (!isChatOpen) {
+                        document.getElementById('chatNotification').style.display = 'block';
+                    }
+                }
+            }
+        )
+        .subscribe();
+}
+
+// ============================================================
+// CHAT FUNCTIONS
+// ============================================================
+async function toggleCampusChat() {
+    const window = document.getElementById('campusChatWindow');
+    const notification = document.getElementById('chatNotification');
+    window.classList.toggle('open');
+    isChatOpen = window.classList.contains('open');
+    
+    if (isChatOpen) {
+        document.getElementById('campusChatInput').focus();
+        notification.style.display = 'none';
+        localStorage.setItem('campusChatOpen', 'true');
+        
+        // Load history if not loaded
+        if (!currentChatId) {
+            await initializeChat();
+        }
+    } else {
+        localStorage.setItem('campusChatOpen', 'false');
+    }
+}
+
+async function initializeChat() {
+    visitorId = getVisitorId();
+    currentChatId = 'chat_' + Date.now();
+    
+    // Create chat session in Supabase
+    try {
+        const { data, error } = await supabase
+            .from('chat_sessions')
+            .insert([
+                {
+                    chat_id: currentChatId,
+                    visitor_id: visitorId,
+                    visitor_ip: await getVisitorIP(),
+                    visitor_page: window.location.href,
+                    status: 'active',
+                    created_at: new Date().toISOString()
+                }
+            ]);
+
+        if (error) {
+            console.error('Error creating chat session:', error);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+    }
+    
+    // Load history
+    await loadChatHistory();
+    
+    // Subscribe to new messages
+    subscribeToMessages();
+}
+
+async function getVisitorIP() {
+    try {
+        const response = await fetch('https://api.ipify.org?format=json');
+        const data = await response.json();
+        return data.ip;
+    } catch {
+        return 'unknown';
+    }
+}
+
+function closeCampusChat() {
+    document.getElementById('campusChatWindow').classList.remove('open');
+    isChatOpen = false;
+    localStorage.setItem('campusChatOpen', 'false');
+}
+
+function handleCampusChatKey(event) {
+    if (event.key === 'Enter') {
+        sendCampusChatMessage();
+    }
+}
+
+async function sendCampusChatMessage() {
+    const input = document.getElementById('campusChatInput');
+    const message = input.value.trim();
+    if (!message) return;
+    
+    // Add user message to UI
+    addChatMessage('user', message);
+    input.value = '';
+    
+    // Save to Supabase
+    await saveMessageToSupabase(message, 'visitor');
+    
+    // Process message with bot
+    processBotResponse(message);
+}
+
+function addChatMessage(type, content) {
+    const messagesContainer = document.getElementById('campusChatMessages');
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `campus-chat-message ${type}`;
+    
+    const sender = type === 'user' ? 'You' : '🎓 CampusNexus Bot';
+    const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    
+    messageDiv.innerHTML = `
+        <div class="campus-msg-bubble">
+            <div class="campus-msg-sender">${sender}</div>
+            ${content}
+            <span class="campus-msg-time">${time}</span>
+        </div>
+    `;
+    
+    messagesContainer.appendChild(messageDiv);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+function sendQuickReply(message) {
+    document.getElementById('campusChatInput').value = message;
+    sendCampusChatMessage();
+}
+
+// ============================================================
+// BOT RESPONSES
+// ============================================================
+const botResponses = {
+    'login': 'You can login at <a href="login.html" style="color: #D4A843;">campusnexus.co.ke/login</a>. Use your student/staff ID and password. 🔑',
+    'demo': 'Great! 🎉 I can help you book a demo. Please provide your email and preferred time, or click the "Book Demo" button on our website.',
+    'pricing': 'We have 3 packages: Basic (KES 25,000), Standard (KES 30,000), and Premium (KES 45,000) per month. All include POS access! 💰',
+    'support': 'Our support team is available 24/7. You can email us at support@campusnexus.com or WhatsApp +254 790 969 743. 🛠️',
+    'pos': 'Our POS system integrates with campus shops, canteens, and bookstores. It syncs with student accounts and manages inventory in real-time! 🏪',
+    'default': 'Thank you for your message! Our team will respond shortly. 🎓 In the meantime, check our <a href="#features" style="color: #D4A843;">features</a> or <a href="#pricing" style="color: #D4A843;">pricing</a>.'
+};
+
+async function processBotResponse(message) {
+    const lowerMsg = message.toLowerCase();
+    let responseKey = 'default';
+    
+    if (lowerMsg.includes('login') || lowerMsg.includes('sign in') || lowerMsg.includes('account')) {
+        responseKey = 'login';
+    } else if (lowerMsg.includes('demo') || lowerMsg.includes('book') || lowerMsg.includes('schedule')) {
+        responseKey = 'demo';
+    } else if (lowerMsg.includes('price') || lowerMsg.includes('cost') || lowerMsg.includes('package') || lowerMsg.includes('plan')) {
+        responseKey = 'pricing';
+    } else if (lowerMsg.includes('help') || lowerMsg.includes('support') || lowerMsg.includes('issue') || lowerMsg.includes('problem')) {
+        responseKey = 'support';
+    } else if (lowerMsg.includes('pos') || lowerMsg.includes('store') || lowerMsg.includes('shop') || lowerMsg.includes('canteen')) {
+        responseKey = 'pos';
+    }
+    
+    // Add typing indicator
+    showTypingIndicator();
+    
+    // Simulate bot thinking
+    setTimeout(async () => {
+        hideTypingIndicator();
+        const response = botResponses[responseKey];
+        addChatMessage('bot', response);
+        await saveMessageToSupabase(response, 'bot');
+    }, 800 + Math.random() * 600);
+}
+
+// ============================================================
+// TYPING INDICATOR
+// ============================================================
+function showTypingIndicator() {
+    const container = document.getElementById('campusChatMessages');
+    const typingDiv = document.createElement('div');
+    typingDiv.id = 'typingIndicator';
+    typingDiv.className = 'campus-chat-message bot';
+    typingDiv.innerHTML = `
+        <div class="campus-msg-bubble">
+            <div class="campus-msg-sender">🎓 CampusNexus Bot</div>
+            <div class="typing-dots">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+    `;
+    container.appendChild(typingDiv);
+    container.scrollTop = container.scrollHeight;
+}
+
+function hideTypingIndicator() {
+    const indicator = document.getElementById('typingIndicator');
+    if (indicator) {
+        indicator.remove();
+    }
+}
+
+// ============================================================
+// INITIALIZE CHAT
+// ============================================================
+document.addEventListener('DOMContentLoaded', async function() {
+    visitorId = getVisitorId();
+    currentChatId = 'chat_' + Date.now();
+    
+    // Initialize chat session
+    await initializeChat();
+    
+    // Check if chat was open
+    const wasOpen = localStorage.getItem('campusChatOpen');
+    if (wasOpen === 'true') {
+        document.getElementById('campusChatWindow').classList.add('open');
+        isChatOpen = true;
+        document.getElementById('chatNotification').style.display = 'none';
+    }
+    
+    // Auto-open chat after 7 seconds on first visit
+    if (!localStorage.getItem('campusChatVisited')) {
+        setTimeout(() => {
+            if (!document.getElementById('campusChatWindow').classList.contains('open')) {
+                document.getElementById('campusChatWindow').classList.add('open');
+                isChatOpen = true;
+                localStorage.setItem('campusChatVisited', 'true');
+                document.getElementById('chatNotification').style.display = 'none';
+            }
+        }, 7000);
+    }
+});
+
+// ============================================================
+// SUPABASE TABLE SCHEMA (Run in Supabase SQL Editor)
+// ============================================================
+/*
+-- Create chat_sessions table
+CREATE TABLE chat_sessions (
+    id SERIAL PRIMARY KEY,
+    chat_id TEXT UNIQUE NOT NULL,
+    visitor_id TEXT NOT NULL,
+    visitor_ip TEXT,
+    visitor_page TEXT,
+    status TEXT DEFAULT 'active',
+    assigned_agent TEXT,
+    created_at TIMESTAMP DEFAULT NOW(),
+    closed_at TIMESTAMP
+);
+
+-- Create chat_messages table
+CREATE TABLE chat_messages (
+    id SERIAL PRIMARY KEY,
+    chat_id TEXT NOT NULL,
+    visitor_id TEXT NOT NULL,
+    sender TEXT NOT NULL,
+    message TEXT NOT NULL,
+    is_read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Create chat_agents table
+CREATE TABLE chat_agents (
+    id SERIAL PRIMARY KEY,
+    email TEXT UNIQUE NOT NULL,
+    name TEXT NOT NULL,
+    password TEXT NOT NULL,
+    is_online BOOLEAN DEFAULT FALSE,
+    last_seen TIMESTAMP DEFAULT NOW()
+);
+
+-- Enable Row Level Security
+ALTER TABLE chat_sessions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE chat_messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE chat_agents ENABLE ROW LEVEL SECURITY;
+
+-- Create policies for public access
+CREATE POLICY "Allow insert for visitors" ON chat_sessions FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow select for visitors" ON chat_sessions FOR SELECT USING (true);
+CREATE POLICY "Allow insert for messages" ON chat_messages FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow select for messages" ON chat_messages FOR SELECT USING (true);
+
+-- Enable realtime subscriptions
+ALTER PUBLICATION supabase_realtime ADD TABLE chat_sessions;
+ALTER PUBLICATION supabase_realtime ADD TABLE chat_messages;
+*/
+</script>
+
 <!-- External JavaScript -->
 <script src="js/script.js"></script>
+
+<!-- ============================================================
+     ADDITIONAL JAVASCRIPT FOR ENHANCEMENTS
+     ============================================================ -->
+<script>
+// ============================================================
+// EXISTING SITE FUNCTIONALITY (Nav, Modals, Animations, etc.)
+// ============================================================
+
+document.addEventListener('DOMContentLoaded', function(){
+    // ===== MOBILE MENU =====
+    const hamburger = document.getElementById('menuToggle');
+    const mobileMenu = document.getElementById('mobileMenu');
+    const backdrop = document.getElementById('mobileMenuBackdrop');
+
+    function openMobileMenu() {
+        mobileMenu.classList.add('open');
+        backdrop.classList.add('open');
+        hamburger.innerHTML = '<i class="fas fa-times"></i>';
+    }
+
+    function closeMobileMenu() {
+        mobileMenu.classList.remove('open');
+        backdrop.classList.remove('open');
+        hamburger.innerHTML = '<i class="fas fa-bars"></i>';
+    }
+    window.closeMobileMenu = closeMobileMenu;
+
+    if (hamburger) {
+        hamburger.addEventListener('click', function() {
+            if (mobileMenu.classList.contains('open')) {
+                closeMobileMenu();
+            } else {
+                openMobileMenu();
+            }
+        });
+    }
+
+    if (backdrop) {
+        backdrop.addEventListener('click', closeMobileMenu);
+    }
+
+    // ===== SCROLL PROGRESS BAR =====
+    const progressBar = document.getElementById('scrollProgress');
+    if (progressBar) {
+        window.addEventListener('scroll', function() {
+            const scrollTop = window.scrollY;
+            const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+            const progress = (scrollTop / docHeight) * 100;
+            progressBar.style.width = progress + '%';
+        });
+    }
+
+    // ===== BACK TO TOP BUTTON =====
+    const backToTopBtn = document.getElementById('backToTop');
+    if (backToTopBtn) {
+        window.addEventListener('scroll', function() {
+            if (window.scrollY > 500) {
+                backToTopBtn.classList.add('visible');
+            } else {
+                backToTopBtn.classList.remove('visible');
+            }
+        });
+
+        backToTopBtn.addEventListener('click', function() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    }
+
+    // ===== STATS COUNTER ANIMATION =====
+    const counters = document.querySelectorAll('.stats-section .number, .hero-stats .number');
+    const speed = 200;
+
+    function animateCounter(counter) {
+        const target = parseInt(counter.getAttribute('data-count'));
+        const increment = target / speed;
+        let current = 0;
+
+        const updateCounter = () => {
+            current += increment;
+            if (current < target) {
+                counter.textContent = Math.ceil(current);
+                requestAnimationFrame(updateCounter);
+            } else {
+                counter.textContent = target + (target > 1000 ? '+' : '');
+            }
+        };
+        updateCounter();
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const counter = entry.target.querySelector('.number');
+                if (counter && counter.textContent === '0') {
+                    animateCounter(counter);
+                }
+            }
+        });
+    }, { threshold: 0.5 });
+
+    document.querySelectorAll('.stat-item, .hero-stats .stat-item').forEach(el => {
+        observer.observe(el);
+    });
+
+    // ===== SCROLL REVEAL ANIMATIONS =====
+    const revealElements = document.querySelectorAll('.feature-card, .step, .testimonial-card, .pricing-card, .pos-feature');
+    const revealObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('revealed');
+            }
+        });
+    }, { threshold: 0.1 });
+
+    revealElements.forEach(el => {
+        el.classList.add('reveal-hidden');
+        revealObserver.observe(el);
+    });
+
+    // ===== POSTER TILT EFFECT =====
+    const posterFrame = document.getElementById('posterFrame');
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const isTouch = window.matchMedia('(hover: none)').matches;
+
+    if (posterFrame && !prefersReduced && !isTouch) {
+        const scene = posterFrame.closest('.hero-image');
+        if (scene) {
+            scene.addEventListener('mousemove', function(e) {
+                const rect = scene.getBoundingClientRect();
+                const px = (e.clientX - rect.left) / rect.width - 0.5;
+                const py = (e.clientY - rect.top) / rect.height - 0.5;
+                posterFrame.style.transform = 'rotateY(' + (px * 8) + 'deg) rotateX(' + (py * -8) + 'deg) translateZ(0)';
+            });
+            scene.addEventListener('mouseleave', function() {
+                posterFrame.style.transform = 'rotateY(0deg) rotateX(0deg)';
+            });
+        }
+    }
+
+    // ===== NAVBAR SCROLL EFFECT =====
+    const navbar = document.getElementById('navbar');
+    window.addEventListener('scroll', function() {
+        if (window.scrollY > 50) {
+            navbar.classList.add('scrolled');
+        } else {
+            navbar.classList.remove('scrolled');
+        }
+    });
+
+    // ===== DARK MODE TOGGLE =====
+    const themeToggle = document.getElementById('themeToggle');
+    const themeIcon = document.getElementById('themeIcon');
+    const themeLabel = document.getElementById('themeLabel');
+
+    if (themeToggle) {
+        themeToggle.addEventListener('click', function() {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            themeIcon.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
+            themeLabel.textContent = isDark ? 'Light' : 'Dark';
+        });
+    }
+
+    // ===== MODAL FUNCTIONS =====
+    window.openModal = function(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        }
+    };
+
+    window.closeModal = function(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.style.display = 'none';
+            document.body.style.overflow = '';
+        }
+    };
+
+    // Close modal on backdrop click
+    document.querySelectorAll('.page-modal').forEach(modal => {
+        modal.addEventListener('click', function(e) {
+            if (e.target === this) {
+                this.style.display = 'none';
+                document.body.style.overflow = '';
+            }
+        });
+    });
+
+    // Close modal on Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            document.querySelectorAll('.page-modal').forEach(modal => {
+                if (modal.style.display === 'block') {
+                    modal.style.display = 'none';
+                    document.body.style.overflow = '';
+                }
+            });
+        }
+    });
+});
+
+// ===== SERVICE WORKER REGISTRATION (PWA) =====
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+        navigator.serviceWorker.register('/sw.js')
+            .then(function(registration) {
+                console.log('ServiceWorker registered successfully');
+            })
+            .catch(function(err) {
+                console.log('ServiceWorker registration failed: ', err);
+            });
+    });
+}
+</script>
 
 </body>
 </html>
