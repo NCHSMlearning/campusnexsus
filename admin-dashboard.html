@@ -64,11 +64,12 @@
             background: var(--gray-900);
             color: #fff;
             padding: 24px 16px;
-            position: sticky;
-            top: 0;
             height: 100vh;
             overflow-y: auto;
             transition: transform 0.3s ease;
+            z-index: 1001;
+            position: sticky;
+            top: 0;
         }
 
         .sidebar .logo {
@@ -197,6 +198,33 @@
         .sidebar-footer .user-role {
             font-size: 0.7rem;
             opacity: 0.5;
+        }
+
+        /* Sidebar Overlay */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .sidebar-overlay.open {
+            display: block;
+            opacity: 1;
+        }
+
+        /* Mobile Menu Toggle */
+        .mobile-menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--gray-700);
+            padding: 4px 8px;
         }
 
         /* ===== MAIN CONTENT ===== */
@@ -895,6 +923,26 @@
             to { transform: rotate(360deg); }
         }
 
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--gray-100);
+            border-radius: 999px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--gray-300);
+            border-radius: 999px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--gray-400);
+        }
+
         /* ===== RESPONSIVE ===== */
         @media (max-width: 1024px) {
             .admin-container {
@@ -909,17 +957,43 @@
             .admin-container {
                 grid-template-columns: 1fr;
             }
+            
             .sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 280px;
+                height: 100vh;
+                transform: translateX(-100%);
+                z-index: 1001;
+                box-shadow: none;
+                transition: transform 0.3s ease;
+            }
+            
+            .sidebar.open {
+                transform: translateX(0);
+                box-shadow: 0 0 40px rgba(0,0,0,0.5);
+            }
+            
+            .sidebar-overlay {
                 display: none;
                 position: fixed;
-                width: 280px;
+                inset: 0;
+                background: rgba(0,0,0,0.5);
                 z-index: 1000;
-                transform: translateX(-100%);
+                opacity: 0;
+                transition: opacity 0.3s ease;
             }
-            .sidebar.open {
+            
+            .sidebar-overlay.open {
                 display: block;
-                transform: translateX(0);
+                opacity: 1;
             }
+            
+            .mobile-menu-toggle {
+                display: block !important;
+            }
+            
             .main-content {
                 padding: 16px;
             }
@@ -963,55 +1037,26 @@
             .chat-reply-modal .modal-box .reply-area {
                 flex-direction: column;
             }
-            .mobile-menu-toggle {
-                display: block !important;
-            }
             .tabs .tab {
                 padding: 6px 12px;
                 font-size: 0.75rem;
             }
         }
 
-        .mobile-menu-toggle {
-            display: none;
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            cursor: pointer;
-            color: var(--gray-700);
-        }
-
-        /* Sidebar overlay */
-        .sidebar-overlay {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.4);
-            z-index: 999;
-        }
-
-        .sidebar-overlay.open {
-            display: block;
-        }
-
-        /* Scrollbar styling */
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: var(--gray-100);
-            border-radius: 999px;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: var(--gray-300);
-            border-radius: 999px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: var(--gray-400);
+        @media (min-width: 769px) {
+            .sidebar {
+                position: sticky;
+                transform: translateX(0) !important;
+                width: 240px;
+            }
+            
+            .sidebar-overlay {
+                display: none !important;
+            }
+            
+            .mobile-menu-toggle {
+                display: none !important;
+            }
         }
     </style>
 </head>
@@ -1040,7 +1085,7 @@
             <div class="user-info">
                 <div class="user-avatar">A</div>
                 <div>
-                    <div class="user-name">Admin</div>
+                    <div class="user-name" id="adminName">Admin</div>
                     <div class="user-role">Super Admin</div>
                 </div>
             </div>
@@ -1267,7 +1312,7 @@
 
 <script>
 // ============================================================
-// SUPABASE CONFIGURATION - FIXED (using supabaseClient)
+// SUPABASE CONFIGURATION
 // ============================================================
 const SUPABASE_URL = 'https://irahplkvocaakjxuisto.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlyYWhwbGt2b2NhYWtqeHVpc3RvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4ODY5ODQsImV4cCI6MjEwMzQ2Mjk4NH0.BFOwdRVDz4r1oYgUjm8zQbthqblGRq4c3WQWQaOhu7g';
@@ -1291,9 +1336,10 @@ let agentOnline = true;
 let chatSubscriptions = [];
 let currentTab = 'visitors';
 let refreshInterval = null;
+let adminName = 'Admin';
 
 // ============================================================
-// DOM REFS (with null checks)
+// DOM REFS
 // ============================================================
 const visitorTableBody = document.getElementById('visitorTableBody');
 const chatList = document.getElementById('chatList');
@@ -1309,6 +1355,7 @@ const searchVisitors = document.getElementById('searchVisitors');
 const visitorFilter = document.getElementById('visitorFilter');
 const searchChats = document.getElementById('searchChats');
 const chatFilter = document.getElementById('chatFilter');
+const adminNameEl = document.getElementById('adminName');
 
 // ============================================================
 // TAB SWITCHING
@@ -1334,10 +1381,63 @@ function switchTab(tab) {
         el.classList.remove('active');
     });
 
+    // Highlight active sidebar link
+    document.querySelectorAll('.sidebar-nav a').forEach(el => {
+        if (el.getAttribute('onclick') && el.getAttribute('onclick').includes(tab)) {
+            el.classList.add('active');
+        }
+    });
+
+    // Close sidebar on mobile after tab switch
+    if (window.innerWidth <= 768) {
+        closeSidebar();
+    }
+
     if (tab === 'visitors') loadVisitors();
     else if (tab === 'chats') loadChats();
     else if (tab === 'analytics') loadAnalytics();
 }
+
+// ============================================================
+// SIDEBAR FUNCTIONS
+// ============================================================
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    sidebar.classList.toggle('open');
+    overlay.classList.toggle('open');
+    document.body.style.overflow = sidebar.classList.contains('open') ? 'hidden' : '';
+}
+
+function closeSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    sidebar.classList.remove('open');
+    overlay.classList.remove('open');
+    document.body.style.overflow = '';
+}
+
+// Close sidebar when clicking outside on mobile
+document.addEventListener('click', function(e) {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    const toggle = document.querySelector('.mobile-menu-toggle');
+    
+    if (!sidebar || !overlay) return;
+    
+    const isMobile = window.innerWidth <= 768;
+    const isOpen = sidebar.classList.contains('open');
+    
+    if (isMobile && isOpen) {
+        const clickedSidebar = sidebar.contains(e.target);
+        const clickedToggle = toggle && toggle.contains(e.target);
+        const clickedOverlay = overlay.contains(e.target);
+        
+        if (!clickedSidebar && !clickedToggle && clickedOverlay) {
+            closeSidebar();
+        }
+    }
+});
 
 // ============================================================
 // LOAD VISITORS
@@ -1462,7 +1562,7 @@ function renderVisitors() {
 }
 
 // ============================================================
-// LOAD CHATS
+// LOAD CHATS - FIXED
 // ============================================================
 async function loadChats() {
     if (!chatList) return;
@@ -1472,20 +1572,50 @@ async function loadChats() {
             <div class="loading"><div class="spinner"></div></div>
         `;
 
-        const { data, error } = await supabaseClient
+        // First, get all chat sessions
+        const { data: sessions, error: sessionsError } = await supabaseClient
             .from('chat_sessions')
-            .select(`
-                *,
-                messages:chat_messages(*)
-            `)
+            .select('*')
             .order('created_at', { ascending: false })
             .limit(50);
 
-        if (error) throw error;
+        if (sessionsError) throw sessionsError;
 
-        allChats = data || [];
+        // If no sessions, show empty state
+        if (!sessions || sessions.length === 0) {
+            allChats = [];
+            renderChats();
+            updateStats();
+            return;
+        }
+
+        // Get chat_ids from sessions
+        const chatIds = sessions.map(s => s.chat_id);
+        
+        // Get all messages for these chat_ids
+        const { data: messages, error: messagesError } = await supabaseClient
+            .from('chat_messages')
+            .select('*')
+            .in('chat_id', chatIds)
+            .order('created_at', { ascending: true });
+
+        if (messagesError) {
+            console.error('Error loading messages:', messagesError);
+        }
+
+        const allMessages = messages || [];
+
+        // Combine sessions with their messages
+        allChats = sessions.map(session => ({
+            ...session,
+            messages: allMessages.filter(msg => msg.chat_id === session.chat_id)
+        }));
+
         renderChats();
         updateStats();
+        
+        console.log(`✅ Loaded ${allChats.length} chats with messages`);
+
     } catch (error) {
         console.error('Error loading chats:', error);
         chatList.innerHTML = `
@@ -1939,16 +2069,6 @@ function subscribeToUpdates() {
 }
 
 // ============================================================
-// TOGGLE SIDEBAR (MOBILE)
-// ============================================================
-function toggleSidebar() {
-    const sidebar = document.getElementById('sidebar');
-    const overlay = document.getElementById('sidebarOverlay');
-    if (sidebar) sidebar.classList.toggle('open');
-    if (overlay) overlay.classList.toggle('open');
-}
-
-// ============================================================
 // LOGOUT
 // ============================================================
 function logout() {
@@ -1972,6 +2092,7 @@ document.addEventListener('keydown', function(e) {
     }
     if (e.key === 'Escape') {
         closeReplyModal();
+        closeSidebar();
     }
     if (e.ctrlKey && e.shiftKey && e.key === 'R') {
         e.preventDefault();
@@ -2000,6 +2121,9 @@ document.addEventListener('DOMContentLoaded', function() {
             window.location.href = 'admin-login.html';
             return;
         }
+
+        adminName = session.name || 'Admin';
+        if (adminNameEl) adminNameEl.textContent = adminName;
 
         console.log('✅ Admin logged in:', session.email);
         console.log('🆔 User ID:', session.id);
@@ -2051,28 +2175,6 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('  Ctrl+Enter = Send reply');
     console.log('  Escape = Close modal');
     console.log('  Ctrl+Shift+R = Refresh all data');
-});
-
-// Close sidebar when clicking outside on mobile
-document.addEventListener('click', function(e) {
-    const sidebar = document.getElementById('sidebar');
-    const overlay = document.getElementById('sidebarOverlay');
-    const toggle = document.querySelector('.mobile-menu-toggle');
-    
-    if (!sidebar || !overlay) return;
-    
-    const isMobile = window.innerWidth <= 768;
-    const isOpen = sidebar.classList.contains('open');
-    
-    if (isMobile && isOpen) {
-        const clickedSidebar = sidebar.contains(e.target);
-        const clickedToggle = toggle && toggle.contains(e.target);
-        
-        if (!clickedSidebar && !clickedToggle) {
-            sidebar.classList.remove('open');
-            overlay.classList.remove('open');
-        }
-    }
 });
 
 console.log('🔐 Admin Dashboard Script Loaded');
