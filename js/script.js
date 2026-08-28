@@ -566,18 +566,20 @@ function createChatWidget() {
 }
 
 // ============================================================
-// SUPABASE CONFIGURATION
+// SUPABASE CONFIGURATION - Check if already declared
 // ============================================================
-const SUPABASE_URL = 'https://irahplkvocaakjxuisto.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlyYWhwbGt2b2NhYWtqeHVpc3RvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4ODY5ODQsImV4cCI6MjEwMzQ2Mjk4NH0.BFOwdRVDz4r1oYgUjm8zQbthqblGRq4c3WQWQaOhu7g';
-
-// Initialize Supabase client
-let supabase;
-try {
-    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    console.log('✅ Supabase initialized for chat');
-} catch (error) {
-    console.error('❌ Supabase initialization failed:', error);
+if (typeof supabase === 'undefined') {
+    const SUPABASE_URL = 'https://irahplkvocaakjxuisto.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlyYWhwbGt2b2NhYWtqeHVpc3RvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4ODY5ODQsImV4cCI6MjEwMzQ2Mjk4NH0.BFOwdRVDz4r1oYgUjm8zQbthqblGRq4c3WQWQaOhu7g';
+    
+    try {
+        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        console.log('✅ Supabase initialized for chat');
+    } catch (error) {
+        console.error('❌ Supabase initialization failed:', error);
+    }
+} else {
+    console.log('✅ Supabase already initialized');
 }
 
 // ============================================================
