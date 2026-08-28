@@ -1,6 +1,6 @@
 // ============================================================
 // CAMPUSNEXUS - MAIN JAVASCRIPT
-// Version: 7.0 - Hybrid Chat (Bot + Live Agent)
+// Version: 7.0 - Hybrid Chat (Bot + Live Agent) + Pre-Chat Form
 // ============================================================
 
 // ============================================================
@@ -278,9 +278,87 @@ let chatMessages = [];
 let currentChatId = null;
 let isChatOpen = false;
 let visitorId = null;
+let visitorName = null;
+let visitorEmail = null;
 let messageSubscription = null;
 let isAgentOnline = false;
 let chatMode = 'bot'; // 'bot' or 'agent'
+let chatStarted = false;
+
+// ============================================================
+// PRE-CHAT FORM FUNCTIONS
+// ============================================================
+
+// Start chat with visitor info
+function startChatWithInfo(name, email) {
+    visitorName = name || document.getElementById('visitorNameInput')?.value?.trim() || 'Anonymous Visitor';
+    visitorEmail = email || document.getElementById('visitorEmailInput')?.value?.trim() || '';
+    
+    // Save to localStorage
+    localStorage.setItem('campusnexus_visitor_name', visitorName);
+    localStorage.setItem('campusnexus_visitor_email', visitorEmail);
+    
+    // Update chat session with visitor info
+    updateVisitorInfo(visitorName, visitorEmail);
+    
+    // Hide pre-chat form, show chat
+    const preChatForm = document.getElementById('preChatForm');
+    const chatMessagesContainer = document.getElementById('chatMessagesContainer');
+    const quickReplies = document.getElementById('quickReplies');
+    const chatInputArea = document.getElementById('chatInputArea');
+    
+    if (preChatForm) preChatForm.style.display = 'none';
+    if (chatMessagesContainer) chatMessagesContainer.style.display = 'block';
+    if (quickReplies) quickReplies.style.display = 'flex';
+    if (chatInputArea) chatInputArea.style.display = 'flex';
+    
+    chatStarted = true;
+    
+    // Add welcome message with visitor name
+    addChatMessage('bot', `👋 Welcome <strong>${visitorName}</strong>! I'm here to help you. What can I assist you with today?`);
+    
+    // Initialize chat if not done
+    if (!visitorId || !currentChatId) {
+        initializeChat();
+    }
+    
+    // Subscribe to messages
+    subscribeToMessages();
+}
+
+// Update visitor info in Supabase
+async function updateVisitorInfo(name, email) {
+    if (!visitorId || !currentChatId) return;
+    
+    try {
+        const { error } = await supabase
+            .from('chat_sessions')
+            .update({
+                visitor_name: name,
+                visitor_email: email
+            })
+            .eq('chat_id', currentChatId);
+        
+        if (error) console.error('Error updating visitor info:', error);
+    } catch (error) {
+        console.error('Supabase error:', error);
+    }
+}
+
+// Check if visitor already provided info
+function checkVisitorInfo() {
+    const savedName = localStorage.getItem('campusnexus_visitor_name');
+    const savedEmail = localStorage.getItem('campusnexus_visitor_email');
+    
+    if (savedName && savedName !== 'Anonymous Visitor') {
+        // Visitor already provided info - show chat directly
+        setTimeout(() => {
+            startChatWithInfo(savedName, savedEmail);
+        }, 500);
+        return true;
+    }
+    return false;
+}
 
 // ============================================================
 // INITIALIZE CHAT
@@ -288,6 +366,8 @@ let chatMode = 'bot'; // 'bot' or 'agent'
 async function initializeChat() {
     visitorId = getVisitorId();
     currentChatId = localStorage.getItem('campusnexus_chat_id');
+    const savedName = localStorage.getItem('campusnexus_visitor_name') || 'Anonymous';
+    const savedEmail = localStorage.getItem('campusnexus_visitor_email') || '';
     
     if (!currentChatId) {
         currentChatId = 'chat_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
@@ -302,6 +382,8 @@ async function initializeChat() {
                     visitor_id: visitorId,
                     visitor_ip: ip,
                     visitor_page: window.location.href,
+                    visitor_name: savedName,
+                    visitor_email: savedEmail,
                     status: 'active',
                     created_at: new Date().toISOString()
                 }]);
@@ -310,10 +392,29 @@ async function initializeChat() {
         } catch (error) {
             console.error('Supabase error:', error);
         }
+    } else {
+        // Update existing session with visitor info if not already set
+        try {
+            const { error } = await supabase
+                .from('chat_sessions')
+                .update({
+                    visitor_name: savedName,
+                    visitor_email: savedEmail
+                })
+                .eq('chat_id', currentChatId);
+            
+            if (error) console.error('Error updating visitor info:', error);
+        } catch (error) {
+            console.error('Supabase error:', error);
+        }
     }
     
-    await loadChatHistory();
-    subscribeToMessages();
+    // If chat already started, load history
+    if (chatStarted) {
+        await loadChatHistory();
+        subscribeToMessages();
+    }
+    
     await checkAgentStatus();
     addModeSelector();
 }
@@ -526,7 +627,10 @@ async function loadChatHistory() {
         
         if (data && data.length > 0) {
             const messagesContainer = document.getElementById('campusChatMessages');
-            messagesContainer.innerHTML = '';
+            // Don't clear if using pre-chat form
+            if (!document.getElementById('preChatForm') || document.getElementById('preChatForm').style.display === 'none') {
+                messagesContainer.innerHTML = '';
+            }
             
             data.forEach(msg => {
                 const type = msg.sender === 'visitor' ? 'user' : 'bot';
@@ -543,7 +647,9 @@ function loadLocalHistory() {
     const localMessages = JSON.parse(localStorage.getItem('campusChatMessages') || '[]');
     if (localMessages.length > 0) {
         const messagesContainer = document.getElementById('campusChatMessages');
-        messagesContainer.innerHTML = '';
+        if (!document.getElementById('preChatForm') || document.getElementById('preChatForm').style.display === 'none') {
+            messagesContainer.innerHTML = '';
+        }
         localMessages.forEach(msg => {
             addChatMessage(msg.sender === 'visitor' ? 'user' : 'bot', msg.message);
         });
@@ -627,8 +733,20 @@ function toggleCampusChat() {
         if (isOpen) {
             const notification = document.getElementById('chatNotification');
             if (notification) notification.style.display = 'none';
-            const input = document.getElementById('campusChatInput');
-            if (input) input.focus();
+            
+            // If chat hasn't started and visitor info exists, start chat
+            if (!chatStarted) {
+                const hasInfo = checkVisitorInfo();
+                if (!hasInfo) {
+                    // Focus on name input if pre-chat form is visible
+                    const nameInput = document.getElementById('visitorNameInput');
+                    if (nameInput) setTimeout(() => nameInput.focus(), 300);
+                }
+            } else {
+                const input = document.getElementById('campusChatInput');
+                if (input) input.focus();
+            }
+            
             localStorage.setItem('campusChatOpen', 'true');
             
             if (!currentChatId) {
@@ -672,6 +790,17 @@ async function sendCampusChatMessage() {
     const message = input.value.trim();
     if (!message) return;
     
+    // If chat hasn't started, start it
+    if (!chatStarted) {
+        const hasInfo = checkVisitorInfo();
+        if (!hasInfo) {
+            // Show pre-chat form
+            const preChatForm = document.getElementById('preChatForm');
+            if (preChatForm) preChatForm.style.display = 'block';
+            return;
+        }
+    }
+    
     addChatMessage('user', message);
     input.value = '';
     
@@ -710,11 +839,21 @@ async function sendCampusChatMessage() {
 // ADD CHAT MESSAGE
 // ============================================================
 function addChatMessage(type, content, timestamp) {
-    const container = document.getElementById('campusChatMessages');
+    // Find the messages container - check if pre-chat form is visible
+    let container = document.getElementById('chatMessagesContainer');
+    if (!container) {
+        container = document.getElementById('campusChatMessages');
+    }
+    
     if (!container) {
         createChatWidget();
         setTimeout(() => addChatMessage(type, content, timestamp), 100);
         return;
+    }
+    
+    // Make sure chat container is visible
+    if (container.style.display === 'none') {
+        container.style.display = 'block';
     }
     
     const messageDiv = document.createElement('div');
@@ -805,7 +944,7 @@ function processBotResponse(message) {
 // TYPING INDICATOR
 // ============================================================
 function showTypingIndicator() {
-    const container = document.getElementById('campusChatMessages');
+    const container = document.getElementById('chatMessagesContainer') || document.getElementById('campusChatMessages');
     if (!container) return;
     
     hideTypingIndicator();
@@ -831,7 +970,7 @@ function hideTypingIndicator() {
 }
 
 // ============================================================
-// CREATE CHAT WIDGET (Fallback)
+// CREATE CHAT WIDGET (Fallback with Pre-Chat Form)
 // ============================================================
 function createChatWidget() {
     if (document.getElementById('campusChatWidget')) return;
@@ -860,23 +999,40 @@ function createChatWidget() {
                 <span id="agentStatus">| Auto-reply enabled</span>
             </div>
             <div class="campus-chat-messages" id="campusChatMessages">
-                <div class="campus-chat-message bot">
-                    <div class="campus-msg-bubble">
-                        <div class="campus-msg-sender">🎓 CampusNexus</div>
-                        Hello! 👋 Welcome to CampusNexus.<br>
-                        I'm here to help you with any questions.<br><br>
-                        💡 <strong>Switch to "Live Agent"</strong> mode to chat with a real person!
-                        <span class="campus-msg-time">Just now</span>
+                <!-- Pre-Chat Form -->
+                <div class="campus-chat-message bot" id="preChatForm">
+                    <div class="campus-msg-bubble" style="width: 100%; max-width: 320px;">
+                        <div class="campus-msg-sender">🎓 CampusNexus Support</div>
+                        <p style="margin-bottom: 12px;">👋 Welcome! Please introduce yourself before we start.</p>
+                        <div id="visitorInfoForm">
+                            <div style="margin-bottom: 10px;">
+                                <input type="text" id="visitorNameInput" placeholder="Your full name" 
+                                       style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: #fff; font-size: 14px; outline: none;">
+                            </div>
+                            <div style="margin-bottom: 10px;">
+                                <input type="email" id="visitorEmailInput" placeholder="Your email address" 
+                                       style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: #fff; font-size: 14px; outline: none;">
+                            </div>
+                            <button onclick="startChatWithInfo()" 
+                                    style="width: 100%; padding: 10px; border-radius: 8px; border: none; background: linear-gradient(135deg, #D4A843, #F0D080); color: #0A1628; font-weight: 700; font-size: 14px; cursor: pointer; transition: all 0.3s ease;">
+                                <i class="fas fa-comment"></i> Start Chat
+                            </button>
+                            <p style="font-size: 11px; opacity: 0.6; margin-top: 8px; text-align: center;">
+                                <i class="fas fa-lock"></i> Your info is safe with us
+                            </p>
+                        </div>
                     </div>
                 </div>
+                <!-- Chat messages container -->
+                <div id="chatMessagesContainer" style="display: none;"></div>
             </div>
-            <div class="chat-quick-replies" id="quickReplies">
+            <div class="chat-quick-replies" id="quickReplies" style="display: none;">
                 <button onclick="sendQuickReply('I need help with login')">🔑 Login Help</button>
                 <button onclick="sendQuickReply('I want to book a demo')">📅 Book Demo</button>
                 <button onclick="sendQuickReply('I have a question about pricing')">💰 Pricing</button>
                 <button onclick="sendQuickReply('I need technical support')">🛠️ Support</button>
             </div>
-            <div class="campus-chat-input">
+            <div class="campus-chat-input" id="chatInputArea" style="display: none;">
                 <input type="text" id="campusChatInput" placeholder="Type your message..." onkeypress="handleCampusChatKey(event)">
                 <button onclick="sendCampusChatMessage()">
                     <i class="fas fa-paper-plane"></i>
@@ -901,6 +1057,9 @@ document.addEventListener('DOMContentLoaded', function() {
         chatMode = savedMode;
     }
     
+    // Check if visitor already provided info
+    const hasInfo = checkVisitorInfo();
+    
     setTimeout(() => {
         initializeChat();
         setTimeout(() => {
@@ -920,6 +1079,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             const notification = document.getElementById('chatNotification');
             if (notification) notification.style.display = 'none';
+            
+            // If no info, focus on name input
+            if (!hasInfo) {
+                const nameInput = document.getElementById('visitorNameInput');
+                if (nameInput) setTimeout(() => nameInput.focus(), 500);
+            }
         }
     }
     
@@ -937,6 +1102,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (notification) notification.style.display = 'none';
                 localStorage.setItem('campusChatVisited', 'true');
                 localStorage.setItem('campusChatOpen', 'true');
+                
+                // If no info, focus on name input
+                if (!hasInfo) {
+                    const nameInput = document.getElementById('visitorNameInput');
+                    if (nameInput) setTimeout(() => nameInput.focus(), 500);
+                }
             }
         }, 7000);
     }
