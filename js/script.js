@@ -423,32 +423,44 @@ function sendQuickReply(message) {
     }
 }
 
-// Bot response logic
 function processBotResponse(message) {
     const lowerMsg = message.toLowerCase();
     let response = '';
     
+    // Check if user is asking about login/account
     if (lowerMsg.includes('login') || lowerMsg.includes('sign in') || lowerMsg.includes('account')) {
-        response = 'You can login at <a href="admin-login.html" style="color: #D4A843;">admin-login.html</a> to access your dashboard. 🔑';
-    } else if (lowerMsg.includes('demo') || lowerMsg.includes('book') || lowerMsg.includes('schedule')) {
-        response = 'Great! 🎉 You can book a demo by clicking the "Book Demo" button on our website, or email us at <strong>demo@campusnexus.com</strong>';
-    } else if (lowerMsg.includes('price') || lowerMsg.includes('cost') || lowerMsg.includes('package') || lowerMsg.includes('plan')) {
-        response = 'We have 3 packages:<br>• <strong>Basic</strong>: KES 25,000/month<br>• <strong>Standard</strong>: KES 30,000/month<br>• <strong>Premium</strong>: KES 45,000/month 💰<br>All packages include POS access!';
-    } else if (lowerMsg.includes('help') || lowerMsg.includes('support') || lowerMsg.includes('issue') || lowerMsg.includes('problem')) {
-        response = 'Our support team is available 24/7.<br>📧 Email: <strong>support@campusnexus.com</strong><br>📱 WhatsApp: <strong>+254 790 969 743</strong><br>🛠️ We\'re here to help!';
-    } else if (lowerMsg.includes('pos') || lowerMsg.includes('store') || lowerMsg.includes('shop') || lowerMsg.includes('canteen')) {
-        response = 'Our POS system integrates with campus shops, canteens, and bookstores! 🏪<br>• Student account sync<br>• Real-time inventory<br>• Sales analytics<br>• Multiple payment methods';
-    } else if (lowerMsg.includes('attendance') || lowerMsg.includes('check in')) {
-        response = 'Attendance tracking uses QR codes and geo-location. 📱<br>Students can check in via their mobile devices with:<br>• QR code scanning<br>• GPS verification<br>• Real-time reporting';
-    } else if (lowerMsg.includes('exam') || lowerMsg.includes('test') || lowerMsg.includes('assessment')) {
-        response = 'Online exams and assessments: 📝<br>• Create and schedule exams<br>• Auto-grading<br>• Real-time analytics<br>• Secure proctoring options';
-    } else if (lowerMsg.includes('feature') || lowerMsg.includes('what can you do')) {
-        response = 'CampusNexus offers: 🚀<br>• Student & Staff Management<br>• Course Management<br>• Attendance Tracking<br>• Online Exams<br>• Learning Resources<br>• Integrated POS System<br>• Analytics & Reports<br>• Fee Management<br>• Support Tickets';
-    } else {
-        response = 'Thank you for your message! 🎓 Our team will respond shortly.<br><br>In the meantime, check out our:<br>• <a href="#features" style="color: #D4A843;">Features</a><br>• <a href="#pricing" style="color: #D4A843;">Pricing</a><br>• <a href="#pos" style="color: #D4A843;">POS System</a>';
+        // Check if they mentioned admin or staff
+        if (lowerMsg.includes('admin') || lowerMsg.includes('staff')) {
+            response = '🔐 <strong>Admin/Staff Login:</strong><br><br>Please visit our <a href="admin-login.html" style="color: #D4A843; text-decoration: underline; font-weight: 600;">Admin Login Page</a>.<br><br>📧 Use your staff email and password to access the dashboard.';
+        } else {
+            response = '🎓 <strong>Welcome to CampusNexus!</strong><br><br>🔑 This platform is for administrators and staff to manage the institution.<br><br>📅 If you\'re a visitor or prospective student, I\'d be happy to help you:<br>• <strong>Book a demo</strong> to see the platform in action<br>• <strong>Learn about our packages</strong> and pricing<br>• <strong>Get support</strong> for any questions<br><br>Just ask me about <strong>demo</strong>, <strong>pricing</strong>, or <strong>support</strong>! 😊';
+        }
+    } 
+    else if (lowerMsg.includes('demo') || lowerMsg.includes('book') || lowerMsg.includes('schedule')) {
+        response = '🎉 <strong>Book a Free Demo of CampusNexus!</strong><br><br>I can help you schedule a personalized demonstration:<br><br>📞 <strong>Call:</strong> +254 790 969 743<br>📧 <strong>Email:</strong> demo@campusnexus.com<br>📱 <strong>WhatsApp:</strong> +254 790 969 743<br><br>Or click the <strong>"Book Demo"</strong> button on our website!<br><br>Our team will get back to you within 24 hours. 🚀';
+    } 
+    else if (lowerMsg.includes('price') || lowerMsg.includes('cost') || lowerMsg.includes('package') || lowerMsg.includes('plan')) {
+        response = '💰 <strong>CampusNexus Pricing Plans</strong> (per month):<br><br>📋 <strong>Basic</strong>: KES 25,000<br>  • Essential portal access<br>  • Student & Staff Management<br><br>⭐ <strong>Standard</strong>: KES 30,000 <span style="color: #D4A843;">Most Popular!</span><br>  • Full portal access<br>  • Staff training included<br><br>🏆 <strong>Premium</strong>: KES 45,000<br>  • Complete solution<br>  • IT support included<br><br>All packages include POS access!<br><br>📅 <strong>Want to see a demo?</strong> Just ask me about demos!';
+    } 
+    else if (lowerMsg.includes('help') || lowerMsg.includes('support') || lowerMsg.includes('issue') || lowerMsg.includes('problem')) {
+        response = '🛠️ <strong>How can I help you today?</strong><br><br>I can assist with:<br>• 📅 <strong>Booking a demo</strong> - See the platform in action<br>• 💰 <strong>Pricing information</strong> - Find the right package<br>• 🏪 <strong>POS System</strong> - Learn about our integrated POS<br>• 📱 <strong>Attendance tracking</strong> - QR code and GPS features<br>• 📝 <strong>Online exams</strong> - Create and grade exams<br><br>Just ask me about any of these topics! 😊';
+    } 
+    else if (lowerMsg.includes('pos') || lowerMsg.includes('store') || lowerMsg.includes('shop') || lowerMsg.includes('canteen')) {
+        response = '🏪 <strong>CampusNexus POS System</strong><br><br>Our integrated POS system includes:<br><br>✅ Student account sync<br>✅ Real-time inventory tracking<br>✅ Sales analytics & reports<br>✅ Multiple payment methods<br>   (Cash, M-Pesa, Student Cards)<br>✅ Receipt printing<br>✅ Mobile POS ready<br><br>Perfect for campus shops, canteens, and bookstores!<br><br>📅 <strong>Want to see it in action?</strong> Ask me about demos!';
+    } 
+    else if (lowerMsg.includes('attendance') || lowerMsg.includes('check in')) {
+        response = '📱 <strong>Attendance Tracking with CampusNexus</strong><br><br>Features include:<br><br>✅ QR code scanning<br>✅ GPS location verification<br>✅ Real-time reporting<br>✅ Automated notifications<br>✅ Export reports to PDF/Excel<br><br>Students can check in using their mobile devices!<br><br>📅 <strong>Interested?</strong> Ask me about booking a demo!';
+    } 
+    else if (lowerMsg.includes('exam') || lowerMsg.includes('test') || lowerMsg.includes('assessment')) {
+        response = '📝 <strong>Online Exams & Assessments</strong><br><br>Our exam management features:<br><br>✅ Create and schedule exams<br>✅ Auto-grading capabilities<br>✅ Real-time analytics<br>✅ Secure proctoring options<br>✅ Results dashboard<br>✅ Export results to PDF/Excel<br><br>Streamline your assessment process! 🚀';
+    } 
+    else if (lowerMsg.includes('feature') || lowerMsg.includes('what can you do')) {
+        response = '🚀 <strong>CampusNexus Complete Features</strong><br><br>📚 <strong>Core Features:</strong><br>• Student Portal<br>• Lecturer Portal<br>• Online Exams & Assessments<br>• Attendance Tracking (QR + GPS)<br>• Learning Resources<br>• Fee Management<br>• Support Tickets<br><br>🏪 <strong>Integrated POS System:</strong><br>• Student account sync<br>• Real-time inventory<br>• Sales analytics<br><br>📊 <strong>Analytics & Reports</strong><br>• Performance tracking<br>• Engagement metrics<br><br>📱 <strong>Mobile PWA Ready</strong><br><br>📅 <strong>Want a demo?</strong> Just ask! 🎉';
+    } 
+    else {
+        response = '🎓 <strong>Hello! Welcome to CampusNexus!</strong><br><br>I\'m here to help you with:<br><br>📅 <strong>Demos</strong> - See our platform in action<br>💰 <strong>Pricing</strong> - Find the right package for you<br>🏪 <strong>POS System</strong> - Learn about integrated POS<br>📱 <strong>Features</strong> - Explore what we offer<br>🛠️ <strong>Support</strong> - Get help with any issues<br><br><strong>Just ask me about any of these topics!</strong> 😊<br><br>💡 <em>Try typing: "demo", "pricing", "features", or "help"</em>';
     }
     
-    // Show typing indicator
     showTypingIndicator();
     
     setTimeout(() => {
