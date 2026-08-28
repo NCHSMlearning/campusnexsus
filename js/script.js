@@ -566,33 +566,77 @@ function createChatWidget() {
 }
 
 // ============================================================
-// SUPABASE CONFIGURATION - Check if already declared
+// SUPABASE CONFIGURATION - FIXED WITH CHANNEL SUPPORT
 // ============================================================
-if (typeof supabase === 'undefined') {
-    const SUPABASE_URL = 'https://irahplkvocaakjxuisto.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlyYWhwbGt2b2NhYWtqeHVpc3RvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4ODY5ODQsImV4cCI6MjEwMzQ2Mjk4NH0.BFOwdRVDz4r1oYgUjm8zQbthqblGRq4c3WQWQaOhu7g';
-    
+const SUPABASE_URL = 'https://irahplkvocaakjxuisto.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlyYWhwbGt2b2NhYWtqeHVpc3RvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4ODY5ODQsImV4cCI6MjEwMzQ2Mjk4NH0.BFOwdRVDz4r1oYgUjm8zQbthqblGRq4c3WQWQaOhu7g';
+
+// Initialize Supabase client - check if window.supabase exists
+if (typeof window.supabase !== 'undefined') {
     try {
-        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        console.log('✅ Supabase initialized for chat');
+        // Check if supabase is already defined globally and has channel method
+        if (typeof supabase === 'undefined' || typeof supabase.channel !== 'function') {
+            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            console.log('✅ Supabase initialized with realtime support');
+        } else {
+            console.log('✅ Supabase already initialized');
+        }
     } catch (error) {
         console.error('❌ Supabase initialization failed:', error);
+        // Create a fallback to prevent errors
+        supabase = {
+            from: () => ({ insert: () => Promise.resolve({ error: null }) }),
+            channel: () => ({ on: () => ({ subscribe: () => {} }) }),
+            removeChannel: () => {}
+        };
     }
 } else {
-    console.log('✅ Supabase already initialized');
+    console.warn('⚠️ Supabase library not loaded');
+    // Create a fallback
+    supabase = {
+        from: () => ({ insert: () => Promise.resolve({ error: null }) }),
+        channel: () => ({ on: () => ({ subscribe: () => {} }) }),
+        removeChannel: () => {}
+    };
 }
 
 // ============================================================
-// SUBSCRIBE TO REALTIME MESSAGES
+// SUBSCRIBE TO REALTIME MESSAGES - FIXED
 // ============================================================
 let messageSubscription = null;
 
 function subscribeToChatMessages() {
     const visitorId = localStorage.getItem('campusnexus_visitor_id');
-    if (!visitorId) return;
+    if (!visitorId) {
+        console.log('No visitor ID found, skipping subscription');
+        return;
+    }
+    
+    // Check if supabase is available and has the channel method
+    if (!supabase) {
+        console.warn('⚠️ Supabase not available, skipping realtime subscription');
+        return;
+    }
+    
+    if (typeof supabase.channel !== 'function') {
+        console.warn('⚠️ Supabase channel method not available. Trying to reinitialize...');
+        try {
+            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            console.log('✅ Supabase reinitialized successfully');
+        } catch (error) {
+            console.error('❌ Failed to reinitialize Supabase:', error);
+            return;
+        }
+    }
     
     if (messageSubscription) {
-        messageSubscription.unsubscribe();
+        try {
+            if (typeof supabase.removeChannel === 'function') {
+                supabase.removeChannel(messageSubscription);
+            }
+        } catch(e) {
+            console.log('Error removing channel:', e);
+        }
     }
     
     try {
@@ -608,9 +652,7 @@ function subscribeToChatMessages() {
                 },
                 (payload) => {
                     if (payload.new.sender !== 'visitor' && payload.new.sender !== 'bot') {
-                        // Only show agent messages in the chat
                         addChatMessage('bot', payload.new.message);
-                        // Show notification if chat is closed
                         const chatWindow = document.getElementById('campusChatWindow');
                         const notification = document.getElementById('chatNotification');
                         if (chatWindow && !chatWindow.classList.contains('open') && notification) {
@@ -620,10 +662,28 @@ function subscribeToChatMessages() {
                 }
             )
             .subscribe();
+        console.log('✅ Subscribed to chat messages');
     } catch (error) {
-        console.error('Error subscribing to messages:', error);
+        console.error('❌ Error subscribing to messages:', error);
     }
 }
+
+// ============================================================
+// RETRY SUPABASE INITIALIZATION IF NEEDED
+// ============================================================
+setTimeout(function() {
+    if (typeof supabase === 'undefined' || typeof supabase.channel !== 'function') {
+        console.log('🔄 Retrying Supabase initialization...');
+        try {
+            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            console.log('✅ Supabase initialized on retry');
+            // Resubscribe to messages
+            setTimeout(subscribeToChatMessages, 500);
+        } catch (error) {
+            console.error('❌ Retry failed:', error);
+        }
+    }
+}, 2000);
 
 // ============================================================
 // INITIALIZE CHAT ON PAGE LOAD
