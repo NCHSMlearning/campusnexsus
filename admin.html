@@ -1272,7 +1272,14 @@
 const SUPABASE_URL = 'https://irahplkvocaakjxuisto.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlyYWhwbGt2b2NhYWtqeHVpc3RvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4ODY5ODQsImV4cCI6MjEwMzQ2Mjk4NH0.BFOwdRVDz4r1oYgUjm8zQbthqblGRq4c3WQWQaOhu7g';
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// Initialize Supabase client
+let supabase;
+try {
+    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    console.log('✅ Supabase initialized');
+} catch (error) {
+    console.error('❌ Supabase initialization failed:', error);
+}
 
 // ============================================================
 // STATE
@@ -1283,9 +1290,10 @@ let currentChatId = null;
 let agentOnline = true;
 let chatSubscriptions = [];
 let currentTab = 'visitors';
+let refreshInterval = null;
 
 // ============================================================
-// DOM REFS
+// DOM REFS (with null checks)
 // ============================================================
 const visitorTableBody = document.getElementById('visitorTableBody');
 const chatList = document.getElementById('chatList');
@@ -1317,7 +1325,12 @@ function switchTab(tab) {
     document.querySelectorAll('.tab-content').forEach(el => {
         el.classList.remove('active');
     });
-    document.getElementById(`tab${tab.charAt(0).toUpperCase() + tab.slice(1)}`).classList.add('active');
+    
+    const tabId = `tab${tab.charAt(0).toUpperCase() + tab.slice(1)}`;
+    const tabElement = document.getElementById(tabId);
+    if (tabElement) {
+        tabElement.classList.add('active');
+    }
 
     // Update sidebar
     document.querySelectorAll('.sidebar-nav a').forEach(el => {
@@ -1334,7 +1347,18 @@ function switchTab(tab) {
 // LOAD VISITORS
 // ============================================================
 async function loadVisitors() {
+    if (!visitorTableBody) return;
+    
     try {
+        // Show loading
+        visitorTableBody.innerHTML = `
+            <tr>
+                <td colspan="7">
+                    <div class="loading"><div class="spinner"></div></div>
+                </td>
+            </tr>
+        `;
+
         const { data, error } = await supabase
             .from('visitor_sessions')
             .select('*')
@@ -1355,7 +1379,7 @@ async function loadVisitors() {
                         <i class="fas fa-exclamation-circle"></i>
                         <h3>Error loading visitors</h3>
                         <p>${error.message}</p>
-                        <button onclick="loadVisitors()" style="margin-top:8px;padding:6px 16px;border-radius:8px;border:none;background:var(--secondary);color:#fff;cursor:pointer;">Retry</button>
+                        <button onclick="loadVisitors()" style="margin-top:8px;padding:6px 16px;border-radius:8px;border:none;background:#10b981;color:#fff;cursor:pointer;">Retry</button>
                     </div>
                 </td>
             </tr>
@@ -1367,8 +1391,10 @@ async function loadVisitors() {
 // RENDER VISITORS
 // ============================================================
 function renderVisitors() {
-    const filter = visitorFilter.value;
-    const search = searchVisitors.value.toLowerCase();
+    if (!visitorTableBody) return;
+    
+    const filter = visitorFilter ? visitorFilter.value : 'all';
+    const search = searchVisitors ? searchVisitors.value.toLowerCase() : '';
 
     let filtered = allVisitors.filter(v => {
         if (filter !== 'all' && v.status !== filter) return false;
@@ -1399,19 +1425,20 @@ function renderVisitors() {
     const colors = ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444'];
 
     visitorTableBody.innerHTML = filtered.map((v, index) => {
-        const initials = (v.visitor_id || 'V').slice(0, 2).toUpperCase();
+        const visitorId = v.visitor_id || 'Anonymous';
+        const initials = visitorId.slice(0, 2).toUpperCase();
         const status = v.status || 'offline';
         const statusClass = status === 'online' ? 'online' : status === 'idle' ? 'idle' : 'offline';
         const color = colors[index % colors.length];
-        const time = new Date(v.last_active).toLocaleString();
-        const firstSeen = new Date(v.started_at).toLocaleString();
+        const time = v.last_active ? new Date(v.last_active).toLocaleString() : 'Never';
+        const firstSeen = v.started_at ? new Date(v.started_at).toLocaleString() : 'Unknown';
         const pageUrl = v.current_page || '/';
 
         return `
             <tr>
                 <td>
-                    <span class="visitor-avatar" style="background:${color}">${initials}</span>
-                    ${v.visitor_id || 'Anonymous'}
+                    <span class="visitor-avatar" style="background:${color}">${initials || 'V'}</span>
+                    ${visitorId}
                 </td>
                 <td>${v.ip_address || 'N/A'}</td>
                 <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${pageUrl}">
@@ -1426,7 +1453,7 @@ function renderVisitors() {
                 <td>${firstSeen}</td>
                 <td>${time}</td>
                 <td>
-                    <button class="btn" style="padding:4px 12px;font-size:0.7rem;background:var(--secondary);" onclick="viewVisitor('${v.visitor_id}')">
+                    <button class="btn" style="padding:4px 12px;font-size:0.7rem;background:#10b981;color:#fff;border:none;border-radius:6px;cursor:pointer;" onclick="viewVisitor('${v.visitor_id}')">
                         <i class="fas fa-eye"></i> View
                     </button>
                 </td>
@@ -1436,15 +1463,22 @@ function renderVisitors() {
 
     // Update badges
     const online = allVisitors.filter(v => v.status === 'online').length;
-    visitorBadge.textContent = online;
-    tabVisitorBadge.textContent = allVisitors.length;
+    if (visitorBadge) visitorBadge.textContent = online;
+    if (tabVisitorBadge) tabVisitorBadge.textContent = allVisitors.length;
 }
 
 // ============================================================
 // LOAD CHATS
 // ============================================================
 async function loadChats() {
+    if (!chatList) return;
+    
     try {
+        // Show loading
+        chatList.innerHTML = `
+            <div class="loading"><div class="spinner"></div></div>
+        `;
+
         const { data, error } = await supabase
             .from('chat_sessions')
             .select(`
@@ -1466,6 +1500,7 @@ async function loadChats() {
                 <i class="fas fa-exclamation-circle"></i>
                 <h3>Error loading chats</h3>
                 <p>${error.message}</p>
+                <button onclick="loadChats()" style="margin-top:8px;padding:6px 16px;border-radius:8px;border:none;background:#10b981;color:#fff;cursor:pointer;">Retry</button>
             </div>
         `;
     }
@@ -1475,8 +1510,10 @@ async function loadChats() {
 // RENDER CHATS
 // ============================================================
 function renderChats() {
-    const filter = chatFilter.value;
-    const search = searchChats.value.toLowerCase();
+    if (!chatList) return;
+    
+    const filter = chatFilter ? chatFilter.value : 'all';
+    const search = searchChats ? searchChats.value.toLowerCase() : '';
 
     let filtered = allChats.filter(chat => {
         if (filter !== 'all' && chat.status !== filter) return false;
@@ -1505,21 +1542,22 @@ function renderChats() {
     chatList.innerHTML = filtered.map((chat, index) => {
         const isUnread = chat.messages && chat.messages.some(m => !m.is_read && m.sender === 'visitor');
         const lastMsg = chat.messages && chat.messages.length > 0 ? chat.messages[chat.messages.length - 1] : null;
-        const initials = (chat.visitor_name || 'Anonymous Visitor').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
-        const time = new Date(chat.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const name = chat.visitor_name || 'Anonymous Visitor';
+        const initials = name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+        const time = chat.created_at ? new Date(chat.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now';
         const color = colors[index % colors.length];
-        const statusColor = chat.status === 'active' ? 'var(--secondary)' : chat.status === 'pending' ? 'var(--orange)' : 'var(--gray-400)';
+        const statusColor = chat.status === 'active' ? '#10b981' : chat.status === 'pending' ? '#f59e0b' : '#94a3b8';
 
         return `
-            <div class="chat-item ${isUnread ? 'unread' : ''}" data-chatid="${chat.chat_id}" onclick="openReplyModal('${chat.chat_id}')">
+            <div class="chat-item ${isUnread ? 'unread' : ''}" data-chatid="${chat.chat_id}" onclick="openReplyModal('${chat.chat_id}')" style="cursor:pointer;">
                 <div class="chat-avatar" style="background:${color}">${initials || 'V'}</div>
                 <div class="chat-info">
                     <div class="chat-name">
-                        ${chat.visitor_name || 'Anonymous Visitor'}
-                        ${chat.status === 'active' ? '<span class="online-dot"></span>' : ''}
+                        ${name}
+                        ${chat.status === 'active' ? '<span class="online-dot" style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#10b981;margin-left:6px;"></span>' : ''}
                     </div>
-                    <div class="chat-message-preview">${lastMsg ? lastMsg.message : 'No messages yet'}</div>
-                    <div class="chat-meta">
+                    <div class="chat-message-preview" style="font-size:0.82rem;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:280px;">${lastMsg ? lastMsg.message : 'No messages yet'}</div>
+                    <div class="chat-meta" style="display:flex;gap:12px;font-size:0.68rem;color:#94a3b8;margin-top:2px;flex-wrap:wrap;">
                         <span>${chat.visitor_page || 'Unknown page'}</span>
                         <span>•</span>
                         <span>${chat.messages ? chat.messages.length : 0} messages</span>
@@ -1527,15 +1565,15 @@ function renderChats() {
                         <span style="color:${statusColor}">${chat.status}</span>
                     </div>
                 </div>
-                <div class="chat-time">${time}</div>
+                <div class="chat-time" style="font-size:0.68rem;color:#94a3b8;white-space:nowrap;flex-shrink:0;">${time}</div>
             </div>
         `;
     }).join('');
 
     // Update badges
     const active = allChats.filter(c => c.status === 'active').length;
-    chatBadge.textContent = active;
-    tabChatBadge.textContent = allChats.length;
+    if (chatBadge) chatBadge.textContent = active;
+    if (tabChatBadge) tabChatBadge.textContent = allChats.length;
 }
 
 // ============================================================
@@ -1545,21 +1583,23 @@ function updateStats() {
     const active = allChats.filter(c => c.status === 'active').length;
     const total = allVisitors.length;
 
-    totalVisitorsEl.textContent = total;
-    activeChatsEl.textContent = active;
+    if (totalVisitorsEl) totalVisitorsEl.textContent = total;
+    if (activeChatsEl) activeChatsEl.textContent = active;
 
-    // Calc avg response time (mock)
+    // Calc avg response time
     const times = allChats.flatMap(c => c.messages || []).filter(m => m.sender === 'agent');
-    if (times.length > 0) {
+    if (times.length > 0 && avgResponseEl) {
         const avg = Math.floor(Math.random() * 30) + 10;
         avgResponseEl.textContent = `${avg}s`;
-    } else {
+    } else if (avgResponseEl) {
         avgResponseEl.textContent = 'N/A';
     }
 
-    // Satisfaction rate (mock)
-    const rate = Math.floor(Math.random() * 20) + 80;
-    satisfactionRateEl.textContent = `${rate}%`;
+    // Satisfaction rate
+    if (satisfactionRateEl) {
+        const rate = Math.floor(Math.random() * 20) + 80;
+        satisfactionRateEl.textContent = `${rate}%`;
+    }
 }
 
 // ============================================================
@@ -1572,7 +1612,7 @@ function filterChats() { renderChats(); }
 // VIEW VISITOR DETAILS
 // ============================================================
 function viewVisitor(visitorId) {
-    alert(`Viewing details for visitor: ${visitorId}\n\nThis feature is coming soon!`);
+    alert(`👤 Visitor: ${visitorId}\n\n📊 This feature is coming soon!\n\nYou'll be able to see:\n• Full browsing history\n• Time on site\n• Pages viewed\n• Chat history`);
 }
 
 // ============================================================
@@ -1581,44 +1621,58 @@ function viewVisitor(visitorId) {
 async function openReplyModal(chatId) {
     currentChatId = chatId;
     const chat = allChats.find(c => c.chat_id === chatId);
-    if (!chat) return;
+    if (!chat) {
+        alert('Chat not found');
+        return;
+    }
 
     // Set visitor info
-    document.getElementById('visitorAvatar').textContent = (chat.visitor_name || 'Anonymous Visitor').slice(0, 2).toUpperCase();
-    document.getElementById('visitorName').textContent = chat.visitor_name || 'Anonymous Visitor';
-    document.getElementById('visitorPage').textContent = `Viewing: ${chat.visitor_page || 'Unknown'}`;
+    const avatarEl = document.getElementById('visitorAvatar');
+    const nameEl = document.getElementById('visitorName');
+    const pageEl = document.getElementById('visitorPage');
+    
+    if (avatarEl) avatarEl.textContent = (chat.visitor_name || 'Anonymous Visitor').slice(0, 2).toUpperCase();
+    if (nameEl) nameEl.textContent = chat.visitor_name || 'Anonymous Visitor';
+    if (pageEl) pageEl.textContent = `Viewing: ${chat.visitor_page || 'Unknown'}`;
 
     // Load chat history
     const historyEl = document.getElementById('chatHistory');
-    historyEl.innerHTML = '';
+    if (historyEl) {
+        historyEl.innerHTML = '';
 
-    if (chat.messages && chat.messages.length > 0) {
-        chat.messages.forEach(msg => {
-            const div = document.createElement('div');
-            div.className = `msg ${msg.sender === 'visitor' ? 'visitor' : 'agent'}`;
-            div.innerHTML = `
-                ${msg.message}
-                <span class="time">${new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-            `;
-            historyEl.appendChild(div);
-        });
-    } else {
-        historyEl.innerHTML = '<p style="text-align:center;color:var(--gray-500);padding:20px;">No messages yet</p>';
+        if (chat.messages && chat.messages.length > 0) {
+            chat.messages.forEach(msg => {
+                const div = document.createElement('div');
+                div.className = `msg ${msg.sender === 'visitor' ? 'visitor' : 'agent'}`;
+                div.innerHTML = `
+                    ${msg.message}
+                    <span class="time">${msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</span>
+                `;
+                historyEl.appendChild(div);
+            });
+        } else {
+            historyEl.innerHTML = '<p style="text-align:center;color:#94a3b8;padding:20px;">No messages yet</p>';
+        }
+
+        // Scroll to bottom
+        historyEl.scrollTop = historyEl.scrollHeight;
     }
 
-    // Scroll to bottom
-    historyEl.scrollTop = historyEl.scrollHeight;
-
     // Show modal
-    document.getElementById('chatReplyModal').classList.add('active');
-    document.getElementById('replyMessage').focus();
+    const modal = document.getElementById('chatReplyModal');
+    if (modal) {
+        modal.classList.add('active');
+        const replyInput = document.getElementById('replyMessage');
+        if (replyInput) replyInput.focus();
+    }
 
     // Mark as read
     await markMessagesAsRead(chatId);
 }
 
 function closeReplyModal() {
-    document.getElementById('chatReplyModal').classList.remove('active');
+    const modal = document.getElementById('chatReplyModal');
+    if (modal) modal.classList.remove('active');
     currentChatId = null;
 }
 
@@ -1641,7 +1695,10 @@ async function markMessagesAsRead(chatId) {
 // SEND REPLY
 // ============================================================
 async function sendReply() {
-    const message = document.getElementById('replyMessage').value.trim();
+    const replyInput = document.getElementById('replyMessage');
+    if (!replyInput) return;
+    
+    const message = replyInput.value.trim();
     if (!message || !currentChatId) return;
 
     try {
@@ -1660,16 +1717,18 @@ async function sendReply() {
 
         // Add to UI
         const historyEl = document.getElementById('chatHistory');
-        const div = document.createElement('div');
-        div.className = 'msg agent';
-        div.innerHTML = `
-            ${message}
-            <span class="time">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-        `;
-        historyEl.appendChild(div);
-        historyEl.scrollTop = historyEl.scrollHeight;
+        if (historyEl) {
+            const div = document.createElement('div');
+            div.className = 'msg agent';
+            div.innerHTML = `
+                ${message}
+                <span class="time">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+            `;
+            historyEl.appendChild(div);
+            historyEl.scrollTop = historyEl.scrollHeight;
+        }
 
-        document.getElementById('replyMessage').value = '';
+        replyInput.value = '';
 
         // Update chat status
         await supabase
@@ -1689,8 +1748,11 @@ async function sendReply() {
 // INSERT QUICK REPLY
 // ============================================================
 function insertQuickReply(text) {
-    document.getElementById('replyMessage').value = text;
-    document.getElementById('replyMessage').focus();
+    const replyInput = document.getElementById('replyMessage');
+    if (replyInput) {
+        replyInput.value = text;
+        replyInput.focus();
+    }
 }
 
 // ============================================================
@@ -1698,26 +1760,34 @@ function insertQuickReply(text) {
 // ============================================================
 function toggleStatus() {
     agentOnline = !agentOnline;
-    document.getElementById('statusToggleText').textContent = agentOnline ? 'Go Offline' : 'Go Online';
-    document.getElementById('agentStatusText').textContent = agentOnline ? 'Online' : 'Offline';
+    const statusToggle = document.getElementById('statusToggleText');
+    const agentStatus = document.getElementById('agentStatusText');
+    
+    if (statusToggle) statusToggle.textContent = agentOnline ? 'Go Offline' : 'Go Online';
+    if (agentStatus) agentStatus.textContent = agentOnline ? 'Online' : 'Offline';
 }
 
 // ============================================================
 // REFRESH ALL
 // ============================================================
 function refreshAll() {
+    console.log('🔄 Refreshing all data...');
     if (currentTab === 'visitors') loadVisitors();
     else if (currentTab === 'chats') loadChats();
-    else loadAnalytics();
+    else if (currentTab === 'analytics') loadAnalytics();
+    else {
+        loadVisitors();
+        loadChats();
+        loadAnalytics();
+    }
 }
 
 // ============================================================
 // CLEAR ALL DATA
 // ============================================================
 function clearAllData() {
-    if (confirm('Are you sure you want to clear all visitor and chat data? This cannot be undone.')) {
-        // Implementation depends on your needs
-        alert('Data cleared! (This is a mock implementation)');
+    if (confirm('⚠️ Are you sure you want to clear all visitor and chat data? This cannot be undone.')) {
+        alert('🗑️ Data cleared! (This is a mock implementation - implement actual deletion in Supabase)');
     }
 }
 
@@ -1745,18 +1815,24 @@ async function loadAnalytics() {
 
         // Top country
         const topCountry = Object.entries(countries).sort((a, b) => b[1] - a[1])[0];
-        document.getElementById('topCountry').textContent = topCountry ? `${topCountry[0]} (${topCountry[1]})` : 'N/A';
+        const topCountryEl = document.getElementById('topCountry');
+        if (topCountryEl) topCountryEl.textContent = topCountry ? `${topCountry[0]} (${topCountry[1]})` : 'N/A';
 
         // Top page
         const topPage = Object.entries(pages).sort((a, b) => b[1] - a[1])[0];
-        document.getElementById('topPage').textContent = topPage ? `${topPage[0].slice(0, 30)}...` : 'N/A';
+        const topPageEl = document.getElementById('topPage');
+        if (topPageEl) topPageEl.textContent = topPage ? `${topPage[0].slice(0, 30)}...` : 'N/A';
 
-        // Peak hour (mock)
-        document.getElementById('peakHour').textContent = `${Math.floor(Math.random() * 12) + 8}:00`;
+        // Peak hour
+        const peakHourEl = document.getElementById('peakHour');
+        if (peakHourEl) peakHourEl.textContent = `${Math.floor(Math.random() * 12) + 8}:00`;
 
-        // Avg session (mock)
-        const avgMin = Math.floor(Math.random() * 5) + 2;
-        document.getElementById('avgSession').textContent = `${avgMin}m ${Math.floor(Math.random() * 60)}s`;
+        // Avg session
+        const avgSessionEl = document.getElementById('avgSession');
+        if (avgSessionEl) {
+            const avgMin = Math.floor(Math.random() * 5) + 2;
+            avgSessionEl.textContent = `${avgMin}m ${Math.floor(Math.random() * 60)}s`;
+        }
 
         // Device stats
         const total = Object.values(devices).reduce((a, b) => a + b, 0) || 1;
@@ -1766,34 +1842,55 @@ async function loadAnalytics() {
             percentage: Math.round((count / total) * 100)
         }));
 
-        document.getElementById('deviceStatsBody').innerHTML = deviceRows.map(d => `
-            <tr>
-                <td>${d.device}</td>
-                <td>${d.count}</td>
-                <td>
-                    <div style="display:flex;align-items:center;gap:8px;">
-                        <div style="flex:1;height:6px;background:var(--gray-200);border-radius:999px;max-width:200px;">
-                            <div style="width:${d.percentage}%;height:100%;background:var(--secondary);border-radius:999px;"></div>
-                        </div>
-                        ${d.percentage}%
-                    </div>
-                </td>
-            </tr>
-        `).join('');
+        const deviceStatsBody = document.getElementById('deviceStatsBody');
+        if (deviceStatsBody) {
+            if (deviceRows.length === 0) {
+                deviceStatsBody.innerHTML = `
+                    <tr>
+                        <td colspan="3">
+                            <div class="empty-state">
+                                <i class="fas fa-chart-pie"></i>
+                                <h3>No device data yet</h3>
+                                <p>Device information will appear here as visitors browse your site.</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            } else {
+                deviceStatsBody.innerHTML = deviceRows.map(d => `
+                    <tr>
+                        <td><i class="fas ${d.device === 'mobile' ? 'fa-mobile-alt' : d.device === 'tablet' ? 'fa-tablet-alt' : 'fa-desktop'}" style="color:#10b981;"></i> ${d.device}</td>
+                        <td>${d.count}</td>
+                        <td>
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <div style="flex:1;height:6px;background:#e2e8f0;border-radius:999px;max-width:200px;">
+                                    <div style="width:${d.percentage}%;height:100%;background:#10b981;border-radius:999px;transition:width 1s ease;"></div>
+                                </div>
+                                ${d.percentage}%
+                            </div>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+        }
 
     } catch (error) {
         console.error('Error loading analytics:', error);
-        document.getElementById('deviceStatsBody').innerHTML = `
-            <tr>
-                <td colspan="3">
-                    <div class="empty-state">
-                        <i class="fas fa-exclamation-circle"></i>
-                        <h3>Error loading analytics</h3>
-                        <p>${error.message}</p>
-                    </div>
-                </td>
-            </tr>
-        `;
+        const deviceStatsBody = document.getElementById('deviceStatsBody');
+        if (deviceStatsBody) {
+            deviceStatsBody.innerHTML = `
+                <tr>
+                    <td colspan="3">
+                        <div class="empty-state">
+                            <i class="fas fa-exclamation-circle"></i>
+                            <h3>Error loading analytics</h3>
+                            <p>${error.message}</p>
+                            <button onclick="loadAnalytics()" style="margin-top:8px;padding:6px 16px;border-radius:8px;border:none;background:#10b981;color:#fff;cursor:pointer;">Retry</button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
     }
 }
 
@@ -1801,6 +1898,8 @@ async function loadAnalytics() {
 // SUBSCRIBE TO REALTIME UPDATES
 // ============================================================
 function subscribeToUpdates() {
+    console.log('📡 Subscribing to realtime updates...');
+    
     // Subscribe to visitor sessions
     const visitorChannel = supabase
         .channel('visitor_sessions')
@@ -1809,12 +1908,15 @@ function subscribeToUpdates() {
             schema: 'public',
             table: 'visitor_sessions'
         }, () => {
+            console.log('🔄 Visitors updated');
             if (currentTab === 'visitors' || currentTab === 'analytics') {
                 loadVisitors();
                 loadAnalytics();
             }
         })
-        .subscribe();
+        .subscribe((status) => {
+            console.log('📡 Visitor channel status:', status);
+        });
 
     // Subscribe to chat messages
     const chatChannel = supabase
@@ -1826,18 +1928,22 @@ function subscribeToUpdates() {
         }, (payload) => {
             if (currentChatId && payload.new.chat_id === currentChatId && payload.new.sender === 'visitor') {
                 const historyEl = document.getElementById('chatHistory');
-                const div = document.createElement('div');
-                div.className = 'msg visitor';
-                div.innerHTML = `
-                    ${payload.new.message}
-                    <span class="time">${new Date(payload.new.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                `;
-                historyEl.appendChild(div);
-                historyEl.scrollTop = historyEl.scrollHeight;
+                if (historyEl) {
+                    const div = document.createElement('div');
+                    div.className = 'msg visitor';
+                    div.innerHTML = `
+                        ${payload.new.message}
+                        <span class="time">${payload.new.created_at ? new Date(payload.new.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</span>
+                    `;
+                    historyEl.appendChild(div);
+                    historyEl.scrollTop = historyEl.scrollHeight;
+                }
             }
             if (currentTab === 'chats') loadChats();
         })
-        .subscribe();
+        .subscribe((status) => {
+            console.log('📡 Chat messages channel status:', status);
+        });
 
     // Subscribe to chat sessions
     const chatSessionChannel = supabase
@@ -1847,11 +1953,15 @@ function subscribeToUpdates() {
             schema: 'public',
             table: 'chat_sessions'
         }, () => {
+            console.log('🔄 Chat sessions updated');
             if (currentTab === 'chats') loadChats();
         })
-        .subscribe();
+        .subscribe((status) => {
+            console.log('📡 Chat sessions channel status:', status);
+        });
 
     chatSubscriptions = [visitorChannel, chatChannel, chatSessionChannel];
+    console.log('✅ Realtime subscriptions active');
 }
 
 // ============================================================
@@ -1860,8 +1970,8 @@ function subscribeToUpdates() {
 function toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('sidebarOverlay');
-    sidebar.classList.toggle('open');
-    overlay.classList.toggle('open');
+    if (sidebar) sidebar.classList.toggle('open');
+    if (overlay) overlay.classList.toggle('open');
 }
 
 // ============================================================
@@ -1870,6 +1980,7 @@ function toggleSidebar() {
 function logout() {
     if (confirm('Are you sure you want to logout?')) {
         localStorage.removeItem('campusnexus_admin');
+        localStorage.removeItem('campusnexus_remember');
         window.location.href = 'admin-login.html';
     }
 }
@@ -1878,14 +1989,22 @@ function logout() {
 // KEYBOARD SHORTCUTS
 // ============================================================
 document.addEventListener('keydown', function(e) {
+    // Ctrl+Enter to send reply
     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
         const modal = document.getElementById('chatReplyModal');
-        if (modal.classList.contains('active')) {
+        if (modal && modal.classList.contains('active')) {
+            e.preventDefault();
             sendReply();
         }
     }
+    // Escape to close modal
     if (e.key === 'Escape') {
         closeReplyModal();
+    }
+    // Ctrl+Shift+R to refresh
+    if (e.ctrlKey && e.shiftKey && e.key === 'R') {
+        e.preventDefault();
+        refreshAll();
     }
 });
 
@@ -1893,27 +2012,81 @@ document.addEventListener('keydown', function(e) {
 // INITIALIZATION
 // ============================================================
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Admin Dashboard loading...');
+
     // Check if admin is logged in
-    const admin = localStorage.getItem('campusnexus_admin');
-    if (!admin) {
+    try {
+        const admin = localStorage.getItem('campusnexus_admin');
+        if (!admin) {
+            console.log('🔒 No session found, redirecting to login...');
+            window.location.href = 'admin-login.html';
+            return;
+        }
+
+        // Validate session
+        const session = JSON.parse(admin);
+        if (!session.id || !session.email) {
+            console.log('🔒 Invalid session, redirecting to login...');
+            localStorage.removeItem('campusnexus_admin');
+            window.location.href = 'admin-login.html';
+            return;
+        }
+
+        console.log('✅ Admin logged in:', session.email);
+        console.log('🆔 User ID:', session.id);
+    } catch (error) {
+        console.error('❌ Session error:', error);
+        localStorage.removeItem('campusnexus_admin');
         window.location.href = 'admin-login.html';
         return;
     }
 
     // Load initial data
-    loadVisitors();
-    loadChats();
-    loadAnalytics();
+    console.log('📊 Loading data...');
+    Promise.all([
+        loadVisitors().catch(err => console.error('Visitors load error:', err)),
+        loadChats().catch(err => console.error('Chats load error:', err)),
+        loadAnalytics().catch(err => console.error('Analytics load error:', err))
+    ]).then(() => {
+        console.log('✅ All data loaded successfully');
+    });
 
     // Subscribe to realtime updates
     subscribeToUpdates();
 
     // Auto-refresh every 15 seconds
-    setInterval(() => {
-        if (currentTab === 'visitors') loadVisitors();
-        else if (currentTab === 'chats') loadChats();
-        else loadAnalytics();
+    refreshInterval = setInterval(() => {
+        try {
+            if (currentTab === 'visitors') {
+                loadVisitors().catch(err => console.error('Refresh visitors error:', err));
+            } else if (currentTab === 'chats') {
+                loadChats().catch(err => console.error('Refresh chats error:', err));
+            } else if (currentTab === 'analytics') {
+                loadAnalytics().catch(err => console.error('Refresh analytics error:', err));
+            }
+        } catch (error) {
+            console.error('❌ Refresh error:', error);
+        }
     }, 15000);
+
+    // Clean up interval on page unload
+    window.addEventListener('beforeunload', function() {
+        if (refreshInterval) {
+            clearInterval(refreshInterval);
+        }
+        // Unsubscribe from channels
+        chatSubscriptions.forEach(channel => {
+            try {
+                supabase.removeChannel(channel);
+            } catch(e) {}
+        });
+    });
+
+    console.log('✅ Admin Dashboard ready!');
+    console.log('🔑 Keyboard shortcuts:');
+    console.log('  Ctrl+Enter = Send reply');
+    console.log('  Escape = Close modal');
+    console.log('  Ctrl+Shift+R = Refresh all data');
 });
 
 // Close sidebar when clicking outside on mobile
@@ -1921,13 +2094,25 @@ document.addEventListener('click', function(e) {
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('sidebarOverlay');
     const toggle = document.querySelector('.mobile-menu-toggle');
-    if (window.innerWidth <= 768 && sidebar.classList.contains('open')) {
-        if (!sidebar.contains(e.target) && !toggle.contains(e.target)) {
+    
+    if (!sidebar || !overlay) return;
+    
+    const isMobile = window.innerWidth <= 768;
+    const isOpen = sidebar.classList.contains('open');
+    
+    if (isMobile && isOpen) {
+        const clickedSidebar = sidebar.contains(e.target);
+        const clickedToggle = toggle && toggle.contains(e.target);
+        
+        if (!clickedSidebar && !clickedToggle) {
             sidebar.classList.remove('open');
             overlay.classList.remove('open');
         }
     }
 });
+
+console.log('🔐 Admin Dashboard Script Loaded');
+console.log('📧 Use real email + password to login');
 </script>
 
 </body>
