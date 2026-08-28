@@ -1267,15 +1267,15 @@
 
 <script>
 // ============================================================
-// SUPABASE CONFIGURATION
+// SUPABASE CONFIGURATION - FIXED (using supabaseClient)
 // ============================================================
 const SUPABASE_URL = 'https://irahplkvocaakjxuisto.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlyYWhwbGt2b2NhYWtqeHVpc3RvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4ODY5ODQsImV4cCI6MjEwMzQ2Mjk4NH0.BFOwdRVDz4r1oYgUjm8zQbthqblGRq4c3WQWQaOhu7g';
 
-// Initialize Supabase client
-let supabase;
+// Initialize Supabase client - use different name to avoid conflicts
+let supabaseClient;
 try {
-    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     console.log('✅ Supabase initialized');
 } catch (error) {
     console.error('❌ Supabase initialization failed:', error);
@@ -1316,12 +1316,10 @@ const chatFilter = document.getElementById('chatFilter');
 function switchTab(tab) {
     currentTab = tab;
 
-    // Update tabs
     document.querySelectorAll('.tab').forEach(el => {
         el.classList.toggle('active', el.dataset.tab === tab);
     });
 
-    // Update content
     document.querySelectorAll('.tab-content').forEach(el => {
         el.classList.remove('active');
     });
@@ -1332,12 +1330,10 @@ function switchTab(tab) {
         tabElement.classList.add('active');
     }
 
-    // Update sidebar
     document.querySelectorAll('.sidebar-nav a').forEach(el => {
         el.classList.remove('active');
     });
 
-    // Load data based on tab
     if (tab === 'visitors') loadVisitors();
     else if (tab === 'chats') loadChats();
     else if (tab === 'analytics') loadAnalytics();
@@ -1350,7 +1346,6 @@ async function loadVisitors() {
     if (!visitorTableBody) return;
     
     try {
-        // Show loading
         visitorTableBody.innerHTML = `
             <tr>
                 <td colspan="7">
@@ -1359,7 +1354,7 @@ async function loadVisitors() {
             </tr>
         `;
 
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('visitor_sessions')
             .select('*')
             .order('last_active', { ascending: false })
@@ -1461,7 +1456,6 @@ function renderVisitors() {
         `;
     }).join('');
 
-    // Update badges
     const online = allVisitors.filter(v => v.status === 'online').length;
     if (visitorBadge) visitorBadge.textContent = online;
     if (tabVisitorBadge) tabVisitorBadge.textContent = allVisitors.length;
@@ -1474,12 +1468,11 @@ async function loadChats() {
     if (!chatList) return;
     
     try {
-        // Show loading
         chatList.innerHTML = `
             <div class="loading"><div class="spinner"></div></div>
         `;
 
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('chat_sessions')
             .select(`
                 *,
@@ -1554,10 +1547,10 @@ function renderChats() {
                 <div class="chat-info">
                     <div class="chat-name">
                         ${name}
-                        ${chat.status === 'active' ? '<span class="online-dot" style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#10b981;margin-left:6px;"></span>' : ''}
+                        ${chat.status === 'active' ? '<span class="online-dot"></span>' : ''}
                     </div>
-                    <div class="chat-message-preview" style="font-size:0.82rem;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:280px;">${lastMsg ? lastMsg.message : 'No messages yet'}</div>
-                    <div class="chat-meta" style="display:flex;gap:12px;font-size:0.68rem;color:#94a3b8;margin-top:2px;flex-wrap:wrap;">
+                    <div class="chat-message-preview">${lastMsg ? lastMsg.message : 'No messages yet'}</div>
+                    <div class="chat-meta">
                         <span>${chat.visitor_page || 'Unknown page'}</span>
                         <span>•</span>
                         <span>${chat.messages ? chat.messages.length : 0} messages</span>
@@ -1565,12 +1558,11 @@ function renderChats() {
                         <span style="color:${statusColor}">${chat.status}</span>
                     </div>
                 </div>
-                <div class="chat-time" style="font-size:0.68rem;color:#94a3b8;white-space:nowrap;flex-shrink:0;">${time}</div>
+                <div class="chat-time">${time}</div>
             </div>
         `;
     }).join('');
 
-    // Update badges
     const active = allChats.filter(c => c.status === 'active').length;
     if (chatBadge) chatBadge.textContent = active;
     if (tabChatBadge) tabChatBadge.textContent = allChats.length;
@@ -1586,7 +1578,6 @@ function updateStats() {
     if (totalVisitorsEl) totalVisitorsEl.textContent = total;
     if (activeChatsEl) activeChatsEl.textContent = active;
 
-    // Calc avg response time
     const times = allChats.flatMap(c => c.messages || []).filter(m => m.sender === 'agent');
     if (times.length > 0 && avgResponseEl) {
         const avg = Math.floor(Math.random() * 30) + 10;
@@ -1595,7 +1586,6 @@ function updateStats() {
         avgResponseEl.textContent = 'N/A';
     }
 
-    // Satisfaction rate
     if (satisfactionRateEl) {
         const rate = Math.floor(Math.random() * 20) + 80;
         satisfactionRateEl.textContent = `${rate}%`;
@@ -1626,7 +1616,6 @@ async function openReplyModal(chatId) {
         return;
     }
 
-    // Set visitor info
     const avatarEl = document.getElementById('visitorAvatar');
     const nameEl = document.getElementById('visitorName');
     const pageEl = document.getElementById('visitorPage');
@@ -1635,7 +1624,6 @@ async function openReplyModal(chatId) {
     if (nameEl) nameEl.textContent = chat.visitor_name || 'Anonymous Visitor';
     if (pageEl) pageEl.textContent = `Viewing: ${chat.visitor_page || 'Unknown'}`;
 
-    // Load chat history
     const historyEl = document.getElementById('chatHistory');
     if (historyEl) {
         historyEl.innerHTML = '';
@@ -1654,11 +1642,9 @@ async function openReplyModal(chatId) {
             historyEl.innerHTML = '<p style="text-align:center;color:#94a3b8;padding:20px;">No messages yet</p>';
         }
 
-        // Scroll to bottom
         historyEl.scrollTop = historyEl.scrollHeight;
     }
 
-    // Show modal
     const modal = document.getElementById('chatReplyModal');
     if (modal) {
         modal.classList.add('active');
@@ -1666,7 +1652,6 @@ async function openReplyModal(chatId) {
         if (replyInput) replyInput.focus();
     }
 
-    // Mark as read
     await markMessagesAsRead(chatId);
 }
 
@@ -1681,7 +1666,7 @@ function closeReplyModal() {
 // ============================================================
 async function markMessagesAsRead(chatId) {
     try {
-        await supabase
+        await supabaseClient
             .from('chat_messages')
             .update({ is_read: true })
             .eq('chat_id', chatId)
@@ -1702,7 +1687,7 @@ async function sendReply() {
     if (!message || !currentChatId) return;
 
     try {
-        await supabase
+        await supabaseClient
             .from('chat_messages')
             .insert([
                 {
@@ -1715,7 +1700,6 @@ async function sendReply() {
                 }
             ]);
 
-        // Add to UI
         const historyEl = document.getElementById('chatHistory');
         if (historyEl) {
             const div = document.createElement('div');
@@ -1730,8 +1714,7 @@ async function sendReply() {
 
         replyInput.value = '';
 
-        // Update chat status
-        await supabase
+        await supabaseClient
             .from('chat_sessions')
             .update({ status: 'active' })
             .eq('chat_id', currentChatId);
@@ -1796,13 +1779,12 @@ function clearAllData() {
 // ============================================================
 async function loadAnalytics() {
     try {
-        const { data: visitors, error } = await supabase
+        const { data: visitors, error } = await supabaseClient
             .from('visitor_sessions')
             .select('*');
 
         if (error) throw error;
 
-        // Calculate analytics
         const countries = {};
         const pages = {};
         const devices = {};
@@ -1813,28 +1795,23 @@ async function loadAnalytics() {
             if (v.device_type) devices[v.device_type] = (devices[v.device_type] || 0) + 1;
         });
 
-        // Top country
         const topCountry = Object.entries(countries).sort((a, b) => b[1] - a[1])[0];
         const topCountryEl = document.getElementById('topCountry');
         if (topCountryEl) topCountryEl.textContent = topCountry ? `${topCountry[0]} (${topCountry[1]})` : 'N/A';
 
-        // Top page
         const topPage = Object.entries(pages).sort((a, b) => b[1] - a[1])[0];
         const topPageEl = document.getElementById('topPage');
         if (topPageEl) topPageEl.textContent = topPage ? `${topPage[0].slice(0, 30)}...` : 'N/A';
 
-        // Peak hour
         const peakHourEl = document.getElementById('peakHour');
         if (peakHourEl) peakHourEl.textContent = `${Math.floor(Math.random() * 12) + 8}:00`;
 
-        // Avg session
         const avgSessionEl = document.getElementById('avgSession');
         if (avgSessionEl) {
             const avgMin = Math.floor(Math.random() * 5) + 2;
             avgSessionEl.textContent = `${avgMin}m ${Math.floor(Math.random() * 60)}s`;
         }
 
-        // Device stats
         const total = Object.values(devices).reduce((a, b) => a + b, 0) || 1;
         const deviceRows = Object.entries(devices).map(([device, count]) => ({
             device: device || 'Unknown',
@@ -1900,8 +1877,7 @@ async function loadAnalytics() {
 function subscribeToUpdates() {
     console.log('📡 Subscribing to realtime updates...');
     
-    // Subscribe to visitor sessions
-    const visitorChannel = supabase
+    const visitorChannel = supabaseClient
         .channel('visitor_sessions')
         .on('postgres_changes', {
             event: '*',
@@ -1918,8 +1894,7 @@ function subscribeToUpdates() {
             console.log('📡 Visitor channel status:', status);
         });
 
-    // Subscribe to chat messages
-    const chatChannel = supabase
+    const chatChannel = supabaseClient
         .channel('chat_messages')
         .on('postgres_changes', {
             event: 'INSERT',
@@ -1945,8 +1920,7 @@ function subscribeToUpdates() {
             console.log('📡 Chat messages channel status:', status);
         });
 
-    // Subscribe to chat sessions
-    const chatSessionChannel = supabase
+    const chatSessionChannel = supabaseClient
         .channel('chat_sessions')
         .on('postgres_changes', {
             event: '*',
@@ -1989,7 +1963,6 @@ function logout() {
 // KEYBOARD SHORTCUTS
 // ============================================================
 document.addEventListener('keydown', function(e) {
-    // Ctrl+Enter to send reply
     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
         const modal = document.getElementById('chatReplyModal');
         if (modal && modal.classList.contains('active')) {
@@ -1997,11 +1970,9 @@ document.addEventListener('keydown', function(e) {
             sendReply();
         }
     }
-    // Escape to close modal
     if (e.key === 'Escape') {
         closeReplyModal();
     }
-    // Ctrl+Shift+R to refresh
     if (e.ctrlKey && e.shiftKey && e.key === 'R') {
         e.preventDefault();
         refreshAll();
@@ -2014,7 +1985,6 @@ document.addEventListener('keydown', function(e) {
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 Admin Dashboard loading...');
 
-    // Check if admin is logged in
     try {
         const admin = localStorage.getItem('campusnexus_admin');
         if (!admin) {
@@ -2023,7 +1993,6 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // Validate session
         const session = JSON.parse(admin);
         if (!session.id || !session.email) {
             console.log('🔒 Invalid session, redirecting to login...');
@@ -2041,7 +2010,6 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
 
-    // Load initial data
     console.log('📊 Loading data...');
     Promise.all([
         loadVisitors().catch(err => console.error('Visitors load error:', err)),
@@ -2051,10 +2019,8 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('✅ All data loaded successfully');
     });
 
-    // Subscribe to realtime updates
     subscribeToUpdates();
 
-    // Auto-refresh every 15 seconds
     refreshInterval = setInterval(() => {
         try {
             if (currentTab === 'visitors') {
@@ -2069,15 +2035,13 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }, 15000);
 
-    // Clean up interval on page unload
     window.addEventListener('beforeunload', function() {
         if (refreshInterval) {
             clearInterval(refreshInterval);
         }
-        // Unsubscribe from channels
         chatSubscriptions.forEach(channel => {
             try {
-                supabase.removeChannel(channel);
+                supabaseClient.removeChannel(channel);
             } catch(e) {}
         });
     });
