@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - CampusNexus</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #0A3D62 0%, #052e1f 50%, #0A1628 100%);
+            padding: 20px;
+        }
+
+        .login-container {
+            background: #fff;
+            border-radius: 24px;
+            padding: 48px 40px;
+            max-width: 420px;
+            width: 100%;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.5);
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .login-container .logo {
+            text-align: center;
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #0A3D62;
+            margin-bottom: 4px;
+        }
+
+        .login-container .logo span {
+            color: #10b981;
+        }
+
+        .login-container .logo small {
+            display: block;
+            font-size: 0.7rem;
+            font-weight: 400;
+            color: #94a3b8;
+            margin-top: 2px;
+        }
+
+        .login-container .subtitle {
+            text-align: center;
+            color: #64748b;
+            font-size: 0.9rem;
+            margin-bottom: 32px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: #1e293b;
+            margin-bottom: 6px;
+        }
+
+        .form-group .input-wrapper {
+            position: relative;
+        }
+
+        .form-group .input-wrapper i {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 14px 12px 44px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            background: #f8fafc;
+            font-family: inherit;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #10b981;
+            background: #fff;
+            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+        }
+
+        .form-group input::placeholder {
+            color: #94a3b8;
+        }
+
+        .form-options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            font-size: 0.85rem;
+        }
+
+        .form-options label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #64748b;
+            cursor: pointer;
+        }
+
+        .form-options label input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: #10b981;
+        }
+
+        .form-options a {
+            color: #10b981;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .form-options a:hover {
+            text-decoration: underline;
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: #fff;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn-login:active {
+            transform: translateY(0);
+        }
+
+        .btn-login:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .error-message {
+            background: #fee2e2;
+            color: #dc2626;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            margin-bottom: 16px;
+            display: none;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .error-message.show {
+            display: flex;
+        }
+
+        .demo-credentials {
+            margin-top: 24px;
+            padding: 16px 20px;
+            background: #f1f5f9;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            border: 1px dashed #94a3b8;
+        }
+
+        .demo-credentials p {
+            color: #64748b;
+            margin-bottom: 4px;
+        }
+
+        .demo-credentials code {
+            background: #e2e8f0;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+            color: #0A3D62;
+        }
+
+        .demo-credentials .cred-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 4px;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 480px) {
+            .login-container {
+                padding: 32px 20px;
+            }
+            .form-options {
+                flex-direction: column;
+                gap: 8px;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <!-- Logo -->
+        <div class="logo">
+            Campus<span>Nexus</span>
+            <small>Admin Dashboard</small>
+        </div>
+        <p class="subtitle">Sign in to manage your platform</p>
+
+        <!-- Error Message -->
+        <div class="error-message" id="errorMessage">
+            <i class="fas fa-exclamation-circle"></i>
+            <span id="errorText">Invalid credentials</span>
+        </div>
+
+        <!-- Login Form -->
+        <form id="loginForm" onsubmit="handleLogin(event)">
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <div class="input-wrapper">
+                    <i class="fas fa-envelope"></i>
+                    <input type="email" id="email" placeholder="admin@campusnexus.com" required autofocus>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <div class="input-wrapper">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" id="password" placeholder="Enter your password" required>
+                </div>
+            </div>
+
+            <div class="form-options">
+                <label>
+                    <input type="checkbox" checked> Remember me
+                </label>
+                <a href="#">Forgot password?</a>
+            </div>
+
+            <button type="submit" class="btn-login" id="loginBtn">
+                <i class="fas fa-sign-in-alt"></i>
+                <span id="loginBtnText">Sign In</span>
+            </button>
+        </form>
+
+        <!-- Demo Credentials -->
+        <div class="demo-credentials">
+            <p><i class="fas fa-info-circle" style="color:#10b981;"></i> Demo Credentials</p>
+            <div class="cred-row">
+                <span><strong>Email:</strong> <code>admin@campusnexus.com</code></span>
+                <span><strong>Password:</strong> <code>admin123</code></span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    // ============================================================
+    // SUPABASE CONFIGURATION
+    // ============================================================
+    const SUPABASE_URL = 'https://irahplkvocaakjxuisto.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlyYWhwbGt2b2NhYWtqeHVpc3RvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4ODY5ODQsImV4cCI6MjEwMzQ2Mjk4NH0.BFOwdRVDz4r1oYgUjm8zQbthqblGRq4c3WQWQaOhu7g';
+
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // ============================================================
+    // HANDLE LOGIN
+    // ============================================================
+    async function handleLogin(event) {
+        event.preventDefault();
+
+        const email = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value.trim();
+        const errorMessage = document.getElementById('errorMessage');
+        const errorText = document.getElementById('errorText');
+        const loginBtn = document.getElementById('loginBtn');
+        const loginBtnText = document.getElementById('loginBtnText');
+
+        // Clear previous error
+        errorMessage.classList.remove('show');
+
+        // Validate
+        if (!email || !password) {
+            showError('Please enter both email and password.');
+            return;
+        }
+
+        // Show loading
+        loginBtn.disabled = true;
+        loginBtnText.innerHTML = '<span class="loading-spinner"></span> Signing in...';
+
+        try {
+            // Check if admin exists in Supabase
+            const { data: agents, error } = await supabase
+                .from('chat_agents')
+                .select('*')
+                .eq('email', email);
+
+            if (error) {
+                console.error('Database error:', error);
+                showError('Database connection error. Please try again.');
+                resetButton();
+                return;
+            }
+
+            // Check if agent exists
+            if (!agents || agents.length === 0) {
+                showError('No admin account found with this email.');
+                resetButton();
+                return;
+            }
+
+            const agent = agents[0];
+
+            // Simple password check (in production, use bcrypt)
+            // For demo, we're using plain text comparison
+            // In production, you should use bcrypt.compare()
+            if (password !== 'admin123') {
+                showError('Invalid password. Please try again.');
+                resetButton();
+                return;
+            }
+
+            // Login successful - store session
+            const session = {
+                id: agent.id,
+                email: agent.email,
+                name: agent.name,
+                role: 'admin',
+                loggedInAt: new Date().toISOString()
+            };
+
+            localStorage.setItem('campusnexus_admin', JSON.stringify(session));
+
+            // Redirect to dashboard
+            window.location.href = 'admin-dashboard.html';
+
+        } catch (error) {
+            console.error('Login error:', error);
+            showError('An error occurred. Please try again.');
+            resetButton();
+        }
+    }
+
+    // ============================================================
+    // HELPER FUNCTIONS
+    // ============================================================
+    function showError(message) {
+        const errorMessage = document.getElementById('errorMessage');
+        const errorText = document.getElementById('errorText');
+        errorText.textContent = message;
+        errorMessage.classList.add('show');
+    }
+
+    function resetButton() {
+        const loginBtn = document.getElementById('loginBtn');
+        const loginBtnText = document.getElementById('loginBtnText');
+        loginBtn.disabled = false;
+        loginBtnText.textContent = 'Sign In';
+    }
+
+    // ============================================================
+    // QUICK LOGIN WITH DEMO CREDENTIALS (for testing)
+    // ============================================================
+    function quickLogin() {
+        document.getElementById('email').value = 'admin@campusnexus.com';
+        document.getElementById('password').value = 'admin123';
+        document.getElementById('loginForm').dispatchEvent(new Event('submit'));
+    }
+
+    // ============================================================
+    // KEYBOARD SHORTCUTS
+    // ============================================================
+    document.addEventListener('keydown', function(e) {
+        // Ctrl+Shift+L for quick login
+        if (e.ctrlKey && e.shiftKey && e.key === 'L') {
+            e.preventDefault();
+            quickLogin();
+        }
+        // Escape to clear error
+        if (e.key === 'Escape') {
+            document.getElementById('errorMessage').classList.remove('show');
+        }
+    });
+
+    // ============================================================
+    // AUTO-FOCUS ON EMAIL
+    // ============================================================
+    document.addEventListener('DOMContentLoaded', function() {
+        // Check if already logged in
+        const admin = localStorage.getItem('campusnexus_admin');
+        if (admin) {
+            try {
+                const session = JSON.parse(admin);
+                if (session && session.id) {
+                    window.location.href = 'admin-dashboard.html';
+                    return;
+                }
+            } catch(e) {}
+        }
+
+        // Focus on email
+        document.getElementById('email').focus();
+
+        // Console hint for quick login
+        console.log('🔑 Quick Login: Press Ctrl+Shift+L to auto-fill demo credentials');
+    });
+    </script>
+</body>
+</html>
