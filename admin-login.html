@@ -344,7 +344,7 @@
     </div>
 
     <!-- ============================================================
-         SUPABASE CONFIG
+         SUPABASE CONFIG - FIXED
          ============================================================ -->
     <script>
         // ============================================================
@@ -353,7 +353,8 @@
         const SUPABASE_URL = 'https://irahplkvocaakjxuisto.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlyYWhwbGt2b2NhYWtqeHVpc3RvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4ODY5ODQsImV4cCI6MjEwMzQ2Mjk4NH0.BFOwdRVDz4r1oYgUjm8zQbthqblGRq4c3WQWQaOhu7g';
 
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        // Initialize Supabase client - use a different variable name to avoid conflicts
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         // ============================================================
         // STATE
@@ -361,7 +362,7 @@
         let isSignupMode = false;
 
         // ============================================================
-        // HANDLE LOGIN (REAL SUPABASE AUTH)
+        // HANDLE LOGIN
         // ============================================================
         async function handleLogin(event) {
             event.preventDefault();
@@ -375,23 +376,19 @@
             const loginBtn = document.getElementById('loginBtn');
             const loginBtnText = document.getElementById('loginBtnText');
 
-            // Clear previous messages
             errorMessage.classList.remove('show');
             document.getElementById('successMessage').classList.remove('show');
 
-            // Validate
             if (!email || !password) {
                 showError('Please enter both email and password.');
                 return;
             }
 
-            // Show loading
             loginBtn.disabled = true;
             loginBtnText.innerHTML = '<span class="loading-spinner"></span> Signing in...';
 
             try {
-                // Attempt login with Supabase Auth
-                const { data, error } = await supabase.auth.signInWithPassword({
+                const { data, error } = await supabaseClient.auth.signInWithPassword({
                     email: email,
                     password: password
                 });
@@ -410,11 +407,9 @@
                     return;
                 }
 
-                // Login successful - check if user has admin role
                 const user = data.user;
 
-                // Get user profile from users table
-                const { data: profile, error: profileError } = await supabase
+                const { data: profile, error: profileError } = await supabaseClient
                     .from('users')
                     .select('*')
                     .eq('id', user.id)
@@ -424,7 +419,6 @@
                     console.error('Profile error:', profileError);
                 }
 
-                // Create session
                 const session = {
                     id: user.id,
                     email: user.email,
@@ -436,12 +430,10 @@
 
                 localStorage.setItem('campusnexus_admin', JSON.stringify(session));
 
-                // If remember me, store for longer
                 if (rememberMe) {
                     localStorage.setItem('campusnexus_remember', 'true');
                 }
 
-                // Redirect to dashboard
                 window.location.href = 'admin-dashboard.html';
 
             } catch (error) {
@@ -452,32 +444,29 @@
         }
 
         // ============================================================
-        // SHOW SIGNUP FORM
+        // SHOW SIGNUP
         // ============================================================
         function showSignup() {
-            const container = document.querySelector('.login-container');
             const subtitle = document.querySelector('.subtitle');
             const form = document.getElementById('loginForm');
             const btnSignup = document.querySelector('.btn-signup');
-            const divider = document.querySelector('.divider');
 
             if (isSignupMode) {
-                // Switch back to login
                 isSignupMode = false;
                 subtitle.textContent = 'Sign in to manage your platform';
                 form.querySelector('button[type="submit"]').innerHTML = '<i class="fas fa-sign-in-alt"></i> <span id="loginBtnText">Sign In</span>';
                 btnSignup.innerHTML = '<i class="fas fa-user-plus"></i> Create New Account';
                 document.querySelector('.form-options').style.display = 'flex';
-                document.querySelector('.form-options').style.display = 'flex';
+                
+                const nameGroup = document.getElementById('nameGroup');
+                if (nameGroup) nameGroup.remove();
             } else {
-                // Switch to signup
                 isSignupMode = true;
                 subtitle.textContent = 'Create a new admin account';
                 form.querySelector('button[type="submit"]').innerHTML = '<i class="fas fa-user-plus"></i> <span id="loginBtnText">Create Account</span>';
                 btnSignup.innerHTML = '<i class="fas fa-sign-in-alt"></i> Back to Sign In';
                 document.querySelector('.form-options').style.display = 'none';
 
-                // Add name field
                 const nameGroup = document.createElement('div');
                 nameGroup.className = 'form-group';
                 nameGroup.id = 'nameGroup';
@@ -509,11 +498,9 @@
             const loginBtn = document.getElementById('loginBtn');
             const loginBtnText = document.getElementById('loginBtnText');
 
-            // Clear messages
             errorMessage.classList.remove('show');
             successMessage.classList.remove('show');
 
-            // Validate
             if (!name || !email || !password) {
                 showError('Please fill in all fields.');
                 return;
@@ -524,13 +511,11 @@
                 return;
             }
 
-            // Show loading
             loginBtn.disabled = true;
             loginBtnText.innerHTML = '<span class="loading-spinner"></span> Creating account...';
 
             try {
-                // Sign up with Supabase Auth
-                const { data, error } = await supabase.auth.signUp({
+                const { data, error } = await supabaseClient.auth.signUp({
                     email: email,
                     password: password,
                     options: {
@@ -551,9 +536,8 @@
                     return;
                 }
 
-                // Create user profile in users table
                 if (data.user) {
-                    const { error: profileError } = await supabase
+                    const { error: profileError } = await supabaseClient
                         .from('users')
                         .insert([
                             {
@@ -570,14 +554,12 @@
                     }
                 }
 
-                // Show success
                 successText.textContent = 'Account created successfully! You can now sign in.';
                 successMessage.classList.add('show');
 
-                // Reset form and switch to login
                 setTimeout(() => {
                     if (isSignupMode) {
-                        showSignup(); // Switch back to login
+                        showSignup();
                     }
                     document.getElementById('email').value = email;
                     document.getElementById('password').value = '';
@@ -593,10 +575,9 @@
         }
 
         // ============================================================
-        // UPDATE FORM SUBMISSION
+        // FORM SUBMISSION
         // ============================================================
         document.addEventListener('DOMContentLoaded', function() {
-            // Check if already logged in
             const admin = localStorage.getItem('campusnexus_admin');
             if (admin) {
                 try {
@@ -608,7 +589,6 @@
                 } catch(e) {}
             }
 
-            // Update form submission
             const form = document.getElementById('loginForm');
             form.addEventListener('submit', function(e) {
                 if (isSignupMode) {
@@ -618,12 +598,11 @@
                 }
             });
 
-            // Focus on email
             document.getElementById('email').focus();
         });
 
         // ============================================================
-        // HELPER FUNCTIONS
+        // HELPERS
         // ============================================================
         function showError(message) {
             const errorMessage = document.getElementById('errorMessage');
@@ -647,7 +626,7 @@
             }
 
             if (confirm(`Send password reset email to ${email}?`)) {
-                supabase.auth.resetPasswordForEmail(email, {
+                supabaseClient.auth.resetPasswordForEmail(email, {
                     redirectTo: window.location.origin + '/admin-reset-password.html'
                 }).then(({ error }) => {
                     if (error) {
@@ -663,9 +642,6 @@
             }
         }
 
-        // ============================================================
-        // KEYBOARD SHORTCUTS
-        // ============================================================
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 document.getElementById('errorMessage').classList.remove('show');
@@ -673,7 +649,7 @@
             }
         });
 
-        console.log('🔐 CampusNexus Admin Login (Real Supabase Auth)');
+        console.log('🔐 CampusNexus Admin Login');
         console.log('📧 Use real email + password to login');
         console.log('🆕 Click "Create New Account" to sign up');
     </script>
