@@ -1081,28 +1081,48 @@
             <span id="agentStatus">| Agent online</span>
         </div>
         
-        <!-- Messages -->
+        <!-- ===== PRE-CHAT FORM (Shows before chat starts) ===== -->
         <div class="campus-chat-messages" id="campusChatMessages">
-            <div class="campus-chat-message bot">
-                <div class="campus-msg-bubble">
-                    <div class="campus-msg-sender">🎓 CampusNexus Bot</div>
-                    Hello! 👋 Welcome to CampusNexus.<br>
-                    How can I help you today?
-                    <span class="campus-msg-time">Just now</span>
+            <div class="campus-chat-message bot" id="preChatForm">
+                <div class="campus-msg-bubble" style="width: 100%; max-width: 320px;">
+                    <div class="campus-msg-sender">🎓 CampusNexus Support</div>
+                    <p style="margin-bottom: 12px;">👋 Welcome! Please introduce yourself before we start.</p>
+                    
+                    <!-- Visitor Info Form -->
+                    <div id="visitorInfoForm">
+                        <div style="margin-bottom: 10px;">
+                            <input type="text" id="visitorNameInput" placeholder="Your full name" 
+                                   style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: #fff; font-size: 14px; outline: none;">
+                        </div>
+                        <div style="margin-bottom: 10px;">
+                            <input type="email" id="visitorEmailInput" placeholder="Your email address" 
+                                   style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: #fff; font-size: 14px; outline: none;">
+                        </div>
+                        <button onclick="startChatWithInfo()" 
+                                style="width: 100%; padding: 10px; border-radius: 8px; border: none; background: linear-gradient(135deg, #D4A843, #F0D080); color: #0A1628; font-weight: 700; font-size: 14px; cursor: pointer; transition: all 0.3s ease;">
+                            <i class="fas fa-comment"></i> Start Chat
+                        </button>
+                        <p style="font-size: 11px; opacity: 0.6; margin-top: 8px; text-align: center;">
+                            <i class="fas fa-lock"></i> Your info is safe with us
+                        </p>
+                    </div>
                 </div>
             </div>
+            
+            <!-- Chat messages will appear here after start -->
+            <div id="chatMessagesContainer" style="display: none;"></div>
         </div>
         
-        <!-- Quick Replies -->
-        <div class="chat-quick-replies" id="quickReplies">
+        <!-- Quick Replies (hidden until chat starts) -->
+        <div class="chat-quick-replies" id="quickReplies" style="display: none;">
             <button onclick="sendQuickReply('I need help with login')">🔑 Login Help</button>
             <button onclick="sendQuickReply('I want to book a demo')">📅 Book Demo</button>
             <button onclick="sendQuickReply('I have a question about pricing')">💰 Pricing</button>
             <button onclick="sendQuickReply('I need technical support')">🛠️ Support</button>
         </div>
         
-        <!-- Input -->
-        <div class="campus-chat-input">
+        <!-- Input (hidden until chat starts) -->
+        <div class="campus-chat-input" id="chatInputArea" style="display: none;">
             <input type="text" id="campusChatInput" placeholder="Type your message..." onkeypress="handleCampusChatKey(event)">
             <button onclick="sendCampusChatMessage()">
                 <i class="fas fa-paper-plane"></i>
