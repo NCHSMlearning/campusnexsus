@@ -443,27 +443,50 @@ async function getVisitorIP() {
         return 'unknown';
     }
 }
-
 // ============================================================
-// CHECK AGENT STATUS
+// CHECK AGENT STATUS - UPDATED
 // ============================================================
 async function checkAgentStatus() {
     try {
+        console.log('🔍 Checking agent status...');
+        
         const { data, error } = await supabase
             .from('chat_agents')
-            .select('is_online')
+            .select('id, email, name, is_online, last_seen')
             .eq('is_online', true)
             .limit(1);
         
-        if (error) throw error;
+        if (error) {
+            console.error('❌ Error checking agent status:', error);
+            isAgentOnline = false;
+            updateStatusIndicator();
+            updateAgentStatusBadge(); // Add this
+            return;
+        }
+        
         isAgentOnline = data && data.length > 0;
         
+        console.log('📊 Agent online:', isAgentOnline);
+        
+        // Update all UI elements
         updateStatusIndicator();
+        updateAgentStatusBadge(); // This now updates the button
+        
+        if (isAgentOnline && chatMode === 'agent') {
+            updateChatHeaderForAgent();
+        }
+        
     } catch (error) {
-        console.error('Error checking agent status:', error);
+        console.error('❌ Error checking agent status:', error);
+        isAgentOnline = false;
+        updateStatusIndicator();
+        updateAgentStatusBadge(); // Add this
     }
 }
 
+// ============================================================
+// UPDATE STATUS INDICATOR
+// ============================================================
 function updateStatusIndicator() {
     const statusIndicator = document.getElementById('chatStatusIndicator');
     const agentStatus = document.getElementById('agentStatus');
@@ -478,7 +501,73 @@ function updateStatusIndicator() {
 }
 
 // ============================================================
-// ADD MODE SELECTOR TO CHAT
+// UPDATE AGENT STATUS BADGE - FIXED
+// ============================================================
+function updateAgentStatusBadge() {
+    const agentBadge = document.getElementById('agentStatusBadge');
+    const liveIndicator = document.getElementById('liveIndicator');
+    const agentAvailability = document.getElementById('agentAvailability');
+    const modeAgentBtn = document.getElementById('modeAgentBtn');
+    
+    // Update the dot badge
+    if (agentBadge) {
+        agentBadge.style.background = isAgentOnline ? '#2ecc71' : '#f39c12';
+    }
+    
+    // Update live indicator if it exists (for older version)
+    if (liveIndicator) {
+        liveIndicator.className = 'mode-indicator ' + (isAgentOnline ? 'live' : 'offline');
+    }
+    
+    // Update availability text if it exists
+    if (agentAvailability) {
+        agentAvailability.textContent = isAgentOnline ? '🟢' : '🔴';
+    }
+    
+    // Update the Live Agent button text with status
+    if (modeAgentBtn) {
+        const statusText = isAgentOnline ? '🟢 Online' : '🔴 Offline';
+        // Find the text node and update it
+        const existingText = modeAgentBtn.textContent;
+        if (existingText) {
+            // Keep the icon and update the status
+            const iconText = '👤 Live Agent';
+            modeAgentBtn.innerHTML = `
+                ${iconText}
+                <span id="agentStatusBadge" style="
+                    display: inline-block;
+                    width: 8px;
+                    height: 8px;
+                    border-radius: 50%;
+                    background: ${isAgentOnline ? '#2ecc71' : '#f39c12'};
+                    margin-left: 4px;
+                "></span>
+                <span style="font-size: 10px; color: ${isAgentOnline ? '#2ecc71' : '#f39c12'}; margin-left: 4px;">
+                    ${isAgentOnline ? 'Online' : 'Away'}
+                </span>
+            `;
+        }
+    }
+}
+// ============================================================
+// UPDATE CHAT HEADER FOR AGENT
+// ============================================================
+function updateChatHeaderForAgent() {
+    const header = document.querySelector('.campus-chat-header div');
+    if (header) {
+        header.innerHTML = `
+            <i class="fas fa-user-tie" style="margin-right: 8px;"></i> 
+            Live Support
+            <span class="chat-status">
+                <span class="online-dot" style="background: ${isAgentOnline ? '#2ecc71' : '#f39c12'};"></span>
+                ${isAgentOnline ? 'Online' : 'Away'}
+            </span>
+        `;
+    }
+}
+
+// ============================================================
+// ADD MODE SELECTOR TO CHAT - UPDATED
 // ============================================================
 function addModeSelector() {
     const quickReplies = document.getElementById('quickReplies');
@@ -495,6 +584,9 @@ function addModeSelector() {
         background: #0A1628;
         border-top: 1px solid rgba(255,255,255,0.05);
     `;
+    
+    const agentStatusText = isAgentOnline ? 'Online' : 'Away';
+    const agentStatusColor = isAgentOnline ? '#2ecc71' : '#f39c12';
     
     modeSelector.innerHTML = `
         <button onclick="setChatMode('bot')" id="modeBotBtn" style="
@@ -529,9 +621,12 @@ function addModeSelector() {
                 width: 8px;
                 height: 8px;
                 border-radius: 50%;
-                background: ${isAgentOnline ? '#2ecc71' : '#f39c12'};
+                background: ${agentStatusColor};
                 margin-left: 4px;
             "></span>
+            <span id="agentStatusText" style="font-size: 10px; color: ${agentStatusColor}; margin-left: 4px;">
+                ${agentStatusText}
+            </span>
         </button>
     `;
     
@@ -1045,7 +1140,7 @@ function createChatWidget() {
 }
 
 // ============================================================
-// INITIALIZE CHAT ON PAGE LOAD
+// INITIALIZE CHAT ON PAGE LOAD - COMPLETE
 // ============================================================
 document.addEventListener('DOMContentLoaded', function() {
     if (!document.getElementById('campusChatWidget')) {
@@ -1080,7 +1175,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const notification = document.getElementById('chatNotification');
             if (notification) notification.style.display = 'none';
             
-            // If no info, focus on name input
             if (!hasInfo) {
                 const nameInput = document.getElementById('visitorNameInput');
                 if (nameInput) setTimeout(() => nameInput.focus(), 500);
@@ -1103,7 +1197,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 localStorage.setItem('campusChatVisited', 'true');
                 localStorage.setItem('campusChatOpen', 'true');
                 
-                // If no info, focus on name input
                 if (!hasInfo) {
                     const nameInput = document.getElementById('visitorNameInput');
                     if (nameInput) setTimeout(() => nameInput.focus(), 500);
@@ -1111,8 +1204,38 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }, 7000);
     }
+    
+    // ============================================================
+    // PERIODIC AGENT STATUS CHECK
+    // ============================================================
+    // Check agent status every 30 seconds
+    setInterval(() => {
+        checkAgentStatus();
+    }, 30000);
+    
+    // Check agent status when chat is toggled open
+    const chatToggle = document.getElementById('campusChatToggle');
+    if (chatToggle) {
+        const originalOnClick = chatToggle.onclick;
+        chatToggle.addEventListener('click', function() {
+            setTimeout(() => {
+                checkAgentStatus();
+            }, 500);
+        });
+    }
+    
+    // Check agent status when switching to agent mode
+    const modeAgentBtn = document.getElementById('modeAgentBtn');
+    if (modeAgentBtn) {
+        modeAgentBtn.addEventListener('click', function() {
+            setTimeout(() => {
+                checkAgentStatus();
+            }, 300);
+        });
+    }
+    
+    console.log('🔄 Agent status check scheduled (every 30s)');
 });
-
 // ============================================================
 // SERVICE WORKER REGISTRATION (PWA)
 // ============================================================
