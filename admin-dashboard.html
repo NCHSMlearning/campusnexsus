@@ -1441,6 +1441,22 @@ document.addEventListener('click', function(e) {
 });
 
 // ============================================================
+// CLOSE REPLY MODAL - FIXED
+// ============================================================
+function closeReplyModal() {
+    const modal = document.getElementById('chatReplyModal');
+    if (modal) {
+        modal.classList.remove('active');
+        modal.style.display = 'none';
+    }
+    currentChatId = null;
+    document.body.style.overflow = '';
+}
+
+// Make sure closeReplyModal is available globally
+window.closeReplyModal = closeReplyModal;
+
+// ============================================================
 // LOAD VISITORS
 // ============================================================
 async function loadVisitors() {
@@ -1737,7 +1753,7 @@ function viewVisitor(visitorId) {
 }
 
 // ============================================================
-// OPEN REPLY MODAL - UPDATED WITH VISITOR INFO
+// OPEN REPLY MODAL
 // ============================================================
 async function openReplyModal(chatId) {
     currentChatId = chatId;
@@ -1749,18 +1765,11 @@ async function openReplyModal(chatId) {
 
     const avatarEl = document.getElementById('visitorAvatar');
     const nameEl = document.getElementById('visitorName');
-    const emailEl = document.getElementById('visitorEmail');
     const pageEl = document.getElementById('visitorPage');
     
-    // Get visitor info
-    const visitorName = chat.visitor_name || 'Anonymous Visitor';
-    const visitorEmail = chat.visitor_email || 'No email provided';
-    const visitorPage = chat.visitor_page || 'Unknown';
-    
-    if (avatarEl) avatarEl.textContent = visitorName.slice(0, 2).toUpperCase();
-    if (nameEl) nameEl.textContent = visitorName;
-    if (emailEl) emailEl.textContent = `📧 ${visitorEmail}`;
-    if (pageEl) pageEl.textContent = `📍 Viewing: ${visitorPage}`;
+    if (avatarEl) avatarEl.textContent = (chat.visitor_name || 'Anonymous Visitor').slice(0, 2).toUpperCase();
+    if (nameEl) nameEl.textContent = chat.visitor_name || 'Anonymous Visitor';
+    if (pageEl) pageEl.textContent = `Viewing: ${chat.visitor_page || 'Unknown'}`;
 
     const historyEl = document.getElementById('chatHistory');
     if (historyEl) {
@@ -1769,11 +1778,9 @@ async function openReplyModal(chatId) {
         if (chat.messages && chat.messages.length > 0) {
             chat.messages.forEach(msg => {
                 const div = document.createElement('div');
-                const isVisitor = msg.sender === 'visitor' || msg.sender === 'visitor';
-                div.className = `msg ${isVisitor ? 'visitor' : 'agent'}`;
-                const senderName = isVisitor ? (visitorName || 'Visitor') : (msg.sender === 'agent' ? 'Agent' : 'Bot');
+                div.className = `msg ${msg.sender === 'visitor' ? 'visitor' : 'agent'}`;
                 div.innerHTML = `
-                    <strong>${senderName}:</strong> ${msg.message}
+                    ${msg.message}
                     <span class="time">${msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</span>
                 `;
                 historyEl.appendChild(div);
@@ -1788,12 +1795,14 @@ async function openReplyModal(chatId) {
     const modal = document.getElementById('chatReplyModal');
     if (modal) {
         modal.classList.add('active');
+        modal.style.display = 'flex';
         const replyInput = document.getElementById('replyMessage');
         if (replyInput) replyInput.focus();
     }
 
     await markMessagesAsRead(chatId);
 }
+
 // ============================================================
 // MARK MESSAGES AS READ
 // ============================================================
