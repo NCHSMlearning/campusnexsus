@@ -1,6 +1,6 @@
 // ============================================================
 // CAMPUSNEXUS - MAIN JAVASCRIPT
-// Version: 7.0 - Hybrid Chat (Bot + Live Agent) + Pre-Chat Form
+// Version: 7.0 - Hybrid Chat (Bot + Live Agent) + Pre-Chat Form + Auto-Scroll
 // ============================================================
 
 // ============================================================
@@ -238,7 +238,7 @@ if ('IntersectionObserver' in window) {
 }
 
 // ============================================================
-// SUPABASE CONFIGURATION - FIXED
+// SUPABASE CONFIGURATION - FIXED PERMANENTLY
 // ============================================================
 const SUPABASE_URL = 'https://irahplkvocaakjxuisto.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlyYWhwbGt2b2NhYWtqeHVpc3RvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4ODY5ODQsImV4cCI6MjEwMzQ2Mjk4NH0.BFOwdRVDz4r1oYgUjm8zQbthqblGRq4c3WQWQaOhu7g';
@@ -270,6 +270,7 @@ let messageSubscription = null;
 let isAgentOnline = false;
 let chatMode = 'bot';
 let chatStarted = false;
+let scrollObserver = null;
 
 // ============================================================
 // PRE-CHAT FORM FUNCTIONS
@@ -282,7 +283,6 @@ function startChatWithInfo(name, email) {
     localStorage.setItem('campusnexus_visitor_name', visitorName);
     localStorage.setItem('campusnexus_visitor_email', visitorEmail);
     
-    // Create chat session first
     createChatSession(visitorName, visitorEmail);
     
     const preChatForm = document.getElementById('preChatForm');
@@ -298,6 +298,11 @@ function startChatWithInfo(name, email) {
     chatStarted = true;
     
     addChatMessage('bot', `👋 Welcome <strong>${visitorName}</strong>! I'm here to help you. What can I assist you with today?`);
+    
+    // Setup scroll observer
+    setTimeout(() => {
+        setupScrollObserver();
+    }, 300);
     
     if (!visitorId || !currentChatId) {
         initializeChat();
@@ -505,6 +510,63 @@ function updateChatHeaderForAgent() {
             </span>
         `;
     }
+}
+
+// ============================================================
+// AUTO-SCROLL OBSERVER - GUARANTEED SCROLLING
+// ============================================================
+function setupScrollObserver() {
+    const container = document.getElementById('chatMessagesContainer') || 
+                      document.getElementById('campusChatMessages');
+    
+    if (!container) return;
+    
+    // Remove existing observer if any
+    if (scrollObserver) {
+        scrollObserver.disconnect();
+    }
+    
+    // Create new observer
+    scrollObserver = new MutationObserver(function(mutations) {
+        let shouldScroll = false;
+        for (const mutation of mutations) {
+            if (mutation.addedNodes.length > 0) {
+                shouldScroll = true;
+                break;
+            }
+        }
+        
+        if (shouldScroll) {
+            setTimeout(() => {
+                container.scrollTop = container.scrollHeight;
+            }, 10);
+            setTimeout(() => {
+                container.scrollTop = container.scrollHeight;
+            }, 100);
+            setTimeout(() => {
+                container.scrollTop = container.scrollHeight;
+            }, 300);
+        }
+    });
+    
+    scrollObserver.observe(container, {
+        childList: true,
+        subtree: true,
+        attributes: false
+    });
+    
+    console.log('✅ Scroll observer set up');
+}
+
+function forceScrollToBottom() {
+    const container = document.getElementById('chatMessagesContainer') || 
+                      document.getElementById('campusChatMessages');
+    if (container) {
+        container.scrollTop = container.scrollHeight;
+        container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+        return true;
+    }
+    return false;
 }
 
 // ============================================================
@@ -780,7 +842,7 @@ function toggleCampusChat() {
             } else {
                 const input = document.getElementById('campusChatInput');
                 if (input) input.focus();
-                setTimeout(() => scrollChatToBottom(), 100);
+                setTimeout(() => forceScrollToBottom(), 100);
             }
             
             localStorage.setItem('campusChatOpen', 'true');
@@ -817,24 +879,6 @@ function handleCampusChatKey(event) {
 }
 
 // ============================================================
-// SCROLL CHAT TO BOTTOM
-// ============================================================
-function scrollChatToBottom() {
-    const containers = [
-        document.getElementById('chatMessagesContainer'),
-        document.getElementById('campusChatMessages'),
-        document.querySelector('.campus-chat-messages')
-    ];
-    
-    for (const container of containers) {
-        if (container) {
-            container.scrollTop = container.scrollHeight;
-            break;
-        }
-    }
-}
-
-// ============================================================
 // SEND CHAT MESSAGE - FIXED
 // ============================================================
 async function sendCampusChatMessage() {
@@ -856,6 +900,10 @@ async function sendCampusChatMessage() {
     addChatMessage('user', message);
     input.value = '';
     
+    // Force scroll immediately
+    setTimeout(() => forceScrollToBottom(), 10);
+    setTimeout(() => forceScrollToBottom(), 50);
+    
     if (!visitorId) {
         visitorId = getVisitorId();
     }
@@ -865,13 +913,11 @@ async function sendCampusChatMessage() {
         localStorage.setItem('campusnexus_chat_id', currentChatId);
     }
     
-    // Check if supabase is ready
     if (typeof supabase === 'undefined' || typeof supabase.from !== 'function') {
         console.warn('⚠️ Supabase not ready');
         return;
     }
     
-    // Ensure chat session exists
     try {
         const { data: existingSession } = await supabase
             .from('chat_sessions')
@@ -899,7 +945,6 @@ async function sendCampusChatMessage() {
         console.error('Error with chat session:', error);
     }
     
-    // Save message
     try {
         const { error } = await supabase
             .from('chat_messages')
@@ -962,9 +1007,11 @@ function addChatMessage(type, content, timestamp) {
     
     container.appendChild(messageDiv);
     
-    setTimeout(() => {
-        scrollChatToBottom();
-    }, 50);
+    // Multiple scroll attempts
+    setTimeout(() => forceScrollToBottom(), 10);
+    setTimeout(() => forceScrollToBottom(), 50);
+    setTimeout(() => forceScrollToBottom(), 150);
+    setTimeout(() => forceScrollToBottom(), 300);
 }
 
 // ============================================================
@@ -1054,7 +1101,7 @@ function showTypingIndicator() {
         </div>
     `;
     container.appendChild(typingDiv);
-    scrollChatToBottom();
+    forceScrollToBottom();
 }
 
 function hideTypingIndicator() {
@@ -1200,7 +1247,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 7000);
     }
     
-    // Check agent status periodically
     setInterval(() => {
         checkAgentStatus();
     }, 30000);
