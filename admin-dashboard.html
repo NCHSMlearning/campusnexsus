@@ -1058,6 +1058,37 @@
                 display: none !important;
             }
         }
+
+/* ===== CAMPUSNEXUS CMS EDITOR ===== */
+.cms-layout{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:20px}
+.cms-card{background:#fff;border:1px solid var(--gray-200);border-radius:16px;box-shadow:var(--shadow);padding:20px}
+.cms-card h3{font-size:1rem;margin-bottom:6px}
+.cms-muted{font-size:.78rem;color:var(--gray-500)}
+.cms-toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:18px}
+.cms-toolbar .btn{min-height:38px}
+.cms-status{display:inline-flex;align-items:center;gap:7px;padding:7px 11px;border-radius:999px;background:var(--gray-100);font-size:.75rem;font-weight:700;color:var(--gray-600)}
+.cms-status .dot{width:7px;height:7px;border-radius:50%;background:var(--orange)}
+.cms-status.published{background:rgba(16,185,129,.1);color:#047857}.cms-status.published .dot{background:var(--secondary)}
+.cms-status.draft{background:rgba(245,158,11,.1);color:#b45309}.cms-status.draft .dot{background:var(--orange)}
+.cms-field-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.cms-field{display:flex;flex-direction:column;gap:6px}.cms-field.full{grid-column:1/-1}
+.cms-field label{font-size:.75rem;font-weight:700;color:var(--gray-700)}
+.cms-field small{font-size:.68rem;color:var(--gray-400)}
+.cms-field input,.cms-field textarea,.cms-field select{width:100%;padding:10px 12px;border:1px solid var(--gray-200);border-radius:10px;background:#fff;color:var(--gray-800);font:inherit;font-size:.82rem;transition:var(--transition)}
+.cms-field textarea{min-height:100px;resize:vertical}.cms-field input:focus,.cms-field textarea:focus,.cms-field select:focus{outline:none;border-color:var(--secondary);box-shadow:0 0 0 3px rgba(16,185,129,.1)}
+.cms-section-list{display:flex;flex-direction:column;gap:8px}
+.cms-section-row{display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center;padding:11px;border:1px solid var(--gray-200);border-radius:11px;background:#fff}
+.cms-section-row.dragging{opacity:.55}.cms-section-icon{width:30px;height:30px;border-radius:9px;background:var(--gray-100);display:flex;align-items:center;justify-content:center;color:var(--primary)}
+.cms-section-name{font-size:.8rem;font-weight:700}.cms-section-id{font-size:.65rem;color:var(--gray-400);margin-top:2px}
+.cms-section-actions{display:flex;gap:4px}.cms-section-actions button{width:28px;height:28px;border:1px solid var(--gray-200);border-radius:7px;background:#fff;color:var(--gray-600);cursor:pointer}.cms-section-actions button:hover{background:var(--gray-100)}
+.cms-toggle{position:relative;width:40px;height:22px;display:inline-block}.cms-toggle input{opacity:0;width:0;height:0}.cms-slider{position:absolute;inset:0;background:#cbd5e1;border-radius:999px;cursor:pointer;transition:.2s}.cms-slider:before{content:"";position:absolute;width:16px;height:16px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 1px 2px rgba(0,0,0,.15)}.cms-toggle input:checked+.cms-slider{background:var(--secondary)}.cms-toggle input:checked+.cms-slider:before{transform:translateX(18px)}
+.cms-preview{height:520px;border:1px solid var(--gray-200);border-radius:12px;overflow:hidden;background:#f8fafc}.cms-preview iframe{width:100%;height:100%;border:0;background:#fff}
+.cms-help{padding:12px;border-radius:10px;background:#f8fafc;border:1px dashed var(--gray-200);font-size:.75rem;color:var(--gray-600);line-height:1.55}
+.cms-notice{display:none;margin-bottom:14px;padding:11px 13px;border-radius:10px;font-size:.78rem}.cms-notice.show{display:block}.cms-notice.success{background:rgba(16,185,129,.1);color:#047857}.cms-notice.error{background:#fee2e2;color:#b91c1c}.cms-notice.info{background:#eff6ff;color:#1d4ed8}
+.cms-history{display:flex;flex-direction:column;gap:8px;max-height:300px;overflow:auto}.cms-history-item{padding:10px;border:1px solid var(--gray-200);border-radius:10px;font-size:.74rem}.cms-history-item strong{display:block}.cms-history-item span{color:var(--gray-500)}
+@media(max-width:1100px){.cms-layout{grid-template-columns:1fr}.cms-preview{height:620px}}
+@media(max-width:768px){.cms-field-grid{grid-template-columns:1fr}.cms-field.full{grid-column:auto}.cms-section-row{grid-template-columns:30px 1fr}.cms-section-actions{grid-column:2;justify-content:flex-end}}
+
     </style>
 </head>
 <body>
@@ -1077,6 +1108,7 @@
             <li><a href="#" class="active" onclick="switchTab('visitors')"><i class="fas fa-address-card"></i> Visitors <span class="badge" id="visitorBadge">0</span></a></li>
             <li><a href="#" onclick="switchTab('chats')"><i class="fas fa-comments"></i> Live Chats <span class="badge green" id="chatBadge">0</span></a></li>
             <li><a href="#" onclick="switchTab('analytics')"><i class="fas fa-chart-bar"></i> Analytics</a></li>
+            <li><a href="#" onclick="switchTab('cms')"><i class="fas fa-layer-group"></i> Website CMS <span class="badge orange">CMS</span></a></li>
             <li><a href="#"><i class="fas fa-users"></i> Agents</a></li>
             <li><a href="#"><i class="fas fa-cog"></i> Settings</a></li>
         </ul>
@@ -1161,6 +1193,9 @@
             </button>
             <button class="tab" onclick="switchTab('analytics')" data-tab="analytics">
                 <i class="fas fa-chart-bar"></i> Analytics
+            </button>
+            <button class="tab" onclick="switchTab('cms')" data-tab="cms">
+                <i class="fas fa-layer-group"></i> Website CMS
             </button>
         </div>
 
@@ -1269,6 +1304,67 @@
                         </tr>
                     </tbody>
                 </table>
+            </div>
+        </div>
+
+        <!-- ===== TAB 4: WEBSITE CMS ===== -->
+        <div class="tab-content" id="tabCms">
+            <div class="section-header">
+                <div>
+                    <h2><i class="fas fa-layer-group" style="color:var(--gold);"></i> Website Content Management</h2>
+                    <div class="cms-muted">Edit the CampusNexus landing page, control sections and publish changes.</div>
+                </div>
+                <div class="cms-toolbar">
+                    <span class="cms-status draft" id="cmsStatus"><span class="dot"></span><span id="cmsStatusText">Draft</span></span>
+                    <button class="btn btn-outline" onclick="cmsLoad()"><i class="fas fa-cloud-download-alt"></i> Load</button>
+                    <button class="btn btn-outline" onclick="cmsSaveDraft()"><i class="fas fa-save"></i> Save Draft</button>
+                    <button class="btn" onclick="cmsPublish()"><i class="fas fa-globe"></i> Publish</button>
+                    <button class="btn btn-outline" onclick="cmsPreview()"><i class="fas fa-external-link-alt"></i> Preview</button>
+                </div>
+            </div>
+            <div class="cms-notice" id="cmsNotice"></div>
+
+            <div class="cms-layout">
+                <div>
+                    <div class="cms-card" style="margin-bottom:16px;">
+                        <h3>Page Content</h3>
+                        <p class="cms-muted" style="margin-bottom:16px;">These fields are connected to the editable areas of the public CampusNexus landing page.</p>
+                        <div class="cms-field-grid" id="cmsFieldGrid"></div>
+                    </div>
+
+                    <div class="cms-card">
+                        <h3>Preview</h3>
+                        <p class="cms-muted" style="margin-bottom:12px;">Preview opens the current public landing page. Published content is loaded by the CMS bridge.</p>
+                        <div class="cms-preview">
+                            <iframe id="cmsPreviewFrame" title="CampusNexus preview" src="about:blank"></iframe>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="cms-card" style="margin-bottom:16px;">
+                        <h3>Page Structure</h3>
+                        <p class="cms-muted" style="margin-bottom:14px;">Show/hide sections and change their display order.</p>
+                        <div class="cms-section-list" id="cmsSectionList"></div>
+                    </div>
+
+                    <div class="cms-card" style="margin-bottom:16px;">
+                        <h3>Publishing</h3>
+                        <div class="cms-help">
+                            <strong>Draft</strong> changes are saved but do not affect visitors.
+                            <br><strong>Publish</strong> makes the current configuration available to the public landing page.
+                            <br><strong>Preview</strong> opens the live page in a new view.
+                        </div>
+                    </div>
+
+                    <div class="cms-card">
+                        <h3>Revision History</h3>
+                        <p class="cms-muted" style="margin-bottom:10px;">Recent CMS saves and publications.</p>
+                        <div class="cms-history" id="cmsHistory">
+                            <div class="cms-muted">No revisions loaded.</div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </main>
@@ -1397,6 +1493,9 @@ function switchTab(tab) {
     if (tab === 'visitors') loadVisitors();
     else if (tab === 'chats') loadChats();
     else if (tab === 'analytics') loadAnalytics();
+    else if (tab === 'cms') {
+        cmsLoad();
+    }
 }
 
 // ============================================================
@@ -1900,6 +1999,7 @@ function refreshAll() {
     if (currentTab === 'visitors') loadVisitors();
     else if (currentTab === 'chats') loadChats();
     else if (currentTab === 'analytics') loadAnalytics();
+    else if (currentTab === 'cms') cmsLoad();
     else {
         loadVisitors();
         loadChats();
@@ -2080,6 +2180,321 @@ function subscribeToUpdates() {
     console.log('✅ Realtime subscriptions active');
 }
 
+
+// ============================================================
+// CAMPUSNEXUS WEBSITE CMS
+// ============================================================
+const CMS_TABLE = 'cms_site_content';
+const CMS_REVISION_TABLE = 'cms_site_revisions';
+const CMS_SITE_ID = 'campusnexus-main-site';
+const CMS_PUBLIC_URL = 'CampusNexus_Landing_CMS_CONNECTED.html';
+
+const CMS_FIELD_DEFINITIONS = [
+  {key:'hero.eyebrow', label:'Hero eyebrow', type:'text', help:'Small label above the main hero heading.'},
+  {key:'hero.title', label:'Hero title', type:'textarea', help:'Main headline on the landing page.', full:true},
+  {key:'hero.description', label:'Hero description', type:'textarea', full:true},
+  {key:'solutions.title', label:'Solutions title', type:'text'},
+  {key:'solutions.description', label:'Solutions description', type:'textarea', full:true},
+  {key:'solutions.lms.title', label:'LMS solution title', type:'text'},
+  {key:'solutions.lms.description', label:'LMS solution description', type:'textarea'},
+  {key:'solutions.pos.title', label:'POS solution title', type:'text'},
+  {key:'solutions.pos.description', label:'POS solution description', type:'textarea'},
+  {key:'industries.title', label:'Industries title', type:'text'},
+  {key:'industries.description', label:'Industries description', type:'textarea', full:true},
+  {key:'lms.title', label:'LMS showcase title', type:'textarea'},
+  {key:'lms.description', label:'LMS showcase description', type:'textarea'},
+  {key:'pos.title', label:'POS showcase title', type:'textarea'},
+  {key:'projects.title', label:'Projects title', type:'text'},
+  {key:'projects.description', label:'Projects description', type:'textarea', full:true},
+  {key:'process.title', label:'Process title', type:'text'},
+  {key:'process.description', label:'Process description', type:'textarea'},
+  {key:'testimonials.title', label:'Testimonials title', type:'text'},
+  {key:'testimonials.description', label:'Testimonials description', type:'textarea'},
+  {key:'cta.title', label:'CTA title', type:'textarea'},
+  {key:'cta.description', label:'CTA description', type:'textarea'},
+  {key:'footer.description', label:'Footer description', type:'textarea', full:true}
+];
+
+const CMS_SECTION_DEFINITIONS = [
+  ['announcement-bar','Announcement Bar','fa-bullhorn'],
+  ['navigation','Navigation','fa-bars'],
+  ['hero','Hero','fa-star'],
+  ['trust-strip','Trust Strip','fa-shield-alt'],
+  ['solutions','Solutions','fa-layer-group'],
+  ['industries','Industries','fa-building'],
+  ['lms-showcase','LMS Showcase','fa-graduation-cap'],
+  ['pos-showcase','POS Showcase','fa-cash-register'],
+  ['projects','Projects','fa-briefcase'],
+  ['capabilities','Capabilities','fa-puzzle-piece'],
+  ['process','Process','fa-route'],
+  ['testimonials','Testimonials','fa-comments'],
+  ['cta','Call to Action','fa-bullhorn'],
+  ['footer','Footer','fa-window-maximize']
+];
+
+const CMS_DEFAULT_CONTENT = {
+  'hero.eyebrow':'DIGITAL SOLUTIONS',
+  'hero.title':'Digital Solutions for Education, Business and a Smarter Tomorrow.',
+  'hero.description':'We design and develop powerful websites, web applications, LMS platforms, POS systems, e-commerce stores and custom digital solutions that help organizations work smarter, grow faster and serve better.',
+  'solutions.title':'Our Digital Solutions',
+  'solutions.description':'From a simple landing page to a complete digital platform, we build technology around the way you work.',
+  'solutions.lms.title':'LMS & Education Systems',
+  'solutions.lms.description':'Complete learning management systems, student portals, lecturer portals and academic management tools.',
+  'solutions.pos.title':'POS & Business Systems',
+  'solutions.pos.description':'Modern POS and management systems for shops, restaurants, pharmacies, supermarkets and other businesses.',
+  'industries.title':'Industries We Serve',
+  'industries.description':'We adapt our technology to the needs of organizations, businesses and institutions.',
+  'lms.title':'Learning platforms built around your workflow.',
+  'lms.description':'Give students, lecturers, administrators and finance teams one connected digital environment for learning and academic operations.',
+  'pos.title':'POS systems that fit your business.',
+  'projects.title':'Featured Projects',
+  'projects.description':'Examples of the types of systems and digital experiences CampusNexus can build.',
+  'process.title':'From idea to digital product.',
+  'process.description':'A simple and transparent process designed to turn your idea into a working solution.',
+  'testimonials.title':'What our clients say.',
+  'testimonials.description':"Technology is only useful when it makes people's work easier.",
+  'cta.title':"Have an idea? Let's turn it into a digital product.",
+  'cta.description':"Whether you need an LMS, POS, website, online store, landing page or custom system, let's talk.",
+  'footer.description':'We build digital products that help organizations and businesses work smarter through modern technology.'
+};
+
+let cmsConfig = {
+  site_id: CMS_SITE_ID,
+  version: 1,
+  status: 'draft',
+  content: {...CMS_DEFAULT_CONTENT},
+  sections: CMS_SECTION_DEFINITIONS.map((x,i)=>({id:x[0],visible:true,order:i}))
+};
+let cmsDirty = false;
+
+function cmsEscape(value){
+  return String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+}
+
+function cmsSetNotice(message,type='info'){
+  const el=document.getElementById('cmsNotice');
+  if(!el)return;
+  el.textContent=message;
+  el.className='cms-notice show '+type;
+  clearTimeout(window.__cmsNoticeTimer);
+  window.__cmsNoticeTimer=setTimeout(()=>el.className='cms-notice',4500);
+}
+
+function cmsRenderFields(){
+  const grid=document.getElementById('cmsFieldGrid');
+  if(!grid)return;
+  grid.innerHTML=CMS_FIELD_DEFINITIONS.map(def=>{
+    const value=cmsConfig.content[def.key] ?? '';
+    const cls=def.full?'cms-field full':'cms-field';
+    const control=def.type==='textarea'
+      ? `<textarea data-cms-input="${cmsEscape(def.key)}">${cmsEscape(value)}</textarea>`
+      : `<input type="text" data-cms-input="${cmsEscape(def.key)}" value="${cmsEscape(value)}">`;
+    return `<div class="${cls}">
+      <label>${cmsEscape(def.label)}</label>
+      ${control}
+      ${def.help?`<small>${cmsEscape(def.help)}</small>`:''}
+    </div>`;
+  }).join('');
+  grid.querySelectorAll('[data-cms-input]').forEach(el=>{
+    el.addEventListener('input',()=>{
+      cmsConfig.content[el.dataset.cmsInput]=el.value;
+      cmsDirty=true;
+      cmsSetStatus('Draft');
+    });
+  });
+}
+
+function cmsRenderSections(){
+  const list=document.getElementById('cmsSectionList');
+  if(!list)return;
+  cmsConfig.sections.sort((a,b)=>a.order-b.order);
+  list.innerHTML=cmsConfig.sections.map((sec,i)=>{
+    const def=CMS_SECTION_DEFINITIONS.find(x=>x[0]===sec.id) || [sec.id,sec.id,'fa-cube'];
+    return `<div class="cms-section-row" data-section-id="${cmsEscape(sec.id)}">
+      <div class="cms-section-icon"><i class="fas ${def[2]}"></i></div>
+      <div>
+        <div class="cms-section-name">${cmsEscape(def[1])}</div>
+        <div class="cms-section-id">${cmsEscape(sec.id)}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;justify-content:flex-end">
+        <label class="cms-toggle" title="${sec.visible?'Visible':'Hidden'}">
+          <input type="checkbox" ${sec.visible?'checked':''} onchange="cmsToggleSection('${sec.id}',this.checked)">
+          <span class="cms-slider"></span>
+        </label>
+        <div class="cms-section-actions">
+          <button title="Move up" onclick="cmsMoveSection(${i},-1)" ${i===0?'disabled':''}>↑</button>
+          <button title="Move down" onclick="cmsMoveSection(${i},1)" ${i===cmsConfig.sections.length-1?'disabled':''}>↓</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function cmsToggleSection(id,visible){
+  const s=cmsConfig.sections.find(x=>x.id===id);
+  if(s){s.visible=!!visible;cmsDirty=true;cmsSetStatus('Draft');}
+}
+
+function cmsMoveSection(index,direction){
+  const target=index+direction;
+  if(target<0||target>=cmsConfig.sections.length)return;
+  const a=cmsConfig.sections[index],b=cmsConfig.sections[target];
+  const tmp=a.order;a.order=b.order;b.order=tmp;
+  cmsConfig.sections.sort((x,y)=>x.order-y.order);
+  cmsDirty=true;
+  cmsRenderSections();
+  cmsSetStatus('Draft');
+}
+
+function cmsSetStatus(status){
+  const el=document.getElementById('cmsStatus');
+  const text=document.getElementById('cmsStatusText');
+  if(!el||!text)return;
+  text.textContent=status;
+  el.className='cms-status '+String(status).toLowerCase();
+  const dot=el.querySelector('.dot');
+  if(dot)dot.style.background=status==='Published'?'var(--secondary)':'var(--orange)';
+}
+
+function cmsNormalizeConfig(row){
+  const c=row?.content || row || {};
+  const cfg={
+    site_id: row?.site_id || CMS_SITE_ID,
+    version: row?.version || 1,
+    status: row?.status || 'draft',
+    content: {...CMS_DEFAULT_CONTENT,...(c.content||c)},
+    sections: Array.isArray(c.sections) ? c.sections : CMS_SECTION_DEFINITIONS.map((x,i)=>({id:x[0],visible:true,order:i}))
+  };
+  cfg.sections=cfg.sections.map((s,i)=>({id:s.id,visible:s.visible!==false,order:Number.isFinite(Number(s.order))?Number(s.order):i}));
+  return cfg;
+}
+
+async function cmsFetchLatest(){
+  if(!supabaseClient)throw new Error('Supabase is not initialized.');
+  const {data,error}=await supabaseClient.from(CMS_TABLE).select('*').eq('site_id',CMS_SITE_ID).order('version',{ascending:false}).limit(20);
+  if(error)throw error;
+  return data||[];
+}
+
+async function cmsLoad(){
+  try{
+    const rows=await cmsFetchLatest();
+    const draft=rows.find(r=>r.status==='draft') || rows.find(r=>r.status==='published');
+    if(draft){
+      cmsConfig=cmsNormalizeConfig(draft);
+      cmsConfig.content={...CMS_DEFAULT_CONTENT,...cmsConfig.content};
+      cmsDirty=false;
+      cmsRenderFields();cmsRenderSections();cmsSetStatus(cmsConfig.status==='published'?'Published':'Draft');
+      await cmsLoadHistory();
+      cmsSetNotice('CMS content loaded from Supabase.','success');
+    }else{
+      cmsConfig={site_id:CMS_SITE_ID,version:1,status:'draft',content:{...CMS_DEFAULT_CONTENT},sections:CMS_SECTION_DEFINITIONS.map((x,i)=>({id:x[0],visible:true,order:i}))};
+      cmsRenderFields();cmsRenderSections();cmsSetStatus('Draft');
+      cmsSetNotice('No CMS record exists yet. The default landing-page configuration is ready to save.','info');
+    }
+  }catch(error){
+    console.error('CMS load failed:',error);
+    const local=localStorage.getItem('campusnexus_cms_draft');
+    if(local){
+      try{cmsConfig=cmsNormalizeConfig(JSON.parse(local));cmsRenderFields();cmsRenderSections();cmsSetStatus('Draft');cmsSetNotice('Supabase unavailable. Loaded local CMS draft.','info');return;}catch(e){}
+    }
+    cmsRenderFields();cmsRenderSections();
+    cmsSetNotice('CMS database is not connected yet. Save locally or run the supplied CMS SQL schema first.','error');
+  }
+}
+
+async function cmsUpsert(status){
+  if(!supabaseClient){
+    localStorage.setItem('campusnexus_cms_draft',JSON.stringify({...cmsConfig,status}));
+    cmsSetNotice('Supabase is not initialized. Your CMS changes were saved locally.','error');
+    return;
+  }
+  const {data:authData,error:authError}=await supabaseClient.auth.getUser();
+  if(authError || !authData?.user){
+    localStorage.setItem('campusnexus_cms_draft',JSON.stringify({...cmsConfig,status}));
+    cmsSetNotice('CMS publishing requires a Supabase-authenticated admin session. Your changes were saved locally.','error');
+    return;
+  }
+  const sorted=[...cmsConfig.sections].sort((a,b)=>a.order-b.order).map((s,i)=>({...s,order:i}));
+  cmsConfig.sections=sorted;
+  cmsConfig.status=status;
+  cmsConfig.version=Number(cmsConfig.version||0)+1;
+  const payload={
+    site_id:CMS_SITE_ID,
+    version:cmsConfig.version,
+    status,
+    content:cmsConfig,
+    updated_by:authData.user.id,
+    updated_at:new Date().toISOString()
+  };
+  try{
+    const {data,error}=await supabaseClient.from(CMS_TABLE).insert(payload).select().single();
+    if(error)throw error;
+    cmsConfig=cmsNormalizeConfig(data);
+    cmsDirty=false;
+    localStorage.setItem('campusnexus_cms_draft',JSON.stringify(cmsConfig));
+    await cmsCreateRevision(status);
+    cmsRenderFields();cmsRenderSections();cmsSetStatus(status==='published'?'Published':'Draft');
+    await cmsLoadHistory();
+    cmsSetNotice(status==='published'?'Website changes published successfully.':'Draft saved successfully.','success');
+  }catch(error){
+    console.error('CMS save failed:',error);
+    // Keep a local draft so work is never lost.
+    localStorage.setItem('campusnexus_cms_draft',JSON.stringify({...cmsConfig,status}));
+    cmsDirty=true;
+    cmsSetNotice('Supabase save failed. Your CMS work was saved locally. '+error.message,'error');
+  }
+}
+
+async function cmsCreateRevision(status){
+  try{
+    const {data:authData}=await supabaseClient.auth.getUser();
+    if(!authData?.user)return;
+    await supabaseClient.from(CMS_REVISION_TABLE).insert({
+      site_id:CMS_SITE_ID,
+      version:cmsConfig.version,
+      status,
+      content:cmsConfig,
+      changed_by:authData.user.id
+    });
+  }catch(e){console.warn('Revision history unavailable:',e.message);}
+}
+
+async function cmsSaveDraft(){
+  await cmsUpsert('draft');
+}
+
+async function cmsPublish(){
+  if(!confirm('Publish the current CMS configuration to the public landing page?'))return;
+  await cmsUpsert('published');
+}
+
+async function cmsLoadHistory(){
+  const el=document.getElementById('cmsHistory');
+  if(!el)return;
+  try{
+    const {data,error}=await supabaseClient.from(CMS_REVISION_TABLE).select('version,status,changed_by,created_at').eq('site_id',CMS_SITE_ID).order('created_at',{ascending:false}).limit(15);
+    if(error)throw error;
+    if(!data?.length){el.innerHTML='<div class="cms-muted">No revisions yet.</div>';return;}
+    el.innerHTML=data.map(r=>`<div class="cms-history-item"><strong>Version ${r.version} · ${cmsEscape(r.status)}</strong><span>${cmsEscape(r.changed_by||'Admin')} · ${r.created_at?new Date(r.created_at).toLocaleString():''}</span></div>`).join('');
+  }catch(e){
+    el.innerHTML='<div class="cms-muted">Revision history will appear after the CMS tables are created.</div>';
+  }
+}
+
+function cmsPreview(){
+  const frame=document.getElementById('cmsPreviewFrame');
+  if(frame)frame.src=CMS_PUBLIC_URL+'?preview=1&v='+Date.now();
+  window.open(CMS_PUBLIC_URL+'?preview=1','_blank');
+}
+
+window.cmsLoad=cmsLoad;
+window.cmsSaveDraft=cmsSaveDraft;
+window.cmsPublish=cmsPublish;
+window.cmsPreview=cmsPreview;
+window.cmsMoveSection=cmsMoveSection;
+window.cmsToggleSection=cmsToggleSection;
+
 // ============================================================
 // LOGOUT
 // ============================================================
@@ -2146,6 +2561,9 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
 
+    console.log('🧩 Preparing CMS editor...');
+    cmsRenderFields();
+    cmsRenderSections();
     console.log('📊 Loading data...');
     Promise.all([
         loadVisitors().catch(err => console.error('Visitors load error:', err)),
