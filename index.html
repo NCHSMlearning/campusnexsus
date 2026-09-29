@@ -1,5 +1,4 @@
 <!DOCTYPE html>
- <!DOCTYPE html>
 
 <html lang="en">
 <head>
@@ -190,14 +189,21 @@ body:before{content:"";position:fixed;inset:0;pointer-events:none;z-index:-2;bac
 @media(max-width:900px){.cap-head{display:block}.cap-head .btn-primary{margin-top:18px}.cap-grid{grid-template-columns:1fr}.cn-hero{min-height:auto;padding:100px 0 80px}.cn-hero-grid{grid-template-columns:1fr}.cn-hero-visual{margin-top:50px}.trust-grid{transform:none;margin:18px 16px 0}.cn-section{padding:75px 0}}
 @media(max-width:600px){.cn-hero h1{font-size:2.7rem}.cn-hero-copy>p{font-size:.98rem}.hero-proof{display:grid!important;grid-template-columns:1fr 1fr;gap:12px}.hero-proof span{font-size:.8rem}.floating-card{display:none}.device.phone{transform:scale(.8)!important;right:-8px!important}.cap-card{padding:25px}.cn-feature{padding:75px 0}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
+
+<style id="campusnexus-global-stability">
+html{scroll-behavior:smooth;overflow-x:hidden}body{overflow-x:hidden}.modal-open{overflow:hidden}
+.mobile-menu,.mobile-menu-backdrop{visibility:hidden;opacity:0;pointer-events:none}.mobile-menu.open,.mobile-menu-backdrop.open{visibility:visible;opacity:1;pointer-events:auto}
+.back-to-top{opacity:0;visibility:hidden;pointer-events:none;transition:.25s}.back-to-top.show{opacity:1;visibility:visible;pointer-events:auto}
 </style></head>
-<body><div class="cn-microbar"><span><i class="fas fa-circle"></i> Building digital products for education, businesses &amp; organizations</span></div>
+<body>
+<!-- CMS COMPONENT MAP: each major section has data-cms-component; editable text uses data-cms-field. Future Admin Portal can manage content, visibility, ordering, media, links and styling per component. -->
+<div class="cn-microbar" data-cms-component="announcement-bar"><span><i class="fas fa-circle"></i> Building digital products for education, businesses &amp; organizations</span></div>
 <!-- ===== SCROLL PROGRESS BAR ===== -->
 <div class="scroll-progress" id="scrollProgress"></div>
 <!-- ============================================================
       NAVBAR
       ============================================================ -->
-<nav class="navbar cn-nav" id="navbar"><div class="container nav-inner">
+<nav class="navbar cn-nav" id="navbar" data-cms-component="navigation"><div class="container nav-inner">
 <a class="logo cn-logo" href="#home"><img alt="CampusNexus" onerror="this.style.display='none'" src="images/logo-icon.png"/><span>Campus<span>Nexus</span></span><small>Digital Solutions for a Smarter Tomorrow</small></a>
 <button aria-label="Toggle menu" class="menu-toggle" id="menuToggle"><i class="fas fa-bars"></i></button>
 <ul class="nav-links" id="navLinks">
@@ -238,12 +244,12 @@ body:before{content:"";position:fixed;inset:0;pointer-events:none;z-index:-2;bac
       FOOTER
       ============================================================ -->
 <!-- ===== BACK TO TOP BUTTON ===== -->
-<section class="cn-hero" id="home">
+<section class="cn-hero" id="home" data-cms-component="hero">
 <div class="cn-hero-glow glow-one"></div><div class="cn-hero-glow glow-two"></div>
 <div class="container cn-hero-grid">
 <div class="cn-hero-copy">
-<div class="eyebrow"><span class="pulse-dot"></span> WE BUILD. WE INNOVATE. WE EMPOWER.</div>
-<h1>Digital Solutions for <span>Education, Business</span> and a Smarter Tomorrow.</h1>
+<div class="eyebrow" data-cms-field="hero.eyebrow"><span class="pulse-dot"></span> WE BUILD. WE INNOVATE. WE EMPOWER.</div>
+<h1 data-cms-field="hero.title">Digital Solutions for <span>Education, Business</span> and a Smarter Tomorrow.</h1>
 <p>We design and develop powerful websites, web applications, LMS platforms, POS systems, e-commerce stores and custom digital solutions that help organizations work smarter, grow faster and serve better.</p>
 <div class="hero-actions"><a class="btn-primary btn-xl" href="#" onclick="openModal('demoModal');return false;">Get a Free Consultation <i class="fas fa-arrow-right"></i></a><a class="btn-ghost" href="#solutions"><i class="fas fa-play-circle"></i> Explore Our Solutions</a></div>
 <div class="hero-proof"><span><i class="fas fa-layer-group"></i> LMS &amp; Portals</span><span><i class="fas fa-cash-register"></i> POS Systems</span><span><i class="fas fa-store"></i> E-commerce</span><span><i class="fas fa-code"></i> Custom Apps</span></div>
@@ -256,13 +262,13 @@ body:before{content:"";position:fixed;inset:0;pointer-events:none;z-index:-2;bac
 <div class="floating-card float-bottom"><i class="fas fa-shield-alt"></i><div><b>Secure &amp; Scalable</b><small>Ready to grow with you</small></div></div>
 </div>
 </div>
-</section><section class="cn-trust"><div class="container trust-grid"><div><i class="fas fa-desktop"></i><b>Modern &amp; Responsive</b><small>Works on all devices</small></div><div><i class="fas fa-shield-alt"></i><b>Secure &amp; Reliable</b><small>Designed with security in mind</small></div><div><i class="fas fa-puzzle-piece"></i><b>Custom Solutions</b><small>Built around your needs</small></div><div><i class="fas fa-headset"></i><b>Professional Support</b><small>We stay with you</small></div><div><i class="fas fa-tags"></i><b>Flexible Pricing</b><small>Solutions for different budgets</small></div></div></section><section class="cn-section" id="solutions"><div class="container"><div class="section-heading"><div class="eyebrow blue">WHAT WE BUILD</div><h2>Our <span>Digital Solutions</span></h2><p>From a simple landing page to a complete digital platform, we build technology around the way you work.</p></div><div class="solution-grid">
+</section><section class="cn-trust" data-cms-component="trust-strip"><div class="container trust-grid"><div><i class="fas fa-desktop"></i><b>Modern &amp; Responsive</b><small>Works on all devices</small></div><div><i class="fas fa-shield-alt"></i><b>Secure &amp; Reliable</b><small>Designed with security in mind</small></div><div><i class="fas fa-puzzle-piece"></i><b>Custom Solutions</b><small>Built around your needs</small></div><div><i class="fas fa-headset"></i><b>Professional Support</b><small>We stay with you</small></div><div><i class="fas fa-tags"></i><b>Flexible Pricing</b><small>Solutions for different budgets</small></div></div></section><section class="cn-section" id="solutions" data-cms-component="solutions"><div class="container"><div class="section-heading"><div class="eyebrow blue">WHAT WE BUILD</div><h2 data-cms-field="solutions.title">Our <span>Digital Solutions</span></h2><p data-cms-field="solutions.description">From a simple landing page to a complete digital platform, we build technology around the way you work.</p></div><div class="solution-grid">
 <div class="solution-card"><div class="solution-image education"><i class="fas fa-graduation-cap"></i></div><div class="solution-body"><span class="solution-tag">EDUCATION TECHNOLOGY</span><h3>LMS &amp; Education Systems</h3><p>Complete learning management systems, student portals, lecturer portals and academic management tools.</p><ul><li>Student &amp; Lecturer Portals</li><li>Online Exams &amp; Assessments</li><li>Attendance Management</li><li>Learning Resources &amp; E-Library</li><li>Academic Reports &amp; Analytics</li></ul><a href="#lms">Explore Education Solutions <i class="fas fa-arrow-right"></i></a></div></div>
 <div class="solution-card"><div class="solution-image pos"><i class="fas fa-cash-register"></i></div><div class="solution-body"><span class="solution-tag green">BUSINESS TECHNOLOGY</span><h3>POS &amp; Business Systems</h3><p>Modern POS and management systems for shops, restaurants, pharmacies, supermarkets and other businesses.</p><ul><li>Sales &amp; Transactions</li><li>Inventory Management</li><li>Staff Management</li><li>Reports &amp; Analytics</li><li>M-Pesa &amp; Payment Integrations</li></ul><a class="green-link" href="#business-pos">Explore POS Solutions <i class="fas fa-arrow-right"></i></a></div></div>
 <div class="solution-card"><div class="solution-image ecommerce"><i class="fas fa-shopping-bag"></i></div><div class="solution-body"><span class="solution-tag purple">COMMERCE</span><h3>Websites &amp; E-commerce</h3><p>Professional websites that help companies showcase their brand, sell products and reach customers online.</p><ul><li>Company &amp; Corporate Websites</li><li>E-commerce Stores</li><li>Landing Pages</li><li>Product Catalogues</li><li>Online Booking &amp; Ordering</li></ul><a class="purple-link" href="#projects">Explore Website Solutions <i class="fas fa-arrow-right"></i></a></div></div>
 <div class="solution-card"><div class="solution-image custom"><i class="fas fa-code"></i></div><div class="solution-body"><span class="solution-tag red">CUSTOM DEVELOPMENT</span><h3>Custom Web Applications</h3><p>Tailored digital products for unique workflows, internal operations and customer-facing services.</p><ul><li>Management Systems</li><li>Customer &amp; Staff Portals</li><li>Dashboards &amp; Data Systems</li><li>API &amp; Payment Integrations</li><li>Automation &amp; Workflows</li></ul><a class="red-link" href="#contact-section" onclick="openModal('demoModal');return false;">Start a Custom Project <i class="fas fa-arrow-right"></i></a></div></div>
-</div></div></section><section class="cn-industries" id="industries"><div class="container"><div class="section-heading light"><div class="eyebrow">SOLUTIONS FOR DIFFERENT INDUSTRIES</div><h2>Industries <span>We Serve</span></h2><p>We adapt our technology to the needs of organizations, businesses and institutions.</p></div><div class="industry-grid"><div><i class="fas fa-graduation-cap"></i><b>Education</b><small>Schools, colleges &amp; universities</small></div><div><i class="fas fa-store"></i><b>Retail &amp; Shops</b><small>POS &amp; inventory systems</small></div><div><i class="fas fa-utensils"></i><b>Restaurants</b><small>Ordering &amp; POS solutions</small></div><div><i class="fas fa-heartbeat"></i><b>Healthcare</b><small>Websites &amp; management systems</small></div><div><i class="fas fa-building"></i><b>Corporate</b><small>Websites, portals &amp; dashboards</small></div><div><i class="fas fa-hands-helping"></i><b>NGOs &amp; CBOs</b><small>Digital reporting &amp; management</small></div><div><i class="fas fa-landmark"></i><b>Public Sector</b><small>Digital services &amp; portals</small></div><div><i class="fas fa-shopping-cart"></i><b>E-commerce</b><small>Online stores &amp; marketplaces</small></div></div></div></section><section class="cn-feature" id="lms"><div class="container feature-grid"><div class="feature-copy"><div class="eyebrow blue">FLAGSHIP SOLUTION</div><h2>Learning platforms built around <span>your workflow.</span></h2><p>Give students, lecturers, administrators and finance teams one connected digital environment for learning and academic operations.</p><div class="feature-points"><div><i class="fas fa-user-graduate"></i><span><b>Student Experience</b><small>Courses, resources, exams, attendance, results and communication.</small></span></div><div><i class="fas fa-chalkboard-teacher"></i><span><b>Lecturer &amp; Staff Tools</b><small>Classes, assessments, marks, resources, reports and student engagement.</small></span></div><div><i class="fas fa-shield-alt"></i><span><b>Administration &amp; Finance</b><small>Management dashboards, records, payments, reports and controlled access.</small></span></div></div><a class="btn-primary" href="#" onclick="openModal('demoModal');return false;">Discuss an LMS Project <i class="fas fa-arrow-right"></i></a></div><div class="showcase-panel lms-panel"><div class="panel-top"><b>Student Dashboard</b><span>● Live</span></div><div class="panel-layout"><div class="panel-side"></div><div class="panel-content"><div class="metric-row"><span></span><span></span><span></span></div><div class="big-chart"></div><div class="table-lines"><i></i><i></i><i></i><i></i></div></div></div></div></div></section><section class="cn-feature alt" id="business-pos"><div class="container feature-grid reverse"><div class="showcase-panel pos-panel"><div class="panel-top"><b>Business POS</b><span>● Live</span></div><div class="pos-product-grid"><div>☕<b>Product A</b><small>KES 350</small></div><div>🍔<b>Product B</b><small>KES 550</small></div><div>🧃<b>Product C</b><small>KES 250</small></div><div>🛍️<b>Product D</b><small>KES 800</small></div></div><div class="pos-total"><span>Total Sales</span><b>KES 18,450</b></div></div><div class="feature-copy"><div class="eyebrow blue">BUSINESS AUTOMATION</div><h2>POS systems that fit <span>your business.</span></h2><p>Whether you run a shop, restaurant, pharmacy, campus store or growing retail operation, we can build a POS experience around your products and processes.</p><div class="feature-points"><div><i class="fas fa-cash-register"></i><span><b>Sales &amp; Transactions</b><small>Fast checkout, receipts, payment records and transaction history.</small></span></div><div><i class="fas fa-boxes"></i><span><b>Inventory Management</b><small>Track stock, products, low-stock items and movements.</small></span></div><div><i class="fas fa-chart-pie"></i><span><b>Reports &amp; Analytics</b><small>Understand sales, products, performance and business activity.</small></span></div></div><a class="btn-primary" href="#" onclick="openModal('demoModal');return false;">Build a POS System <i class="fas fa-arrow-right"></i></a></div></div></section><section class="cn-projects" id="projects"><div class="container"><div class="section-heading light"><div class="eyebrow">SELECTED DIGITAL PRODUCTS</div><h2>Featured <span>Projects</span></h2><p>Examples of the types of systems and digital experiences CampusNexus can build.</p></div><div class="project-grid"><div class="project-card"><div class="project-screen blue-screen"><b>Campus LMS</b><div class="screen-bars"></div><div class="screen-boxes"><i></i><i></i><i></i></div></div><h3>College LMS</h3><small>Student &amp; Lecturer Portal</small></div><div class="project-card"><div class="project-screen green-screen"><b>Business POS</b><div class="pos-screen-grid"><i></i><i></i><i></i><i></i></div></div><h3>Restaurant / Retail POS</h3><small>Sales &amp; Inventory System</small></div><div class="project-card"><div class="project-screen purple-screen"><b>Online Store</b><div class="store-product"><i></i><i></i><i></i></div></div><h3>E-commerce Store</h3><small>Online Selling Platform</small></div><div class="project-card"><div class="project-screen orange-screen"><b>Company Website</b><div class="website-lines"></div></div><h3>Corporate Website</h3><small>Brand &amp; Services Platform</small></div><div class="project-card"><div class="project-screen dark-screen"><b>Management Dashboard</b><div class="analytics-bars"><i></i><i></i><i></i><i></i></div></div><h3>Custom Management System</h3><small>Business Operations Platform</small></div></div></div></section>
-<section class="cn-capabilities" id="capabilities">
+</div></div></section><section class="cn-industries" id="industries" data-cms-component="industries"><div class="container"><div class="section-heading light"><div class="eyebrow">SOLUTIONS FOR DIFFERENT INDUSTRIES</div><h2 data-cms-field="industries.title">Industries <span>We Serve</span></h2><p>We adapt our technology to the needs of organizations, businesses and institutions.</p></div><div class="industry-grid"><div><i class="fas fa-graduation-cap"></i><b>Education</b><small>Schools, colleges &amp; universities</small></div><div><i class="fas fa-store"></i><b>Retail &amp; Shops</b><small>POS &amp; inventory systems</small></div><div><i class="fas fa-utensils"></i><b>Restaurants</b><small>Ordering &amp; POS solutions</small></div><div><i class="fas fa-heartbeat"></i><b>Healthcare</b><small>Websites &amp; management systems</small></div><div><i class="fas fa-building"></i><b>Corporate</b><small>Websites, portals &amp; dashboards</small></div><div><i class="fas fa-hands-helping"></i><b>NGOs &amp; CBOs</b><small>Digital reporting &amp; management</small></div><div><i class="fas fa-landmark"></i><b>Public Sector</b><small>Digital services &amp; portals</small></div><div><i class="fas fa-shopping-cart"></i><b>E-commerce</b><small>Online stores &amp; marketplaces</small></div></div></div></section><section class="cn-feature" id="lms" data-cms-component="lms-showcase"><div class="container feature-grid"><div class="feature-copy"><div class="eyebrow blue">FLAGSHIP SOLUTION</div><h2 data-cms-field="lms.title">Learning platforms built around <span>your workflow.</span></h2><p>Give students, lecturers, administrators and finance teams one connected digital environment for learning and academic operations.</p><div class="feature-points"><div><i class="fas fa-user-graduate"></i><span><b>Student Experience</b><small>Courses, resources, exams, attendance, results and communication.</small></span></div><div><i class="fas fa-chalkboard-teacher"></i><span><b>Lecturer &amp; Staff Tools</b><small>Classes, assessments, marks, resources, reports and student engagement.</small></span></div><div><i class="fas fa-shield-alt"></i><span><b>Administration &amp; Finance</b><small>Management dashboards, records, payments, reports and controlled access.</small></span></div></div><a class="btn-primary" href="#" onclick="openModal('demoModal');return false;">Discuss an LMS Project <i class="fas fa-arrow-right"></i></a></div><div class="showcase-panel lms-panel"><div class="panel-top"><b>Student Dashboard</b><span>● Live</span></div><div class="panel-layout"><div class="panel-side"></div><div class="panel-content"><div class="metric-row"><span></span><span></span><span></span></div><div class="big-chart"></div><div class="table-lines"><i></i><i></i><i></i><i></i></div></div></div></div></div></section><section class="cn-feature alt" id="business-pos" data-cms-component="pos-showcase"><div class="container feature-grid reverse"><div class="showcase-panel pos-panel"><div class="panel-top"><b>Business POS</b><span>● Live</span></div><div class="pos-product-grid"><div>☕<b>Product A</b><small>KES 350</small></div><div>🍔<b>Product B</b><small>KES 550</small></div><div>🧃<b>Product C</b><small>KES 250</small></div><div>🛍️<b>Product D</b><small>KES 800</small></div></div><div class="pos-total"><span>Total Sales</span><b>KES 18,450</b></div></div><div class="feature-copy"><div class="eyebrow blue">BUSINESS AUTOMATION</div><h2>POS systems that fit <span>your business.</span></h2><p>Whether you run a shop, restaurant, pharmacy, campus store or growing retail operation, we can build a POS experience around your products and processes.</p><div class="feature-points"><div><i class="fas fa-cash-register"></i><span><b>Sales &amp; Transactions</b><small>Fast checkout, receipts, payment records and transaction history.</small></span></div><div><i class="fas fa-boxes"></i><span><b>Inventory Management</b><small>Track stock, products, low-stock items and movements.</small></span></div><div><i class="fas fa-chart-pie"></i><span><b>Reports &amp; Analytics</b><small>Understand sales, products, performance and business activity.</small></span></div></div><a class="btn-primary" href="#" onclick="openModal('demoModal');return false;">Build a POS System <i class="fas fa-arrow-right"></i></a></div></div></section><section class="cn-projects" id="projects" data-cms-component="projects"><div class="container"><div class="section-heading light"><div class="eyebrow">SELECTED DIGITAL PRODUCTS</div><h2>Featured <span>Projects</span></h2><p>Examples of the types of systems and digital experiences CampusNexus can build.</p></div><div class="project-grid"><div class="project-card"><div class="project-screen blue-screen"><b>Campus LMS</b><div class="screen-bars"></div><div class="screen-boxes"><i></i><i></i><i></i></div></div><h3>College LMS</h3><small>Student &amp; Lecturer Portal</small></div><div class="project-card"><div class="project-screen green-screen"><b>Business POS</b><div class="pos-screen-grid"><i></i><i></i><i></i><i></i></div></div><h3>Restaurant / Retail POS</h3><small>Sales &amp; Inventory System</small></div><div class="project-card"><div class="project-screen purple-screen"><b>Online Store</b><div class="store-product"><i></i><i></i><i></i></div></div><h3>E-commerce Store</h3><small>Online Selling Platform</small></div><div class="project-card"><div class="project-screen orange-screen"><b>Company Website</b><div class="website-lines"></div></div><h3>Corporate Website</h3><small>Brand &amp; Services Platform</small></div><div class="project-card"><div class="project-screen dark-screen"><b>Management Dashboard</b><div class="analytics-bars"><i></i><i></i><i></i><i></i></div></div><h3>Custom Management System</h3><small>Business Operations Platform</small></div></div></div></section>
+<section class="cn-capabilities" data-cms-component="capabilities" id="capabilities">
 <div class="container">
 <div class="cap-head">
 <div>
@@ -278,7 +284,7 @@ body:before{content:"";position:fixed;inset:0;pointer-events:none;z-index:-2;bac
 <article class="cap-card cap-purple"><span>03</span><i class="fas fa-layer-group"></i><h3>Build a Platform</h3><p>Complete LMS, portals, e-commerce platforms and custom web applications connected to the workflows your organization needs.</p><div class="cap-tags"><b>LMS</b><b>E-commerce</b><b>Web Apps</b></div></article>
 </div>
 </div>
-</section><section class="cn-section" id="how-it-works"><div class="container"><div class="section-heading"><div class="eyebrow blue">OUR PROCESS</div><h2>From idea to <span>digital product.</span></h2><p>A simple and transparent process designed to turn your idea into a working solution.</p></div><div class="process-grid"><div><span>01</span><i class="fas fa-comments"></i><h3>Consultation</h3><p>We understand your needs, users and goals.</p></div><div><span>02</span><i class="fas fa-pencil-ruler"></i><h3>Planning &amp; Design</h3><p>We map the experience, features and solution.</p></div><div><span>03</span><i class="fas fa-code"></i><h3>Development</h3><p>We build, test and refine the system.</p></div><div><span>04</span><i class="fas fa-rocket"></i><h3>Launch &amp; Support</h3><p>We deploy and continue supporting you.</p></div></div></div></section><section class="cn-testimonials" id="testimonials"><div class="container"><div class="section-heading"><div class="eyebrow blue">CLIENT EXPERIENCE</div><h2>What our <span>clients say.</span></h2><p>Technology is only useful when it makes people's work easier.</p></div><div class="testimonial-grid"><article><div class="quote">“</div><p>CampusNexus has transformed how we manage our academic programs and digital operations.</p><div class="person"><img alt="Client" onerror="this.style.display='none'" src="images/staff/kevin-matoka.jpg"/><span><b>Education Partner</b><small>Academic Management</small></span></div></article><article><div class="quote">“</div><p>The approach is practical and focused on building systems that actually fit the organization's workflow.</p><div class="person"><img alt="Client" onerror="this.style.display='none'" src="images/staff/peter-onkundi.jpg"/><span><b>Business Partner</b><small>Operations &amp; POS</small></span></div></article><article><div class="quote">“</div><p>We needed a professional digital presence and a system that could grow with the organization.</p><div class="person"><img alt="Client" onerror="this.style.display='none'" src="images/staff/dr-jane-mwangi.jpg"/><span><b>Organization Partner</b><small>Website &amp; Digital Services</small></span></div></article></div></div></section><section class="cn-cta" id="contact-section"><div class="container"><div><div class="eyebrow">LET'S BUILD SOMETHING USEFUL</div><h2>Have an idea? <span>Let's turn it into a digital product.</span></h2><p>Whether you need an LMS, POS, website, online store, landing page or custom system, let's talk.</p></div><div class="cta-actions"><a class="btn-white" href="#" onclick="openModal('demoModal');return false;">Get a Free Consultation <i class="fas fa-arrow-right"></i></a><a class="btn-outline-light" href="#" onclick="openModal('contactModal');return false;">Contact Us</a></div></div></section><footer class="cn-footer"><div class="container footer-grid"><div class="footer-brand"><a class="cn-logo" href="#home"><img alt="CampusNexus" src="images/logo-icon.png"/><span>Campus<span>Nexus</span></span></a><p>We build digital products that help organizations and businesses work smarter through modern technology.</p><div class="socials"><a href="#"><i class="fab fa-facebook-f"></i></a><a href="#"><i class="fab fa-x-twitter"></i></a><a href="#"><i class="fab fa-instagram"></i></a><a href="#"><i class="fab fa-linkedin-in"></i></a><a href="#"><i class="fab fa-youtube"></i></a></div></div><div><h4>Quick Links</h4><a href="#home">Home</a><a href="#solutions">Solutions</a><a href="#industries">Industries</a><a href="#projects">Portfolio</a><a href="#how-it-works">How We Work</a><a href="#contact-section">Contact</a></div><div><h4>Our Solutions</h4><a href="#lms">LMS &amp; Education</a><a href="#business-pos">POS Systems</a><a href="#projects">Websites &amp; E-commerce</a><a href="#projects">Custom Web Applications</a><a href="#projects">Portals &amp; Dashboards</a></div><div><h4>Contact</h4><a href="tel:+254790969743"><i class="fas fa-phone"></i> +254 790 969 743</a><a href="mailto:info@campusnexus.com"><i class="fas fa-envelope"></i> info@campusnexus.com</a><span><i class="fas fa-location-dot"></i> Nakuru, Kenya</span><a href="#" onclick="openModal('demoModal');return false;">Book a Consultation</a></div></div><div class="container footer-bottom"><span>© 2026 CampusNexus. All rights reserved.</span><span><a href="#" onclick="openModal('termsModal');return false;">Terms</a> · <a href="#" onclick="openModal('privacyModal');return false;">Privacy</a></span></div></footer><button aria-label="Back to top" class="back-to-top" id="backToTop">
+</section><section class="cn-section" id="how-it-works" data-cms-component="process"><div class="container"><div class="section-heading"><div class="eyebrow blue">OUR PROCESS</div><h2 data-cms-field="process.title">From idea to <span>digital product.</span></h2><p>A simple and transparent process designed to turn your idea into a working solution.</p></div><div class="process-grid"><div><span>01</span><i class="fas fa-comments"></i><h3>Consultation</h3><p>We understand your needs, users and goals.</p></div><div><span>02</span><i class="fas fa-pencil-ruler"></i><h3>Planning &amp; Design</h3><p>We map the experience, features and solution.</p></div><div><span>03</span><i class="fas fa-code"></i><h3>Development</h3><p>We build, test and refine the system.</p></div><div><span>04</span><i class="fas fa-rocket"></i><h3>Launch &amp; Support</h3><p>We deploy and continue supporting you.</p></div></div></div></section><section class="cn-testimonials" id="testimonials" data-cms-component="testimonials"><div class="container"><div class="section-heading"><div class="eyebrow blue">CLIENT EXPERIENCE</div><h2 data-cms-field="testimonials.title">What our <span>clients say.</span></h2><p>Technology is only useful when it makes people's work easier.</p></div><div class="testimonial-grid"><article><div class="quote">“</div><p>CampusNexus has transformed how we manage our academic programs and digital operations.</p><div class="person"><img alt="Client" onerror="this.style.display='none'" src="images/staff/kevin-matoka.jpg"/><span><b>Education Partner</b><small>Academic Management</small></span></div></article><article><div class="quote">“</div><p>The approach is practical and focused on building systems that actually fit the organization's workflow.</p><div class="person"><img alt="Client" onerror="this.style.display='none'" src="images/staff/peter-onkundi.jpg"/><span><b>Business Partner</b><small>Operations &amp; POS</small></span></div></article><article><div class="quote">“</div><p>We needed a professional digital presence and a system that could grow with the organization.</p><div class="person"><img alt="Client" onerror="this.style.display='none'" src="images/staff/dr-jane-mwangi.jpg"/><span><b>Organization Partner</b><small>Website &amp; Digital Services</small></span></div></article></div></div></section><section class="cn-cta" id="contact-section" data-cms-component="cta"><div class="container"><div><div class="eyebrow">LET'S BUILD SOMETHING USEFUL</div><h2 data-cms-field="cta.title">Have an idea? <span>Let's turn it into a digital product.</span></h2><p>Whether you need an LMS, POS, website, online store, landing page or custom system, let's talk.</p></div><div class="cta-actions"><a class="btn-white" href="#" onclick="openModal('demoModal');return false;">Get a Free Consultation <i class="fas fa-arrow-right"></i></a><a class="btn-outline-light" href="#" onclick="openModal('contactModal');return false;">Contact Us</a></div></div></section><footer class="cn-footer" data-cms-component="footer"><div class="container footer-grid"><div class="footer-brand"><a class="cn-logo" href="#home"><img alt="CampusNexus" src="images/logo-icon.png"/><span>Campus<span>Nexus</span></span></a><p>We build digital products that help organizations and businesses work smarter through modern technology.</p><div class="socials"><a href="#"><i class="fab fa-facebook-f"></i></a><a href="#"><i class="fab fa-x-twitter"></i></a><a href="#"><i class="fab fa-instagram"></i></a><a href="#"><i class="fab fa-linkedin-in"></i></a><a href="#"><i class="fab fa-youtube"></i></a></div></div><div><h4>Quick Links</h4><a href="#home">Home</a><a href="#solutions">Solutions</a><a href="#industries">Industries</a><a href="#projects">Portfolio</a><a href="#how-it-works">How We Work</a><a href="#contact-section">Contact</a></div><div><h4>Our Solutions</h4><a href="#lms">LMS &amp; Education</a><a href="#business-pos">POS Systems</a><a href="#projects">Websites &amp; E-commerce</a><a href="#projects">Custom Web Applications</a><a href="#projects">Portals &amp; Dashboards</a></div><div><h4>Contact</h4><a href="tel:+254790969743"><i class="fas fa-phone"></i> +254 790 969 743</a><a href="mailto:info@campusnexus.com"><i class="fas fa-envelope"></i> info@campusnexus.com</a><span><i class="fas fa-location-dot"></i> Nakuru, Kenya</span><a href="#" onclick="openModal('demoModal');return false;">Book a Consultation</a></div></div><div class="container footer-bottom"><span>© 2026 CampusNexus. All rights reserved.</span><span><a href="#" onclick="openModal('termsModal');return false;">Terms</a> · <a href="#" onclick="openModal('privacyModal');return false;">Privacy</a></span></div></footer><button aria-label="Back to top" class="back-to-top" id="backToTop">
 <i class="fas fa-arrow-up"></i>
 </button>
 <!-- ============================================================
@@ -407,14 +413,14 @@ Nakuru, Kenya</p>
       CHAT WIDGET - FLOATING CHAT BUTTON
       ============================================================ -->
 <style>
- /\* Chat Widget Styles \*/
+ //* Chat Widget Styles *//
  .campus-chat-widget {
      position: fixed;
      bottom: 30px;
      right: 30px;
      z-index: 9999;
  }
- <br>
+
  .campus-chat-toggle {
      width: 64px;
      height: 64px;
@@ -431,12 +437,12 @@ Nakuru, Kenya</p>
      justify-content: center;
      position: relative;
  }
- <br>
+
  .campus-chat-toggle:hover {
      transform: scale(1.1);
      box-shadow: 0 12px 40px rgba(212, 168, 67, 0.5);
  }
- <br>
+
  .chat-notification {
      position: absolute;
      top: -5px;
@@ -449,12 +455,12 @@ Nakuru, Kenya</p>
      font-weight: 700;
      animation: pulse 2s infinite;
  }
- <br>
+
  @keyframes pulse {
      0%, 100% { transform: scale(1); }
      50% { transform: scale(1.1); }
  }
- <br>
+
  .campus-chat-window {
      display: none;
      position: absolute;
@@ -469,12 +475,12 @@ Nakuru, Kenya</p>
      overflow: hidden;
      animation: slideUp 0.3s ease;
  }
- <br>
- .campus-chat-window\.open {
+
+ .campus-chat-window.open {
      display: flex !important;
      flex-direction: column;
  }
- <br>
+
  @keyframes slideUp {
      from {
          opacity: 0;
@@ -485,7 +491,7 @@ Nakuru, Kenya</p>
          transform: translateY(0) scale(1);
      }
  }
- <br>
+
  .campus-chat-header {
      padding: 16px 20px;
      background: linear-gradient(135deg, #D4A843, #F0D080);
@@ -496,7 +502,7 @@ Nakuru, Kenya</p>
      font-weight: 700;
      font-size: 16px;
  }
- <br>
+
  .campus-chat-header .chat-status {
      font-size: 12px;
      font-weight: 400;
@@ -504,7 +510,7 @@ Nakuru, Kenya</p>
      align-items: center;
      gap: 6px;
  }
- <br>
+
  .campus-chat-header .chat-status .online-dot {
      width: 8px;
      height: 8px;
@@ -513,7 +519,7 @@ Nakuru, Kenya</p>
      display: inline-block;
      animation: pulse 2s infinite;
  }
- <br>
+
  .campus-chat-header button {
      background: none;
      border: none;
@@ -523,11 +529,11 @@ Nakuru, Kenya</p>
      opacity: 0.7;
      transition: 0.3s;
  }
- <br>
+
  .campus-chat-header button:hover {
      opacity: 1;
  }
- <br>
+
  .campus-chat-messages {
      flex: 1;
      padding: 16px 20px;
@@ -537,55 +543,55 @@ Nakuru, Kenya</p>
      gap: 12px;
      background: #0F1A2A;
  }
- <br>
+
  .campus-chat-message {
      display: flex;
      flex-direction: column;
      max-width: 80%;
  }
- <br>
+
  .campus-chat-message.user {
      align-items: flex-end;
      margin-left: auto;
  }
- <br>
+
  .campus-chat-message.bot {
      align-items: flex-start;
  }
- <br>
+
  .campus-msg-bubble {
      padding: 10px 14px;
      border-radius: 12px;
      font-size: 14px;
      line-height: 1.4;
  }
- <br>
+
  .campus-chat-message.bot .campus-msg-bubble {
      background: #1A2A3A;
      color: #E8EDF3;
      border-bottom-left-radius: 4px;
  }
- <br>
+
  .campus-chat-message.user .campus-msg-bubble {
      background: linear-gradient(135deg, #D4A843, #F0D080);
      color: #0A1628;
      border-bottom-right-radius: 4px;
  }
- <br>
+
  .campus-msg-time {
      font-size: 10px;
      opacity: 0.5;
      margin-top: 4px;
      display: block;
  }
- <br>
+
  .campus-msg-sender {
      font-size: 11px;
      font-weight: 600;
      margin-bottom: 3px;
      opacity: 0.7;
  }
- <br>
+
  .chat-status-indicator {
      display: flex;
      align-items: center;
@@ -596,7 +602,7 @@ Nakuru, Kenya</p>
      font-size: 12px;
      color: #2ecc71;
  }
- <br>
+
  .chat-quick-replies {
      display: flex;
      gap: 6px;
@@ -605,7 +611,7 @@ Nakuru, Kenya</p>
      background: #0A1628;
      border-top: 1px solid rgba(255,255,255,0.03);
  }
- <br>
+
  .chat-quick-replies button {
      padding: 5px 12px;
      border-radius: 20px;
@@ -616,12 +622,12 @@ Nakuru, Kenya</p>
      cursor: pointer;
      transition: all 0.3s ease;
  }
- <br>
+
  .chat-quick-replies button:hover {
      background: rgba(212, 168, 67, 0.1);
      border-color: #D4A843;
  }
- <br>
+
  .campus-chat-input {
      padding: 12px 16px;
      border-top: 1px solid rgba(255,255,255,0.05);
@@ -629,7 +635,7 @@ Nakuru, Kenya</p>
      gap: 8px;
      background: #0A1628;
  }
- <br>
+
  .campus-chat-input input {
      flex: 1;
      padding: 10px 14px;
@@ -640,15 +646,15 @@ Nakuru, Kenya</p>
      outline: none;
      font-size: 14px;
  }
- <br>
+
  .campus-chat-input input::placeholder {
      color: rgba(255,255,255,0.3);
  }
- <br>
+
  .campus-chat-input input:focus {
      border-color: #D4A843;
  }
- <br>
+
  .campus-chat-input button {
      padding: 10px 18px;
      border-radius: 8px;
@@ -659,17 +665,17 @@ Nakuru, Kenya</p>
      font-weight: 700;
      transition: all 0.3s ease;
  }
- <br>
+
  .campus-chat-input button:hover {
      transform: translateY(-2px);
      box-shadow: 0 4px 12px rgba(212, 168, 67, 0.3);
  }
- <br>
+
  .typing-dots {
      display: inline-flex;
      gap: 3px;
  }
- <br>
+
  .typing-dots span {
      width: 6px;
      height: 6px;
@@ -677,21 +683,21 @@ Nakuru, Kenya</p>
      border-radius: 50%;
      animation: typingBounce 1.4s infinite both;
  }
- <br>
+
  .typing-dots span:nth-child(2) {
      animation-delay: 0.2s;
  }
- <br>
+
  .typing-dots span:nth-child(3) {
      animation-delay: 0.4s;
  }
- <br>
+
  @keyframes typingBounce {
      0%, 60%, 100% { transform: translateY(0); }
      30% { transform: translateY(-4px); }
  }
- <br>
- /\* Mobile Responsive \*/
+
+ //* Mobile Responsive *//
  @media (max-width: 480px) {
      .campus-chat-window {
          width: calc(100vw - 40px);
@@ -707,6 +713,26 @@ Nakuru, Kenya</p>
      }
  }
  </style>
+<style id="campus-chat-stability-fix">
+/* CampusNexus Chat — isolated, responsive, non-blocking */
+.campus-chat-widget{position:fixed!important;right:24px!important;bottom:24px!important;width:auto!important;height:auto!important;z-index:2147483000!important;isolation:isolate!important;pointer-events:none!important}
+.campus-chat-widget *{box-sizing:border-box}
+.campus-chat-toggle{pointer-events:auto!important;position:relative!important;z-index:2!important}
+.campus-chat-window{position:absolute!important;right:0!important;bottom:82px!important;width:min(390px,calc(100vw - 32px))!important;height:min(640px,calc(100vh - 112px))!important;max-height:calc(100vh - 112px)!important;display:none!important;flex-direction:column!important;overflow:hidden!important;pointer-events:auto!important;border-radius:18px!important}
+.campus-chat-window.open{display:flex!important}
+.campus-chat-messages{min-height:0!important;flex:1 1 auto!important;overflow-y:auto!important;overflow-x:hidden!important}
+.campus-chat-message{min-width:0!important}
+.campus-chat-message .campus-msg-bubble{max-width:100%!important;overflow-wrap:anywhere!important}
+#preChatForm{width:100%!important;max-width:100%!important}
+#preChatForm .campus-msg-bubble{width:100%!important;max-width:100%!important}
+#visitorInfoForm input{display:block!important;width:100%!important;max-width:100%!important;box-sizing:border-box!important}
+.campus-chat-input{flex:0 0 auto!important}
+@media(max-width:600px){
+ .campus-chat-widget{right:16px!important;bottom:16px!important}
+ .campus-chat-window{right:0!important;bottom:72px!important;width:calc(100vw - 32px)!important;height:min(620px,calc(100vh - 96px))!important;max-height:calc(100vh - 96px)!important}
+}
+@media(prefers-reduced-motion:reduce){.campus-chat-window{animation:none!important}.chat-notification{animation:none!important}}
+</style>
 <!-- Chat Widget HTML -->
 <div class="campus-chat-widget">
 <!-- Chat Toggle Button -->
@@ -777,6 +803,75 @@ Nakuru, Kenya</p>
 <!-- ============================================================
       MAIN JAVASCRIPT - All functions in one place
       ============================================================ -->
-<script src="https://campusnexus.co.ke/js/script.js"></script>
-<script>document.addEventListener('DOMContentLoaded',()=>{document.querySelectorAll('.cn-nav a[href^="#"]').forEach(a=>a.addEventListener('click',()=>document.body.classList.remove('menu-open')));});</script><script>document.addEventListener('DOMContentLoaded',()=>{document.querySelectorAll('a[href="#contact"]').forEach(a=>a.setAttribute('href','#contact-section'));const m=document.getElementById('contactModal');if(m){m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('active');});}});</script></body>
+
+<!-- CampusNexus CMS Bridge
+     The public site remains fully static by default. A future Admin Portal can
+     update the fields below from Supabase/API without changing this HTML. -->
+<script>
+window.CampusNexusCMS = {
+  version: '1.0',
+  siteId: 'campusnexus-main-site',
+  apiEndpoint: null, // Future: '/api/site-config' or Supabase Edge Function
+  editableComponents: [
+    'announcement-bar','navigation','hero','trust-strip','solutions','industries',
+    'lms-showcase','pos-showcase','projects','capabilities','process','testimonials','cta','footer'
+  ],
+  apply(config) {
+    if (!config || typeof config !== 'object') return;
+    Object.entries(config).forEach(([key, value]) => {
+      const nodes = document.querySelectorAll('[data-cms-field="' + key + '"]');
+      nodes.forEach(node => {
+        if (value == null) return;
+        if (node.matches('img')) node.src = value;
+        else if (node.matches('a')) node.href = value;
+        else node.textContent = value;
+      });
+    });
+  },
+  async load() {
+    if (!this.apiEndpoint) return;
+    try {
+      const res = await fetch(this.apiEndpoint + '?site=' + encodeURIComponent(this.siteId), {
+        headers: { 'Accept': 'application/json' },
+        credentials: 'same-origin'
+      });
+      if (!res.ok) return;
+      const payload = await res.json();
+      this.apply(payload.content || payload);
+    } catch (error) {
+      console.info('CampusNexus CMS: using built-in page content.', error);
+    }
+  }
+};
+document.addEventListener('DOMContentLoaded', () => CampusNexusCMS.load());
+</script>
+
+<script id="campusnexus-core-ui">
+(function(){
+  const $=(s)=>document.querySelector(s);
+  const $$=(s)=>Array.from(document.querySelectorAll(s));
+  window.openModal=function(id){const el=document.getElementById(id);if(!el)return;el.classList.add('active');document.body.classList.add('modal-open');};
+  window.closeModal=function(id){const el=document.getElementById(id);if(!el)return;el.classList.remove('active');document.body.classList.remove('modal-open');};
+  window.closeMobileMenu=function(){document.body.classList.remove('menu-open');const m=$('#mobileMenu'),b=$('#mobileMenuBackdrop');if(m)m.classList.remove('open');if(b)b.classList.remove('open');};
+  window.toggleMobileMenu=function(){const open=!document.body.classList.contains('menu-open');document.body.classList.toggle('menu-open',open);const m=$('#mobileMenu'),b=$('#mobileMenuBackdrop');if(m)m.classList.toggle('open',open);if(b)b.classList.toggle('open',open);};
+  window.toggleCampusChat=function(){const w=$('#campusChatWindow');if(!w)return;w.classList.toggle('open');const n=$('#chatNotification');if(w.classList.contains('open')&&n)n.style.display='none';};
+  window.closeCampusChat=function(){const w=$('#campusChatWindow');if(w)w.classList.remove('open');};
+  function addMessage(text,type){const box=$('#chatMessagesContainer');if(!box)return;box.style.display='flex';const row=document.createElement('div');row.className='campus-chat-message '+type;row.innerHTML='<div class="campus-msg-bubble"></div><span class="campus-msg-time">'+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})+'</span>';row.querySelector('.campus-msg-bubble').textContent=text;box.appendChild(row);box.parentElement.scrollTop=box.parentElement.scrollHeight;}
+  function botReply(message){const m=message.toLowerCase();let reply='Thanks for contacting CampusNexus. Tell us what you would like to build and our team can help you plan it.';if(m.includes('price')||m.includes('cost')||m.includes('pricing'))reply='We build solutions around the scope and workflow of each client. Ask for a free consultation and we can discuss the requirements and budget.';else if(m.includes('demo'))reply='Absolutely. Use “Book Demo” to request a consultation, or send us your preferred date and the type of system you want to see.';else if(m.includes('login')||m.includes('portal'))reply='For portal or login support, tell us the system name and what you are experiencing. We can guide you to the right support channel.';else if(m.includes('pos'))reply='We build POS solutions for retail, restaurants, pharmacies, campus stores and other businesses, including inventory and reporting.';else if(m.includes('lms')||m.includes('school')||m.includes('student'))reply='We build LMS and institutional platforms with student, lecturer, administration, exams, resources, attendance and reporting modules.';setTimeout(()=>addMessage(reply,'bot'),350);}
+  window.startChatWithInfo=function(){const name=$('#visitorNameInput')?.value.trim();const email=$('#visitorEmailInput')?.value.trim();if(!name||!email){alert('Please enter your name and email address to start the chat.');return;}const form=$('#preChatForm');if(form)form.style.display='none';const box=$('#chatMessagesContainer');if(box){box.style.display='flex';box.innerHTML='';}addMessage('Hi '+name+' 👋 Welcome to CampusNexus. How can we help you today?','bot');const q=$('#quickReplies'),i=$('#chatInputArea');if(q)q.style.display='flex';if(i)i.style.display='flex';};
+  window.sendQuickReply=function(text){addMessage(text,'user');botReply(text);};
+  window.sendCampusChatMessage=function(){const input=$('#campusChatInput');if(!input)return;const text=input.value.trim();if(!text)return;input.value='';addMessage(text,'user');botReply(text);};
+  window.handleCampusChatKey=function(e){if(e.key==='Enter'){e.preventDefault();sendCampusChatMessage();}};
+  document.addEventListener('DOMContentLoaded',function(){
+    const mt=$('#menuToggle');if(mt)mt.addEventListener('click',toggleMobileMenu);
+    const mb=$('#mobileMenuBackdrop');if(mb)mb.addEventListener('click',closeMobileMenu);
+    $$('.cn-nav a[href^="#"], #mobileMenu a[href^="#"]').forEach(a=>a.addEventListener('click',function(){if(!this.getAttribute('onclick'))closeMobileMenu();}));
+    $$('.page-modal').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)closeModal(m.id);}));
+    document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeMobileMenu();$$('.page-modal.active').forEach(m=>closeModal(m.id));closeCampusChat();}});
+    const back=$('#backToTop');if(back)back.addEventListener('click',()=>window.scrollTo({top:0,behavior:'smooth'}));
+    const progress=$('#scrollProgress');window.addEventListener('scroll',()=>{const h=document.documentElement.scrollHeight-window.innerHeight; if(progress)progress.style.width=(h>0?(window.scrollY/h)*100:0)+'%';if(back)back.classList.toggle('show',window.scrollY>500);},{passive:true});
+    document.querySelectorAll('a[href="#contact"]').forEach(a=>a.setAttribute('href','#contact-section'));
+  });
+})();
+</script></body>
 </html>
