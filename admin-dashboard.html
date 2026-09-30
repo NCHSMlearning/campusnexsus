@@ -808,6 +808,25 @@
             margin-left: auto;
         }
 
+        .chat-typing-indicator {
+            display:none;
+            align-items:center;
+            gap:4px;
+            width:max-content;
+            max-width:85%;
+            padding:7px 11px;
+            margin:6px 0;
+            border-radius:14px;
+            background:#eef4fa;
+            color:#637b91;
+            font-size:.72rem;
+        }
+        .chat-typing-indicator span { width:5px; height:5px; border-radius:50%; background:#7b91a7; animation:adminTyping 1.2s infinite ease-in-out; }
+        .chat-typing-indicator span:nth-child(2){animation-delay:.15s}
+        .chat-typing-indicator span:nth-child(3){animation-delay:.3s}
+        .chat-typing-indicator b{margin-left:4px;font-weight:700}
+        @keyframes adminTyping{0%,60%,100%{transform:translateY(0);opacity:.45}30%{transform:translateY(-3px);opacity:1}}
+
         .chat-reply-modal .modal-box .chat-history .msg .time {
             font-size: 0.6rem;
             opacity: 0.6;
@@ -1390,6 +1409,9 @@
         <div class="chat-history" id="chatHistory">
             <!-- Chat history loaded here -->
         </div>
+        <div class="chat-typing-indicator" id="chatTypingIndicator">
+            <span></span><span></span><span></span><b>Visitor is typing…</b>
+        </div>
 
         <div class="quick-replies">
             <button onclick="insertQuickReply('Hello! How can I help you today?')">👋 Greeting</button>
@@ -1434,6 +1456,9 @@ let chatSubscriptions = [];
 let currentTab = 'visitors';
 let refreshInterval = null;
 let adminName = 'Admin';
+let currentChatChannel = null;
+let agentTypingTimer = null;
+let agentLastTypingState = false;
 
 // ============================================================
 // DOM REFS
@@ -1547,6 +1572,14 @@ function closeReplyModal() {
     if (modal) {
         modal.classList.remove('active');
         modal.style.display = 'none';
+    }
+    hideVisitorTyping();
+    clearTimeout(agentTypingTimer);
+    agentLastTypingState = false;
+    if (currentChatChannel) {
+        currentChatChannel.untrack().catch(() => {});
+        supabaseClient.removeChannel(currentChatChannel).catch(() => {});
+        currentChatChannel = null;
     }
     currentChatId = null;
     document.body.style.overflow = '';
@@ -1856,6 +1889,7 @@ function viewVisitor(visitorId) {
 // ============================================================
 async function openReplyModal(chatId) {
     currentChatId = chatId;
+    await subscribeCurrentChat(chatId);
     const chat = allChats.find(c => c.chat_id === chatId);
     if (!chat) {
         alert('Chat not found');
@@ -1903,6 +1937,83 @@ async function openReplyModal(chatId) {
 }
 
 // ============================================================
+// LIVE CHAT TYPING / PRESENCE
+// ============================================================
+async function subscribeCurrentChat(chatId) {
+    if (!supabaseClient || !chatId) return;
+    if (currentChatChannel) {
+        try { await currentChatChannel.untrack(); } catch (_) {}
+        try { await supabaseClient.removeChannel(currentChatChannel); } catch (_) {}
+    }
+
+    currentChatChannel = supabaseClient.channel(`campusnexus-chat-${chatId}`);
+
+    currentChatChannel
+        .on('broadcast', { event: 'typing' }, (payload) => {
+            if (payload.payload?.sender === 'visitor') {
+                if (payload.payload.isTyping) {
+                    showVisitorTyping();
+                } else {
+                    hideVisitorTyping();
+                }
+            }
+        })
+        .on('presence', { event: 'sync' }, () => {
+            // Presence is also used by the public chat to determine whether an agent is connected.
+        })
+        .subscribe(async (status) => {
+            if (status === 'SUBSCRIBED') {
+                if (agentOnline) {
+                    try {
+                        await currentChatChannel.track({
+                            role: 'agent',
+                            agent_id: (window.currentUserId || 'admin'),
+                            agent_name: adminName,
+                            online: true
+                        });
+                    } catch (err) {
+                        console.warn('Agent presence tracking failed:', err);
+                    }
+                }
+            }
+        });
+}
+
+function showVisitorTyping() {
+    const el = document.getElementById('chatTypingIndicator');
+    if (!el) return;
+    el.style.display = 'flex';
+    const history = document.getElementById('chatHistory');
+    if (history) history.scrollTop = history.scrollHeight;
+}
+
+function hideVisitorTyping() {
+    const el = document.getElementById('chatTypingIndicator');
+    if (el) el.style.display = 'none';
+}
+
+function broadcastAgentTyping(isTyping) {
+    if (!currentChatChannel || !currentChatId || !agentOnline) return;
+    if (agentLastTypingState === isTyping) return;
+    agentLastTypingState = isTyping;
+    currentChatChannel.send({
+        type: 'broadcast',
+        event: 'typing',
+        payload: {
+            sender: 'agent',
+            isTyping,
+            agent_name: adminName
+        }
+    }).catch(() => {});
+}
+
+function handleAgentTyping() {
+    broadcastAgentTyping(true);
+    clearTimeout(agentTypingTimer);
+    agentTypingTimer = setTimeout(() => broadcastAgentTyping(false), 1200);
+}
+
+// ============================================================
 // MARK MESSAGES AS READ
 // ============================================================
 async function markMessagesAsRead(chatId) {
@@ -1927,8 +2038,11 @@ async function sendReply() {
     const message = replyInput.value.trim();
     if (!message || !currentChatId) return;
 
+    clearTimeout(agentTypingTimer);
+    broadcastAgentTyping(false);
+
     try {
-        await supabaseClient
+        const { data: sentMessage, error: sendError } = await supabaseClient
             .from('chat_messages')
             .insert([
                 {
@@ -1939,7 +2053,11 @@ async function sendReply() {
                     is_read: true,
                     created_at: new Date().toISOString()
                 }
-            ]);
+            ])
+            .select()
+            .single();
+
+        if (sendError) throw sendError;
 
         const historyEl = document.getElementById('chatHistory');
         if (historyEl) {
@@ -1979,16 +2097,32 @@ function insertQuickReply(text) {
     }
 }
 
+const replyInputEl = document.getElementById('replyMessage');
+if (replyInputEl) replyInputEl.addEventListener('input', handleAgentTyping);
+
 // ============================================================
 // TOGGLE AGENT STATUS
 // ============================================================
-function toggleStatus() {
+async function toggleStatus() {
     agentOnline = !agentOnline;
     const statusToggle = document.getElementById('statusToggleText');
     const agentStatus = document.getElementById('agentStatusText');
     
     if (statusToggle) statusToggle.textContent = agentOnline ? 'Go Offline' : 'Go Online';
     if (agentStatus) agentStatus.textContent = agentOnline ? 'Online' : 'Offline';
+
+    if (currentChatChannel) {
+        try {
+            if (agentOnline) {
+                await currentChatChannel.track({ role:'agent', agent_id:window.currentUserId || 'admin', agent_name:adminName, online:true });
+            } else {
+                await currentChatChannel.untrack();
+                broadcastAgentTyping(false);
+            }
+        } catch (err) {
+            console.warn('Agent presence update failed:', err);
+        }
+    }
 }
 
 // ============================================================
@@ -2550,6 +2684,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         adminName = session.name || 'Admin';
+        window.currentUserId = session.user_id || session.id || 'admin';
         if (adminNameEl) adminNameEl.textContent = adminName;
 
         console.log('✅ Admin logged in:', session.email);
