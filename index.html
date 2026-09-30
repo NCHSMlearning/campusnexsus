@@ -368,6 +368,48 @@ a{text-decoration:none;color:inherit}button,input,select,textarea{font:inherit}.
 
 <div class="modal-bg" id="bookingModal"><div class="modal"><div class="modal-head"><h3><i class="fa-solid fa-calendar-check" style="color:#087cf2"></i> Book a Consultation</h3><button class="close" onclick="closeBooking()"><i class="fa-solid fa-xmark"></i></button></div><div class="modal-body"><div class="note"><i class="fa-solid fa-circle-info"></i> Tell us what you need and choose a preferred date and time. Your request will be securely submitted for the CampusNexus team to review.</div><form id="bookingForm"><div class="form-grid"><div class="field"><label>Full Name *</label><input name="full_name" required placeholder="Your full name"></div><div class="field"><label>Organization / Company</label><input name="organization" placeholder="Organization name"></div><div class="field"><label>Email Address *</label><input name="email" type="email" required placeholder="you@example.com"></div><div class="field"><label>Phone Number *</label><input name="phone" required placeholder="+254..."></div><div class="field"><label>Service *</label><select name="service" required><option value="">Select a service</option><option>Education / LMS Platform</option><option>POS / Business System</option><option>Website</option><option>E-commerce</option><option>Custom Web Application</option><option>Dashboard / Portal</option><option>Other</option></select></div><div class="field"><label>Meeting Preference</label><select name="meeting_preference"><option>Online</option><option>Phone call</option><option>In person</option></select></div><div class="field"><label>Preferred Date *</label><input name="preferred_date" type="date" required></div><div class="field"><label>Preferred Time *</label><input name="preferred_time" type="time" required></div><div class="field"><label>Budget Range</label><select name="budget_range"><option value="">Prefer not to say</option><option>Below KES 50,000</option><option>KES 50,000 – 100,000</option><option>KES 100,000 – 250,000</option><option>KES 250,000 – 500,000</option><option>Above KES 500,000</option></select></div><div class="field"><label>How did you hear about us?</label><select name="source"><option>Website</option><option>Referral</option><option>Social media</option><option>Existing client</option><option>Other</option></select></div><div class="field full"><label>Project Description *</label><textarea name="project_description" required placeholder="Tell us what you want to build, improve or digitize..."></textarea></div></div><label class="consent"><input type="checkbox" name="consent" required><span>I agree that CampusNexus may use these details to contact me about this consultation request.</span></label><div class="msg" id="bookingMsg"></div><div class="submit"><button type="button" class="btn" style="background:#edf5fc;color:#31516e" onclick="closeBooking()">Cancel</button><button class="btn gold" id="submitBooking" type="submit">Submit Request <i class="fa-solid fa-arrow-right"></i></button></div></form></div></div></div>
 
+<style>
+/* ===== CampusNexus Live Agent Chat ===== */
+.agent-chat{position:fixed;right:22px;bottom:22px;z-index:10050;font-family:Inter,Arial,sans-serif}
+.agent-chat-toggle{border:0;border-radius:999px;background:linear-gradient(135deg,#087cf2,#075fc0);color:#fff;padding:14px 19px;display:flex;align-items:center;gap:10px;box-shadow:0 16px 38px rgba(4,35,76,.28);font-weight:800;cursor:pointer;transition:.2s}
+.agent-chat-toggle:hover{transform:translateY(-2px);box-shadow:0 20px 45px rgba(4,35,76,.35)}
+.agent-chat-toggle .live-dot{width:9px;height:9px;background:#35e28a;border-radius:50%;box-shadow:0 0 0 4px rgba(53,226,138,.16)}
+.agent-chat-window{position:absolute;right:0;bottom:64px;width:365px;max-width:calc(100vw - 28px);height:540px;max-height:calc(100vh - 110px);background:#fff;border:1px solid #dce8f4;border-radius:22px;box-shadow:0 25px 70px rgba(3,28,57,.25);overflow:hidden;display:none;flex-direction:column}
+.agent-chat-window.open{display:flex}
+.agent-chat-head{background:linear-gradient(135deg,#071b32,#0b3762);color:#fff;padding:17px 18px;display:flex;align-items:center;justify-content:space-between}
+.agent-chat-head-left{display:flex;gap:11px;align-items:center}.agent-avatar{width:39px;height:39px;border-radius:12px;background:#d4a843;display:grid;place-items:center;color:#08182b}.agent-chat-head strong{display:block;font-size:14px}.agent-chat-head small{display:block;color:#b9d3eb;margin-top:2px;font-size:11px}
+.agent-close{background:transparent;border:0;color:#fff;font-size:20px;cursor:pointer;padding:4px}
+.agent-intro{padding:13px 16px;background:#f4f8fc;border-bottom:1px solid #e5edf5;font-size:12px;color:#526b82;line-height:1.55}
+.agent-form{padding:14px 16px;border-bottom:1px solid #e5edf5}.agent-form.hidden{display:none}.agent-form input{width:100%;box-sizing:border-box;border:1px solid #d7e3ee;border-radius:10px;padding:11px 12px;margin-bottom:8px;font:inherit;font-size:13px;outline:none}.agent-form input:focus{border-color:#087cf2}.agent-start{width:100%;border:0;border-radius:10px;padding:11px;background:#087cf2;color:#fff;font-weight:800;cursor:pointer}
+.agent-messages{flex:1;overflow:auto;padding:15px;background:#f7fafc;display:flex;flex-direction:column;gap:9px}.agent-msg{max-width:82%;padding:10px 12px;border-radius:14px;font-size:13px;line-height:1.45;word-break:break-word}.agent-msg.visitor{align-self:flex-end;background:#087cf2;color:#fff;border-bottom-right-radius:4px}.agent-msg.agent{align-self:flex-start;background:#fff;color:#233b51;border:1px solid #e0e9f1;border-bottom-left-radius:4px}.agent-msg.system{align-self:center;background:#eaf2f9;color:#60768a;font-size:11px;text-align:center;max-width:95%}.agent-time{display:block;font-size:9px;opacity:.62;margin-top:4px}
+.agent-input{display:flex;gap:7px;padding:11px;border-top:1px solid #e3ebf3;background:#fff}.agent-input input{flex:1;min-width:0;border:1px solid #d6e2ed;border-radius:10px;padding:10px 11px;outline:none;font:inherit;font-size:13px}.agent-input button{width:43px;border:0;border-radius:10px;background:#087cf2;color:#fff;cursor:pointer}.agent-input button:disabled{opacity:.55;cursor:not-allowed}
+.agent-status{padding:6px 15px;font-size:10px;color:#7890a5;background:#fff}.agent-error{color:#c0392b}
+@media(max-width:520px){.agent-chat{right:12px;bottom:12px}.agent-chat-window{right:-1px;bottom:59px;width:calc(100vw - 24px);height:min(560px,calc(100vh - 90px));border-radius:18px}.agent-chat-toggle{padding:13px 16px}.agent-chat-toggle span.label{display:none}}
+</style>
+
+<!-- CampusNexus Live Chat with an Agent -->
+<div class="agent-chat" id="agentChat">
+  <div class="agent-chat-window" id="agentChatWindow" aria-hidden="true">
+    <div class="agent-chat-head">
+      <div class="agent-chat-head-left"><div class="agent-avatar"><i class="fa-solid fa-headset"></i></div><div><strong>Chat with a CampusNexus Agent</strong><small><span style="color:#35e28a">●</span> Live support</small></div></div>
+      <button class="agent-close" onclick="closeAgentChat()" aria-label="Close chat"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="agent-intro">Have a question about a website, LMS, POS system or custom application? Start a conversation with our team.</div>
+    <form class="agent-form" id="agentStartForm">
+      <input id="agentName" name="name" required maxlength="100" placeholder="Your name">
+      <input id="agentEmail" name="email" type="email" maxlength="160" placeholder="Email address (optional)">
+      <button class="agent-start" type="submit">Start Chat <i class="fa-solid fa-arrow-right"></i></button>
+    </form>
+    <div class="agent-messages" id="agentMessages" aria-live="polite"></div>
+    <div class="agent-status" id="agentStatus">Connect with our team</div>
+    <form class="agent-input" id="agentMessageForm" style="display:none">
+      <input id="agentMessageInput" autocomplete="off" maxlength="2000" placeholder="Type your message...">
+      <button type="submit" id="agentSendButton" aria-label="Send"><i class="fa-solid fa-paper-plane"></i></button>
+    </form>
+  </div>
+  <button class="agent-chat-toggle" onclick="toggleAgentChat()" aria-label="Chat with an agent"><span class="live-dot"></span><i class="fa-solid fa-comments"></i><span class="label">Chat with an Agent</span></button>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 window.CampusNexusCMS={
@@ -441,6 +483,42 @@ document.querySelectorAll('.lab-tab').forEach(b=>b.addEventListener('click',()=>
 setProduct('education');
 
 document.addEventListener('DOMContentLoaded',()=>CampusNexusCMS.load());
+</script>
+
+<script>
+/* ===== Live Agent Chat ===== */
+let agentChatId=null, agentChannel=null, agentStarted=false;
+const agentEsc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+function toggleAgentChat(){const w=document.getElementById('agentChatWindow');w.classList.toggle('open');w.setAttribute('aria-hidden',String(!w.classList.contains('open')));if(w.classList.contains('open')&&!agentStarted)setTimeout(()=>document.getElementById('agentName')?.focus(),80)}
+function closeAgentChat(){const w=document.getElementById('agentChatWindow');w.classList.remove('open');w.setAttribute('aria-hidden','true')}
+function addAgentMessage(message,sender='agent',time=new Date()){const box=document.getElementById('agentMessages');const div=document.createElement('div');div.className='agent-msg '+sender;div.innerHTML=agentEsc(message).replace(/\n/g,'<br>')+'<span class="agent-time">'+time.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})+'</span>';box.appendChild(div);box.scrollTop=box.scrollHeight}
+function addAgentSystem(message){const box=document.getElementById('agentMessages');const div=document.createElement('div');div.className='agent-msg system';div.textContent=message;box.appendChild(div);box.scrollTop=box.scrollHeight}
+function setAgentStatus(text,error=false){const el=document.getElementById('agentStatus');el.textContent=text;el.classList.toggle('agent-error',error)}
+async function startAgentChat(e){
+ e.preventDefault();
+ const name=document.getElementById('agentName').value.trim(),email=document.getElementById('agentEmail').value.trim();
+ if(!name)return;
+ const client=CampusNexusCMS.getClient();if(!client){setAgentStatus('Chat service is unavailable right now.',true);return}
+ const btn=e.currentTarget.querySelector('button');btn.disabled=true;btn.textContent='Connecting...';
+ try{
+  agentChatId=(crypto.randomUUID?crypto.randomUUID():'chat-'+Date.now()+'-'+Math.random().toString(36).slice(2));
+  const {error}=await client.from('chat_sessions').insert({chat_id:agentChatId,visitor_id:agentChatId,visitor_name:name,visitor_email:email||null,visitor_page:location.pathname||'/',status:'active'});
+  if(error)throw error;
+  agentStarted=true;document.getElementById('agentStartForm').classList.add('hidden');document.getElementById('agentMessageForm').style.display='flex';setAgentStatus('Connected — send your message below.');addAgentSystem('You are now connected to CampusNexus support.');
+  await subscribeAgentChat();
+ }catch(err){console.error('Live chat start error:',err);setAgentStatus('Unable to start chat. Please try again.',true);btn.disabled=false;btn.innerHTML='Start Chat <i class="fa-solid fa-arrow-right"></i>'}
+}
+async function subscribeAgentChat(){
+ const client=CampusNexusCMS.getClient();if(!client||!agentChatId)return;
+ if(agentChannel)client.removeChannel(agentChannel);
+ agentChannel=client.channel('visitor-chat-'+agentChatId).on('postgres_changes',{event:'INSERT',schema:'public',table:'chat_messages',filter:'chat_id=eq.'+agentChatId},payload=>{if(payload.new.sender==='agent'){addAgentMessage(payload.new.message,'agent',new Date(payload.new.created_at||Date.now()));setAgentStatus('Agent replied — you can respond below.')}}).subscribe(status=>{if(status==='SUBSCRIBED')setAgentStatus('Live chat connected')});
+}
+async function sendAgentMessage(e){
+ e.preventDefault();const input=document.getElementById('agentMessageInput'),btn=document.getElementById('agentSendButton'),message=input.value.trim();if(!message||!agentChatId)return;
+ const client=CampusNexusCMS.getClient();if(!client)return;input.disabled=true;btn.disabled=true;
+ try{const {error}=await client.from('chat_messages').insert({chat_id:agentChatId,visitor_id:agentChatId,sender:'visitor',message,is_read:false,created_at:new Date().toISOString()});if(error)throw error;addAgentMessage(message,'visitor');input.value='';setAgentStatus('Message sent — waiting for an agent reply.')}catch(err){console.error('Live chat message error:',err);setAgentStatus('Message could not be sent. Please try again.',true)}finally{input.disabled=false;btn.disabled=false;input.focus()}
+}
+document.getElementById('agentStartForm').addEventListener('submit',startAgentChat);document.getElementById('agentMessageForm').addEventListener('submit',sendAgentMessage);document.addEventListener('keydown',e=>{if(e.key==='Escape')closeAgentChat()});
 </script>
 </body>
 </html>
