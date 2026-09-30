@@ -385,7 +385,7 @@ a{text-decoration:none;color:inherit}button,input,select,textarea{font:inherit}.
 .agent-chat-head-left{display:flex;gap:11px;align-items:center}.agent-avatar{width:39px;height:39px;border-radius:12px;background:#d4a843;display:grid;place-items:center;color:#08182b}.agent-chat-head strong{display:block;font-size:14px}.agent-chat-head small{display:block;color:#b9d3eb;margin-top:2px;font-size:11px}
 .agent-close{background:transparent;border:0;color:#fff;font-size:20px;cursor:pointer;padding:4px}
 .agent-intro{padding:13px 16px;background:#f4f8fc;border-bottom:1px solid #e5edf5;font-size:12px;color:#526b82;line-height:1.55}
-.agent-form{padding:14px 16px;border-bottom:1px solid #e5edf5}.agent-form.hidden{display:none}.agent-form input{width:100%;box-sizing:border-box;border:1px solid #d7e3ee;border-radius:10px;padding:11px 12px;margin-bottom:8px;font:inherit;font-size:13px;outline:none}.agent-form input:focus{border-color:#087cf2}.agent-start{width:100%;border:0;border-radius:10px;padding:11px;background:#087cf2;color:#fff;font-weight:800;cursor:pointer}
+.agent-form{padding:14px 16px;border-bottom:1px solid #e5edf5}.agent-form.hidden{display:none}.agent-typing{display:none;align-items:center;gap:4px;max-width:230px;padding:8px 12px;margin:6px 0;border-radius:14px;background:#eef4fa;color:#617b93;font-size:11px}.agent-typing span{width:5px;height:5px;border-radius:50%;background:#7c96ad;animation:agentTyping 1.2s infinite ease-in-out}.agent-typing span:nth-child(2){animation-delay:.15s}.agent-typing span:nth-child(3){animation-delay:.3s}.agent-typing b{margin-left:4px;font-weight:700}.agent-seen{display:block;font-size:9px;color:#8aa0b5;margin-top:2px;text-align:right}@keyframes agentTyping{0%,60%,100%{transform:translateY(0);opacity:.45}30%{transform:translateY(-3px);opacity:1}}.agent-form input{width:100%;box-sizing:border-box;border:1px solid #d7e3ee;border-radius:10px;padding:11px 12px;margin-bottom:8px;font:inherit;font-size:13px;outline:none}.agent-form input:focus{border-color:#087cf2}.agent-start{width:100%;border:0;border-radius:10px;padding:11px;background:#087cf2;color:#fff;font-weight:800;cursor:pointer}
 .agent-messages{flex:1;overflow:auto;padding:15px;background:#f7fafc;display:flex;flex-direction:column;gap:9px}.agent-msg{max-width:82%;padding:10px 12px;border-radius:14px;font-size:13px;line-height:1.45;word-break:break-word}.agent-msg.visitor{align-self:flex-end;background:#087cf2;color:#fff;border-bottom-right-radius:4px}.agent-msg.agent{align-self:flex-start;background:#fff;color:#233b51;border:1px solid #e0e9f1;border-bottom-left-radius:4px}.agent-msg.system{align-self:center;background:#eaf2f9;color:#60768a;font-size:11px;text-align:center;max-width:95%}.agent-time{display:block;font-size:9px;opacity:.62;margin-top:4px}
 .agent-input{display:flex;gap:7px;padding:11px;border-top:1px solid #e3ebf3;background:#fff}.agent-input input{flex:1;min-width:0;border:1px solid #d6e2ed;border-radius:10px;padding:10px 11px;outline:none;font:inherit;font-size:13px}.agent-input button{width:43px;border:0;border-radius:10px;background:#087cf2;color:#fff;cursor:pointer}.agent-input button:disabled{opacity:.55;cursor:not-allowed}
 .agent-status{padding:6px 15px;font-size:10px;color:#7890a5;background:#fff}.agent-error{color:#c0392b}
@@ -492,11 +492,11 @@ document.addEventListener('DOMContentLoaded',()=>CampusNexusCMS.load());
 
 <script>
 /* ===== Live Agent Chat ===== */
-let agentChatId=null, agentChannel=null, agentStarted=false;
+let agentChatId=null, agentChannel=null, agentStarted=false, agentTypingTimer=null, agentLastTyping=false;
 const agentEsc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
 function toggleAgentChat(){const w=document.getElementById('agentChatWindow');w.classList.toggle('open');w.setAttribute('aria-hidden',String(!w.classList.contains('open')));if(w.classList.contains('open')&&!agentStarted)setTimeout(()=>document.getElementById('agentName')?.focus(),80)}
 function closeAgentChat(){const w=document.getElementById('agentChatWindow');w.classList.remove('open');w.setAttribute('aria-hidden','true')}
-function addAgentMessage(message,sender='agent',time=new Date()){const box=document.getElementById('agentMessages');const div=document.createElement('div');div.className='agent-msg '+sender;div.innerHTML=agentEsc(message).replace(/\n/g,'<br>')+'<span class="agent-time">'+time.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})+'</span>';box.appendChild(div);box.scrollTop=box.scrollHeight}
+function addAgentMessage(message,sender='agent',time=new Date(),messageId=null){const box=document.getElementById('agentMessages');const div=document.createElement('div');div.className='agent-msg '+sender;if(messageId)div.dataset.messageId=messageId;div.innerHTML=agentEsc(message).replace(/\n/g,'<br>')+'<span class="agent-time">'+time.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})+'</span>';if(sender==='visitor'&&messageId)div.insertAdjacentHTML('beforeend','<span class="agent-seen" data-seen-for="'+agentEsc(messageId)+'">Sent</span>');box.appendChild(div);box.scrollTop=box.scrollHeight;return div}
 function addAgentSystem(message){const box=document.getElementById('agentMessages');const div=document.createElement('div');div.className='agent-msg system';div.textContent=message;box.appendChild(div);box.scrollTop=box.scrollHeight}
 function setAgentStatus(text,error=false){const el=document.getElementById('agentStatus');el.textContent=text;el.classList.toggle('agent-error',error)}
 async function startAgentChat(e){
@@ -519,15 +519,75 @@ async function startAgentChat(e){
 }
 async function subscribeAgentChat(){
  const client=CampusNexusCMS.getClient();if(!client||!agentChatId)return;
- if(agentChannel)client.removeChannel(agentChannel);
- agentChannel=client.channel('visitor-chat-'+agentChatId).on('postgres_changes',{event:'INSERT',schema:'public',table:'chat_messages',filter:'chat_id=eq.'+agentChatId},payload=>{if(payload.new.sender==='agent'){addAgentMessage(payload.new.message,'agent',new Date(payload.new.created_at||Date.now()));setAgentStatus('Agent replied — you can respond below.')}}).subscribe(status=>{if(status==='SUBSCRIBED')setAgentStatus('Live chat connected')});
+ if(agentChannel)await client.removeChannel(agentChannel);
+ agentChannel=client.channel('campusnexus-chat-'+agentChatId);
+ agentChannel
+  .on('postgres_changes',{event:'INSERT',schema:'public',table:'chat_messages',filter:'chat_id=eq.'+agentChatId},payload=>{
+   if(payload.new.sender==='agent'){
+    hideAgentTyping();
+    addAgentMessage(payload.new.message,'agent',new Date(payload.new.created_at||Date.now()),payload.new.id);
+    setAgentStatus('Agent replied — you can respond below.');
+   }
+  })
+  .on('postgres_changes',{event:'UPDATE',schema:'public',table:'chat_messages',filter:'chat_id=eq.'+agentChatId},payload=>{
+   if(payload.new.sender==='visitor' && payload.new.is_read){
+    const el=document.querySelector('[data-seen-for="'+String(payload.new.id||'').replace(/"/g,'\\"')+'"]');
+    if(el)el.textContent='Seen';
+   }
+  })
+  .on('broadcast',{event:'typing'},payload=>{
+   if(payload.payload?.sender==='agent'){
+    if(payload.payload.isTyping) showAgentTyping(payload.payload.agent_name||'CampusNexus Agent');
+    else hideAgentTyping();
+   }
+  })
+  .on('presence',{event:'sync'},()=>{
+   const state=agentChannel.presenceState();
+   const agents=Object.values(state).flat();
+   const online=agents.some(a=>a.role==='agent');
+   setAgentStatus(online?'Agent online — you can send a message.':'Live chat connected — waiting for an agent.');
+  })
+  .subscribe(async status=>{
+   if(status==='SUBSCRIBED'){
+    await agentChannel.track({role:'visitor',visitor_id:localStorage.getItem('campusnexus_visitor_id')||'',online:true});
+    setAgentStatus('Live chat connected — waiting for an agent.');
+   }
+  });
+}
+function ensureAgentTypingBox(){
+ const box=document.getElementById('agentMessages');if(!box)return null;
+ let el=document.getElementById('agentTypingIndicator');
+ if(!el){
+  el=document.createElement('div');el.id='agentTypingIndicator';el.className='agent-typing';el.innerHTML='<span></span><span></span><span></span><b>Agent is typing…</b>';box.appendChild(el);
+ }
+ return el;
+}
+function showAgentTyping(name){
+ const el=ensureAgentTypingBox();if(!el)return;
+ const label=el.querySelector('b');if(label)label.textContent=(name||'Agent')+' is typing…';
+ el.style.display='flex';
+ const box=document.getElementById('agentMessages');box.scrollTop=box.scrollHeight;
+}
+function hideAgentTyping(){const el=document.getElementById('agentTypingIndicator');if(el)el.style.display='none'}
+
+function broadcastVisitorTyping(isTyping){
+ if(!agentChannel||!agentStarted)return;
+ if(isTyping===agentLastTyping)return;
+ agentLastTyping=isTyping;
+ agentChannel.send({type:'broadcast',event:'typing',payload:{sender:'visitor',isTyping,visitor_id:localStorage.getItem('campusnexus_visitor_id')||''}}).catch(()=>{});
+}
+function handleVisitorTyping(){
+ broadcastVisitorTyping(true);
+ clearTimeout(agentTypingTimer);
+ agentTypingTimer=setTimeout(()=>broadcastVisitorTyping(false),1200);
 }
 async function sendAgentMessage(e){
  e.preventDefault();const input=document.getElementById('agentMessageInput'),btn=document.getElementById('agentSendButton'),message=input.value.trim();if(!message||!agentChatId)return;
+ clearTimeout(agentTypingTimer);broadcastVisitorTyping(false);
  const client=CampusNexusCMS.getClient();if(!client)return;input.disabled=true;btn.disabled=true;
- try{const {error}=await client.from('chat_messages').insert({chat_id:agentChatId,visitor_id:agentChatId,sender:'visitor',message,is_read:false,created_at:new Date().toISOString()});if(error)throw error;addAgentMessage(message,'visitor');input.value='';setAgentStatus('Message sent — waiting for an agent reply.')}catch(err){console.error('Live chat message error:',err);setAgentStatus('Message could not be sent. Please try again.',true)}finally{input.disabled=false;btn.disabled=false;input.focus()}
+ try{const {data:sent,error}=await client.from('chat_messages').insert({chat_id:agentChatId,visitor_id:localStorage.getItem('campusnexus_visitor_id')||agentChatId,sender:'visitor',message,is_read:false,created_at:new Date().toISOString()}).select().single();if(error)throw error;addAgentMessage(message,'visitor',new Date(sent?.created_at||Date.now()),sent?.id||null);input.value='';setAgentStatus('Message sent — waiting for an agent reply.')}catch(err){console.error('Live chat message error:',err);setAgentStatus('Message could not be sent. Please try again.',true)}finally{input.disabled=false;btn.disabled=false;input.focus()}
 }
-document.getElementById('agentStartForm').addEventListener('submit',startAgentChat);document.getElementById('agentMessageForm').addEventListener('submit',sendAgentMessage);document.addEventListener('keydown',e=>{if(e.key==='Escape')closeAgentChat()});
+document.getElementById('agentStartForm').addEventListener('submit',startAgentChat);document.getElementById('agentMessageForm').addEventListener('submit',sendAgentMessage);document.getElementById('agentMessageInput')?.addEventListener('input',handleVisitorTyping);document.addEventListener('keydown',e=>{if(e.key==='Escape')closeAgentChat()});
 </script>
 </body>
 </html>
