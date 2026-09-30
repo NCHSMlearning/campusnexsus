@@ -420,7 +420,7 @@ a{text-decoration:none;color:inherit}button,input,select,textarea{font:inherit}.
 window.CampusNexusCMS={
  version:'7.0',siteId:'campusnexus-main-site',
  supabaseUrl:'https://irahplkvocaakjxuisto.supabase.co',
- supabaseAnonKey:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmUtdXByb2plY3QiLCJyZWYiOiJpcmFocGxrdm9jYWFranh1aXN0byIsInJvbGUiOiJhbXkifQ',
+ supabaseAnonKey:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlyYWhwbGt2b2NhYWtqeHVpc3RvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4ODY5ODQsImV4cCI6MjEwMzQ2Mjk4NH0.BFOwdRVDz4r1oYgUjm8zQbthqblGRq4c3WQWQaOhu7g',
  table:'cms_site_content',
  getClient(){if(!window.supabase?.createClient)return null;if(!this._client)this._client=window.supabase.createClient(this.supabaseUrl,this.supabaseAnonKey);return this._client},
  apply(config){if(!config)return;const content=config.content||config;Object.entries(content).forEach(([key,value])=>{if(value==null)return;document.querySelectorAll('[data-cms-field="'+key+'"]').forEach(n=>{if(key==='hero.visual' && /^https?:/i.test(String(value))){const img=n.querySelector('img');if(img)img.src=value;return}n.textContent=value})});(config.sections||[]).forEach(s=>document.querySelectorAll('[data-cms-component="'+s.id+'"]').forEach(n=>n.style.display=s.visible===false?'none':''));try{localStorage.setItem('campusnexus_cms_published',JSON.stringify(config))}catch(e){}},
@@ -507,11 +507,15 @@ async function startAgentChat(e){
  const btn=e.currentTarget.querySelector('button');btn.disabled=true;btn.textContent='Connecting...';
  try{
   agentChatId=(crypto.randomUUID?crypto.randomUUID():'chat-'+Date.now()+'-'+Math.random().toString(36).slice(2));
-  const {error}=await client.from('chat_sessions').insert({chat_id:agentChatId,visitor_id:agentChatId,visitor_name:name,visitor_email:email||null,visitor_page:location.pathname||'/',status:'active'});
+  const visitorId=localStorage.getItem('campusnexus_visitor_id')||('visitor-'+Date.now()+'-'+Math.random().toString(36).slice(2));
+  localStorage.setItem('campusnexus_visitor_id',visitorId);
+  localStorage.setItem('campusnexus_chat_id',agentChatId);
+  const {data:session,error}=await client.from('chat_sessions').insert({chat_id:agentChatId,visitor_id:visitorId,visitor_name:name,visitor_email:email||null,visitor_page:location.pathname||'/',status:'active'}).select().single();
   if(error)throw error;
+  if(!session)throw new Error('Chat session was not created.');
   agentStarted=true;document.getElementById('agentStartForm').classList.add('hidden');document.getElementById('agentMessageForm').style.display='flex';setAgentStatus('Connected — send your message below.');addAgentSystem('You are now connected to CampusNexus support.');
   await subscribeAgentChat();
- }catch(err){console.error('Live chat start error:',err);setAgentStatus('Unable to start chat. Please try again.',true);btn.disabled=false;btn.innerHTML='Start Chat <i class="fa-solid fa-arrow-right"></i>'}
+ }catch(err){console.error('Live chat start error:',err);setAgentStatus('Unable to start chat: '+(err?.message||'Please try again.'),true);btn.disabled=false;btn.innerHTML='Start Chat <i class="fa-solid fa-arrow-right"></i>'}
 }
 async function subscribeAgentChat(){
  const client=CampusNexusCMS.getClient();if(!client||!agentChatId)return;
