@@ -1353,7 +1353,7 @@
 
                     <div class="cms-card">
                         <h3>Preview</h3>
-                        <p class="cms-muted" style="margin-bottom:12px;">Preview opens the current public landing page. Published content is loaded by the CMS bridge.</p>
+                        <p class="cms-muted" style="margin-bottom:12px;">Preview opens the current public CampusNexus landing page (index.html). Published content is loaded by the CMS bridge.</p>
                         <div class="cms-preview">
                             <iframe id="cmsPreviewFrame" title="CampusNexus preview" src="about:blank"></iframe>
                         </div>
@@ -1372,7 +1372,7 @@
                         <div class="cms-help">
                             <strong>Draft</strong> changes are saved but do not affect visitors.
                             <br><strong>Publish</strong> makes the current configuration available to the public landing page.
-                            <br><strong>Preview</strong> opens the live page in a new view.
+                            <br><strong>Preview</strong> opens the public <code>index.html</code> landing page in a new browser tab and also loads it in the preview panel. It shows the latest <strong>published</strong> CMS content.
                         </div>
                     </div>
 
@@ -2321,7 +2321,7 @@ function subscribeToUpdates() {
 const CMS_TABLE = 'cms_site_content';
 const CMS_REVISION_TABLE = 'cms_site_revisions';
 const CMS_SITE_ID = 'campusnexus-main-site';
-const CMS_PUBLIC_URL = 'CampusNexus_Landing_CMS_CONNECTED.html';
+const CMS_PUBLIC_URL = 'index.html';
 
 const CMS_FIELD_DEFINITIONS = [
   {key:'hero.eyebrow', label:'Hero eyebrow', type:'text', help:'Small label above the main hero heading.'},
@@ -2616,16 +2616,33 @@ async function cmsLoadHistory(){
   }
 }
 
-function cmsPreview(){
-  const frame=document.getElementById('cmsPreviewFrame');
-  if(frame)frame.src=CMS_PUBLIC_URL+'?preview=1&v='+Date.now();
-  window.open(CMS_PUBLIC_URL+'?preview=1','_blank');
+function cmsGetPublicUrl(){
+  return new URL(CMS_PUBLIC_URL, window.location.href).href;
 }
+
+function cmsPreview(){
+  const url=cmsGetPublicUrl()+'?preview=1&v='+Date.now();
+  const frame=document.getElementById('cmsPreviewFrame');
+  if(frame)frame.src=url;
+  const previewWindow=window.open(url,'_blank','noopener,noreferrer');
+  if(!previewWindow){
+    cmsSetNotice('Preview was blocked by your browser. Allow pop-ups for the Admin Dashboard and click Preview again.','error');
+    return;
+  }
+  cmsSetNotice('Preview opened in a new browser tab. The same page is also shown in the Preview panel below.','success');
+}
+
+function cmsOpenPreview(){
+  const url=cmsGetPublicUrl()+'?preview=1&v='+Date.now();
+  window.open(url,'_blank','noopener,noreferrer');
+}
+
 
 window.cmsLoad=cmsLoad;
 window.cmsSaveDraft=cmsSaveDraft;
 window.cmsPublish=cmsPublish;
 window.cmsPreview=cmsPreview;
+window.cmsOpenPreview=cmsOpenPreview;
 window.cmsMoveSection=cmsMoveSection;
 window.cmsToggleSection=cmsToggleSection;
 
