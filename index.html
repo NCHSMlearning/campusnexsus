@@ -1,889 +1,143 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
-<title>CampusNexus | Digital Products, Websites, LMS, POS &amp; Custom Software</title>
-<!-- SEO Meta Tags -->
-<meta content="CampusNexus builds LMS platforms, POS systems, e-commerce stores, company websites, landing pages and custom web applications for organizations and businesses." name="description"/>
-<meta content="learning management system, digital learning, nursing education, TVET, campus management, POS system, student management" name="keywords"/>
-<meta content="Nakuru College of Health Sciences and Management" name="author"/>
-<meta content="index, follow" name="robots"/>
-<!-- Canonical URL -->
-<link href="https://campusnexus.co.ke/" rel="canonical"/>
-<!-- Open Graph -->
-<meta content="CampusNexus - Digital Learning Platform" property="og:title"/>
-<meta content="One secure platform for learning, assessments, attendance, and academic management. Plus integrated POS for campus shops and canteens." property="og:description"/>
-<meta content="website" property="og:type"/>
-<meta content="https://campusnexus.co.ke/" property="og:url"/>
-<meta content="https://raw\.githubusercontent.com/NCHSMlearning/e-learning/main/images/Logo_NCHSM.png" property="og:image"/>
-<!-- PWA Support -->
-<link href="https://campusnexus.co.ke/manifest.json" rel="manifest"/>
-<meta content="#0A1628" name="theme-color"/>
-<meta content="yes" name="mobile-web-app-capable"/>
-<meta content="CampusNexus" name="apple-mobile-web-app-title"/>
-<link href="https://campusnexus.co.ke/images/logo-icon.png" rel="apple-touch-icon"/>
-<link href="https://campusnexus.co.ke/images/logo-icon.png" rel="icon" sizes="192x192" type="image/png"/>
-<link href="https://campusnexus.co.ke/images/logo-icon.png" rel="shortcut icon" type="image/png"/>
-<!-- Fonts -->
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&amp;display=swap" rel="stylesheet"/>
-<!-- Font Awesome (for icons) -->
-<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
-<!-- Supabase Client -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<!-- External CSS -->
-<link href="https://campusnexus.co.ke/css/style.css" rel="stylesheet"/>
-<!-- JSON-LD Structured Data -->
-<script type="application/ld+json">
-     {
-       "@context": "https://schema.org",
-       "@type": "EducationalOrganization",
-       "name": "CampusNexus",
-       "alternateName": "CampusNexus Digital Learning Platform",
-       "url": "https://campusnexus.co.ke",
-       "logo": "https://campusnexus.co.ke/images/logo.png",
-       "description": "Next generation digital learning platform for nursing, TVET, and higher learning institutions across Africa. Includes integrated POS system for campus shops.",
-       "address": {
-         "@type": "PostalAddress",
-         "streetAddress": "Kiamunyi Off Nakuru - Kabarak Rd",
-         "addressLocality": "Nakuru",
-         "addressCountry": "KE"
-       },
-       "contactPoint": {
-         "@type": "ContactPoint",
-         "contactType": "customer support",
-         "email": "support@campusnexus.com",
-         "telephone": "+254790969743"
-       }
-     }
-     </script>
-<style id="campusnexus-premium-overrides">
-:root{
-  --cn-navy:#071426;
-  --cn-navy-2:#0b1d34;
-  --cn-blue:#0d5ea8;
-  --cn-cyan:#29b6d8;
-  --cn-gold:#d7ad4b;
-  --cn-gold-2:#f1d58a;
-  --cn-ink:#102033;
-  --cn-muted:#66758a;
-  --cn-bg:#f5f8fc;
-  --cn-card:rgba(255,255,255,.86);
-  --cn-border:rgba(15,45,75,.10);
-  --cn-shadow:0 24px 70px rgba(8,27,50,.12);
-}
-html{scroll-behavior:smooth}
-body{background:var(--cn-bg);color:var(--cn-ink);overflow-x:hidden}
-body:before{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;background:radial-gradient(circle at 8% 12%,rgba(41,182,216,.08),transparent 28%),radial-gradient(circle at 90% 30%,rgba(215,173,75,.09),transparent 26%)}
-.container{width:min(1180px,calc(100% - 40px));margin-inline:auto}
-.navbar{background:rgba(7,20,38,.82)!important;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-bottom:1px solid rgba(255,255,255,.08);box-shadow:0 10px 35px rgba(0,0,0,.12);position:sticky;top:0;z-index:1000}
-.navbar .container{min-height:74px}
-.logo{letter-spacing:-.03em}.logo small{letter-spacing:.01em}
-.nav-links a{transition:color .2s ease,transform .2s ease}.nav-links a:hover{transform:translateY(-1px);color:var(--cn-gold-2)!important}
-.btn-primary,.btn-gold,.btn-secondary,.btn-pricing{border-radius:12px!important;box-shadow:0 10px 25px rgba(0,0,0,.10);transition:transform .2s ease,box-shadow .2s ease,filter .2s ease!important}
-.btn-primary:hover,.btn-gold:hover,.btn-secondary:hover,.btn-pricing:hover{transform:translateY(-2px);box-shadow:0 16px 35px rgba(0,0,0,.16);filter:brightness(1.04)}
-.hero{position:relative;isolation:isolate;padding:92px 0 78px!important;background:linear-gradient(135deg,#071426 0%,#0a203a 52%,#0d3554 100%)!important;overflow:hidden}
-.hero:before{content:"";position:absolute;width:620px;height:620px;right:-180px;top:-250px;border-radius:50%;background:radial-gradient(circle,rgba(41,182,216,.22),transparent 65%);z-index:-1}
-.hero:after{content:"";position:absolute;width:520px;height:520px;left:-300px;bottom:-320px;border-radius:50%;background:radial-gradient(circle,rgba(215,173,75,.16),transparent 65%);z-index:-1}
-.hero h1{font-size:clamp(2.8rem,5.2vw,5.2rem)!important;line-height:1.02!important;letter-spacing:-.055em!important;max-width:760px}
-.hero p{max-width:670px!important;font-size:1.08rem!important;line-height:1.8!important;color:rgba(255,255,255,.76)!important}
-.badge,.subtitle-badge{border-radius:999px!important;letter-spacing:.06em;box-shadow:0 8px 25px rgba(0,0,0,.08)}
-.hero-buttons{gap:14px!important}.hero-stats{margin-top:48px!important;gap:26px!important}.hero-stats .stat-item{padding-right:26px;border-right:1px solid rgba(255,255,255,.13)}.hero-stats .stat-item:last-child{border-right:0}
-.hero-stats .number{font-size:1.65rem!important}.hero-stats .label{color:rgba(255,255,255,.58)!important}
-.trust-badges{gap:10px!important}.trust-badges span{border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.055);padding:9px 12px;border-radius:999px!important}
-.poster-frame{border-radius:28px!important;box-shadow:0 35px 90px rgba(0,0,0,.34)!important;border:1px solid rgba(255,255,255,.13);overflow:hidden}
-.poster-frame:after{content:"";position:absolute;inset:0;background:linear-gradient(145deg,rgba(255,255,255,.13),transparent 28%,transparent 70%,rgba(215,173,75,.10));pointer-events:none}
-.float-chip{border:1px solid rgba(255,255,255,.12)!important;box-shadow:0 20px 45px rgba(0,0,0,.25)!important;backdrop-filter:blur(14px)}
-.stats-section{background:#fff!important;border-block:1px solid var(--cn-border);padding:30px 0!important}.stats-section .container{display:grid;grid-template-columns:repeat(4,1fr);gap:0}.stats-section .stat-item{text-align:center;padding:12px 20px;border-right:1px solid var(--cn-border)}.stats-section .stat-item:last-child{border-right:0}.stats-section .number{font-size:2rem!important;font-weight:850!important;color:var(--cn-navy)!important}
-section{position:relative}.section-header{max-width:760px;margin-inline:auto}.section-header h2{font-size:clamp(2rem,3.5vw,3.25rem)!important;letter-spacing:-.04em!important}.section-header p{color:var(--cn-muted);font-size:1.02rem;line-height:1.7}
-.features,.pricing,.how-it-works,.testimonials,.pos-section{padding:96px 0!important}
-.features{background:linear-gradient(180deg,#f7faff,#eef4fa)!important}
-.features-grid{gap:18px!important}.feature-card{background:var(--cn-card)!important;border:1px solid var(--cn-border)!important;border-radius:22px!important;padding:28px!important;box-shadow:0 10px 35px rgba(12,39,68,.055)!important;transition:transform .25s ease,box-shadow .25s ease,border-color .25s ease!important;position:relative;overflow:hidden}
-.feature-card:before{content:"";position:absolute;inset:0 0 auto;height:3px;background:linear-gradient(90deg,var(--cn-blue),var(--cn-cyan),var(--cn-gold));opacity:0;transition:opacity .25s ease}.feature-card:hover{transform:translateY(-7px)!important;box-shadow:var(--cn-shadow)!important;border-color:rgba(13,94,168,.2)!important}.feature-card:hover:before{opacity:1}.feature-card h3{letter-spacing:-.02em}.icon-wrapper{border-radius:16px!important;box-shadow:0 10px 25px rgba(13,94,168,.12)}
-.highlight-card{background:linear-gradient(145deg,#0a2038,#0d3554)!important;color:#fff!important;border-color:rgba(215,173,75,.25)!important}.highlight-card p{color:rgba(255,255,255,.68)!important}
-.pos-section{background:#071426!important;color:#fff!important;overflow:hidden}.pos-section:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 80% 15%,rgba(41,182,216,.12),transparent 35%),radial-gradient(circle at 15% 90%,rgba(215,173,75,.08),transparent 35%);pointer-events:none}.pos-section .section-header p{color:rgba(255,255,255,.62)}.pos-grid{gap:18px!important}.pos-feature{background:rgba(255,255,255,.045)!important;border:1px solid rgba(255,255,255,.08)!important;border-radius:20px!important;padding:25px!important;transition:transform .25s ease,background .25s ease}.pos-feature:hover{transform:translateY(-5px);background:rgba(255,255,255,.075)!important}.pos-feature p{color:rgba(255,255,255,.62)!important}.pos-icon{border-radius:14px!important}
-.pos-preview{border-radius:26px!important;border:1px solid rgba(255,255,255,.12)!important;box-shadow:0 30px 80px rgba(0,0,0,.3)!important;background:rgba(255,255,255,.045)!important;overflow:hidden}.pos-preview-header{padding:18px 22px!important}.pos-item{padding:16px 0!important;border-bottom:1px solid rgba(255,255,255,.07)!important}.pos-total{font-size:1.15rem!important}
-.pricing{background:#fff!important}.pricing-grid{align-items:stretch;gap:20px!important}.pricing-card{border:1px solid var(--cn-border)!important;border-radius:26px!important;padding:34px 30px!important;box-shadow:0 12px 40px rgba(12,39,68,.06)!important;transition:transform .25s ease,box-shadow .25s ease!important;position:relative}.pricing-card:hover{transform:translateY(-7px);box-shadow:var(--cn-shadow)!important}.pricing-card.popular{border:2px solid rgba(215,173,75,.6)!important;box-shadow:0 24px 60px rgba(215,173,75,.13)!important;transform:translateY(-8px)}.pricing-card.popular:hover{transform:translateY(-12px)}.popular-badge{border-radius:999px!important}.package-price{font-size:2rem!important;letter-spacing:-.04em}.features-list li{padding:9px 0!important;border-bottom:1px solid rgba(15,45,75,.055)}
-.how-it-works{background:linear-gradient(180deg,#f4f8fc,#fff)!important}.steps{gap:20px!important}.step{background:#fff;border:1px solid var(--cn-border);border-radius:22px;padding:30px 24px!important;box-shadow:0 10px 35px rgba(12,39,68,.05);position:relative}.step-number{width:48px!important;height:48px!important;border-radius:15px!important;background:linear-gradient(135deg,var(--cn-blue),var(--cn-cyan))!important;box-shadow:0 10px 25px rgba(13,94,168,.18)}
-.testimonials{background:#eef4fa!important}.testimonial-grid{gap:18px!important}.testimonial-card{background:#fff!important;border:1px solid var(--cn-border)!important;border-radius:24px!important;padding:30px!important;box-shadow:0 10px 35px rgba(12,39,68,.055)!important}.testimonial-card .quote{font-size:1rem!important;line-height:1.75!important;color:#33465b!important}.stars{letter-spacing:3px}
-.page-links-section{background:#071426!important;border-top:1px solid rgba(255,255,255,.06)}.link-group h4{color:#fff!important}.link-group a{color:rgba(255,255,255,.62)!important}.link-group a:hover{color:var(--cn-gold-2)!important}
-.cta{margin:0!important;padding:100px 0!important;background:linear-gradient(135deg,#0b2948,#0d5ea8)!important;position:relative;overflow:hidden}.cta:after{content:"";position:absolute;width:520px;height:520px;right:-240px;top:-300px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.13),transparent 65%)}.cta h2{font-size:clamp(2.2rem,4vw,4rem)!important;letter-spacing:-.05em!important}.cta-trust span{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.08);padding:8px 12px;border-radius:999px}
-.footer{background:#040d19!important;border-top:1px solid rgba(255,255,255,.07)}
-.back-to-top{border-radius:14px!important;box-shadow:0 15px 35px rgba(0,0,0,.2)!important}
-.page-modal .modal-content{border-radius:24px!important;box-shadow:0 35px 90px rgba(0,0,0,.3)!important;border:1px solid rgba(255,255,255,.1)}
-/* Accessibility + mobile polish */
-:focus-visible{outline:3px solid rgba(41,182,216,.6);outline-offset:3px}
-@media(max-width:900px){.container{width:min(100% - 28px,720px)}.hero{padding:68px 0 58px!important}.hero .container{grid-template-columns:1fr!important}.hero-image{margin-top:40px}.stats-section .container{grid-template-columns:repeat(2,1fr)}.stats-section .stat-item:nth-child(2){border-right:0}.stats-section .stat-item:nth-child(-n+2){border-bottom:1px solid var(--cn-border)}.pricing-card.popular{transform:none}.pricing-card.popular:hover{transform:translateY(-5px)}}
-@media(max-width:620px){.container{width:calc(100% - 24px)}.hero h1{font-size:2.65rem!important}.hero p{font-size:.98rem!important}.hero-buttons{flex-direction:column!important}.hero-buttons>*{width:100%;text-align:center}.hero-stats{display:grid!important;grid-template-columns:1fr 1fr;gap:15px!important}.hero-stats .stat-item{border-right:0!important;padding-right:0}.trust-badges{justify-content:center}.trust-badges span{font-size:.75rem}.stats-section .container{grid-template-columns:1fr 1fr}.features,.pricing,.how-it-works,.testimonials,.pos-section{padding:70px 0!important}.features-grid,.pos-grid,.pricing-grid,.testimonial-grid,.steps{grid-template-columns:1fr!important}.section-header h2{font-size:2.15rem!important}.poster-frame{border-radius:20px!important}.float-chip{transform:scale(.88)}.cta{padding:75px 0!important}.cta h2{font-size:2.3rem!important}}
-@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
-</style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CampusNexus | Digital Systems. Built Around You.</title>
+<meta name="description" content="CampusNexus builds education platforms, business systems, POS, websites, e-commerce and custom web applications.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <style>
-/* CampusNexus company positioning refresh */
-:root{--cn-ink:#07111f;--cn-navy:#0a1628;--cn-blue:#0b5cff;--cn-cyan:#18b6d9;--cn-gold:#d4a843;--cn-soft:#f5f8fc;--cn-border:rgba(10,22,40,.10)}
-body{overflow-x:hidden}
-.hero{position:relative;overflow:hidden;background:radial-gradient(circle at 85% 15%,rgba(24,182,217,.16),transparent 30%),radial-gradient(circle at 15% 85%,rgba(212,168,67,.10),transparent 28%)}
-.hero:before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(10,22,40,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(10,22,40,.035) 1px,transparent 1px);background-size:40px 40px;mask-image:linear-gradient(to bottom,black,transparent 85%);pointer-events:none}
-.hero h1{max-width:820px;letter-spacing:-.045em}
-.hero h1 .highlight{background:linear-gradient(90deg,#0b5cff,#18b6d9);-webkit-background-clip:text;background-clip:text;color:transparent}
-.features-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
-.solution-card{position:relative;min-height:235px;overflow:hidden}
-.solution-card:after{content:"";position:absolute;width:100px;height:100px;border-radius:50%;right:-45px;bottom:-45px;background:rgba(11,92,255,.06);transition:.35s}
-.solution-card:hover:after{transform:scale(2.2)}
-.showcase-section{padding:100px 0;background:linear-gradient(180deg,#fff,#f7faff)}
-.showcase-section:nth-of-type(even){background:#fff}
-.showcase-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px}
-.showcase-card{padding:28px;border:1px solid var(--cn-border);border-radius:20px;background:rgba(255,255,255,.88);box-shadow:0 12px 35px rgba(7,17,31,.06);transition:.3s}
-.showcase-card:hover{transform:translateY(-7px);box-shadow:0 20px 45px rgba(7,17,31,.11);border-color:rgba(11,92,255,.2)}
-.showcase-icon{width:48px;height:48px;display:grid;place-items:center;border-radius:14px;background:linear-gradient(135deg,rgba(11,92,255,.11),rgba(24,182,217,.12));color:var(--cn-blue);font-size:19px;margin-bottom:18px}
-.showcase-card h3{margin:0 0 10px;font-size:1.08rem}.showcase-card p{margin:0;color:#667085;line-height:1.7}
-.pos-section{background:var(--cn-navy)}
-.pos-section .section-header h2,.pos-section .section-header p{color:#fff}
-.pricing-card{border-radius:24px;transition:.3s}.pricing-card:hover{transform:translateY(-8px)}
-.cta{position:relative;overflow:hidden}.cta:before{content:"";position:absolute;width:500px;height:500px;border:1px solid rgba(255,255,255,.08);border-radius:50%;right:-180px;top:-260px}
-@media(max-width:1050px){.features-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.showcase-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:650px){.features-grid,.showcase-grid{grid-template-columns:1fr}.showcase-section{padding:72px 0}.hero h1{font-size:clamp(2.4rem,11vw,4rem)}.solution-card{min-height:auto}}
-</style><style>.cn-microbar{display:flex;justify-content:center;align-items:center;gap:8px;min-height:30px;padding:7px 16px;background:#07111f;color:rgba(255,255,255,.82);font-size:12px;letter-spacing:.02em}.cn-microbar i{font-size:6px;color:#27d17f}@media(max-width:600px){.cn-microbar{font-size:11px;text-align:center}}</style><style>
-:root{--cn-blue:#0877ff;--cn-cyan:#18c9ff;--cn-navy:#07182e;--cn-dark:#04101f;--cn-green:#18b96b;--cn-purple:#7047e8;--cn-red:#ef3f68;--cn-bg:#f7faff;--cn-text:#12213a;--cn-muted:#64748b;--cn-border:#e4ebf5;--cn-shadow:0 18px 50px rgba(7,24,46,.10)}
-*{box-sizing:border-box}.container{width:min(1180px,92%);margin:auto}.cn-nav{position:fixed!important;top:0;left:0;right:0;z-index:1000;background:rgba(255,255,255,.94)!important;backdrop-filter:blur(18px);border-bottom:1px solid rgba(7,24,46,.07);box-shadow:0 5px 25px rgba(7,24,46,.06)}.nav-inner{min-height:72px;display:flex;align-items:center;justify-content:space-between}.cn-logo{display:flex!important;align-items:center;gap:9px;text-decoration:none!important;position:relative}.cn-logo img{width:34px;height:34px;object-fit:contain}.cn-logo>span{font-weight:900;font-size:22px;line-height:1;color:#07182e}.cn-logo>span>span{color:var(--cn-blue)}.cn-logo small{position:absolute;left:43px;top:27px;font-size:7px;letter-spacing:.15em;text-transform:uppercase;color:#728096;white-space:nowrap}.nav-links{align-items:center!important;gap:26px!important}.nav-links a{font-size:13px!important;font-weight:600}.nav-cta{padding:11px 17px!important;border-radius:10px!important}.cn-hero{min-height:760px;padding:140px 0 85px;background:radial-gradient(circle at 78% 40%,rgba(24,201,255,.18),transparent 25%),linear-gradient(120deg,#06162c 0%,#0a2340 52%,#06162c 100%);color:#fff;position:relative;overflow:hidden}.cn-hero:after{content:"";position:absolute;inset:auto -10% -45% -10%;height:350px;background:rgba(255,255,255,.04);transform:rotate(-4deg)}.cn-hero-grid{display:grid;grid-template-columns:1.02fr .98fr;gap:35px;align-items:center;position:relative;z-index:2}.eyebrow{font-size:12px;letter-spacing:.16em;font-weight:800;color:#9fcfff;margin-bottom:15px}.eyebrow.blue{color:var(--cn-blue)}.cn-hero h1{font-size:clamp(42px,5vw,68px);line-height:1.02;letter-spacing:-.045em;margin:0 0 22px;max-width:720px}.cn-hero h1 span{color:#18c9ff}.cn-hero p{font-size:17px;line-height:1.75;color:#c6d4e6;max-width:650px;margin-bottom:30px}.hero-actions{display:flex;gap:13px;flex-wrap:wrap}.btn-xl{padding:15px 22px!important}.btn-ghost{display:inline-flex;align-items:center;gap:9px;padding:14px 20px;border:1px solid rgba(255,255,255,.45);border-radius:10px;color:#fff;text-decoration:none;font-weight:700}.hero-proof{display:flex;gap:20px;flex-wrap:wrap;margin-top:34px;color:#aebfd4;font-size:12px}.hero-proof span{display:flex;align-items:center;gap:7px}.hero-proof i{color:#2ec5ff}.cn-hero-visual{min-height:480px;position:relative}.device{position:absolute;background:#101b2c;border:8px solid #25344a;box-shadow:0 35px 80px rgba(0,0,0,.35)}.laptop{width:90%;height:360px;right:0;top:45px;border-radius:16px;transform:perspective(1200px) rotateY(-5deg) rotateX(2deg)}.device-bar{height:30px;background:#1d2b40;display:flex;align-items:center;gap:6px;padding:0 10px}.device-bar span{width:7px;height:7px;border-radius:50%;background:#738196}.device-bar b{font-size:9px;color:#dce9f8;margin-left:auto;margin-right:auto}.dashboard-screen{display:flex;height:calc(100% - 30px);background:#f7faff;color:#17263d}.dashboard-screen aside{width:24%;background:#07182e;color:#a9bad0;padding:17px 12px;display:flex;flex-direction:column;gap:14px;font-size:9px}.dashboard-screen aside strong{color:#fff;font-size:12px;margin-bottom:8px}.dash-main{padding:18px;width:76%}.dash-welcome{font-size:17px;font-weight:800}.dash-welcome small{display:block;color:#8190a4;font-size:9px;font-weight:500;margin-top:5px}.dash-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:20px 0}.dash-cards div{background:#fff;border:1px solid #e6edf6;border-radius:8px;padding:10px}.dash-cards i{color:var(--cn-blue);font-size:11px}.dash-cards b,.dash-cards small{display:block}.dash-cards b{font-size:15px;margin-top:7px}.dash-cards small{font-size:8px;color:#8190a4}.dash-chart{height:130px;border-radius:9px;background:linear-gradient(180deg,#eaf5ff,#fff);display:flex;align-items:end;padding:12px;gap:9px}.dash-chart span{flex:1;background:linear-gradient(180deg,#18c9ff,#0877ff);border-radius:4px 4px 0 0}.dash-chart span:nth-child(1){height:38%}.dash-chart span:nth-child(2){height:55%}.dash-chart span:nth-child(3){height:45%}.dash-chart span:nth-child(4){height:72%}.dash-chart span:nth-child(5){height:61%}.dash-chart span:nth-child(6){height:86%}.dash-chart span:nth-child(7){height:95%}.phone{width:155px;height:315px;right:4%;bottom:0;border-radius:27px;z-index:4;border-width:7px}.phone-notch{width:65px;height:14px;background:#101b2c;border-radius:0 0 12px 12px;margin:auto}.phone-screen{background:#f6f9fd;height:100%;padding:18px;color:#17263d}.mini-brand{font-size:10px;font-weight:900;color:#07182e}.mini-brand span{color:var(--cn-blue)}.phone-screen h4{font-size:17px;margin:25px 0 15px}.mini-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.mini-grid span{background:#fff;border:1px solid #e3eaf3;padding:12px 7px;border-radius:8px;font-size:8px;font-weight:700}.mini-list{height:100px;background:linear-gradient(#dcecff 0 12%,transparent 12% 20%,#dcecff 20% 30%,transparent 30% 38%,#dcecff 38% 48%,transparent 48%);margin-top:14px;border-radius:8px}.floating-card{position:absolute;z-index:5;background:rgba(12,32,57,.92);border:1px solid rgba(255,255,255,.15);border-radius:12px;padding:12px 14px;display:flex;gap:10px;align-items:center;box-shadow:0 18px 40px rgba(0,0,0,.25)}.floating-card i{color:#22c8ff;font-size:20px}.floating-card b,.floating-card small{display:block}.floating-card b{font-size:11px}.floating-card small{font-size:9px;color:#9eb2ca;margin-top:3px}.float-top{right:-5px;top:0}.float-bottom{left:0;bottom:5px}.cn-trust{background:#fff;border-bottom:1px solid var(--cn-border);box-shadow:0 10px 30px rgba(7,24,46,.05);position:relative;z-index:5}.trust-grid{display:grid;grid-template-columns:repeat(5,1fr);padding:18px 0}.trust-grid>div{display:grid;grid-template-columns:36px 1fr;column-gap:9px;align-items:center;padding:0 15px;border-right:1px solid #edf1f6}.trust-grid>div:last-child{border:0}.trust-grid i{grid-row:span 2;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:#eef7ff;color:var(--cn-blue)}.trust-grid b{font-size:11px}.trust-grid small{font-size:9px;color:#7c8a9e}.cn-section{padding:95px 0;background:#fff}.section-heading{text-align:center;max-width:760px;margin:0 auto 45px}.section-heading h2{font-size:42px;letter-spacing:-.04em;color:var(--cn-text);margin:0 0 10px}.section-heading h2 span{color:var(--cn-blue)}.section-heading p{color:var(--cn-muted);line-height:1.7;margin:0}.solution-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:17px}.solution-card{border:1px solid var(--cn-border);border-radius:17px;overflow:hidden;background:#fff;box-shadow:var(--cn-shadow);transition:.3s}.solution-card:hover{transform:translateY(-7px);box-shadow:0 25px 65px rgba(7,24,46,.14)}.solution-image{height:145px;display:grid;place-items:center;color:#fff;font-size:43px;position:relative;overflow:hidden}.solution-image:after{content:"";position:absolute;width:180px;height:180px;border:1px solid rgba(255,255,255,.18);border-radius:50%;transform:translate(65px,45px)}.solution-image.education{background:linear-gradient(135deg,#0877ff,#18c9ff)}.solution-image.pos{background:linear-gradient(135deg,#0a9d5d,#24d783)}.solution-image.ecommerce{background:linear-gradient(135deg,#6441d8,#a56cff)}.solution-image.custom{background:linear-gradient(135deg,#df315c,#ff6684)}.solution-body{padding:22px}.solution-tag{font-size:9px;letter-spacing:.12em;font-weight:900;color:var(--cn-blue)}.solution-tag.green{color:#079b59}.solution-tag.purple{color:#7047e8}.solution-tag.red{color:#e33a63}.solution-body h3{font-size:19px;margin:8px 0}.solution-body p{font-size:12px;line-height:1.6;color:#68778c;min-height:60px}.solution-body ul{list-style:none;padding:0;margin:15px 0 20px}.solution-body li{font-size:11px;margin:8px 0;color:#405067}.solution-body li:before{content:'✓';color:#18b96b;font-weight:900;margin-right:7px}.solution-body a{display:inline-flex;gap:7px;align-items:center;text-decoration:none;font-size:11px;font-weight:800;color:var(--cn-blue)}.solution-body .green-link{color:#079b59}.solution-body .purple-link{color:#7047e8}.solution-body .red-link{color:#e33a63}.cn-industries{padding:85px 0;background:linear-gradient(120deg,#06182e,#092b49);color:#fff}.section-heading.light h2{color:#fff}.section-heading.light p{color:#aabdd1}.section-heading.light .eyebrow{color:#80cfff}.industry-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:10px}.industry-grid>div{min-height:140px;padding:17px 10px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.045);border-radius:13px;display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-end;transition:.25s}.industry-grid>div:hover{background:rgba(24,201,255,.10);transform:translateY(-4px)}.industry-grid i{font-size:23px;color:#29c7ff;margin-bottom:auto}.industry-grid b{font-size:11px}.industry-grid small{font-size:8px;color:#9eb1c8;line-height:1.4;margin-top:4px}.cn-feature{padding:100px 0;background:#f7faff}.cn-feature.alt{background:#fff}.feature-grid{display:grid;grid-template-columns:1fr 1fr;gap:70px;align-items:center}.feature-grid.reverse .showcase-panel{order:1}.feature-grid.reverse .feature-copy{order:2}.feature-copy h2{font-size:43px;line-height:1.1;letter-spacing:-.04em;color:var(--cn-text);margin:0 0 17px}.feature-copy h2 span{color:var(--cn-blue)}.feature-copy>p{color:#64748b;line-height:1.75}.feature-points{margin:25px 0}.feature-points>div{display:flex;gap:13px;margin:17px 0}.feature-points i{width:38px;height:38px;border-radius:10px;background:#eaf5ff;color:var(--cn-blue);display:grid;place-items:center;flex:none}.feature-points b,.feature-points small{display:block}.feature-points b{font-size:13px;color:var(--cn-text)}.feature-points small{font-size:11px;color:#738197;line-height:1.5;margin-top:3px}.showcase-panel{min-height:390px;background:#fff;border:1px solid #dce6f1;border-radius:20px;padding:15px;box-shadow:0 30px 70px rgba(7,24,46,.12)}.panel-top{height:40px;display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#17263d;border-bottom:1px solid #edf1f5}.panel-top span{font-size:9px;color:#16a361}.panel-layout{display:flex;height:315px;padding-top:15px}.panel-side{width:22%;background:#07182e;border-radius:9px 0 0 9px}.panel-content{flex:1;padding:14px}.metric-row{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.metric-row span{height:52px;border-radius:8px;background:#eef6ff}.big-chart{height:125px;margin-top:10px;border-radius:10px;background:linear-gradient(180deg,#eef8ff,#fff);position:relative}.big-chart:after{content:"";position:absolute;left:10%;right:10%;bottom:25%;height:2px;background:#0877ff;box-shadow:40px -20px #0877ff,80px 4px #0877ff,120px -35px #0877ff,160px -10px #0877ff}.table-lines{margin-top:12px}.table-lines i{display:block;height:8px;background:#edf2f7;margin:7px 0;border-radius:4px}.pos-product-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:25px 5px}.pos-product-grid div{background:#f7faff;border:1px solid #e1eaf4;border-radius:12px;padding:22px 12px;font-size:24px}.pos-product-grid b,.pos-product-grid small{display:block;font-size:11px}.pos-product-grid small{color:#7b899d;font-size:9px;margin-top:4px}.pos-total{margin-top:8px;background:#07182e;color:#fff;padding:17px;border-radius:11px;display:flex;justify-content:space-between}.pos-total span{font-size:10px;color:#a9bbcf}.pos-total b{font-size:15px;color:#25c8ff}.cn-projects{padding:90px 0;background:#06182e;color:#fff}.project-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:15px}.project-card{background:#0c2744;border:1px solid rgba(255,255,255,.09);border-radius:14px;overflow:hidden;padding-bottom:14px}.project-screen{height:150px;padding:15px;position:relative;overflow:hidden}.project-screen>b{font-size:12px}.blue-screen{background:linear-gradient(135deg,#0b66d7,#14b8e6)}.green-screen{background:linear-gradient(135deg,#087a50,#20bf78)}.purple-screen{background:linear-gradient(135deg,#5233b7,#9d6bff)}.orange-screen{background:linear-gradient(135deg,#d45b25,#ffb14b)}.dark-screen{background:linear-gradient(135deg,#1d2939,#44546a)}.screen-bars{height:60px;background:rgba(255,255,255,.17);border-radius:8px;margin-top:18px}.screen-boxes,.pos-screen-grid,.store-product,.analytics-bars{display:flex;gap:7px;margin-top:10px}.screen-boxes i,.pos-screen-grid i,.store-product i{height:27px;flex:1;background:rgba(255,255,255,.35);border-radius:5px}.website-lines{height:75px;margin-top:15px;background:repeating-linear-gradient(#fff0 0 12px,rgba(255,255,255,.28) 13px 17px);border-radius:5px}.analytics-bars{align-items:end;height:85px}.analytics-bars i{flex:1;background:rgba(255,255,255,.55);height:35%}.analytics-bars i:nth-child(2){height:60%}.analytics-bars i:nth-child(3){height:78%}.analytics-bars i:nth-child(4){height:48%}.project-card h3{font-size:13px;margin:12px 13px 2px}.project-card small{font-size:9px;color:#a5bad0;margin:0 13px}.process-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}.process-grid>div{position:relative;padding:26px;border:1px solid var(--cn-border);border-radius:15px;background:#fff;box-shadow:0 12px 35px rgba(7,24,46,.06)}.process-grid span{position:absolute;right:17px;top:13px;font-weight:900;color:#dce9f7}.process-grid i{width:43px;height:43px;border-radius:12px;background:#eaf5ff;color:var(--cn-blue);display:grid;place-items:center}.process-grid h3{font-size:16px}.process-grid p{font-size:11px;color:#738197;line-height:1.5}.cn-testimonials{padding:90px 0;background:#eef7ff}.testimonial-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}.testimonial-grid article{background:#fff;border:1px solid #dfe9f4;border-radius:16px;padding:25px;box-shadow:0 15px 40px rgba(7,24,46,.06)}.quote{font-size:45px;color:#7dcfff;font-family:Georgia;line-height:.6}.testimonial-grid article>p{font-size:13px;color:#506079;line-height:1.7;min-height:70px}.person{display:flex;align-items:center;gap:10px}.person img{width:38px;height:38px;border-radius:50%;object-fit:cover}.person b,.person small{display:block}.person b{font-size:11px}.person small{font-size:9px;color:#8390a2;margin-top:3px}.cn-cta{padding:70px 0;background:linear-gradient(110deg,#075bd4,#0877ff 50%,#13bde9);color:#fff;position:relative;overflow:hidden}.cn-cta .container{display:flex;align-items:center;justify-content:space-between;gap:30px}.cn-cta h2{font-size:42px;line-height:1.08;margin:0 0 10px;max-width:760px}.cn-cta h2 span{color:#baf2ff}.cn-cta p{color:#d9efff;margin:0;max-width:700px}.cta-actions{display:flex;gap:10px;flex-wrap:wrap}.btn-white{background:#fff;color:#0867df;padding:14px 20px;border-radius:10px;text-decoration:none;font-weight:800;white-space:nowrap}.cn-footer{background:#04101f;color:#aebed0;padding:65px 0 25px}.footer-grid{display:grid;grid-template-columns:1.5fr 1fr 1.2fr 1.2fr;gap:45px}.footer-brand p{font-size:11px;line-height:1.7;max-width:300px;margin-top:18px}.cn-footer .cn-logo>span{color:#fff}.cn-footer h4{color:#fff;font-size:12px;margin:5px 0 18px}.cn-footer>div a,.cn-footer>div span{display:block;color:#8fa3ba;text-decoration:none;font-size:10px;margin:11px 0}.socials{display:flex!important;gap:8px;margin-top:20px}.socials a{width:30px;height:30px!important;border:1px solid rgba(255,255,255,.12);border-radius:50%;display:grid!important;place-items:center;margin:0!important}.footer-bottom{border-top:1px solid rgba(255,255,255,.08);margin-top:45px;padding-top:18px;display:flex;justify-content:space-between;font-size:9px}.footer-bottom a{display:inline!important;margin:0!important}.back-to-top{z-index:999}
-@media(max-width:1050px){.solution-grid{grid-template-columns:repeat(2,1fr)}.industry-grid{grid-template-columns:repeat(4,1fr)}.project-grid{grid-template-columns:repeat(3,1fr)}.trust-grid{grid-template-columns:repeat(3,1fr);gap:15px}.trust-grid>div:nth-child(3){border:0}.nav-links{gap:13px!important}.nav-links a{font-size:11px!important}}
-@media(max-width:780px){.cn-hero{padding-top:115px}.cn-hero-grid,.feature-grid{grid-template-columns:1fr}.cn-hero-visual{min-height:400px}.laptop{width:92%;height:290px}.phone{width:125px;height:255px}.trust-grid{grid-template-columns:1fr 1fr}.trust-grid>div{border:0}.industry-grid{grid-template-columns:repeat(2,1fr)}.project-grid{grid-template-columns:1fr 1fr}.process-grid,.testimonial-grid{grid-template-columns:1fr 1fr}.cn-cta .container{display:block}.cta-actions{margin-top:25px}.footer-grid{grid-template-columns:1fr 1fr}.feature-grid.reverse .showcase-panel,.feature-grid.reverse .feature-copy{order:initial}.cn-logo small{display:none}}
-@media(max-width:560px){.solution-grid,.project-grid,.process-grid,.testimonial-grid,.footer-grid{grid-template-columns:1fr}.cn-hero h1{font-size:40px}.cn-hero p{font-size:14px}.cn-hero-visual{min-height:320px}.laptop{height:220px;border-width:5px}.dashboard-screen aside{display:none}.dash-main{width:100%;padding:10px}.phone{width:100px;height:205px;right:0}.float-top{right:0}.float-bottom{left:0}.trust-grid{grid-template-columns:1fr}.section-heading h2,.feature-copy h2,.cn-cta h2{font-size:32px}.industry-grid{grid-template-columns:1fr 1fr}.footer-bottom{display:block;line-height:2}.nav-links{display:none!important}}
-@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
-</style><style>
-/* =========================================================
-   CAMPUSNEXUS FINAL COMPANY WEBSITE POLISH
-   ========================================================= */
-:root{--cn-blue:#087cff;--cn-cyan:#20c8ff;--cn-navy:#07182d;--cn-ink:#10233d;--cn-muted:#617086;--cn-border:#e6edf5;--cn-soft:#f5f9fe;--cn-green:#16b979;--cn-purple:#7458f5;--cn-red:#ee4f6d}
-html{scroll-behavior:smooth}
-body{background:#fff;color:var(--cn-ink);overflow-x:hidden}
-body:before{content:"";position:fixed;inset:0;pointer-events:none;z-index:-2;background:radial-gradient(circle at 8% 20%,rgba(8,124,255,.035),transparent 28%),radial-gradient(circle at 90% 58%,rgba(32,200,255,.035),transparent 30%)}
-.cn-nav{backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);background:rgba(255,255,255,.92)!important;border-bottom:1px solid rgba(15,35,61,.08);box-shadow:0 8px 30px rgba(7,24,45,.05)}
-.cn-logo{letter-spacing:-.03em}.cn-logo img{filter:drop-shadow(0 4px 10px rgba(8,124,255,.15))}.cn-logo>span>span{color:var(--cn-blue)!important}
-.nav-links a{font-weight:650}.nav-links a:not(.btn-primary):after{background:linear-gradient(90deg,var(--cn-blue),var(--cn-cyan))!important}
-.nav-cta{box-shadow:0 10px 25px rgba(8,124,255,.2);border-radius:12px!important}
-.cn-hero{min-height:720px;background:linear-gradient(125deg,#07182d 0%,#0b2949 48%,#063b66 100%);position:relative;isolation:isolate;overflow:hidden}
-.cn-hero:after{content:"";position:absolute;inset:auto -10% -42% -10%;height:55%;background:radial-gradient(ellipse,rgba(32,200,255,.22),transparent 62%);z-index:-1}
-.cn-hero-copy{max-width:700px}.cn-hero h1{font-size:clamp(3rem,5.2vw,5.4rem);line-height:.98;letter-spacing:-.055em;font-weight:850}.cn-hero h1 span{background:linear-gradient(100deg,#fff 0%,#24c8ff 48%,#67e8ff 100%);-webkit-background-clip:text;background-clip:text;color:transparent}.cn-hero-copy>p{font-size:1.08rem;line-height:1.8;max-width:650px;color:rgba(255,255,255,.76)}
-.eyebrow{letter-spacing:.16em;font-weight:800}.pulse-dot{box-shadow:0 0 0 7px rgba(32,200,255,.12)}
-.btn-primary{background:linear-gradient(135deg,#087cff,#1265e9)!important;border:1px solid rgba(255,255,255,.12)!important;box-shadow:0 12px 28px rgba(8,124,255,.22)}
-.btn-primary:hover{transform:translateY(-2px);box-shadow:0 18px 34px rgba(8,124,255,.28)}
-.btn-ghost{border-color:rgba(255,255,255,.35)!important;background:rgba(255,255,255,.06)!important;backdrop-filter:blur(10px)}
-.hero-proof{border-top:1px solid rgba(255,255,255,.13);padding-top:18px;margin-top:30px}.hero-proof span{color:rgba(255,255,255,.8)}.hero-proof i{color:#35c9ff}
-.cn-hero-visual{filter:drop-shadow(0 35px 55px rgba(0,0,0,.3))}.device.laptop{transform:perspective(1300px) rotateY(-5deg) rotateX(2deg);transition:transform .5s ease}.cn-hero:hover .device.laptop{transform:perspective(1300px) rotateY(-2deg) rotateX(1deg) translateY(-5px)}
-.trust-grid{border:1px solid var(--cn-border);box-shadow:0 12px 40px rgba(7,24,45,.06);border-radius:22px;background:rgba(255,255,255,.96);transform:translateY(-28px);position:relative;z-index:5}
-.cn-section{padding:100px 0}.section-heading{max-width:800px;margin-bottom:42px}.section-heading h2,.cap-head h2{font-size:clamp(2.3rem,4vw,4rem);letter-spacing:-.045em;line-height:1.02}.section-heading h2 span,.cap-head h2 span{color:var(--cn-blue)}.section-heading p{font-size:1.05rem;color:var(--cn-muted);line-height:1.75}
-.solution-grid{gap:22px}.solution-card{border:1px solid var(--cn-border)!important;border-radius:24px!important;box-shadow:0 12px 35px rgba(7,24,45,.055)!important;transition:transform .35s ease,box-shadow .35s ease,border-color .35s ease!important;overflow:hidden}.solution-card:hover{transform:translateY(-9px)!important;box-shadow:0 25px 55px rgba(7,24,45,.12)!important;border-color:rgba(8,124,255,.3)!important}.solution-card h3{letter-spacing:-.02em}.solution-card li{font-size:.9rem}
-.cn-industries{background:linear-gradient(135deg,#07182d,#0a2b4a)!important;position:relative;overflow:hidden}.cn-industries:before{content:"";position:absolute;width:500px;height:500px;border:1px solid rgba(32,200,255,.12);border-radius:50%;right:-160px;top:-220px;box-shadow:0 0 0 70px rgba(32,200,255,.025),0 0 0 140px rgba(32,200,255,.018)}
-.industry-card{border:1px solid rgba(255,255,255,.12)!important;background:rgba(255,255,255,.055)!important;backdrop-filter:blur(10px);transition:.3s!important}.industry-card:hover{background:rgba(255,255,255,.1)!important;transform:translateY(-5px)}
-.cn-feature{padding:110px 0}.cn-feature .feature-copy h2{font-size:clamp(2.4rem,4vw,4rem);letter-spacing:-.045em}.cn-feature .feature-copy p{line-height:1.8;color:var(--cn-muted)}
-.feature-visual{border:1px solid var(--cn-border)!important;box-shadow:0 30px 80px rgba(7,24,45,.12)!important;border-radius:28px!important}
-.cn-capabilities{padding:90px 0;background:var(--cn-soft);border-top:1px solid var(--cn-border);border-bottom:1px solid var(--cn-border)}.cap-head{display:flex;justify-content:space-between;gap:40px;align-items:end;margin-bottom:38px}.cap-head>div{max-width:760px}.cap-head p{color:var(--cn-muted);line-height:1.75;font-size:1.03rem}.cap-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}.cap-card{position:relative;background:#fff;border:1px solid var(--cn-border);border-radius:24px;padding:32px;min-height:280px;overflow:hidden;box-shadow:0 15px 45px rgba(7,24,45,.06);transition:.35s}.cap-card:hover{transform:translateY(-7px);box-shadow:0 25px 55px rgba(7,24,45,.1)}.cap-card:after{content:"";position:absolute;width:160px;height:160px;border-radius:50%;right:-75px;top:-75px;background:rgba(8,124,255,.06)}.cap-card>span{font-weight:800;color:#9aabbe}.cap-card>i{display:flex;width:54px;height:54px;border-radius:16px;align-items:center;justify-content:center;margin:20px 0 18px;font-size:1.25rem;background:#eaf4ff;color:var(--cn-blue)}.cap-card h3{font-size:1.35rem;letter-spacing:-.025em}.cap-card p{color:var(--cn-muted);line-height:1.65}.cap-tags{display:flex;flex-wrap:wrap;gap:7px;margin-top:18px}.cap-tags b{font-size:.72rem;padding:7px 10px;border-radius:999px;background:#f3f7fb;color:#53657b}.cap-green>i{background:#eafaf4;color:var(--cn-green)}.cap-purple>i{background:#f2efff;color:var(--cn-purple)}
-.cn-projects{padding:100px 0}.project-grid{gap:18px}.project-card{border-radius:20px!important;border:1px solid var(--cn-border)!important;box-shadow:0 12px 35px rgba(7,24,45,.06)!important;overflow:hidden;transition:.3s!important}.project-card:hover{transform:translateY(-6px)!important;box-shadow:0 24px 50px rgba(7,24,45,.12)!important}.project-screen{min-height:180px}
-.process-grid>div{border:1px solid var(--cn-border);border-radius:22px;background:#fff;padding:28px;box-shadow:0 10px 30px rgba(7,24,45,.045);transition:.3s}.process-grid>div:hover{transform:translateY(-5px);border-color:rgba(8,124,255,.25);box-shadow:0 20px 40px rgba(7,24,45,.08)}
-.cn-testimonials{background:#f5f9fe!important}.testimonial-grid article{border:1px solid var(--cn-border)!important;box-shadow:0 12px 35px rgba(7,24,45,.05)!important;border-radius:22px!important}.quote{color:var(--cn-blue)!important}
-.cn-cta{background:linear-gradient(120deg,#07182d,#075fc7 72%,#0b8be8)!important;overflow:hidden;position:relative}.cn-cta:before{content:"";position:absolute;width:600px;height:600px;border-radius:50%;right:-280px;top:-380px;border:1px solid rgba(255,255,255,.14);box-shadow:0 0 0 70px rgba(255,255,255,.025),0 0 0 140px rgba(255,255,255,.02)}.cn-cta h2{font-size:clamp(2.4rem,4vw,4.2rem);letter-spacing:-.045em}.btn-white{box-shadow:0 14px 30px rgba(0,0,0,.16)!important}
-.cn-footer{background:#04101f!important}.footer-grid a,.footer-grid span{color:rgba(255,255,255,.68)}.footer-grid a:hover{color:#fff}.socials a{transition:.25s}.socials a:hover{transform:translateY(-3px);background:var(--cn-blue)!important}
-.page-modal{z-index:10000!important}.modal-content{border:1px solid rgba(8,124,255,.12);box-shadow:0 35px 100px rgba(0,0,0,.25);border-radius:24px}
-@media(max-width:900px){.cap-head{display:block}.cap-head .btn-primary{margin-top:18px}.cap-grid{grid-template-columns:1fr}.cn-hero{min-height:auto;padding:100px 0 80px}.cn-hero-grid{grid-template-columns:1fr}.cn-hero-visual{margin-top:50px}.trust-grid{transform:none;margin:18px 16px 0}.cn-section{padding:75px 0}}
-@media(max-width:600px){.cn-hero h1{font-size:2.7rem}.cn-hero-copy>p{font-size:.98rem}.hero-proof{display:grid!important;grid-template-columns:1fr 1fr;gap:12px}.hero-proof span{font-size:.8rem}.floating-card{display:none}.device.phone{transform:scale(.8)!important;right:-8px!important}.cap-card{padding:25px}.cn-feature{padding:75px 0}}
-@media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
+:root{--navy:#062b57;--navy2:#0a3f7c;--blue:#087cf2;--blue2:#075fc5;--gold:#ffc52f;--green:#0caf82;--purple:#6736e8;--ink:#102f54;--muted:#667d97;--line:#dce8f3;--soft:#f5f9fd;--white:#fff;--shadow:0 22px 60px rgba(7,53,98,.13);--max:1200px}
+*{box-sizing:border-box}html{scroll-behavior:smooth;overflow-x:hidden}body{margin:0;font-family:Inter,Arial,sans-serif;color:var(--ink);background:#fff;overflow-x:hidden}body.lock{overflow:hidden}
+a{text-decoration:none;color:inherit}button,input,select,textarea{font:inherit}.container{width:min(var(--max),calc(100% - 48px));margin:auto}
+.top{height:36px;background:#05264d;color:#dceeff;font-size:10px}.top .container{height:100%;display:flex;align-items:center;justify-content:space-between}.top a{color:#fff;font-weight:800}
+.nav{height:78px;background:#fff;border-bottom:1px solid #e8eff6;position:sticky;top:0;z-index:1000}.nav .container{height:100%;display:flex;align-items:center;justify-content:space-between}
+.logo{display:flex;align-items:center;gap:10px}.logo-icon{width:42px;height:42px;border-radius:13px;background:linear-gradient(145deg,#087cf2,#ffc52f);display:grid;place-items:center;color:#fff;box-shadow:0 10px 22px #087cf230}.logo-name{font-size:22px;font-weight:900;letter-spacing:-.9px;color:var(--navy)}.logo-name span{color:var(--blue)}.logo small{display:block;color:#70869d;font-size:7px;font-weight:700;letter-spacing:.1px;margin-top:2px}
+.links{display:flex;align-items:center;gap:25px;font-size:11px;font-weight:800}.links a:hover{color:var(--blue)}.nav-button{background:var(--gold);padding:12px 18px;border-radius:24px;color:var(--navy)!important;box-shadow:0 8px 20px #ffc52f35}.menu{display:none;border:0;background:#edf6ff;color:var(--blue);width:42px;height:42px;border-radius:12px}
+.mobile{display:none;position:fixed;top:114px;left:12px;right:12px;background:#fff;border:1px solid var(--line);border-radius:18px;padding:10px;z-index:1200;box-shadow:0 25px 60px #062b5730}.mobile.open{display:block}.mobile a{display:block;padding:12px;border-radius:10px;font-size:11px;font-weight:800}.mobile a:hover{background:#edf6ff;color:var(--blue)}
 
-<style id="campusnexus-global-stability">
-html{scroll-behavior:smooth;overflow-x:hidden}body{overflow-x:hidden}.modal-open{overflow:hidden}
-.mobile-menu,.mobile-menu-backdrop{visibility:hidden;opacity:0;pointer-events:none}.mobile-menu.open,.mobile-menu-backdrop.open{visibility:visible;opacity:1;pointer-events:auto}
-.back-to-top{opacity:0;visibility:hidden;pointer-events:none;transition:.25s}.back-to-top.show{opacity:1;visibility:visible;pointer-events:auto}
-</style><style id="campusnexus-pixel-match">
-:root{--px-blue:#087cf2;--px-navy:#092b57;--px-gold:#ffc42d;--px-green:#0eaf82;--px-purple:#6736e8;--px-ink:#102c52;--px-muted:#60758e}
-.px-cms-hidden{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}.px-main{font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--px-ink);background:#fff;overflow:hidden}.px-main *{box-sizing:border-box}.px-container{width:min(936px,calc(100% - 64px));margin:auto}.px-nav{height:58px;background:#fff!important;border-bottom:1px solid #e7eef6!important;position:relative!important;z-index:50}.px-nav .nav-inner{height:58px}.px-brand{position:relative;display:grid!important;grid-template-columns:34px auto;grid-template-rows:21px 10px;column-gap:8px;align-items:center}.px-brand-mark{grid-row:1/3;width:34px;height:34px;border-radius:9px;background:linear-gradient(145deg,#087cf2,#ffc42d);color:#fff;display:grid;place-items:center;box-shadow:0 5px 13px #087cf233}.px-brand>span{font-weight:800;font-size:20px;color:#092b57;line-height:1}.px-brand>span>span{color:#f2b300}.px-brand small{font-size:6px;color:#60758e;font-weight:600;line-height:1}.px-nav .nav-links{gap:25px}.px-nav .nav-links a{font-size:10px!important;font-weight:600!important;color:#163a62!important;padding:20px 0!important}.px-nav .nav-links a.active{color:#087cf2!important;border-bottom:2px solid #087cf2}.px-nav .nav-links .px-nav-cta{background:#ffc42d!important;color:#092b57!important;border-radius:22px!important;padding:11px 20px!important;box-shadow:0 7px 17px #ffc42d3b}.px-nav .menu-toggle{display:none}
-.px-hero{height:463px;background:linear-gradient(135deg,#0a3670 0%,#064d9f 47%,#087cf2 100%);color:#fff;position:relative;overflow:hidden}.px-hero:before{content:"";position:absolute;width:620px;height:620px;right:-240px;top:-340px;border-radius:50%;border:1px solid #ffffff1d;box-shadow:0 0 0 80px #ffffff05,0 0 0 160px #ffffff03}.px-hero:after{content:"";position:absolute;width:560px;height:560px;left:-250px;bottom:-350px;border-radius:50%;background:#ffffff07}.px-hero-orbit{position:absolute;border-radius:50%;border:1px dashed #ffffff2a}.px-o1{width:360px;height:360px;right:50px;top:50px}.px-o2{width:470px;height:470px;right:-10px;top:0}.px-hero-grid{height:463px;display:grid;grid-template-columns:47% 53%;align-items:center;position:relative;z-index:2}.px-hero-copy{padding-top:4px}.px-eyebrow{display:inline-flex;gap:7px;align-items:center;border:1px solid #7bd1ff88;border-radius:18px;padding:6px 12px;font-size:8px;font-weight:800;letter-spacing:.7px}.px-eyebrow i{font-size:6px;color:#17d98d}.px-hero h1{font-size:38px;line-height:1.04;letter-spacing:-1.5px;margin:14px 0 13px;font-weight:800;max-width:460px}.px-hero h1 em{font-style:normal;color:#ffc42d}.px-hero p{font-size:11px;line-height:1.65;color:#e4f2ff;max-width:450px;margin:0 0 19px}.px-actions{display:flex;gap:9px}.px-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:23px;padding:12px 19px;font-size:9px;font-weight:800;border:1px solid transparent}.px-gold{background:#ffc42d;color:#092b57}.px-white{background:#fff;color:#1768b8}.px-proof{display:flex;align-items:center;gap:10px;margin-top:16px;font-size:7px;color:#dceeff}.px-avatars{display:flex}.px-avatars span{width:25px;height:25px;border-radius:50%;border:2px solid #fff;margin-left:-5px;background:linear-gradient(145deg,#ffca64,#ef6e36)}.px-avatars span:first-child{margin-left:0}.px-avatars span:nth-child(2){background:linear-gradient(145deg,#9ad7ff,#3977e8)}.px-avatars span:nth-child(3){background:linear-gradient(145deg,#7fe5bc,#168e6c)}.px-avatars span:nth-child(4){background:linear-gradient(145deg,#c6a4ff,#6d36db)}
-.px-hero-art{height:100%;position:relative}.px-laptop{position:absolute;right:-6px;top:54px;width:495px;height:295px;border:5px solid #31597f;border-bottom-width:7px;border-radius:17px 17px 11px 11px;background:#132c49;box-shadow:0 28px 48px #001b3d55}.px-laptop:after{content:"";position:absolute;left:-44px;right:-44px;bottom:-20px;height:18px;background:#b6c5d6;border-radius:0 0 18px 18px;box-shadow:0 8px 0 #8ea0b5}.px-browser{height:24px;background:#132b45;border-bottom:1px solid #294766;display:flex;align-items:center;gap:5px;padding:0 9px;font-size:6px}.px-browser span{width:6px;height:6px;border-radius:50%;background:#7d93a8}.px-browser b{margin-left:8px;font-size:7px}.px-browser small{margin-left:auto;color:#b6c8d9}.px-screen{height:264px;background:#f7fbff;display:grid;grid-template-columns:84px 1fr;overflow:hidden;border-radius:0 0 9px 9px}.px-screen aside{background:#092b57;color:#fff;padding:10px 7px;font-size:6px}.px-screen aside strong{display:block;font-size:8px;margin-bottom:11px}.px-screen aside i{display:block;font-style:normal;padding:6px 5px;color:#d9eaff;border-radius:4px}.px-screen aside i.active{background:#087cf2;color:#fff}.px-dash{padding:10px 11px;position:relative}.px-dash-top{display:flex;justify-content:space-between;font-size:7px;margin-bottom:7px}.px-dash-top b{font-size:10px}.px-dash-top span{background:#fff;border:1px solid #dfeaf5;border-radius:8px;padding:5px 7px;color:#7d90a4}.px-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}.px-metrics>div{background:#fff;border:1px solid #e1eaf4;border-radius:7px;padding:7px;box-shadow:0 3px 8px #103d6c0b}.px-metrics i{font-size:6px;color:#087cf2}.px-metrics b{display:block;font-size:12px;margin-top:2px}.px-metrics small{font-size:5px;color:#6a7f95}.px-chart{margin-top:7px;background:#fff;border:1px solid #e1eaf4;border-radius:7px;height:110px;padding:8px}.px-chart strong{font-size:6px}.px-chart>div{height:85px;display:flex;align-items:flex-end;gap:13px;padding:6px 25px}.px-chart i{width:14px;background:linear-gradient(#58adff,#087cf2);border-radius:4px 4px 0 0}.px-activity{position:absolute;right:9px;bottom:9px;width:132px;background:#fff;border:1px solid #e1eaf4;border-radius:7px;padding:7px;box-shadow:0 5px 12px #103d6c0b}.px-activity strong{font-size:6px}.px-activity p{font-size:5px;border-top:1px solid #eef3f8;padding-top:4px;margin:4px 0}.px-activity small{float:right;color:#8093a6}.px-phone{position:absolute;z-index:5;left:17px;bottom:3px;width:113px;height:221px;border:5px solid #233b55;background:#101c2c;border-radius:20px;box-shadow:0 22px 32px #001b3d55;overflow:hidden}.px-phone-top{background:#092b57;color:#fff;margin:6px;border-radius:9px;padding:9px 7px;font-size:6px}.px-phone-top b{font-size:8px;display:block}.px-phone-stat{background:#fff;margin:6px;border-radius:8px;padding:8px;font-size:6px;color:#173b63}.px-phone-stat b{display:block;font-size:7px}.px-phone-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin:6px}.px-phone-grid span{background:#fff;border-radius:6px;border:1px solid #dce9f4;padding:7px 4px;font-size:5px}.px-phone-grid b{display:block;font-size:9px;color:#087cf2}.px-phone-nav{position:absolute;left:0;right:0;bottom:0;background:#fff;display:flex;justify-content:space-around;padding:6px;color:#087cf2;font-size:7px}.px-float{position:absolute;z-index:6;color:#092b57;border-radius:11px;padding:8px 10px;box-shadow:0 13px 24px #001b3d33;font-size:6px;background:#fff;display:grid;grid-template-columns:17px auto;column-gap:5px;align-items:center}.px-float i{grid-row:1/3;font-size:10px}.px-float b{font-size:7px}.px-float small{font-size:5px}.px-edu{left:-2px;top:123px;background:#ffc42d}.px-pos{right:62px;bottom:30px;background:#0eaf82;color:#fff}.px-web{right:-3px;bottom:68px;background:#6736e8;color:#fff}
-.px-solutions{background:#fff;padding:10px 0 9px;position:relative;z-index:4}.px-four{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}.px-four article{min-height:92px;border:1px solid #e0eaf4;border-radius:13px;background:#fff;padding:12px 10px;display:grid;grid-template-columns:32px 1fr;gap:9px;box-shadow:0 8px 20px #103d6c0c}.px-sol-icon{width:31px;height:31px;border-radius:9px;color:#fff;display:grid;place-items:center;font-size:13px}.px-sol-icon.blue{background:#087cf2}.px-sol-icon.green{background:#0eaf82}.px-sol-icon.purple{background:#6736e8}.px-sol-icon.gold{background:#f3ad09}.px-four h3{font-size:9px;margin:2px 0 5px}.px-four p{font-size:6.5px;line-height:1.45;color:#60758e;margin:0}
-.px-stats{padding:7px 0 15px}.px-stat-grid{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid #e0eaf4;border-radius:13px;background:#fff;padding:10px;box-shadow:0 8px 20px #103d6c0b}.px-stat-grid>div{display:grid;grid-template-columns:34px auto;column-gap:8px;align-items:center;padding:3px 10px;border-right:1px solid #edf2f7}.px-stat-grid>div:last-child{border-right:0}.px-stat-grid i{grid-row:1/3;width:33px;height:33px;border-radius:10px;background:#edf6ff;color:#087cf2;display:grid;place-items:center}.px-stat-grid strong{font-size:16px}.px-stat-grid span{font-size:6.5px;color:#60758e}
-.px-showcase{padding:25px 0 22px;background:#fff}.px-show-grid{display:grid;grid-template-columns:33% 67%;gap:22px;align-items:center}.px-section-tag{display:inline-block;background:#e9f5ff;color:#087cf2;border-radius:15px;padding:5px 10px;font-size:6.5px;font-weight:800;letter-spacing:.5px}.px-show-copy h2,.px-process h2,.px-projects h2,.px-industries h2,.px-pos h2,.px-cap h2,.px-testimonials h2{font-size:24px;line-height:1.1;letter-spacing:-.7px;margin:9px 0;color:#092b57}.px-show-copy h2 span,.px-process h2 span,.px-industries h2 span,.px-pos h2 span,.px-cap h2 span,.px-testimonials h2 span{color:#087cf2}.px-show-copy p,.px-process>div>p,.px-industries>div>p,.px-pos p,.px-cap>div>p,.px-testimonials>div>p{font-size:8px;line-height:1.6;color:#60758e}.px-blue-btn{background:#087cf2;color:#fff;margin-top:8px}.px-product-card{position:relative;background:#eef7ff;border:1px solid #dbeaff;border-radius:18px;padding:12px;min-height:255px;box-shadow:0 14px 32px #103d6c12}.px-tabs{display:flex;gap:5px;margin-bottom:10px}.px-tabs>*{font-size:5.5px;padding:6px 8px;background:#fff;border-radius:9px;color:#476481;font-weight:700}.px-tabs b{background:#087cf2;color:#fff}.px-product-ui{width:64%;height:184px;background:#fff;border-radius:9px;display:grid;grid-template-columns:68px 1fr;overflow:hidden;box-shadow:0 7px 18px #103d6c0d}.px-product-ui aside{background:#092b57;color:#fff;padding:8px;font-size:5.5px}.px-product-ui aside strong{font-size:7px;display:block;margin-bottom:8px}.px-product-ui aside i{font-style:normal;display:block;padding:5px 3px}.px-product-ui aside .active{background:#087cf2;border-radius:4px}.px-product-ui>div{padding:9px}.px-product-ui h4{font-size:9px;margin:0 0 6px}.px-mini-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}.px-mini-metrics span{border:1px solid #e4edf6;border-radius:5px;padding:5px;font-size:4.5px}.px-mini-metrics b{display:block;font-size:9px}.px-mini-chart{height:80px;border:1px solid #e4edf6;border-radius:6px;margin-top:6px;display:flex;align-items:flex-end;gap:10px;padding:10px 18px}.px-mini-chart i{width:12px;background:#087cf2;border-radius:3px 3px 0 0}.px-product-copy{position:absolute;right:12px;top:57px;width:29%;padding:4px}.px-product-copy h3{font-size:13px;margin:0 0 7px}.px-product-copy p{font-size:6.5px;line-height:1.5;color:#60758e}.px-product-copy ul{list-style:none;padding:0;margin:8px 0}.px-product-copy li{font-size:5.8px;margin:5px 0}.px-product-copy li:before{content:"✓";color:#e4a900;font-weight:900;margin-right:5px}
-.px-process{background:#eef7ff;border-top:1px solid #dcecff;border-bottom:1px solid #dcecff;padding:18px 0}.px-process h2{font-size:21px;margin:7px 0 0}.px-process>div>p{margin:4px 0}.px-process-grid{display:grid;grid-template-columns:repeat(6,1fr);margin-top:15px}.px-process-grid>div{position:relative;text-align:center;padding:0 7px}.px-process-grid>div:not(:last-child):after{content:"→";position:absolute;right:-5px;top:9px;color:#087cf2;font-weight:900}.px-process-grid i{width:34px;height:34px;border-radius:11px;background:#fff;color:#087cf2;display:grid;place-items:center;margin:auto auto 6px;box-shadow:0 5px 13px #103d6c0c}.px-process-grid b{display:block;font-size:7px}.px-process-grid small{display:block;font-size:5.5px;color:#60758e;margin-top:2px}
-.px-projects{padding:23px 0}.px-project-head{display:flex;justify-content:space-between;align-items:end}.px-projects h2{font-size:23px;margin:7px 0 0}.px-projects p{font-size:7px;color:#60758e;margin:4px 0 0}.px-small-btn{background:#edf6ff;color:#087cf2;border-radius:18px;padding:8px 12px;font-size:7px;font-weight:800}.px-project-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:13px}.px-project-grid article{background:#fff;border:1px solid #e0e9f3;border-radius:12px;overflow:hidden;box-shadow:0 8px 20px #103d6c0b}.px-project-shot{height:101px;padding:10px}.blue-shot{background:linear-gradient(145deg,#0b3c77,#087cf2)}.green-shot{background:linear-gradient(145deg,#075b4b,#0eaf82)}.purple-shot{background:linear-gradient(145deg,#5a2cc6,#8b5df0)}.navy-shot{background:linear-gradient(145deg,#173d72,#087cf2)}.px-shot-window{height:100%;background:#fff;border-radius:6px;display:grid;grid-template-columns:23px 1fr;overflow:hidden}.px-shot-window aside{background:#092b57}.px-shot-window main{padding:6px}.px-shot-window main b{display:block;width:55%;height:5px;background:#c9dff3;border-radius:4px;margin-bottom:7px}.px-shot-window main span{display:inline-block;width:43%;height:22px;background:#edf6ff;border-radius:4px;margin:2px}.px-project-grid h3{font-size:8px;margin:8px 9px 3px}.px-project-grid p{font-size:5.7px;margin:0 9px;color:#60758e}.px-project-grid a{display:block;font-size:6px;color:#087cf2;font-weight:800;margin:7px 9px 9px}
-.px-industries{background:#092b57;color:#fff;padding:24px 0}.light-tag{background:#ffffff12;color:#d9edff}.px-industries h2{color:#fff;margin-top:8px}.px-industries h2 span{color:#ffc42d}.px-industries>div>p{color:#bdd6ef;max-width:530px}.px-ind-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:7px;margin-top:12px}.px-ind-grid span{background:#ffffff0b;border:1px solid #ffffff18;border-radius:10px;padding:10px 7px;font-size:6px;text-align:center}
-.px-pos{padding:25px 0;background:#f7fbff}.px-pos-grid{display:grid;grid-template-columns:40% 60%;gap:20px;align-items:center}.px-pos-ui{background:#fff;border:1px solid #dce8f3;border-radius:15px;padding:12px;box-shadow:0 13px 28px #103d6c0e}.px-pos-head{display:flex;justify-content:space-between;font-size:8px}.px-pos-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-top:8px}.px-pos-cards b{background:#edf6ff;border-radius:7px;padding:9px;font-size:9px}.px-pos-cards small{display:block;font-size:5px;color:#60758e;margin-top:3px}.px-pos-chart{height:90px;border:1px solid #e5edf5;border-radius:7px;margin-top:7px;background:linear-gradient(to top,#eef7ff 1px,transparent 1px);background-size:100% 18px}
-.px-cap{padding:25px 0}.px-cap h2{max-width:700px}.px-cap-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:13px}.px-cap-grid article{border-radius:14px;padding:15px;border:1px solid #e0e9f3;box-shadow:0 8px 20px #103d6c0a}.px-cap-grid article:nth-child(1){border-top:3px solid #087cf2}.px-cap-grid article:nth-child(2){border-top:3px solid #0eaf82}.px-cap-grid article:nth-child(3){border-top:3px solid #6736e8}.px-cap-grid b{font-size:7px;color:#087cf2}.px-cap-grid h3{font-size:11px;margin:7px 0}.px-cap-grid p{font-size:7px;line-height:1.5;color:#60758e}
-.px-testimonials{background:#f7fbff;padding:25px 0}.px-test-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:13px}.px-test-grid article{background:#fff;border:1px solid #e0e9f3;border-radius:14px;padding:16px;font-size:8px;line-height:1.6;color:#355473}.px-test-grid b{display:block;font-size:6px;color:#087cf2;margin-top:10px}.px-cta{background:#092b57;color:#fff;padding:30px 0;position:relative;overflow:hidden}.px-cta:after{content:"";position:absolute;width:430px;height:180px;right:-140px;top:-80px;border-radius:50%;border:35px solid #087cf244}.px-cta>.px-container{display:flex;justify-content:space-between;align-items:center;position:relative;z-index:2}.px-cta .px-section-tag{background:#ffffff12;color:#d9edff}.px-cta h2{font-size:25px;margin:7px 0 2px}.px-cta p{font-size:8px;color:#cce5ff;margin:0}.px-outline{border-color:#fff;color:#fff;background:transparent}
-@media(max-width:850px){.px-container{width:min(100% - 30px,620px)}.px-nav .nav-links{display:none}.px-nav .menu-toggle{display:block}.px-hero{height:auto}.px-hero-grid{height:auto;grid-template-columns:1fr;padding:32px 0 0}.px-hero h1{font-size:34px}.px-hero-art{height:360px}.px-laptop{transform:scale(.72);transform-origin:center top;right:-35px}.px-phone{transform:scale(.82);left:0}.px-float{transform:scale(.9)}.px-four,.px-stat-grid{grid-template-columns:1fr 1fr}.px-show-grid,.px-pos-grid{grid-template-columns:1fr}.px-product-card{min-height:260px}.px-project-grid{grid-template-columns:1fr 1fr}.px-ind-grid{grid-template-columns:repeat(3,1fr)}.px-process-grid{grid-template-columns:repeat(3,1fr);row-gap:18px}.px-process-grid>div:nth-child(3):after{display:none}.px-cap-grid{grid-template-columns:1fr}.px-test-grid{grid-template-columns:1fr}.px-cta>.px-container{gap:18px}}
-@media(max-width:560px){.px-container{width:calc(100% - 24px)}.px-brand>span{font-size:17px}.px-brand small{font-size:5px}.px-hero h1{font-size:30px}.px-hero p{font-size:10px}.px-actions{flex-direction:column;align-items:stretch}.px-btn{width:100%}.px-hero-art{height:300px}.px-laptop{transform:scale(.49);right:-102px;top:30px}.px-phone{transform:scale(.7);left:-2px}.px-float{font-size:5px}.px-edu{left:0;top:95px}.px-pos{right:30px;bottom:28px}.px-web{right:-5px;bottom:62px}.px-four,.px-stat-grid,.px-project-grid{grid-template-columns:1fr}.px-stat-grid>div{border-right:0;border-bottom:1px solid #edf2f7}.px-stat-grid>div:last-child{border-bottom:0}.px-product-ui{width:100%}.px-product-copy{position:static;width:100%;margin-top:10px}.px-product-card{padding-bottom:12px}.px-tabs{overflow:auto}.px-tabs>*{white-space:nowrap}.px-process-grid{grid-template-columns:1fr 1fr}.px-ind-grid{grid-template-columns:1fr 1fr}.px-project-head{align-items:start;gap:8px;flex-direction:column}.px-cta>.px-container{flex-direction:column;align-items:stretch}.px-cta .px-actions{flex-direction:row}.px-cta .px-btn{width:auto;flex:1}}
-</style></head>
+.hero{position:relative;overflow:hidden;color:#fff;min-height:650px;background:radial-gradient(circle at 76% 43%,#168cff 0,#087cf2 18%,transparent 44%),linear-gradient(125deg,#062b57,#06427f 48%,#087cf2)}.hero:before{content:"";position:absolute;width:820px;height:820px;right:-360px;top:-420px;border:1px solid #ffffff24;border-radius:50%;box-shadow:0 0 0 80px #ffffff05,0 0 0 160px #ffffff03}.hero:after{content:"";position:absolute;width:700px;height:700px;left:-350px;bottom:-500px;border:1px solid #ffffff18;border-radius:50%}
+.hero-grid{min-height:650px;display:grid;grid-template-columns:46% 54%;align-items:center;position:relative;z-index:2}.hero-copy{padding:55px 0}.eyebrow{display:inline-flex;gap:8px;align-items:center;padding:8px 13px;border:1px solid #84d4ff66;border-radius:30px;font-size:9px;font-weight:900;letter-spacing:.9px}.pulse{width:7px;height:7px;border-radius:50%;background:#17d795;box-shadow:0 0 0 5px #17d79518}
+.hero h1{font-size:59px;line-height:.99;letter-spacing:-3px;margin:20px 0 19px;font-weight:900;max-width:660px}.hero h1 span{color:var(--gold)}.hero-copy>p{font-size:14px;line-height:1.75;color:#e5f3ff;max-width:610px;margin:0 0 26px}.actions{display:flex;gap:11px;flex-wrap:wrap}.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;padding:14px 21px;border-radius:27px;font-size:11px;font-weight:900;transition:.2s;cursor:pointer}.btn:hover{transform:translateY(-2px)}.gold{background:var(--gold);color:var(--navy);box-shadow:0 13px 30px #ffc52f35}.white{background:#fff;color:var(--blue)}.outline{background:transparent;color:#fff;border:1px solid #fff}
+.proof{display:flex;align-items:center;gap:12px;margin-top:23px;font-size:9px;color:#dceeff}.avatars{display:flex}.avatar{width:29px;height:29px;border:2px solid #fff;border-radius:50%;margin-left:-6px;background:linear-gradient(145deg,#ffd77e,#ff8450)}.avatar:first-child{margin-left:0}.avatar:nth-child(2){background:linear-gradient(145deg,#a2dbff,#4c80e8)}.avatar:nth-child(3){background:linear-gradient(145deg,#86e4c0,#178d6d)}.avatar:nth-child(4){background:linear-gradient(145deg,#d1b1ff,#6938dd)}
+.hero-visual{height:100%;min-height:650px;position:relative;display:flex;align-items:center;justify-content:center}.laptop{position:relative;width:690px;height:420px;background:#172b43;border:7px solid #315b83;border-radius:23px 23px 13px 13px;box-shadow:0 38px 65px #001b3f66;transform:translate(35px,4px);z-index:2}.laptop:after{content:"";position:absolute;left:-68px;right:-68px;bottom:-25px;height:25px;border-radius:0 0 23px 23px;background:linear-gradient(#cad5e0,#a7b9ca);box-shadow:0 11px 0 #8ca0b4}
+.screen{height:100%;background:#f7fbff;border-radius:14px 14px 6px 6px;overflow:hidden;padding:14px;display:grid;grid-template-columns:108px 1fr;gap:11px}.side{background:#062b57;border-radius:10px;padding:12px 8px;color:#fff;font-size:8px}.side b{display:block;font-size:10px;margin-bottom:18px}.side div{padding:8px 6px;border-radius:6px;color:#d9eaff;margin:2px 0}.side .sel{background:#087cf2;color:#fff}.dash{padding:2px}.dash-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}.dash-top b{font-size:12px}.dash-search{font-size:7px;border:1px solid #dce7f2;border-radius:9px;padding:7px 10px;color:#71869c}.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}.metric{background:#fff;border:1px solid #e0eaf3;border-radius:9px;padding:10px}.metric i{color:#087cf2;font-size:9px}.metric b{display:block;font-size:17px;margin:5px 0 2px}.metric small{font-size:6px;color:#6d8094}.chart{height:175px;margin-top:9px;background:#fff;border:1px solid #e0eaf3;border-radius:9px;padding:12px}.chart-title{font-size:7px;font-weight:900}.bars{height:135px;display:flex;align-items:flex-end;justify-content:space-around;gap:13px;padding:12px 30px 0}.bars i{width:24px;border-radius:6px 6px 0 0;background:linear-gradient(#58b3ff,#087cf2)}.bars i:nth-child(1){height:29%}.bars i:nth-child(2){height:48%}.bars i:nth-child(3){height:40%}.bars i:nth-child(4){height:65%}.bars i:nth-child(5){height:58%}.bars i:nth-child(6){height:84%}
+.float{position:absolute;border-radius:15px;padding:12px 15px;background:#fff;color:var(--navy);font-size:8px;font-weight:700;box-shadow:0 22px 42px #001b3f45;z-index:5}.float b{display:block;font-size:10px;margin:2px 0}.float.edu{left:-5px;top:125px;background:var(--gold)}.float.app{right:-2px;bottom:177px;background:var(--purple);color:#fff}.float.pos{right:38px;bottom:67px;background:var(--green);color:#fff}
+.phone{position:absolute;left:5px;bottom:4px;width:185px;height:350px;border:7px solid #2c4159;background:#101c2c;border-radius:30px;box-shadow:0 30px 50px #001b3f55;overflow:hidden;z-index:7}.phone-screen{height:100%;background:#f5faff;padding:12px}.phone-head{background:#062b57;color:#fff;border-radius:15px;padding:16px 12px;font-size:8px}.phone-head b{font-size:12px}.phone-cards{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}.phone-card{background:#fff;border:1px solid #dce8f3;border-radius:9px;padding:9px;font-size:6px}.phone-card b{display:block;font-size:14px;margin-bottom:2px}.phone-nav{position:absolute;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #dce8f3;padding:12px;display:flex;justify-content:space-around;color:#087cf2;font-size:10px}
+
+.trust{padding:16px 0;border-bottom:1px solid #e7eef5;background:#fff}.trust-grid{display:grid;grid-template-columns:repeat(5,1fr)}.trust-item{text-align:center;font-size:10px;font-weight:800;color:#4e6c89;border-right:1px solid var(--line)}.trust-item:last-child{border:0}.trust-item i{color:var(--blue);margin-right:5px}
+.section{padding:68px 0}.soft{background:var(--soft)}.head{text-align:center;max-width:740px;margin:0 auto 31px}.tag{display:inline-block;padding:7px 12px;border-radius:20px;background:#eaf5ff;color:var(--blue);font-size:9px;font-weight:900;letter-spacing:.6px}.head h2{font-size:39px;line-height:1.05;letter-spacing:-1.7px;margin:12px 0}.head h2 span{color:var(--blue)}.head p{font-size:12px;line-height:1.75;color:var(--muted);margin:0}
+.solution-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}.solution{background:#fff;border:1px solid var(--line);border-radius:20px;padding:23px;min-height:210px;box-shadow:0 12px 28px #103d6c09;transition:.2s}.solution:hover{transform:translateY(-5px);box-shadow:var(--shadow)}.solution-icon{width:47px;height:47px;border-radius:14px;background:#eaf5ff;color:var(--blue);display:grid;place-items:center;font-size:20px;margin-bottom:17px}.solution:nth-child(2) .solution-icon{background:#e7faf4;color:var(--green)}.solution:nth-child(3) .solution-icon{background:#f0ebff;color:var(--purple)}.solution:nth-child(4) .solution-icon{background:#fff5d9;color:#cf9500}.solution h3{font-size:15px;margin:0 0 8px}.solution p{font-size:10px;line-height:1.65;color:var(--muted);margin:0}.link{display:inline-block;color:var(--blue);font-size:9px;font-weight:900;margin-top:13px}
+.stats{padding:25px 0}.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);overflow:hidden}.stat{display:flex;align-items:center;gap:13px;padding:23px;border-right:1px solid var(--line)}.stat:last-child{border:0}.stat-icon{width:43px;height:43px;border-radius:12px;background:#eaf5ff;color:var(--blue);display:grid;place-items:center}.stat b{display:block;font-size:21px}.stat span{font-size:9px;color:var(--muted)}
+.showcase{padding:75px 0}.showcase-grid{display:grid;grid-template-columns:37% 63%;gap:48px;align-items:center}.showcase-copy h2{font-size:41px;line-height:1.03;letter-spacing:-1.8px;margin:13px 0}.showcase-copy h2 span{color:var(--blue)}.showcase-copy p{font-size:12px;line-height:1.75;color:var(--muted)}.checks{padding:0;margin:20px 0;list-style:none}.checks li{font-size:10px;margin:10px 0}.checks i{width:19px;height:19px;border-radius:50%;display:inline-grid;place-items:center;background:#fff2c8;color:#bd8500;font-size:8px;margin-right:7px}
+.ui{background:linear-gradient(145deg,#eaf5ff,#f8fbff);border:1px solid #d6e7f8;border-radius:27px;padding:18px;box-shadow:0 28px 65px #103d6c17}.tabs{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:13px}.tab{background:#fff;border-radius:12px;padding:8px 11px;font-size:8px;font-weight:800;color:#56728d}.tab.active{background:var(--blue);color:#fff}.window{background:#fff;border-radius:14px;overflow:hidden;display:grid;grid-template-columns:116px 1fr;min-height:350px}.window-side{background:var(--navy);color:#fff;padding:13px 8px;font-size:8px}.window-side b{display:block;font-size:10px;margin-bottom:16px}.window-side span{display:block;padding:8px 6px;color:#d9eaff}.window-side .selected{background:var(--blue);border-radius:6px;color:#fff}.window-main{padding:17px}.window-main h4{font-size:13px;margin:0 0 11px}.mini-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}.mini{border:1px solid #e0eaf3;border-radius:9px;padding:9px}.mini b{display:block;font-size:15px}.mini small{font-size:6px;color:var(--muted)}.big-chart{height:190px;border:1px solid #e0eaf3;border-radius:9px;margin-top:9px;padding:12px}.big-bars{height:150px;display:flex;align-items:flex-end;gap:18px;padding:10px 35px}.big-bars i{width:25px;border-radius:6px 6px 0 0;background:linear-gradient(#59b5ff,#087cf2)}.big-bars i:nth-child(1){height:32%}.big-bars i:nth-child(2){height:48%}.big-bars i:nth-child(3){height:42%}.big-bars i:nth-child(4){height:68%}.big-bars i:nth-child(5){height:58%}.big-bars i:nth-child(6){height:84%}
+.ecosystem{padding:68px 0;background:var(--soft)}.eco-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.eco-card{background:#fff;border:1px solid var(--line);border-radius:19px;padding:20px}.eco-card h3{font-size:14px;margin:0 0 8px}.eco-card p{font-size:9px;line-height:1.6;color:var(--muted)}.module-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}.module{padding:6px 8px;background:#edf6ff;color:#356285;border-radius:9px;font-size:7px;font-weight:800}
+.industries{padding:65px 0}.industry-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:11px}.industry{padding:19px 10px;border:1px solid var(--line);border-radius:17px;text-align:center}.industry i{color:var(--blue);font-size:20px;margin-bottom:9px}.industry b{display:block;font-size:9px}.industry span{font-size:7px;color:var(--muted)}
+.process{padding:68px 0;background:var(--soft)}.process-grid{display:grid;grid-template-columns:repeat(6,1fr);margin-top:31px}.step{text-align:center;padding:0 12px;position:relative}.step:not(:last-child):after{content:"→";position:absolute;right:-5px;top:17px;color:var(--blue);font-weight:900}.step-icon{width:45px;height:45px;margin:0 auto 11px;background:#fff;border-radius:14px;color:var(--blue);display:grid;place-items:center;box-shadow:0 8px 18px #103d6c0c}.step b{font-size:10px}.step span{display:block;font-size:8px;color:var(--muted);line-height:1.45;margin-top:4px}
+.projects{padding:68px 0}.projects-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}.project{border:1px solid var(--line);border-radius:20px;overflow:hidden;background:#fff;box-shadow:0 12px 28px #103d6c09}.project-img{height:185px;padding:12px;background:linear-gradient(145deg,#0a3e7b,#087cf2)}.project:nth-child(2) .project-img{background:linear-gradient(145deg,#075c4c,#0caf82)}.project:nth-child(3) .project-img{background:linear-gradient(145deg,#5225c7,#8c62ef)}.project:nth-child(4) .project-img{background:linear-gradient(145deg,#163b70,#087cf2)}.project-screen{height:100%;background:#fff;border-radius:10px;overflow:hidden;display:grid;grid-template-columns:37px 1fr}.project-screen aside{background:#062b57}.project-screen main{padding:9px}.line{height:7px;background:#dce9f5;border-radius:5px;margin-bottom:8px}.boxes{display:grid;grid-template-columns:1fr 1fr;gap:6px}.box{height:52px;background:#edf6ff;border-radius:7px}.project-body{padding:16px}.project-body h3{font-size:12px;margin:0 0 6px}.project-body p{font-size:8px;color:var(--muted);margin:0}.project-body a{display:block;margin-top:10px;color:var(--blue);font-size:9px;font-weight:900}
+.tech{padding:52px 0;background:var(--soft)}.tech-grid{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:24px}.tech-pill{background:#fff;border:1px solid var(--line);border-radius:13px;padding:12px 16px;font-size:10px;font-weight:800;color:#45647f}
+.faq{padding:68px 0}.faq-grid{width:min(850px,100%);margin:auto}.faq-item{border:1px solid var(--line);border-radius:14px;margin-bottom:9px;overflow:hidden;background:#fff}.faq-q{width:100%;background:#fff;border:0;padding:16px;text-align:left;display:flex;justify-content:space-between;align-items:center;font-size:11px;font-weight:800;color:var(--ink)}.faq-a{display:none;padding:0 16px 16px;font-size:9px;line-height:1.7;color:var(--muted)}.faq-item.open .faq-a{display:block}.faq-item.open .faq-q i{transform:rotate(45deg)}
+.booking{padding:65px 0}.booking-panel{border-radius:30px;background:linear-gradient(125deg,#062b57,#087cf2);padding:48px;color:#fff;display:flex;align-items:center;justify-content:space-between;gap:35px;position:relative;overflow:hidden}.booking-panel:after{content:"";position:absolute;right:-120px;top:-180px;width:460px;height:460px;border-radius:50%;border:60px solid #ffffff16}.booking-panel>*{position:relative;z-index:2}.booking-panel h2{font-size:40px;letter-spacing:-1.5px;margin:10px 0}.booking-panel p{font-size:11px;line-height:1.7;color:#dceeff;max-width:650px}
+.footer{background:#061f3f;color:#a8c0d8;padding:48px 0 20px}.footer-grid{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:45px}.footer h4{color:#fff;font-size:11px;margin:0 0 13px}.footer p,.footer a{font-size:9px;line-height:1.75}.footer a{display:block;margin:5px 0}.bottom{border-top:1px solid #ffffff15;margin-top:30px;padding-top:16px;text-align:center;font-size:8px}
+
+.back{position:fixed;right:20px;bottom:20px;width:42px;height:42px;border:0;border-radius:50%;background:var(--navy);color:#fff;display:none;place-items:center;z-index:900;box-shadow:0 10px 25px #062b5733}.back.show{display:grid}
+
+.modal-bg{position:fixed;inset:0;background:#03182ddd;backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:18px;z-index:5000}.modal-bg.open{display:flex}.modal{width:min(760px,100%);max-height:94vh;overflow:auto;background:#fff;border-radius:25px;box-shadow:0 35px 90px #00172f66}.modal-head{display:flex;justify-content:space-between;align-items:center;padding:21px 25px;border-bottom:1px solid var(--line)}.modal-head h3{font-size:20px;margin:0}.close{width:37px;height:37px;border:0;border-radius:10px;background:#edf5fc;color:#456}.modal-body{padding:22px 25px 27px}.note{padding:11px;border-radius:11px;background:#edf7ff;color:#2c5b80;font-size:9px;line-height:1.5;margin-bottom:16px}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px}.field{display:flex;flex-direction:column;gap:6px}.field.full{grid-column:1/-1}.field label{font-size:9px;font-weight:800;color:#294d70}.field input,.field select,.field textarea{border:1px solid #d5e3ef;border-radius:11px;background:#fbfdff;padding:11px 12px;font-size:10px;color:#173a60;outline:0}.field textarea{min-height:90px;resize:vertical}.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px #087cf214}.consent{display:flex;gap:8px;margin-top:13px;font-size:8px;color:#61778e}.submit{display:flex;justify-content:flex-end;gap:9px;margin-top:17px}.msg{display:none;margin-top:12px;padding:11px;border-radius:10px;font-size:9px}.msg.success{display:block;background:#e8fbf4;color:#087a5a}.msg.error{display:block;background:#fff0f0;color:#a62c2c}
+
+@media(max-width:1050px){.links{gap:13px}.hero h1{font-size:50px}.laptop{transform:scale(.82) translate(25px,3px);transform-origin:center}.phone{transform:scale(.82);transform-origin:bottom left}.solution-grid,.projects-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:800px){.container{width:calc(100% - 30px)}.links{display:none}.menu{display:grid;place-items:center}.hero-grid{grid-template-columns:1fr}.hero,.hero-grid{min-height:auto}.hero-copy{padding:45px 0 15px}.hero h1{font-size:45px}.hero-visual{height:490px;min-height:490px}.laptop{transform:scale(.68);transform-origin:center}.phone{transform:scale(.72);left:2%;bottom:0}.trust-grid{grid-template-columns:repeat(3,1fr)}.stats-grid{grid-template-columns:1fr 1fr}.stat:nth-child(2){border-right:0}.stat{border-bottom:1px solid var(--line)}.showcase-grid{grid-template-columns:1fr}.industry-grid{grid-template-columns:repeat(3,1fr)}.process-grid{grid-template-columns:repeat(3,1fr);row-gap:25px}.step:nth-child(3):after,.step:nth-child(6):after{display:none}.booking-panel{flex-direction:column;align-items:flex-start}.footer-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:560px){.container{width:calc(100% - 24px)}.top{height:32px}.top .container{font-size:8px}.top .container span:first-child{display:none}.nav{height:70px}.hero h1{font-size:36px;letter-spacing:-1.6px}.hero-copy>p{font-size:12px}.actions{flex-direction:column}.btn{width:100%}.hero-visual{height:350px;min-height:350px}.laptop{transform:scale(.46);transform-origin:center}.phone{transform:scale(.57);left:-2px}.float{font-size:6px;padding:8px 10px}.float b{font-size:7px}.float.edu{left:-2px;top:64px}.float.app{right:0;bottom:110px}.float.pos{right:7px;bottom:29px}.trust-grid{grid-template-columns:1fr 1fr}.trust-item{padding:8px 2px;font-size:8px}.solution-grid,.projects-grid,.stats-grid{grid-template-columns:1fr}.stat{border-right:0}.head h2{font-size:30px}.showcase-copy h2{font-size:31px}.window{grid-template-columns:75px 1fr}.window-side{font-size:6px}.mini-metrics{grid-template-columns:1fr 1fr}.industry-grid{grid-template-columns:1fr 1fr}.process-grid{grid-template-columns:1fr 1fr}.step:not(:last-child):after{display:none}.booking-panel{padding:31px 22px}.booking-panel h2{font-size:30px}.footer-grid{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}.field.full{grid-column:auto}.modal-body{padding:18px}.modal-head{padding:18px}}
+</style>
+</head>
 <body>
-<!-- CMS COMPONENT MAP: each major section has data-cms-component; editable text uses data-cms-field. Future Admin Portal can manage content, visibility, ordering, media, links and styling per component. -->
-<div class="cn-microbar" data-cms-component="announcement-bar"><span><i class="fas fa-circle"></i> Building digital products for education, businesses &amp; organizations</span></div>
-<!-- ===== SCROLL PROGRESS BAR ===== -->
-<div class="scroll-progress" id="scrollProgress"></div>
-<!-- ============================================================
-      NAVBAR
-      ============================================================ -->
-<nav class="navbar cn-nav px-nav" id="navbar" data-cms-component="navigation"><div class="px-container nav-inner">
-<a class="logo cn-logo px-brand" href="#home"><div class="px-brand-mark"><i class="fas fa-layer-group"></i></div><span>Campus<span>Nexus</span></span><small>Digital Solutions for Better Organizations</small></a>
-<button aria-label="Toggle menu" class="menu-toggle" id="menuToggle"><i class="fas fa-bars"></i></button>
-<ul class="nav-links" id="navLinks"><li><a class="active" href="#home">Home</a></li><li><a href="#solutions">Solutions</a></li><li><a href="#projects">Our Work</a></li><li><a href="#how-it-works">How It Works</a></li><li><a href="#industries">About</a></li><li><a href="#contact-section" onclick="openModal('contactModal');return false;">Contact</a></li><li><a class="px-nav-cta" href="#" onclick="openModal('demoModal');return false;">Get Started <i class="fas fa-arrow-right"></i></a></li></ul></div></nav>
-<!-- ===== MOBILE MENU ===== -->
-<div class="mobile-menu-backdrop" id="mobileMenuBackdrop"></div>
-<div class="mobile-menu" id="mobileMenu"><ul><li><a href="#home" onclick="closeMobileMenu()">Home</a></li><li><a href="#solutions" onclick="closeMobileMenu()">Solutions</a></li><li><a href="#projects" onclick="closeMobileMenu()">Our Work</a></li><li><a href="#how-it-works" onclick="closeMobileMenu()">How It Works</a></li><li><a href="#industries" onclick="closeMobileMenu()">About</a></li><li><a href="#contact-section" onclick="openModal('contactModal');closeMobileMenu();return false;">Contact</a></li><li><a class="btn-primary" href="#" onclick="openModal('demoModal');closeMobileMenu();return false;">Get Started</a></li></ul></div>
-<!-- PIXEL-MATCHED CAMPUSNEXUS LANDING DESIGN -->
-<main class="px-main">
-<section class="px-hero" id="home" data-cms-component="hero">
-  <div class="px-hero-orbit px-o1"></div><div class="px-hero-orbit px-o2"></div>
-  <div class="px-container px-hero-grid">
-    <div class="px-hero-copy">
-      <div class="px-eyebrow" data-cms-field="hero.eyebrow"><i class="fas fa-circle"></i> INNOVATIVE · RELIABLE · RESULTS-DRIVEN</div>
-      <h1 data-cms-field="hero.title">We Build Digital Systems That Move <em>Your Organization Forward.</em></h1>
-      <p data-cms-field="hero.description">From education platforms and business systems to websites and custom applications — CampusNexus designs, builds and deploys digital solutions around the way you work.</p>
-      <div class="px-actions"><a class="px-btn px-gold" href="#" onclick="openModal('demoModal');return false;">Start a Project <i class="fas fa-arrow-right"></i></a><a class="px-btn px-white" href="#solutions">Explore Solutions <i class="fas fa-play-circle"></i></a></div>
-      <div class="px-proof"><div class="px-avatars"><span></span><span></span><span></span><span></span></div><b>Trusted by institutions, businesses<br>and organizations across Kenya.</b></div>
-    </div>
-    <div class="px-hero-art">
-      <div class="px-laptop">
-        <div class="px-browser"><span></span><span></span><span></span><b>CampusNexus</b><small>Admin Dashboard</small></div>
-        <div class="px-screen">
-          <aside><strong>CampusNexus</strong><i class="active">Dashboard</i><i>Students</i><i>Lecturers</i><i>Courses</i><i>Exams</i><i>Attendance</i><i>Reports</i></aside>
-          <div class="px-dash"><div class="px-dash-top"><b>Dashboard</b><span>Search... &nbsp; ● Admin</span></div><div class="px-metrics"><div><i class="fas fa-user-graduate"></i><b>1,294</b><small>Students</small></div><div><i class="fas fa-chalkboard-teacher"></i><b>48</b><small>Lecturers</small></div><div><i class="fas fa-book"></i><b>55</b><small>Courses</small></div><div><i class="fas fa-file-alt"></i><b>12</b><small>Exams</small></div></div><div class="px-chart"><strong>Student Enrollment</strong><div><i style="height:28%"></i><i style="height:46%"></i><i style="height:37%"></i><i style="height:63%"></i><i style="height:56%"></i><i style="height:81%"></i></div></div><div class="px-activity"><strong>Recent Activities</strong><p>New student registered <small>2 mins ago</small></p><p>Exam result published <small>1 hour ago</small></p><p>New resource uploaded <small>3 hours ago</small></p></div></div>
-        </div>
-      </div>
-      <div class="px-phone"><div class="px-phone-top"><b>NCHSM</b><span>Welcome Back</span></div><div class="px-phone-stat"><b>Quick Snapshot</b><small>Active Courses &nbsp; 11</small></div><div class="px-phone-grid"><span>📚<b>11</b>Courses</span><span>▣<b>41</b>Resources</span><span>◉<b>97%</b>Progress</span><span>▤<b>3</b>Exams</span></div><div class="px-phone-nav"><i>⌂</i><i>▦</i><i>◯</i><i>☰</i></div></div>
-      <div class="px-float px-edu"><i class="fas fa-graduation-cap"></i><b>Education Management</b><small>LMS · Student Portals · Exams</small></div>
-      <div class="px-float px-pos"><i class="fas fa-cash-register"></i><b>POS System</b><small>Sales, Inventory & Reports</small></div>
-      <div class="px-float px-web"><i class="fas fa-globe"></i><b>Websites & Custom Apps</b><small>Modern · Responsive · Scalable</small></div>
-    </div>
+
+<div class="top"><div class="container"><span><i class="fa-solid fa-circle-check"></i> Building digital products for education, businesses & organizations</span><span><a href="mailto:info@campusnexus.com">info@campusnexus.com</a> · <a href="tel:+254790969743">+254 790 969 743</a></span></div></div>
+
+<nav class="nav" data-cms-component="navigation"><div class="container">
+  <a class="logo" href="#home"><div class="logo-icon"><i class="fa-solid fa-cubes"></i></div><div class="logo-name">Campus<span>Nexus</span><small>Digital Solutions for Better Organizations</small></div></a>
+  <div class="links"><a href="#home">Home</a><a href="#solutions">Solutions</a><a href="#ecosystem">Platforms</a><a href="#projects">Our Work</a><a href="#process">How We Work</a><a href="#industries">Industries</a><a href="#faq">FAQ</a><a class="nav-button" href="#" onclick="openBooking();return false">Book a Consultation <i class="fa-solid fa-arrow-right"></i></a></div>
+  <button class="menu" onclick="toggleMobile()" aria-label="Open menu"><i class="fa-solid fa-bars"></i></button>
+</div></nav>
+<div class="mobile" id="mobile"><a href="#home">Home</a><a href="#solutions">Solutions</a><a href="#ecosystem">Platforms</a><a href="#projects">Our Work</a><a href="#process">How We Work</a><a href="#industries">Industries</a><a href="#faq">FAQ</a><a href="#" onclick="openBooking();closeMobile();return false">Book a Consultation</a></div>
+
+<section class="hero" id="home" data-cms-component="hero"><div class="container hero-grid">
+  <div class="hero-copy">
+    <div class="eyebrow" data-cms-field="hero.eyebrow"><span class="pulse"></span> INNOVATIVE · RELIABLE · RESULTS-DRIVEN</div>
+    <h1 data-cms-field="hero.title">We Build Digital Systems That Move <span>Your Organization Forward.</span></h1>
+    <p data-cms-field="hero.description">From education platforms and business systems to websites and custom applications — CampusNexus designs, builds and deploys digital solutions around the way you work.</p>
+    <div class="actions"><a class="btn gold" href="#" onclick="openBooking();return false">Book a Consultation <i class="fa-solid fa-calendar-check"></i></a><a class="btn white" href="#solutions">Explore Solutions <i class="fa-solid fa-arrow-down"></i></a></div>
+    <div class="proof"><div class="avatars"><i class="avatar"></i><i class="avatar"></i><i class="avatar"></i><i class="avatar"></i></div><span><strong>Built for real organizations.</strong><br>Education · Business · Healthcare · Professional Services</span></div>
   </div>
-</section>
-
-<section class="px-solutions" id="solutions" data-cms-component="solutions">
- <span class="px-cms-hidden" data-cms-field="solutions.title">Our Digital Solutions</span><span class="px-cms-hidden" data-cms-field="solutions.description">From a simple landing page to a complete digital platform.</span>
- <div class="px-container px-four">
-  <article><div class="px-sol-icon blue"><i class="fas fa-graduation-cap"></i></div><div><h3 data-cms-field="solutions.lms.title">Education Platforms →</h3><p data-cms-field="solutions.lms.description">LMS, student portals, lecturer portals, exams, attendance and academic management.</p></div></article>
-  <article><div class="px-sol-icon green"><i class="fas fa-store"></i></div><div><h3 data-cms-field="solutions.pos.title">Business & POS Systems →</h3><p data-cms-field="solutions.pos.description">Sales, inventory, payments, customers, reports and operational management.</p></div></article>
-  <article><div class="px-sol-icon purple"><i class="fas fa-globe"></i></div><div><h3>Websites & E-Commerce →</h3><p>Landing pages, business websites, online stores and branding solutions.</p></div></article>
-  <article><div class="px-sol-icon gold"><i class="fas fa-code"></i></div><div><h3>Custom Applications →</h3><p>Dashboards, portals, workflows and organization-specific software systems.</p></div></article>
- </div>
-</section>
-
-<section class="px-stats" data-cms-component="trust-strip"><div class="px-container px-stat-grid">
- <div><i class="fas fa-chart-line"></i><strong>50+</strong><span>Projects Delivered</span></div><div><i class="fas fa-users"></i><strong>10+</strong><span>Sectors Served</span></div><div><i class="fas fa-star"></i><strong>99%</strong><span>Client Satisfaction</span></div><div><i class="fas fa-headset"></i><strong>24/7</strong><span>Ongoing Support</span></div>
+  <div class="hero-visual">
+    <div class="laptop"><div class="screen"><aside class="side"><b>CampusNexus</b><div class="sel">Dashboard</div><div>Students</div><div>Lecturers</div><div>Courses</div><div>Exams</div><div>Attendance</div><div>Reports</div></aside><div class="dash"><div class="dash-top"><b>Organization Dashboard</b><span class="dash-search">Search... &nbsp; Admin</span></div><div class="metrics"><div class="metric"><i class="fa-solid fa-user-graduate"></i><b>1,294</b><small>Students</small></div><div class="metric"><i class="fa-solid fa-chalkboard-user"></i><b>48</b><small>Lecturers</small></div><div class="metric"><i class="fa-solid fa-book"></i><b>55</b><small>Courses</small></div><div class="metric"><i class="fa-solid fa-file-circle-check"></i><b>12</b><small>Exams</small></div></div><div class="chart"><span class="chart-title">Activity & Growth</span><div class="bars"><i></i><i></i><i></i><i></i><i></i><i></i></div></div></div></div>
+      <div class="float edu"><i class="fa-solid fa-graduation-cap"></i><b>Education Platforms</b>LMS · Portals · Exams</div><div class="float app"><i class="fa-solid fa-code"></i><b>Custom Applications</b>Dashboards · Workflows</div><div class="float pos"><i class="fa-solid fa-cash-register"></i><b>POS Systems</b>Sales · Inventory · Reports</div>
+      <div class="phone"><div class="phone-screen"><div class="phone-head"><b>NCHSM</b><br>Welcome back · Your learning at a glance</div><div class="phone-cards"><div class="phone-card"><b>11</b>Courses</div><div class="phone-card"><b>41</b>Resources</div><div class="phone-card"><b>97%</b>Progress</div><div class="phone-card"><b>3</b>Upcoming Exams</div></div></div><div class="phone-nav"><i class="fa-solid fa-house"></i><i class="fa-solid fa-grip"></i><i class="fa-solid fa-chart-simple"></i><i class="fa-solid fa-bars"></i></div></div>
+  </div>
 </div></section>
 
-<section class="px-showcase" data-cms-component="lms-showcase" id="lms"><div class="px-container px-show-grid">
- <div class="px-show-copy"><div class="px-section-tag">⚙ OUR SOLUTIONS</div><h2 data-cms-field="lms.title">Powerful Software.<br>Designed for <span>Real Users.</span></h2><p data-cms-field="lms.description">Explore our core solutions built to simplify operations, improve efficiency and drive growth.</p><a class="px-btn px-blue-btn" href="#projects">View All Solutions <i class="fas fa-arrow-right"></i></a></div>
- <div class="px-product-card"><div class="px-tabs"><b>Student Portal</b><span>Lecturer Portal</span><span>Admin Dashboard</span><span>POS System</span><span>Website</span></div><div class="px-product-ui"><aside><strong>NCHSM</strong><i class="active">Dashboard</i><i>My Courses</i><i>Timetable</i><i>Attendance</i><i>Exams & Results</i><i>Assignments</i></aside><div><h4>Quick Snapshot</h4><div class="px-mini-metrics"><span><b>11</b>Active Courses</span><span><b>11</b>Approved Units</span><span><b>41</b>New Resources</span><span><b>3.45</b>GPA</span></div><div class="px-mini-chart"><i style="height:35%"></i><i style="height:52%"></i><i style="height:43%"></i><i style="height:67%"></i><i style="height:82%"></i></div></div></div><div class="px-product-copy"><h3>Student Portal</h3><p>A modern, easy-to-use portal for students to access learning resources, timetables, exams, results, fees and more.</p><ul><li>Course materials</li><li>Timetables & notifications</li><li>Exam access & results</li><li>Fee management</li><li>Progress tracking</li></ul></div></div>
-</div></section>
+<section class="trust" data-cms-component="trust-strip"><div class="container trust-grid"><div class="trust-item"><i class="fa-solid fa-shield-halved"></i> Secure</div><div class="trust-item"><i class="fa-solid fa-mobile-screen"></i> Responsive</div><div class="trust-item"><i class="fa-solid fa-cloud"></i> Cloud Ready</div><div class="trust-item"><i class="fa-solid fa-plug"></i> Integrations</div><div class="trust-item"><i class="fa-solid fa-headset"></i> Ongoing Support</div></div></section>
 
-<section class="px-process" id="how-it-works" data-cms-component="process"><div class="px-container"><div class="px-section-tag">⚙ HOW WE WORK</div><h2 data-cms-field="process.title">From Idea to <span>Digital Product.</span></h2><p data-cms-field="process.description">A clear path from your idea to a working, supported digital solution.</p><div class="px-process-grid">
- <div><i class="fas fa-search"></i><b>1. Discover</b><small>Understand your needs</small></div><div><i class="fas fa-file-alt"></i><b>2. Design</b><small>Plan the solution</small></div><div><i class="fas fa-code"></i><b>3. Develop</b><small>Build and test</small></div><div><i class="fas fa-database"></i><b>4. Integrate</b><small>Connect systems</small></div><div><i class="fas fa-rocket"></i><b>5. Launch</b><small>Deploy with training</small></div><div><i class="fas fa-headset"></i><b>6. Support</b><small>Ongoing maintenance</small></div>
- </div></div></section>
+<section class="section soft" id="solutions" data-cms-component="solutions"><div class="container"><div class="head"><div class="tag">WHAT WE BUILD</div><h2 data-cms-field="solutions.title">Digital Solutions Built Around <span>Your Goals.</span></h2><p data-cms-field="solutions.description">From a simple online presence to a complete digital platform, we build systems that solve real operational problems.</p></div>
+<div class="solution-grid"><article class="solution"><div class="solution-icon"><i class="fa-solid fa-graduation-cap"></i></div><h3>Education Platforms</h3><p>LMS, student portals, lecturer portals, examinations, attendance, resources, finance and academic management.</p><a class="link" href="#ecosystem">Explore platform →</a></article><article class="solution"><div class="solution-icon"><i class="fa-solid fa-cash-register"></i></div><h3>Business & POS Systems</h3><p>Sales, inventory, payments, customers, reports, staff workflows and operational management.</p><a class="link" href="#projects">Explore systems →</a></article><article class="solution"><div class="solution-icon"><i class="fa-solid fa-globe"></i></div><h3>Websites & E-Commerce</h3><p>Landing pages, corporate websites, commercial websites, online stores and digital experiences.</p><a class="link" href="#projects">View web work →</a></article><article class="solution"><div class="solution-icon"><i class="fa-solid fa-code"></i></div><h3>Custom Web Applications</h3><p>Dashboards, portals, workflows, automation and purpose-built software for your organization.</p><a class="link" href="#" onclick="openBooking();return false">Discuss your idea →</a></article></div></div></section>
 
-<section class="px-projects" id="projects" data-cms-component="projects"><div class="px-container"><div class="px-project-head"><div><div class="px-section-tag">↗ OUR WORK</div><h2 data-cms-field="projects.title">Featured Projects</h2><p data-cms-field="projects.description">Real solutions for real organizations.</p></div><a class="px-small-btn" href="#contact-section">View All Projects <i class="fas fa-arrow-right"></i></a></div><div class="px-project-grid">
- <article><div class="px-project-shot blue-shot"><div class="px-shot-window"><aside></aside><main><b></b><span></span><span></span><span></span><span></span></main></div></div><h3>School Management System</h3><p>Student, Lecturer & Admin Portals</p><a href="#contact-section">View Project →</a></article>
- <article><div class="px-project-shot green-shot"><div class="px-shot-window"><aside></aside><main><b></b><span></span><span></span><span></span><span></span></main></div></div><h3>Business POS System</h3><p>Sales, Inventory & Reports</p><a href="#contact-section">View Project →</a></article>
- <article><div class="px-project-shot purple-shot"><div class="px-shot-window"><aside></aside><main><b></b><span></span><span></span><span></span><span></span></main></div></div><h3>Corporate Website</h3><p>Modern & Responsive Websites</p><a href="#contact-section">View Project →</a></article>
- <article><div class="px-project-shot navy-shot"><div class="px-shot-window"><aside></aside><main><b></b><span></span><span></span><span></span><span></span></main></div></div><h3>County Health Dashboard</h3><p>Data Management & Reporting</p><a href="#contact-section">View Project →</a></article>
- </div></div></section>
+<section class="stats"><div class="container stats-grid"><div class="stat"><div class="stat-icon"><i class="fa-solid fa-rocket"></i></div><div><b>50+</b><span>Projects & solutions</span></div></div><div class="stat"><div class="stat-icon"><i class="fa-solid fa-layer-group"></i></div><div><b>10+</b><span>Solution categories</span></div></div><div class="stat"><div class="stat-icon"><i class="fa-solid fa-mobile-screen"></i></div><div><b>100%</b><span>Responsive builds</span></div></div><div class="stat"><div class="stat-icon"><i class="fa-solid fa-headset"></i></div><div><b>Ongoing</b><span>Support & improvement</span></div></div></div></section>
 
-<section class="px-industries" id="industries" data-cms-component="industries"><div class="px-container"><div class="px-section-tag light-tag">SOLUTIONS FOR DIFFERENT INDUSTRIES</div><h2 data-cms-field="industries.title">Technology that adapts to <span>your organization.</span></h2><p data-cms-field="industries.description">Education, healthcare, retail, corporate and public-sector solutions designed around real workflows.</p><div class="px-ind-grid"><span>🎓 Education</span><span>🏥 Healthcare</span><span>🛒 Retail</span><span>🏢 Corporate</span><span>🏛 Public Sector</span><span>🛍 E-commerce</span></div></div></section>
+<section class="showcase" id="ecosystem" data-cms-component="lms-showcase"><div class="container showcase-grid"><div class="showcase-copy"><div class="tag">PRODUCT ECOSYSTEM</div><h2>More Than a Website.<br>A <span>Complete Digital Platform.</span></h2><p data-cms-field="lms.description">We build connected experiences for the people who use your system every day — with clear dashboards, simple workflows and the information they need at the right time.</p><ul class="checks"><li><i class="fa-solid fa-check"></i> Student & lecturer portals</li><li><i class="fa-solid fa-check"></i> Examinations & assessments</li><li><i class="fa-solid fa-check"></i> Attendance & learning resources</li><li><i class="fa-solid fa-check"></i> Finance, reports & administration</li></ul><a class="btn gold" href="#" onclick="openBooking();return false">Build Your Platform <i class="fa-solid fa-arrow-right"></i></a></div>
+<div class="ui"><div class="tabs"><span class="tab active">Student Portal</span><span class="tab">Lecturer Portal</span><span class="tab">Admin</span><span class="tab">Finance</span><span class="tab">POS</span></div><div class="window"><aside class="window-side"><b>NCHSM</b><span class="selected">Dashboard</span><span>My Courses</span><span>Timetable</span><span>Attendance</span><span>Exams & Results</span><span>Resources</span></aside><main class="window-main"><h4>Good morning 👋</h4><div class="mini-metrics"><div class="mini"><b>11</b><small>Active Courses</small></div><div class="mini"><b>41</b><small>Resources</small></div><div class="mini"><b>97%</b><small>Progress</small></div><div class="mini"><b>3</b><small>Upcoming Exams</small></div></div><div class="big-chart"><small>Learning Activity</small><div class="big-bars"><i></i><i></i><i></i><i></i><i></i><i></i></div></div></main></div></div></div></section>
 
-<section class="px-pos" id="business-pos" data-cms-component="pos-showcase"><div class="px-container px-pos-grid"><div><div class="px-section-tag">BUSINESS SYSTEMS</div><h2 data-cms-field="pos.title">Run your business from <span>one place.</span></h2><p>POS, inventory, sales, customers, payments and reports in one connected system.</p><a class="px-btn px-blue-btn" href="#contact-section">Discuss a POS Project <i class="fas fa-arrow-right"></i></a></div><div class="px-pos-ui"><div class="px-pos-head"><b>Sales Dashboard</b><span>Today</span></div><div class="px-pos-cards"><b>KSh 248,500<small>Today's Sales</small></b><b>186<small>Transactions</small></b><b>42<small>Low Stock</small></b></div><div class="px-pos-chart"></div></div></div></section>
+<section class="ecosystem" data-cms-component="capabilities"><div class="container"><div class="head"><div class="tag">PLATFORM CAPABILITIES</div><h2>Everything Can Be <span>Connected.</span></h2><p>Build only what you need today, then expand as your organization grows.</p></div><div class="eco-grid"><article class="eco-card"><h3><i class="fa-solid fa-graduation-cap" style="color:#087cf2"></i> Education Suite</h3><p>One connected environment for students, lecturers, administrators and management.</p><div class="module-list"><span class="module">Student Portal</span><span class="module">Lecturer Portal</span><span class="module">Online Exams</span><span class="module">Attendance</span><span class="module">Resources</span><span class="module">Finance</span><span class="module">Reports</span></div></article><article class="eco-card"><h3><i class="fa-solid fa-store" style="color:#0caf82"></i> Business Suite</h3><p>Digitize daily operations and give teams real-time visibility.</p><div class="module-list"><span class="module">POS</span><span class="module">Inventory</span><span class="module">Sales</span><span class="module">Customers</span><span class="module">Payments</span><span class="module">Staff</span><span class="module">Analytics</span></div></article><article class="eco-card"><h3><i class="fa-solid fa-gears" style="color:#6736e8"></i> Custom Suite</h3><p>Build a workflow around your exact process rather than changing your process to fit generic software.</p><div class="module-list"><span class="module">Dashboards</span><span class="module">Portals</span><span class="module">Automation</span><span class="module">APIs</span><span class="module">Integrations</span><span class="module">Workflows</span><span class="module">Cloud</span></div></article></div></div></section>
 
-<section class="px-cap" data-cms-component="capabilities"><div class="px-container"><div class="px-section-tag">ONE PARTNER. MANY DIGITAL PRODUCTS.</div><h2>From a <span>simple landing page</span> to a complete digital platform.</h2><p>Start with what you need today and expand as your organization grows.</p><div class="px-cap-grid"><article><b>01</b><h3>Start Small</h3><p>Landing pages, company websites and product pages.</p></article><article><b>02</b><h3>Run Better</h3><p>POS, inventory, dashboards and operational systems.</p></article><article><b>03</b><h3>Build a Platform</h3><p>LMS, portals, e-commerce and custom web applications.</p></article></div></div></section>
+<section class="industries" id="industries" data-cms-component="industries"><div class="container"><div class="head"><div class="tag">WHO WE SERVE</div><h2 data-cms-field="industries.title">Technology for <span>Different Industries.</span></h2><p data-cms-field="industries.description">We adapt the technology to your environment, workflows and users.</p></div><div class="industry-grid"><div class="industry"><i class="fa-solid fa-school"></i><b>Education</b><span>Schools & colleges</span></div><div class="industry"><i class="fa-solid fa-hospital"></i><b>Healthcare</b><span>Facilities & teams</span></div><div class="industry"><i class="fa-solid fa-store"></i><b>Retail</b><span>Sales & inventory</span></div><div class="industry"><i class="fa-solid fa-building"></i><b>Businesses</b><span>Corporate operations</span></div><div class="industry"><i class="fa-solid fa-landmark"></i><b>Organizations</b><span>Digital workflows</span></div><div class="industry"><i class="fa-solid fa-briefcase"></i><b>Professional</b><span>Custom platforms</span></div></div></div></section>
 
-<section class="px-testimonials" id="testimonials" data-cms-component="testimonials"><div class="px-container"><div class="px-section-tag">CLIENT EXPERIENCE</div><h2 data-cms-field="testimonials.title">Built to make <span>work easier.</span></h2><p data-cms-field="testimonials.description">Practical digital products designed around the people who use them every day.</p><div class="px-test-grid"><article>“A practical approach to building systems around our actual workflow.”<b>— Organization Partner</b></article><article>“The platform brings learning, operations and reporting together.”<b>— Education Partner</b></article><article>“A professional digital presence with room to grow.”<b>— Business Partner</b></article></div></div></section>
+<section class="process" id="process" data-cms-component="process"><div class="container"><div class="head"><div class="tag">HOW WE WORK</div><h2 data-cms-field="process.title">From Idea to <span>Digital Product.</span></h2><p data-cms-field="process.description">A clear process from the first conversation to launch and ongoing support.</p></div><div class="process-grid"><div class="step"><div class="step-icon"><i class="fa-solid fa-comments"></i></div><b>Discover</b><span>Understand your needs</span></div><div class="step"><div class="step-icon"><i class="fa-solid fa-pen-ruler"></i></div><b>Design</b><span>Plan the experience</span></div><div class="step"><div class="step-icon"><i class="fa-solid fa-code"></i></div><b>Develop</b><span>Build & test</span></div><div class="step"><div class="step-icon"><i class="fa-solid fa-plug"></i></div><b>Integrate</b><span>Connect systems</span></div><div class="step"><div class="step-icon"><i class="fa-solid fa-rocket"></i></div><b>Launch</b><span>Deploy & train</span></div><div class="step"><div class="step-icon"><i class="fa-solid fa-headset"></i></div><b>Support</b><span>Improve continuously</span></div></div></div></section>
 
-<section class="px-cta" id="contact-section" data-cms-component="cta"><div class="px-container"><div><div class="px-section-tag cta-tag">↗ LET'S BUILD TOGETHER</div><h2 data-cms-field="cta.title">Have a system in mind?</h2><p data-cms-field="cta.description">Let's turn it into a working digital product.</p></div><div class="px-actions"><a class="px-btn px-gold" href="#" onclick="openModal('demoModal');return false;">Start a Project <i class="fas fa-arrow-right"></i></a><a class="px-btn px-outline" href="#" onclick="openModal('contactModal');return false;">Contact Us</a></div></div></section>
-</main>
-<!-- END PIXEL-MATCHED CAMPUSNEXUS LANDING DESIGN -->
-<footer class="cn-footer" data-cms-component="footer"><div class="container footer-grid"><div class="footer-brand"><a class="cn-logo" href="#home"><img alt="CampusNexus" src="images/logo-icon.png"/><span>Campus<span>Nexus</span></span></a><p data-cms-field="footer.description">We build digital products that help organizations and businesses work smarter through modern technology.</p><div class="socials"><a href="#"><i class="fab fa-facebook-f"></i></a><a href="#"><i class="fab fa-x-twitter"></i></a><a href="#"><i class="fab fa-instagram"></i></a><a href="#"><i class="fab fa-linkedin-in"></i></a><a href="#"><i class="fab fa-youtube"></i></a></div></div><div><h4>Quick Links</h4><a href="#home">Home</a><a href="#solutions">Solutions</a><a href="#industries">Industries</a><a href="#projects">Portfolio</a><a href="#how-it-works">How We Work</a><a href="#contact-section">Contact</a></div><div><h4>Our Solutions</h4><a href="#lms">LMS &amp; Education</a><a href="#business-pos">POS Systems</a><a href="#projects">Websites &amp; E-commerce</a><a href="#projects">Custom Web Applications</a><a href="#projects">Portals &amp; Dashboards</a></div><div><h4>Contact</h4><a href="tel:+254790969743"><i class="fas fa-phone"></i> +254 790 969 743</a><a href="mailto:info@campusnexus.com"><i class="fas fa-envelope"></i> info@campusnexus.com</a><span><i class="fas fa-location-dot"></i> Nakuru, Kenya</span><a href="#" onclick="openModal('demoModal');return false;">Book a Consultation</a></div></div><div class="container footer-bottom"><span>© 2026 CampusNexus. All rights reserved.</span><span><a href="#" onclick="openModal('termsModal');return false;">Terms</a> · <a href="#" onclick="openModal('privacyModal');return false;">Privacy</a></span></div></footer><button aria-label="Back to top" class="back-to-top" id="backToTop">
-<i class="fas fa-arrow-up"></i>
-</button>
-<!-- ============================================================
-      MODALS (Contact, Demo, Terms, Privacy)
-      ============================================================ -->
-<!-- Contact Modal -->
-<div class="page-modal" id="contactModal">
-<div class="modal-content">
-<button class="modal-close" onclick="closeModal('contactModal')">×</button>
-<h2><i class="fas fa-envelope" style="color: var(--secondary);"></i> Contact Us</h2>
-<p>We'd love to hear from you! Reach out to us through any of the channels below.</p>
-<h3>📍 Our Address</h3>
-<p>CampusNexus Digital Solutions
-Nakuru, Kenya</p>
-<h3>📞 Phone Numbers</h3>
-<div class="contact-info">
-<p><i class="fas fa-phone"></i> +254 790 969 743</p>
-</div>
-<h3>📧 Email</h3>
-<div class="contact-info">
-<p><i class="fas fa-envelope"></i> info@campusnexus.com</p>
-<p><i class="fas fa-envelope"></i> support@campusnexus.com</p>
-</div>
-<h3>🕐 Office Hours</h3>
-<p>Monday - Friday: 8:00 AM - 5:00 PM (EAT)</p>
-<p>Saturday: 9:00 AM - 1:00 PM</p>
-<p>Sunday: Closed</p>
-<button class="btn-primary" onclick="closeModal('contactModal')" style="margin-top: 20px; width: 100%;">
-<i class="fas fa-check"></i> Got It
-         </button>
-</div>
-</div>
-<!-- Demo Modal -->
-<div class="page-modal" id="demoModal">
-<div class="modal-content">
-<button class="modal-close" onclick="closeModal('demoModal')">×</button>
-<h2><i class="fas fa-calendar-check" style="color: var(--gold);"></i> Book a Free Demo</h2>
-<p>Ready to see CampusNexus in action? Schedule a personalized demonstration with our team.</p>
-<h3>📋 What to Expect</h3>
-<ul>
-<li>✅ Live walkthrough of the platform</li>
-<li>✅ Customized to your institution's needs</li>
-<li>✅ POS system demonstration</li>
-<li>✅ Q&amp;A session with our experts</li>
-<li>✅ No obligation - just see what's possible</li>
-</ul>
-<h3>📅 How to Book</h3>
-<div class="contact-info">
-<p><i class="fas fa-phone"></i> Call: +254 790 969 743</p>
-<p><i class="fas fa-envelope"></i> Email: demo@campusnexus.com</p>
-<p><i class="fas fa-whatsapp"></i> WhatsApp: +254 790 969 743</p>
-</div>
-<p style="margin-top: 12px; font-size: 0.9rem; color: var(--gray-500);">
-<i class="fas fa-clock"></i> Demos typically take 30-45 minutes and can be scheduled at your convenience.
-         </p>
-<button class="btn-gold" onclick="closeModal('demoModal')" style="margin-top: 20px; width: 100%;">
-<i class="fas fa-check"></i> I'll Reach Out
-         </button>
-</div>
-</div>
-<!-- Terms Modal -->
-<div class="page-modal" id="termsModal">
-<div class="modal-content">
-<button class="modal-close" onclick="closeModal('termsModal')">×</button>
-<h2><i class="fas fa-file-contract" style="color: var(--primary);"></i> Terms of Service</h2>
-<p><strong>Last Updated:</strong> July 2026</p>
-<h3>1. Acceptance of Terms</h3>
-<p>By accessing and using CampusNexus, you agree to comply with and be bound by these Terms of Service.</p>
-<h3>2. User Accounts</h3>
-<p>You must provide accurate information when creating your account. You are responsible for maintaining the confidentiality of your login credentials.</p>
-<h3>3. Acceptable Use</h3>
-<p>You agree NOT to share your account, attempt unauthorized access, upload malicious code, harass others, or violate laws.</p>
-<h3>4. Academic Integrity</h3>
-<p>All academic work must be your own. Plagiarism and cheating are strictly prohibited.</p>
-<h3>5. Intellectual Property</h3>
-<p>All content is protected by copyright. You may not reproduce or distribute without permission.</p>
-<h3>6. Privacy and Data Protection</h3>
-<p>Your data is handled in accordance with our Privacy Policy and applicable data protection laws.</p>
-<h3>7. Termination</h3>
-<p>We reserve the right to suspend or terminate access for violation of these terms.</p>
-<h3>8. Contact Information</h3>
-<p>For questions: <strong>legal@campusnexus.com</strong></p>
-<button class="btn-primary" onclick="closeModal('termsModal')" style="margin-top: 20px; width: 100%;">
-<i class="fas fa-check"></i> I Understand
-         </button>
-</div>
-</div>
-<!-- Privacy Modal -->
-<div class="page-modal" id="privacyModal">
-<div class="modal-content">
-<button class="modal-close" onclick="closeModal('privacyModal')">×</button>
-<h2><i class="fas fa-shield-alt" style="color: var(--secondary);"></i> Privacy Policy</h2>
-<p><strong>Last Updated:</strong> July 2026</p>
-<h3>1. Information We Collect</h3>
-<ul>
-<li>Name, email address, phone number</li>
-<li>Student/Staff ID and academic records</li>
-<li>Attendance, exam results, and progress data</li>
-<li>Device information and IP addresses</li>
-</ul>
-<h3>2. How We Use Your Information</h3>
-<ul>
-<li>To provide and improve our services</li>
-<li>To track academic progress and attendance</li>
-<li>To communicate with you about updates</li>
-<li>To ensure platform security</li>
-</ul>
-<h3>3. Data Security</h3>
-<p>We implement encryption, access controls, and regular security audits to protect your data.</p>
-<h3>4. Data Sharing</h3>
-<p>We do not sell your data. We may share with your institution, service providers, or law enforcement when required.</p>
-<h3>5. Your Rights</h3>
-<ul>
-<li>Access and review your data</li>
-<li>Request correction or deletion</li>
-<li>Object to processing</li>
-</ul>
-<h3>6. Contact Us</h3>
-<p>Privacy questions: <strong>privacy@campusnexus.com</strong></p>
-<button class="btn-primary" onclick="closeModal('privacyModal')" style="margin-top: 20px; width: 100%;">
-<i class="fas fa-check"></i> I Understand
-         </button>
-</div>
-</div>
-<!-- ============================================================
-      CHAT WIDGET - FLOATING CHAT BUTTON
-      ============================================================ -->
-<style>
- //* Chat Widget Styles *//
- .campus-chat-widget {
-     position: fixed;
-     bottom: 30px;
-     right: 30px;
-     z-index: 9999;
- }
+<section class="projects" id="projects" data-cms-component="projects"><div class="container"><div class="head"><div class="tag">SELECTED WORK</div><h2 data-cms-field="projects.title">Built for <span>Real-World Operations.</span></h2><p data-cms-field="projects.description">Digital products can be designed around the exact users, processes and information your organization needs.</p></div><div class="projects-grid"><article class="project"><div class="project-img"><div class="project-screen"><aside></aside><main><div class="line"></div><div class="boxes"><i class="box"></i><i class="box"></i><i class="box"></i><i class="box"></i></div></main></div></div><div class="project-body"><h3>Education Management Platform</h3><p>Student, lecturer & administration workflows.</p><a>View project →</a></div></article><article class="project"><div class="project-img"><div class="project-screen"><aside></aside><main><div class="line"></div><div class="boxes"><i class="box"></i><i class="box"></i><i class="box"></i><i class="box"></i></div></main></div></div><div class="project-body"><h3>Business POS System</h3><p>Sales, inventory, customers & reports.</p><a>View project →</a></div></article><article class="project"><div class="project-img"><div class="project-screen"><aside></aside><main><div class="line"></div><div class="boxes"><i class="box"></i><i class="box"></i><i class="box"></i><i class="box"></i></div></main></div></div><div class="project-body"><h3>Corporate Website</h3><p>Modern, responsive digital presence.</p><a>View project →</a></div></article><article class="project"><div class="project-img"><div class="project-screen"><aside></aside><main><div class="line"></div><div class="boxes"><i class="box"></i><i class="box"></i><i class="box"></i><i class="box"></i></div></main></div></div><div class="project-body"><h3>Management Dashboard</h3><p>Data, reporting and operational visibility.</p><a>View project →</a></div></article></div></div></section>
 
- .campus-chat-toggle {
-     width: 64px;
-     height: 64px;
-     border-radius: 50%;
-     background: linear-gradient(135deg, #D4A843, #F0D080);
-     border: none;
-     color: #0A1628;
-     font-size: 28px;
-     cursor: pointer;
-     box-shadow: 0 8px 32px rgba(212, 168, 67, 0.4);
-     transition: all 0.3s ease;
-     display: flex !important;
-     align-items: center;
-     justify-content: center;
-     position: relative;
- }
+<section class="tech"><div class="container"><div class="head"><div class="tag">TECHNOLOGY & INTEGRATION</div><h2>Built to <span>Connect.</span></h2><p>Modern web technologies and integrations selected around the requirements of each project.</p></div><div class="tech-grid"><span class="tech-pill"><i class="fa-brands fa-react"></i> React</span><span class="tech-pill">TypeScript</span><span class="tech-pill">Vite</span><span class="tech-pill">Supabase</span><span class="tech-pill"><i class="fa-solid fa-cloud"></i> Cloud</span><span class="tech-pill"><i class="fa-solid fa-code"></i> APIs</span><span class="tech-pill"><i class="fa-solid fa-envelope"></i> Email</span><span class="tech-pill"><i class="fa-solid fa-credit-card"></i> Payments</span><span class="tech-pill"><i class="fa-solid fa-chart-line"></i> Analytics</span></div></div></section>
 
- .campus-chat-toggle:hover {
-     transform: scale(1.1);
-     box-shadow: 0 12px 40px rgba(212, 168, 67, 0.5);
- }
+<section class="faq" id="faq"><div class="container"><div class="head"><div class="tag">FAQ</div><h2>Questions Before You <span>Start?</span></h2><p>Some of the questions organizations ask before beginning a digital project.</p></div><div class="faq-grid"><div class="faq-item"><button class="faq-q">Can CampusNexus build a completely custom system?<i class="fa-solid fa-plus"></i></button><div class="faq-a">Yes. A project can be designed around your specific workflows, users, data and operational requirements rather than forcing your organization into a generic template.</div></div><div class="faq-item"><button class="faq-q">Can you build both websites and full platforms?<i class="fa-solid fa-plus"></i></button><div class="faq-a">Yes. CampusNexus can work on simple landing pages and corporate websites as well as portals, dashboards, LMS platforms, POS systems, e-commerce and custom applications.</div></div><div class="faq-item"><button class="faq-q">Can an existing system be integrated?<i class="fa-solid fa-plus"></i></button><div class="faq-a">Where suitable, existing systems and services can be connected through APIs, data integrations and other supported integration methods.</div></div><div class="faq-item"><button class="faq-q">Do you provide support after launch?<i class="fa-solid fa-plus"></i></button><div class="faq-a">Yes. Support and ongoing improvement can be part of the project arrangement, including maintenance, changes and operational assistance.</div></div><div class="faq-item"><button class="faq-q">How do I start a project?<i class="fa-solid fa-plus"></i></button><div class="faq-a">Use the Book a Consultation button and submit your requirements. The request is recorded for the CampusNexus team to review and follow up.</div></div></div></div></section>
 
- .chat-notification {
-     position: absolute;
-     top: -5px;
-     right: -5px;
-     background: #e74c3c;
-     color: white;
-     border-radius: 50%;
-     padding: 2px 8px;
-     font-size: 12px;
-     font-weight: 700;
-     animation: pulse 2s infinite;
- }
+<section class="booking" id="contact" data-cms-component="cta"><div class="container booking-panel"><div><div class="tag" style="background:#ffffff18;color:#dceeff">LET'S BUILD TOGETHER</div><h2 data-cms-field="cta.title">Have a system in mind?</h2><p data-cms-field="cta.description">Tell us what you need, choose a preferred consultation time and submit your request. It will appear in the CampusNexus booking workflow for your team to manage.</p></div><a class="btn gold" href="#" onclick="openBooking();return false">Book a Consultation <i class="fa-solid fa-calendar-check"></i></a></div></section>
 
- @keyframes pulse {
-     0%, 100% { transform: scale(1); }
-     50% { transform: scale(1.1); }
- }
+<footer class="footer" data-cms-component="footer"><div class="container footer-grid"><div><div class="logo"><div class="logo-icon"><i class="fa-solid fa-cubes"></i></div><div class="logo-name" style="color:#fff">Campus<span>Nexus</span><small style="color:#9eb6d0">Digital Solutions for Better Organizations</small></div></div><p data-cms-field="footer.description">We design, build and support digital solutions that help organizations work smarter, grow faster and serve better.</p></div><div><h4>Solutions</h4><a href="#solutions">Education Platforms</a><a href="#solutions">POS Systems</a><a href="#solutions">Websites</a><a href="#solutions">Custom Applications</a></div><div><h4>Company</h4><a href="#projects">Our Work</a><a href="#process">How We Work</a><a href="#industries">Industries</a><a href="#faq">FAQ</a></div><div><h4>Contact</h4><a href="mailto:info@campusnexus.com">info@campusnexus.com</a><a href="tel:+254790969743">+254 790 969 743</a><a>Nakuru, Kenya</a><a href="#" onclick="openBooking();return false">Book a Consultation</a></div></div><div class="container bottom">© 2026 CampusNexus. All rights reserved.</div></footer>
 
- .campus-chat-window {
-     display: none;
-     position: absolute;
-     bottom: 80px;
-     right: 0;
-     width: 380px;
-     height: 520px;
-     background: #0A1628;
-     border: 1px solid rgba(255,255,255,0.1);
-     border-radius: 16px;
-     box-shadow: 0 20px 60px rgba(0,0,0,0.6);
-     overflow: hidden;
-     animation: slideUp 0.3s ease;
- }
+<button class="back" id="back" onclick="window.scrollTo({top:0,behavior:'smooth'})"><i class="fa-solid fa-arrow-up"></i></button>
 
- .campus-chat-window.open {
-     display: flex !important;
-     flex-direction: column;
- }
+<div class="modal-bg" id="bookingModal"><div class="modal"><div class="modal-head"><h3><i class="fa-solid fa-calendar-check" style="color:#087cf2"></i> Book a Consultation</h3><button class="close" onclick="closeBooking()"><i class="fa-solid fa-xmark"></i></button></div><div class="modal-body"><div class="note"><i class="fa-solid fa-circle-info"></i> Tell us what you need and choose a preferred date and time. Your request will be securely submitted for the CampusNexus team to review.</div><form id="bookingForm"><div class="form-grid"><div class="field"><label>Full Name *</label><input name="full_name" required placeholder="Your full name"></div><div class="field"><label>Organization / Company</label><input name="organization" placeholder="Organization name"></div><div class="field"><label>Email Address *</label><input name="email" type="email" required placeholder="you@example.com"></div><div class="field"><label>Phone Number *</label><input name="phone" required placeholder="+254..."></div><div class="field"><label>Service *</label><select name="service" required><option value="">Select a service</option><option>Education / LMS Platform</option><option>POS / Business System</option><option>Website</option><option>E-commerce</option><option>Custom Web Application</option><option>Dashboard / Portal</option><option>Other</option></select></div><div class="field"><label>Meeting Preference</label><select name="meeting_preference"><option>Online</option><option>Phone call</option><option>In person</option></select></div><div class="field"><label>Preferred Date *</label><input name="preferred_date" type="date" required></div><div class="field"><label>Preferred Time *</label><input name="preferred_time" type="time" required></div><div class="field"><label>Budget Range</label><select name="budget_range"><option value="">Prefer not to say</option><option>Below KES 50,000</option><option>KES 50,000 – 100,000</option><option>KES 100,000 – 250,000</option><option>KES 250,000 – 500,000</option><option>Above KES 500,000</option></select></div><div class="field"><label>How did you hear about us?</label><select name="source"><option>Website</option><option>Referral</option><option>Social media</option><option>Existing client</option><option>Other</option></select></div><div class="field full"><label>Project Description *</label><textarea name="project_description" required placeholder="Tell us what you want to build, improve or digitize..."></textarea></div></div><label class="consent"><input type="checkbox" name="consent" required><span>I agree that CampusNexus may use these details to contact me about this consultation request.</span></label><div class="msg" id="bookingMsg"></div><div class="submit"><button type="button" class="btn" style="background:#edf5fc;color:#31516e" onclick="closeBooking()">Cancel</button><button class="btn gold" id="submitBooking" type="submit">Submit Request <i class="fa-solid fa-arrow-right"></i></button></div></form></div></div></div>
 
- @keyframes slideUp {
-     from {
-         opacity: 0;
-         transform: translateY(20px) scale(0.95);
-     }
-     to {
-         opacity: 1;
-         transform: translateY(0) scale(1);
-     }
- }
-
- .campus-chat-header {
-     padding: 16px 20px;
-     background: linear-gradient(135deg, #D4A843, #F0D080);
-     color: #0A1628;
-     display: flex;
-     justify-content: space-between;
-     align-items: center;
-     font-weight: 700;
-     font-size: 16px;
- }
-
- .campus-chat-header .chat-status {
-     font-size: 12px;
-     font-weight: 400;
-     display: flex;
-     align-items: center;
-     gap: 6px;
- }
-
- .campus-chat-header .chat-status .online-dot {
-     width: 8px;
-     height: 8px;
-     border-radius: 50%;
-     background: #2ecc71;
-     display: inline-block;
-     animation: pulse 2s infinite;
- }
-
- .campus-chat-header button {
-     background: none;
-     border: none;
-     color: #0A1628;
-     font-size: 22px;
-     cursor: pointer;
-     opacity: 0.7;
-     transition: 0.3s;
- }
-
- .campus-chat-header button:hover {
-     opacity: 1;
- }
-
- .campus-chat-messages {
-     flex: 1;
-     padding: 16px 20px;
-     overflow-y: auto;
-     display: flex;
-     flex-direction: column;
-     gap: 12px;
-     background: #0F1A2A;
- }
-
- .campus-chat-message {
-     display: flex;
-     flex-direction: column;
-     max-width: 80%;
- }
-
- .campus-chat-message.user {
-     align-items: flex-end;
-     margin-left: auto;
- }
-
- .campus-chat-message.bot {
-     align-items: flex-start;
- }
-
- .campus-msg-bubble {
-     padding: 10px 14px;
-     border-radius: 12px;
-     font-size: 14px;
-     line-height: 1.4;
- }
-
- .campus-chat-message.bot .campus-msg-bubble {
-     background: #1A2A3A;
-     color: #E8EDF3;
-     border-bottom-left-radius: 4px;
- }
-
- .campus-chat-message.user .campus-msg-bubble {
-     background: linear-gradient(135deg, #D4A843, #F0D080);
-     color: #0A1628;
-     border-bottom-right-radius: 4px;
- }
-
- .campus-msg-time {
-     font-size: 10px;
-     opacity: 0.5;
-     margin-top: 4px;
-     display: block;
- }
-
- .campus-msg-sender {
-     font-size: 11px;
-     font-weight: 600;
-     margin-bottom: 3px;
-     opacity: 0.7;
- }
-
- .chat-status-indicator {
-     display: flex;
-     align-items: center;
-     gap: 8px;
-     padding: 8px 16px;
-     background: rgba(46, 204, 113, 0.1);
-     border-bottom: 1px solid rgba(255,255,255,0.05);
-     font-size: 12px;
-     color: #2ecc71;
- }
-
- .chat-quick-replies {
-     display: flex;
-     gap: 6px;
-     padding: 8px 16px 12px;
-     flex-wrap: wrap;
-     background: #0A1628;
-     border-top: 1px solid rgba(255,255,255,0.03);
- }
-
- .chat-quick-replies button {
-     padding: 5px 12px;
-     border-radius: 20px;
-     border: 1px solid rgba(212, 168, 67, 0.3);
-     background: transparent;
-     color: #D4A843;
-     font-size: 12px;
-     cursor: pointer;
-     transition: all 0.3s ease;
- }
-
- .chat-quick-replies button:hover {
-     background: rgba(212, 168, 67, 0.1);
-     border-color: #D4A843;
- }
-
- .campus-chat-input {
-     padding: 12px 16px;
-     border-top: 1px solid rgba(255,255,255,0.05);
-     display: flex;
-     gap: 8px;
-     background: #0A1628;
- }
-
- .campus-chat-input input {
-     flex: 1;
-     padding: 10px 14px;
-     border-radius: 8px;
-     border: 1px solid rgba(255,255,255,0.1);
-     background: rgba(255,255,255,0.05);
-     color: white;
-     outline: none;
-     font-size: 14px;
- }
-
- .campus-chat-input input::placeholder {
-     color: rgba(255,255,255,0.3);
- }
-
- .campus-chat-input input:focus {
-     border-color: #D4A843;
- }
-
- .campus-chat-input button {
-     padding: 10px 18px;
-     border-radius: 8px;
-     border: none;
-     background: linear-gradient(135deg, #D4A843, #F0D080);
-     color: #0A1628;
-     cursor: pointer;
-     font-weight: 700;
-     transition: all 0.3s ease;
- }
-
- .campus-chat-input button:hover {
-     transform: translateY(-2px);
-     box-shadow: 0 4px 12px rgba(212, 168, 67, 0.3);
- }
-
- .typing-dots {
-     display: inline-flex;
-     gap: 3px;
- }
-
- .typing-dots span {
-     width: 6px;
-     height: 6px;
-     background: #2ecc71;
-     border-radius: 50%;
-     animation: typingBounce 1.4s infinite both;
- }
-
- .typing-dots span:nth-child(2) {
-     animation-delay: 0.2s;
- }
-
- .typing-dots span:nth-child(3) {
-     animation-delay: 0.4s;
- }
-
- @keyframes typingBounce {
-     0%, 60%, 100% { transform: translateY(0); }
-     30% { transform: translateY(-4px); }
- }
-
- //* Mobile Responsive *//
- @media (max-width: 480px) {
-     .campus-chat-window {
-         width: calc(100vw - 40px);
-         height: 60vh;
-         right: -10px;
-         bottom: 70px;
-     }
-
-     .campus-chat-toggle {
-         width: 56px;
-         height: 56px;
-         font-size: 24px;
-     }
- }
- </style>
-<style id="campus-chat-stability-fix">
-/* CampusNexus Chat — isolated, responsive, non-blocking */
-.campus-chat-widget{position:fixed!important;right:24px!important;bottom:24px!important;width:auto!important;height:auto!important;z-index:2147483000!important;isolation:isolate!important;pointer-events:none!important}
-.campus-chat-widget *{box-sizing:border-box}
-.campus-chat-toggle{pointer-events:auto!important;position:relative!important;z-index:2!important}
-.campus-chat-window{position:absolute!important;right:0!important;bottom:82px!important;width:min(390px,calc(100vw - 32px))!important;height:min(640px,calc(100vh - 112px))!important;max-height:calc(100vh - 112px)!important;display:none!important;flex-direction:column!important;overflow:hidden!important;pointer-events:auto!important;border-radius:18px!important}
-.campus-chat-window.open{display:flex!important}
-.campus-chat-messages{min-height:0!important;flex:1 1 auto!important;overflow-y:auto!important;overflow-x:hidden!important}
-.campus-chat-message{min-width:0!important}
-.campus-chat-message .campus-msg-bubble{max-width:100%!important;overflow-wrap:anywhere!important}
-#preChatForm{width:100%!important;max-width:100%!important}
-#preChatForm .campus-msg-bubble{width:100%!important;max-width:100%!important}
-#visitorInfoForm input{display:block!important;width:100%!important;max-width:100%!important;box-sizing:border-box!important}
-.campus-chat-input{flex:0 0 auto!important}
-@media(max-width:600px){
- .campus-chat-widget{right:16px!important;bottom:16px!important}
- .campus-chat-window{right:0!important;bottom:72px!important;width:calc(100vw - 32px)!important;height:min(620px,calc(100vh - 96px))!important;max-height:calc(100vh - 96px)!important}
-}
-@media(prefers-reduced-motion:reduce){.campus-chat-window{animation:none!important}.chat-notification{animation:none!important}}
-</style>
-<!-- Chat Widget HTML -->
-<div class="campus-chat-widget">
-<!-- Chat Toggle Button -->
-<button class="campus-chat-toggle" id="campusChatToggle" onclick="toggleCampusChat()">
-<i class="fas fa-comment-dots"></i>
-<span class="chat-notification" id="chatNotification">1</span>
-</button>
-<!-- Chat Window -->
-<div class="campus-chat-window" id="campusChatWindow">
-<!-- Header -->
-<div class="campus-chat-header">
-<div>
-<i class="fas fa-graduation-cap" style="margin-right: 8px;"></i>
-                 CampusNexus Support
-                 <span class="chat-status">
-<span class="online-dot"></span> Online
-                 </span>
-</div>
-<button onclick="closeCampusChat()">✕</button>
-</div>
-<!-- Chat Status -->
-<div class="chat-status-indicator" id="chatStatusIndicator">
-<span>🟢 Connected</span>
-<span id="agentStatus">\| Agent online</span>
-</div>
-<!-- ===== PRE-CHAT FORM (Shows before chat starts) ===== -->
-<div class="campus-chat-messages" id="campusChatMessages">
-<div class="campus-chat-message bot" id="preChatForm">
-<div class="campus-msg-bubble" style="width: 100%; max-width: 320px;">
-<div class="campus-msg-sender">🎓 CampusNexus Support</div>
-<p style="margin-bottom: 12px;">👋 Welcome! Please introduce yourself before we start.</p>
-<!-- Visitor Info Form -->
-<div id="visitorInfoForm">
-<div style="margin-bottom: 10px;">
-<input id="visitorNameInput" placeholder="Your full name" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: #fff; font-size: 14px; outline: none;" type="text"/>
-</div>
-<div style="margin-bottom: 10px;">
-<input id="visitorEmailInput" placeholder="Your email address" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: #fff; font-size: 14px; outline: none;" type="email"/>
-</div>
-<button onclick="startChatWithInfo()" style="width: 100%; padding: 10px; border-radius: 8px; border: none; background: linear-gradient(135deg, #D4A843, #F0D080); color: #0A1628; font-weight: 700; font-size: 14px; cursor: pointer; transition: all 0.3s ease;">
-<i class="fas fa-comment"></i> Start Chat
-                         </button>
-<p style="font-size: 11px; opacity: 0.6; margin-top: 8px; text-align: center;">
-<i class="fas fa-lock"></i> Your info is safe with us
-                         </p>
-</div>
-</div>
-</div>
-<!-- Chat messages will appear here after start -->
-<div id="chatMessagesContainer" style="display: none;"></div>
-</div>
-<!-- Quick Replies (hidden until chat starts) -->
-<div class="chat-quick-replies" id="quickReplies" style="display: none;">
-<button onclick="sendQuickReply('I need help with login')">🔑 Login Help</button>
-<button onclick="sendQuickReply('I want to book a demo')">📅 Book Demo</button>
-<button onclick="sendQuickReply('I have a question about pricing')">💰 Pricing</button>
-<button onclick="sendQuickReply('I need technical support')">🛠️ Support</button>
-</div>
-<!-- Input (hidden until chat starts) -->
-<div class="campus-chat-input" id="chatInputArea" style="display: none;">
-<input id="campusChatInput" onkeypress="handleCampusChatKey(event)" placeholder="Type your message..." type="text"/>
-<button onclick="sendCampusChatMessage()">
-<i class="fas fa-paper-plane"></i>
-</button>
-</div>
-</div>
-</div>
-<!-- ============================================================
-      MAIN JAVASCRIPT - All functions in one place
-      ============================================================ -->
-
-<!-- CampusNexus CMS Bridge
-     The public site remains fully static by default. A future Admin Portal can
-     update the fields below from Supabase/API without changing this HTML. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-window.CampusNexusCMS = {
-  version:'2.0',
-  siteId:'campusnexus-main-site',
-  supabaseUrl:'https://irahplkvocaakjxuisto.supabase.co',
-  supabaseAnonKey:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlyYWhwbGt2b2NhYWtqeHVpc3RvIiwiaWF0IjoxNzg3ODY5ODQsImV4cCI6MjEwMzQ2Mjk4NH0.BFOwdRVDz4r1oYgUjm8zQbthqblGRq4c3WQWQaOhu7g',
-  table:'cms_site_content',
-  editableComponents:['announcement-bar','navigation','hero','trust-strip','solutions','industries','lms-showcase','pos-showcase','projects','capabilities','process','testimonials','cta','footer'],
-  getClient(){if(window.supabase?.createClient){if(!this._client)this._client=window.supabase.createClient(this.supabaseUrl,this.supabaseAnonKey);return this._client;}return null;},
-  apply(config){
-    if(!config||typeof config!=='object')return;
-    const content=config.content||config;
-    Object.entries(content).forEach(([key,value])=>{
-      if(value==null)return;
-      document.querySelectorAll('[data-cms-field="'+key+'"]').forEach(node=>{
-        if(node.matches('img'))node.src=value;
-        else if(node.matches('a'))node.textContent=value;
-        else node.textContent=value;
-      });
-    });
-    const sections=Array.isArray(config.sections)?[...config.sections].sort((a,b)=>Number(a.order||0)-Number(b.order||0)):[];
-    sections.forEach(section=>{
-      document.querySelectorAll('[data-cms-component="'+section.id+'"]').forEach(node=>{
-        node.style.display=section.visible===false?'none':'';
-      });
-    });
-    try{localStorage.setItem('campusnexus_cms_published',JSON.stringify(config));}catch(e){}
-  },
-  async load(){
-    try{const cached=JSON.parse(localStorage.getItem('campusnexus_cms_published')||'null');if(cached&&cached.status==='published')this.apply(cached);}catch(e){}
-    const client=this.getClient();if(!client)return;
-    try{
-      const {data,error}=await client.from(this.table).select('site_id,version,status,content,sections,updated_at').eq('site_id',this.siteId).eq('status','published').order('version',{ascending:false}).limit(1).maybeSingle();
-      if(error||!data)return;
-      this.apply({site_id:data.site_id,version:data.version,status:data.status,content:data.content?.content||data.content||{},sections:data.sections||data.content?.sections||[]});
-    }catch(error){console.info('CampusNexus CMS: using built-in page content.',error);}
-  }
+window.CampusNexusCMS={
+ version:'4.0',siteId:'campusnexus-main-site',
+ supabaseUrl:'https://irahplkvocaakjxuisto.supabase.co',
+ supabaseAnonKey:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmUtdXByb2plY3QiLCJyZWYiOiJpcmFocGxrdm9jYWFranh1aXN0byIsInJvbGUiOiJhbXkifQ',
+ table:'cms_site_content',
+ getClient(){if(!window.supabase?.createClient)return null;if(!this._client)this._client=window.supabase.createClient(this.supabaseUrl,this.supabaseAnonKey);return this._client},
+ apply(config){if(!config)return;const content=config.content||config;Object.entries(content).forEach(([key,value])=>{if(value==null)return;document.querySelectorAll('[data-cms-field="'+key+'"]').forEach(n=>n.textContent=value)});(config.sections||[]).forEach(s=>document.querySelectorAll('[data-cms-component="'+s.id+'"]').forEach(n=>n.style.display=s.visible===false?'none':''));try{localStorage.setItem('campusnexus_cms_published',JSON.stringify(config))}catch(e){}},
+ async load(){try{const c=JSON.parse(localStorage.getItem('campusnexus_cms_published')||'null');if(c?.status==='published')this.apply(c)}catch(e){}const client=this.getClient();if(!client)return;try{const {data,error}=await client.from(this.table).select('site_id,version,status,content,sections,updated_at').eq('site_id',this.siteId).eq('status','published').order('version',{ascending:false}).limit(1).maybeSingle();if(error||!data)return;this.apply({site_id:data.site_id,version:data.version,status:data.status,content:data.content?.content||data.content||{},sections:data.sections||data.content?.sections||[]})}catch(e){console.info('CMS fallback active')}}
 };
-document.addEventListener('DOMContentLoaded',()=>CampusNexusCMS.load());</script>
 
-<script id="campusnexus-core-ui">
-(function(){
-  const $=(s)=>document.querySelector(s);
-  const $$=(s)=>Array.from(document.querySelectorAll(s));
-  window.openModal=function(id){const el=document.getElementById(id);if(!el)return;el.classList.add('active');document.body.classList.add('modal-open');};
-  window.closeModal=function(id){const el=document.getElementById(id);if(!el)return;el.classList.remove('active');document.body.classList.remove('modal-open');};
-  window.closeMobileMenu=function(){document.body.classList.remove('menu-open');const m=$('#mobileMenu'),b=$('#mobileMenuBackdrop');if(m)m.classList.remove('open');if(b)b.classList.remove('open');};
-  window.toggleMobileMenu=function(){const open=!document.body.classList.contains('menu-open');document.body.classList.toggle('menu-open',open);const m=$('#mobileMenu'),b=$('#mobileMenuBackdrop');if(m)m.classList.toggle('open',open);if(b)b.classList.toggle('open',open);};
-  window.toggleCampusChat=function(){const w=$('#campusChatWindow');if(!w)return;w.classList.toggle('open');const n=$('#chatNotification');if(w.classList.contains('open')&&n)n.style.display='none';};
-  window.closeCampusChat=function(){const w=$('#campusChatWindow');if(w)w.classList.remove('open');};
-  function addMessage(text,type){const box=$('#chatMessagesContainer');if(!box)return;box.style.display='flex';const row=document.createElement('div');row.className='campus-chat-message '+type;row.innerHTML='<div class="campus-msg-bubble"></div><span class="campus-msg-time">'+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})+'</span>';row.querySelector('.campus-msg-bubble').textContent=text;box.appendChild(row);box.parentElement.scrollTop=box.parentElement.scrollHeight;}
-  function botReply(message){const m=message.toLowerCase();let reply='Thanks for contacting CampusNexus. Tell us what you would like to build and our team can help you plan it.';if(m.includes('price')||m.includes('cost')||m.includes('pricing'))reply='We build solutions around the scope and workflow of each client. Ask for a free consultation and we can discuss the requirements and budget.';else if(m.includes('demo'))reply='Absolutely. Use “Book Demo” to request a consultation, or send us your preferred date and the type of system you want to see.';else if(m.includes('login')||m.includes('portal'))reply='For portal or login support, tell us the system name and what you are experiencing. We can guide you to the right support channel.';else if(m.includes('pos'))reply='We build POS solutions for retail, restaurants, pharmacies, campus stores and other businesses, including inventory and reporting.';else if(m.includes('lms')||m.includes('school')||m.includes('student'))reply='We build LMS and institutional platforms with student, lecturer, administration, exams, resources, attendance and reporting modules.';setTimeout(()=>addMessage(reply,'bot'),350);}
-  window.startChatWithInfo=function(){const name=$('#visitorNameInput')?.value.trim();const email=$('#visitorEmailInput')?.value.trim();if(!name||!email){alert('Please enter your name and email address to start the chat.');return;}const form=$('#preChatForm');if(form)form.style.display='none';const box=$('#chatMessagesContainer');if(box){box.style.display='flex';box.innerHTML='';}addMessage('Hi '+name+' 👋 Welcome to CampusNexus. How can we help you today?','bot');const q=$('#quickReplies'),i=$('#chatInputArea');if(q)q.style.display='flex';if(i)i.style.display='flex';};
-  window.sendQuickReply=function(text){addMessage(text,'user');botReply(text);};
-  window.sendCampusChatMessage=function(){const input=$('#campusChatInput');if(!input)return;const text=input.value.trim();if(!text)return;input.value='';addMessage(text,'user');botReply(text);};
-  window.handleCampusChatKey=function(e){if(e.key==='Enter'){e.preventDefault();sendCampusChatMessage();}};
-  document.addEventListener('DOMContentLoaded',function(){
-    const mt=$('#menuToggle');if(mt)mt.addEventListener('click',toggleMobileMenu);
-    const mb=$('#mobileMenuBackdrop');if(mb)mb.addEventListener('click',closeMobileMenu);
-    $$('.cn-nav a[href^="#"], #mobileMenu a[href^="#"]').forEach(a=>a.addEventListener('click',function(){if(!this.getAttribute('onclick'))closeMobileMenu();}));
-    $$('.page-modal').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)closeModal(m.id);}));
-    document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeMobileMenu();$$('.page-modal.active').forEach(m=>closeModal(m.id));closeCampusChat();}});
-    const back=$('#backToTop');if(back)back.addEventListener('click',()=>window.scrollTo({top:0,behavior:'smooth'}));
-    const progress=$('#scrollProgress');window.addEventListener('scroll',()=>{const h=document.documentElement.scrollHeight-window.innerHeight; if(progress)progress.style.width=(h>0?(window.scrollY/h)*100:0)+'%';if(back)back.classList.toggle('show',window.scrollY>500);},{passive:true});
-    document.querySelectorAll('a[href="#contact"]').forEach(a=>a.setAttribute('href','#contact-section'));
-  });
-})();
-</script></body>
+function openBooking(){document.getElementById('bookingModal').classList.add('open');document.body.classList.add('lock');setTimeout(()=>document.querySelector('[name="full_name"]')?.focus(),80)}
+function closeBooking(){document.getElementById('bookingModal').classList.remove('open');document.body.classList.remove('lock')}
+document.getElementById('bookingModal').addEventListener('click',e=>{if(e.target.id==='bookingModal')closeBooking()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeBooking()});
+function toggleMobile(){document.getElementById('mobile').classList.toggle('open')}
+function closeMobile(){document.getElementById('mobile').classList.remove('open')}
+document.querySelectorAll('.faq-q').forEach(q=>q.addEventListener('click',()=>q.parentElement.classList.toggle('open')));
+window.addEventListener('scroll',()=>document.getElementById('back').classList.toggle('show',scrollY>500));
+
+document.getElementById('bookingForm').addEventListener('submit',async e=>{
+ e.preventDefault();
+ const btn=document.getElementById('submitBooking'),msg=document.getElementById('bookingMsg'),fd=new FormData(e.currentTarget);
+ btn.disabled=true;btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Submitting...';msg.className='msg';msg.textContent='';
+ const payload={full_name:String(fd.get('full_name')||'').trim(),organization:String(fd.get('organization')||'').trim()||null,email:String(fd.get('email')||'').trim(),phone:String(fd.get('phone')||'').trim(),service:String(fd.get('service')||''),meeting_preference:String(fd.get('meeting_preference')||'Online'),preferred_date:fd.get('preferred_date')||null,preferred_time:fd.get('preferred_time')||null,budget_range:String(fd.get('budget_range')||'').trim()||null,source:String(fd.get('source')||'Website'),project_description:String(fd.get('project_description')||'').trim(),status:'new'};
+ try{const client=CampusNexusCMS.getClient();if(!client)throw new Error('Supabase unavailable');const {error}=await client.from('consultation_bookings').insert(payload);if(error)throw error;msg.className='msg success';msg.innerHTML='<strong><i class="fa-solid fa-circle-check"></i> Request received.</strong><br>Thank you. Our team will review your request and contact you to confirm the consultation.';e.currentTarget.reset()}catch(err){console.error(err);msg.className='msg error';msg.textContent='We could not submit the request right now. Please try again or contact us directly. See the browser console for the technical error.')}finally{btn.disabled=false;btn.innerHTML='Submit Request <i class="fa-solid fa-arrow-right"></i>'}
+});
+
+document.addEventListener('DOMContentLoaded',()=>CampusNexusCMS.load());
+</script>
+</body>
 </html>
