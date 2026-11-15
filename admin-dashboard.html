@@ -2110,11 +2110,12 @@ function clearAllData() {
 // ============================================================
 async function loadAnalytics() {
     try {
-        const { data: visitors, error } = await supabaseClient
-            .from('visitor_sessions')
-            .select('*');
-
-        if (error) throw error;
+        const [{data:visitors,error},{data:pageViews,error:pageViewsError}]=await Promise.all([
+            supabaseClient.from('visitor_sessions').select('*').order('last_active',{ascending:false}),
+            supabaseClient.from('visitor_page_views').select('page_url,created_at').order('created_at',{ascending:false}).limit(1000)
+        ]);
+        if(error)throw error;
+        if(pageViewsError)throw pageViewsError;
 
         const countries = {};
         const pages = {};
@@ -2122,9 +2123,10 @@ async function loadAnalytics() {
 
         visitors.forEach(v => {
             if (v.country) countries[v.country] = (countries[v.country] || 0) + 1;
-            if (v.current_page) pages[v.current_page] = (pages[v.current_page] || 0) + 1;
             if (v.device_type) devices[v.device_type] = (devices[v.device_type] || 0) + 1;
         });
+
+        (pageViews||[]).forEach(v=>{if(v.page_url)pages[v.page_url]=(pages[v.page_url]||0)+1;});
 
         const topCountry = Object.entries(countries).sort((a, b) => b[1] - a[1])[0];
         const topCountryEl = document.getElementById('topCountry');
