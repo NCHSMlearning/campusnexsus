@@ -654,7 +654,21 @@ window.CampusNexusCMS={
  async load(){try{const c=JSON.parse(localStorage.getItem('campusnexus_cms_published')||'null');if(c?.status==='published')this.apply(c)}catch(e){}const client=this.getClient();if(!client)return;try{const {data,error}=await client.from(this.table).select('site_id,version,status,content,sections,updated_at').eq('site_id',this.siteId).eq('status','published').order('version',{ascending:false}).limit(1).maybeSingle();if(error||!data)return;this.apply({site_id:data.site_id,version:data.version,status:data.status,content:data.content?.content||data.content||{},sections:data.sections||data.content?.sections||[]})}catch(e){console.info('CMS fallback active')}}
 };
 
-function openBooking(){document.getElementById('bookingModal').classList.add('open');document.body.classList.add('lock');setTimeout(()=>document.querySelector('[name="full_name"]')?.focus(),80)}
+function openBooking(){
+ const modal=document.getElementById('bookingModal');
+ const form=document.getElementById('bookingForm');
+ const msg=document.getElementById('bookingMsg');
+ // A completed request should never leave the form hidden when the visitor books again.
+ if(form.querySelector('.form-grid').hidden){
+  form.reset();
+  form.querySelector('.form-grid').hidden=false;
+  form.querySelector('.consent').hidden=false;
+  form.querySelector('.submit').hidden=false;
+  msg.className='msg';msg.textContent='';
+ }
+ modal.classList.add('open');document.body.classList.add('lock');
+ setTimeout(()=>document.querySelector('[name="full_name"]')?.focus(),80);
+}
 function closeBooking(){document.getElementById('bookingModal').classList.remove('open');document.body.classList.remove('lock')}
 document.getElementById('bookingModal').addEventListener('click',e=>{if(e.target.id==='bookingModal')closeBooking()});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeBooking()});
@@ -692,6 +706,20 @@ document.addEventListener('click',event=>{
 document.querySelectorAll('.faq-q').forEach(q=>q.addEventListener('click',()=>q.parentElement.classList.toggle('open')));
 window.addEventListener('scroll',()=>document.getElementById('back').classList.toggle('show',scrollY>500));
 
+// Prevent visitors from accidentally selecting a consultation date in the past.
+(function(){
+ const dateInput=document.querySelector('#bookingForm [name="preferred_date"]');
+ if(!dateInput)return;
+ const now=new Date();
+ const localToday=[now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),String(now.getDate()).padStart(2,'0')].join('-');
+ dateInput.min=localToday;
+ dateInput.addEventListener('change',()=>{
+  if(dateInput.value && dateInput.value<dateInput.min){
+   dateInput.setCustomValidity('Please choose today or a future date.');
+   dateInput.reportValidity();
+  }else dateInput.setCustomValidity('');
+ });
+})();
 document.getElementById('bookingForm').addEventListener('submit',async e=>{
  e.preventDefault();
  const form=e.currentTarget;
