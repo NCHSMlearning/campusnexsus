@@ -658,8 +658,37 @@ function openBooking(){document.getElementById('bookingModal').classList.add('op
 function closeBooking(){document.getElementById('bookingModal').classList.remove('open');document.body.classList.remove('lock')}
 document.getElementById('bookingModal').addEventListener('click',e=>{if(e.target.id==='bookingModal')closeBooking()});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeBooking()});
-function toggleMobile(){document.getElementById('mobile').classList.toggle('open')}
-function closeMobile(){document.getElementById('mobile').classList.remove('open')}
+function toggleMobile(){
+ const menu=document.getElementById('mobile');
+ const button=document.querySelector('.menu');
+ const isOpen=menu.classList.toggle('open');
+ button?.setAttribute('aria-expanded',String(isOpen));
+ button?.setAttribute('aria-label',isOpen?'Close menu':'Open menu');
+ const icon=button?.querySelector('i');
+ if(icon){icon.classList.toggle('fa-bars',!isOpen);icon.classList.toggle('fa-xmark',isOpen)}
+}
+function closeMobile(){
+ const menu=document.getElementById('mobile');
+ const button=document.querySelector('.menu');
+ menu?.classList.remove('open');
+ button?.setAttribute('aria-expanded','false');
+ button?.setAttribute('aria-label','Open menu');
+ const icon=button?.querySelector('i');
+ if(icon){icon.classList.add('fa-bars');icon.classList.remove('fa-xmark')}
+}
+// Close the mobile navigation immediately after a visitor selects a section.
+document.querySelectorAll('#mobile a').forEach(link=>{
+ link.addEventListener('click',()=>{
+  if(link.getAttribute('href')?.startsWith('#')) closeMobile();
+ });
+});
+// Also close it when the browser navigates to a new in-page section by another method.
+window.addEventListener('hashchange',closeMobile);
+document.addEventListener('click',event=>{
+ const menu=document.getElementById('mobile');
+ const button=document.querySelector('.menu');
+ if(menu?.classList.contains('open')&&!menu.contains(event.target)&&!button?.contains(event.target)) closeMobile();
+});
 document.querySelectorAll('.faq-q').forEach(q=>q.addEventListener('click',()=>q.parentElement.classList.toggle('open')));
 window.addEventListener('scroll',()=>document.getElementById('back').classList.toggle('show',scrollY>500));
 
