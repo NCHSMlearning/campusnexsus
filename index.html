@@ -365,6 +365,21 @@ a{text-decoration:none;color:inherit}button,input,select,textarea{font:inherit}.
 
 <section class="faq" id="faq"><div class="container"><div class="head"><div class="tag">FAQ</div><h2>Questions Before You <span>Start?</span></h2><p>Some of the questions organizations ask before beginning a digital project.</p></div><div class="faq-grid"><div class="faq-item"><button class="faq-q">Can CampusNexus build a completely custom system?<i class="fa-solid fa-plus"></i></button><div class="faq-a">Yes. A project can be designed around your specific workflows, users, data and operational requirements rather than forcing your organization into a generic template.</div></div><div class="faq-item"><button class="faq-q">Can you build both websites and full platforms?<i class="fa-solid fa-plus"></i></button><div class="faq-a">Yes. CampusNexus can work on simple landing pages and corporate websites as well as portals, dashboards, LMS platforms, POS systems, e-commerce and custom applications.</div></div><div class="faq-item"><button class="faq-q">Can an existing system be integrated?<i class="fa-solid fa-plus"></i></button><div class="faq-a">Where suitable, existing systems and services can be connected through APIs, data integrations and other supported integration methods.</div></div><div class="faq-item"><button class="faq-q">Do you provide support after launch?<i class="fa-solid fa-plus"></i></button><div class="faq-a">Yes. Support and ongoing improvement can be part of the project arrangement, including maintenance, changes and operational assistance.</div></div><div class="faq-item"><button class="faq-q">How do I start a project?<i class="fa-solid fa-plus"></i></button><div class="faq-a">Use the Book a Consultation button and submit your requirements. The request is recorded for the CampusNexus team to review and follow up.</div></div></div></div></section>
 
+
+<section class="section" id="student-stories" aria-labelledby="student-stories-title">
+  <div class="container">
+    <div class="head">
+      <span class="tag">REAL STUDENT FEEDBACK</span>
+      <h2 id="student-stories-title">What students say about <span>their digital learning experience.</span></h2>
+      <p>Feedback shared by NCHSM students through the Digital Campus review system. Reviews shown here have been approved and are published anonymously.</p>
+    </div>
+    <div id="campusTestimonials" class="solution-grid" aria-live="polite" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));">
+      <article class="solution" style="min-height:220px"><div class="solution-icon"><i class="fa-solid fa-star"></i></div><p>Loading approved student feedback…</p></article>
+    </div>
+    <p style="text-align:center;color:#64748b;font-size:12px;margin-top:18px">Student identities are kept private. Only approved feedback about the digital learning experience is displayed.</p>
+  </div>
+</section>
+
 <section class="booking" id="contact" data-cms-component="cta"><div class="container booking-panel"><div><div class="tag" style="background:#ffffff18;color:#dceeff">LET'S BUILD TOGETHER</div><h2 data-cms-field="cta.title">Have a system in mind?</h2><p data-cms-field="cta.description">Tell us what you need, choose a preferred consultation time and submit your request. It will appear in the CampusNexus booking workflow for your team to manage.</p></div><a class="btn gold" href="#" onclick="openBooking();return false">Book a Consultation <i class="fa-solid fa-calendar-check"></i></a></div></section>
 
 <section class="section soft" id="direct-contact"><div class="container"><div class="head"><span class="tag">TALK TO OUR TEAM</span><h2>Let's build something <span>great together.</span></h2><p>Reach CampusNexus directly. Choose the contact method that works best for you.</p></div><div class="solution-grid" style="grid-template-columns:repeat(3,1fr)"><a class="solution" href="mailto:info@campusnexus.com?subject=CampusNexus%20Enquiry"><div class="solution-icon"><i class="fa-solid fa-envelope"></i></div><h3>Email Us</h3><p>Send your project brief or questions directly to our business email.</p><span class="link">info@campusnexus.com</span></a><a class="solution" href="https://wa.me/254790969743?text=Hello%20CampusNexus%2C%20I%27d%20like%20to%20enquire%20about%20your%20services." target="_blank" rel="noopener"><div class="solution-icon"><i class="fa-brands fa-whatsapp"></i></div><h3>WhatsApp Us</h3><p>Chat with us directly about websites, portals and custom systems.</p><span class="link">0790 969 743</span></a><a class="solution" href="tel:+254790969743"><div class="solution-icon"><i class="fa-solid fa-phone"></i></div><h3>Call Us</h3><p>Speak to our team about your requirements and next steps.</p><span class="link">0790 969 743</span></a></div></div></section>
@@ -618,5 +633,31 @@ document.getElementById('agentStartForm').addEventListener('submit',startAgentCh
 <a class="call" href="tel:+254790969743" aria-label="Call CampusNexus"><i class="fa-solid fa-phone"></i><span>Call us</span></a>
 <a class="email" href="mailto:info@campusnexus.com?subject=CampusNexus%20Enquiry" aria-label="Email CampusNexus"><i class="fa-solid fa-envelope"></i><span>Email us</span></a>
 </div>
+
+<script>
+(function(){
+  const target=document.getElementById('campusTestimonials');
+  if(!target)return;
+  const endpoint='https://lwhtjozfsmbyihenfunw.supabase.co/functions/v1/public-campusnexus-testimonials';
+  const escapeHTML=value=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  function render(items){
+    if(!Array.isArray(items)||!items.length){
+      target.innerHTML='<article class="solution"><p>Student feedback will appear here once approved reviews are available.</p></article>';return;
+    }
+    target.innerHTML=items.slice(0,6).map(item=>{
+      const stars='★'.repeat(Math.max(1,Math.min(5,Number(item.rating)||5)));
+      return '<article class="solution" style="min-height:230px;display:flex;flex-direction:column"><div style="color:#d69a24;letter-spacing:3px;font-size:18px" aria-label="'+Number(item.rating||5)+' out of 5 stars">'+stars+'</div><span class="tag" style="margin-top:14px;align-self:flex-start">'+escapeHTML(item.category)+'</span><h3 style="margin:12px 0 8px">'+escapeHTML(item.title)+'</h3><p style="line-height:1.75;flex:1">“'+escapeHTML(item.review)+'”</p><small style="color:#64748b;margin-top:14px">'+escapeHTML(item.attribution||'NCHSM student · Anonymous')+'</small></article>';
+    }).join('');
+  }
+  fetch(endpoint,{method:'GET',headers:{'Accept':'application/json'}})
+    .then(response=>{if(!response.ok)throw new Error('Feedback unavailable');return response.json();})
+    .then(data=>render(data.reviews))
+    .catch(error=>{
+      console.warn('Student testimonials could not be loaded:',error);
+      target.innerHTML='<article class="solution"><p>Approved student feedback is temporarily unavailable. Please check back shortly.</p></article>';
+    });
+})();
+</script>
+
 </body>
 </html>
