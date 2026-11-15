@@ -334,23 +334,10 @@ async function initializeChat() {
 function getVisitorId() {
     let id = localStorage.getItem('campusnexus_visitor_id');
     if (!id) {
-        id = 'visitor_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        id = 'visitor_' + (crypto.randomUUID ? crypto.randomUUID() : Date.now() + '_' + Math.random().toString(36).slice(2));
         localStorage.setItem('campusnexus_visitor_id', id);
     }
     return id;
-}
-
-// ============================================================
-// GET VISITOR IP
-// ============================================================
-async function getVisitorIP() {
-    try {
-        const response = await fetch('https://api.ipify.org?format=json');
-        const data = await response.json();
-        return data.ip;
-    } catch {
-        return 'unknown';
-    }
 }
 
 // ============================================================
