@@ -741,5 +741,45 @@ document.getElementById('agentStartForm').addEventListener('submit',startAgentCh
     });
 })();
 </script>
+<div id="analyticsConsent" role="dialog" aria-label="Anonymous website analytics" aria-live="polite" style="display:none;position:fixed;left:18px;bottom:18px;z-index:4500;width:min(390px,calc(100% - 36px));padding:18px 20px;background:#fff;border:1px solid #dce8f3;border-radius:18px;box-shadow:0 18px 50px #062b5730">
+  <strong style="display:block;color:#062b57;font-size:13px;margin-bottom:6px">Help us improve CampusNexus</strong>
+  <p style="font-size:11px;line-height:1.6;color:#667d97;margin:0 0 13px">With your permission, we collect anonymous page visits, device type and browser details to improve the website. We do not collect your name, email or IP address through this analytics feature.</p>
+  <div style="display:flex;gap:8px;justify-content:flex-end">
+    <button type="button" id="analyticsReject" class="btn outline" style="padding:9px 14px;color:#45647f;border-color:#dce8f3">Not now</button>
+    <button type="button" id="analyticsAccept" class="btn gold" style="padding:9px 14px">Allow analytics</button>
+  </div>
+</div>
+<script>
+(function(){
+  const endpoint='https://irahplkvocaakjxuisto.supabase.co/functions/v1/track-campus-visitor';
+  const consentKey='campusnexus_analytics_consent';
+  const banner=document.getElementById('analyticsConsent');
+  function id(key,store){
+    let value=store.getItem(key);
+    if(!value){value=crypto.randomUUID();store.setItem(key,value);}
+    return value;
+  }
+  function send(action){
+    const visitor_id=id('campusnexus_visitor_id',localStorage);
+    const session_id=id('campusnexus_session_id',sessionStorage);
+    const payload={visitor_id,session_id,action,page_url:location.pathname+location.search,page_title:document.title,referrer:document.referrer||''};
+    return fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),keepalive:action==='session_end'}).catch(()=>{});
+  }
+  function start(){
+    send('page_view');
+    const heartbeat=setInterval(()=>send('heartbeat'),60000);
+    window.addEventListener('pagehide',()=>{clearInterval(heartbeat);send('session_end');},{once:true});
+  }
+  const choice=localStorage.getItem(consentKey);
+  if(choice==='accepted')start();
+  else if(!choice&&banner)banner.style.display='block';
+  document.getElementById('analyticsAccept')?.addEventListener('click',()=>{
+    localStorage.setItem(consentKey,'accepted');banner.style.display='none';start();
+  });
+  document.getElementById('analyticsReject')?.addEventListener('click',()=>{
+    localStorage.setItem(consentKey,'rejected');banner.style.display='none';
+  });
+})();
+</script>
 </body>
 </html>
