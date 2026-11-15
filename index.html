@@ -883,5 +883,22 @@ document.getElementById('agentStartForm').addEventListener('submit',startAgentCh
   });
 })();
 </script>
+
+<style id="campusnexus-mobile-contact-fix">
+@media(max-width:560px){
+  /* Keep the hero actions and trust strip clear on small screens. */
+  .contact-float{left:14px;right:auto;bottom:18px;z-index:10040;gap:0}
+  .contact-float a{display:none;width:48px;height:48px}
+  .contact-float a.wa{display:grid}
+  .agent-chat{right:14px;left:auto;bottom:18px;z-index:10050}
+  .agent-chat-toggle{width:48px;height:48px;padding:0;justify-content:center;border-radius:50%;gap:0}
+  .agent-chat-toggle .live-dot{position:absolute;width:8px;height:8px;right:3px;top:3px}
+  .agent-chat-toggle .label{display:none}
+  .agent-chat-window{right:0;bottom:60px;width:calc(100vw - 28px);max-width:calc(100vw - 28px);height:min(560px,calc(100dvh - 96px))}
+  .trust,.trust .container{min-width:0;max-width:100%;overflow:hidden}
+  .trust .container{flex-wrap:wrap;gap:12px}
+  .trust p,.trust .trust-copy{min-width:0;max-width:100%;overflow-wrap:anywhere}
+}
+</style>
 </body>
 </html>
