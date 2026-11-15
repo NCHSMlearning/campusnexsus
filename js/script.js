@@ -267,6 +267,10 @@ let visitorId = null;
 let visitorName = null;
 let visitorEmail = null;
 let messageSubscription = null;
+let renderedChatMessageIds = new Set();
+const CAMPUS_CHAT_API='https://irahplkvocaakjxuisto.supabase.co/functions/v1/public-chat-api';
+async function campusChatApi(action,extra={}){const r=await fetch(CAMPUS_CHAT_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,visitor_id:visitorId,chat_id:currentChatId,...extra})});const d=await r.json().catch(()=>({}));if(!r.ok||!d.ok)throw new Error(d.error||'Chat service unavailable');return d;}
+function escapeChatText(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 let isAgentOnline = false;
 let chatMode = 'bot';
 let chatStarted = false;
@@ -276,84 +280,23 @@ let scrollObserver = null;
 // PRE-CHAT FORM FUNCTIONS
 // ============================================================
 
-function startChatWithInfo(name, email) {
-    visitorName = name || document.getElementById('visitorNameInput')?.value?.trim() || 'Anonymous Visitor';
-    visitorEmail = email || document.getElementById('visitorEmailInput')?.value?.trim() || '';
-    
-    localStorage.setItem('campusnexus_visitor_name', visitorName);
-    localStorage.setItem('campusnexus_visitor_email', visitorEmail);
-    
-    createChatSession(visitorName, visitorEmail);
-    
-    const preChatForm = document.getElementById('preChatForm');
-    const chatMessagesContainer = document.getElementById('chatMessagesContainer');
-    const quickReplies = document.getElementById('quickReplies');
-    const chatInputArea = document.getElementById('chatInputArea');
-    
-    if (preChatForm) preChatForm.style.display = 'none';
-    if (chatMessagesContainer) chatMessagesContainer.style.display = 'block';
-    if (quickReplies) quickReplies.style.display = 'flex';
-    if (chatInputArea) chatInputArea.style.display = 'flex';
-    
-    chatStarted = true;
-    
-    addChatMessage('bot', `👋 Welcome <strong>${visitorName}</strong>! I'm here to help you. What can I assist you with today?`);
-    
-    // Setup scroll observer
-    setTimeout(() => {
-        setupScrollObserver();
-    }, 300);
-    
-    if (!visitorId || !currentChatId) {
-        initializeChat();
-    }
-    
-    subscribeToMessages();
-    checkAgentStatus();
+async function startChatWithInfo(name,email){
+ visitorName=name||document.getElementById('visitorNameInput')?.value?.trim()||'Anonymous Visitor';
+ visitorEmail=email||document.getElementById('visitorEmailInput')?.value?.trim()||'';
+ localStorage.setItem('campusnexus_visitor_name',visitorName);localStorage.setItem('campusnexus_visitor_email',visitorEmail);
+ await createChatSession(visitorName,visitorEmail);
+ ['preChatForm','chatMessagesContainer','quickReplies','chatInputArea'].forEach((id,i)=>{const el=document.getElementById(id);if(el)el.style.display=i===0?'none':i===1||i===2||i===3?'block':el.style.display;});
+ chatStarted=true;addChatMessage('bot','👋 Welcome '+escapeChatText(visitorName)+'! I\'m here to help you. What can I assist you with today?');
+ setTimeout(setupScrollObserver,300);subscribeToMessages();await checkAgentStatus();
 }
-
-async function createChatSession(name, email) {
-    visitorId = getVisitorId();
-    currentChatId = 'chat_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
-    localStorage.setItem('campusnexus_chat_id', currentChatId);
-    
-    try {
-        const ip = await getVisitorIP();
-        const { error } = await supabase
-            .from('chat_sessions')
-            .insert([{
-                chat_id: currentChatId,
-                visitor_id: visitorId,
-                visitor_ip: ip,
-                visitor_page: window.location.href,
-                visitor_name: name,
-                visitor_email: email,
-                status: 'active',
-                created_at: new Date().toISOString()
-            }]);
-        
-        if (error) console.error('Error creating chat session:', error);
-    } catch (error) {
-        console.error('Supabase error:', error);
-    }
+async function createChatSession(name,email){
+ visitorId=getVisitorId();currentChatId='chat_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
+ localStorage.setItem('campusnexus_chat_id',currentChatId);renderedChatMessageIds=new Set();
+ try{await campusChatApi('create_session',{visitor_name:name,visitor_email:email,visitor_page:location.pathname||'/'});}catch(e){console.error('Chat session could not be created:',e);}
 }
-
-async function updateVisitorInfo(name, email) {
-    if (!visitorId || !currentChatId) return;
-    
-    try {
-        const { error } = await supabase
-            .from('chat_sessions')
-            .update({
-                visitor_name: name,
-                visitor_email: email
-            })
-            .eq('chat_id', currentChatId);
-        
-        if (error) console.error('Error updating visitor info:', error);
-    } catch (error) {
-        console.error('Supabase error:', error);
-    }
+async function updateVisitorInfo(name,email){
+ if(!visitorId||!currentChatId)return;
+ try{await campusChatApi('update_visitor',{visitor_name:name,visitor_email:email});}catch(e){console.error('Visitor details update failed:',e);}
 }
 
 function checkVisitorInfo() {
@@ -413,42 +356,11 @@ async function getVisitorIP() {
 // ============================================================
 // CHECK AGENT STATUS
 // ============================================================
-async function checkAgentStatus() {
-    try {
-        console.log('🔍 Checking agent status...');
-        
-        const { data, error } = await supabase
-            .from('chat_agents')
-            .select('id, email, name, is_online, last_seen')
-            .eq('is_online', true)
-            .limit(1);
-        
-        if (error) {
-            console.error('❌ Error checking agent status:', error);
-            isAgentOnline = false;
-            updateStatusIndicator();
-            updateAgentStatusBadge();
-            return;
-        }
-        
-        isAgentOnline = data && data.length > 0;
-        console.log('📊 Agent online:', isAgentOnline);
-        
-        updateStatusIndicator();
-        updateAgentStatusBadge();
-        
-        if (isAgentOnline && chatMode === 'agent') {
-            updateChatHeaderForAgent();
-        }
-        
-    } catch (error) {
-        console.error('❌ Error checking agent status:', error);
-        isAgentOnline = false;
-        updateStatusIndicator();
-        updateAgentStatusBadge();
-    }
+async function checkAgentStatus(){
+ try{const d=await campusChatApi('agent_status');isAgentOnline=!!d.isOnline;}
+ catch(e){console.warn('Agent status unavailable:',e);isAgentOnline=false;}
+ updateStatusIndicator();updateAgentStatusBadge();if(isAgentOnline&&chatMode==='agent')updateChatHeaderForAgent();
 }
-
 function updateStatusIndicator() {
     const statusIndicator = document.getElementById('chatStatusIndicator');
     const agentStatus = document.getElementById('agentStatus');
@@ -715,31 +627,16 @@ function setChatMode(mode) {
 // ============================================================
 // LOAD CHAT HISTORY
 // ============================================================
-async function loadChatHistory() {
-    try {
-        const { data, error } = await supabase
-            .from('chat_messages')
-            .select('*')
-            .eq('visitor_id', visitorId)
-            .order('created_at', { ascending: true });
-        
-        if (error) throw error;
-        
-        if (data && data.length > 0) {
-            const messagesContainer = document.getElementById('campusChatMessages');
-            if (!document.getElementById('preChatForm') || document.getElementById('preChatForm').style.display === 'none') {
-                messagesContainer.innerHTML = '';
-            }
-            
-            data.forEach(msg => {
-                const type = msg.sender === 'visitor' ? 'user' : 'bot';
-                addChatMessage(type, msg.message, msg.created_at);
-            });
-        }
-    } catch (error) {
-        console.error('Error loading history:', error);
-        loadLocalHistory();
-    }
+async function loadChatHistory(){
+ if(!visitorId||!currentChatId)return;
+ try{
+  const d=await campusChatApi('history');const container=document.getElementById('campusChatMessages');if(!container)return;
+  (d.messages||[]).forEach(msg=>{
+   const id=String(msg.id);if(renderedChatMessageIds.has(id))return;renderedChatMessageIds.add(id);
+   const content=msg.sender==='agent'?'👤 <strong>Agent:</strong> '+escapeChatText(msg.message):escapeChatText(msg.message);
+   addChatMessage(msg.sender==='visitor'?'user':'bot',content,msg.created_at);
+  });
+ }catch(e){console.error('Chat history unavailable:',e);}
 }
 
 function loadLocalHistory() {
@@ -758,48 +655,11 @@ function loadLocalHistory() {
 // ============================================================
 // SUBSCRIBE TO REALTIME MESSAGES
 // ============================================================
-function subscribeToMessages() {
-    if (messageSubscription) {
-        try {
-            supabase.removeChannel(messageSubscription);
-        } catch(e) {}
-    }
-    
-    if (!visitorId) return;
-    
-    try {
-        messageSubscription = supabase
-            .channel('chat_messages_' + visitorId)
-            .on(
-                'postgres_changes',
-                {
-                    event: 'INSERT',
-                    schema: 'public',
-                    table: 'chat_messages',
-                    filter: `visitor_id=eq.${visitorId}`
-                },
-                (payload) => {
-                    const msg = payload.new;
-                    if (msg.sender === 'agent') {
-                        addChatMessage('bot', '👤 <strong>Agent:</strong> ' + msg.message, msg.created_at);
-                        const chatWindow = document.getElementById('campusChatWindow');
-                        const notification = document.getElementById('chatNotification');
-                        if (chatWindow && !chatWindow.classList.contains('open') && notification) {
-                            notification.style.display = 'block';
-                            notification.textContent = '1';
-                        }
-                        playNotificationSound();
-                    } else if (msg.sender === 'bot' && chatMode === 'bot') {
-                        addChatMessage('bot', msg.message, msg.created_at);
-                    }
-                }
-            )
-            .subscribe();
-    } catch (error) {
-        console.error('Error subscribing to messages:', error);
-    }
+function subscribeToMessages(){
+ if(messageSubscription)clearInterval(messageSubscription);
+ if(!visitorId||!currentChatId)return;
+ loadChatHistory();messageSubscription=setInterval(loadChatHistory,5000);
 }
-
 // ============================================================
 // PLAY NOTIFICATION SOUND
 // ============================================================
@@ -881,97 +741,22 @@ function handleCampusChatKey(event) {
 // ============================================================
 // SEND CHAT MESSAGE - FIXED
 // ============================================================
-async function sendCampusChatMessage() {
-    const input = document.getElementById('campusChatInput');
-    if (!input) return;
-    
-    const message = input.value.trim();
-    if (!message) return;
-    
-    if (!chatStarted) {
-        const hasInfo = checkVisitorInfo();
-        if (!hasInfo) {
-            const preChatForm = document.getElementById('preChatForm');
-            if (preChatForm) preChatForm.style.display = 'block';
-            return;
-        }
-    }
-    
-    addChatMessage('user', message);
-    input.value = '';
-    
-    // Force scroll immediately
-    setTimeout(() => forceScrollToBottom(), 10);
-    setTimeout(() => forceScrollToBottom(), 50);
-    
-    if (!visitorId) {
-        visitorId = getVisitorId();
-    }
-    
-    if (!currentChatId) {
-        currentChatId = 'chat_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
-        localStorage.setItem('campusnexus_chat_id', currentChatId);
-    }
-    
-    if (typeof supabase === 'undefined' || typeof supabase.from !== 'function') {
-        console.warn('⚠️ Supabase not ready');
-        return;
-    }
-    
-    try {
-        const { data: existingSession } = await supabase
-            .from('chat_sessions')
-            .select('chat_id')
-            .eq('chat_id', currentChatId)
-            .limit(1);
-        
-        if (!existingSession || existingSession.length === 0) {
-            console.log('📝 Creating new chat session:', currentChatId);
-            const ip = await getVisitorIP();
-            await supabase
-                .from('chat_sessions')
-                .insert([{
-                    chat_id: currentChatId,
-                    visitor_id: visitorId,
-                    visitor_ip: ip,
-                    visitor_page: window.location.href,
-                    visitor_name: localStorage.getItem('campusnexus_visitor_name') || 'Anonymous',
-                    visitor_email: localStorage.getItem('campusnexus_visitor_email') || '',
-                    status: 'active',
-                    created_at: new Date().toISOString()
-                }]);
-        }
-    } catch (error) {
-        console.error('Error with chat session:', error);
-    }
-    
-    try {
-        const { error } = await supabase
-            .from('chat_messages')
-            .insert([{
-                chat_id: currentChatId,
-                visitor_id: visitorId,
-                sender: 'visitor',
-                message: message,
-                created_at: new Date().toISOString()
-            }]);
-        
-        if (error) console.error('Error saving message:', error);
-    } catch (error) {
-        console.error('Supabase error:', error);
-    }
-    
-    if (chatMode === 'bot') {
-        processBotResponse(message);
-    } else {
-        if (isAgentOnline) {
-            addChatMessage('bot', '👤 Your message has been sent to a live agent. They will respond shortly...');
-        } else {
-            addChatMessage('bot', '⏳ No agents are currently online. Your message has been saved and will be responded to when an agent becomes available.');
-        }
-    }
+async function sendCampusChatMessage(){
+ const input=document.getElementById('campusChatInput');if(!input)return;
+ const message=input.value.trim();if(!message)return;
+ if(!chatStarted){const hasInfo=checkVisitorInfo();if(!hasInfo){const f=document.getElementById('preChatForm');if(f)f.style.display='block';return;}}
+ if(!visitorId)visitorId=getVisitorId();
+ if(!currentChatId)await createChatSession(localStorage.getItem('campusnexus_visitor_name')||'Anonymous Visitor',localStorage.getItem('campusnexus_visitor_email')||'');
+ addChatMessage('user',escapeChatText(message));input.value='';setTimeout(forceScrollToBottom,10);
+ try{const d=await campusChatApi('send',{message});if(d.message?.id!==undefined)renderedChatMessageIds.add(String(d.message.id));}
+ catch(e){console.error('Message send failed:',e);addChatMessage('bot','Sorry, your message could not be sent. Please try again.');return;}
+ if(chatMode==='bot')processBotResponse(message);
+ else if(isAgentOnline)addChatMessage('bot','👤 Your message has been sent to a live agent. They will respond shortly...');
+ else addChatMessage('bot','⏳ No agents are currently online. Your message has been saved and will be responded to when an agent becomes available.');
 }
 
+// ============================================================
+// ADD CHAT MESSAGE
 // ============================================================
 // ADD CHAT MESSAGE - WITH AUTO-SCROLL
 // ============================================================
@@ -1062,21 +847,7 @@ function processBotResponse(message) {
         hideTypingIndicator();
         addChatMessage('bot', response);
         
-        if (visitorId && currentChatId) {
-            try {
-                supabase
-                    .from('chat_messages')
-                    .insert([{
-                        chat_id: currentChatId,
-                        visitor_id: visitorId,
-                        sender: 'bot',
-                        message: response.replace(/<[^>]*>/g, ''),
-                        created_at: new Date().toISOString()
-                    }]);
-            } catch (error) {
-                console.error('Error saving bot response:', error);
-            }
-        }
+        if(visitorId&&currentChatId)campusChatApi('bot_reply',{message:response.replace(/<[^>]*>/g,'')}).then(d=>{if(d.message?.id!==undefined)renderedChatMessageIds.add(String(d.message.id));}).catch(e=>console.warn('Bot reply save failed:',e));
     }, 800 + Math.random() * 600);
 }
 
