@@ -243,6 +243,55 @@ a{text-decoration:none;color:inherit}button,input,select,textarea{font:inherit}.
   ]
 }
 </script>
+
+<style id="campusnexus-premium-refresh">
+:root{--cn-ink:#071d36;--cn-navy:#082b52;--cn-blue:#087cf2;--cn-gold:#f5bd36;--cn-mist:#f4f8fc;--cn-line:#e4edf6}
+html{scroll-padding-top:100px}
+body{font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:-.012em}
+::selection{background:#b9ddff;color:#062b57}
+:focus-visible{outline:3px solid #5db5ff!important;outline-offset:3px}
+.nav{background:rgba(255,255,255,.94);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:0 8px 28px rgba(6,43,87,.045)}
+.logo-icon,.btn,.nav-button,.lab-tab,.solution,.project-card,.faq-item,.process-card,.industry-card{transition:transform .24s ease,box-shadow .24s ease,border-color .24s ease,background .24s ease}
+.logo-icon{box-shadow:0 9px 24px rgba(8,124,242,.2)}
+.btn,.nav-button{font-weight:800;letter-spacing:-.01em}
+.btn:hover,.nav-button:hover{transform:translateY(-2px);box-shadow:0 14px 30px rgba(5,49,95,.17)}
+.solution:hover,.project-card:hover,.process-card:hover,.industry-card:hover{transform:translateY(-5px);box-shadow:0 22px 48px rgba(7,53,98,.12);border-color:#b8d8f5}
+section{scroll-margin-top:96px}
+section:not(.hero){position:relative}
+input,select,textarea{border:1px solid #d8e4f0!important;border-radius:12px!important;min-height:48px;transition:border-color .2s,box-shadow .2s}
+textarea{min-height:120px}
+input:focus,select:focus,textarea:focus{border-color:#087cf2!important;box-shadow:0 0 0 4px rgba(8,124,242,.1)!important;outline:0}
+.modal{border:1px solid #e3edf6;box-shadow:0 30px 90px rgba(2,24,49,.3)}
+.modal-head{position:sticky;top:0;z-index:2}
+.modal .note{border-radius:14px}
+.faq-q{transition:color .2s}
+.faq-q:hover{color:#087cf2}
+.mobile{box-shadow:0 24px 65px rgba(6,43,87,.2)}
+.contact-float a{transition:transform .2s,box-shadow .2s}
+.contact-float a:hover{box-shadow:0 14px 30px rgba(0,27,63,.25)}
+#analyticsConsent{backdrop-filter:blur(14px)}
+#analyticsConsent button{cursor:pointer;border-radius:999px!important;font-weight:800}
+#bookingMsg{line-height:1.7}
+#bookingMsg.success{padding:16px;border:1px solid #b9ead7;background:#effcf6;border-radius:14px;color:#126448}
+#bookingMsg.error{padding:14px;border:1px solid #ffd2d2;background:#fff5f5;border-radius:14px;color:#a12b2b}
+@media(max-width:760px){
+ .container{width:min(var(--max),calc(100% - 32px))}
+ .hero{min-height:auto}
+ .hero-grid{min-height:auto;padding:42px 0 52px}
+ .hero-copy{padding:24px 0}
+ .hero h1{font-size:clamp(2.25rem,9vw,3.7rem);line-height:1.06;letter-spacing:-.055em}
+ .hero p{font-size:15px;line-height:1.75}
+ .hero-grid{grid-template-columns:1fr}
+ .hero-visual{margin-top:24px}
+ .links{display:none}
+ .menu{display:grid;place-items:center}
+ .modal{width:min(640px,calc(100vw - 24px));max-height:calc(100dvh - 24px);overflow:auto}
+ .modal-body{padding:18px}
+ .form-grid{grid-template-columns:1fr!important}
+ .field.full{grid-column:auto!important}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+</style>
 </head>
 <body>
 
@@ -628,9 +677,10 @@ document.getElementById('bookingForm').addEventListener('submit',async e=>{
   form.querySelector('.consent').hidden=true;
   form.querySelector('.submit').hidden=true;
   msg.className='msg success';
+  const reference=result.bookingId ? String(result.bookingId).slice(0,8).toUpperCase() : 'RECEIVED';
   msg.innerHTML=result.emailSent
-   ? '<strong><i class="fa-solid fa-circle-check"></i> Request received successfully.</strong><br>Thank you. Your consultation request has been saved and our team has been notified. We will contact you to confirm.'
-   : '<strong><i class="fa-solid fa-circle-check"></i> Request received successfully.</strong><br>Your consultation request has been saved. Email notifications are still being configured, but your request is recorded. You can also reach us on WhatsApp at +254 790 969 743.';
+   ? '<strong><i class="fa-solid fa-circle-check"></i> Your request is in!</strong><br>Thank you for contacting CampusNexus. Your request has been saved and our email provider has accepted the notification for processing. We will contact you to confirm your consultation.<br><small>Reference: '+reference+'</small>'
+   : '<strong><i class="fa-solid fa-circle-check"></i> Your request is safely recorded.</strong><br>Thank you. Your consultation request has been saved, but the email notification could not be confirmed. Our team can still retrieve your request. For urgent enquiries, WhatsApp us on +254 790 969 743.<br><small>Reference: '+reference+'</small>';
  }catch(err){
   console.error(err);msg.className='msg error';msg.textContent=err.message||'We could not submit the request right now. Please try again or contact us directly.';
  }finally{btn.disabled=false;btn.innerHTML='Submit Request <i class="fa-solid fa-arrow-right"></i>'}
@@ -794,7 +844,7 @@ document.getElementById('agentStartForm').addEventListener('submit',startAgentCh
 </script>
 <div id="analyticsConsent" role="dialog" aria-label="Anonymous website analytics" aria-live="polite" style="display:none;position:fixed;left:18px;bottom:18px;z-index:4500;width:min(390px,calc(100% - 36px));padding:18px 20px;background:#fff;border:1px solid #dce8f3;border-radius:18px;box-shadow:0 18px 50px #062b5730">
   <strong style="display:block;color:#062b57;font-size:13px;margin-bottom:6px">Help us improve CampusNexus</strong>
-  <p style="font-size:11px;line-height:1.6;color:#667d97;margin:0 0 13px">With your permission, we collect anonymous page visits, device type and browser details to improve the website. We do not collect your name, email or IP address through this analytics feature.</p>
+  <p style="font-size:11px;line-height:1.6;color:#667d97;margin:0 0 13px">With your permission, CampusNexus records anonymous page visits, device type and browser details to improve the website. This is optional; consultation and contact forms work whether you accept or decline. Website infrastructure may also process technical connection data.</p>
   <div style="display:flex;gap:8px;justify-content:flex-end">
     <button type="button" id="analyticsReject" class="btn outline" style="padding:9px 14px;color:#45647f;border-color:#dce8f3">Not now</button>
     <button type="button" id="analyticsAccept" class="btn gold" style="padding:9px 14px">Allow analytics</button>
