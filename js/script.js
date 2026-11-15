@@ -334,7 +334,7 @@ async function initializeChat() {
 function getVisitorId() {
     let id = localStorage.getItem('campusnexus_visitor_id');
     if (!id) {
-        id = 'visitor_' + (crypto.randomUUID ? crypto.randomUUID() : Date.now() + '_' + Math.random().toString(36).slice(2));
+        id = crypto.randomUUID ? crypto.randomUUID() : 'visitor_' + Date.now() + '_' + Math.random().toString(36).slice(2);
         localStorage.setItem('campusnexus_visitor_id', id);
     }
     return id;
