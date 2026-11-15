@@ -404,10 +404,11 @@
 
                 const user = data.user;
                 const { data: membership, error: membershipError } = await supabaseClient.from('cms_admins').select('role').eq('user_id', user.id).maybeSingle();
-                if (membershipError || !membership || !['admin','editor'].includes(membership.role)) { await supabaseClient.auth.signOut(); showError('This account is not authorized to access the CampusNexus administration portal.'); resetButton(); return; }
+                if (membershipError || !membership || !['admin','editor'].includes(membership.role)) { try { await supabaseClient.functions.invoke('admin-audit-event',{body:{action:'LOGIN'}}); } catch (_) {} await supabaseClient.auth.signOut(); showError('This account is not authorized to access the CampusNexus administration portal.'); resetButton(); return; }
                 const { data: profile } = await supabaseClient.from('users').select('name').eq('id', user.id).maybeSingle();
                 const session = { id:user.id, email:user.email, name:profile?.name || user.user_metadata?.name || user.email?.split('@')[0] || 'Admin', role:membership.role, loggedInAt:new Date().toISOString() };
                 localStorage.setItem('campusnexus_admin', JSON.stringify(session));
+                try { const {error:auditError}=await supabaseClient.functions.invoke('admin-audit-event',{body:{action:'LOGIN'}}); if(auditError)console.warn('Login audit could not be recorded:',auditError.message); } catch(auditError) { console.warn('Login audit unavailable:',auditError); }
                 if (rememberMe) localStorage.setItem('campusnexus_remember', 'true');
                 window.location.href = 'admin-dashboard.html';
 
