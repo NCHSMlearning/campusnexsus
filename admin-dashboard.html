@@ -1899,26 +1899,25 @@ function renderChats() {
 // UPDATE STATS
 // ============================================================
 function updateStats() {
-    const active = allChats.filter(c => c.status === 'active').length;
-    const total = allVisitors.length;
-
-    if (totalVisitorsEl) totalVisitorsEl.textContent = total;
-    if (activeChatsEl) activeChatsEl.textContent = active;
-
-    const times = allChats.flatMap(c => c.messages || []).filter(m => m.sender === 'agent');
-    if (times.length > 0 && avgResponseEl) {
-        const avg = Math.floor(Math.random() * 30) + 10;
-        avgResponseEl.textContent = `${avg}s`;
-    } else if (avgResponseEl) {
-        avgResponseEl.textContent = 'N/A';
-    }
-
-    if (satisfactionRateEl) {
-        const rate = Math.floor(Math.random() * 20) + 80;
-        satisfactionRateEl.textContent = `${rate}%`;
-    }
+    const active=allChats.filter(c=>c.status==='active').length,total=allVisitors.length;
+    if(totalVisitorsEl)totalVisitorsEl.textContent=total;
+    if(activeChatsEl)activeChatsEl.textContent=active;
+    const responseTimes=[];
+    allChats.forEach(chat=>{
+        const messages=[...(chat.messages||[])].sort((x,y)=>new Date(x.created_at)-new Date(y.created_at));
+        for(let i=0;i<messages.length;i++){
+            if(messages[i].sender==='visitor'){
+                const reply=messages.slice(i+1).find(m=>m.sender==='agent');
+                if(reply){const delta=new Date(reply.created_at)-new Date(messages[i].created_at);if(delta>=0&&delta<86400000)responseTimes.push(delta);}
+            }
+        }
+    });
+    if(avgResponseEl)avgResponseEl.textContent=responseTimes.length?Math.round(responseTimes.reduce((x,y)=>x+y,0)/responseTimes.length/1000)+'s':'N/A';
+    if(satisfactionRateEl)satisfactionRateEl.textContent='Not tracked';
 }
 
+// ============================================================
+// FILTER FUNCTIONS
 // ============================================================
 // FILTER FUNCTIONS
 // ============================================================
@@ -1928,10 +1927,16 @@ function filterChats() { renderChats(); }
 // ============================================================
 // VIEW VISITOR DETAILS
 // ============================================================
-function viewVisitor(visitorId) {
-    alert(`👤 Visitor: ${visitorId}\n\n📊 This feature is coming soon!\n\nYou'll be able to see:\n• Full browsing history\n• Time on site\n• Pages viewed\n• Chat history`);
+async function viewVisitor(visitorId) {
+    const visitor=allVisitors.find(v=>v.visitor_id===visitorId);
+    const {data:views,error}=await supabaseClient.from('visitor_page_views').select('page_url,page_title,referrer,time_spent,created_at').eq('visitor_id',visitorId).order('created_at',{ascending:false}).limit(100);
+    if(error){alert('Could not load visitor history: '+error.message);return;}
+    const lines=['Visitor: '+visitorId,'Device: '+(visitor?.device_type||'Unknown'),'Browser: '+(visitor?.browser||'Unknown'),'Location: '+[visitor?.city,visitor?.country].filter(Boolean).join(', '),'Referrer: '+(visitor?.referrer||'Direct / unknown'),'','Recent pages:',...(views||[]).map(v=>new Date(v.created_at).toLocaleString()+' — '+(v.page_title||v.page_url)+' ('+(v.time_spent||0)+' sec)')];
+    alert(lines.join('\n'));
 }
 
+// ============================================================
+// OPEN REPLY MODAL
 // ============================================================
 // OPEN REPLY MODAL
 // ============================================================
@@ -1960,10 +1965,10 @@ async function openReplyModal(chatId) {
             chat.messages.forEach(msg => {
                 const div = document.createElement('div');
                 div.className = `msg ${msg.sender === 'visitor' ? 'visitor' : 'agent'}`;
-                div.innerHTML = `
-                    ${msg.message}
-                    <span class="time">${msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</span>
-                `;
+                const messageText=document.createElement('span');messageText.textContent=msg.message||'';
+                const timeText=document.createElement('span');timeText.className='time';
+                timeText.textContent=msg.created_at?new Date(msg.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'';
+                div.append(messageText,timeText);
                 historyEl.appendChild(div);
             });
         } else {
@@ -2193,11 +2198,11 @@ function refreshAll() {
 // CLEAR ALL DATA
 // ============================================================
 function clearAllData() {
-    if (confirm('⚠️ Are you sure you want to clear all visitor and chat data? This cannot be undone.')) {
-        alert('🗑️ Data cleared! (This is a mock implementation - implement actual deletion in Supabase)');
-    }
+    alert('Bulk deletion is disabled to protect visitor and customer records. Use authorized retention and deletion procedures instead.');
 }
 
+// ============================================================
+// LOAD ANALYTICS
 // ============================================================
 // LOAD ANALYTICS
 // ============================================================
@@ -2227,13 +2232,16 @@ async function loadAnalytics() {
         const topPageEl = document.getElementById('topPage');
         if (topPageEl) topPageEl.textContent = topPage ? `${topPage[0].slice(0, 30)}...` : 'N/A';
 
-        const peakHourEl = document.getElementById('peakHour');
-        if (peakHourEl) peakHourEl.textContent = `${Math.floor(Math.random() * 12) + 8}:00`;
+        const peakHourEl=document.getElementById('peakHour');
+        const hourCounts={};
+        visitors.forEach(v=>{if(v.started_at){const hour=new Date(v.started_at).getHours();hourCounts[hour]=(hourCounts[hour]||0)+1;}});
+        const peak=Object.entries(hourCounts).sort((x,y)=>y[1]-x[1])[0];
+        if(peakHourEl)peakHourEl.textContent=peak?String(peak[0]).padStart(2,'0')+':00':'N/A';
 
         const avgSessionEl = document.getElementById('avgSession');
         if (avgSessionEl) {
-            const avgMin = Math.floor(Math.random() * 5) + 2;
-            avgSessionEl.textContent = `${avgMin}m ${Math.floor(Math.random() * 60)}s`;
+            const durations=visitors.map(v=>{const start=new Date(v.started_at||v.last_active).getTime();const end=new Date(v.ended_at||v.last_active||v.started_at).getTime();return Number.isFinite(start)&&Number.isFinite(end)&&end>=start?end-start:null;}).filter(v=>v!==null);
+            if(durations.length){const avg=Math.round(durations.reduce((x,y)=>x+y,0)/durations.length/1000);avgSessionEl.textContent=Math.floor(avg/60)+'m '+(avg%60)+'s';}else avgSessionEl.textContent='N/A';
         }
 
         const total = Object.values(devices).reduce((a, b) => a + b, 0) || 1;
@@ -2697,14 +2705,15 @@ window.cmsToggleSection=cmsToggleSection;
 // ============================================================
 // LOGOUT
 // ============================================================
-function logout() {
-    if (confirm('Are you sure you want to logout?')) {
-        localStorage.removeItem('campusnexus_admin');
-        localStorage.removeItem('campusnexus_remember');
-        window.location.href = 'admin-login.html';
-    }
+async function logout() {
+    if(!confirm('Are you sure you want to logout?'))return;
+    try{await supabaseClient.auth.signOut();}catch(error){console.error('Sign out error:',error);}
+    localStorage.removeItem('campusnexus_admin');localStorage.removeItem('campusnexus_remember');
+    window.location.href='admin-login.html';
 }
 
+// ============================================================
+// KEYBOARD SHORTCUTS
 // ============================================================
 // KEYBOARD SHORTCUTS
 // ============================================================
@@ -2729,82 +2738,31 @@ document.addEventListener('keydown', function(e) {
 // ============================================================
 // INITIALIZATION
 // ============================================================
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 Admin Dashboard loading...');
-
+document.addEventListener('DOMContentLoaded', async function() {
     try {
-        const admin = localStorage.getItem('campusnexus_admin');
-        if (!admin) {
-            console.log('🔒 No session found, redirecting to login...');
-            window.location.href = 'admin-login.html';
-            return;
-        }
-
-        const session = JSON.parse(admin);
-        if (!session.id || !session.email) {
-            console.log('🔒 Invalid session, redirecting to login...');
-            localStorage.removeItem('campusnexus_admin');
-            window.location.href = 'admin-login.html';
-            return;
-        }
-
-        adminName = session.name || 'Admin';
-        window.currentUserId = session.user_id || session.id || 'admin';
-        if (adminNameEl) adminNameEl.textContent = adminName;
-
-        console.log('✅ Admin logged in:', session.email);
-        console.log('🆔 User ID:', session.id);
-    } catch (error) {
-        console.error('❌ Session error:', error);
-        localStorage.removeItem('campusnexus_admin');
-        window.location.href = 'admin-login.html';
-        return;
+        const {data:{user},error:userError}=await supabaseClient.auth.getUser();
+        if(userError||!user)throw new Error('Your administrator session has expired. Please sign in again.');
+        const {data:membership,error:membershipError}=await supabaseClient.from('cms_admins').select('role').eq('user_id',user.id).maybeSingle();
+        if(membershipError||!membership||!['admin','editor'].includes(membership.role))throw new Error('This account is not authorized to access the administration portal.');
+        let localProfile={};try{localProfile=JSON.parse(localStorage.getItem('campusnexus_admin')||'{}')}catch(_){}
+        adminName=localProfile.name||user.user_metadata?.name||user.email||'Administrator';
+        window.currentUserId=user.id;if(adminNameEl)adminNameEl.textContent=adminName;
+        cmsRenderFields();cmsRenderSections();
+        await Promise.allSettled([loadVisitors(),loadChats(),loadAnalytics()]);
+        subscribeToUpdates();
+        refreshInterval=setInterval(()=>{
+            if(currentTab==='visitors')loadVisitors().catch(console.error);
+            else if(currentTab==='chats')loadChats().catch(console.error);
+            else if(currentTab==='analytics')loadAnalytics().catch(console.error);
+            else if(currentTab==='bookings')loadBookings().catch(console.error);
+            else if(currentTab==='audit')loadAuditLogs().catch(console.error);
+        },30000);
+        window.addEventListener('beforeunload',()=>{if(refreshInterval)clearInterval(refreshInterval);chatSubscriptions.forEach(channel=>{try{supabaseClient.removeChannel(channel)}catch(_){}});});
+    }catch(error){
+        console.error('Administrator verification failed:',error);
+        localStorage.removeItem('campusnexus_admin');try{await supabaseClient.auth.signOut()}catch(_){}
+        window.location.href='admin-login.html';
     }
-
-    console.log('🧩 Preparing CMS editor...');
-    cmsRenderFields();
-    cmsRenderSections();
-    console.log('📊 Loading data...');
-    Promise.all([
-        loadVisitors().catch(err => console.error('Visitors load error:', err)),
-        loadChats().catch(err => console.error('Chats load error:', err)),
-        loadAnalytics().catch(err => console.error('Analytics load error:', err))
-    ]).then(() => {
-        console.log('✅ All data loaded successfully');
-    });
-
-    subscribeToUpdates();
-
-    refreshInterval = setInterval(() => {
-        try {
-            if (currentTab === 'visitors') {
-                loadVisitors().catch(err => console.error('Refresh visitors error:', err));
-            } else if (currentTab === 'chats') {
-                loadChats().catch(err => console.error('Refresh chats error:', err));
-            } else if (currentTab === 'analytics') {
-                loadAnalytics().catch(err => console.error('Refresh analytics error:', err));
-            }
-        } catch (error) {
-            console.error('❌ Refresh error:', error);
-        }
-    }, 15000);
-
-    window.addEventListener('beforeunload', function() {
-        if (refreshInterval) {
-            clearInterval(refreshInterval);
-        }
-        chatSubscriptions.forEach(channel => {
-            try {
-                supabaseClient.removeChannel(channel);
-            } catch(e) {}
-        });
-    });
-
-    console.log('✅ Admin Dashboard ready!');
-    console.log('🔑 Keyboard shortcuts:');
-    console.log('  Ctrl+Enter = Send reply');
-    console.log('  Escape = Close modal');
-    console.log('  Ctrl+Shift+R = Refresh all data');
 });
 
 console.log('🔐 Admin Dashboard Script Loaded');
