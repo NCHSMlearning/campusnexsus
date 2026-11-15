@@ -2656,6 +2656,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         await Promise.allSettled([loadVisitors(),loadChats(),loadAnalytics()]);
         subscribeToUpdates();
         refreshInterval=setInterval(()=>{
+            supabaseClient.functions.invoke('admin-audit-event',{body:{action:'HEARTBEAT'}}).catch(error=>console.warn('Admin presence heartbeat failed:',error));
             if(currentTab==='visitors')loadVisitors().catch(console.error);
             else if(currentTab==='chats')loadChats().catch(console.error);
             else if(currentTab==='analytics')loadAnalytics().catch(console.error);
