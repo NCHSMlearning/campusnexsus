@@ -2707,6 +2707,7 @@ window.cmsToggleSection=cmsToggleSection;
 // ============================================================
 async function logout() {
     if(!confirm('Are you sure you want to logout?'))return;
+    try{const {error}=await supabaseClient.functions.invoke('admin-audit-event',{body:{action:'LOGOUT'}});if(error)console.warn('Logout audit could not be recorded:',error.message);}catch(error){console.warn('Logout audit unavailable:',error);}
     try{await supabaseClient.auth.signOut();}catch(error){console.error('Sign out error:',error);}
     localStorage.removeItem('campusnexus_admin');localStorage.removeItem('campusnexus_remember');
     window.location.href='admin-login.html';
