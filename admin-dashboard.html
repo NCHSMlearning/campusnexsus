@@ -1126,6 +1126,8 @@
         <ul class="sidebar-nav">
             <li><a href="#" class="active" onclick="switchTab('visitors')"><i class="fas fa-address-card"></i> Visitors <span class="badge" id="visitorBadge">0</span></a></li>
             <li><a href="#" onclick="switchTab('chats')"><i class="fas fa-comments"></i> Live Chats <span class="badge green" id="chatBadge">0</span></a></li>
+            <li><a href="#" onclick="switchTab('bookings')"><i class="fas fa-calendar-check"></i> Consultation Bookings</a></li>
+            <li><a href="#" onclick="switchTab('audit')"><i class="fas fa-shield-alt"></i> Audit Logs</a></li>
             <li><a href="#" onclick="switchTab('analytics')"><i class="fas fa-chart-bar"></i> Analytics</a></li>
             <li><a href="#" onclick="switchTab('cms')"><i class="fas fa-layer-group"></i> Website CMS <span class="badge orange">CMS</span></a></li>
             <li><a href="#"><i class="fas fa-users"></i> Agents</a></li>
@@ -1386,7 +1388,22 @@
                 </div>
             </div>
         </div>
-    </main>
+    
+        <div class="tab-content" id="tabBookings">
+            <div class="section-header">
+                <div><h2><i class="fas fa-calendar-check"></i> Consultation Requests</h2><p class="page-subtitle">Review enquiries and update their follow-up status.</p></div>
+                <button class="btn" onclick="loadBookings()"><i class="fas fa-sync-alt"></i> Refresh</button>
+            </div>
+            <div class="table-container"><table><thead><tr><th>Contact</th><th>Organisation</th><th>Service</th><th>Preferred Meeting</th><th>Received</th><th>Status</th><th>Action</th></tr></thead><tbody id="bookingsTableBody"><tr><td colspan="7">Select Consultation Bookings to load requests.</td></tr></tbody></table></div>
+        </div>
+        <div class="tab-content" id="tabAudit">
+            <div class="section-header">
+                <div><h2><i class="fas fa-shield-alt"></i> Administrator Audit Trail</h2><p class="page-subtitle">Recorded changes made by authorized administrators.</p></div>
+                <button class="btn" onclick="loadAuditLogs()"><i class="fas fa-sync-alt"></i> Refresh</button>
+            </div>
+            <div class="table-container"><table><thead><tr><th>Date &amp; Time</th><th>Administrator</th><th>Action</th><th>Module</th><th>Record</th></tr></thead><tbody id="auditTableBody"><tr><td colspan="5">Select Audit Logs to load activity.</td></tr></tbody></table></div>
+        </div>
+</main>
 </div>
 
 <!-- ===== CHAT REPLY MODAL ===== -->
@@ -1482,6 +1499,35 @@ const adminNameEl = document.getElementById('adminName');
 // ============================================================
 // TAB SWITCHING
 // ============================================================
+
+function adminEscape(value){return String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
+async function loadBookings(){
+ const body=document.getElementById('bookingsTableBody');if(!body)return;
+ body.innerHTML='<tr><td colspan="7">Loading consultation requests…</td></tr>';
+ const {data,error}=await supabaseClient.from('consultation_bookings').select('*').order('created_at',{ascending:false}).limit(200);
+ if(error){body.innerHTML='<tr><td colspan="7">Unable to load bookings: '+adminEscape(error.message)+'</td></tr>';return;}
+ if(!data||!data.length){body.innerHTML='<tr><td colspan="7">No consultation requests received yet.</td></tr>';return;}
+ window._campusBookings=data;
+ const states=['new','contacted','scheduled','proposal_sent','won','lost'];
+ body.innerHTML=data.map(b=>'<tr><td><strong>'+adminEscape(b.full_name)+'</strong><br><small>'+adminEscape(b.email)+' · '+adminEscape(b.phone)+'</small></td><td>'+adminEscape(b.organization||'—')+'</td><td>'+adminEscape(b.service)+'</td><td>'+adminEscape(b.meeting_preference||'—')+'<br><small>'+adminEscape(b.preferred_date||'Date not set')+' '+adminEscape(b.preferred_time||'')+'</small></td><td>'+adminEscape(new Date(b.created_at).toLocaleString())+'</td><td><select aria-label="Booking status" onchange="updateBookingStatus(\''+adminEscape(b.id)+'\',this.value)">'+states.map(st=>'<option value="'+st+'" '+(b.status===st?'selected':'')+'>'+st.replace('_',' ')+'</option>').join('')+'</select></td><td><button class="btn btn-outline" onclick="viewBooking(\''+adminEscape(b.id)+'\')">Details</button></td></tr>').join('');
+}
+async function updateBookingStatus(id,status){
+ const allowed=['new','contacted','scheduled','proposal_sent','won','lost'];if(!allowed.includes(status))return;
+ const {error}=await supabaseClient.from('consultation_bookings').update({status}).eq('id',id);
+ if(error){alert('Could not update booking: '+error.message);return;}await loadBookings();
+}
+function viewBooking(id){
+ const b=(window._campusBookings||[]).find(x=>x.id===id);if(!b)return;
+ alert(['Name: '+b.full_name,'Email: '+b.email,'Phone: '+b.phone,'Organisation: '+(b.organization||'—'),'Service: '+b.service,'Meeting: '+(b.meeting_preference||'—'),'Preferred: '+(b.preferred_date||'—')+' '+(b.preferred_time||''),'Budget: '+(b.budget_range||'—'),'Description: '+(b.project_description||'—')].join('\n'));
+}
+async function loadAuditLogs(){
+ const body=document.getElementById('auditTableBody');if(!body)return;
+ body.innerHTML='<tr><td colspan="5">Loading audit records…</td></tr>';
+ const {data,error}=await supabaseClient.from('admin_audit_logs').select('id,actor_email,action,table_name,record_id,created_at').order('created_at',{ascending:false}).limit(200);
+ if(error){body.innerHTML='<tr><td colspan="5">Unable to load audit records: '+adminEscape(error.message)+'</td></tr>';return;}
+ if(!data||!data.length){body.innerHTML='<tr><td colspan="5">No administrator changes have been recorded yet.</td></tr>';return;}
+ body.innerHTML=data.map(x=>'<tr><td>'+adminEscape(new Date(x.created_at).toLocaleString())+'</td><td>'+adminEscape(x.actor_email||'Administrator')+'</td><td>'+adminEscape(x.action)+'</td><td>'+adminEscape(x.table_name)+'</td><td>'+adminEscape(x.record_id||'—')+'</td></tr>').join('');
+}
 function switchTab(tab) {
     currentTab = tab;
 
@@ -1518,6 +1564,8 @@ function switchTab(tab) {
     if (tab === 'visitors') loadVisitors();
     else if (tab === 'chats') loadChats();
     else if (tab === 'analytics') loadAnalytics();
+    else if (tab === 'bookings') loadBookings();
+    else if (tab === 'audit') loadAuditLogs();
     else if (tab === 'cms') {
         cmsLoad();
     }
