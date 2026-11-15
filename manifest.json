@@ -9,7 +9,6 @@
   "theme_color": "#062b57",
   "background_color": "#f5f9fd",
   "icons": [
-    {"src": "/images/logo-icon.png?v=8", "sizes": "192x192", "type": "image/png", "purpose": "any"},
-    {"src": "/images/logo-icon.png?v=8", "sizes": "512x512", "type": "image/png", "purpose": "any"}
+    {"src": "/favicon.svg?v=10", "sizes": "any", "type": "image/svg+xml", "purpose": "any"}
   ]
 }
