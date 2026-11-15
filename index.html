@@ -162,6 +162,12 @@ a{text-decoration:none;color:inherit}button,input,select,textarea{font:inherit}.
 .hero-art{width:min(760px,100%);position:relative;z-index:4;filter:drop-shadow(0 35px 55px rgba(0,27,63,.34));animation:heroFloat 7s ease-in-out infinite}
 .hero-art img{display:block;width:100%;height:auto;border-radius:22px;position:relative;z-index:2}
 .hero-art-glow{position:absolute;inset:10% -5% -8%;background:radial-gradient(ellipse,#53b9ff55 0%,#087cf222 42%,transparent 72%);filter:blur(28px);z-index:1}
+/* Carousel reliability and smooth cross-fade override */
+#heroShowcase .hero-slides{position:relative;isolation:isolate}
+#heroShowcase .hero-slide{display:block!important;inset:0!important;opacity:0;visibility:hidden;pointer-events:none;z-index:0;transition:opacity 900ms ease-in-out,visibility 0s linear 900ms}
+#heroShowcase .hero-slide.is-active{opacity:1;visibility:visible;pointer-events:auto;z-index:1;transition:opacity 900ms ease-in-out,visibility 0s}
+#heroShowcase .hero-slide img{display:block!important;width:100%!important;height:100%!important;object-fit:cover!important}
+@media(prefers-reduced-motion:reduce){#heroShowcase .hero-slide,#heroShowcase .hero-slide.is-active{transition:opacity 300ms ease}}
 /* Accessible, touch-friendly automatic hero showcase */
 .hero-showcase{animation:none;filter:drop-shadow(0 30px 48px rgba(0,27,63,.32));}
 .hero-slides{position:relative;z-index:2;aspect-ratio:1.48;overflow:hidden;border-radius:22px;background:#0b2340}
@@ -821,41 +827,48 @@ function openBooking(){
 }
 function closeBooking(){document.getElementById('bookingModal').classList.remove('open');document.body.classList.remove('lock')}
  
-// Hero product showcase: autoplay, manual controls, keyboard focus pause and touch swipe.
+// CampusNexus hero carousel — isolated initialization so other page scripts cannot block it.
 (function(){
- const root=document.getElementById('heroShowcase');
- if(!root)return;
- const slides=Array.from(root.querySelectorAll('.hero-slide'));
- const dots=Array.from(root.querySelectorAll('.hero-showcase-dots button'));
- const count=root.querySelector('.hero-showcase-count');
- const status=root.querySelector('.hero-showcase-status');
- const reduced=window.matchMedia('(prefers-reduced-motion: reduce)');
- let current=0,timer=null,touchStartX=0,touchStartY=0;
- const labels=['CampusNexus product ecosystem','Education technology','Business systems','Websites and e-commerce','Custom applications'];
- function show(index,announce){
-  current=(index+slides.length)%slides.length;
-  slides.forEach((slide,i)=>{const active=i===current;slide.classList.toggle('is-active',active);slide.setAttribute('aria-hidden',String(!active));});
-  dots.forEach((dot,i)=>{const active=i===current;dot.classList.toggle('is-active',active);dot.setAttribute('aria-pressed',String(active));});
-  if(count)count.textContent=String(current+1).padStart(2,'0')+' / '+String(slides.length).padStart(2,'0');
-  if(announce&&status)status.textContent='Showing '+labels[current];
+ function initHeroShowcase(){
+  const root=document.getElementById('heroShowcase');
+  if(!root||root.dataset.carouselReady==='true')return;
+  const slides=Array.from(root.querySelectorAll('.hero-slide'));
+  const dots=Array.from(root.querySelectorAll('.hero-showcase-dots button'));
+  if(slides.length<2)return;
+  root.dataset.carouselReady='true';
+  let current=0,timer=null,touchStartX=0,touchStartY=0;
+  const labels=['CampusNexus product ecosystem','Education technology','Business systems','Websites and e-commerce','Custom applications'];
+  const count=root.querySelector('.hero-showcase-count');
+  const status=root.querySelector('.hero-showcase-status');
+  function show(index,announce){
+   current=(index+slides.length)%slides.length;
+   slides.forEach((slide,i)=>{const active=i===current;slide.classList.toggle('is-active',active);slide.setAttribute('aria-hidden',active?'false':'true');});
+   dots.forEach((dot,i)=>{const active=i===current;dot.classList.toggle('is-active',active);dot.setAttribute('aria-pressed',active?'true':'false');});
+   if(count)count.textContent=String(current+1).padStart(2,'0')+' / '+String(slides.length).padStart(2,'0');
+   if(announce&&status)status.textContent='Showing '+labels[current%labels.length];
+  }
+  function stop(){if(timer){window.clearInterval(timer);timer=null;}}
+  function start(){
+   stop();
+   const desktopHover=window.matchMedia('(hover: hover) and (pointer: fine)').matches&&root.matches(':hover');
+   if(!document.hidden&&!desktopHover)timer=window.setInterval(()=>show(current+1,false),4200);
+  }
+  root.querySelector('.prev')?.addEventListener('click',()=>{show(current-1,true);start();});
+  root.querySelector('.next')?.addEventListener('click',()=>{show(current+1,true);start();});
+  dots.forEach((dot,i)=>dot.addEventListener('click',()=>{show(i,true);start();}));
+  root.addEventListener('mouseenter',()=>{if(window.matchMedia('(hover: hover) and (pointer: fine)').matches)stop();});
+  root.addEventListener('mouseleave',start);
+  root.addEventListener('focusin',stop);
+  root.addEventListener('focusout',()=>window.setTimeout(start,150));
+  root.addEventListener('keydown',event=>{if(event.key==='ArrowLeft'){event.preventDefault();show(current-1,true);start();}if(event.key==='ArrowRight'){event.preventDefault();show(current+1,true);start();}});
+  root.addEventListener('touchstart',event=>{const t=event.changedTouches[0];touchStartX=t.clientX;touchStartY=t.clientY;},{passive:true});
+  root.addEventListener('touchend',event=>{const t=event.changedTouches[0],dx=t.clientX-touchStartX,dy=t.clientY-touchStartY;if(Math.abs(dx)>45&&Math.abs(dx)>Math.abs(dy))show(current+(dx<0?1:-1),true);start();},{passive:true});
+  document.addEventListener('visibilitychange',start);
+  show(0,false);start();
  }
- function stop(){if(timer){clearInterval(timer);timer=null;}}
- function start(){stop();if(!reduced.matches&&!document.hidden&&!root.matches(':hover')&&!root.contains(document.activeElement))timer=setInterval(()=>show(current+1,false),4800);}
- root.querySelector('.prev')?.addEventListener('click',()=>{show(current-1,true);start();});
- root.querySelector('.next')?.addEventListener('click',()=>{show(current+1,true);start();});
- dots.forEach((dot,i)=>dot.addEventListener('click',()=>{show(i,true);start();}));
- root.addEventListener('mouseenter',stop);
- root.addEventListener('mouseleave',start);
- root.addEventListener('focusin',stop);
- root.addEventListener('focusout',()=>setTimeout(start,0));
- root.addEventListener('keydown',event=>{if(event.key==='ArrowLeft'){event.preventDefault();show(current-1,true);start();}if(event.key==='ArrowRight'){event.preventDefault();show(current+1,true);start();}});
- root.addEventListener('touchstart',event=>{const t=event.changedTouches[0];touchStartX=t.clientX;touchStartY=t.clientY;stop();},{passive:true});
- root.addEventListener('touchend',event=>{const t=event.changedTouches[0],dx=t.clientX-touchStartX,dy=t.clientY-touchStartY;if(Math.abs(dx)>45&&Math.abs(dx)>Math.abs(dy)){show(current+(dx<0?1:-1),true);}start();},{passive:true});
- document.addEventListener('visibilitychange',start);
- reduced.addEventListener?.('change',start);
- show(0,false);start();
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initHeroShowcase,{once:true});
+ else initHeroShowcase();
 })();
-
 document.getElementById('bookingModal').addEventListener('click',e=>{if(e.target.id==='bookingModal')closeBooking()});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeBooking()});
 function toggleMobile(){
