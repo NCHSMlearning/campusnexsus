@@ -1130,8 +1130,6 @@
             <li><a href="#" onclick="switchTab('audit')"><i class="fas fa-shield-alt"></i> Audit Logs</a></li>
             <li><a href="#" onclick="switchTab('analytics')"><i class="fas fa-chart-bar"></i> Analytics</a></li>
             <li><a href="#" onclick="switchTab('cms')"><i class="fas fa-layer-group"></i> Website CMS <span class="badge orange">CMS</span></a></li>
-            <li><a href="#"><i class="fas fa-users"></i> Agents</a></li>
-            <li><a href="#"><i class="fas fa-cog"></i> Settings</a></li>
         </ul>
 
         <div class="sidebar-footer">
@@ -1160,18 +1158,9 @@
                 </div>
             </div>
             <div class="topbar-right">
-                <span class="status">
-                    <span class="dot"></span>
-                    <span id="agentStatusText">Online</span>
-                </span>
+                <span class="status"><span class="dot"></span><span>Secure admin session</span></span>
                 <button class="btn" onclick="refreshAll()">
                     <i class="fas fa-sync"></i> Refresh
-                </button>
-                <button class="btn btn-outline" onclick="toggleStatus()">
-                    <i class="fas fa-power-off"></i> <span id="statusToggleText">Go Offline</span>
-                </button>
-                <button class="btn btn-danger" onclick="clearAllData()">
-                    <i class="fas fa-trash"></i> Clear
                 </button>
             </div>
         </header>
@@ -1683,81 +1672,32 @@ async function loadVisitors() {
 // RENDER VISITORS
 // ============================================================
 function renderVisitors() {
-    if (!visitorTableBody) return;
-    
-    const filter = visitorFilter ? visitorFilter.value : 'all';
-    const search = searchVisitors ? searchVisitors.value.toLowerCase() : '';
-
-    let filtered = allVisitors.filter(v => {
-        if (filter !== 'all' && v.status !== filter) return false;
-        if (search) {
-            const id = (v.visitor_id || '').toLowerCase();
-            const page = (v.current_page || '').toLowerCase();
-            const country = (v.country || '').toLowerCase();
-            return id.includes(search) || page.includes(search) || country.includes(search);
-        }
+    if(!visitorTableBody)return;
+    const filter=visitorFilter?visitorFilter.value:'all';
+    const search=searchVisitors?searchVisitors.value.toLowerCase():'';
+    const filtered=allVisitors.filter(v=>{
+        if(filter!=='all'&&v.status!==filter)return false;
+        if(search){const hay=[v.visitor_id,v.current_page,v.country].join(' ').toLowerCase();return hay.includes(search);}
         return true;
     });
-
-    if (filtered.length === 0) {
-        visitorTableBody.innerHTML = `
-            <tr>
-                <td colspan="7">
-                    <div class="empty-state">
-                        <i class="fas fa-user-slash"></i>
-                        <h3>No visitors found</h3>
-                        <p>Visitors will appear here when they visit your site.</p>
-                    </div>
-                </td>
-            </tr>
-        `;
-        return;
-    }
-
-    const colors = ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444'];
-
-    visitorTableBody.innerHTML = filtered.map((v, index) => {
-        const visitorId = v.visitor_id || 'Anonymous';
-        const initials = visitorId.slice(0, 2).toUpperCase();
-        const status = v.status || 'offline';
-        const statusClass = status === 'online' ? 'online' : status === 'idle' ? 'idle' : 'offline';
-        const color = colors[index % colors.length];
-        const time = v.last_active ? new Date(v.last_active).toLocaleString() : 'Never';
-        const firstSeen = v.started_at ? new Date(v.started_at).toLocaleString() : 'Unknown';
-        const pageUrl = v.current_page || '/';
-
-        return `
-            <tr>
-                <td>
-                    <span class="visitor-avatar" style="background:${color}">${initials || 'V'}</span>
-                    ${visitorId}
-                </td>
-                <td>${v.ip_address || 'N/A'}</td>
-                <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${pageUrl}">
-                    ${pageUrl.length > 50 ? pageUrl.slice(0, 50) + '...' : pageUrl}
-                </td>
-                <td>
-                    <span class="status-badge ${statusClass}">
-                        <span class="status-dot ${statusClass}"></span>
-                        ${status}
-                    </span>
-                </td>
-                <td>${firstSeen}</td>
-                <td>${time}</td>
-                <td>
-                    <button class="btn" style="padding:4px 12px;font-size:0.7rem;background:#10b981;color:#fff;border:none;border-radius:6px;cursor:pointer;" onclick="viewVisitor('${v.visitor_id}')">
-                        <i class="fas fa-eye"></i> View
-                    </button>
-                </td>
-            </tr>
-        `;
+    if(!filtered.length){visitorTableBody.innerHTML='<tr><td colspan="7"><div class="empty-state"><i class="fas fa-user-slash"></i><h3>No visitors found</h3><p>Visitors will appear here when they visit your site and consent to analytics.</p></div></td></tr>';return;}
+    const colors=['#10b981','#3b82f6','#8b5cf6','#f59e0b','#ef4444'];
+    visitorTableBody.innerHTML=filtered.map((v,index)=>{
+        const id=String(v.visitor_id||'Anonymous'),initials=adminEscape(id.slice(0,2).toUpperCase());
+        const status=['online','idle','offline'].includes(v.status)?v.status:'offline';
+        const statusClass=status==='online'?'online':status==='idle'?'idle':'offline';
+        const time=v.last_active?new Date(v.last_active).toLocaleString():'Never';
+        const firstSeen=v.started_at?new Date(v.started_at).toLocaleString():'Unknown';
+        const page=String(v.current_page||'/');
+        return '<tr><td><span class="visitor-avatar" style="background:'+colors[index%colors.length]+'">'+initials+'</span> '+adminEscape(id)+'</td><td>'+adminEscape(v.ip_address||'Not collected')+'</td><td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+adminEscape(page)+'">'+adminEscape(page.length>50?page.slice(0,50)+'...':page)+'</td><td><span class="status-badge '+statusClass+'"><span class="status-dot '+statusClass+'"></span>'+adminEscape(status)+'</span></td><td>'+adminEscape(firstSeen)+'</td><td>'+adminEscape(time)+'</td><td><button class="btn" style="padding:4px 12px;font-size:.7rem;background:#10b981;color:#fff;border:none;border-radius:6px;cursor:pointer" onclick="viewVisitor(\''+adminEscape(id)+'\')"><i class="fas fa-eye"></i> View</button></td></tr>';
     }).join('');
-
-    const online = allVisitors.filter(v => v.status === 'online').length;
-    if (visitorBadge) visitorBadge.textContent = online;
-    if (tabVisitorBadge) tabVisitorBadge.textContent = allVisitors.length;
+    const online=allVisitors.filter(v=>v.status==='online').length;
+    if(visitorBadge)visitorBadge.textContent=online;
+    if(tabVisitorBadge)tabVisitorBadge.textContent=allVisitors.length;
 }
 
+// ============================================================
+// LOAD CHATS - FIXED
 // ============================================================
 // LOAD CHATS - FIXED
 // ============================================================
@@ -1830,71 +1770,31 @@ async function loadChats() {
 // RENDER CHATS
 // ============================================================
 function renderChats() {
-    if (!chatList) return;
-    
-    const filter = chatFilter ? chatFilter.value : 'all';
-    const search = searchChats ? searchChats.value.toLowerCase() : '';
-
-    let filtered = allChats.filter(chat => {
-        if (filter !== 'all' && chat.status !== filter) return false;
-        if (search) {
-            const name = (chat.visitor_name || 'Anonymous Visitor').toLowerCase();
-            const messages = chat.messages || [];
-            const msgText = messages.map(m => m.message || '').join(' ').toLowerCase();
-            return name.includes(search) || msgText.includes(search);
-        }
+    if(!chatList)return;
+    const filter=chatFilter?chatFilter.value:'all',search=searchChats?searchChats.value.toLowerCase():'';
+    const filtered=allChats.filter(chat=>{
+        if(filter!=='all'&&chat.status!==filter)return false;
+        if(search){const name=(chat.visitor_name||'Anonymous Visitor').toLowerCase();const msg=(chat.messages||[]).map(m=>m.message||'').join(' ').toLowerCase();return name.includes(search)||msg.includes(search);}
         return true;
     });
-
-    if (filtered.length === 0) {
-        chatList.innerHTML = `
-            <div class="empty-state">
-                <i class="fas fa-comment-slash"></i>
-                <h3>No conversations yet</h3>
-                <p>Visitors will appear here when they start chatting.</p>
-            </div>
-        `;
-        return;
-    }
-
-    const colors = ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444'];
-
-    chatList.innerHTML = filtered.map((chat, index) => {
-        const isUnread = chat.messages && chat.messages.some(m => !m.is_read && m.sender === 'visitor');
-        const lastMsg = chat.messages && chat.messages.length > 0 ? chat.messages[chat.messages.length - 1] : null;
-        const name = chat.visitor_name || 'Anonymous Visitor';
-        const initials = name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
-        const time = chat.created_at ? new Date(chat.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now';
-        const color = colors[index % colors.length];
-        const statusColor = chat.status === 'active' ? '#10b981' : chat.status === 'pending' ? '#f59e0b' : '#94a3b8';
-
-        return `
-            <div class="chat-item ${isUnread ? 'unread' : ''}" data-chatid="${chat.chat_id}" onclick="openReplyModal('${chat.chat_id}')" style="cursor:pointer;">
-                <div class="chat-avatar" style="background:${color}">${initials || 'V'}</div>
-                <div class="chat-info">
-                    <div class="chat-name">
-                        ${name}
-                        ${chat.status === 'active' ? '<span class="online-dot"></span>' : ''}
-                    </div>
-                    <div class="chat-message-preview">${lastMsg ? lastMsg.message : 'No messages yet'}</div>
-                    <div class="chat-meta">
-                        <span>${chat.visitor_page || 'Unknown page'}</span>
-                        <span>•</span>
-                        <span>${chat.messages ? chat.messages.length : 0} messages</span>
-                        <span>•</span>
-                        <span style="color:${statusColor}">${chat.status}</span>
-                    </div>
-                </div>
-                <div class="chat-time">${time}</div>
-            </div>
-        `;
+    if(!filtered.length){chatList.innerHTML='<div class="empty-state"><i class="fas fa-comment-slash"></i><h3>No conversations yet</h3><p>Visitor conversations will appear here when available.</p></div>';return;}
+    const colors=['#10b981','#3b82f6','#8b5cf6','#f59e0b','#ef4444'];
+    chatList.innerHTML=filtered.map((chat,index)=>{
+        const unread=(chat.messages||[]).some(m=>!m.is_read&&m.sender==='visitor');
+        const last=(chat.messages||[]).at(-1),name=String(chat.visitor_name||'Anonymous Visitor');
+        const initials=adminEscape(name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)||'V');
+        const time=chat.created_at?new Date(chat.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'Just now';
+        const color=colors[index%colors.length],status=['active','pending','closed'].includes(chat.status)?chat.status:'unknown';
+        const statusColor=status==='active'?'#10b981':status==='pending'?'#f59e0b':'#94a3b8';
+        return '<div class="chat-item '+(unread?'unread':'')+'" data-chatid="'+adminEscape(chat.chat_id)+'" onclick="openReplyModal(\''+adminEscape(chat.chat_id)+'\')" style="cursor:pointer"><div class="chat-avatar" style="background:'+color+'">'+initials+'</div><div class="chat-info"><div class="chat-name">'+adminEscape(name)+(status==='active'?'<span class="online-dot"></span>':'')+'</div><div class="chat-message-preview">'+adminEscape(last?last.message:'No messages yet')+'</div><div class="chat-meta"><span>'+adminEscape(chat.visitor_page||'Unknown page')+'</span><span>•</span><span>'+(chat.messages||[]).length+' messages</span><span>•</span><span style="color:'+statusColor+'">'+adminEscape(status)+'</span></div></div><div class="chat-time">'+adminEscape(time)+'</div></div>';
     }).join('');
-
-    const active = allChats.filter(c => c.status === 'active').length;
-    if (chatBadge) chatBadge.textContent = active;
-    if (tabChatBadge) tabChatBadge.textContent = allChats.length;
+    const active=allChats.filter(c=>c.status==='active').length;
+    if(chatBadge)chatBadge.textContent=active;
+    if(tabChatBadge)tabChatBadge.textContent=allChats.length;
 }
 
+// ============================================================
+// UPDATE STATS
 // ============================================================
 // UPDATE STATS
 // ============================================================
@@ -2156,7 +2056,7 @@ if (replyInputEl) replyInputEl.addEventListener('input', handleAgentTyping);
 // ============================================================
 // TOGGLE AGENT STATUS
 // ============================================================
-async function toggleStatus() {
+async async function toggleStatus() {
     agentOnline = !agentOnline;
     const statusToggle = document.getElementById('statusToggleText');
     const agentStatus = document.getElementById('agentStatusText');
@@ -2186,6 +2086,8 @@ function refreshAll() {
     if (currentTab === 'visitors') loadVisitors();
     else if (currentTab === 'chats') loadChats();
     else if (currentTab === 'analytics') loadAnalytics();
+    else if (currentTab === 'bookings') loadBookings();
+    else if (currentTab === 'audit') loadAuditLogs();
     else if (currentTab === 'cms') cmsLoad();
     else {
         loadVisitors();
@@ -2338,10 +2240,10 @@ function subscribeToUpdates() {
                 if (historyEl) {
                     const div = document.createElement('div');
                     div.className = 'msg visitor';
-                    div.innerHTML = `
-                        ${payload.new.message}
-                        <span class="time">${payload.new.created_at ? new Date(payload.new.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</span>
-                    `;
+                    const messageText=document.createElement('span');messageText.textContent=payload.new.message||'';
+                    const timeText=document.createElement('span');timeText.className='time';
+                    timeText.textContent=payload.new.created_at?new Date(payload.new.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'';
+                    div.append(messageText,timeText);
                     historyEl.appendChild(div);
                     historyEl.scrollTop = historyEl.scrollHeight;
                 }
