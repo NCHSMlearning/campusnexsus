@@ -293,6 +293,52 @@ input:focus,select:focus,textarea:focus{border-color:#087cf2!important;box-shado
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 </style>
+
+<style id="campusnexus-education-upgrade">
+.cn-education{padding:96px 0;background:linear-gradient(180deg,#f5f9ff 0%,#fff 100%);color:#14243a}
+.cn-education-intro{max-width:790px;margin:0 auto 42px;text-align:center}
+.cn-education-intro h2{font-size:clamp(2rem,4vw,3.25rem);line-height:1.08;letter-spacing:-.045em;margin:16px 0}
+.cn-education-intro h2 span{color:#087cf2}
+.cn-education-intro>p{color:#61718a;font-size:1.04rem;line-height:1.8}
+.cn-education-actions{display:flex;align-items:center;justify-content:center;gap:22px;flex-wrap:wrap;margin-top:26px}
+.cn-text-link{font-weight:800;color:#12345b;text-decoration:none}
+.cn-education-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.cn-education-card{background:#fff;border:1px solid #e2eaf4;border-radius:22px;padding:28px;box-shadow:0 12px 34px rgba(20,48,82,.055)}
+.cn-education-primary{border-color:#b8d8ff;box-shadow:0 16px 42px rgba(8,124,242,.09)}
+.cn-education-icon{width:48px;height:48px;display:grid;place-items:center;border-radius:15px;background:#eaf3ff;color:#087cf2;font-size:20px;margin-bottom:20px}
+.cn-education-label{font-size:10px;font-weight:900;letter-spacing:.13em;color:#087cf2}
+.cn-education-card h3{font-size:1.28rem;margin:9px 0}
+.cn-education-card p{color:#66758b;line-height:1.7;margin:0 0 16px}
+.cn-education-card ul{list-style:none;padding:0;margin:0;display:grid;gap:11px}
+.cn-education-card li{position:relative;padding-left:23px;color:#31445e;line-height:1.5}
+.cn-education-card li:before{content:"✓";position:absolute;left:0;color:#0b9b71;font-weight:900}
+.cn-education-card small{display:block;margin-top:18px;color:#78869a;line-height:1.6}
+.cn-education-foot{display:flex;gap:12px;align-items:flex-start;margin-top:22px;padding:16px 18px;border-radius:14px;background:#edf5ff;color:#526781;font-size:13px;line-height:1.65}
+.cn-education-foot i{color:#087cf2;margin-top:3px}
+@media(max-width:760px){
+ .cn-education{padding:64px 0}
+ .cn-education-grid{grid-template-columns:1fr;gap:13px}
+ .cn-education-card{padding:22px;border-radius:18px}
+ .cn-education-intro{text-align:left;margin-bottom:28px}
+ .cn-education-actions{justify-content:flex-start;gap:16px}
+ .cn-education-actions .btn{width:100%;justify-content:center}
+ .cn-education-foot{font-size:12px}
+}
+@media(max-width:560px){
+ .proof{display:flex;align-items:flex-start;gap:10px;max-width:100%;min-width:0;flex-wrap:wrap}
+ .proof>span{display:block;min-width:0;max-width:100%;font-size:12px;line-height:1.55;overflow-wrap:anywhere}
+ .proof .avatars{flex:0 0 auto}
+ .hero-grid{padding-top:30px;padding-bottom:34px}
+ .hero-copy{padding:12px 0}
+ .hero h1{font-size:clamp(2.05rem,8.8vw,2.8rem);line-height:1.07}
+ .hero-visual{margin-top:14px}
+ .trust-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+ .trust-item{min-width:0;justify-content:flex-start;font-size:12px}
+ .solution-grid{grid-template-columns:1fr!important}
+ .cn-tier-grid{grid-template-columns:1fr!important}
+}
+</style>
+
 </head>
 <body>
 
@@ -300,7 +346,7 @@ input:focus,select:focus,textarea:focus{border-color:#087cf2!important;box-shado
 
 <nav class="nav" data-cms-component="navigation"><div class="container">
   <a class="brand-image" href="#home" aria-label="CampusNexus home"><img src="images/logo-icon.png" alt="CampusNexus logo"></a>
-  <div class="links"><a href="#home">Home</a><a href="#solutions">Solutions</a><a href="#pricing">Pricing</a><a href="#platform">Platforms</a><a href="#projects">Our Work</a><a href="#leadership">Our Team</a><a href="#administration">Admin</a><a href="#process">How We Work</a><a href="#industries">Industries</a><a href="#faq">FAQ</a><a class="nav-button" href="#" onclick="openBooking();return false">Book a Consultation <i class="fa-solid fa-arrow-right"></i></a></div>
+  <div class="links"><a href="#home">Home</a><a href="#solutions">Solutions</a><a href="#pricing">Pricing</a><a href="#education-suite">Education ERP</a><a href="#education-suite">Education ERP</a><a href="#platform">Platforms</a><a href="#projects">Our Work</a><a href="#leadership">Our Team</a><a href="#administration">Admin</a><a href="#process">How We Work</a><a href="#industries">Industries</a><a href="#faq">FAQ</a><a class="nav-button" href="#" onclick="openBooking();return false">Book a Consultation <i class="fa-solid fa-arrow-right"></i></a></div>
   <button class="menu" onclick="toggleMobile()" aria-label="Open menu"><i class="fa-solid fa-bars"></i></button>
 </div></nav>
 <div class="mobile" id="mobile"><a href="#home">Home</a><a href="#solutions">Solutions</a><a href="#pricing">Pricing</a><a href="#platform">Platforms</a><a href="#projects">Our Work</a><a href="#administration">Admin</a><a href="#process">How We Work</a><a href="#industries">Industries</a><a href="#faq">FAQ</a><a href="#" onclick="openBooking();closeMobile();return false">Book a Consultation</a></div>
@@ -376,6 +422,53 @@ input:focus,select:focus,textarea:focus{border-color:#087cf2!important;box-shado
       <article class="solution"><div class="solution-icon"><i class="fa-solid fa-wallet"></i></div><h3>Fee Management</h3><p>Fee structures, payment tracking and outstanding balance visibility for academic administration.</p><a class="link" href="#product-lab">See platform →</a></article>
       <article class="solution"><div class="solution-icon"><i class="fa-solid fa-ticket"></i></div><h3>Support Tickets</h3><p>Issue tracking, priority management and resolution monitoring for support workflows.</p><a class="link" href="#contact">Get support →</a></article>
     </div>
+  </div>
+
+</section>
+
+<section class="cn-education" id="education-suite" aria-labelledby="cn-education-title">
+  <div class="container">
+    <div class="cn-education-intro">
+      <span class="cn-kicker"><i class="fa-solid fa-graduation-cap"></i> CAMPUSNEXUS EDUCATION ERP</span>
+      <h2 id="cn-education-title">One connected system for <span>the whole institution.</span></h2>
+      <p>Bring academic, student, staff and management workflows into one coordinated platform. Start with the modules you need and scope additional capabilities around your institution's policies and operations.</p>
+      <div class="cn-education-actions">
+        <a class="btn gold" href="#" onclick="openBooking();return false">Request an institution demo <i class="fa-solid fa-arrow-right"></i></a>
+        <a class="cn-text-link" href="#pricing">Compare packages <i class="fa-solid fa-arrow-down"></i></a>
+      </div>
+    </div>
+    <div class="cn-education-grid">
+      <article class="cn-education-card cn-education-primary">
+        <div class="cn-education-icon"><i class="fa-solid fa-user-graduate"></i></div>
+        <span class="cn-education-label">LEARNER EXPERIENCE</span>
+        <h3>Students & learners</h3>
+        <p>A clear self-service experience for the day-to-day academic journey.</p>
+        <ul><li>Personal profile and programme information</li><li>Courses, timetables and learning resources</li><li>Attendance, assessments and results</li><li>Fee balances and support requests</li></ul>
+      </article>
+      <article class="cn-education-card">
+        <div class="cn-education-icon"><i class="fa-solid fa-chalkboard-user"></i></div>
+        <span class="cn-education-label">TEACHING & LEARNING</span>
+        <h3>Lecturers & trainers</h3>
+        <p>Tools to organise teaching, assessment and learner progress.</p>
+        <ul><li>Class lists and course allocations</li><li>Learning materials and assignments</li><li>Attendance and assessment workflows</li><li>Marks, results and performance reports</li></ul>
+      </article>
+      <article class="cn-education-card">
+        <div class="cn-education-icon"><i class="fa-solid fa-building-columns"></i></div>
+        <span class="cn-education-label">INSTITUTIONAL CONTROL</span>
+        <h3>Administrators & management</h3>
+        <p>Shared visibility over institutional records, processes and decisions.</p>
+        <ul><li>Admissions and student records</li><li>Programmes, units and academic calendars</li><li>Finance, fee tracking and reporting</li><li>Role-based access and audit workflows</li></ul>
+      </article>
+      <article class="cn-education-card">
+        <div class="cn-education-icon"><i class="fa-solid fa-sitemap"></i></div>
+        <span class="cn-education-label">GROWTH & CONFIGURATION</span>
+        <h3>Designed around your institution</h3>
+        <p>Extend the platform as your structure, services and requirements grow.</p>
+        <ul><li>Multi-campus structure and consolidated reporting</li><li>Curriculum and programme configuration</li><li>Optional parent, library and communication portals</li><li>Integrations and custom institutional workflows</li></ul>
+        <small>Additional modules and integrations are scoped to requirements and may affect implementation and subscription costs.</small>
+      </article>
+    </div>
+    <div class="cn-education-foot"><i class="fa-solid fa-circle-info"></i><span>CampusNexus supports Nursing, TVET and higher-learning use cases. Final module availability, integrations and workflows are confirmed during institutional discovery and implementation.</span></div>
   </div>
 </section>
 
