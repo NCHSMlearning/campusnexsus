@@ -1,7 +1,7 @@
-# 🚀 CampusNexus - Digital Learning Platform
+# 🚀 CampusNexus — Digital Systems. Built Around You.
 
-[![Website](https://img.shields.io/badge/Website-campusnexus.co.ke-0A3D62?style=for-the-badge&logo=google-chrome)](http://campusnexus.co.ke)
-[![Version](https://img.shields.io/badge/Version-7.0-10b981?style=for-the-badge)](https://github.com/NCHSMlearning/campusnexus)
+[![Website](https://img.shields.io/badge/Website-campusnexus.co.ke-0A3D62?style=for-the-badge&logo=google-chrome)](https://campusnexus.co.ke)
+[![Version](https://img.shields.io/badge/Version-7.0-10b981?style=for-the-badge)](https://github.com/NCHSMlearning/campusnexsus)
 [![Status](https://img.shields.io/badge/Status-Active-34d399?style=for-the-badge)]()
 [![Mobile](https://img.shields.io/badge/Mobile-Friendly-Yes-059669?style=for-the-badge)]()
 [![License](https://img.shields.io/badge/License-All%20Rights%20Reserved-d4af37?style=for-the-badge)]()
@@ -69,21 +69,7 @@
 
 ## 💰 Pricing Packages
 
-| Feature | 🚀 Basic | ⭐ Standard | 🛡️ Premium |
-|---------|----------|------------|------------|
-| **Price (KES/month)** | 25,000 | 30,000 | 45,000 |
-| **Full Portal Access** | ✅ | ✅ | ✅ |
-| **Student Management** | ✅ | ✅ | ✅ |
-| **Staff Management** | ✅ | ✅ | ✅ |
-| **Course Management** | ✅ | ✅ | ✅ |
-| **Attendance Tracking** | ✅ | ✅ | ✅ |
-| **Exam Management** | ✅ | ✅ | ✅ |
-| **Staff Training** | ❌ | ✅ | ✅ |
-| **Student Training** | ❌ | ❌ | ✅ |
-| **IT Support** | ❌ | ❌ | ✅ |
-| **Cybersecurity** | ❌ | ❌ | ✅ |
-
-> 💡 **Most Popular:** The **Standard** package offers the best value for most institutions.
+The current subscription packages, capacities, annual rates and trial terms are maintained on the [official CampusNexus website](https://campusnexus.co.ke/#pricing). Please use that page as the source of truth rather than relying on copied prices in this README. Final scope and third-party charges are confirmed in a written quotation.
 
 ---
 
