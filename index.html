@@ -1603,5 +1603,44 @@ section img{max-width:100%}
 }
 </style>
 
+
+<style id="campusnexus-founder-organic-portrait">
+/* Blend the original black-studio portrait into the founder section.
+   Lighten reveals the blue gradient beneath the photo wherever the source is black. */
+#founder-mission .cnf-main{align-items:stretch!important}
+#founder-mission .cnf-photo{
+ position:relative!important;display:block!important;isolation:isolate!important;
+ width:100%!important;height:auto!important;min-height:0!important;
+ aspect-ratio:.70!important;overflow:hidden!important;clip-path:none!important;
+ background:radial-gradient(ellipse 78% 76% at 50% 46%,
+   #123f6a 0%,#0b3157 48%,#174b70 70%,#edf6f9 100%)!important;
+}
+#founder-mission .cnf-photo img{
+ position:absolute!important;inset:0!important;display:block!important;
+ width:100%!important;height:100%!important;min-height:0!important;max-height:none!important;
+ object-fit:cover!important;object-position:center 24%!important;
+ mix-blend-mode:lighten!important;filter:none!important;
+ -webkit-mask-image:radial-gradient(ellipse 78% 78% at 50% 48%,#000 61%,rgba(0,0,0,.92) 72%,transparent 100%)!important;
+ mask-image:radial-gradient(ellipse 78% 78% at 50% 48%,#000 61%,rgba(0,0,0,.92) 72%,transparent 100%)!important;
+}
+#founder-mission .cnf-photo:after{display:none!important;content:none!important}
+#founder-mission .cnf-photo-art{display:none!important}
+@media(max-width:760px){
+ #founder-mission .cnf-photo{
+  width:100%!important;max-width:520px!important;min-height:0!important;
+  height:auto!important;aspect-ratio:.70!important;margin:0 auto!important;
+  background:radial-gradient(ellipse 78% 76% at 50% 46%,
+    #123f6a 0%,#0b3157 48%,#174b70 70%,#edf6f9 100%)!important;
+ }
+ #founder-mission .cnf-photo img{
+  position:absolute!important;inset:0!important;width:100%!important;height:100%!important;
+  min-height:0!important;max-height:none!important;object-fit:cover!important;
+  object-position:center 24%!important;mix-blend-mode:lighten!important;
+  -webkit-mask-image:radial-gradient(ellipse 78% 78% at 50% 48%,#000 61%,rgba(0,0,0,.92) 72%,transparent 100%)!important;
+  mask-image:radial-gradient(ellipse 78% 78% at 50% 48%,#000 61%,rgba(0,0,0,.92) 72%,transparent 100%)!important;
+ }
+}
+</style>
+
 </body>
 </html>
