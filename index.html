@@ -466,23 +466,33 @@ input:focus,select:focus,textarea:focus{border-color:#087cf2!important;box-shado
 @media(prefers-reduced-motion:reduce){#leadership .cn-leader-card{transition:none}}
 </style>
 <section id="founder-mission" aria-labelledby="founder-mission-title">
- <div class="container fm-grid">
-  <div class="fm-founder">
-   <div class="fm-photo-wrap">
-    <img class="fm-photo" src="images/team/kevin-matoka.jpg" alt="Kevin Matoka Tiong’i, Founder and Main Engineer of CampusNexus" width="208" height="208" loading="eager" decoding="async">
-    <div class="fm-founder-label"><strong>Kevin Matoka Tiong’i</strong><span>Founder &amp; Main Engineer · CampusNexus</span></div>
+ <div class="container">
+  <div class="cn-founder-poster">
+   <div class="cn-poster-brand">
+    <span class="cn-poster-mark"><i class="fa-solid fa-graduation-cap" aria-hidden="true"></i></span>
+    <span class="cn-poster-wordmark">Campus<span>Nexus</span><small>Digital Campus Solutions</small></span>
    </div>
+   <div class="cn-poster-layout">
+    <div class="cn-poster-copy">
+     <span class="cn-poster-quote-mark">“</span>
+     <h2 id="founder-mission-title">Technology alone isn’t enough. <em>The real impact comes from rethinking how institutions learn, work and grow.</em></h2>
+     <p>We empower institutions and organisations with practical, reliable and secure digital solutions that simplify operations, strengthen learning and create lasting impact.</p>
+     <div class="cn-poster-rule"></div>
+     <div class="cn-poster-founder">
+      <strong>Kevin Matoka Tiong’i</strong>
+      <span>Founder &amp; Main Engineer</span>
+     </div>
+     <div class="cn-poster-url"><i class="fa-solid fa-globe" aria-hidden="true"></i> campusnexus.co.ke</div>
+    </div>
+    <div class="cn-poster-photo">
+     <img src="images/team/kevin-matoka.jpg" alt="Kevin Matoka Tiong’i, Founder and Main Engineer of CampusNexus" loading="eager" decoding="async">
+    </div>
+   </div>
+   <div class="cn-poster-accent" aria-hidden="true"></div>
   </div>
-  <div class="fm-copy">
-   <span class="tag">THE THINKING BEHIND CAMPUSNEXUS</span>
-   <h2 id="founder-mission-title">Technology should move your organisation forward.</h2>
-   <p class="fm-intro"><strong>Kevin Matoka Tiong’i</strong> is the Founder &amp; Main Engineer of CampusNexus, where he leads the technical vision, product engineering and development of digital solutions. His approach is grounded in a simple principle: technology should solve real problems, simplify everyday work and create measurable value for the people and organisations using it.</p>
-   <p class="fm-intro">Under his technical leadership, CampusNexus focuses on education platforms, institutional management systems, business solutions, websites and custom software—designed around each organisation’s workflows, priorities and growth.</p>
-   <div class="fm-values">
-    <article class="fm-value"><div class="fm-icon"><i class="fa-solid fa-bullseye" aria-hidden="true"></i></div><h3>Our Mission</h3><p>To design and deliver practical, reliable and accessible digital solutions that simplify work, connect people and help organisations achieve more.</p></article>
-    <article class="fm-value"><div class="fm-icon"><i class="fa-solid fa-eye" aria-hidden="true"></i></div><h3>Our Vision</h3><p>To become a trusted technology partner enabling institutions and businesses to grow through purposeful, connected and sustainable digital innovation.</p></article>
-   </div>
-   <div class="fm-signoff">“Build with purpose. Engineer for impact. Keep people at the centre of every solution.”</div>
+  <div class="cn-founder-purpose">
+   <article class="fm-value"><div class="fm-icon"><i class="fa-solid fa-bullseye" aria-hidden="true"></i></div><h3>Our Mission</h3><p>To design and deliver practical, reliable and accessible digital solutions that simplify work, connect people and help organisations achieve more.</p></article>
+   <article class="fm-value"><div class="fm-icon"><i class="fa-solid fa-eye" aria-hidden="true"></i></div><h3>Our Vision</h3><p>To become a trusted technology partner enabling institutions and businesses to grow through purposeful, connected and sustainable digital innovation.</p></article>
   </div>
  </div>
 </section>
@@ -1321,6 +1331,64 @@ document.getElementById('agentStartForm').addEventListener('submit',startAgentCh
   #founder-mission .fm-signoff { margin-top: 17px !important; }
   /* Avoid two floating contact buttons covering the reading area on phones. */
   .contact-float a.wa { display: none !important; }
+}
+</style>
+
+
+<style id="campusnexus-founder-poster-design">
+#founder-mission{padding:clamp(38px,6vw,76px) 0;background:linear-gradient(135deg,#f3f8fb,#fff 55%,#edf6f8)}
+.cn-founder-poster{position:relative;isolation:isolate;overflow:hidden;background:#fff;border:1px solid #e4edf3;box-shadow:0 24px 70px rgba(7,35,63,.12);padding:clamp(22px,4vw,48px);min-height:620px}
+.cn-founder-poster:before{content:"";position:absolute;z-index:-1;left:-90px;top:-145px;width:260px;height:260px;border:12px solid #d9edf1;transform:rotate(35deg);opacity:.75}
+.cn-poster-brand{display:flex;justify-content:flex-end;align-items:center;gap:12px;margin-bottom:20px;position:relative;z-index:2}
+.cn-poster-mark{width:47px;height:42px;display:grid;place-items:center;color:#082b52;font-size:28px;border-right:2px solid #d7e1e9;padding-right:12px}
+.cn-poster-wordmark{font-size:clamp(21px,3vw,31px);font-weight:900;letter-spacing:-1.3px;color:#082b52;line-height:1}
+.cn-poster-wordmark span{color:#d6a329}
+.cn-poster-wordmark small{display:block;font-size:10px;letter-spacing:.04em;font-weight:600;color:#536c83;margin-top:5px}
+.cn-poster-layout{display:grid;grid-template-columns:1.04fr .96fr;align-items:stretch;min-height:490px;position:relative}
+.cn-poster-copy{padding:8px 24px 12px 4px;display:flex;flex-direction:column;align-items:flex-start;position:relative;z-index:2}
+.cn-poster-quote-mark{font-size:82px;line-height:.7;font-weight:900;color:#078c91;height:62px}
+.cn-poster-copy h2{font-size:clamp(27px,3.2vw,45px);line-height:1.08;letter-spacing:-1.7px;color:#082b52;margin:8px 0 19px;max-width:600px}
+.cn-poster-copy h2 em{font-style:normal;color:#087f86}
+.cn-poster-copy>p{font-size:clamp(13px,1.25vw,16px);line-height:1.65;color:#24384b;max-width:500px;margin:0 0 20px}
+.cn-poster-rule{height:5px;width:70px;background:#d6a329;margin:3px 0 18px}
+.cn-poster-founder strong{display:block;font-size:clamp(19px,2vw,25px);color:#082b52;letter-spacing:-.6px}
+.cn-poster-founder span{display:block;color:#07858a;font-size:clamp(13px,1.3vw,17px);font-weight:800;margin-top:4px}
+.cn-poster-url{margin-top:auto;padding-top:20px;color:#082b52;font-weight:800;font-size:13px;display:flex;align-items:center;gap:9px}
+.cn-poster-url i{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:#e3f2f2;color:#07858a}
+.cn-poster-photo{align-self:stretch;min-height:490px;overflow:hidden;position:relative;background:#05090e}
+.cn-poster-photo img{display:block;width:100%;height:100%;min-height:490px;object-fit:cover;object-position:center 20%}
+.cn-poster-accent{position:absolute;right:-30px;bottom:65px;width:220px;height:85px;border-top:7px solid #078b8b;border-bottom:7px solid #d6a329;transform:rotate(-37deg);z-index:3;pointer-events:none;opacity:.95}
+.cn-founder-purpose{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:22px}
+.cn-founder-purpose .fm-value{padding:22px;border:1px solid #e0eaf3;border-radius:18px;background:#fff;box-shadow:0 10px 30px rgba(8,43,82,.045)}
+@media(max-width:760px){
+ #founder-mission{padding:28px 0 42px}
+ .cn-founder-poster{padding:18px 15px 20px;min-height:0}
+ .cn-poster-brand{justify-content:flex-end;margin-bottom:12px;gap:8px}
+ .cn-poster-mark{width:34px;height:34px;font-size:21px;padding-right:8px}
+ .cn-poster-wordmark{font-size:21px}
+ .cn-poster-wordmark small{font-size:8px}
+ .cn-poster-layout{grid-template-columns:minmax(0,1.06fr) minmax(0,.84fr);min-height:410px;gap:4px}
+ .cn-poster-copy{padding:8px 5px 8px 0}
+ .cn-poster-quote-mark{font-size:57px;height:42px}
+ .cn-poster-copy h2{font-size:clamp(18px,5.2vw,25px);line-height:1.12;letter-spacing:-.75px;margin:5px 0 11px}
+ .cn-poster-copy>p{font-size:11px;line-height:1.48;margin-bottom:13px}
+ .cn-poster-rule{height:4px;width:42px;margin:2px 0 12px}
+ .cn-poster-founder strong{font-size:15px;line-height:1.2}
+ .cn-poster-founder span{font-size:10px;line-height:1.35}
+ .cn-poster-url{font-size:9px;gap:5px;padding-top:13px}
+ .cn-poster-url i{width:22px;height:22px;font-size:9px}
+ .cn-poster-photo{min-height:410px}
+ .cn-poster-photo img{min-height:410px;object-position:center 18%}
+ .cn-poster-accent{width:130px;height:55px;right:-38px;bottom:45px;border-width:5px}
+ .cn-founder-purpose{grid-template-columns:1fr;gap:11px;margin-top:15px}
+ .cn-founder-purpose .fm-value{padding:17px}
+}
+@media(max-width:390px){
+ .cn-poster-layout{grid-template-columns:minmax(0,1fr) minmax(0,.78fr);min-height:390px}
+ .cn-poster-photo,.cn-poster-photo img{min-height:390px}
+ .cn-poster-copy h2{font-size:18px}
+ .cn-poster-copy>p{font-size:10px}
+ .cn-poster-founder strong{font-size:14px}
 }
 </style>
 
