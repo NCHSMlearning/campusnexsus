@@ -438,7 +438,7 @@ input:focus,select:focus,textarea:focus{border-color:#087cf2!important;box-shado
 #founder-mission .fm-grid{display:grid;grid-template-columns:minmax(260px,.82fr) minmax(0,1.35fr);gap:clamp(28px,5vw,68px);align-items:center}
 #founder-mission .fm-founder{position:relative;max-width:390px;margin:auto}
 #founder-mission .fm-photo-wrap{position:relative;padding:12px;border-radius:28px;background:linear-gradient(145deg,#0b2d52,#087e8b 68%,#d6a84f);box-shadow:0 24px 65px rgba(8,43,82,.19)}
-#founder-mission .fm-photo{display:block;width:100%;aspect-ratio:4/5;object-fit:cover;object-position:center 25%;border-radius:19px;background:#dce7f0}
+#founder-mission .fm-photo{display:block;width:100%;height:auto;aspect-ratio:auto;object-fit:contain;object-position:center center;border-radius:19px;background:#dce7f0}
 #founder-mission .fm-founder-label{position:absolute;left:25px;right:25px;bottom:24px;padding:15px 17px;border:1px solid rgba(255,255,255,.4);border-radius:15px;background:rgba(5,26,49,.84);backdrop-filter:blur(12px);color:#fff}
 #founder-mission .fm-founder-label strong{display:block;font-size:17px;letter-spacing:-.02em}
 #founder-mission .fm-founder-label span{display:block;margin-top:4px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#d5e8f7}
@@ -462,7 +462,7 @@ input:focus,select:focus,textarea:focus{border-color:#087cf2!important;box-shado
 #leadership .cn-leader-card h3{font-size:21px;letter-spacing:-.03em;color:#082b52;margin:7px 0 4px}
 #leadership .cn-leader-role{font-size:12px;font-weight:800;color:#087e8b;margin:0}
 #leadership .cn-leader-bio{font-size:13px;line-height:1.75;color:#5b7085;margin:0}
-@media(max-width:760px){#founder-mission .fm-grid{grid-template-columns:1fr;gap:30px}#founder-mission .fm-founder{max-width:310px;width:100%}#founder-mission .fm-values{grid-template-columns:1fr}#leadership .cn-leadership-grid{grid-template-columns:1fr;max-width:520px}#leadership .cn-leader-card{padding:22px!important}}
+@media(max-width:760px){#founder-mission .fm-grid{grid-template-columns:1fr;gap:30px}#founder-mission .fm-founder{max-width:310px;width:100%}#founder-mission .fm-photo{width:100%;height:auto;max-height:520px;object-fit:contain;object-position:center center}#founder-mission .fm-values{grid-template-columns:1fr}#leadership .cn-leadership-grid{grid-template-columns:1fr;max-width:520px}#leadership .cn-leader-card{padding:22px!important}}
 @media(prefers-reduced-motion:reduce){#leadership .cn-leader-card{transition:none}}
 </style>
 <section id="founder-mission" aria-labelledby="founder-mission-title">
