@@ -1748,5 +1748,53 @@ document.getElementById('agentStartForm').addEventListener('submit',startAgentCh
 }
 </style>
 
+
+<style id="campusnexus-founder-portrait-correction">
+/* Correct portrait rendering: no narrow clipping, no screen blend or face washout */
+#founder-mission .cn-founder-portrait{
+ clip-path:none!important;
+ overflow:hidden!important;
+ min-width:0!important;
+ background:linear-gradient(145deg,#082b52 0%,#06436b 62%,#087f88 100%)!important;
+}
+#founder-mission .cn-founder-portrait-backdrop{
+ display:block!important;inset:0!important;clip-path:none!important;
+ background:linear-gradient(145deg,#082b52 0%,#06436b 62%,#087f88 100%)!important;
+}
+#founder-mission .cn-founder-portrait img{
+ display:block!important;
+ width:100%!important;height:100%!important;min-height:620px!important;
+ max-height:720px!important;
+ object-fit:contain!important;object-position:center bottom!important;
+ mix-blend-mode:normal!important;filter:none!important;
+ background:transparent!important;
+}
+@media(max-width:760px){
+ #founder-mission .cn-founder-main{
+  display:flex!important;flex-direction:column!important;gap:18px!important;
+  min-height:0!important;
+ }
+ #founder-mission .cn-founder-message{
+  width:100%!important;padding:0!important;
+ }
+ #founder-mission .cn-founder-portrait{
+  width:100%!important;height:auto!important;min-height:0!important;
+  max-height:none!important;margin:0!important;clip-path:none!important;
+  display:flex!important;justify-content:center!important;align-items:flex-end!important;
+  background:linear-gradient(145deg,#082b52 0%,#06436b 62%,#087f88 100%)!important;
+ }
+ #founder-mission .cn-founder-portrait-backdrop{display:none!important}
+ #founder-mission .cn-founder-portrait img{
+  width:100%!important;height:auto!important;min-height:0!important;
+  max-height:560px!important;object-fit:contain!important;
+  object-position:center bottom!important;mix-blend-mode:normal!important;filter:none!important;
+ }
+ #founder-mission .cn-founder-signature{
+  width:min(100%,420px)!important;margin-right:0!important;
+ }
+ #founder-mission .cn-founder-purpose{margin-top:16px!important}
+}
+</style>
+
 </body>
 </html>
