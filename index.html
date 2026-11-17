@@ -1210,5 +1210,40 @@ document.getElementById('agentStartForm').addEventListener('submit',startAgentCh
   .trust p,.trust .trust-copy{min-width:0;max-width:100%;overflow-wrap:anywhere}
 }
 </style>
+
+<style id="campusnexus-founder-mobile-image-fix">
+/* Keep the founder portrait at a deliberate portrait-card size on phones. */
+@media (max-width: 760px) {
+  #founder-mission .fm-founder {
+    width: min(100%, 300px) !important;
+    max-width: 300px !important;
+    margin-inline: auto !important;
+  }
+  #founder-mission .fm-photo-wrap {
+    width: 100% !important;
+    padding: 10px !important;
+    overflow: hidden;
+  }
+  #founder-mission .fm-photo {
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    aspect-ratio: auto !important;
+    object-fit: contain !important;
+    object-position: center top !important;
+  }
+  #founder-mission .fm-founder-label {
+    left: 20px !important;
+    right: 20px !important;
+    bottom: 20px !important;
+    padding: 12px 14px !important;
+  }
+  #founder-mission .fm-founder-label strong {
+    font-size: clamp(14px, 4vw, 17px) !important;
+  }
+}
+</style>
+
 </body>
 </html>
