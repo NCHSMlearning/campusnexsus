@@ -1246,5 +1246,83 @@ document.getElementById('agentStartForm').addEventListener('submit',startAgentCh
 }
 </style>
 
+
+<style id="campusnexus-founder-mobile-polish">
+/* Mobile-first founder section: separate the portrait and caption, then tighten the copy. */
+@media (max-width: 760px) {
+  #founder-mission { padding: 42px 0 50px !important; }
+  #founder-mission .fm-grid {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 25px !important;
+  }
+  #founder-mission .fm-founder {
+    width: min(100%, 270px) !important;
+    max-width: 270px !important;
+    margin: 0 auto !important;
+  }
+  #founder-mission .fm-photo-wrap {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 9px !important;
+    padding: 8px !important;
+    border-radius: 22px !important;
+    overflow: visible !important;
+  }
+  #founder-mission .fm-photo {
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    aspect-ratio: auto !important;
+    object-fit: contain !important;
+    object-position: center top !important;
+    border-radius: 15px !important;
+  }
+  #founder-mission .fm-founder-label {
+    position: static !important;
+    inset: auto !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 12px 13px !important;
+    border: 1px solid rgba(255,255,255,.24) !important;
+    border-radius: 13px !important;
+    background: #071f39 !important;
+    text-align: center !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+  }
+  #founder-mission .fm-founder-label strong {
+    font-size: 15px !important;
+    line-height: 1.3 !important;
+  }
+  #founder-mission .fm-founder-label span {
+    font-size: 9px !important;
+    line-height: 1.4 !important;
+    letter-spacing: .08em !important;
+  }
+  #founder-mission .fm-copy .tag {
+    font-size: 9px !important;
+    margin-bottom: 10px !important;
+  }
+  #founder-mission .fm-copy h2 {
+    font-size: clamp(28px, 8vw, 34px) !important;
+    line-height: 1.12 !important;
+    letter-spacing: -.04em !important;
+    margin-bottom: 13px !important;
+  }
+  #founder-mission .fm-intro {
+    font-size: 14px !important;
+    line-height: 1.7 !important;
+    margin-bottom: 15px !important;
+  }
+  #founder-mission .fm-values { gap: 11px !important; }
+  #founder-mission .fm-value { padding: 17px !important; }
+  #founder-mission .fm-signoff { margin-top: 17px !important; }
+  /* Avoid two floating contact buttons covering the reading area on phones. */
+  .contact-float a.wa { display: none !important; }
+}
+</style>
+
 </body>
 </html>
