@@ -1539,5 +1539,35 @@ section img{max-width:100%}
  #founder-mission .cnf-purpose article{padding:0!important}
 }
 </style>
+
+<style id="campusnexus-founder-portrait-final-fix">
+/* Keep the supplied original portrait fully visible. This block intentionally comes last. */
+#founder-mission .cnf-photo{
+ display:flex!important;align-items:center!important;justify-content:center!important;
+ width:100%!important;height:auto!important;min-height:0!important;
+ aspect-ratio:4/5!important;overflow:hidden!important;clip-path:none!important;
+ background:#031d3e!important;
+}
+#founder-mission .cnf-photo img{
+ display:block!important;width:100%!important;height:100%!important;
+ min-height:0!important;max-height:none!important;
+ object-fit:contain!important;object-position:center center!important;
+ mix-blend-mode:normal!important;filter:none!important;
+}
+#founder-mission .cnf-photo:after{content:none!important;display:none!important}
+#founder-mission .cnf-photo-art{display:none!important}
+@media(max-width:760px){
+ #founder-mission .cnf-photo{
+  width:100%!important;max-width:520px!important;height:auto!important;
+  min-height:0!important;aspect-ratio:4/5!important;clip-path:none!important;
+  margin:0 auto!important;
+ }
+ #founder-mission .cnf-photo img{
+  width:100%!important;height:100%!important;min-height:0!important;
+  max-height:none!important;object-fit:contain!important;object-position:center center!important;
+ }
+}
+</style>
+
 </body>
 </html>
