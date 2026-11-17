@@ -1392,5 +1392,106 @@ document.getElementById('agentStartForm').addEventListener('submit',startAgentCh
 }
 </style>
 
+
+<style id="campusnexus-founder-seamless-layout">
+/* A single, continuous editorial founder feature integrated into the page */
+#founder-mission{
+ position:relative;isolation:isolate;overflow:hidden;
+ padding:clamp(42px,6vw,82px) 0 54px;
+ background:linear-gradient(112deg,#f7fbff 0%,#eef6fb 48%,#e6f2f5 100%);
+}
+#founder-mission:before{
+ content:"";position:absolute;z-index:-1;inset:0;
+ background:radial-gradient(ellipse at 80% 35%,rgba(9,137,145,.11),transparent 42%),
+ linear-gradient(135deg,transparent 0 73%,rgba(8,43,82,.045) 73% 74%,transparent 74%);
+ pointer-events:none;
+}
+#founder-mission>.container{max-width:1240px;position:relative}
+.cn-founder-poster{
+ position:relative;isolation:isolate;overflow:hidden;
+ display:flex;flex-direction:column;
+ min-height:0;padding:0;background:transparent;border:0;border-radius:0;box-shadow:none;
+}
+.cn-founder-poster:before{display:none}
+.cn-poster-brand{
+ order:0;justify-content:flex-start;gap:13px;margin:0 0 30px;padding:0;
+}
+.cn-poster-mark{border:0;padding:0;width:48px;height:44px;font-size:31px;color:#082b52}
+.cn-poster-wordmark{font-size:clamp(24px,3vw,35px);letter-spacing:-1.4px}
+.cn-poster-wordmark small{font-size:10px;letter-spacing:.08em;text-transform:uppercase}
+.cn-poster-layout{
+ order:1;display:grid;grid-template-columns:minmax(0,1fr) minmax(360px,.92fr);
+ align-items:center;gap:clamp(20px,4vw,60px);min-height:560px;
+}
+.cn-poster-copy{padding:8px 0 24px;max-width:620px}
+.cn-poster-quote-mark{font-size:92px;height:66px;color:#078b91}
+.cn-poster-copy h2{font-size:clamp(34px,4.2vw,58px);line-height:1.03;letter-spacing:-2.2px;margin:8px 0 22px;color:#082b52}
+.cn-poster-copy h2 em{color:#087f86}
+.cn-poster-copy>p{font-size:clamp(15px,1.35vw,18px);line-height:1.7;max-width:560px;color:#30465b;margin-bottom:25px}
+.cn-poster-rule{height:5px;width:84px;margin:0 0 22px;background:#e3ae27}
+.cn-poster-founder strong{font-size:clamp(22px,2.4vw,30px)}
+.cn-poster-founder span{font-size:14px;letter-spacing:.12em;text-transform:uppercase}
+.cn-poster-url{padding-top:28px;font-size:14px}
+.cn-poster-photo{
+ min-height:560px;height:100%;overflow:visible;background:transparent;
+ display:flex;align-items:flex-end;justify-content:center;position:relative;
+}
+.cn-poster-photo:before{
+ content:"";position:absolute;z-index:-1;right:2%;top:4%;width:86%;height:88%;
+ background:linear-gradient(145deg,#082b52,#087f86);border-radius:48% 48% 18px 18px;
+}
+.cn-poster-photo img{
+ display:block;width:100%;height:100%;min-height:560px;max-height:690px;
+ object-fit:contain;object-position:center bottom;border:0;border-radius:0;
+ filter:none;box-shadow:none;
+}
+.cn-poster-accent{right:-90px;bottom:35px;width:300px;height:100px;border-top-width:9px;border-bottom-width:9px}
+.cn-founder-purpose{
+ order:2;display:grid;grid-template-columns:1fr 1fr;gap:0;margin:36px 0 0;
+ border-top:1px solid rgba(8,43,82,.16);background:transparent;
+}
+.cn-founder-purpose .fm-value{
+ padding:26px 30px 8px;background:transparent;border:0;border-radius:0;box-shadow:none;
+}
+.cn-founder-purpose .fm-value+ .fm-value{border-left:1px solid rgba(8,43,82,.16)}
+.cn-founder-purpose .fm-value h3{color:#082b52;font-size:20px}
+.cn-founder-purpose .fm-value p{color:#53697d;font-size:14px;line-height:1.7}
+@media(max-width:760px){
+ #founder-mission{padding:30px 0 36px}
+ .cn-poster-brand{margin-bottom:17px;gap:10px}
+ .cn-poster-mark{width:35px;height:35px;font-size:24px}
+ .cn-poster-wordmark{font-size:24px}
+ .cn-poster-wordmark small{font-size:8px}
+ .cn-poster-layout{
+  grid-template-columns:minmax(0,1fr) minmax(0,.88fr);gap:8px;min-height:390px;align-items:center;
+ }
+ .cn-poster-copy{padding:0 0 12px}
+ .cn-poster-quote-mark{font-size:62px;height:46px}
+ .cn-poster-copy h2{font-size:clamp(21px,5.7vw,31px);line-height:1.07;letter-spacing:-.9px;margin:5px 0 12px}
+ .cn-poster-copy>p{font-size:11px;line-height:1.55;margin-bottom:15px}
+ .cn-poster-rule{width:48px;height:4px;margin-bottom:13px}
+ .cn-poster-founder strong{font-size:15px}
+ .cn-poster-founder span{font-size:9px;letter-spacing:.08em}
+ .cn-poster-url{font-size:9px;padding-top:16px;gap:5px}
+ .cn-poster-url i{width:22px;height:22px;font-size:9px}
+ .cn-poster-photo{min-height:390px}
+ .cn-poster-photo:before{width:96%;height:82%;top:10%;right:0;border-radius:48% 48% 10px 10px}
+ .cn-poster-photo img{min-height:390px;max-height:480px;object-fit:contain;object-position:center bottom}
+ .cn-poster-accent{width:135px;height:48px;right:-45px;bottom:23px;border-width:5px}
+ .cn-founder-purpose{grid-template-columns:1fr 1fr;margin-top:20px}
+ .cn-founder-purpose .fm-value{padding:17px 12px 5px}
+ .cn-founder-purpose .fm-value+ .fm-value{border-left:1px solid rgba(8,43,82,.16)}
+ .cn-founder-purpose .fm-value h3{font-size:15px}
+ .cn-founder-purpose .fm-value p{font-size:11px;line-height:1.55}
+}
+@media(max-width:390px){
+ .cn-poster-layout{grid-template-columns:minmax(0,1fr) minmax(0,.82fr);min-height:360px}
+ .cn-poster-photo,.cn-poster-photo img{min-height:360px}
+ .cn-poster-copy h2{font-size:20px}
+ .cn-poster-copy>p{font-size:10px}
+ .cn-poster-founder strong{font-size:13px}
+}
+</style>
+
 </body>
 </html>
