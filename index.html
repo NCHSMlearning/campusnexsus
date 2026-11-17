@@ -1614,5 +1614,51 @@ document.getElementById('agentStartForm').addEventListener('submit',startAgentCh
 }
 </style>
 
+
+<style id="campusnexus-founder-seamless-poster">
+/* Blend the founder photograph into the poster artwork instead of showing a photo tile */
+#founder-mission.cn-founder-hero{
+ background:linear-gradient(112deg,#f7fbff 0%,#edf6f8 52%,#082b52 52%,#06365a 100%)!important;
+}
+#founder-mission.cn-founder-hero:before{
+ background:
+  radial-gradient(ellipse at 78% 35%,rgba(0,170,170,.22),transparent 38%),
+  linear-gradient(135deg,transparent 0 68%,rgba(244,181,30,.13) 68% 68.3%,transparent 68.3%)!important;
+}
+#founder-mission .cn-founder-main{align-items:stretch!important}
+#founder-mission .cn-founder-portrait{
+ min-height:590px!important;background:transparent!important;overflow:hidden!important;
+ align-items:flex-end!important;justify-content:center!important;
+}
+#founder-mission .cn-founder-portrait-backdrop{
+ inset:0!important;clip-path:polygon(28% 0,100% 0,100% 100%,0 100%,0 38%)!important;
+ background:linear-gradient(145deg,#06264c 0%,#07486b 65%,#078b8c 100%)!important;
+}
+#founder-mission .cn-founder-portrait img{
+ width:100%!important;height:590px!important;max-height:680px!important;
+ object-fit:contain!important;object-position:center bottom!important;
+ border:0!important;border-radius:0!important;box-shadow:none!important;
+ mix-blend-mode:screen!important;filter:none!important;
+}
+#founder-mission .cn-founder-message{padding-right:12px!important}
+#founder-mission .cn-founder-purpose{background:linear-gradient(90deg,rgba(247,251,255,.94),rgba(237,246,248,.94))!important}
+@media(max-width:760px){
+ #founder-mission.cn-founder-hero{
+  background:linear-gradient(180deg,#f7fbff 0%,#edf6f8 54%,#082b52 54%,#06365a 100%)!important;
+ }
+ #founder-mission .cn-founder-main{grid-template-columns:minmax(0,1fr) minmax(0,.96fr)!important;gap:5px!important}
+ #founder-mission .cn-founder-portrait{min-height:390px!important;overflow:hidden!important}
+ #founder-mission .cn-founder-portrait-backdrop{inset:5% 0 0!important}
+ #founder-mission .cn-founder-portrait img{
+  width:100%!important;height:390px!important;max-height:470px!important;
+  object-fit:contain!important;object-position:center bottom!important;mix-blend-mode:screen!important;
+ }
+ #founder-mission .cn-founder-purpose{background:linear-gradient(90deg,#f7fbff,#edf6f8)!important}
+}
+@media(max-width:390px){
+ #founder-mission .cn-founder-main{grid-template-columns:minmax(0,1fr) minmax(0,.88fr)!important}
+}
+</style>
+
 </body>
 </html>
