@@ -1569,5 +1569,39 @@ section img{max-width:100%}
 }
 </style>
 
+
+<style id="campusnexus-founder-photo-fill-fix">
+/* Fill the portrait frame with the real photo; prevent the intrinsic image height
+   and grid stretching from leaving empty navy bands above and below it. */
+#founder-mission .cnf-main{align-items:stretch!important}
+#founder-mission .cnf-photo{
+ position:relative!important;display:block!important;
+ width:100%!important;height:auto!important;min-height:0!important;
+ aspect-ratio:0.70!important;overflow:hidden!important;
+ clip-path:none!important;background:#031d3e!important;
+}
+#founder-mission .cnf-photo img{
+ position:absolute!important;inset:0!important;display:block!important;
+ width:100%!important;height:100%!important;
+ min-height:0!important;max-height:none!important;
+ object-fit:cover!important;object-position:center 24%!important;
+ margin:0!important;padding:0!important;
+}
+#founder-mission .cnf-photo:after{display:none!important;content:none!important}
+#founder-mission .cnf-photo-art{display:none!important}
+@media(max-width:760px){
+ #founder-mission .cnf-photo{
+  position:relative!important;width:100%!important;max-width:520px!important;
+  height:auto!important;min-height:0!important;aspect-ratio:0.70!important;
+  margin:0 auto!important;clip-path:none!important;
+ }
+ #founder-mission .cnf-photo img{
+  position:absolute!important;inset:0!important;width:100%!important;height:100%!important;
+  min-height:0!important;max-height:none!important;
+  object-fit:cover!important;object-position:center 24%!important;
+ }
+}
+</style>
+
 </body>
 </html>
