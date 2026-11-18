@@ -424,6 +424,32 @@ section img{max-width:100%;height:auto}
 }
 </style>
 
+
+<style id="campusnexus-founder-photo-true-colour-fix">
+/* Final override: remove the old lighten blend and radial mask that made the
+   founder's face blue. Render the original source image without colour mixing. */
+#founder-mission .cnf-photo{
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  position:relative!important;width:100%!important;height:auto!important;
+  min-height:0!important;aspect-ratio:1/1!important;overflow:hidden!important;
+  clip-path:none!important;background:#fff!important;border-radius:14px!important;
+}
+#founder-mission .cnf-photo img{
+  position:relative!important;inset:auto!important;display:block!important;
+  width:100%!important;height:100%!important;min-height:0!important;max-height:none!important;
+  object-fit:contain!important;object-position:center!important;
+  mix-blend-mode:normal!important;filter:none!important;
+  -webkit-mask-image:none!important;mask-image:none!important;
+  background:#fff!important;border:0!important;border-radius:0!important;
+}
+#founder-mission .cnf-photo:after{display:none!important;content:none!important}
+#founder-mission .cnf-photo-art{display:none!important}
+@media(max-width:760px){
+ #founder-mission .cnf-photo{width:100%!important;max-width:460px!important;aspect-ratio:1/1!important;margin:0 auto!important}
+ #founder-mission .cnf-photo img{width:100%!important;height:100%!important;object-fit:contain!important;object-position:center!important}
+}
+</style>
+
 </head>
 <body>
 
