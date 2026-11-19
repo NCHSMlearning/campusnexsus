@@ -84,7 +84,13 @@
         manage(userId,key,scope,'grant',$('cnOperatorGrant')).catch(e=>message(e.message,true));
       });
       $('cnOperatorRefresh').addEventListener('click',()=>loadGrants().catch(e=>message(e.message,true)));
-    }catch(e){message(e.message||'Unable to initialise permissions centre.',true);}
+    }catch(e){
+      message(e.message||'Unable to initialise permissions centre.',true);
+      if(e.message==='Database session is not ready.'){
+        state.ready=false;
+        window.addEventListener('load',()=>init(),{once:true});
+      }
+    }
   }
   window.loadPlatformOperatorPermissions=init;
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
