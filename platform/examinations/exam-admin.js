@@ -15,26 +15,49 @@ async function boot(){
   if(sessionError) throw sessionError;
   if(!session?.user){window.location.replace("/login?redirect=%2Fexams");return}
   authUser=session.user;
-  const {data:memberships,error:memberError}=await sb.from("institution_users").select("institution_id,role,status").eq("user_id",authUser.id).eq("role","institution_admin").eq("status","active");
-  if(memberError) throw memberError;
-  if(!memberships?.length) throw new Error("This account does not have an active institution administrator assignment. Ask the Campus Nexus platform administrator to assign your institution.");
-  if(memberships.length>1) throw new Error("This account is assigned to more than one institution. Please use the institution-specific portal selection.");
-  const institutionId=memberships[0].institution_id;
-  const [{data:inst,error:instError},{data:mods,error:modError},{data:prof}] = await Promise.all([
-    sb.from("institutions").select("id,name,logo_url,primary_color,school_code,physical_address,postal_address").eq("id",institutionId).single(),
-    sb.from("institution_modules").select("module_key,enabled").eq("institution_id",institutionId).in("module_key",["admin_exams","examinations","proctoring"]).eq("enabled",true),
+  const [{data:memberships,error:memberError},{data:isSuper,error:superError},{data:prof}] = await Promise.all([
+    sb.from("institution_users").select("institution_id,role,status").eq("user_id",authUser.id).eq("role","institution_admin").eq("status","active"),
+    sb.rpc("is_current_user_superadmin"),
     sb.from("consolidated_user_profiles_table").select("full_name,email,role,status").eq("user_id",authUser.id).maybeSingle()
   ]);
-  if(instError) throw instError;if(modError) throw modError;
+  if(memberError) throw memberError;
+  const platformSuperadmin=!superError && isSuper===true;
+  let institutionOptions=[];
+  if(platformSuperadmin){
+    const {data,error}=await sb.from("institutions").select("id,name,logo_url,primary_color,school_code,physical_address,postal_address").order("name");
+    if(error) throw error;institutionOptions=data||[];
+  }else{
+    if(!memberships?.length) throw new Error("This account does not have an active institution administrator assignment. Ask the Campus Nexus platform administrator to assign your institution.");
+    const ids=[...new Set(memberships.map(m=>m.institution_id))];
+    const {data,error}=await sb.from("institutions").select("id,name,logo_url,primary_color,school_code,physical_address,postal_address").in("id",ids).order("name");
+    if(error) throw error;institutionOptions=data||[];
+  }
+  if(!institutionOptions.length) throw new Error("No institutions are available to this account.");
+  const params=new URLSearchParams(window.location.search);
+  const requestedId=params.get("institution_id");
+  institution=institutionOptions.find(i=>i.id===requestedId)||institutionOptions[0];
+  if(institutionOptions.length>1){
+    $("institutionSwitcherWrap").hidden=false;
+    $("institutionSwitcher").innerHTML=institutionOptions.map(i=>'<option value="'+escapeHTML(i.id)+'">'+escapeHTML(i.name)+'</option>').join("");
+    $("institutionSwitcher").value=institution.id;
+    $("institutionSwitcher").addEventListener("change",()=>{const url=new URL(window.location.href);url.searchParams.set("institution_id",$("institutionSwitcher").value);window.location.href=url.toString()});
+  }
+  await applyInstitutionBranding();
+  profile=prof||{};
+  $("userName").textContent=profile.full_name||authUser.email||"Administrator";
+  showApp();
+  await refreshAll();
+}
+async function applyInstitutionBranding(){
+  const inst=institution;
+  const {data:mods,error:modError}=await sb.from("institution_modules").select("module_key,enabled").eq("institution_id",inst.id).in("module_key",["admin_exams","examinations","proctoring"]).eq("enabled",true);
+  if(modError) throw modError;
   if(!mods?.some(m=>["admin_exams","examinations"].includes(m.module_key))) throw new Error("The Examinations module is not enabled for this institution. Contact the Campus Nexus platform administrator.");
-  institution=inst;profile=prof||{};
   $("institutionName").textContent=inst.name||"Your institution";
   if(inst.logo_url && /^https:\/\//i.test(inst.logo_url)) $("institutionLogo").innerHTML='<img src="'+escapeHTML(inst.logo_url)+'" alt="">';
   else $("institutionLogo").textContent=(inst.name||"CN").split(/\s+/).slice(0,2).map(x=>x[0]).join("").toUpperCase();
   if(/^#[0-9a-f]{6}$/i.test(inst.primary_color||"")) document.documentElement.style.setProperty("--navy",inst.primary_color);
-  $("userName").textContent=profile.full_name||authUser.email||"Administrator";
-  showApp();
-  await refreshAll();
+}
 }
 async function refreshAll(){
   await loadExams();
