@@ -34,6 +34,13 @@
   const esc = (value) => String(value ?? "").replace(/[&<>"']/g, c => ({
     "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
   }[c]));
+  const safeWebUrl = (value, requireHttps = false) => {
+    try {
+      const url = new URL(String(value || "").trim());
+      if (requireHttps ? url.protocol !== "https:" : !["https:","http:"].includes(url.protocol)) return "";
+      return url.href;
+    } catch (_) { return ""; }
+  };
   const notify = (message, type = "info") => {
     if (typeof window.showNotification === "function") window.showNotification(message, type);
     else alert(message);
@@ -149,7 +156,7 @@
     }
     host.innerHTML = filtered.map(i => {
       const status = i.status === "active" ? "Active" : i.status === "suspended" ? "Suspended" : "Pending";
-      const registrationUrl = i._registrationUrl || "";
+      const registrationUrl = safeWebUrl(i._registrationUrl);
       return '<tr><td><div class="cn-school"><span class="cn-school-mark" style="background:' + esc(i.primary_color || "#082f49") + '">' +
         (i.logo_url ? '<img src="' + esc(i.logo_url) + '" alt="" onerror="this.style.display=\'none\'">' : '<i class="fas fa-school"></i>') +
         '</span><span><strong>' + esc(i.name) + '</strong><small>' + esc(i.short_code) + ' · ' + esc(i.country || "") + '</small></span></div></td>' +
