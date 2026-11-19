@@ -1,0 +1,2255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>NCHSM Lecturer Dashboard</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/config.js?v=20261112-force-relogin-1"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="stylesheet" href="css/admindashboard.css" />
+    <link rel="stylesheet" href="css/lecturer-exams-modern.css?v=6" />
+
+    <style>
+        /* ---------- Stats Cards ---------- */
+        .stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:14px; margin-bottom:20px; }
+        .stat-card { background:#fff; border-radius:16px; padding:18px 20px; box-shadow:0 2px 8px rgba(0,0,0,0.04); border:1px solid rgba(0,0,0,0.04); display:flex; align-items:center; gap:14px; transition:all .3s ease; }
+        .stat-card:hover { transform:translateY(-3px); box-shadow:0 8px 30px rgba(0,0,0,0.06); }
+        .stat-card .icon { width:48px; height:48px; border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:1.2rem; flex-shrink:0; }
+        .stat-card .icon.blue { background:#DBEAFE; color:#1E40AF; }
+        .stat-card .icon.green { background:#D1FAE5; color:#065F46; }
+        .stat-card .icon.yellow { background:#FEF3C7; color:#92400E; }
+        .stat-card .icon.purple { background:#EDE9FE; color:#5B21B6; }
+        .stat-card .icon.red { background:#FEE2E2; color:#991B1B; }
+        .stat-card .icon.indigo { background:#E0E7FF; color:#3730A3; }
+        .stat-card .number { font-size:1.3rem; font-weight:700; color:#0A3D62; line-height:1.2; }
+        .stat-card .label { font-size:0.65rem; color:#94A3B8; font-weight:500; text-transform:uppercase; letter-spacing:0.3px; }
+
+        .tab-content { display:none; animation:fadeIn .3s ease; }
+        .tab-content.active { display:block; }
+        @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+        .btn-reset-exam { background:#DC2626; color:#fff; border:none; padding:4px 12px; border-radius:6px; cursor:pointer; font-size:.6rem; font-weight:600; transition:all .2s; }
+        .btn-reset-exam:hover { background:#B91C1C; transform:scale(1.05); }
+        .btn-reset-exam:disabled { opacity:.5; cursor:not-allowed; transform:none; }
+        .btn-view-only { background:#E2E8F0; color:#475569; border:none; padding:4px 12px; border-radius:6px; font-size:.6rem; font-weight:600; cursor:default; }
+
+        .status-badge { display:inline-block; padding:2px 10px; border-radius:20px; font-size:.6rem; font-weight:600; }
+        .status-badge.active { background:#D1FAE5; color:#064E3B; }
+        .status-badge.completed { background:#E2E8F0; color:#475569; }
+        .status-badge.pending { background:#FEF3C7; color:#92400E; }
+        .status-badge.pass { background:#D1FAE5; color:#064E3B; }
+        .status-badge.fail { background:#FEE2E2; color:#991B1B; }
+
+        .live-dot { display:inline-block; width:8px; height:8px; background:#10B981; border-radius:50%; animation:pulse-dot 1.5s infinite; }
+        @keyframes pulse-dot { 0%,100% { opacity:1; transform:scale(1);} 50% { opacity:.5; transform:scale(.8);} }
+
+        .student-id-badge { font-family:monospace; background:#F1F5F9; padding:2px 8px; border-radius:4px; font-size:.65rem; color:#475569; }
+
+        .quick-actions { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px; margin-top:12px; }
+        .quick-action-btn { padding:16px 20px; background:#F8FAFC; border:1px solid #E2E8F0; border-radius:12px; text-align:center; cursor:pointer; transition:all .3s ease; text-decoration:none; color:#0A3D62; }
+        .quick-action-btn:hover { background:#0A3D62; color:#fff; border-color:#0A3D62; transform:translateY(-2px); box-shadow:0 4px 15px rgba(10,61,98,0.15); }
+        .quick-action-btn i { font-size:1.3rem; display:block; margin-bottom:6px; }
+        .quick-action-btn .label { font-size:.7rem; font-weight:600; }
+
+        @media (max-width:768px) { .stats-grid { grid-template-columns:repeat(2,1fr); gap:8px; } .stat-card { padding:12px 14px; } .stat-card .number { font-size:1rem; } .quick-actions { grid-template-columns:1fr 1fr; } }
+        @media (max-width:480px) { .stats-grid { grid-template-columns:1fr; } .quick-actions { grid-template-columns:1fr; } }
+    </style>
+<script src="/js/dashboard-maintenance.js?v=20261111" defer></script>
+</head>
+<body>
+
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header"><div class="sidebar-brand"><div class="brand-crest"><img src="/images/Logo_NCHSM.png" alt="NCHSM crest"></div><div class="brand-text"><h2>NCHSM <span>Exam Portal</span></h2><small>Lecturer Workspace</small></div></div></div>
+
+        <div class="sidebar-scroll">
+            <div class="menu-section">
+                <div class="menu-label">Dashboard</div>
+                <ul class="sidebar-menu">
+                    <li><a class="active" data-tab="dashboard" onclick="switchTab('dashboard')"><i class="fas fa-th-large"></i> Overview</a></li>
+                </ul>
+            </div>
+            <div class="menu-section">
+                <div class="menu-label">Exams</div>
+                <ul class="sidebar-menu">
+                    <li><a data-tab="myExams" onclick="switchTab('myExams')"><i class="fas fa-file-alt"></i> My Exams</a></li>
+                    <li><a data-tab="results" onclick="switchTab('results')"><i class="fas fa-graduation-cap"></i> Results</a></li>
+                    <li><a data-tab="attendance" onclick="switchTab('attendance')"><i class="fas fa-clipboard-check"></i> Attendance <span class="badge-sidebar warning" id="attendanceBadge">0</span></a></li>
+                </ul>
+            </div>
+            <div class="menu-section">
+                <div class="menu-label">Monitoring</div>
+                <ul class="sidebar-menu">
+                    <li><a data-tab="liveStudents" onclick="switchTab('liveStudents')"><i class="fas fa-eye"></i> Live Students <span class="badge-sidebar success" id="liveBadge">0</span></a></li>
+                </ul>
+            </div>
+            <div class="menu-section">
+                <div class="menu-label">Settings</div>
+                <ul class="sidebar-menu">
+                    <li><a data-tab="profile" onclick="switchTab('profile')"><i class="fas fa-user-circle"></i> Profile</a></li>
+                    <li><a data-tab="security" onclick="switchTab('security')"><i class="fas fa-shield-alt"></i> Security</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="sidebar-footer">
+            <div class="user-card">
+                <div class="avatar" id="lecturerAvatar">L</div>
+                <div class="info">
+                    <div class="name" id="lecturerName">Lecturer</div>
+                    <div class="role">Lecturer</div>
+                </div>
+            </div>
+            <button class="logout-btn-sidebar" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+        </div>
+    </div>
+
+    <div class="main-content">
+
+        <div class="top-header lecturer-command-topbar">
+            <div class="lecturer-command-brand">
+                <span id="pageTitle" hidden>Overview</span><span id="pageSubtitle" hidden>Welcome to your lecturer dashboard</span>
+                <div class="lecturer-command-cap"><i class="fas fa-graduation-cap"></i></div>
+                <div><h1>NCHSM Exam Portal</h1><p>Lecturer workspace · examinations, results and student monitoring</p></div>
+            </div>
+            <div class="header-actions">
+                <button class="mobile-toggle" onclick="toggleSidebar()" aria-label="Open navigation"><i class="fas fa-bars"></i></button>
+                <div class="lecturer-command-date"><i class="far fa-calendar-alt"></i><span id="lecturerCommandDate">Today</span></div>
+                <div class="admin-profile">
+                    <div class="admin-avatar" id="adminInitial">L</div>
+                    <div><div class="admin-name" id="adminName">Lecturer</div><div class="admin-email" id="adminEmail">lecturer@nchsm.ac.ke</div></div>
+                </div>
+                <div class="notification-bell" id="notificationBell">
+                    <i class="fas fa-bell"></i><span class="notification-count" id="notificationCount">0</span>
+                    <div class="notification-panel" id="notificationPanel"><div class="notification-header"><i class="fas fa-exclamation-triangle"></i> Alerts</div><div class="notification-list" id="notificationList">Loading alerts...</div></div>
+                </div>
+            </div>
+        </div>
+
+        <section id="dashboard" class="tab-content active">
+            <div class="lecturer-dashboard-hero">
+                <div class="lecturer-hero-icon"><i class="fas fa-th-large"></i></div>
+                <div><h2>Lecturer Dashboard</h2><p><i class="fas fa-chart-line"></i> Overview of examinations and student performance in your department</p></div>
+                <div class="lecturer-hero-tag"><i class="fas fa-shield-alt"></i> Lecturer Workspace</div>
+            </div>
+
+            <div class="stats-grid" id="dashboardStats">
+                <div class="stat-card"><div class="icon blue"><i class="fas fa-file-alt"></i></div><div><div class="number" id="statTotalExams">0</div><div class="label">Total Exams</div></div></div>
+                <div class="stat-card"><div class="icon green"><i class="fas fa-user-graduate"></i></div><div><div class="number" id="statTotalStudents">0</div><div class="label">Total Students</div></div></div>
+                <div class="stat-card"><div class="icon purple"><i class="fas fa-check-circle"></i></div><div><div class="number" id="statPassed">0</div><div class="label">Passed</div></div></div>
+                <div class="stat-card"><div class="icon yellow"><i class="fas fa-eye"></i></div><div><div class="number" id="statLiveStudents">0</div><div class="label">🟢 Live Students</div></div></div>
+            </div>
+
+            <div style="background: white; border-radius: 16px; padding: 20px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.04); margin-bottom: 20px;">
+                <h3 style="color: #0A3D62; margin: 0 0 12px 0; font-size: 0.9rem;"><i class="fas fa-bolt" style="color: #FDB913;"></i> Quick Actions</h3>
+                <div class="quick-actions">
+                    <div class="quick-action-btn" onclick="switchTab('myExams')"><i class="fas fa-file-alt"></i><span class="label">View Exams</span></div>
+                    <div class="quick-action-btn" onclick="switchTab('results')"><i class="fas fa-graduation-cap"></i><span class="label">View Results</span></div>
+                    <div class="quick-action-btn" onclick="switchTab('attendance')"><i class="fas fa-clipboard-check"></i><span class="label">Attendance</span></div>
+                    <div class="quick-action-btn" onclick="switchTab('liveStudents')"><i class="fas fa-eye"></i><span class="label">Live Students</span></div>
+                </div>
+            </div>
+
+            <div style="background: white; border-radius: 16px; padding: 20px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+                <h3 style="color: #0A3D62; margin: 0 0 12px 0; font-size: 0.9rem;"><i class="fas fa-clock" style="color: #FDB913;"></i> Recent Exams</h3>
+                <div id="recentExamsList"><p style="color: #94A3B8; text-align: center; padding: 20px; font-size: 0.85rem;">No exams yet</p></div>
+            </div>
+        </section>
+
+        <section id="myExams" class="tab-content">
+            <div style="background: linear-gradient(135deg, #0A3D62, #1a5a7a); border-radius: 16px; padding: 20px 25px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; box-shadow: 0 4px 20px rgba(10,61,98,0.3);">
+                <div>
+                    <h2 style="color: white; margin: 0; font-weight: 700; display: flex; align-items: center; gap: 12px;"><i class="fas fa-file-alt" style="color: #FDB913;"></i> Department Exams</h2>
+                    <p style="color: rgba(255,255,255,0.85); margin: 4px 0 0 0; font-size: 14px;"><i class="fas fa-list"></i> All exams in your program</p>
+                </div>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <span style="background: rgba(255,255,255,0.15); color: white; padding: 8px 16px; border-radius: 8px; font-size: 0.8rem; border: 1px solid rgba(255,255,255,0.1);"><i class="fas fa-eye"></i> View Only</span>
+                </div>
+            </div>
+
+            <style>
+                .exam-filter-panel{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:18px;margin:0 0 16px;box-shadow:0 4px 16px rgba(15,23,42,.04)}
+                .exam-filter-stats{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+                .exam-filter-stat{display:flex;align-items:center;gap:7px;padding:7px 11px;border-radius:9px;background:#f8fafc;border:1px solid #e2e8f0;color:#475569;font-size:12px}
+                .exam-filter-stat strong{color:#0A3D62;font-size:13px}
+                .exam-filter-grid{display:grid;grid-template-columns:minmax(180px,2fr) repeat(4,minmax(130px,1fr));gap:11px;align-items:end}
+                .exam-filter-field label{display:block;font-size:11px;font-weight:700;color:#475569;margin:0 0 6px}
+                .exam-filter-field input,.exam-filter-field select{box-sizing:border-box;width:100%;min-height:41px;padding:9px 11px;border:1px solid #cbd5e1;border-radius:9px;background:#fff;color:#0f172a;font:inherit;font-size:12px;outline:none}
+                .exam-filter-field input:focus,.exam-filter-field select:focus{border-color:#0A3D62;box-shadow:0 0 0 3px rgba(10,61,98,.10)}
+                .exam-filter-actions{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px}
+                .exam-filter-reset{border:1px solid #cbd5e1;border-radius:8px;padding:8px 12px;background:#fff;color:#334155;font-weight:600;font-size:12px;cursor:pointer}
+                .exam-filter-reset:hover{background:#f1f5f9}
+                #examFilterSummary{font-size:12px;color:#64748b}
+                #examsTable tbody tr:hover{background:#f8fafc}
+                @media(max-width:900px){.exam-filter-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+                @media(max-width:520px){.exam-filter-panel{padding:13px}.exam-filter-grid{grid-template-columns:1fr}.exam-filter-stat{flex:1 1 42%}}
+            </style>
+            <div class="exam-filter-panel" aria-label="Filter department exams">
+                <div class="exam-filter-stats">
+                    <div class="exam-filter-stat"><i class="fas fa-file-alt"></i> All exams <strong id="examCountAll">0</strong></div>
+                    <div class="exam-filter-stat"><i class="fas fa-user-check" style="color:#059669;"></i> My exams <strong id="examCountMine">0</strong></div>
+                    <div class="exam-filter-stat"><i class="fas fa-users" style="color:#64748b;"></i> Other lecturers <strong id="examCountOthers">0</strong></div>
+                </div>
+                <div class="exam-filter-grid">
+                    <div class="exam-filter-field">
+                        <label for="examSearchFilter">Search exams</label>
+                        <input id="examSearchFilter" type="search" placeholder="Search by exam name or type…" oninput="applyExamFilters()" autocomplete="off">
+                    </div>
+                    <div class="exam-filter-field">
+                        <label for="examOwnerFilter">Exam ownership</label>
+                        <select id="examOwnerFilter" onchange="applyExamFilters()">
+                            <option value="all">All department exams</option>
+                            <option value="mine">My exams only</option>
+                            <option value="others">Other lecturers</option>
+                        </select>
+                    </div>
+                    <div class="exam-filter-field">
+                        <label for="examTypeFilter">Exam type</label>
+                        <select id="examTypeFilter" onchange="applyExamFilters()">
+                            <option value="all">All types</option>
+                            <option value="cat">CAT</option>
+                            <option value="exam">Other exams</option>
+                        </select>
+                    </div>
+                    <div class="exam-filter-field">
+                        <label for="examStatusFilter">Status</label>
+                        <select id="examStatusFilter" onchange="applyExamFilters()">
+                            <option value="all">All statuses</option>
+                            <option value="published">Published</option>
+                            <option value="draft">Draft</option>
+                            <option value="active">Active</option>
+                            <option value="completed">Completed</option>
+                        </select>
+                    </div>
+                    <div class="exam-filter-field">
+                        <label for="examSortFilter">Sort by</label>
+                        <select id="examSortFilter" onchange="applyExamFilters()">
+                            <option value="newest">Newest first</option>
+                            <option value="oldest">Oldest first</option>
+                            <option value="name">Name A–Z</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="exam-filter-actions">
+                    <span id="examFilterSummary" aria-live="polite">Showing all exams</span>
+                    <button type="button" class="exam-filter-reset" onclick="resetExamFilters()"><i class="fas fa-undo"></i> Reset filters</button>
+                </div>
+            </div>
+            <div style="background: white; border-radius: 16px; border: 1px solid #e5e7eb; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+                <div style="overflow-x: auto;">
+                    <table id="examsTable" style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                        <thead>
+                            <tr style="background: #f8fafc; border-bottom: 2px solid #e5e7eb;">
+                                <th style="padding: 10px 14px; text-align: left; font-weight: 600; color: #475569;">Exam Name</th>
+                                <th style="padding: 10px 14px; text-align: center; font-weight: 600; color: #475569;">Type</th>
+                                <th style="padding: 10px 14px; text-align: center; font-weight: 600; color: #475569;">Created By</th>
+                                <th style="padding: 10px 14px; text-align: center; font-weight: 600; color: #475569;">Status</th>
+                                <th style="padding: 10px 14px; text-align: center; font-weight: 600; color: #475569; min-width: 100px;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="examsBody"></tbody>
+                    </table>
+                    <div id="examsLoading" class="loading" style="padding:40px; text-align:center;"><i class="fas fa-spinner fa-spin"></i> Loading exams...</div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- Lecturer exam edit form: opens from the selected table row -->
+        <div id="lecturerExamEditModal" class="lecturer-edit-overlay" aria-hidden="true">
+            <div class="lecturer-edit-card" role="dialog" aria-modal="true" aria-labelledby="lecturerExamEditTitle">
+                <div class="lecturer-edit-header">
+                    <div>
+                        <span class="lecturer-edit-kicker"><i class="fas fa-pen-to-square"></i> ASSESSMENT MANAGEMENT</span>
+                        <h2 id="lecturerExamEditTitle">Edit Exam / CAT</h2>
+                        <p>Update the selected assessment. Changes are saved to the existing record.</p>
+                    </div>
+                    <button type="button" class="lecturer-edit-close" onclick="closeLecturerExamEdit()" aria-label="Close edit form">&times;</button>
+                </div>
+                <form id="lecturerExamEditForm" class="lecturer-edit-form">
+                    <input type="hidden" id="lecturerEditExamId">
+                    <div class="lecturer-edit-section-title"><i class="fas fa-file-alt"></i> Assessment details</div>
+                    <div class="lecturer-edit-grid">
+                        <label class="lecturer-edit-field lecturer-edit-span-2">Exam / CAT title
+                            <input id="lecturerEditTitle" type="text" maxlength="180" required>
+                        </label>
+                        <label class="lecturer-edit-field">Assessment type
+                            <select id="lecturerEditType" required>
+                                <option value="CAT">CAT</option>
+                                <option value="CAT_1">CAT 1</option>
+                                <option value="CAT_2">CAT 2</option>
+                                <option value="EXAM">Final Exam</option>
+                                <option value="ASSIGNMENT">Assignment</option>
+                                <option value="PRACTICAL">Practical</option>
+                                <option value="OSCE">OSCE</option>
+                            </select>
+                        </label>
+                        <label class="lecturer-edit-field">Status
+                            <select id="lecturerEditStatus">
+                                <option value="draft">Draft</option>
+                                <option value="pending">Pending</option>
+                                <option value="active">Active</option>
+                                <option value="completed">Completed</option>
+                                <option value="published">Published</option>
+                                <option value="released">Released</option>
+                                <option value="scheduled">Scheduled</option>
+                                <option value="in_progress">In progress</option>
+                                <option value="closed">Closed</option>
+                            </select>
+                        </label>
+                        <label class="lecturer-edit-field">Program
+                            <input id="lecturerEditProgram" type="text" maxlength="120">
+                        </label>
+                        <label class="lecturer-edit-field">Unit code
+                            <input id="lecturerEditUnitCode" type="text" maxlength="80">
+                        </label>
+                        <label class="lecturer-edit-field">Intake year
+                            <input id="lecturerEditIntake" type="text" maxlength="20">
+                        </label>
+                        <label class="lecturer-edit-field">Block / Semester
+                            <input id="lecturerEditBlock" type="text" maxlength="50">
+                        </label>
+                    </div>
+                    <div class="lecturer-edit-section-title"><i class="fas fa-calendar-alt"></i> Schedule and marks</div>
+                    <div class="lecturer-edit-grid">
+                        <label class="lecturer-edit-field">Exam date
+                            <input id="lecturerEditDate" type="date" required>
+                        </label>
+                        <label class="lecturer-edit-field">Start time
+                            <input id="lecturerEditTime" type="time">
+                        </label>
+                        <label class="lecturer-edit-field">Duration (minutes)
+                            <input id="lecturerEditDuration" type="number" min="1" max="600" required>
+                        </label>
+                        <label class="lecturer-edit-field">Total marks
+                            <input id="lecturerEditTotalMarks" type="number" min="1" step="0.5" required>
+                        </label>
+                        <label class="lecturer-edit-field">Pass mark
+                            <input id="lecturerEditPassMark" type="number" min="0" step="0.5" required>
+                        </label>
+                        <label class="lecturer-edit-field lecturer-edit-span-2">Online exam link
+                            <input id="lecturerEditLink" type="url" placeholder="https://">
+                        </label>
+                    </div>
+                    <div class="lecturer-edit-section-title"><i class="fas fa-align-left"></i> Instructions</div>
+                    <div class="lecturer-edit-grid">
+                        <label class="lecturer-edit-field lecturer-edit-span-2">Description
+                            <textarea id="lecturerEditDescription" rows="2"></textarea>
+                        </label>
+                        <label class="lecturer-edit-field lecturer-edit-span-2">Student instructions
+                            <textarea id="lecturerEditInstructions" rows="3"></textarea>
+                        </label>
+                    </div>
+                    <div class="lecturer-edit-footer">
+                        <span id="lecturerEditFeedback" role="status" aria-live="polite"></span>
+                        <div class="lecturer-edit-actions">
+                            <button type="button" class="lecturer-edit-cancel" onclick="closeLecturerExamEdit()">Cancel</button>
+                            <button type="submit" id="lecturerEditSaveButton" class="lecturer-edit-save"><i class="fas fa-check"></i> Save Changes</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <style>
+            .lecturer-edit-overlay{display:none;position:fixed;inset:0;z-index:10050;background:rgba(15,23,42,.62);padding:22px;overflow-y:auto;align-items:center;justify-content:center}
+            .lecturer-edit-overlay.open{display:flex}
+            .lecturer-edit-card{width:min(850px,100%);background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.28);animation:lecturerEditIn .2s ease}
+            @keyframes lecturerEditIn{from{opacity:0;transform:translateY(10px) scale(.99)}to{opacity:1;transform:translateY(0) scale(1)}}
+            .lecturer-edit-header{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;padding:22px 26px;background:linear-gradient(125deg,#065f46,#059669);color:#fff}
+            .lecturer-edit-kicker{font-size:10px;font-weight:800;letter-spacing:1.2px;color:#bbf7d0}
+            .lecturer-edit-header h2{font-size:21px;margin:7px 0 4px;color:#fff}
+            .lecturer-edit-header p{font-size:12px;margin:0;color:#d1fae5}
+            .lecturer-edit-close{border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.12);color:#fff;border-radius:10px;width:36px;height:36px;font-size:24px;cursor:pointer}
+            .lecturer-edit-form{padding:22px 26px 24px}
+            .lecturer-edit-section-title{font-size:12px;font-weight:800;color:#047857;padding:10px 0;border-bottom:1px solid #d1fae5;margin:2px 0 14px;display:flex;align-items:center;gap:8px}
+            .lecturer-edit-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;margin-bottom:20px}
+            .lecturer-edit-field{display:flex;flex-direction:column;gap:6px;font-size:11px;font-weight:700;color:#334155}
+            .lecturer-edit-field input,.lecturer-edit-field select,.lecturer-edit-field textarea{box-sizing:border-box;width:100%;min-height:41px;padding:10px 12px;border:1px solid #cbd5e1;border-radius:9px;background:#fff;color:#0f172a;font:inherit;font-size:13px;font-weight:500;outline:none}
+            .lecturer-edit-field textarea{resize:vertical;min-height:68px}
+            .lecturer-edit-field input:focus,.lecturer-edit-field select:focus,.lecturer-edit-field textarea:focus{border-color:#059669;box-shadow:0 0 0 3px rgba(5,150,105,.13)}
+            .lecturer-edit-span-2{grid-column:span 2}
+            .lecturer-edit-footer{display:flex;justify-content:space-between;align-items:center;gap:12px;border-top:1px solid #e2e8f0;padding-top:17px}
+            .lecturer-edit-actions{display:flex;gap:9px}
+            .lecturer-edit-cancel,.lecturer-edit-save{border:0;border-radius:9px;padding:11px 17px;font-size:12px;font-weight:800;cursor:pointer}
+            .lecturer-edit-cancel{background:#f1f5f9;color:#475569}
+            .lecturer-edit-save{background:#059669;color:#fff;box-shadow:0 4px 10px rgba(5,150,105,.2)}
+            .lecturer-edit-save:hover{background:#047857}
+            .lecturer-edit-save:disabled{opacity:.6;cursor:wait}
+            #lecturerEditFeedback{font-size:11px;color:#64748b}
+            @media(max-width:600px){.lecturer-edit-overlay{padding:10px;align-items:flex-start}.lecturer-edit-card{margin:auto 0}.lecturer-edit-header,.lecturer-edit-form{padding:17px}.lecturer-edit-grid{grid-template-columns:1fr}.lecturer-edit-span-2{grid-column:span 1}.lecturer-edit-footer{align-items:stretch;flex-direction:column}.lecturer-edit-actions{width:100%}.lecturer-edit-actions button{flex:1}}
+        </style>
+
+        <section id="results" class="tab-content">
+            <div style="background: linear-gradient(135deg, #0A3D62, #1a5a7a); border-radius: 16px; padding: 20px 25px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; box-shadow: 0 4px 20px rgba(10,61,98,0.3);">
+                <div>
+                    <h2 style="color: white; margin: 0; font-weight: 700; display: flex; align-items: center; gap: 12px;"><i class="fas fa-graduation-cap" style="color: #FDB913;"></i> Student Results</h2>
+                    <p style="color: rgba(255,255,255,0.85); margin: 4px 0 0 0; font-size: 14px;"><i class="fas fa-chart-bar"></i> Results across your department</p>
+                </div>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button onclick="exportMyData()" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;"><i class="fas fa-download"></i> Export</button>
+                </div>
+            </div>
+
+            <style>
+                .results-filter-panel{background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:16px 18px;margin:0 0 16px;box-shadow:0 4px 16px rgba(15,23,42,.04)}
+                .results-filter-grid{display:grid;grid-template-columns:repeat(3,minmax(150px,1fr));gap:12px;align-items:end}
+                .results-filter-field label{display:block;font-size:11px;font-weight:700;color:#475569;margin:0 0 6px}
+                .results-filter-field select,.results-filter-field input{box-sizing:border-box;width:100%;min-height:42px;padding:9px 11px;border:1px solid #cbd5e1;border-radius:9px;background:#fff;color:#0f172a;font:inherit;font-size:12px}
+                .results-filter-field select:focus,.results-filter-field input:focus{outline:none;border-color:#0A3D62;box-shadow:0 0 0 3px rgba(10,61,98,.1)}
+                .results-filter-footer{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px}
+                #resultsFilterSummary{font-size:12px;color:#64748b}
+                .results-filter-reset{border:1px solid #cbd5e1;border-radius:8px;padding:8px 12px;background:#fff;color:#334155;font-weight:600;font-size:12px;cursor:pointer}
+                .results-filter-reset:hover{background:#f1f5f9}
+                @media(max-width:760px){.results-filter-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+                @media(max-width:480px){.results-filter-grid{grid-template-columns:1fr}.results-filter-panel{padding:13px}}
+            </style>
+            <div class="results-filter-panel" aria-label="Filter student results">
+                <div class="results-filter-grid">
+                    <div class="results-filter-field">
+                        <label for="resultExamFilter">Exam / CAT</label>
+                        <select id="resultExamFilter" onchange="applyLecturerResultFilters()"><option value="">All Exams</option></select>
+                    </div>
+                    <div class="results-filter-field">
+                        <label for="resultTypeFilter">Exam type</label>
+                        <select id="resultTypeFilter" onchange="applyLecturerResultFilters()">
+                            <option value="">All types</option><option value="cat">CATs</option><option value="exam">Other exams</option>
+                        </select>
+                    </div>
+                    <div class="results-filter-field">
+                        <label for="resultOwnerFilter">Exam creator</label>
+                        <select id="resultOwnerFilter" onchange="applyLecturerResultFilters()">
+                            <option value="all">All department exams</option><option value="mine" selected>My exams only</option><option value="others">Other lecturers</option>
+                        </select>
+                    </div>
+                    <div class="results-filter-field">
+                        <label for="resultStatusFilter">Result status</label>
+                        <select id="resultStatusFilter" onchange="applyLecturerResultFilters()">
+                            <option value="">All statuses</option><option value="PASS">Pass</option><option value="FAIL">Fail</option><option value="PENDING">Pending / In progress</option>
+                        </select>
+                    </div>
+                    <div class="results-filter-field">
+                        <label for="resultSearch">Search student or exam</label>
+                        <input type="search" id="resultSearch" name="lecturer-results-search-query" placeholder="Search by student name, admission number or exam…" oninput="applyLecturerResultFilters()" autocomplete="new-password" autocapitalize="off" autocorrect="off" spellcheck="false" data-lpignore="true" data-form-type="other" readonly onfocus="this.removeAttribute('readonly')">
+                    </div>
+                    <div class="results-filter-field">
+                        <label for="resultSortFilter">Sort results</label>
+                        <select id="resultSortFilter" onchange="applyLecturerResultFilters()">
+                            <option value="newest">Newest exam first</option><option value="oldest">Oldest exam first</option><option value="student">Student name A–Z</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="results-filter-footer">
+                    <span id="resultsFilterSummary" aria-live="polite">Showing all results</span>
+                    <button type="button" class="results-filter-reset" onclick="resetResultFilters()"><i class="fas fa-undo"></i> Reset filters</button>
+                </div>
+            </div>
+
+            <div style="background: white; border-radius: 16px; border: 1px solid #e5e7eb; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+                <div style="overflow-x: auto;">
+                    <table id="resultsTable" style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                        <thead>
+                            <tr style="background: #f8fafc; border-bottom: 2px solid #e5e7eb;">
+                                <th style="padding: 10px 14px; text-align: left; font-weight: 600; color: #475569;">Student ID</th>
+                                <th style="padding: 10px 14px; text-align: left; font-weight: 600; color: #475569;">Name</th>
+                                <th style="padding: 10px 14px; text-align: left; font-weight: 600; color: #475569;">Exam</th>
+                                <th style="padding: 10px 14px; text-align: center; font-weight: 600; color: #475569;">Score</th>
+                                <th style="padding: 10px 14px; text-align: center; font-weight: 600; color: #475569;">%</th>
+                                <th style="padding: 10px 14px; text-align: center; font-weight: 600; color: #475569;">Status</th>
+                                <th style="padding: 10px 14px; text-align: center; font-weight: 600; color: #475569; min-width: 100px;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resultsBody"></tbody>
+                    </table>
+                    <div id="resultsLoading" class="loading" style="padding:40px; text-align:center;"><i class="fas fa-spinner fa-spin"></i> Loading results...</div>
+                </div>
+                <div class="pagination" id="resultsPagination"></div>
+            </div>
+        </section>
+
+        <section id="attendance" class="tab-content">
+            <div style="background: linear-gradient(135deg, #065f46, #0A3D62); border-radius: 16px; padding: 20px 25px; margin-bottom: 20px; box-shadow: 0 4px 20px rgba(6,95,70,0.3);">
+                <div>
+                    <h2 style="color: white; margin: 0; font-weight: 700; display: flex; align-items: center; gap: 12px;"><i class="fas fa-clipboard-check" style="color: #FDB913;"></i> Exam Attendance</h2>
+                    <p style="color: rgba(255,255,255,0.85); margin: 4px 0 0 0; font-size: 14px;"><i class="fas fa-users"></i> Attendance across your department</p>
+                </div>
+            </div>
+
+            <div style="background: white; border-radius: 16px; padding: 16px 20px; margin-bottom: 16px; border: 1px solid #e5e7eb;">
+                <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                    <div style="flex:1; min-width:160px;">
+                        <label style="font-weight: 600; font-size: 0.75rem; color: #475569;">Exam</label>
+                        <select id="attendanceExamFilter" style="width:100%; padding: 8px 12px; border: 2px solid #E2E8F0; border-radius: 8px; font-size: 0.8rem;"><option value="">All Exams</option></select>
+                    </div>
+                    <button class="btn btn-primary" onclick="loadAttendance()" style="padding: 8px 16px; white-space:nowrap; margin-top:16px;"><i class="fas fa-search"></i> Load</button>
+                </div>
+            </div>
+
+            <div style="background: white; border-radius: 16px; border: 1px solid #e5e7eb; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+                <div style="overflow-x: auto;">
+                    <table id="attendanceTable" style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                        <thead>
+                            <tr style="background: #f8fafc; border-bottom: 2px solid #e5e7eb;">
+                                <th style="padding: 10px 14px; text-align: center; font-weight: 600; color: #475569;">#</th>
+                                <th style="padding: 10px 14px; text-align: left; font-weight: 600; color: #475569;">Student Name</th>
+                                <th style="padding: 10px 14px; text-align: left; font-weight: 600; color: #475569;">Registration</th>
+                                <th style="padding: 10px 14px; text-align: left; font-weight: 600; color: #475569;">Exam</th>
+                                <th style="padding: 10px 14px; text-align: center; font-weight: 600; color: #475569;">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="attendanceBody"></tbody>
+                    </table>
+                    <div id="attendanceLoading" class="loading" style="padding:40px; text-align:center;"><i class="fas fa-spinner fa-spin"></i> Loading attendance...</div>
+                </div>
+            </div>
+        </section>
+
+        <section id="liveStudents" class="tab-content">
+            <div style="background: linear-gradient(135deg, #065f46, #0A3D62); border-radius: 16px; padding: 20px 25px; margin-bottom: 20px; box-shadow: 0 4px 20px rgba(6,95,70,0.3);">
+                <div>
+                    <h2 style="color: white; margin: 0; font-weight: 700; display: flex; align-items: center; gap: 12px;"><i class="fas fa-eye" style="color: #4ADE80;"></i> 🟢 Live Students</h2>
+                    <p style="color: rgba(255,255,255,0.85); margin: 4px 0 0 0; font-size: 14px;"><i class="fas fa-clock"></i> Students currently taking exams in your department</p>
+                </div>
+            </div>
+
+            <div style="background: white; border-radius: 16px; border: 1px solid #e5e7eb; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+                <div style="overflow-x: auto;">
+                    <table id="liveStudentsTable" style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                        <thead>
+                            <tr style="background: #f8fafc; border-bottom: 2px solid #e5e7eb;">
+                                <th style="padding: 10px 14px; text-align: center; font-weight: 600; color: #475569;">Status</th>
+                                <th style="padding: 10px 14px; text-align: left; font-weight: 600; color: #475569;">Student ID</th>
+                                <th style="padding: 10px 14px; text-align: left; font-weight: 600; color: #475569;">Name</th>
+                                <th style="padding: 10px 14px; text-align: left; font-weight: 600; color: #475569;">Exam</th>
+                                <th style="padding: 10px 14px; text-align: center; font-weight: 600; color: #475569;">Progress</th>
+                            </tr>
+                        </thead>
+                        <tbody id="liveStudentsBody"></tbody>
+                    </table>
+                    <div id="liveStudentsLoading" class="loading" style="padding:40px; text-align:center;"><i class="fas fa-spinner fa-spin"></i> Loading live students...</div>
+                </div>
+            </div>
+        </section>
+
+        <section id="profile" class="tab-content">
+            <div style="background: linear-gradient(135deg, #1e3a5f, #0A3D62); border-radius: 16px; padding: 20px 25px; margin-bottom: 20px; box-shadow: 0 4px 20px rgba(10,61,98,0.3);">
+                <div>
+                    <h2 style="color: white; margin: 0; font-weight: 700; display: flex; align-items: center; gap: 12px;"><i class="fas fa-user-circle" style="color: #FDB913;"></i> Profile</h2>
+                    <p style="color: rgba(255,255,255,0.85); margin: 4px 0 0 0; font-size: 14px;"><i class="fas fa-id-card"></i> Your profile information</p>
+                </div>
+            </div>
+
+            <div style="background: white; border-radius: 16px; padding: 30px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+                <div style="display: flex; align-items: center; gap: 24px; padding-bottom: 20px; border-bottom: 2px solid #e5e7eb; flex-wrap: wrap;">
+                    <div style="width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(135deg, #0A3D62, #1a5a7a); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 700; color: white; flex-shrink: 0;"><span id="profileAvatar">L</span></div>
+                    <div>
+                        <h3 style="margin: 0; color: #0A3D62; font-size: 1.1rem;" id="profileName">Lecturer</h3>
+                        <p style="margin: 2px 0 0 0; color: #64748B;" id="profileEmail">lecturer@nchsm.ac.ke</p>
+                        <p style="margin: 2px 0 0 0; color: #64748B; font-size: 0.85rem;"><span style="background: #D1FAE5; color: #064E3B; padding: 2px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: 600;"><i class="fas fa-check-circle"></i> Verified Account</span></p>
+                    </div>
+                    <div style="margin-left: auto; text-align: right;"><span style="background: #DBEAFE; color: #1E40AF; padding: 4px 16px; border-radius: 20px; font-size: 0.7rem; font-weight: 600;"><i class="fas fa-user-tag"></i> Lecturer</span></div>
+                </div>
+                <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end;">
+                    <button class="btn btn-secondary" onclick="showToast('📧 Profile is view-only', 'info')"><i class="fas fa-info-circle"></i> View Only</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="security" class="tab-content">
+            <div style="background: linear-gradient(135deg, #1e3a5f, #0A3D62); border-radius: 16px; padding: 20px 25px; margin-bottom: 20px; box-shadow: 0 4px 20px rgba(10,61,98,0.3);">
+                <div>
+                    <h2 style="color: white; margin: 0; font-weight: 700; display: flex; align-items: center; gap: 12px;"><i class="fas fa-shield-alt" style="color: #FDB913;"></i> Security</h2>
+                    <p style="color: rgba(255,255,255,0.85); margin: 4px 0 0 0; font-size: 14px;"><i class="fas fa-lock"></i> Security settings</p>
+                </div>
+            </div>
+
+            <div style="background: white; border-radius: 16px; padding: 30px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+                <div style="margin-bottom: 16px;"><label style="font-weight: 600; font-size: 0.8rem; color: #475569; display: block; margin-bottom: 4px;">Current Password</label><input type="password" placeholder="Enter current password" style="width:100%; padding: 10px 14px; border: 2px solid #E2E8F0; border-radius: 8px; font-size: 0.9rem;"></div>
+                <div style="margin-bottom: 16px;"><label style="font-weight: 600; font-size: 0.8rem; color: #475569; display: block; margin-bottom: 4px;">New Password</label><input type="password" placeholder="Enter new password" style="width:100%; padding: 10px 14px; border: 2px solid #E2E8F0; border-radius: 8px; font-size: 0.9rem;"></div>
+                <div style="margin-bottom: 16px;"><label style="font-weight: 600; font-size: 0.8rem; color: #475569; display: block; margin-bottom: 4px;">Confirm Password</label><input type="password" placeholder="Confirm new password" style="width:100%; padding: 10px 14px; border: 2px solid #E2E8F0; border-radius: 8px; font-size: 0.9rem;"></div>
+                <div style="border-top: 1px solid #e5e7eb; padding-top: 20px;">
+                    <button class="btn btn-primary" onclick="showToast('🔒 Password updated', 'success')"><i class="fas fa-sync-alt"></i> Update Password</button>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <div id="resetModal" class="modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); z-index: 10000; padding: 20px; align-items: center; justify-content: center;">
+        <div class="modal-content" style="max-width: 500px; width: 95%; background: white; border-radius: 16px; padding: 30px; max-height: 90vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #DC2626; padding-bottom: 15px; position: sticky; top: 0; background: white; z-index: 10;">
+                <div>
+                    <h3 style="margin: 0; color: #DC2626;"><i class="fas fa-trash-alt"></i> Reset Student Exam</h3>
+                    <p style="margin: 2px 0 0 0; font-size: 12px; color: #94a3b8;"><i class="fas fa-exclamation-triangle"></i> This will reset the student's timer</p>
+                </div>
+                <button onclick="closeResetModal()" style="background: none; border: none; font-size: 28px; cursor: pointer; color: #6b7280;">&times;</button>
+            </div>
+            <div id="resetStudentInfo" style="background: #F8FAFC; padding: 16px; border-radius: 12px; margin-bottom: 16px;">
+                <p><strong>👤 Student:</strong> <span id="resetStudentName">Loading...</span></p>
+                <p><strong>🆔 ID:</strong> <span id="resetStudentId">Loading...</span></p>
+                <p><strong>📝 Exam:</strong> <span id="resetExamName">Loading...</span></p>
+            </div>
+            <div style="background: #FEF2F2; border-radius: 12px; padding: 16px; margin-bottom: 20px; border-left: 4px solid #DC2626;">
+                <p style="margin: 0; color: #991B1B; font-size: 14px;"><i class="fas fa-info-circle"></i> This will:</p>
+                <ul style="margin: 8px 0 0 20px; color: #991B1B; font-size: 13px;">
+                    <li>✅ PRESERVE all saved answers and progress</li>
+                    <li>✅ KEEP the same attempt ID and attempt number</li>
+                    <li>✅ REOPEN the submitted attempt with a fresh timer</li>
+                    <li>✅ Recalculate the score after the student resubmits</li>
+                    <li>❌ Does NOT clear the student's choices</li>
+                </ul>
+            </div>
+            <input type="hidden" id="resetStudentUserId">
+            <input type="hidden" id="resetExamId">
+            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; border-top: 1px solid #e5e7eb; padding-top: 20px;">
+                <button class="btn btn-secondary" onclick="closeResetModal()" style="padding: 8px 20px; border-radius: 6px; border: none; cursor: pointer; font-weight: 600;">Cancel</button>
+                <button class="btn btn-danger" id="confirmResetBtn" onclick="confirmResetStudent()" style="padding: 8px 24px; border-radius: 6px; border: none; cursor: pointer; font-weight: 600;"><i class="fas fa-redo"></i> Authorize Retake</button>
+            </div>
+        </div>
+    </div>
+
+
+    <div id="lecturerProgressModal" class="modal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.72);backdrop-filter:blur(4px);z-index:11000;padding:18px;align-items:center;justify-content:center;">
+      <div style="width:min(1100px,98vw);max-height:92vh;overflow:auto;background:#fff;border-radius:16px;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.25);">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #e2e8f0;padding-bottom:12px;margin-bottom:16px;">
+          <h2 id="lecturerProgressTitle" style="margin:0;color:#0A3D62;font-size:1.1rem;"><i class="fas fa-chart-line"></i> Student Progress</h2>
+          <button type="button" onclick="document.getElementById('lecturerProgressModal').style.display='none'" aria-label="Close progress" style="border:0;background:#f1f5f9;border-radius:8px;width:36px;height:36px;font-size:22px;cursor:pointer;">&times;</button>
+        </div>
+        <div id="lecturerProgressContent"><div style="text-align:center;padding:30px;">Loading...</div></div>
+      </div>
+    </div>
+
+    <script>
+    // ============================================================
+    // CONFIG
+    // ============================================================
+    const SUPABASE_URL = 'https://lwhtjozfsmbyihenfunw.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx3aHRqb3pmc21ieWloZW5mdW53Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk2NTgxMjcsImV4cCI6MjA3NTIzNDEyN30.7Z8AYvPQwTAEEEhODlW6Xk-IR1FK3Uj5ivZS7P17Wpk';
+    const ZERO_QUESTION_ID = '00000000-0000-0000-0000-000000000000';
+
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    window.sb = sb;
+
+    // ============================================================
+    // STATE
+    // ============================================================
+    let lecturerExams = [];
+    let lecturerResults = [];
+    let lecturerAttendance = [];
+    let liveStudentsData = [];
+    let currentTab = 'dashboard';
+    let currentPage = { results: 1 };
+    const itemsPerPage = 10;
+    let lecturerId = null;
+    let lecturerProgram = null;   // lecturer's program/department
+    let lecturerSessionData = null;
+    const lecturerOwnerIds = new Set();
+// Hides the .html extension in the URL  
+if (window.location.pathname.endsWith('.html')) {
+    const cleanPath = window.location.pathname.replace(/\.html$/, '');
+    window.history.replaceState({}, '', cleanPath);
+}
+    // ============================================================
+    // AUTH
+    // ============================================================
+    function checkAuth() {
+        const session = localStorage.getItem('adminSession') || localStorage.getItem('userProfile');
+        if (!session) { window.location.href = 'login.html'; return false; }
+        try {
+            const data = JSON.parse(session);
+            lecturerSessionData = data;
+            const role = (data.role || data.user_role || '').toLowerCase();
+            if (!['lecturer','instructor','teacher','admin','superadmin','administrator'].includes(role)) {
+                window.location.href = 'login.html';
+                return false;
+            }
+            const name = data.name || data.full_name || 'Lecturer';
+            const email = data.email || 'lecturer@nchsm.ac.ke';
+            const initial = name.charAt(0).toUpperCase();
+
+            lecturerId = data.user_id || data.id || data.staff_id || data.auth_user_id || data.profile_id;
+            [data.user_id, data.id, data.staff_id, data.auth_user_id, data.profile_id].filter(Boolean).forEach(v => lecturerOwnerIds.add(String(v).trim().toLowerCase()));
+            lecturerProgram = data.program || data.department || data.course || null;
+
+            document.querySelectorAll('#adminName, #lecturerName, #profileName').forEach(el => { if (el) el.textContent = name; });
+            document.querySelectorAll('#adminEmail, #profileEmail').forEach(el => { if (el) el.textContent = email; });
+            document.querySelectorAll('#adminInitial, #lecturerAvatar, #profileAvatar').forEach(el => { if (el) el.textContent = initial; });
+
+            console.log('👤 Lecturer:', lecturerId, '| Program:', lecturerProgram);
+            return true;
+        } catch (e) { window.location.href = 'login.html'; return false; }
+    }
+
+    function logout() {
+        try {
+            localStorage.removeItem('adminSession');
+            localStorage.removeItem('userProfile');
+            localStorage.removeItem('lecturerSession');
+            sessionStorage.clear();
+        } catch (e) { console.warn('Session cleanup warning:', e); }
+        window.location.replace('https://nchsm.co.ke/adminlogin');
+    }
+
+    // ============================================================
+    // SIDEBAR & TABS
+    // ============================================================
+    function toggleSidebar() {
+        document.getElementById('sidebar').classList.toggle('open');
+        document.getElementById('sidebarOverlay').classList.toggle('active');
+    }
+
+    function switchTab(tab) {
+        currentTab = tab;
+        document.querySelectorAll('.sidebar-menu a').forEach(a => a.classList.remove('active'));
+        document.querySelector(`.sidebar-menu a[data-tab="${tab}"]`)?.classList.add('active');
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.getElementById(tab).classList.add('active');
+
+        const titles = {
+            dashboard: ['Overview', 'Welcome to your lecturer dashboard', 'fa-th-large'],
+            myExams: ['Department Exams', 'All exams in your program', 'fa-file-alt'],
+            results: ['Results', 'View student results', 'fa-graduation-cap'],
+            attendance: ['Attendance', 'Track student attendance', 'fa-clipboard-check'],
+            liveStudents: ['Live Students', 'Students currently taking exams', 'fa-eye'],
+            profile: ['Profile', 'Your profile information', 'fa-user-circle'],
+            security: ['Security', 'Security settings', 'fa-shield-alt']
+        };
+        const [title, subtitle, icon] = titles[tab] || ['Dashboard', 'Overview', 'fa-home'];
+        document.getElementById('pageTitle').innerHTML = `<i class="fas ${icon}"></i> ${title}`;
+        document.getElementById('pageSubtitle').textContent = subtitle;
+
+        if (tab === 'dashboard') loadDashboard();
+        if (tab === 'myExams') loadExams();
+        if (tab === 'results') loadResults();
+        if (tab === 'attendance') loadAttendance();
+        if (tab === 'liveStudents') loadLiveStudents();
+
+        if (window.innerWidth <= 768) {
+            document.getElementById('sidebar').classList.remove('open');
+            document.getElementById('sidebarOverlay').classList.remove('active');
+        }
+    }
+
+    // ============================================================
+    // DASHBOARD — shows program-wide stats
+    // ============================================================
+    async function loadDashboard() {
+        try {
+            let q = sb.from('exams').select('id, exam_name, status, created_by').order('id', { ascending: false });
+            if (lecturerProgram) q = q.eq('target_program', lecturerProgram);
+            const { data: exams } = await q;
+
+            const examIds = exams?.map(e => e.id) || [];
+
+            let totalStudents = 0;
+            let passed = 0;
+
+            if (examIds.length > 0) {
+                const { data: grades } = await sb
+                    .from('exam_grades')
+                    .select('student_id, result_status, marks')
+                    .eq('question_id', ZERO_QUESTION_ID)
+                    .in('exam_id', examIds);
+
+                const uniqueStudents = new Set(grades?.map(g => g.student_id) || []);
+                totalStudents = uniqueStudents.size;
+                passed = grades?.filter(g => g.result_status === 'PASS').length || 0;
+            }
+
+            const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+            const { data: liveLogs } = await sb
+                .from('exam_proctoring_logs')
+                .select('student_id')
+                .eq('event_type', 'exam_started')
+                .gte('timestamp', fiveMinutesAgo)
+                .in('exam_id', examIds.length ? examIds : [-1]);
+
+            const liveCount = new Set(liveLogs?.map(l => l.student_id) || []).size;
+
+            document.getElementById('statTotalExams').textContent = exams?.length || 0;
+            document.getElementById('statTotalStudents').textContent = totalStudents;
+            document.getElementById('statPassed').textContent = passed;
+            document.getElementById('statLiveStudents').textContent = liveCount;
+
+            const recent = exams?.slice(0, 5) || [];
+            document.getElementById('recentExamsList').innerHTML = recent.length ?
+                recent.map(e => `
+                    <div style="display:flex; justify-content:space-between; padding:10px 14px; background:#F8FAFC; border-radius:8px; border-left:3px solid #0A3D62; margin-bottom:6px;">
+                        <span style="font-weight:600; color:#0A3D62;">${e.exam_name}</span>
+                        <span class="status-badge ${e.status === 'published' ? 'active' : 'pending'}">${e.status || 'draft'}</span>
+                    </div>
+                `).join('') :
+                '<p style="color:#94A3B8; text-align:center; padding:20px; font-size:0.85rem;">No exams yet</p>';
+
+        } catch (e) { console.error(e); }
+    }
+
+    // ============================================================
+    // EXAMS — all exams in the lecturer's program
+    // ============================================================
+    async function loadExams() {
+        const loading = document.getElementById('examsLoading');
+        const tbody = document.getElementById('examsBody');
+        loading.style.display = 'block';
+        try {
+            await resolveLecturerOwnerIdentity();
+            // Filter by program, not by created_by
+            let q = sb.from('exams').select('*').order('id', { ascending: false });
+            if (lecturerProgram) q = q.eq('target_program', lecturerProgram);
+            const { data } = await q;
+            lecturerExams = data || [];
+            displayExams();
+            loading.style.display = 'none';
+        } catch (e) {
+            console.error('Error loading lecturer exams:', e);
+            lecturerExams = [];
+            const tbody = document.getElementById('examsBody');
+            if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:28px;color:#b91c1c;">Unable to load exams. Please refresh and try again.</td></tr>';
+            if (loading) {
+                loading.style.display = 'none';
+                loading.innerHTML = '<i class="fas fa-exclamation-circle"></i> Unable to load exams';
+            }
+        }
+    }
+
+    function isLecturerOwnExam(exam) {
+        const ownerValues = [exam?.created_by, exam?.lecturer_id, exam?.created_by_user_id, exam?.owner_id]
+            .filter(v => v !== null && v !== undefined && String(v).trim() !== '')
+            .map(v => String(v).trim().toLowerCase());
+        return ownerValues.some(v => lecturerOwnerIds.has(v));
+    }
+
+    async function resolveLecturerOwnerIdentity() {
+        const session = lecturerSessionData || {};
+        [session.user_id, session.id, session.staff_id, session.auth_user_id, session.profile_id]
+            .filter(Boolean).forEach(v => lecturerOwnerIds.add(String(v).trim().toLowerCase()));
+
+        // Older lecturer sessions can contain staff_id while exams.created_by stores profile user_id.
+        try {
+            let query = sb.from('consolidated_user_profiles_table').select('user_id, staff_id, email');
+            if (session.email) query = query.eq('email', session.email);
+            else if (session.staff_id) query = query.eq('staff_id', session.staff_id);
+            else return;
+            const { data, error } = await query.limit(1);
+            if (error) {
+                console.warn('Lecturer identity lookup warning:', error.message);
+                return;
+            }
+            (data || []).forEach(profile => {
+                [profile.user_id, profile.staff_id, profile.email].filter(Boolean)
+                    .forEach(v => lecturerOwnerIds.add(String(v).trim().toLowerCase()));
+            });
+        } catch (error) {
+            console.warn('Lecturer identity resolution skipped:', error);
+        }
+    }
+
+    function applyExamFilters() {
+        const search = (document.getElementById('examSearchFilter')?.value || '').trim().toLowerCase();
+        const owner = document.getElementById('examOwnerFilter')?.value || 'all';
+        const type = document.getElementById('examTypeFilter')?.value || 'all';
+        const status = document.getElementById('examStatusFilter')?.value || 'all';
+        const sort = document.getElementById('examSortFilter')?.value || 'newest';
+
+        const all = Array.isArray(lecturerExams) ? lecturerExams : [];
+        const mineCount = all.filter(isLecturerOwnExam).length;
+        const othersCount = all.length - mineCount;
+        const countAll = document.getElementById('examCountAll');
+        const countMine = document.getElementById('examCountMine');
+        const countOthers = document.getElementById('examCountOthers');
+        if (countAll) countAll.textContent = all.length;
+        if (countMine) countMine.textContent = mineCount;
+        if (countOthers) countOthers.textContent = othersCount;
+
+        const filtered = all.filter(e => {
+            const mine = isLecturerOwnExam(e);
+            const examName = String(e.exam_name || e.title || '').toLowerCase();
+            const examType = String(e.exam_type || 'Exam').toLowerCase();
+            const examStatus = String(e.status || 'draft').trim().toLowerCase().replace(/[ -]+/g, '_');
+            const searchMatches = !search || examName.includes(search) || examType.includes(search) || examStatus.includes(search);
+            const ownerMatches = owner === 'all' || (owner === 'mine' && mine) || (owner === 'others' && !mine);
+            const typeMatches = type === 'all' || (type === 'cat' && examType.includes('cat')) || (type === 'exam' && !examType.includes('cat'));
+            const statusMatches = status === 'all' ||
+                (status === 'published' && ['published', 'released'].includes(examStatus)) ||
+                (status === 'draft' && ['draft', 'pending', 'unpublished'].includes(examStatus)) ||
+                (status === 'active' && ['active', 'in_progress', 'ongoing', 'started'].includes(examStatus)) ||
+                (status === 'completed' && ['completed', 'closed', 'ended', 'submitted'].includes(examStatus));
+            return searchMatches && ownerMatches && typeMatches && statusMatches;
+        });
+
+        const examTimestamp = exam => {
+            const raw = exam.exam_date || exam.updated_at || exam.created_at;
+            const time = raw ? new Date(raw).getTime() : NaN;
+            return Number.isFinite(time) ? time : Number(exam.id || 0);
+        };
+        filtered.sort((a, b) => {
+            if (sort === 'name') return String(a.exam_name || a.title || '').localeCompare(String(b.exam_name || b.title || ''), undefined, { sensitivity: 'base' });
+            if (sort === 'oldest') return examTimestamp(a) - examTimestamp(b);
+            return examTimestamp(b) - examTimestamp(a);
+        });
+
+        const summary = document.getElementById('examFilterSummary');
+        if (summary) summary.textContent = `Showing ${filtered.length} of ${all.length} exams${owner === 'mine' ? ' · Your exams' : owner === 'others' ? ' · Other lecturers' : ''}`;
+        renderExamRows(filtered);
+    }
+
+    function resetExamFilters() {
+        const defaults = { examSearchFilter: '', examOwnerFilter: 'all', examTypeFilter: 'all', examStatusFilter: 'all', examSortFilter: 'newest' };
+        Object.entries(defaults).forEach(([id, value]) => {
+            const el = document.getElementById(id);
+            if (el) el.value = value;
+        });
+        applyExamFilters();
+    }
+
+    function displayExams() {
+        applyExamFilters();
+    }
+
+    function renderExamRows(exams) {
+        const tbody = document.getElementById('examsBody');
+        if (!tbody) return;
+        if (!exams.length) {
+            const hasAnyExams = Array.isArray(lecturerExams) && lecturerExams.length > 0;
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:34px 18px;color:#64748b;">
+                <i class="fas fa-${hasAnyExams ? 'filter' : 'folder-open'}" style="display:block;font-size:24px;margin-bottom:10px;color:#94a3b8;"></i>
+                <strong style="display:block;color:#334155;margin-bottom:5px;">${hasAnyExams ? 'No exams match these filters' : 'No exams found in your program'}</strong>
+                <span style="font-size:12px;">${hasAnyExams ? 'Try changing your search or reset the filters.' : 'Department exams will appear here when available.'}</span>
+            </td></tr>`;
+            return;
+        }
+        tbody.innerHTML = exams.map(e => {
+            const mine = isLecturerOwnExam(e);
+            const examName = String(e.exam_name || e.title || 'Untitled exam');
+            const examType = String(e.exam_type || 'Exam');
+            const examStatus = String(e.status || 'draft');
+            const normalizedStatus = examStatus.trim().toLowerCase().replace(/[ -]+/g, '_');
+            const statusClass = ['published', 'released', 'active', 'ongoing', 'in_progress', 'started'].includes(normalizedStatus) ? 'active' : ['completed', 'closed', 'ended', 'submitted'].includes(normalizedStatus) ? 'completed' : 'pending';
+            const safe = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+            const actions = mine
+                ? `<button type="button" onclick="openLecturerExamEdit('${safe(e.id)}')" style="background:#059669;color:#fff;border:0;padding:7px 12px;border-radius:7px;cursor:pointer;font-size:11px;font-weight:700;margin-right:5px;"><i class="fas fa-pen"></i> Edit</button>`
+                : '<span class="btn-view-only"><i class="fas fa-eye"></i> View Only</span>';
+            return `
+                <tr>
+                    <td style="padding:12px 14px;"><strong>${safe(examName)}</strong> ${!mine ? '<span title="Created by another lecturer" style="font-size:10px;color:#94a3b8;">🔒</span>' : ''}</td>
+                    <td style="text-align:center;padding:12px 14px;"><span class="status-badge ${examType.toUpperCase().includes('CAT') ? 'pending' : 'active'}">${safe(examType)}</span></td>
+                    <td style="text-align:center;padding:12px 14px;">${mine ? '<span style="color:#059669;font-weight:600;">You</span>' : '<span style="color:#94a3b8;">Other lecturer</span>'}</td>
+                    <td style="text-align:center;padding:12px 14px;"><span class="status-badge ${statusClass}">${safe(examStatus)}</span></td>
+                    <td style="text-align:center;padding:12px 14px;white-space:nowrap;">${actions}</td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    function openLecturerExamEdit(examId) {
+        const exam = lecturerExams.find(item => String(item.id) === String(examId));
+        if (!exam) {
+            showToast('The selected exam could not be found. Refresh the table and try again.', 'error');
+            return;
+        }
+        if (!isLecturerOwnExam(exam)) {
+            showToast('You can only edit exams that you created.', 'warning');
+            return;
+        }
+        const set = (id, value) => {
+            const field = document.getElementById(id);
+            if (field) field.value = value == null ? '' : String(value);
+        };
+        const dateValue = exam.exam_date ? String(exam.exam_date).slice(0, 10) : '';
+        const typeValue = String(exam.exam_type || 'CAT').toUpperCase();
+        const allowedTypes = ['CAT','CAT_1','CAT_2','EXAM','ASSIGNMENT','PRACTICAL','OSCE'];
+        set('lecturerEditExamId', exam.id);
+        set('lecturerEditTitle', exam.exam_name || exam.title || '');
+        set('lecturerEditType', allowedTypes.includes(typeValue) ? typeValue : 'CAT');
+        const statusField = document.getElementById('lecturerEditStatus');
+        const statusValue = String(exam.status || 'draft').toLowerCase();
+        if (statusField && !Array.from(statusField.options).some(option => option.value === statusValue)) {
+            const statusOption = document.createElement('option');
+            statusOption.value = statusValue;
+            statusOption.textContent = statusValue.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
+            statusField.appendChild(statusOption);
+        }
+        set('lecturerEditStatus', statusValue);
+        set('lecturerEditProgram', exam.target_program || exam.program_type || lecturerProgram || '');
+        set('lecturerEditUnitCode', exam.course_code || exam.unit_code || '');
+        set('lecturerEditIntake', exam.intake_year || '');
+        set('lecturerEditBlock', exam.block_term || exam.block || '');
+        set('lecturerEditDate', dateValue);
+        set('lecturerEditTime', exam.exam_start_time || exam.start_time || '');
+        set('lecturerEditDuration', exam.duration_minutes ?? 120);
+        set('lecturerEditTotalMarks', exam.total_marks ?? exam.marks_out_of ?? exam.MARKS ?? 100);
+        set('lecturerEditPassMark', exam.pass_mark ?? 50);
+        set('lecturerEditLink', exam.online_link || exam.exam_link || '');
+        set('lecturerEditDescription', exam.description || '');
+        set('lecturerEditInstructions', exam.instructions || '');
+        const feedback = document.getElementById('lecturerEditFeedback');
+        if (feedback) feedback.textContent = '';
+        const modal = document.getElementById('lecturerExamEditModal');
+        if (modal) {
+            modal.classList.add('open');
+            modal.setAttribute('aria-hidden', 'false');
+            document.body.style.overflow = 'hidden';
+            setTimeout(() => document.getElementById('lecturerEditTitle')?.focus(), 50);
+        }
+    }
+
+    function closeLecturerExamEdit() {
+        const modal = document.getElementById('lecturerExamEditModal');
+        if (modal) {
+            modal.classList.remove('open');
+            modal.setAttribute('aria-hidden', 'true');
+        }
+        document.body.style.overflow = '';
+        const form = document.getElementById('lecturerExamEditForm');
+        if (form) form.reset();
+        const feedback = document.getElementById('lecturerEditFeedback');
+        if (feedback) feedback.textContent = '';
+    }
+
+    async function saveLecturerExamEdit(event) {
+        event.preventDefault();
+        const id = document.getElementById('lecturerEditExamId')?.value;
+        const exam = lecturerExams.find(item => String(item.id) === String(id));
+        if (!exam || !isLecturerOwnExam(exam)) {
+            showToast('You are not permitted to edit this assessment.', 'error');
+            return;
+        }
+        const title = document.getElementById('lecturerEditTitle').value.trim();
+        const totalMarks = Number(document.getElementById('lecturerEditTotalMarks').value);
+        const passMark = Number(document.getElementById('lecturerEditPassMark').value);
+        const duration = Number(document.getElementById('lecturerEditDuration').value);
+        if (!title || !document.getElementById('lecturerEditDate').value ||
+            !Number.isFinite(totalMarks) || totalMarks <= 0 ||
+            !Number.isFinite(passMark) || passMark < 0 || passMark > totalMarks ||
+            !Number.isInteger(duration) || duration < 1) {
+            showToast('Check the title, date, duration and marks. Pass mark cannot exceed total marks.', 'warning');
+            return;
+        }
+        const saveButton = document.getElementById('lecturerEditSaveButton');
+        const feedback = document.getElementById('lecturerEditFeedback');
+        const original = saveButton.innerHTML;
+        saveButton.disabled = true;
+        saveButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+        if (feedback) feedback.textContent = 'Saving your changes…';
+        try {
+            const link = document.getElementById('lecturerEditLink').value.trim() || null;
+            const changes = {
+                exam_name: title,
+                title,
+                exam_type: document.getElementById('lecturerEditType').value,
+                status: document.getElementById('lecturerEditStatus').value,
+                target_program: document.getElementById('lecturerEditProgram').value.trim() || null,
+                course_code: document.getElementById('lecturerEditUnitCode').value.trim() || null,
+                intake_year: document.getElementById('lecturerEditIntake').value.trim() || null,
+                block: document.getElementById('lecturerEditBlock').value.trim() || null,
+                block_term: document.getElementById('lecturerEditBlock').value.trim() || null,
+                exam_date: document.getElementById('lecturerEditDate').value,
+                exam_start_time: document.getElementById('lecturerEditTime').value || null,
+                duration_minutes: duration,
+                total_marks: totalMarks,
+                marks_out_of: totalMarks,
+                pass_mark: passMark,
+                online_link: link,
+                exam_link: link,
+                description: document.getElementById('lecturerEditDescription').value.trim() || null,
+                instructions: document.getElementById('lecturerEditInstructions').value.trim() || null,
+                updated_at: new Date().toISOString()
+            };
+            let query = sb.from('exams').update(changes).eq('id', exam.id);
+            if (exam.created_by) query = query.eq('created_by', exam.created_by);
+            const { data, error } = await query.select('id').maybeSingle();
+            if (error) throw error;
+            if (!data) throw new Error('No exam was updated. Check that you still own this exam and have permission to edit it.');
+            Object.assign(exam, changes);
+            displayExams();
+            showToast('Exam / CAT updated successfully.', 'success');
+            closeLecturerExamEdit();
+        } catch (error) {
+            console.error('Lecturer exam edit failed:', error);
+            if (feedback) feedback.textContent = error.message || 'Unable to save changes.';
+            showToast('Could not update the exam: ' + (error.message || 'Unknown error'), 'error');
+        } finally {
+            saveButton.disabled = false;
+            saveButton.innerHTML = original;
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('lecturerExamEditForm');
+        if (form) form.addEventListener('submit', saveLecturerExamEdit);
+        const modal = document.getElementById('lecturerExamEditModal');
+        if (modal) modal.addEventListener('click', event => {
+            if (event.target === modal) closeLecturerExamEdit();
+        });
+    });
+
+    // ============================================================
+    // RESULTS — all results across the program
+    // ============================================================
+    async function loadResults() {
+        const loading = document.getElementById('resultsLoading');
+        const tbody = document.getElementById('resultsBody');
+        if (loading) { loading.style.display = 'block'; loading.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading current student results...'; }
+
+        try {
+            await resolveLecturerOwnerIdentity();
+            // Filter by program
+            let q = sb.from('exams')
+                .select('id, exam_name, exam_type, total_marks, pass_mark, created_at, updated_at, exam_date, exam_start_time, status, created_by')
+                .order('id', { ascending: false });
+            if (lecturerProgram) q = q.eq('target_program', lecturerProgram);
+            const { data: exams, error: examError } = await q;
+            if (examError) throw examError;
+
+            const examRows = exams || [];
+            const examIds = examRows.map(e => Number(e.id)).filter(Number.isFinite);
+            const examMap = Object.fromEntries(examRows.map(e => [e.id, e]));
+
+            if (!examIds.length) {
+                lecturerResults = [];
+                populateLecturerExamFilter([]);
+                displayResults();
+                if (loading) loading.style.display = 'none';
+                return;
+            }
+
+            const [{ data: attempts, error: attemptsError }, { data: grades, error: gradesError }] = await Promise.all([
+                sb.from('exam_attempts')
+                    .select('id, student_id, exam_id, attempt_number, status, is_retake, started_at, submitted_at, score, percentage, total_marks, updated_at')
+                    .in('exam_id', examIds)
+                    .order('updated_at', { ascending: false })
+                    .order('attempt_number', { ascending: false }),
+                sb.from('exam_grades')
+                    .select('*')
+                    .in('exam_id', examIds)
+                    .eq('question_id', ZERO_QUESTION_ID)
+                    .order('updated_at', { ascending: false })
+            ]);
+
+            if (attemptsError) console.warn('⚠️ attempt lookup warning:', attemptsError.message);
+            if (gradesError) throw gradesError;
+
+            const allAttempts = attempts || [];
+            const allGrades = grades || [];
+
+            const currentAttemptMap = new Map();
+            const newerAttempt = (candidate, current) => {
+                if (!current) return true;
+                const ct = new Date(candidate.updated_at || candidate.submitted_at || candidate.started_at || 0).getTime();
+                const pt = new Date(current.updated_at || current.submitted_at || current.started_at || 0).getTime();
+                if (ct !== pt) return ct > pt;
+                return Number(candidate.attempt_number || 1) > Number(current.attempt_number || 1);
+            };
+            for (const a of allAttempts) {
+                if (!a?.student_id || a?.exam_id == null) continue;
+                const key = `${a.student_id}__${a.exam_id}`;
+                if (newerAttempt(a, currentAttemptMap.get(key))) currentAttemptMap.set(key, a);
+            }
+
+            const attemptGradeMap = new Map();
+            for (const g of allGrades) {
+                if (!g?.attempt_id) continue;
+                const key = String(g.attempt_id);
+                const existing = attemptGradeMap.get(key);
+                if (!existing || new Date(g.updated_at || g.graded_at || g.created_at || 0) > new Date(existing.updated_at || existing.graded_at || existing.created_at || 0)) {
+                    attemptGradeMap.set(key, g);
+                }
+            }
+
+            const currentGradeMap = new Map();
+            for (const g of allGrades) {
+                if (!g?.student_id || g?.exam_id == null) continue;
+                const key = `${g.student_id}__${g.exam_id}`;
+                const canonicalAttempt = currentAttemptMap.get(key);
+                if (canonicalAttempt?.id && g.attempt_id && String(g.attempt_id) !== String(canonicalAttempt.id)) continue;
+                const existing = currentGradeMap.get(key);
+                if (!existing || new Date(g.updated_at || g.graded_at || g.created_at || 0) > new Date(existing.updated_at || existing.graded_at || existing.created_at || 0)) {
+                    currentGradeMap.set(key, g);
+                }
+            }
+            currentAttemptMap.forEach((attempt, key) => {
+                const linked = attemptGradeMap.get(String(attempt.id));
+                if (linked) currentGradeMap.set(key, linked);
+            });
+
+            const pairKeys = new Set([...currentAttemptMap.keys(), ...currentGradeMap.keys()]);
+
+            try {
+                const { data: attendanceParticipants, error: attendanceError } = await sb
+                    .from('exam_attendance').select('student_id, exam_id').in('exam_id', examIds);
+                if (attendanceError) {
+                    console.warn('⚠️ attendance participant lookup skipped:', attendanceError.message);
+                } else {
+                    (attendanceParticipants || []).forEach(r => {
+                        if (r?.student_id && r?.exam_id != null) pairKeys.add(`${r.student_id}__${r.exam_id}`);
+                    });
+                }
+            } catch (attErr) { console.warn('⚠️ attendance lookup failed:', attErr); }
+
+            const studentIds = [...new Set([...pairKeys].map(k => String(k).split('__')[0]).filter(Boolean))];
+
+            let profiles = [];
+            if (studentIds.length) {
+                const { data: p, error: profileError } = await sb
+                    .from('consolidated_user_profiles_table')
+                    .select('user_id, full_name, student_id, email, program, block, intake_year')
+                    .in('user_id', studentIds);
+                if (profileError) console.warn('⚠️ profile lookup warning:', profileError.message);
+                else profiles = p || [];
+            }
+            const profileMap = Object.fromEntries(profiles.map(p => [p.user_id, p]));
+
+            const rows = [];
+            for (const key of pairKeys) {
+                const attempt = currentAttemptMap.get(key) || null;
+                const grade = currentGradeMap.get(key) || null;
+                const parts = String(key).split('__');
+                const studentId = attempt?.student_id || grade?.student_id || parts[0];
+                const examId = attempt?.exam_id ?? grade?.exam_id ?? (parts[1] != null ? Number(parts[1]) : null);
+                if (!studentId || examId == null || Number.isNaN(Number(examId))) continue;
+
+                const exam = examMap[examId] || {};
+                const student = profileMap[studentId] || {};
+                const score = attempt?.score ?? grade?.marks ?? grade?.total_score ?? null;
+                const totalMarks = attempt?.total_marks ?? grade?.total_marks ?? exam.total_marks ?? 100;
+                const percentage = attempt?.percentage ?? grade?.percentage ?? (score != null && Number(totalMarks) > 0 ? (Number(score) / Number(totalMarks)) * 100 : null);
+                const attemptStatus = String(attempt?.status || '').toUpperCase();
+                const gradeStatus = String(grade?.result_status || '').toUpperCase();
+
+                rows.push({
+                    ...(grade || {}),
+                    id: grade?.id || `attempt-${attempt?.id || key}`,
+                    student_id: studentId,
+                    exam_id: Number(examId),
+                    question_id: ZERO_QUESTION_ID,
+                    marks: score,
+                    total_score: score,
+                    total_marks: totalMarks,
+                    percentage,
+                    result_status: gradeStatus || (attemptStatus === 'IN_PROGRESS' ? 'IN_PROGRESS' : 'PENDING'),
+                    attempt_id: attempt?.id || grade?.attempt_id || null,
+                    attempt_number: attempt?.attempt_number || 1,
+                    attempt_info: attempt,
+                    student, exam_name: exam.exam_name || `Exam ${examId}`, exam_info: exam,
+                    _status: gradeStatus || (attemptStatus === 'IN_PROGRESS' ? 'IN_PROGRESS' : 'PENDING')
+                });
+            }
+
+            const examSortValue = row => {
+                const exam = row?.exam_info || {};
+                if (exam.exam_date) {
+                    const t = exam.exam_start_time || '00:00:00';
+                    const parsed = new Date(`${exam.exam_date}T${t.length === 5 ? t + ':00' : t}`).getTime();
+                    if (!Number.isNaN(parsed)) return parsed;
+                }
+                const fallback = new Date(exam.updated_at || exam.created_at || row?.attempt_info?.updated_at || 0).getTime();
+                return !Number.isNaN(fallback) && fallback > 0 ? fallback : Number(row.exam_id || 0);
+            };
+            rows.sort((a, b) => {
+                const diff = examSortValue(b) - examSortValue(a);
+                if (diff !== 0) return diff;
+                return String(a.student?.full_name || '').localeCompare(String(b.student?.full_name || ''));
+            });
+
+            lecturerResults = rows;
+            populateLecturerExamFilter(examRows);
+            applyLecturerResultFilters();
+            if (loading) loading.style.display = 'none';
+        } catch (e) {
+            console.error('loadResults error:', e);
+            lecturerResults = [];
+            if (tbody) tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:30px; color:#DC2626;">❌ Error loading results: ${String(e?.message || e).replace(/</g, '&lt;')}</td></tr>`;
+            if (loading) loading.style.display = 'none';
+        }
+    }
+
+    function applyLecturerResultFilters() {
+        const search = (document.getElementById('resultSearch')?.value || '').trim().toLowerCase();
+        const examFilter = document.getElementById('resultExamFilter')?.value || '';
+        const statusFilter = document.getElementById('resultStatusFilter')?.value || '';
+        const typeFilter = document.getElementById('resultTypeFilter')?.value || '';
+        const ownerFilter = document.getElementById('resultOwnerFilter')?.value || 'mine';
+        const sortFilter = document.getElementById('resultSortFilter')?.value || 'newest';
+        const ownerId = String(lecturerId || '').trim();
+
+        let filtered = [...lecturerResults];
+        if (search) {
+            filtered = filtered.filter(r => {
+                const values = [r.student?.full_name, r.student?.student_id, r.student?.email, r.student?.program, r.exam_name, r.exam_info?.exam_name, r.exam_info?.exam_type].map(v => String(v || '').toLowerCase());
+                return values.some(v => v.includes(search));
+            });
+        }
+        if (examFilter) filtered = filtered.filter(r => String(r.exam_id) === String(examFilter));
+        if (typeFilter) {
+            filtered = filtered.filter(r => {
+                const type = String(r.exam_info?.exam_type || '').toLowerCase().replace(/[\s_-]+/g, '');
+                const isCat = type.includes('cat') || type.includes('continuousassessment');
+                return typeFilter === 'cat' ? isCat : !isCat;
+            });
+        }
+        if (ownerFilter !== 'all') {
+            filtered = filtered.filter(r => {
+                const isMine = isLecturerOwnExam(r.exam_info);
+                return ownerFilter === 'mine' ? isMine : !isMine;
+            });
+        }
+        if (statusFilter) {
+            filtered = filtered.filter(r => {
+                const status = String(r.result_status || r._status || r.attempt_info?.status || 'PENDING').toUpperCase().replace(/[\s-]+/g, '_');
+                if (statusFilter === 'PENDING') return ['PENDING','PENDING_REVIEW','RESET_FOR_RETAKE','IN_PROGRESS','NOT_MARKED','AWAITING_REVIEW'].includes(status);
+                return status === statusFilter;
+            });
+        }
+        const examTime = r => {
+            const exam = r.exam_info || {};
+            if (exam.exam_date) {
+                const t = exam.exam_start_time || '00:00:00';
+                const parsed = new Date(`${exam.exam_date}T${t.length === 5 ? t + ':00' : t}`).getTime();
+                if (!Number.isNaN(parsed)) return parsed;
+            }
+            const fallback = new Date(exam.updated_at || exam.created_at || r.attempt_info?.updated_at || 0).getTime();
+            return !Number.isNaN(fallback) ? fallback : Number(r.exam_id || 0);
+        };
+        filtered.sort((a, b) => {
+            if (sortFilter === 'student') return String(a.student?.full_name || '').localeCompare(String(b.student?.full_name || ''));
+            const diff = examTime(b) - examTime(a);
+            return sortFilter === 'oldest' ? -diff : diff;
+        });
+
+        window.lecturerFilteredResults = filtered;
+        currentPage.results = 1;
+        displayResults(filtered);
+        const summary = document.getElementById('resultsFilterSummary');
+        if (summary) { const ownerLabel = ownerFilter === 'mine' ? 'your exams only' : ownerFilter === 'others' ? 'other lecturers’ exams' : 'all department exams'; summary.textContent = `Showing ${filtered.length} of ${lecturerResults.length} results • View: ${ownerLabel} • Export: only your filtered exams`; }
+    }
+
+    function populateLecturerExamFilter(exams) {
+        const select = document.getElementById('resultExamFilter');
+        if (!select) return;
+        const current = select.value;
+        select.innerHTML = '<option value="">All Exams</option>' +
+            (exams || []).map(e => `<option value="${e.id}">${e.exam_name || `Exam ${e.id}`}</option>`).join('');
+        if ([...select.options].some(o => o.value === String(current))) select.value = current;
+    }
+
+    function displayResults(data = window.lecturerFilteredResults || lecturerResults) {
+        const start = (currentPage.results - 1) * itemsPerPage;
+        const page = data.slice(start, start + itemsPerPage);
+        const tbody = document.getElementById('resultsBody');
+
+        if (!page.length) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:30px; color:#94A3B8;">No current results found</td></tr>';
+            renderPagination('results', 0);
+            return;
+        }
+
+        tbody.innerHTML = page.map(r => {
+            const totalMarks = Number(r.exam_info?.total_marks || r.total_marks || r.attempt_info?.total_marks || 100);
+            const score = Number(r.marks ?? r.score ?? r.attempt_info?.score ?? 0) || 0;
+            const pct = totalMarks > 0 ? Number(r.percentage ?? r.attempt_info?.percentage ?? ((score / totalMarks) * 100)).toFixed(1) : '0.0';
+            const status = String(r.result_status || r.attempt_info?.status || 'PENDING_REVIEW').toUpperCase();
+
+            const isReset = status === 'RESET_FOR_RETAKE' && r.allow_retake === true && r.retake_unlocked === true;
+            const isInProgress = status === 'IN_PROGRESS';
+
+            let statusHtml = '';
+            if (isReset) statusHtml = '<span class="status-badge pending">🔄 RETAKE AUTHORIZED</span>';
+            else if (isInProgress) statusHtml = '<span class="status-badge active">🟢 IN PROGRESS</span>';
+            else if (status === 'PASS') statusHtml = '<span class="status-badge pass">PASS</span>';
+            else if (status === 'FAIL') statusHtml = '<span class="status-badge fail">FAIL</span>';
+            else statusHtml = '<span class="status-badge pending">PENDING</span>';
+
+            return `
+                <tr>
+                    <td><span class="student-id-badge">${r.student?.student_id || 'N/A'}</span></td>
+                    <td><strong>${r.student?.full_name || 'Unknown'}</strong>${r.student?.email ? `<br><small style="color:#64748B;">${r.student.email}</small>` : ''}</td>
+                    <td>${r.exam_name}</td>
+                    <td style="text-align:center; font-weight:600; color:#0A3D62;">${score} / ${totalMarks}</td>
+                    <td style="text-align:center; font-weight:600; color:${parseFloat(pct) >= 60 ? '#059669' : '#DC2626'};">${pct}%</td>
+                    <td style="text-align:center;">${statusHtml}</td>
+                    <td style="text-align:center;white-space:nowrap;">
+                        ${isLecturerOwnExam(r.exam_info) ? `<button type="button" onclick="viewLecturerStudentProgress('${String(r.student_id).replace(/'/g,"\\'")}', '${String(r.student?.full_name||'Unknown').replace(/'/g,"\\'")}', ${Number(r.exam_id)})" style="background:#0A3D62;color:#fff;border:0;padding:6px 10px;border-radius:6px;cursor:pointer;font-size:.65rem;font-weight:700;margin:2px;"><i class="fas fa-chart-line"></i> View Progress</button>` : ''}
+                        ${isReset || isInProgress ? `
+                            <button class="btn-reset-exam" disabled><i class="fas fa-clock"></i> ${isReset ? 'Continue Ready' : 'In Progress'}</button>
+                        ` : `
+                            <button class="btn-reset-exam" onclick="openResetModal('${String(r.student_id).replace(/'/g,"\\'")}', '${String(r.exam_id).replace(/'/g,"\\'")}', '${String(r.student?.full_name||'Unknown').replace(/'/g,"\\'")}', '${String(r.exam_name||'Exam').replace(/'/g,"\\'")}')"><i class="fas fa-undo"></i> Reset / Continue</button>
+                        `}
+                    </td>
+                </tr>`;
+        }).join('');
+
+        renderPagination('results', data.length);
+    }
+
+    function renderPagination(type, total) {
+        const totalPages = Math.ceil(total / itemsPerPage);
+        const container = document.getElementById(type + 'Pagination');
+        if (!container || totalPages <= 1) { if (container) container.innerHTML = ''; return; }
+        let html = `<button class="page-btn" onclick="changePage('${type}',${currentPage[type]-1})" ${currentPage[type]===1?'disabled':''}>‹</button>`;
+        for (let i = 1; i <= totalPages; i++) {
+            if (i === 1 || i === totalPages || (i >= currentPage[type] - 2 && i <= currentPage[type] + 2)) {
+                html += `<button class="page-btn ${i===currentPage[type]?'active':''}" onclick="changePage('${type}',${i})">${i}</button>`;
+            }
+        }
+        html += `<button class="page-btn" onclick="changePage('${type}',${currentPage[type]+1})" ${currentPage[type]===totalPages?'disabled':''}>›</button>`;
+        container.innerHTML = html;
+    }
+
+    function changePage(type, page) {
+        if (page < 1) return;
+        const total = type === 'results' ? (window.lecturerFilteredResults || lecturerResults).length : 0;
+        const totalPages = Math.ceil(total / itemsPerPage);
+        if (page > totalPages) return;
+        currentPage[type] = page;
+        if (type === 'results') displayResults();
+    }
+
+    function resetResultFilters() {
+        ['resultSearch','resultExamFilter','resultStatusFilter','resultTypeFilter'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = '';
+        });
+        const owner = document.getElementById('resultOwnerFilter');
+        if (owner) owner.value = 'mine';
+        const sort = document.getElementById('resultSortFilter');
+        if (sort) sort.value = 'newest';
+        applyLecturerResultFilters();
+    }
+
+    // ============================================================
+    // ATTENDANCE — for all program exams
+    // ============================================================
+    async function loadAttendance() {
+        const loading = document.getElementById('attendanceLoading');
+        const tbody = document.getElementById('attendanceBody');
+        loading.style.display = 'block';
+        try {
+            let q = sb.from('exams').select('id').order('id', { ascending: false });
+            if (lecturerProgram) q = q.eq('target_program', lecturerProgram);
+            const { data: exams } = await q;
+            const examIds = exams?.map(e => e.id) || [];
+            if (!examIds.length) { loading.innerHTML = 'No exams found'; return; }
+
+            const { data: logs } = await sb
+                .from('exam_proctoring_logs')
+                .select('*')
+                .in('exam_id', examIds)
+                .in('event_type', ['exam_started', 'exam_submitted'])
+                .order('timestamp', { ascending: false });
+
+            const studentIds = [...new Set(logs?.map(l => l.student_id).filter(Boolean))];
+            let profiles = [];
+            if (studentIds.length) {
+                const { data: p } = await sb.from('consolidated_user_profiles_table').select('user_id, full_name, student_id').in('user_id', studentIds);
+                profiles = p || [];
+            }
+            const profileMap = Object.fromEntries(profiles.map(p => [p.user_id, p]));
+            const examMap = Object.fromEntries((await sb.from('exams').select('id, exam_name').in('id', examIds))?.data?.map(e => [e.id, e]) || []);
+
+            lecturerAttendance = logs?.map(l => ({ ...l, student: profileMap[l.student_id] || {}, exam_name: examMap[l.exam_id]?.exam_name || 'Exam' })) || [];
+
+            const examFilter = document.getElementById('attendanceExamFilter')?.value;
+            let filtered = lecturerAttendance;
+            if (examFilter) filtered = filtered.filter(a => a.exam_id == examFilter);
+
+            tbody.innerHTML = filtered.slice(0, 50).map((a, i) => `
+                <tr>
+                    <td style="text-align:center;">${i + 1}</td>
+                    <td><strong>${a.student?.full_name || 'Unknown'}</strong></td>
+                    <td><span class="student-id-badge">${a.student?.student_id || 'N/A'}</span></td>
+                    <td>${a.exam_name}</td>
+                    <td style="text-align:center;"><span class="status-badge ${a.event_type === 'exam_started' ? 'active' : 'completed'}">${a.event_type === 'exam_started' ? '⏳ In Progress' : '✅ Completed'}</span></td>
+                </tr>
+            `).join('') || '<tr><td colspan="5" style="text-align:center; padding:30px; color:#94A3B8;">No attendance records</td></tr>';
+            loading.style.display = 'none';
+            document.getElementById('attendanceBadge').textContent = filtered.length;
+        } catch (e) { console.error(e); loading.innerHTML = 'Error loading attendance'; }
+    }
+
+    // ============================================================
+    // LIVE STUDENTS — for all program exams
+    // ============================================================
+    async function loadLiveStudents() {
+        const loading = document.getElementById('liveStudentsLoading');
+        const tbody = document.getElementById('liveStudentsBody');
+        const badge = document.getElementById('liveBadge');
+        if (!loading || !tbody) return;
+
+        loading.style.display = 'block';
+        loading.textContent = 'Checking live exam activity...';
+
+        try {
+            let examQuery = sb.from('exams').select('id, exam_name, target_program').order('id', { ascending: false });
+            if (lecturerProgram) examQuery = examQuery.eq('target_program', lecturerProgram);
+
+            const { data: exams, error: examsError } = await examQuery;
+            if (examsError) throw examsError;
+
+            const examIds = (exams || []).map(exam => exam.id).filter(id => id != null);
+            if (!examIds.length) {
+                liveStudentsData = [];
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:30px;color:#94A3B8;">No exams are assigned to this programme</td></tr>';
+                loading.style.display = 'none';
+                if (badge) badge.textContent = '0';
+                const stat = document.getElementById('statLiveStudents');
+                if (stat) stat.textContent = '0';
+                return;
+            }
+
+            // A recent heartbeat is the live signal. "exam_started" logs are
+            // historical events and can remain after a student closes the exam.
+            const liveSince = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+            const { data: heartbeats, error: heartbeatError } = await sb
+                .from('exam_heartbeats')
+                .select('student_id, exam_id, timestamp, current_question, answered_count, total_questions, face_detected')
+                .in('exam_id', examIds)
+                .gte('timestamp', liveSince)
+                .order('timestamp', { ascending: false });
+
+            if (heartbeatError) throw heartbeatError;
+
+            // Keep only the newest heartbeat for each student + exam pair.
+            const latestBySession = new Map();
+            (heartbeats || []).forEach(row => {
+                if (!row.student_id || row.exam_id == null || !row.timestamp) return;
+                const key = String(row.exam_id) + ':' + String(row.student_id);
+                if (!latestBySession.has(key)) latestBySession.set(key, row);
+            });
+            const sessions = [...latestBySession.values()];
+            const studentIds = [...new Set(sessions.map(row => String(row.student_id)))];
+
+            let profiles = [];
+            if (studentIds.length) {
+                const { data, error: profileError } = await sb
+                    .from('consolidated_user_profiles_table')
+                    .select('user_id, student_id, full_name, program')
+                    .in('user_id', studentIds);
+                if (profileError) throw profileError;
+                profiles = data || [];
+            }
+
+            const profileMap = new Map();
+            profiles.forEach(profile => {
+                if (profile.user_id != null) profileMap.set(String(profile.user_id), profile);
+                if (profile.student_id != null) profileMap.set(String(profile.student_id), profile);
+            });
+            const examMap = new Map((exams || []).map(exam => [String(exam.id), exam]));
+
+            liveStudentsData = sessions.map(row => ({
+                ...row,
+                student: profileMap.get(String(row.student_id)) || {},
+                exam_name: examMap.get(String(row.exam_id))?.exam_name || 'Exam'
+            })).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+            tbody.innerHTML = liveStudentsData.slice(0, 100).map(row => {
+                const student = row.student || {};
+                const lastSeenSeconds = Math.max(0, Math.floor((Date.now() - new Date(row.timestamp).getTime()) / 1000));
+                const lastSeen = lastSeenSeconds < 60 ? 'just now' : Math.floor(lastSeenSeconds / 60) + ' min ago';
+                const progress = Number(row.total_questions) > 0
+                    ? Math.round((Number(row.answered_count || 0) / Number(row.total_questions)) * 100)
+                    : 0;
+                const faceLabel = row.face_detected === false ? 'Face check paused' : 'Connected';
+                const faceColor = row.face_detected === false ? '#b45309' : '#15803d';
+                return `
+                    <tr>
+                        <td style="text-align:center;"><span class="live-dot"></span></td>
+                        <td><span class="student-id-badge">${student.student_id || 'N/A'}</span></td>
+                        <td><strong>${student.full_name || 'Student ' + String(row.student_id).slice(0, 8)}</strong><div style="font-size:11px;color:#64748b;margin-top:3px;">Last heartbeat: ${lastSeen}</div></td>
+                        <td>${row.exam_name}<div style="font-size:11px;color:#64748b;margin-top:3px;">Progress: ${progress}% · Q${Number(row.current_question || 0)}/${Number(row.total_questions || 0)}</div></td>
+                        <td style="text-align:center;"><span class="status-badge active" title="${faceLabel}" style="color:${faceColor};">● Live</span></td>
+                    </tr>`;
+            }).join('') || '<tr><td colspan="5" style="text-align:center;padding:30px;color:#94A3B8;">No students have sent a heartbeat in the last 2 minutes</td></tr>';
+
+            loading.style.display = 'none';
+            if (badge) badge.textContent = String(liveStudentsData.length);
+            const stat = document.getElementById('statLiveStudents');
+            if (stat) stat.textContent = String(liveStudentsData.length);
+        } catch (error) {
+            console.error('Could not load live exam students:', error);
+            loading.style.display = 'block';
+            loading.textContent = 'Unable to load live students. Check exam_heartbeats access and try again.';
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:#b91c1c;">Live student data could not be loaded. Please refresh or contact the administrator.</td></tr>';
+        }
+    }
+    // ============================================================
+    // RESET STUDENT EXAM
+    // ============================================================
+    // ============================================================
+    // RESET STUDENT EXAM — ATTEMPT-AWARE CONTINUATION
+    // Uses the same secure RPC as the Admin Dashboard.
+    // The RPC is authoritative: it reopens the existing attempt
+    // and does not require the browser to insert into exam_attempts.
+    // ============================================================
+
+    const lecturerRetakeInFlight = new Set();
+
+window.viewLecturerStudentProgress = async function(studentId, studentName, examId) {
+        const modalTitle = document.getElementById('lecturerProgressTitle');
+        const modalContent = document.getElementById('lecturerProgressContent');
+        const modal = document.getElementById('lecturerProgressModal');
+        const safe = value => String(value == null ? '' : value).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+        const sentinel = '00000000-0000-0000-0000-000000000000';
+        const answerValue = row => row?.selected_answer ?? row?.student_answer ?? row?.answer ?? row?.response ?? '';
+        const normalize = value => String(value ?? '').trim().toUpperCase().replace(/[()\s.\-_:]/g, '');
+        const optionKeyMatches = (value, letter, optionText) => {
+            const v = normalize(value);
+            return !!v && (v === normalize(letter) || v === normalize(optionText) || v === 'OPTION' + normalize(letter));
+        };
+
+        try {
+            await resolveLecturerOwnerIdentity();
+            const targetRow = lecturerResults.find(r => String(r.student_id) === String(studentId) && Number(r.exam_id) === Number(examId));
+            if (!targetRow || !isLecturerOwnExam(targetRow.exam_info)) throw new Error('You can view question-level progress only for exams you created.');
+            const numericExamId = Number(examId);
+            if (!studentId || !Number.isFinite(numericExamId) || numericExamId <= 0) {
+                throw new Error('Missing or invalid student/exam identifier.');
+            }
+
+            if (modalTitle) modalTitle.innerHTML = '<i class="fas fa-chart-line"></i> Student Progress';
+            if (modalContent) modalContent.innerHTML = '<div style="text-align:center;padding:40px;"><i class="fas fa-spinner fa-spin fa-2x"></i><br>Loading saved answers...</div>';
+            if (modal) modal.style.display = 'flex';
+
+            // Find the current attempt, never combine answers from an earlier retake.
+            const [attemptResult, questionsResult, examResult] = await Promise.all([
+                sb.from('exam_attempts')
+                    .select('id, attempt_number, status, is_retake, started_at, submitted_at, score, percentage, total_marks, updated_at')
+                    .eq('student_id', String(studentId))
+                    .eq('exam_id', numericExamId)
+                    .order('attempt_number', { ascending: false })
+                    .limit(1),
+                sb.from('exam_questions')
+                    .select('*')
+                    .eq('exam_id', numericExamId)
+                    .order('question_number', { ascending: true }),
+                sb.from('exams').select('exam_name, total_marks').eq('id', numericExamId).maybeSingle()
+            ]);
+
+            if (questionsResult.error) throw new Error('Could not load exam questions: ' + questionsResult.error.message);
+            const questions = questionsResult.data || [];
+            const latestAttempt = !attemptResult.error ? (attemptResult.data || [])[0] || null : null;
+            if (attemptResult.error) console.warn('Could not read exam_attempts; deriving attempt from saved grade rows.', attemptResult.error);
+
+            // The secure submission RPC writes per-question rows into exam_grades.
+            // If attempt table access is restricted, derive the latest attempt_id
+            // from the sentinel summary row before loading question answers.
+            let attemptId = latestAttempt?.id || null;
+            if (!attemptId) {
+                const { data: summaries, error: summaryError } = await sb.from('exam_grades')
+                    .select('attempt_id, updated_at, attempt_number')
+                    .eq('student_id', String(studentId))
+                    .eq('exam_id', numericExamId)
+                    .eq('question_id', sentinel)
+                    .order('updated_at', { ascending: false })
+                    .limit(1);
+                if (summaryError) console.warn('Could not derive attempt from summary row:', summaryError);
+                attemptId = summaries?.[0]?.attempt_id || null;
+            }
+
+            let answersQuery = sb.from('exam_grades')
+                .select('*')
+                .eq('student_id', String(studentId))
+                .eq('exam_id', numericExamId)
+                .neq('question_id', sentinel);
+            if (attemptId) answersQuery = answersQuery.eq('attempt_id', attemptId);
+            const { data: answerRows, error: answersError } = await answersQuery.order('updated_at', { ascending: false });
+            if (answersError) throw new Error('Could not load saved student answers: ' + answersError.message);
+
+            let gradeRows = answerRows || [];
+            // Legacy rows may have no attempt_id. In that case, avoid mixing attempts:
+            // select only rows belonging to the newest available attempt id.
+            if (!attemptId && gradeRows.some(row => row.attempt_id)) {
+                const newestAttemptId = gradeRows.find(row => row.attempt_id)?.attempt_id;
+                gradeRows = gradeRows.filter(row => row.attempt_id === newestAttemptId);
+                attemptId = newestAttemptId;
+            }
+
+            const answerMap = new Map();
+            gradeRows.forEach(row => {
+                const key = String(row.question_id);
+                if (!answerMap.has(key)) answerMap.set(key, row);
+            });
+
+            const reviewRows = questions.map((q, index) => {
+                const row = answerMap.get(String(q.id));
+                const selected = answerValue(row);
+                const isAnswered = !!row && normalize(selected) !== '';
+                const correct = q.correct_answer ?? q.correct_option ?? q.answer ?? '';
+                const options = [
+                    ['A', q.option_a], ['B', q.option_b], ['C', q.option_c],
+                    ['D', q.option_d], ['E', q.option_e]
+                ].filter(([, value]) => value !== null && value !== undefined && String(value).trim() !== '');
+
+                const explicitCorrect = row?.is_correct === true || row?.correct === true;
+                const explicitWrong = row?.is_correct === false || row?.correct === false;
+                const numericMarks = Number(row?.marks ?? row?.marks_obtained);
+                const hasNumericMarks = row?.marks != null || row?.marks_obtained != null;
+                const comparedCorrect = options.some(([letter, value]) =>
+                    optionKeyMatches(selected, letter, value) && optionKeyMatches(correct, letter, value)
+                );
+                const isCorrect = isAnswered && (
+                    explicitCorrect || (!explicitWrong && (comparedCorrect || (hasNumericMarks && Number.isFinite(numericMarks) && numericMarks > 0)))
+                );
+                const selectedOption = options.find(([letter, value]) => optionKeyMatches(selected, letter, value));
+                const correctOption = options.find(([letter, value]) => optionKeyMatches(correct, letter, value));
+                return {
+                    number: q.question_number ?? index + 1,
+                    text: q.question_text || q.question || ('Question ' + (index + 1)),
+                    options,
+                    selectedText: selectedOption ? selectedOption[0] + '. ' + selectedOption[1] : selected,
+                    correctText: correctOption ? correctOption[0] + '. ' + correctOption[1] : correct,
+                    isAnswered,
+                    isCorrect,
+                    marks: row?.marks ?? row?.marks_obtained ?? 0,
+                    totalMarks: q.marks ?? 1
+                };
+            });
+
+            const answeredCount = reviewRows.filter(q => q.isAnswered).length;
+            const correctCount = reviewRows.filter(q => q.isCorrect).length;
+            const wrongCount = reviewRows.filter(q => q.isAnswered && !q.isCorrect).length;
+            const unansweredCount = Math.max(0, reviewRows.length - answeredCount);
+            const attemptLabel = latestAttempt
+                ? 'Attempt #' + Number(latestAttempt.attempt_number || 1) + (latestAttempt.is_retake ? ' · Retake' : '')
+                : (attemptId ? 'Latest saved attempt' : 'Legacy result records');
+            const examName = safe(examResult.data?.exam_name || ('Exam ' + numericExamId));
+
+            let html = `
+                <div style="background:#F8FAFC;padding:16px;border-radius:12px;margin-bottom:16px;">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">
+                        <div><h3 style="margin:0;color:#0f172a;">${safe(studentName || 'Student')}</h3>
+                        <p style="color:#64748B;margin:5px 0;">${examName}</p><small style="color:#64748B;">${safe(attemptLabel)}</small></div>
+                        <button type="button" onclick="viewLecturerStudentProgress(${JSON.stringify(String(studentId))},${JSON.stringify(String(studentName || 'Student'))},${numericExamId})" style="padding:7px 11px;border:1px solid #cbd5e1;background:#fff;border-radius:8px;cursor:pointer;"><i class="fas fa-sync-alt"></i> Refresh</button>
+                    </div>
+                    <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin-top:14px;">
+                        <div style="background:#fff;padding:10px;border-radius:8px;text-align:center;"><strong style="font-size:1.3rem;color:#0A3D62;">${answeredCount}/${reviewRows.length}</strong><div style="font-size:.7rem;color:#64748B;">Answered</div></div>
+                        <div style="background:#fff;padding:10px;border-radius:8px;text-align:center;"><strong style="font-size:1.3rem;color:#15803d;">${correctCount}</strong><div style="font-size:.7rem;color:#64748B;">Correct</div></div>
+                        <div style="background:#fff;padding:10px;border-radius:8px;text-align:center;"><strong style="font-size:1.3rem;color:#b91c1c;">${wrongCount}</strong><div style="font-size:.7rem;color:#64748B;">Incorrect</div></div>
+                        <div style="background:#fff;padding:10px;border-radius:8px;text-align:center;"><strong style="font-size:1.3rem;color:#d97706;">${unansweredCount}</strong><div style="font-size:.7rem;color:#64748B;">Unanswered</div></div>
+                    </div>
+                </div>
+                <div style="max-height:52vh;overflow:auto;border:1px solid #E2E8F0;border-radius:10px;">
+                <table style="width:100%;min-width:700px;border-collapse:collapse;font-size:.82rem;">
+                    <thead style="position:sticky;top:0;background:#F1F5F9;z-index:1;"><tr>
+                        <th style="padding:10px;text-align:left;">Q#</th><th style="padding:10px;text-align:left;">Question & options</th>
+                        <th style="padding:10px;text-align:left;">Student answer</th><th style="padding:10px;text-align:left;">Correct answer</th>
+                        <th style="padding:10px;text-align:center;">Marks</th><th style="padding:10px;text-align:center;">Status</th>
+                    </tr></thead><tbody>`;
+
+            reviewRows.forEach(q => {
+                const optionsHtml = q.options.map(([letter, value]) =>
+                    '<div style="margin-top:3px;color:#64748b;">' + letter + '. ' + safe(value) + '</div>'
+                ).join('');
+                const status = !q.isAnswered ? '<span style="color:#64748b;">Not answered</span>'
+                    : q.isCorrect ? '<strong style="color:#15803d;">Correct</strong>'
+                    : '<strong style="color:#b91c1c;">Incorrect</strong>';
+                html += `<tr style="border-bottom:1px solid #E2E8F0;vertical-align:top;">
+                    <td style="padding:10px;font-weight:700;">${safe(q.number)}</td>
+                    <td style="padding:10px;white-space:normal;min-width:230px;"><strong>${safe(q.text)}</strong>${optionsHtml}</td>
+                    <td style="padding:10px;white-space:normal;">${q.isAnswered ? safe(q.selectedText) : '<span style="color:#94a3b8;">—</span>'}</td>
+                    <td style="padding:10px;white-space:normal;">${safe(q.correctText || '—')}</td>
+                    <td style="padding:10px;text-align:center;">${safe(q.marks)} / ${safe(q.totalMarks)}</td>
+                    <td style="padding:10px;text-align:center;">${status}</td>
+                </tr>`;
+            });
+
+            if (!reviewRows.length) html += '<tr><td colspan="6" style="padding:24px;text-align:center;color:#64748b;">No questions found for this exam.</td></tr>';
+            html += '</tbody></table></div>';
+
+            if (!gradeRows.length) {
+                html += '<p style="margin-top:12px;padding:12px;background:#fff7ed;color:#9a3412;border-radius:8px;">No per-question answer records were returned for this attempt. The attempt may have a final score without saved question-level responses, or access to the answer records may be restricted.</p>';
+            }
+            if (modalContent) modalContent.innerHTML = html;
+        } catch (error) {
+            console.error('Student progress load failed:', error);
+            if (modalContent) modalContent.innerHTML = `<div style="padding:18px;background:#fef2f2;color:#991b1b;border-radius:10px;"><strong>Unable to load student progress</strong><p>${safe(error?.message || error)}</p><button type="button" onclick="viewLecturerStudentProgress(${JSON.stringify(String(studentId || ''))},${JSON.stringify(String(studentName || 'Student'))},${Number(examId) || 0})" style="padding:8px 12px;border:0;border-radius:7px;background:#991b1b;color:#fff;">Retry</button></div>`;
+        }
+    };
+
+    function openResetModal(studentId, examId, studentName, examName) {
+        const nameEl = document.getElementById('resetStudentName');
+        const idEl = document.getElementById('resetStudentId');
+        const examEl = document.getElementById('resetExamName');
+        const userIdEl = document.getElementById('resetStudentUserId');
+        const examIdEl = document.getElementById('resetExamId');
+        const modal = document.getElementById('resetModal');
+
+        if (!nameEl || !idEl || !examEl || !userIdEl || !examIdEl || !modal) {
+            showToast('❌ Reset window is not available. Please refresh the page.', 'error');
+            console.error('Reset modal elements are missing.');
+            return;
+        }
+
+        nameEl.textContent = studentName || 'Unknown';
+        idEl.textContent = studentId || 'N/A';
+        examEl.textContent = examName || 'Exam';
+        userIdEl.value = studentId;
+        examIdEl.value = examId;
+        modal.style.display = 'flex';
+    }
+
+    function closeResetModal() {
+        const modal = document.getElementById('resetModal');
+        if (modal) modal.style.display = 'none';
+    }
+
+    async function authorizeLecturerRetake(studentId, examId, studentName = 'Student') {
+        const parsedExamId = parseInt(examId, 10);
+        const key = `${String(studentId)}__${parsedExamId}`;
+
+        if (!studentId || !parsedExamId) {
+            throw new Error('Student and exam are required.');
+        }
+
+        if (lecturerRetakeInFlight.has(key)) {
+            throw new Error('A reset is already being processed for this student.');
+        }
+
+        lecturerRetakeInFlight.add(key);
+
+        try {
+            console.log('🔐 Lecturer authorizing continuation through secure server RPC...', {
+                studentId,
+                examId: parsedExamId,
+                studentName
+            });
+
+            // IMPORTANT:
+            // Do NOT query/update/insert exam_attempts directly here.
+            // The SECURITY DEFINER RPC is the authoritative operation and
+            // handles the existing attempt atomically.
+            const { data, error } = await sb.rpc('admin_authorize_exam_retake', {
+                p_student_id: studentId,
+                p_exam_id: parsedExamId
+            });
+
+            if (error) {
+                console.error('❌ Lecturer retake authorization RPC failed:', error);
+                throw new Error(error.message || 'Unable to authorize exam continuation.');
+            }
+
+            if (!data) {
+                throw new Error('Retake authorization completed but the server returned no attempt information.');
+            }
+
+            const attempt = data.attempt || data;
+
+            if (!attempt.id ||
+                attempt.attempt_number === undefined ||
+                attempt.attempt_number === null) {
+                console.error('❌ Unexpected RPC response:', data);
+                throw new Error('The server returned an invalid attempt record.');
+            }
+
+            console.log(
+                `✅ Lecturer reset authorized for ${studentName}. Same attempt #${attempt.attempt_number} will resume.`,
+                attempt
+            );
+
+            return attempt;
+        } finally {
+            lecturerRetakeInFlight.delete(key);
+        }
+    }
+
+    async function confirmResetStudent() {
+        const studentId = document.getElementById('resetStudentUserId')?.value;
+        const examId = document.getElementById('resetExamId')?.value;
+        const studentName = document.getElementById('resetStudentName')?.textContent || 'Student';
+        const examName = document.getElementById('resetExamName')?.textContent || 'Exam';
+
+        const parsedExamId = parseInt(examId, 10);
+        const key = `${String(studentId)}__${parsedExamId}`;
+
+        if (!studentId || !parsedExamId) {
+            showToast('❌ Missing student or exam information.', 'error');
+            return;
+        }
+
+        if (lecturerRetakeInFlight.has(key)) {
+            showToast('⏳ This student reset is already being processed.', 'info');
+            return;
+        }
+
+        if (!confirm(
+            'AUTHORIZE RETAKE — PRESERVE ANSWERS\n\n' +
+            'Student: ' + studentName + '\n' +
+            'Exam: ' + examName + '\n\n' +
+            'The same submitted attempt will be reopened.\n' +
+            '✓ Saved answers and progress are preserved\n' +
+            '✓ Attempt ID and attempt number are retained\n' +
+            '✓ A fresh timer starts when the student re-enters\n' +
+            '✓ Score is recalculated after resubmission\n' +
+            '✗ This action does NOT clear choices\n\n' +
+            'Authorize this retake?'
+        )) return;
+
+        const btn = document.getElementById('confirmResetBtn');
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Authorizing...';
+        }
+
+        try {
+            // The secure RPC is now the single source of truth.
+            // This fixes the previous failure where the browser required
+            // a directly readable exam_attempts row before resetting.
+            const attempt = await authorizeLecturerRetake(
+                studentId,
+                parsedExamId,
+                studentName
+            );
+
+            // Clean up the old released-result record if one exists.
+            // Failure here must not undo the secure authorization.
+            try {
+                const { data: gradeRows, error: gradeLookupError } = await sb
+                    .from('exam_grades')
+                    .select('id, attempt_id')
+                    .eq('student_id', studentId)
+                    .eq('exam_id', parsedExamId)
+                    .eq('question_id', ZERO_QUESTION_ID)
+                    .order('updated_at', { ascending: false })
+                    .limit(20);
+
+                if (gradeLookupError) {
+                    console.warn('⚠️ Result cleanup lookup warning:', gradeLookupError.message);
+                } else {
+                    const matchingGrade = (gradeRows || []).find(
+                        g => g.attempt_id && String(g.attempt_id) === String(attempt.id)
+                    ) || gradeRows?.[0];
+
+                    if (matchingGrade?.id) {
+                        const { error: releaseDeleteError } = await sb
+                            .from('released_exam_results')
+                            .delete()
+                            .eq('student_id', studentId)
+                            .eq('exam_id', parsedExamId)
+                            .eq('result_id', matchingGrade.id);
+
+                        if (releaseDeleteError) {
+                            console.warn('⚠️ Release cleanup warning:', releaseDeleteError.message);
+                        }
+                    }
+                }
+            } catch (cleanupError) {
+                console.warn('⚠️ Release cleanup skipped:', cleanupError);
+            }
+
+            // Clear any stale heartbeat so the student's exam page can
+            // establish a fresh active session/timer when it resumes.
+            try {
+                const { error: heartbeatError } = await sb
+                    .from('exam_heartbeats')
+                    .delete()
+                    .eq('student_id', studentId)
+                    .eq('exam_id', parsedExamId);
+
+                if (heartbeatError) {
+                    console.warn('⚠️ Heartbeat cleanup warning:', heartbeatError.message);
+                }
+            } catch (heartbeatError) {
+                console.warn('⚠️ Heartbeat cleanup skipped:', heartbeatError);
+            }
+
+            // Audit log is best-effort and must never make a successful
+            // continuation look like a failed reset.
+            try {
+                const { error: logError } = await sb
+                    .from('exam_proctoring_logs')
+                    .insert({
+                        student_id: studentId,
+                        exam_id: parsedExamId,
+                        event_type: 'exam_retake_unlocked',
+                        details: `Lecturer unlocked ${studentName} for continuation using the same attempt #${attempt.attempt_number}; saved answers preserved.`,
+                        severity: 'info',
+                        timestamp: new Date().toISOString()
+                    });
+
+                if (logError) {
+                    console.warn('⚠️ Reset audit-log warning:', logError.message);
+                }
+            } catch (logError) {
+                console.warn('⚠️ Reset audit-log skipped:', logError);
+            }
+
+            showToast(
+                `✅ ${studentName}'s exam is unlocked. Same attempt #${attempt.attempt_number} will continue from saved progress.`,
+                'success'
+            );
+
+            closeResetModal();
+
+            // Refresh the lecturer result/dashboard views.
+            try { await loadResults(); } catch (e) { console.warn('Results refresh warning:', e); }
+            try { await loadDashboard(); } catch (e) { console.warn('Dashboard refresh warning:', e); }
+
+        } catch (err) {
+            console.error('❌ Lecturer reset error:', err);
+            showToast('❌ Reset failed: ' + (err?.message || err), 'error');
+        } finally {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-redo"></i> Authorize Retake';
+            }
+        }
+    }
+
+    // ============================================================
+    // EXPORT
+    // ============================================================
+    async function exportMyData() {
+        if (!Array.isArray(lecturerResults) || lecturerResults.length === 0) {
+            showToast('⚠️ No marks are available to export.', 'warning');
+            return;
+        }
+
+        // Re-apply the live Results filters at export time so the spreadsheet
+        // matches the user's current exam, status, and search selections.
+        // Export permission is still independently restricted to exams created
+        // by this lecturer, even if the visible Results table shows department-wide data.
+        await resolveLecturerOwnerIdentity();
+        if (!lecturerOwnerIds.size) {
+            showToast('❌ Your lecturer identity could not be verified. Please sign in again.', 'error');
+            return;
+        }
+
+        applyLecturerResultFilters();
+        const currentlyFiltered = Array.isArray(window.lecturerFilteredResults)
+            ? window.lecturerFilteredResults
+            : lecturerResults;
+
+        const ownedFilteredResults = currentlyFiltered.filter(r => isLecturerOwnExam(r.exam_info));
+
+        if (!ownedFilteredResults.length) {
+            showToast('⚠️ No results match the current filters for exams or CATs you created.', 'warning');
+            return;
+        }
+
+        const data = ownedFilteredResults.map(r => {
+            const totalMarks = Number(r.total_marks ?? r.exam_info?.total_marks ?? r.attempt_info?.total_marks ?? 100) || 100;
+            const score = Number(r.marks ?? r.score ?? r.attempt_info?.score ?? 0) || 0;
+            const percentage = Number(r.percentage ?? r.attempt_info?.percentage ?? ((score / totalMarks) * 100));
+            return {
+                'Student ID': r.student?.student_id || 'N/A',
+                'Student Name': r.student?.full_name || 'Unknown',
+                'Exam / CAT': r.exam_name || r.exam_info?.exam_name || 'Exam',
+                'Score': score,
+                'Total Marks': totalMarks,
+                'Percentage': percentage.toFixed(1) + '%',
+                'Status': r.result_status || r._status || r.attempt_info?.status || 'PENDING'
+            };
+        });
+
+        const ws = XLSX.utils.json_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Filtered Exam Marks');
+        XLSX.writeFile(wb, `My_Filtered_Exam_Marks_${new Date().toISOString().split('T')[0]}.xlsx`);
+        showToast(`✅ Exported ${data.length} filtered marks from your own exams/CATs only.`, 'success');
+    }
+
+    // ============================================================
+    // TOAST
+    // ============================================================
+    function showToast(message, type = 'info') {
+        const colors = { success: '#10B981', error: '#EF4444', warning: '#F59E0B', info: '#3B82F6' };
+        const icons = { success: 'fa-check-circle', error: 'fa-exclamation-circle', warning: 'fa-exclamation-triangle', info: 'fa-info-circle' };
+        document.querySelectorAll('.custom-toast').forEach(t => t.remove());
+        const toast = document.createElement('div');
+        toast.className = 'custom-toast';
+        toast.style.cssText = `position: fixed; top: 20px; right: 20px; background: ${colors[type] || '#3B82F6'}; color: white; padding: 14px 24px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); z-index: 99999; display: flex; align-items: center; gap: 12px; font-family: 'Inter', sans-serif; font-size: 0.85rem; font-weight: 500; max-width: 400px; transform: translateX(120%); opacity: 0; transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55); cursor: pointer;`;
+        toast.innerHTML = `<i class="fas ${icons[type] || 'fa-info-circle'}" style="font-size:1.1rem;"></i><span>${message}</span><i class="fas fa-times" style="margin-left:auto; opacity:0.7; font-size:0.8rem; cursor:pointer;"></i>`;
+        document.body.appendChild(toast);
+        setTimeout(() => { toast.style.transform = 'translateX(0)'; toast.style.opacity = '1'; }, 10);
+        toast.addEventListener('click', () => { toast.style.transform = 'translateX(120%)'; toast.style.opacity = '0'; setTimeout(() => toast.remove(), 400); });
+        setTimeout(() => { if (document.body.contains(toast)) { toast.style.transform = 'translateX(120%)'; toast.style.opacity = '0'; setTimeout(() => toast.remove(), 400); } }, 5000);
+    }
+
+    // ============================================================
+    // NOTIFICATIONS
+    // ============================================================
+    async function setupNotifications() {
+        try {
+            const { data: logs } = await sb.from('exam_proctoring_logs').select('id, is_read').eq('is_read', false).limit(10);
+            document.getElementById('notificationCount').textContent = logs?.length || 0;
+
+            sb.channel('lecturer-alerts')
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'exam_proctoring_logs' }, async () => {
+                    const count = parseInt(document.getElementById('notificationCount').textContent) || 0;
+                    document.getElementById('notificationCount').textContent = count + 1;
+                    showToast('🔔 New proctoring alert!', 'warning');
+                    loadNotifications();
+                })
+                .subscribe();
+
+            await loadNotifications();
+        } catch (e) { console.error('Notification setup error:', e); }
+    }
+
+    async function loadNotifications() {
+        const container = document.getElementById('notificationList');
+        try {
+            const { data: logs, error: logsError } = await sb
+                .from('exam_proctoring_logs')
+                .select('*')
+                .eq('is_read', false)
+                .order('timestamp', { ascending: false })
+                .limit(10);
+
+            if (logsError) throw logsError;
+
+            if (!logs || logs.length === 0) {
+                container.innerHTML = '<div style="padding:20px;text-align:center;color:#94A3B8;"><i class="fas fa-check-circle" style="display:block;font-size:2rem;margin-bottom:8px;"></i>All clear!</div>';
+                return;
+            }
+
+            // Fetch student names separately because the profile table may not
+            // have a PostgREST foreign-key relationship with proctoring logs.
+            const studentIds = [...new Set((logs || []).map(log => log.student_id).filter(Boolean))];
+            let profileMap = {};
+
+            if (studentIds.length) {
+                const { data: profiles, error: profileError } = await sb
+                    .from('consolidated_user_profiles_table')
+                    .select('user_id, full_name, student_id')
+                    .in('user_id', studentIds);
+
+                if (profileError) {
+                    console.warn('⚠️ Notification profile lookup warning:', profileError.message);
+                } else {
+                    profileMap = Object.fromEntries(
+                        (profiles || []).map(p => [String(p.user_id), p])
+                    );
+                }
+            }
+
+            container.innerHTML = logs.map(log => {
+                const profile = profileMap[String(log.student_id)] || {};
+                const displayName = profile.full_name || profile.student_id || log.student_id || 'Student';
+
+                return `
+                    <div class="notification-item" style="padding:12px 16px;border-bottom:1px solid #E2E8F0;cursor:pointer;" onclick="markNotificationRead('${log.id}')">
+                        <div class="notification-title">${log.event_type?.replace(/_/g, ' ') || 'Alert'}</div>
+                        <div class="notification-detail">Student: ${displayName}</div>
+                        <div class="notification-time">${new Date(log.timestamp).toLocaleString()}</div>
+                    </div>
+                `;
+            }).join('');
+        } catch (e) { console.error('Error loading notifications:', e); }
+    }
+
+    async function markNotificationRead(id) {
+        try {
+            await sb.from('exam_proctoring_logs').update({ is_read: true }).eq('id', id);
+            const count = parseInt(document.getElementById('notificationCount').textContent) || 0;
+            document.getElementById('notificationCount').textContent = Math.max(0, count - 1);
+            loadNotifications();
+        } catch (e) { console.error('Error marking notification read:', e); }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const bell = document.getElementById('notificationBell');
+        const panel = document.getElementById('notificationPanel');
+        if (bell && panel) {
+            bell.addEventListener('click', function(e) {
+                e.stopPropagation();
+                panel.classList.toggle('show');
+                if (panel.classList.contains('show')) loadNotifications();
+            });
+            document.addEventListener('click', function() { panel.classList.remove('show'); });
+        }
+    });
+
+    // ============================================================
+    // INIT
+    // ============================================================
+    document.addEventListener('DOMContentLoaded', function() {
+        if (!checkAuth()) return;
+
+        // Load exam dropdowns — filtered by program
+        setTimeout(async () => {
+            let q = sb.from('exams').select('id, exam_name').order('id', { ascending: false });
+            if (lecturerProgram) q = q.eq('target_program', lecturerProgram);
+            const { data: exams } = await q;
+            if (exams) populateLecturerExamFilter(exams);
+            const attSelect = document.getElementById('attendanceExamFilter');
+            if (attSelect && exams) {
+                attSelect.innerHTML = '<option value="">All Exams</option>' +
+                    exams.map(e => `<option value="${e.id}">${e.exam_name}</option>`).join('');
+            }
+        }, 500);
+
+        setupNotifications();
+        switchTab('dashboard');
+
+        // Refresh the live roster while the lecturer keeps that tab open.
+        // The roster itself filters to heartbeats received within the last 2 minutes.
+        if (!window.nchsmLiveStudentsRefreshTimer) {
+            window.nchsmLiveStudentsRefreshTimer = setInterval(() => {
+                const liveTab = document.getElementById('liveStudents');
+                if (liveTab && liveTab.classList.contains('active')) {
+                    loadLiveStudents();
+                }
+            }, 15000);
+        }
+
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('modal')) e.target.style.display = 'none';
+        });
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
+        });
+
+        console.log('✅ Lecturer Dashboard loaded (Program-wide view + Reset)');
+    });
+    </script>
+
+
+<script>
+/* Prevent browsers/password managers from injecting the signed-in lecturer email
+   into the student/exam search field. It becomes editable after an explicit focus. */
+(function () {
+  function protectLecturerSearch() {
+    const field = document.getElementById('resultSearch');
+    if (!field) return;
+    const looksLikeEmail = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test((field.value || '').trim());
+    if (!field.matches(':focus') && looksLikeEmail) {
+      field.value = '';
+      field.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    field.setAttribute('autocomplete', 'new-password');
+    field.setAttribute('name', 'lecturer-results-search-query');
+    field.setAttribute('data-lpignore', 'true');
+    field.setAttribute('data-1p-ignore', 'true');
+    if (!field.dataset.nchsmFocusGuard) {
+      field.dataset.nchsmFocusGuard = '1';
+      field.addEventListener('focus', () => field.removeAttribute('readonly'));
+      field.addEventListener('blur', () => {
+        if (/^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test((field.value || '').trim())) {
+          field.value = '';
+          field.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+        field.setAttribute('readonly', 'readonly');
+      });
+    }
+    if (!field.matches(':focus')) field.setAttribute('readonly', 'readonly');
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', protectLecturerSearch, { once: true });
+  } else protectLecturerSearch();
+  window.addEventListener('pageshow', protectLecturerSearch);
+  setTimeout(protectLecturerSearch, 350);
+  setTimeout(protectLecturerSearch, 1100);
+})();
+</script>
+
+<script src="/js/exam-coordinator.js?v=1" defer></script>
+<script src="/js/nchsm-mobile-enhancements.js?v=7" defer></script>
+<script src="/js/lecturer-exams-access-audit.js?v=20261112-1" defer></script>
+
+<script>(function(){function updateLecturerClock(){const n=new Date();const e=document.getElementById('lecturerCommandDate');if(e)e.textContent=new Intl.DateTimeFormat('en-KE',{weekday:'short',day:'2-digit',month:'short',year:'numeric'}).format(n);}updateLecturerClock();})();</script>
+</body>
+</html>

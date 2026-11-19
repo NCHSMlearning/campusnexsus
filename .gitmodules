@@ -1,0 +1,3 @@
+[submodule "platform/full-source"]
+	path = platform/full-source
+	url = https://github.com/NCHSMlearning/NCHSM-Digital-campus-.git
