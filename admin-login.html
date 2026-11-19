@@ -423,7 +423,7 @@
             if(!qrCode)throw new Error('Supabase did not return an authenticator QR code. Please retry setup.');
             qrImage.onerror=()=>{qrImage.hidden=true;showError('The authenticator QR code could not be displayed. Use the setup key below or restart setup.');};
             qrImage.onload=()=>{qrImage.hidden=false;};
-            qrImage.src=/^data:image\\/svg\\+xml/i.test(qrCode)?qrCode:'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(qrCode);
+            qrImage.src=qrCode.toLowerCase().startsWith('data:image/svg+xml')?qrCode:'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(qrCode);
             document.getElementById('mfaSecret').textContent=enrollment.totp.secret;
             showMfaPanel('Set up administrator two-step verification','Scan this QR code using an authenticator app. Enter the generated 6-digit code below to activate two-step verification. Setup is required before accessing the admin dashboard.',true);
         }
