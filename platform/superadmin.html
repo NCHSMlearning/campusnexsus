@@ -942,7 +942,7 @@ main.main>header{width:100%;max-width:100%;min-width:0}
     <span>Global User Management</span>
   </a>
 </li>
-<li style="margin-bottom:2px;"><a href="#" data-tab="operator-permissions" style="display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;color:white;text-decoration:none;font-size:14px;font-weight:600;"><i class="fas fa-user-shield" style="width:20px;text-align:center;color:#5eead4;"></i><span>Operator Permissions</span></a></li>
+<li style="margin-bottom:2px;"><a href="#" data-tab="operator-permissions" style="display:none;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;color:white;text-decoration:none;font-size:14px;font-weight:600;"><i class="fas fa-user-shield" style="width:20px;text-align:center;color:#5eead4;"></i><span>Operator Permissions</span></a></li>
 
 
                 <!-- SECTION 2: USER MANAGEMENT              -->
@@ -14889,6 +14889,7 @@ body.profile-dark-mode #profile .profile-extra-panel select{background:#20364f!i
             });
             if (typeof loadSectionData === 'function') loadSectionData(tabId);
             if (tabId === 'staff-management' && typeof window.initStaffDirectory === 'function') window.initStaffDirectory();\n            if (tabId === 'global-users' && typeof window.loadGlobalUserManagement === 'function') window.loadGlobalUserManagement();
+            if (tabId === 'operator-permissions' && typeof window.loadPlatformOperatorPermissions === 'function') window.loadPlatformOperatorPermissions();
         };
     }
 
