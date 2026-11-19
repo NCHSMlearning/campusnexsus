@@ -95,7 +95,7 @@
   function resetForm() {
     editingId = null;
     $("cnInstitutionForm")?.reset();
-    if ($("cnInstitutionStatus")) $("cnInstitutionStatus").value = "active";
+    if ($("cnInstitutionStatus")) $("cnInstitutionStatus").value = "pending";
     if ($("cnInstitutionType")) $("cnInstitutionType").value = "college";
     if ($("cnInstitutionAmount")) $("cnInstitutionAmount").value = "5000";
     applyBrandColors();
@@ -157,15 +157,18 @@
     host.innerHTML = filtered.map(i => {
       const status = i.status === "active" ? "Active" : i.status === "suspended" ? "Suspended" : "Pending";
       const registrationUrl = safeWebUrl(i._registrationUrl);
+      const portalUrl = safeWebUrl(i._portalUrl);
+      const setupState = i.onboarding_status || "configuring";
+      const adminState = i._adminUserId ? "Admin assigned" : "Admin pending";
+      const moduleState = (i._modules || []).length + " modules enabled";
       return '<tr><td><div class="cn-school"><span class="cn-school-mark" style="background:' + esc(i.primary_color || "#082f49") + '">' +
-        (safeWebUrl(i.logo_url,true) ? '<img src="' + esc(safeWebUrl(i.logo_url,true)) + '" alt="" onerror="this.style.display=\\'none\\'">' : '<i class="fas fa-school"></i>') +
+        (safeWebUrl(i.logo_url,true) ? '<img src="' + esc(safeWebUrl(i.logo_url,true)) + '" alt="" onerror="this.style.display=\'none\'">' : '<i class="fas fa-school"></i>') +
         '</span><span><strong>' + esc(i.name) + '</strong><small>' + esc(i.short_code) + ' · ' + esc(i.country || "") + '</small></span></div></td>' +
         '<td><span class="cn-status cn-status-' + esc(i.status) + '">' + status + '</span></td>' +
         '<td>' + esc(i._subscription?.plan_name || "—") + '<small class="cn-subline">' +
         (i._subscription ? esc(i._subscription.currency) + " " + Number(i._subscription.amount).toLocaleString() + " / " + esc(i._subscription.billing_cycle) : "Not configured") + '</small></td>' +
-        '<td>' + esc(i.contact_email || "—") + '</td><td>' + (registrationUrl
-          ? '<a href="' + esc(registrationUrl) + '" target="_blank" rel="noopener">Registration link</a><button class="cn-row-action" type="button" data-copy-registration="' + esc(i.id) + '">Copy</button>'
-          : esc(i.portal_domain || "Domain not configured")) + '</td>' +
+        '<td>' + esc(i.contact_email || "—") + '</td><td>' + (portalUrl ? '<a href="' + esc(portalUrl) + '" target="_blank" rel="noopener">Open portal</a>' : esc(i.portal_domain || "Domain not configured")) +
+        (registrationUrl ? '<br><a href="' + esc(registrationUrl) + '" target="_blank" rel="noopener">Registration</a><button class="cn-row-action" type="button" data-copy-registration="' + esc(i.id) + '">Copy</button>' : '') + '</td>' +
         '<td><div class="cn-row-actions"><button class="cn-row-action" type="button" data-edit="' + esc(i.id) + '">Manage</button>' +
         (i.status !== "active" ? '<button class="cn-row-action" type="button" data-status="' + esc(i.id) + '" data-next="active" aria-label="Activate ' + esc(i.name) + '">Activate</button>' :
         '<button class="cn-row-action cn-row-secondary" type="button" data-status="' + esc(i.id) + '" data-next="suspended" aria-label="Suspend ' + esc(i.name) + '">Suspend</button>') +
@@ -223,17 +226,18 @@
     }
     institutions = (data || []).map(i => {
       const sub = subscriptions.find(x => x.institution_id === i.id);
-      const member = memberships.find(x => x.institution_id === i.id && x.status === "active");
+      const member = memberships.find(x => x.institution_id === i.id && x.status === "active" && x.role === "institution_admin");
       const registration = registrationLinks.find(x => x.institution_id === i.id);
       const host = String(i.portal_domain || "").trim().replace(/^https?:\/\//i,"").replace(/\/$/,"");
-      const registrationUrl = i.portal_mode === "custom_website" && i.custom_login_url
+      const registrationUrl = host
+        ? "https://" + host + "/register"
+        : registration ? new URL("full-source/registration.html",window.location.href).href + "?institution_code=" + encodeURIComponent(registration.code) : "";
+      const portalUrl = i.portal_mode === "custom_website" && i.custom_login_url
         ? i.custom_login_url
-        : host
-          ? "https://" + host + "/register"
-          : registration ? new URL("full-source/registration.html",window.location.href).href + "?institution_code=" + encodeURIComponent(registration.code) : "";
+        : host ? "https://" + host : "";
       return {...i, _modules:modules.filter(x => x.institution_id === i.id && x.enabled).map(x => x.module_key),
         _subscription:sub || null, _subscriptionId:sub?.id || null, _adminUserId:member?.user_id || null,
-        _registrationUrl:registrationUrl, _registrationCode:registration?.code || null};
+        _registrationUrl:registrationUrl, _portalUrl:portalUrl, _registrationCode:registration?.code || null};
     });
     renderRows();
   }
