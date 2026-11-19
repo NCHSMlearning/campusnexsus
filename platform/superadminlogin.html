@@ -403,13 +403,13 @@ async function sendLoginNotification(profile){
    const html=`<!doctype html><html><body style="margin:0;background:#f3f7fa;font-family:Arial,sans-serif;color:#17354b">
    <div style="max-width:650px;margin:30px auto;background:#fff;border:1px solid #dbe7ee;border-radius:18px;overflow:hidden">
      <div style="padding:28px;background:linear-gradient(135deg,#4c1d95,#7c3aed,#a855f7);color:#fff">
-       <div style="font-size:14px;font-weight:bold;opacity:.9">${theme.emoji} NCHSM SECURITY</div>
+       <div style="font-size:14px;font-weight:bold;opacity:.9">${theme.emoji} CAMPUS NEXUS SECURITY</div>
        <h1 style="margin:8px 0 4px;font-size:27px">New Login Detected</h1>
        <div style="opacity:.9">${theme.label} Portal</div>
      </div>
      <div style="padding:28px">
        <p>Hello ${profile.full_name||"Administrator"},</p>
-       <p>A successful login to your NCHSM administrative account was detected.</p>
+       <p>A successful login to your Campus Nexus Platform Super Admin account was detected.</p>
        <div style="border:1px solid #dbe7ee;border-radius:12px;overflow:hidden;margin:20px 0">
          <div style="padding:12px 16px;background:#f5f9fc;font-weight:bold">Session Details</div>
          <div style="padding:15px 16px;border-top:1px solid #e5edf2"><b>Time:</b> ${time}</div>
@@ -419,18 +419,18 @@ async function sendLoginNotification(profile){
          <div style="padding:15px 16px;border-top:1px solid #e5edf2"><b>Session ID:</b> ${sessionId}</div>
        </div>
        <div style="padding:15px;border-radius:10px;background:#fff7e5;border:1px solid #f2d28a">
-         <b>Security tip:</b> If you do not recognize this activity, secure the account immediately and contact NCHSM ICT Support.
+         <b>Security tip:</b> If you do not recognize this activity, secure the account immediately and contact your designated Campus Nexus platform support contact.
        </div>
-       <p style="margin-top:24px;font-size:13px;color:#627b8e">NCHSM ICT Support • ict@nchsm.co.ke</p>
+       <p style="margin-top:24px;font-size:13px;color:#627b8e">Campus Nexus Platform Security</p>
      </div>
    </div></body></html>`;
 
    const {data,error}=await supabase.functions.invoke("send-email",{
      body:{
        to:profile.email,
-       subject:"🔐 New "+theme.label+" Login — NCHSM Portal",
+       subject:"🔐 New "+theme.label+" Login — Campus Nexus",
        html,
-       from:"NCHSM ICT Support <noreply@nchsm.co.ke>"
+       
      }
    });
    if(error||!data?.success)console.warn("Login notification could not be sent.");
@@ -463,7 +463,7 @@ async function completeAdminLogin(profile){
  await saveAdminSession(profile);
  showMessage("Authentication successful. Opening Super Admin Console…","success");
  sendLoginNotification(profile).catch(()=>{});
- window.location.replace("superadmin.html");
+ window.location.replace(new URL("superadmin.html",window.location.href).href);
 }
 
 async function verifyCloudflareTurnstile(){
@@ -572,7 +572,7 @@ function initSSO(){
  $("googleAdminSignIn").addEventListener("click",()=>showMessage("Google administrator sign-in is not configured on this portal yet."));
  $("microsoftAdminSignIn").addEventListener("click",()=>showMessage("Microsoft administrator sign-in is not configured on this portal yet."));
  $("appleAdminSignIn").addEventListener("click",()=>showMessage("Apple administrator sign-in is not configured on this portal yet."));
- $("securityHelpBtn").addEventListener("click",()=>showMessage("For administrator access assistance, contact NCHSM ICT Support at ict@nchsm.co.ke."));
+ $("securityHelpBtn").addEventListener("click",()=>showMessage("For administrator access assistance, contact your designated Campus Nexus platform support contact."));
  $("twoFactorBtn").addEventListener("click",()=>{
    showMessage("Two-factor authentication is requested automatically when enabled on your administrator account.","success");
  });
