@@ -7,6 +7,14 @@
     {
       "source": "/register",
       "destination": "/register.html"
+    },
+    {
+      "source": "/exams",
+      "destination": "/platform/examinations/index.html"
+    },
+    {
+      "source": "/admin-exams",
+      "destination": "/platform/examinations/index.html"
     }
   ]
 }
