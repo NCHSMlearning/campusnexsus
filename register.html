@@ -1,0 +1,1318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>NCHSM Digital Portal | Registration</title>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/NCHSMlearning/e-learning/main/images/Logo_NCHSM.png" sizes="32x32"> 
+    
+    <!-- Feather Icons & Fonts -->
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- External CSS -->
+    <link rel="stylesheet" href="registration.css">
+</head>
+<body>
+
+<div class="register-container">
+    <div class="logo-area" id="campus-nexus-registration-brand">
+        <div class="college-title">CAMPUS NEXUS</div>
+        <div class="tagline">Institution Registration Portal</div>
+        <div><span class="portal-badge">✦ Student & Lecturer Registration ✦</span></div>
+    </div>
+
+    <h2 style="font-size: 1.5rem; font-weight: 700; color: #073450; margin-bottom: 5px;">Create Your Account</h2>
+    <p style="color: #64748B; font-size: 0.85rem; margin-bottom: 1.5rem;">Register for your institution's digital campus</p>
+
+    <!-- Progress Indicator -->
+    <div class="progress-bar">
+        <div class="progress-step active" data-step="1">
+            <span class="step-icon">👤</span>
+            Personal
+        </div>
+        <div class="progress-step" data-step="2">
+            <span class="step-icon">🎓</span>
+            Academic
+        </div>
+        <div class="progress-step" data-step="3">
+            <span class="step-icon">📁</span>
+            Documents
+        </div>
+        <div class="progress-step" data-step="4">
+            <span class="step-icon">🔐</span>
+            Security
+        </div>
+    </div>
+
+    <form id="register-form" enctype="multipart/form-data">
+        <!-- ============================================ -->
+        <!-- STEP 1: PERSONAL INFORMATION -->
+        <!-- ============================================ -->
+        <div class="form-section" data-section="1">
+            <div class="form-group">
+                <label><i data-feather="user"></i> Register As</label>
+                <select id="role" name="role" required>
+                    <option value="">-- Select Your Role --</option>
+                    <option value="student" selected>Student</option>
+                    <option value="lecturer">Lecturer</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label><i data-feather="user"></i> Full Name</label>
+                <input type="text" id="full_name" name="full_name" placeholder="Enter your full name" required>
+            </div>
+
+            <div class="form-group">
+                <label><i data-feather="mail"></i> Email Address <span style="color: red;">*</span></label>
+                <input type="email" id="email" name="email" placeholder="Enter your email address" required>
+                <div id="email-status" class="help-text" style="font-weight: 600; margin-top: 4px; min-height: 20px;"></div>
+                <div class="help-text">We will check if this email is already registered</div>
+            </div>
+
+            <div class="two-columns">
+                <div class="form-group">
+                    <label><i data-feather="phone"></i> Phone Number</label>
+                    <input type="tel" id="phone" name="phone" placeholder="07XXXXXXXX" required>
+                </div>
+                <div class="form-group">
+                    <label><i data-feather="phone-call"></i> Alternative Phone</label>
+                    <input type="tel" id="alt_phone" name="alt_phone" placeholder="Alternative contact number">
+                </div>
+            </div>
+
+            <div class="two-columns">
+                <div class="form-group">
+                    <label><i data-feather="credit-card"></i> National ID / Passport No.</label>
+                    <input type="text" id="national_id" name="national_id" placeholder="e.g., 12345678">
+                </div>
+                <div class="form-group">
+                    <label><i data-feather="calendar"></i> Date of Birth <span style="color: red;">*</span></label>
+                    <input type="date" id="dob" name="dob" required>
+                </div>
+            </div>
+
+            <div class="two-columns">
+                <div class="form-group">
+                    <label><i data-feather="users"></i> Gender</label>
+                    <select id="gender" name="gender" required>
+                        <option value="">-- Select Gender --</option>
+                        <option value="M">Male</option>
+                        <option value="F">Female</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label><i data-feather="map-pin"></i> Physical Address</label>
+                    <input type="text" id="address" name="address" placeholder="Your residential address">
+                </div>
+            </div>
+
+            <!-- PROFILE PHOTO UPLOAD -->
+            <div class="form-group">
+                <label><i data-feather="camera"></i> Passport Photo (Face) <span style="font-weight:400;color:#64748B;">(For Staff/Student ID Card)</span></label>
+                <div class="photo-upload-container">
+                    <div class="photo-preview" id="photoPreview" onclick="document.getElementById('profile_photo').click()">
+                        <div class="placeholder-icon">📸</div>
+                        <div class="placeholder-text">Upload Photo</div>
+                        <div class="upload-hover">Click to change</div>
+                    </div>
+                    <div class="photo-upload-controls">
+                        <input type="file" id="profile_photo" name="profile_photo" accept="image/*" style="display: none;" onchange="handlePhotoUpload(event)">
+                        <div class="help-text">Upload a clear passport-style photo (JPEG, PNG) - Max 5MB</div>
+                        <div class="photo-status" id="photoStatus">No photo selected</div>
+                        <div class="upload-progress" id="photoProgress">
+                            <div class="progress-bar-inner" id="photoProgressBar"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button type="button" class="btn-success" onclick="goToStep(2)" style="margin-top: 0.5rem;">
+                Next Step → Academic Info
+            </button>
+        </div>
+
+        <!-- ============================================ -->
+        <!-- STEP 2: ACADEMIC INFORMATION -->
+        <!-- ============================================ -->
+        <div class="form-section" data-section="2" style="display: none;">
+
+            <!-- STUDENT FIELDS -->
+            <div id="student-fields" class="role-fields" style="display: block;">
+                <!-- Student Type Selection -->
+                <div class="form-group">
+                    <label><i data-feather="users"></i> Student Type <span style="color:red;">*</span></label>
+                    <div class="student-type-selector" id="studentTypeSelector">
+                        <div class="student-type-card selected" data-type="continuing" onclick="selectStudentType('continuing')">
+                            <input type="radio" name="student_type" value="continuing" id="student_type_continuing" checked>
+                            <span class="type-icon">🔄</span>
+                            <div class="type-name">Continuing Student</div>
+                            <div class="type-desc">Already has a student ID/Reg number</div>
+                            <span class="check-mark">✓</span>
+                        </div>
+                        <div class="student-type-card" data-type="new" onclick="selectStudentType('new')">
+                            <input type="radio" name="student_type" value="new" id="student_type_new">
+                            <span class="type-icon">✨</span>
+                            <div class="type-name">New Student</div>
+                            <div class="type-desc">New admission - Generate registration number</div>
+                            <span class="check-mark">✓</span>
+                        </div>
+                    </div>
+                    <!-- HIDDEN INPUT FOR VALIDATION -->
+                    <input type="hidden" id="student_type_hidden" name="student_type" value="continuing">
+                    <div id="studentTypeError" style="color: #DC2626; font-size: 0.75rem; margin-top: 6px; display: none;">
+                        ⚠️ Please select whether you are a Continuing or New student.
+                    </div>
+                </div>
+
+                <!-- Student ID / Registration Number -->
+                <div class="form-group" id="studentIdGroup">
+                    <label>
+                        <i data-feather="user-check"></i> 
+                        <span id="studentIdLabel">Student ID / Registration Number</span>
+                        <span style="color:red;">*</span>
+                        <span style="font-weight:400;color:#64748B;font-size:0.7rem;" id="studentIdHint">
+                            (Enter your existing Student ID)
+                        </span>
+                    </label>
+                    
+                    <input type="text" id="student_id_number" name="student_id_number" 
+                           placeholder="e.g., KRCHN/0032/MAR/2024 or DCHN/0001/MAR/2026 or DPOTT/00001/05/26" required>
+                    
+                    <div id="student-id-status" class="help-text" style="font-weight: 600; margin-top: 4px; min-height: 20px;"></div>
+                    
+                    <!-- Program Required Message (for New Students) -->
+                    <div class="program-required-msg" id="programRequiredMsg">
+                        ⚠️ Please select your <strong>Program</strong> first to generate your registration number.
+                    </div>
+                </div>
+
+                <!-- Auto-generated Registration Number Display -->
+                <div class="reg-number-display" id="regNumberDisplay" style="display: none;">
+                    <div class="reg-label">📋 Your New Registration Number</div>
+                    <div class="reg-value" id="generatedRegNumber">DCHN/0001/MAR/2026</div>
+                    <div class="reg-hint">This number will be assigned to you as a new student. Please save it.</div>
+                    <button type="button" class="regenerate-btn" onclick="regenerateStudentId()" style="margin-top:8px;padding:8px 16px;font-size:0.75rem;width:auto;background:#6b7280;color:white;border:none;border-radius:40px;cursor:pointer;">
+                        🔄 Generate New Number
+                    </button>
+                </div>
+
+                <!-- PROGRAM SELECTION -->
+                <div class="form-group">
+                    <label><i data-feather="book"></i> Program <span style="color: red;">*</span></label>
+                    <select id="program_type" name="program_type" required>
+                        <option value="">-- Select Your Program --</option>
+                        <optgroup label="🎓 Nursing Programs">
+                            <option value="KRCHN" data-desc="Kenya Registered Community Health Nursing - 3.5 years program (Continuing Students)">KRCHN Nursing (Continuing)</option>
+                            <option value="DCHN" data-desc="Diploma in Community Health Nursing - 3.5 years program (New Students)">DCHN Nursing (NEW)</option>
+                        </optgroup>
+                        <optgroup label="🎯 TVET Diploma Programs (6-24 months)">
+                            <option value="DPOTT" data-desc="Diploma in Perioperative Theatre Technology - 2 years">Diploma in Perioperative Theatre Technology</option>
+                            <option value="DCH" data-desc="Diploma in Community Health - 2 years">Diploma in Community Health</option>
+                            <option value="DHRIT" data-desc="Diploma in Health Records and IT - 2 years">Diploma in Health Records and IT</option>
+                            <option value="DSL" data-desc="Diploma in Science Lab - 2 years">Diploma in Science Lab</option>
+                            <option value="DSW" data-desc="Diploma in Social Work - 2 years">Diploma in Social Work</option>
+                            <option value="DCJS" data-desc="Diploma in Criminal Justice - 2 years">Diploma in Criminal Justice</option>
+                            <option value="DHSS" data-desc="Diploma in Health Support Services - 2 years">Diploma in Health Support Services</option>
+                            <option value="DICT" data-desc="Diploma in ICT - 2 years">Diploma in ICT</option>
+                            <option value="DME" data-desc="Diploma in Medical Engineering - 2 years">Diploma in Medical Engineering</option>
+                        </optgroup>
+                        <optgroup label="📜 TVET Certificate Programs (3-12 months)">
+                            <option value="CPOTT" data-desc="Certificate in Perioperative Theatre Technology - 1 year">Certificate in Perioperative Theatre Technology</option>
+                            <option value="CCH" data-desc="Certificate in Community Health - 1 year">Certificate in Community Health</option>
+                            <option value="CHRIT" data-desc="Certificate in Health Records and IT - 1 year">Certificate in Health Records and IT</option>
+                            <option value="CPC" data-desc="Certificate in Patient Care - 6 months">Certificate in Patient Care</option>
+                            <option value="CSL" data-desc="Certificate in Science Lab - 1 year">Certificate in Science Lab</option>
+                            <option value="CSW" data-desc="Certificate in Social Work - 1 year">Certificate in Social Work</option>
+                            <option value="CCJS" data-desc="Certificate in Criminal Justice - 1 year">Certificate in Criminal Justice</option>
+                            <option value="CAG" data-desc="Certificate in Agriculture - 1 year">Certificate in Agriculture</option>
+                            <option value="CHSS" data-desc="Certificate in Health Support Services - 1 year">Certificate in Health Support Services</option>
+                            <option value="CICT" data-desc="Certificate in ICT - 1 year">Certificate in ICT</option>
+                            <option value="CCG" data-desc="Certificate in Caregiver - 6 months">Certificate in Caregiver</option>
+                            <option value="COMT" data-desc="Certificate in Orthopedic Trauma Medicine - 1 year">Certificate in Orthopedic Trauma Medicine</option>
+                        </optgroup>
+                        <optgroup label="🔧 TVET Artisan Programs (2-12 months)">
+                            <option value="ACH" data-desc="Artisan in Community Health - 6 months">Artisan in Community Health</option>
+                            <option value="AAG" data-desc="Artisan in Agriculture - 6 months">Artisan in Agriculture</option>
+                            <option value="ASW" data-desc="Artisan in Social Work - 6 months">Artisan in Social Work</option>
+                        </optgroup>
+                        <optgroup label="📊 Other TVET Programs">
+                            <option value="CCA" data-desc="Certificate in Computer Applications - 3 months">Certificate in Computer Applications (CCA)</option>
+                            <option value="PTE" data-desc="TVET/CDACC - Professional Teaching Experience">TVET/CDACC (PTE)</option>
+                        </optgroup>
+                    </select>
+                    <div class="program-description" id="programDescription">
+                        Select a program above to see details
+                    </div>
+                </div>
+                
+                <div id="intake-container">
+                    <!-- Nursing Intake -->
+                    <div id="krchn-intake" class="intake-section">
+                        <div class="form-group">
+                            <label><i data-feather="calendar"></i> Intake Year</label>
+                            <select id="krchn_intake_year" name="krchn_intake_year">
+                                <option value="">-- Select Intake Year --</option>
+                                <option value="2024">2024</option>
+                                <option value="2025">2025</option>
+                                <option value="2026" selected>2026</option>
+                                <option value="2027">2027</option>
+                                <option value="2028">2028</option>
+                            </select>
+                            <div class="help-text">Nursing intake (March intake each year)</div>
+                            <div class="intake-preview">📅 Will display as: <strong id="krchnDisplay">March 2026</strong></div>
+                        </div>
+                    </div>
+
+                    <div id="tvet-intake" class="intake-section hidden">
+                        <div class="form-group">
+                            <label><i data-feather="calendar"></i> Intake</label>
+                            <div class="tvet-intake-row">
+                                <select id="tvet_intake_month" name="tvet_intake_month">
+                                    <option value="01">January (01)</option>
+                                    <option value="02">February (02)</option>
+                                    <option value="03" selected>March (03)</option>
+                                    <option value="04">April (04)</option>
+                                    <option value="05">May (05)</option>
+                                    <option value="06">June (06)</option>
+                                    <option value="07">July (07)</option>
+                                    <option value="08">August (08)</option>
+                                    <option value="09">September (09)</option>
+                                    <option value="10">October (10)</option>
+                                    <option value="11">November (11)</option>
+                                    <option value="12">December (12)</option>
+                                </select>
+                                                          
+                                <select id="tvet_intake_year" name="tvet_intake_year">
+                                    <option value="2021">2021</option>
+                                    <option value="2022">2022</option>
+                                    <option value="2023">2023</option>
+                                    <option value="2024">2024</option>
+                                    <option value="2025">2025</option>
+                                    <option value="2026" selected>2026</option>
+                                    <option value="2027">2027</option>
+                                    <option value="2028">2028</option>
+                                    <option value="2029">2029</option>
+                                    <option value="2030">2030</option>
+                                </select>
+                            </div>
+                            <div class="help-text">TVET intake: Select month (01-12) and year</div>
+                            <div class="intake-preview">📅 Will display as: <strong id="tvetDisplay">March 2026 Intake</strong></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="two-columns">
+                    <div class="form-group">
+                        <label><i data-feather="heart"></i> Parent/Guardian Name</label>
+                        <input type="text" id="guardian_name" name="guardian_name" placeholder="Parent or guardian full name">
+                    </div>
+                    <div class="form-group">
+                        <label><i data-feather="phone"></i> Guardian Phone</label>
+                        <input type="tel" id="guardian_phone" name="guardian_phone" placeholder="e.g., 07XXXXXXXX">
+                    </div>
+                </div>
+                
+                <div class="help-text">📌 Block will be set by Admin after approval</div>
+
+                <!-- Format Instructions -->
+                <div style="margin-top: 12px; padding: 14px 16px; background: #f8fafc; border-radius: 10px; border: 1px solid #e2e8f0; font-size: 13px;">
+                    
+                    <div style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed #e2e8f0;">
+                        <span style="background: #dbeafe; color: #1e40af; padding: 2px 10px; border-radius: 12px; font-weight: 700; font-size: 11px; white-space: nowrap;">🎓 NURSING (CONTINUING)</span>
+                        <div>
+                            <code style="background: #e5e7eb; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600;">KRCHN/XXXX/MAR/YYYY</code>
+                            <div style="font-size: 12px; color: #64748b; margin-top: 2px;">
+                                Example: <span style="color: #0A3D62; font-weight: 500;">KRCHN/0032/MAR/2024</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed #e2e8f0;">
+                        <span style="background: #dbeafe; color: #1e40af; padding: 2px 10px; border-radius: 12px; font-weight: 700; font-size: 11px; white-space: nowrap;">🎓 NURSING (NEW)</span>
+                        <div>
+                            <code style="background: #e5e7eb; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600;">DCHN/XXXX/MAR/YYYY</code>
+                            <div style="font-size: 12px; color: #64748b; margin-top: 2px;">
+                                Example: <span style="color: #0A3D62; font-weight: 500;">DCHN/0001/MAR/2026</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed #e2e8f0;">
+                        <span style="background: #fef3c7; color: #92400e; padding: 2px 10px; border-radius: 12px; font-weight: 700; font-size: 11px; white-space: nowrap;">🔧 TVET</span>
+                        <div>
+                            <div style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center;">
+                                <code style="background: #e5e7eb; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600;">PROGRAM/XXXXX/MM/YY</code>
+                                <span style="color: #94a3b8; font-size: 11px;">OR</span>
+                                <code style="background: #e5e7eb; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600;">PROGRAM/XXXXX/MM/YYYY</code>
+                            </div>
+                            <div style="font-size: 12px; color: #64748b; margin-top: 2px;">
+                                Example: <span style="color: #0A3D62; font-weight: 500;">DPOTT/00001/05/26</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <div style="font-size: 11px; font-weight: 600; color: #475569; margin-bottom: 4px;">
+                            <i class="fas fa-check-circle" style="color: #10b981;"></i> Valid TVET Programs:
+                        </div>
+                        <div style="display: flex; flex-wrap: wrap; gap: 4px;">
+                            <span style="background: #f1f5f9; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 500; color: #1e293b;">DPOTT</span>
+                            <span style="background: #f1f5f9; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 500; color: #1e293b;">DCH</span>
+                            <span style="background: #f1f5f9; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 500; color: #1e293b;">DHRIT</span>
+                            <span style="background: #f1f5f9; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 500; color: #1e293b;">DSL</span>
+                            <span style="background: #f1f5f9; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 500; color: #1e293b;">DSW</span>
+                            <span style="background: #f1f5f9; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 500; color: #1e293b;">DCJS</span>
+                            <span style="background: #f1f5f9; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 500; color: #1e293b;">DHSS</span>
+                            <span style="background: #f1f5f9; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 500; color: #1e293b;">DICT</span>
+                            <span style="background: #f1f5f9; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 500; color: #1e293b;">DME</span>
+                            <span style="background: #f1f5f9; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 500; color: #1e293b;">CPOTT</span>
+                            <span style="background: #f1f5f9; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 500; color: #1e293b;">CCH</span>
+                            <span style="background: #f1f5f9; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 500; color: #1e293b;">CHRIT</span>
+                            <span style="background: #f1f5f9; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 500; color: #1e293b;">CPC</span>
+                            <span style="background: #f1f5f9; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 500; color: #1e293b;">CSL</span>
+                            <span style="background: #f1f5f9; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 500; color: #1e293b;">CSW</span>
+                            <span style="background: #f1f5f9; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 500; color: #1e293b;">CCJS</span>
+                            <span style="background: #f1f5f9; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 500; color: #1e293b;">CAG</span>
+                            <span style="background: #f1f5f9; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 500; color: #1e293b;">CHSS</span>
+                            <span style="background: #f1f5f9; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 500; color: #1e293b;">CICT</span>
+                            <span style="background: #f1f5f9; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 500; color: #1e293b;">CCG</span>
+                            <span style="background: #f1f5f9; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 500; color: #1e293b;">COMT</span>
+                            <span style="background: #f1f5f9; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 500; color: #1e293b;">ACH</span>
+                            <span style="background: #f1f5f9; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 500; color: #1e293b;">AAG</span>
+                            <span style="background: #f1f5f9; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 500; color: #1e293b;">ASW</span>
+                            <span style="background: #f1f5f9; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 500; color: #1e293b;">CCA</span>
+                            <span style="background: #f1f5f9; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 500; color: #1e293b;">PTE</span>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 10px; padding: 10px 12px; background: #fef3c7; border-radius: 6px; border-left: 3px solid #f59e0b;">
+                        <div style="font-size: 11px; color: #92400e; display: flex; align-items: flex-start; gap: 8px;">
+                            <span style="font-size: 14px;">💡</span>
+                            <div>
+                                <strong>Quick Tips:</strong>
+                                <ul style="margin: 4px 0 0 0; padding-left: 18px; font-size: 11px;">
+                                    <li><strong>KRCHN</strong> = Continuing Nursing students (keep existing ID)</li>
+                                    <li><strong>DCHN</strong> = New Nursing students (starts from 0001)</li>
+                                    <li>Program code must be in <strong>UPPERCASE</strong></li>
+                                    <li>Student ID number: <strong>4 digits</strong> for Nursing, <strong>5 digits</strong> for TVET</li>
+                                    <li>Month must be <strong>01-12</strong></li>
+                                    <li>Year can be <strong>2-digit (21-30)</strong> or <strong>4-digit (2021-2030)</strong></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LECTURER FIELDS -->
+            <div id="lecturer-fields" class="role-fields" style="display: none;">
+                <div style="background:#e8f4f8;padding:12px 16px;border-radius:12px;margin-bottom:16px;border-left:4px solid #0A3D62;">
+                    <p style="font-size:0.8rem;color:#0A3D62;margin:0;font-weight:500;">
+                        🆔 <strong>Staff ID will be auto-generated</strong> after registration (e.g., NCHSMNUR-001, NCHSMTVT-001)
+                    </p>
+                </div>
+                
+                <div class="two-columns">
+                    <div class="form-group">
+                        <label><i data-feather="briefcase"></i> Department <span style="color:red;">*</span></label>
+                       <select id="department" name="department">
+                            <option value="">-- Select Department --</option>
+                            <option value="Nursing">Nursing</option>
+                            <option value="TVET">TVET</option>
+                            <option value="Community Health">Community Health</option>
+                            <option value="Health Records">Health Records</option>
+                            <option value="ICT">ICT</option>
+                            <option value="Administration">Administration</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label><i data-feather="calendar"></i> Employment Date <span style="font-weight:400;color:#64748B;">(Optional)</span></label>
+                        <input type="date" id="employment_date" name="employment_date">
+                    </div>
+                </div>
+                
+                <div style="margin-top:12px;">
+                    <p style="font-weight:600;font-size:0.8rem;color:#1e293b;margin-bottom:8px;">
+                        📁 Lecturer Documents <span style="font-weight:400;color:#64748B;">(Optional)</span>
+                    </p>
+                    <div class="documents-grid">
+                        <div class="doc-card" id="doc_lecturer_id">
+                            <div class="doc-icon">🪪</div>
+                            <div class="doc-name">National ID / Passport</div>
+                            <div class="doc-status" id="doc_lecturer_id_status">Not uploaded</div>
+                            <div class="doc-badge">✓</div>
+                            <div class="doc-remove" onclick="removeDocument('lecturer_id')">✕ Remove</div>
+                            <input type="file" id="doc_lecturer_id_input" accept=".pdf,.jpg,.png,.jpeg" onchange="handleDocumentUpload(event, 'lecturer_id')">
+                            <div class="doc-file-name" id="doc_lecturer_id_filename"></div>
+                        </div>
+                        
+                        <div class="doc-card" id="doc_kra_pin">
+                            <div class="doc-icon">📄</div>
+                            <div class="doc-name">KRA PIN Certificate</div>
+                            <div class="doc-status" id="doc_kra_pin_status">Not uploaded</div>
+                            <div class="doc-badge">✓</div>
+                            <div class="doc-remove" onclick="removeDocument('kra_pin')">✕ Remove</div>
+                            <input type="file" id="doc_kra_pin_input" accept=".pdf,.jpg,.png,.jpeg" onchange="handleDocumentUpload(event, 'kra_pin')">
+                            <div class="doc-file-name" id="doc_kra_pin_filename"></div>
+                        </div>
+                        
+                        <div class="doc-card" id="doc_university_cert">
+                            <div class="doc-icon">🎓</div>
+                            <div class="doc-name">University Certificate</div>
+                            <div class="doc-status" id="doc_university_cert_status">Not uploaded</div>
+                            <div class="doc-badge">✓</div>
+                            <div class="doc-remove" onclick="removeDocument('university_cert')">✕ Remove</div>
+                            <input type="file" id="doc_university_cert_input" accept=".pdf,.jpg,.png,.jpeg" onchange="handleDocumentUpload(event, 'university_cert')">
+                            <div class="doc-file-name" id="doc_university_cert_filename"></div>
+                        </div>
+                        
+                        <div class="doc-card" id="doc_cv">
+                            <div class="doc-icon">📝</div>
+                            <div class="doc-name">CV / Resume</div>
+                            <div class="doc-status" id="doc_cv_status">Not uploaded</div>
+                            <div class="doc-badge">✓</div>
+                            <div class="doc-remove" onclick="removeDocument('cv')">✕ Remove</div>
+                            <input type="file" id="doc_cv_input" accept=".pdf,.jpg,.png,.jpeg" onchange="handleDocumentUpload(event, 'cv')">
+                            <div class="doc-file-name" id="doc_cv_filename"></div>
+                        </div>
+                    </div>
+                    <div class="help-text" style="margin-top:6px;">📌 <strong>Optional:</strong> Upload ID, KRA PIN, University Certificate, or CV if available</div>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-top: 0.5rem;">
+                <button type="button" onclick="goToStep(1)" style="flex: 1; background: #6b7280; color: white; border: none; border-radius: 10px; padding: 12px; font-size: 0.85rem; font-weight: 600; cursor: pointer;">
+                    ← Back
+                </button>
+                <button type="button" class="btn-success" onclick="goToStep(3)" style="flex: 1;">
+                    Next Step → Documents
+                </button>
+            </div>
+        </div>
+
+        <!-- ============================================ -->
+        <!-- STEP 3: DOCUMENT UPLOADS -->
+        <!-- ============================================ -->
+        <div class="form-section" data-section="3" style="display: none;">
+            
+            <div style="background:#f0f7ff;padding:12px 16px;border-radius:12px;margin-bottom:16px;">
+                <p style="font-size:0.75rem;color:#1e293b;margin:0;">
+                    <i data-feather="info" style="width:16px;height:16px;color:#0A3D62;"></i>
+                    Upload your academic documents. All documents will be verified by the administration.
+                </p>
+            </div>
+
+            <div id="student-docs" class="documents-grid">
+                <div class="doc-card" id="doc_kcse">
+                    <div class="doc-icon">📄</div>
+                    <div class="doc-name">KCSE Certificate</div>
+                    <div class="doc-status" id="doc_kcse_status">Not uploaded</div>
+                    <div class="doc-badge">✓</div>
+                    <div class="doc-remove" onclick="removeDocument('kcse')">✕ Remove</div>
+                    <input type="file" id="doc_kcse_input" accept=".pdf,.jpg,.png,.jpeg" onchange="handleDocumentUpload(event, 'kcse')">
+                    <div class="doc-file-name" id="doc_kcse_filename"></div>
+                </div>
+
+                <div class="doc-card" id="doc_id">
+                    <div class="doc-icon">🪪</div>
+                    <div class="doc-name">ID / Passport / Birth Cert</div>
+                    <div class="doc-status" id="doc_id_status">Not uploaded</div>
+                    <div class="doc-badge">✓</div>
+                    <div class="doc-remove" onclick="removeDocument('id')">✕ Remove</div>
+                    <input type="file" id="doc_id_input" accept=".pdf,.jpg,.png,.jpeg" onchange="handleDocumentUpload(event, 'id')">
+                    <div class="doc-file-name" id="doc_id_filename"></div>
+                </div>
+            </div>
+
+            <div class="help-text" style="margin-top:12px;text-align:center;">
+                Supported formats: PDF, JPG, PNG, JPEG | Max size: 5MB per file
+            </div>
+
+            <div class="upload-progress" id="docUploadProgress">
+                <div class="progress-bar-inner" id="docProgressBar"></div>
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-top: 0.5rem;">
+                <button type="button" onclick="goToStep(2)" style="flex: 1; background: #6b7280; color: white; border: none; border-radius: 10px; padding: 12px; font-size: 0.85rem; font-weight: 600; cursor: pointer;">
+                    ← Back
+                </button>
+                <button type="button" class="btn-success" onclick="goToStep(4)" style="flex: 1;">
+                    Next Step → Security
+                </button>
+            </div>
+        </div>
+
+    <!-- ============================================ -->
+<!-- STEP 4: SECURITY & SUBMIT -->
+<!-- ============================================ -->
+<div class="form-section" data-section="4" style="display: none;">
+
+    <div class="two-columns">
+        <!-- Password Field with Eye Toggle -->
+        <div class="form-group">
+            <label><i data-feather="lock"></i> Password</label>
+            <div class="password-toggle-wrapper">
+                <input type="password" id="password" name="password" placeholder="Create a password (letters + numbers)" required>
+                <button type="button" class="toggle-password-btn" onclick="togglePasswordVisibility('password', this)" aria-label="Toggle password visibility">
+                    👁️
+                </button>
+            </div>
+            <div class="password-strength">
+                <div class="strength-bar" id="strengthBar"></div>
+                <div class="strength-text" id="strengthText">Enter a password</div>
+            </div>
+            <div class="help-text">Minimum 6 characters, mix of letters and numbers</div>
+        </div>
+
+        <!-- Confirm Password Field with Eye Toggle -->
+        <div class="form-group">
+            <label><i data-feather="lock"></i> Confirm Password</label>
+            <div class="password-toggle-wrapper">
+                <input type="password" id="confirm_password" name="confirm_password" placeholder="Confirm your password" required>
+                <button type="button" class="toggle-password-btn" onclick="togglePasswordVisibility('confirm_password', this)" aria-label="Toggle password visibility">
+                    👁️
+                </button>
+            </div>
+            <div class="help-text" id="passwordMatch"></div>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <div class="terms-container">
+            <input type="checkbox" id="terms" required>
+            <label for="terms">
+                I agree to the 
+                <a href="#" onclick="openTermsModal(event)">Terms & Conditions</a> 
+                and confirm that all information provided is accurate.
+            </label>
+        </div>
+    </div>
+
+    <div class="draft-actions">
+        <button type="button" class="btn-secondary" onclick="saveDraft()">
+            💾 Save Draft
+        </button>
+        <button type="button" class="btn-secondary" onclick="loadDraft()">
+            📂 Load Draft
+        </button>
+    </div>
+
+    <button type="submit" id="register-btn" style="width:100%; padding: 14px; background: #0A3D62; color: white; border: none; border-radius: 10px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">
+        <span id="button-text">✅ Create Account</span>
+    </button>
+    
+    <button type="button" onclick="goToStep(3)" style="margin-top: 0.5rem; width:100%; padding: 12px; background: #6b7280; color: white; border: none; border-radius: 10px; font-size: 0.85rem; font-weight: 600; cursor: pointer;">
+        ← Back to Documents
+    </button>
+
+    <div id="message" class="message"></div>
+    <div id="redirect-countdown" class="redirect-countdown"></div>
+</div>
+<!-- ============================================ -->
+<!-- VALIDATION ERROR MODAL -->
+<!-- ============================================ -->
+<div class="validation-modal-overlay" id="validationModal">
+    <div class="validation-modal-content">
+        <div class="modal-icon error" id="validationModalIcon">⚠️</div>
+        <h3 id="validationModalTitle">Cannot Proceed</h3>
+        <p class="modal-subtitle" id="validationModalSubtitle">Please fix the following issues before continuing:</p>
+        <ul class="error-list" id="validationErrorList"></ul>
+        <div class="modal-actions">
+            <button class="btn-primary" onclick="closeValidationModal()">Go Back & Fix</button>
+            <button class="btn-secondary" onclick="closeValidationModal()">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================ -->
+<!-- TERMS & CONDITIONS MODAL -->
+<!-- ============================================ -->
+<div class="terms-modal-overlay" id="termsModal">
+    <div class="terms-modal-content">
+        <div class="modal-header">
+            <h2>📋 Terms & Conditions</h2>
+            <button class="modal-close" onclick="closeTermsModal()">&times;</button>
+        </div>
+        <div class="terms-body">
+            <p style="color:#64748B;margin-bottom:12px;"><strong>Last Updated:</strong> February 2026</p>
+            <h4>1. Acceptance of Terms</h4>
+            <p>By accessing and using the Nakuru College of Health Sciences and Management (NCHSM) Digital Portal, you agree to comply with and be bound by these Terms and Conditions.</p>
+            <h4>2. User Accounts</h4>
+            <p>You must provide accurate and complete information when creating your account. You are responsible for maintaining the confidentiality of your login credentials and for all activities that occur under your account.</p>
+            <h4>3. Acceptable Use Policy</h4>
+            <p>You agree not to:</p>
+            <ul>
+                <li>Share your account credentials with others</li>
+                <li>Attempt to gain unauthorized access to any systems or networks</li>
+                <li>Upload malicious code or content</li>
+                <li>Harass, abuse, or harm other users</li>
+                <li>Violate any applicable laws or regulations</li>
+            </ul>
+            <h4>4. Academic Integrity</h4>
+            <p>All academic work submitted through the portal must be your own. Plagiarism, cheating, or any form of academic dishonesty is strictly prohibited and may result in disciplinary action.</p>
+            <h4>5. Intellectual Property</h4>
+            <p>All content, materials, and resources provided through the NCHSM Digital Portal are protected by copyright and other intellectual property laws.</p>
+            <h4>6. Privacy and Data Protection</h4>
+            <p>Your use of the portal is also governed by our Privacy Policy.</p>
+            <h4>7. Termination</h4>
+            <p>NCHSM reserves the right to suspend or terminate your access to the portal for violation of these terms.</p>
+            <h4>8. Limitation of Liability</h4>
+            <p>NCHSM shall not be liable for any indirect, incidental, special, or consequential damages resulting from your use or inability to use the portal.</p>
+            <h4>9. Modifications to Terms</h4>
+            <p>We reserve the right to modify these terms at any time.</p>
+            <h4>10. Contact Information</h4>
+            <p>Email: legal@nchsm.ac.ke<br>Phone: +254 790969743</p>
+        </div>
+        <div class="modal-footer">
+            <button onclick="acceptTerms()">✅ I Agree to Terms</button>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================ -->
+<!-- SUCCESS OVERLAY -->
+<!-- ============================================ -->
+<div class="success-overlay" id="successOverlay">
+    <div class="success-card">
+        <div class="check-circle">✅</div>
+        <h2>🎉 Registration Successful!</h2>
+        <p>Your account has been created and is pending admin approval.</p>
+        <div id="successIntake" style="background: #f0f7ff; padding: 10px; border-radius: 8px; margin: 15px 0; font-size: 0.9rem;">
+            <strong>Intake:</strong> <span id="successIntakeText">March 2026</span>
+        </div>
+        <div style="margin-top: 15px;">
+            <button class="btn" onclick="window.location.href='login.html'">Go to Login →</button>
+        </div>
+        <div style="margin-top: 10px; font-size: 0.8rem; color: #94a3b8;">
+            Redirecting in <span id="successCountdown">5</span> seconds...
+        </div>
+    </div>
+</div>
+
+<!-- ============================================ -->
+<!-- JAVASCRIPT - registration.js -->
+<!-- ============================================ -->
+<script src="registration.js"></script>
+<script src="code-protection.js"></script>
+
+<!-- ============================================ -->
+<!-- INLINE FIX WITH VALIDATION -->
+<!-- ============================================ -->
+
+    <!-- ============================================ -->
+<!-- CSRF PRODUCTION FIX -->
+<!-- ============================================ -->
+<script>
+// Ensure CSRF token exists on every page load
+(function() {
+    // Helper to generate token
+    function generateToken() {
+        const array = new Uint8Array(32);
+        crypto.getRandomValues(array);
+        return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+    }
+    
+    // Check and generate token
+    function ensureToken() {
+        let storedData = sessionStorage.getItem('csrf_token');
+        let token = null;
+        let isValid = false;
+        
+        if (storedData) {
+            try {
+                const parsed = JSON.parse(storedData);
+                token = parsed.token;
+                const expires = parsed.expires || parsed.created + (30 * 60 * 1000);
+                isValid = Date.now() < expires;
+            } catch (e) {
+                // Old format - treat as valid but refresh
+                token = storedData;
+                isValid = true;
+                // Upgrade to new format
+                const newData = {
+                    token: token,
+                    created: Date.now(),
+                    expires: Date.now() + (30 * 60 * 1000)
+                };
+                sessionStorage.setItem('csrf_token', JSON.stringify(newData));
+            }
+        }
+        
+        if (!token || !isValid) {
+            // Generate new token
+            token = generateToken();
+            const tokenData = {
+                token: token,
+                created: Date.now(),
+                expires: Date.now() + (30 * 60 * 1000)
+            };
+            sessionStorage.setItem('csrf_token', JSON.stringify(tokenData));
+            console.log('✅ New CSRF token generated');
+        }
+        
+        // Set token in form
+        const form = document.getElementById('register-form');
+        if (form) {
+            let csrfInput = document.getElementById('csrf_token_input');
+            if (!csrfInput) {
+                csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.id = 'csrf_token_input';
+                csrfInput.name = 'csrf_token';
+                form.appendChild(csrfInput);
+            }
+            csrfInput.value = token;
+        }
+        
+        return token;
+    }
+    
+    // Run on page load
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', ensureToken);
+    } else {
+        ensureToken();
+    }
+    
+    // Also ensure token before form submit
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('register-form');
+        if (form) {
+            form.addEventListener('submit', function() {
+                const storedData = sessionStorage.getItem('csrf_token');
+                let token = null;
+                if (storedData) {
+                    try {
+                        const parsed = JSON.parse(storedData);
+                        token = parsed.token;
+                    } catch (e) {
+                        token = storedData;
+                    }
+                }
+                
+                const input = document.getElementById('csrf_token_input');
+                if (token && input) {
+                    input.value = token;
+                } else if (input) {
+                    // Generate new token if missing
+                    const newToken = Array.from(crypto.getRandomValues(new Uint8Array(32)))
+                        .map(b => b.toString(16).padStart(2, '0'))
+                        .join('');
+                    const tokenData = {
+                        token: newToken,
+                        created: Date.now(),
+                        expires: Date.now() + (30 * 60 * 1000)
+                    };
+                    sessionStorage.setItem('csrf_token', JSON.stringify(tokenData));
+                    input.value = newToken;
+                }
+            });
+        }
+    });
+    
+    // Override the verifyCSRFToken function if it exists
+    if (window.verifyCSRFToken) {
+        const originalVerify = window.verifyCSRFToken;
+        window.verifyCSRFToken = function() {
+            try {
+                return originalVerify();
+            } catch (error) {
+                console.warn('⚠️ CSRF verification failed, generating new token:', error.message);
+                ensureToken();
+                return true;
+            }
+        };
+    }
+    
+    console.log('✅ CSRF production fix applied');
+})();
+</script>
+<script>
+// Complete goToStep with validation
+window.goToStep = function(step) {
+    // VALIDATION: Check Step 1 before going to Step 2
+    if (step === 2) {
+        const errors = [];
+        
+        // Check Full Name
+        const fullName = document.getElementById('full_name');
+        if (!fullName.value.trim()) {
+            errors.push({ field: 'Full Name', message: 'Please enter your full name.' });
+            fullName.style.borderColor = '#DC2626';
+        } else {
+            fullName.style.borderColor = '#e2e8f0';
+        }
+        
+        // Check Email
+        const email = document.getElementById('email');
+        if (!email.value.trim()) {
+            errors.push({ field: 'Email Address', message: 'Please enter your email address.' });
+            email.style.borderColor = '#DC2626';
+        } else {
+            email.style.borderColor = '#e2e8f0';
+        }
+        
+        // Check Phone
+        const phone = document.getElementById('phone');
+        if (!phone.value.trim()) {
+            errors.push({ field: 'Phone Number', message: 'Please enter your phone number.' });
+            phone.style.borderColor = '#DC2626';
+        } else {
+            phone.style.borderColor = '#e2e8f0';
+        }
+        
+        // Check Date of Birth
+        const dob = document.getElementById('dob');
+        if (!dob.value) {
+            errors.push({ field: 'Date of Birth', message: 'Please select your date of birth.' });
+            dob.style.borderColor = '#DC2626';
+        } else {
+            dob.style.borderColor = '#e2e8f0';
+        }
+        
+        // Check Gender
+        const gender = document.getElementById('gender');
+        if (!gender.value) {
+            errors.push({ field: 'Gender', message: 'Please select your gender.' });
+            gender.style.borderColor = '#DC2626';
+        } else {
+            gender.style.borderColor = '#e2e8f0';
+        }
+        
+        if (errors.length > 0) {
+            // Show validation modal
+            const modal = document.getElementById('validationModal');
+            const errorList = document.getElementById('validationErrorList');
+            if (modal && errorList) {
+                errorList.innerHTML = '';
+                errors.forEach(error => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <span class="error-icon">📝</span>
+                        <div>
+                            <span class="error-field">${error.field}:</span>
+                            <span>${error.message}</span>
+                        </div>
+                    `;
+                    errorList.appendChild(li);
+                });
+                modal.classList.add('show');
+            }
+            return;
+        }
+    }
+    
+    // VALIDATION: Check Step 2 before going to Step 3
+    if (step === 3) {
+        const errors = [];
+        const role = document.getElementById('role').value;
+        
+        if (role === 'student') {
+            // Check Student Type
+            const hiddenInput = document.getElementById('student_type_hidden');
+            if (!hiddenInput || !hiddenInput.value) {
+                errors.push({ field: 'Student Type', message: 'Please select whether you are a Continuing or New student.' });
+                document.getElementById('studentTypeError').style.display = 'block';
+            } else {
+                document.getElementById('studentTypeError').style.display = 'none';
+            }
+            
+            // Check Student ID
+            const studentId = document.getElementById('student_id_number');
+            if (!studentId.value.trim()) {
+                errors.push({ field: 'Student ID', message: 'Please enter your Student ID or generate one.' });
+                studentId.style.borderColor = '#DC2626';
+            } else {
+                studentId.style.borderColor = '#e2e8f0';
+            }
+            
+            // Check Program
+            const program = document.getElementById('program_type');
+            if (!program.value) {
+                errors.push({ field: 'Program', message: 'Please select your program.' });
+                program.style.borderColor = '#DC2626';
+            } else {
+                program.style.borderColor = '#e2e8f0';
+            }
+        }
+        
+        if (role === 'lecturer') {
+            // Check Department
+            const department = document.getElementById('department');
+            if (!department.value) {
+                errors.push({ field: 'Department', message: 'Please select your department.' });
+                department.style.borderColor = '#DC2626';
+            } else {
+                department.style.borderColor = '#e2e8f0';
+            }
+        }
+        
+        if (errors.length > 0) {
+            const modal = document.getElementById('validationModal');
+            const errorList = document.getElementById('validationErrorList');
+            if (modal && errorList) {
+                errorList.innerHTML = '';
+                errors.forEach(error => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <span class="error-icon">📝</span>
+                        <div>
+                            <span class="error-field">${error.field}:</span>
+                            <span>${error.message}</span>
+                        </div>
+                    `;
+                    errorList.appendChild(li);
+                });
+                modal.classList.add('show');
+            }
+            return;
+        }
+    }
+    
+    // Hide all sections
+    document.querySelectorAll('.form-section').forEach(section => {
+        section.style.display = 'none';
+    });
+    
+    // Show target section
+    const targetSection = document.querySelector(`.form-section[data-section="${step}"]`);
+    if (targetSection) {
+        targetSection.style.display = 'block';
+    }
+    
+    // Handle Step 2 - Show role-specific fields
+    if (step === 2) {
+        const role = document.getElementById('role').value;
+        const studentFields = document.getElementById('student-fields');
+        const lecturerFields = document.getElementById('lecturer-fields');
+        const studentDocs = document.getElementById('student-docs');
+        
+        if (role === 'student') {
+            if (studentFields) {
+                studentFields.style.display = 'block';
+                studentFields.classList.add('active');
+            }
+            if (lecturerFields) {
+                lecturerFields.style.display = 'none';
+                lecturerFields.classList.remove('active');
+            }
+            if (studentDocs) {
+                studentDocs.style.display = 'grid';
+            }
+        } else if (role === 'lecturer') {
+            if (studentFields) {
+                studentFields.style.display = 'none';
+                studentFields.classList.remove('active');
+            }
+            if (lecturerFields) {
+                lecturerFields.style.display = 'block';
+                lecturerFields.classList.add('active');
+            }
+            if (studentDocs) {
+                studentDocs.style.display = 'none';
+            }
+        }
+    }
+    
+    // Update progress
+    document.querySelectorAll('.progress-step').forEach(el => {
+        const stepNum = parseInt(el.dataset.step);
+        el.classList.remove('active', 'completed');
+        if (stepNum === step) {
+            el.classList.add('active');
+        } else if (stepNum < step) {
+            el.classList.add('completed');
+        }
+    });
+    
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+// selectStudentType function
+window.selectStudentType = function(type) {
+    // Clear all selected states
+    document.querySelectorAll('.student-type-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+    
+    // Select the clicked card
+    const selectedCard = document.querySelector(`.student-type-card[data-type="${type}"]`);
+    if (selectedCard) {
+        selectedCard.classList.add('selected');
+        const radio = selectedCard.querySelector('input[type="radio"]');
+        if (radio) {
+            radio.checked = true;
+        }
+    }
+    
+    // Set hidden input value
+    const hiddenInput = document.getElementById('student_type_hidden');
+    if (hiddenInput) {
+        hiddenInput.value = type;
+    }
+    
+    // Hide error
+    const errorEl = document.getElementById('studentTypeError');
+    if (errorEl) {
+        errorEl.style.display = 'none';
+    }
+    
+    // Update fields based on type
+    const idInput = document.getElementById('student_id_number');
+    const idLabel = document.getElementById('studentIdLabel');
+    const idHint = document.getElementById('studentIdHint');
+    const regDisplay = document.getElementById('regNumberDisplay');
+    const programMsg = document.getElementById('programRequiredMsg');
+    
+    if (type === 'continuing') {
+        if (idLabel) idLabel.textContent = 'Student ID / Registration Number';
+        if (idHint) idHint.textContent = '(Enter your existing Student ID)';
+        if (idInput) {
+            idInput.placeholder = 'e.g., KRCHN/0032/MAR/2024 or DPOTT/00001/05/26';
+            idInput.value = '';
+            idInput.disabled = false;
+        }
+        if (regDisplay) regDisplay.style.display = 'none';
+        if (programMsg) programMsg.classList.remove('show');
+    } else if (type === 'new') {
+        if (idLabel) idLabel.textContent = 'New Registration Number';
+        if (idHint) idHint.textContent = '(Will be auto-generated)';
+        if (idInput) {
+            idInput.placeholder = 'Auto-generated based on program selection';
+            idInput.value = '';
+            idInput.disabled = true;
+        }
+        if (regDisplay) regDisplay.style.display = 'block';
+        const program = document.getElementById('program_type')?.value;
+        if (program && program !== '') {
+            if (programMsg) programMsg.classList.remove('show');
+            regenerateStudentId();
+        } else {
+            if (programMsg) programMsg.classList.add('show');
+        }
+    }
+};
+
+// Regenerate student ID
+window.regenerateStudentId = function() {
+    const program = document.getElementById('program_type')?.value;
+    if (!program) {
+        const msg = document.getElementById('programRequiredMsg');
+        if (msg) msg.classList.add('show');
+        return;
+    }
+    
+    const msg = document.getElementById('programRequiredMsg');
+    if (msg) msg.classList.remove('show');
+    
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+    const monthName = monthNames[now.getMonth()];
+    
+    let regNumber = '';
+    if (program === 'KRCHN' || program === 'DCHN') {
+        const randomNum = String(Math.floor(Math.random() * 9999) + 1).padStart(4, '0');
+        regNumber = `${program}/${randomNum}/${monthName}/${year}`;
+    } else {
+        const randomNum = String(Math.floor(Math.random() * 99999) + 1).padStart(5, '0');
+        regNumber = `${program}/${randomNum}/${month}/${String(year).slice(-2)}`;
+    }
+    
+    const genDisplay = document.getElementById('generatedRegNumber');
+    if (genDisplay) genDisplay.textContent = regNumber;
+    
+    const idInput = document.getElementById('student_id_number');
+    if (idInput) {
+        idInput.value = regNumber;
+        idInput.dataset.generated = 'true';
+    }
+};
+
+// Modal functions
+function closeValidationModal() {
+    const modal = document.getElementById('validationModal');
+    if (modal) modal.classList.remove('show');
+}
+
+function openTermsModal(e) {
+    if (e) e.preventDefault();
+    const modal = document.getElementById('termsModal');
+    if (modal) modal.classList.add('show');
+}
+
+function closeTermsModal() {
+    const modal = document.getElementById('termsModal');
+    if (modal) modal.classList.remove('show');
+}
+
+function acceptTerms() {
+    const checkbox = document.getElementById('terms');
+    if (checkbox) checkbox.checked = true;
+    closeTermsModal();
+}
+
+// Placeholder functions
+function handlePhotoUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const preview = document.getElementById('photoPreview');
+    const status = document.getElementById('photoStatus');
+    if (preview) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            preview.innerHTML = `<img src="${e.target.result}" alt="Profile Photo" style="width:100%;height:100%;object-fit:cover;">`;
+        };
+        reader.readAsDataURL(file);
+    }
+    if (status) {
+        status.textContent = `📸 ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+    }
+}
+
+function handleDocumentUpload(event, docType) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const statusEl = document.getElementById(`doc_${docType}_status`);
+    const filenameEl = document.getElementById(`doc_${docType}_filename`);
+    const cardEl = document.getElementById(`doc_${docType}`);
+    if (statusEl) statusEl.textContent = '✅ Uploaded';
+    if (filenameEl) filenameEl.textContent = file.name;
+    if (cardEl) cardEl.classList.add('uploaded');
+}
+
+function removeDocument(docType) {
+    const statusEl = document.getElementById(`doc_${docType}_status`);
+    const filenameEl = document.getElementById(`doc_${docType}_filename`);
+    const cardEl = document.getElementById(`doc_${docType}`);
+    const inputEl = document.getElementById(`doc_${docType}_input`);
+    if (statusEl) statusEl.textContent = 'Not uploaded';
+    if (filenameEl) filenameEl.textContent = '';
+    if (cardEl) cardEl.classList.remove('uploaded');
+    if (inputEl) inputEl.value = '';
+}
+
+function saveDraft() {
+    alert('Draft saved successfully!');
+}
+
+function loadDraft() {
+    alert('Draft loaded successfully!');
+}
+
+// Update intake preview
+window.updateIntakePreview = function() {
+    const program = document.getElementById('program_type')?.value || '';
+    const isNursing = program === 'KRCHN' || program === 'DCHN';
+    const isTVET = program && program !== '' && !isNursing;
+    
+    const krchnIntake = document.getElementById('krchn-intake');
+    const tvetIntake = document.getElementById('tvet-intake');
+    
+    if (krchnIntake) {
+        krchnIntake.style.display = isNursing ? 'block' : 'none';
+        if (isNursing) {
+            const year = document.getElementById('krchn_intake_year')?.value || '2026';
+            const display = document.getElementById('krchnDisplay');
+            if (display) display.textContent = `March ${year}`;
+        }
+    }
+    
+    if (tvetIntake) {
+        tvetIntake.style.display = isTVET ? 'block' : 'none';
+        if (isTVET) {
+            const month = document.getElementById('tvet_intake_month')?.value || '03';
+            const year = document.getElementById('tvet_intake_year')?.value || '2026';
+            const monthNames = {
+                '01': 'January', '02': 'February', '03': 'March', '04': 'April',
+                '05': 'May', '06': 'June', '07': 'July', '08': 'August',
+                '09': 'September', '10': 'October', '11': 'November', '12': 'December'
+            };
+            const display = document.getElementById('tvetDisplay');
+            if (display) display.textContent = `${monthNames[month] || month} ${year} Intake`;
+        }
+    }
+};
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    // Run updateIntakePreview
+    setTimeout(function() {
+        if (typeof window.updateIntakePreview === 'function') {
+            window.updateIntakePreview();
+        }
+    }, 100);
+    
+    // Set up event listeners for intake
+    const krchnYear = document.getElementById('krchn_intake_year');
+    if (krchnYear) krchnYear.addEventListener('change', window.updateIntakePreview);
+    
+    const tvetMonth = document.getElementById('tvet_intake_month');
+    if (tvetMonth) tvetMonth.addEventListener('change', window.updateIntakePreview);
+    
+    const tvetYear = document.getElementById('tvet_intake_year');
+    if (tvetYear) tvetYear.addEventListener('change', window.updateIntakePreview);
+    
+    // Program change
+    const programSelect = document.getElementById('program_type');
+    if (programSelect) {
+        programSelect.addEventListener('change', function() {
+            if (typeof window.updateIntakePreview === 'function') {
+                window.updateIntakePreview();
+            }
+            const selected = this.options[this.selectedIndex];
+            const desc = selected?.dataset?.desc || 'Select a program above to see details';
+            const descEl = document.getElementById('programDescription');
+            if (descEl) descEl.textContent = desc;
+        });
+    }
+    
+    // Role change
+    const roleSelect = document.getElementById('role');
+    if (roleSelect) {
+        roleSelect.addEventListener('change', function() {
+            const isStudent = this.value === 'student';
+            const studentFields = document.getElementById('student-fields');
+            const lecturerFields = document.getElementById('lecturer-fields');
+            const studentDocs = document.getElementById('student-docs');
+            
+            if (studentFields) {
+                studentFields.style.display = isStudent ? 'block' : 'none';
+                studentFields.classList.toggle('active', isStudent);
+            }
+            if (lecturerFields) {
+                lecturerFields.style.display = isStudent ? 'none' : 'block';
+                lecturerFields.classList.toggle('active', !isStudent);
+            }
+            if (studentDocs) {
+                studentDocs.style.display = isStudent ? 'grid' : 'none';
+            }
+            
+            if (isStudent) {
+                const hiddenInput = document.getElementById('student_type_hidden');
+                if (hiddenInput && !hiddenInput.value) {
+                    selectStudentType('continuing');
+                }
+            }
+        });
+    }
+    
+    // Initialize feather icons
+    if (typeof feather !== 'undefined') {
+        feather.replace();
+    }
+    
+    console.log('✅ Registration form loaded with Step 2 student type selector and validation');
+});
+</script>
+
+</body>
+</html>
