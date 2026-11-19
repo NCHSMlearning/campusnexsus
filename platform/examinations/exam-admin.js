@@ -58,7 +58,6 @@ async function applyInstitutionBranding(){
   else $("institutionLogo").textContent=(inst.name||"CN").split(/\s+/).slice(0,2).map(x=>x[0]).join("").toUpperCase();
   if(/^#[0-9a-f]{6}$/i.test(inst.primary_color||"")) document.documentElement.style.setProperty("--navy",inst.primary_color);
 }
-}
 async function refreshAll(){
   await loadExams();
   await Promise.all([loadAttempts(),loadProctoring(),loadAttendance()]);
