@@ -181,15 +181,26 @@
       roleLabelNode.htmlFor = 'cnGlobalUserRoleEdit';
       const roleSelect = document.createElement('select');
       roleSelect.id = 'cnGlobalUserRoleEdit';
-      [
+      const allowedRoles = [
         ['student','Student'], ['lecturer','Lecturer'], ['institution_admin','Institution administrator'],
         ['finance_officer','Finance officer'], ['director','Director'], ['applicant','Applicant']
-      ].forEach(([value,label]) => roleSelect.add(new Option(label,value)));
-      if ([...roleSelect.options].some(option => option.value === user.role)) roleSelect.value = user.role;
+      ];
+      allowedRoles.forEach(([value,label]) => roleSelect.add(new Option(label,value)));
+      const roleIsSupported = allowedRoles.some(([value]) => value === user.role);
+      if (roleIsSupported) {
+        roleSelect.value = user.role;
+      } else {
+        const legacyRole = new Option(roleLabel(user.role) + ' (requires role mapping)', user.role || '');
+        legacyRole.selected = true;
+        legacyRole.disabled = true;
+        roleSelect.add(legacyRole, 0);
+      }
       const saveRole = document.createElement('button');
       saveRole.type = 'button';
       saveRole.className = 'cn-gu-action-btn primary';
       saveRole.textContent = 'Save role';
+      saveRole.disabled = !roleIsSupported;
+      saveRole.title = roleIsSupported ? 'Save institution role' : 'This legacy role must be mapped before it can be changed here';
       saveRole.addEventListener('click', () => applyMembershipAction(user,'set_role',roleSelect.value,saveRole));
       const statusActions = document.createElement('div');
       statusActions.className = 'cn-gu-status-actions';
