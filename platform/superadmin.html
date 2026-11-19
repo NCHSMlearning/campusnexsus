@@ -936,6 +936,13 @@ main.main>header{width:100%;max-width:100%;min-width:0}
                 </li>
 
                 <!-- ======================================== -->
+                <li style="margin-bottom:2px;">
+  <a href="#" data-tab="global-users" style="display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;color:white;text-decoration:none;font-size:14px;font-weight:600;transition:all .2s;" onmouseover="this.style.background='rgba(255,255,255,.1)'" onmouseout="this.style.background='transparent'">
+    <i class="fas fa-users-gear" style="width:20px;text-align:center;color:#5eead4;"></i>
+    <span>Global User Management</span>
+  </a>
+</li>
+
                 <!-- SECTION 2: USER MANAGEMENT              -->
                 <!-- ======================================== -->
                 <li class="nav-section" style="padding: 16px 12px 8px 12px; margin-top: 4px;">
@@ -14235,6 +14242,109 @@ body.profile-dark-mode #profile .profile-extra-panel select{background:#20364f!i
 </section>
 
         
+<section id="global-users" class="tab-content" style="display:none;padding:0 4px;">
+  <style>
+    #global-users{color:#0f172a;max-width:100%;padding-bottom:28px}
+    #global-users .cn-gu-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:18px}
+    #global-users .cn-gu-kicker{font-size:10px;letter-spacing:.12em;font-weight:800;color:#0f766e;text-transform:uppercase}
+    #global-users .cn-gu-header h2{font-size:25px;margin:5px 0;color:#0f172a}
+    #global-users .cn-gu-header p{font-size:13px;color:#64748b;margin:0;max-width:720px;line-height:1.6}
+    #global-users .cn-gu-actions{display:flex;gap:8px;flex-wrap:wrap}
+    #global-users button{cursor:pointer}
+    #global-users .cn-gu-btn{border:1px solid #cbd5e1;background:#fff;color:#0f172a;border-radius:9px;padding:10px 13px;font-size:12px;font-weight:700}
+    #global-users .cn-gu-btn.primary{background:#0f766e;border-color:#0f766e;color:#fff}
+    #global-users .cn-gu-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:18px 0}
+    #global-users .cn-gu-stat{background:#fff;border:1px solid #e2e8f0;border-radius:13px;padding:15px;min-width:0;box-shadow:0 3px 12px rgba(15,23,42,.035)}
+    #global-users .cn-gu-stat span{display:block;color:#64748b;font-size:11px;font-weight:700}
+    #global-users .cn-gu-stat strong{display:block;color:#0f172a;font-size:25px;line-height:1.3;margin:7px 0}
+    #global-users .cn-gu-stat small{display:block;color:#94a3b8;font-size:10px;line-height:1.45}
+    #global-users .cn-gu-notice{background:#f0fdfa;border:1px solid #99f6e4;border-radius:11px;padding:12px 14px;color:#115e59;font-size:12px;line-height:1.55;margin:16px 0}
+    #global-users .cn-gu-message{min-height:18px;color:#64748b;font-size:12px;margin:8px 0}
+    #global-users .cn-gu-message.is-error{color:#b91c1c}
+    #global-users .cn-gu-filters{display:grid;grid-template-columns:minmax(220px,2fr) repeat(3,minmax(150px,1fr)) auto;gap:9px;margin:14px 0}
+    #global-users .cn-gu-filters input,#global-users .cn-gu-filters select{width:100%;min-width:0;border:1px solid #cbd5e1;border-radius:9px;background:#fff;padding:11px 12px;color:#0f172a;font-size:12px}
+    #global-users .cn-gu-table-wrap{width:100%;overflow-x:auto;border:1px solid #e2e8f0;border-radius:13px;background:#fff;-webkit-overflow-scrolling:touch}
+    #global-users table{width:100%;min-width:1080px;border-collapse:collapse}
+    #global-users th,#global-users td{padding:12px 13px;text-align:left;border-bottom:1px solid #edf2f7;white-space:nowrap;font-size:12px}
+    #global-users th{background:#f8fafc;color:#64748b;font-size:10px;text-transform:uppercase;letter-spacing:.05em}
+    #global-users td{color:#334155}
+    #global-users td:first-child strong,#global-users td:first-child small{display:block}
+    #global-users td:first-child strong{color:#0f172a;font-size:12px}
+    #global-users td:first-child small{color:#64748b;font-size:10px;margin-top:4px}
+    #global-users .cn-gu-status{display:inline-flex;padding:4px 8px;border-radius:99px;background:#f1f5f9;color:#475569;font-size:10px;font-weight:800}
+    #global-users .cn-gu-status-active,#global-users .cn-gu-status-approved{background:#dcfce7;color:#166534}
+    #global-users .cn-gu-status-suspended,#global-users .cn-gu-status-login_disabled{background:#fee2e2;color:#991b1b}
+    #global-users .cn-gu-status-pending{background:#fef3c7;color:#92400e}
+    #global-users .cn-gu-status-missing_profile,#global-users .cn-gu-status-missing_auth_user{background:#ffedd5;color:#9a3412}
+    #global-users .cn-gu-view{border:1px solid #cbd5e1;background:#fff;border-radius:7px;padding:6px 9px;color:#0f766e;font-size:11px;font-weight:800}
+    #global-users .cn-gu-empty{text-align:center;padding:38px 18px;color:#64748b;white-space:normal}
+    #global-users .cn-gu-pagination{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px;color:#64748b;font-size:11px}
+    #global-users .cn-gu-page-actions{display:flex;align-items:center;gap:8px}
+    #global-users .cn-gu-btn:disabled{opacity:.45;cursor:not-allowed}
+    #cnGlobalUserDialog{width:min(680px,calc(100vw - 28px));max-height:85vh;overflow:auto;border:0;border-radius:16px;padding:22px;box-shadow:0 20px 80px rgba(15,23,42,.25)}
+    #cnGlobalUserDialog::backdrop{background:rgba(15,23,42,.55)}
+    #cnGlobalUserDialog .cn-gu-dialog-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px}
+    #cnGlobalUserDialog h3{margin:0;color:#0f172a;font-size:18px}
+    #cnGlobalUserDialog .cn-gu-close{border:1px solid #cbd5e1;background:#fff;border-radius:8px;padding:7px 10px}
+    #cnGlobalUserDialog .cn-gu-detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:0}
+    #cnGlobalUserDialog .cn-gu-detail-grid>div{background:#f8fafc;border-radius:9px;padding:10px;min-width:0}
+    #cnGlobalUserDialog dt{color:#64748b;font-size:10px;margin-bottom:5px}
+    #cnGlobalUserDialog dd{color:#0f172a;font-size:12px;font-weight:700;margin:0;overflow-wrap:anywhere}
+    #cnGlobalUserDialog .cn-gu-dialog-note{font-size:11px;color:#64748b;margin:15px 0 0}
+    @media(max-width:1050px){#global-users .cn-gu-stats{grid-template-columns:repeat(2,minmax(0,1fr))}#global-users .cn-gu-filters{grid-template-columns:repeat(2,minmax(0,1fr))}#global-users .cn-gu-filters input{grid-column:1/-1}}
+    @media(max-width:600px){#global-users .cn-gu-stats{grid-template-columns:1fr 1fr;gap:8px}#global-users .cn-gu-stat{padding:12px}#global-users .cn-gu-stat strong{font-size:21px}#global-users .cn-gu-filters{grid-template-columns:1fr}#global-users .cn-gu-filters input{grid-column:auto}#cnGlobalUserDialog .cn-gu-detail-grid{grid-template-columns:1fr}}
+  </style>
+  <div class="cn-gu-header">
+    <div>
+      <span class="cn-gu-kicker"><i class="fas fa-globe"></i> Campus Nexus · Platform Operations</span>
+      <h2>Global User Management</h2>
+      <p>Central directory of accounts across every institution, including students, lecturers, administrators, applicants and platform-level roles. Use the institution filter to inspect one tenant at a time.</p>
+    </div>
+    <div class="cn-gu-actions">
+      <button type="button" id="cnGlobalUsersRefresh" class="cn-gu-btn primary"><i class="fas fa-sync-alt"></i> Refresh directory</button>
+      <button type="button" id="cnGlobalUsersExport" class="cn-gu-btn"><i class="fas fa-file-csv"></i> Export current page</button>
+    </div>
+  </div>
+  <div class="cn-gu-notice"><strong>Security boundary:</strong> This directory is available only to the primary Campus Nexus Platform Super Admin. Cross-institution records are returned by protected database functions; institution administrators do not receive the global directory. This release is read-only while secure Auth account controls are being completed.</div>
+  <div id="cnGlobalUserStats" class="cn-gu-stats" aria-live="polite">
+    <article class="cn-gu-stat"><span>Loading user metrics</span><strong>—</strong><small>Secure platform summary</small></article>
+  </div>
+  <div class="cn-gu-filters">
+    <input id="cnGlobalUsersSearch" type="search" placeholder="Search name, email, student ID, role or institution" aria-label="Search global users">
+    <select id="cnGlobalUsersInstitution" aria-label="Filter by institution"><option value="all">All institutions</option></select>
+    <select id="cnGlobalUsersRole" aria-label="Filter by role">
+      <option value="all">All roles</option><option value="student">Student</option><option value="lecturer">Lecturer</option>
+      <option value="institution_admin">Institution administrator</option><option value="admin">Administrator</option>
+      <option value="finance_officer">Finance officer</option><option value="director">Director</option>
+      <option value="applicant">Applicant</option><option value="superadmin">Superadmin</option>
+      <option value="platform_operator">Platform operator</option><option value="unassigned">Unassigned / no profile</option>
+    </select>
+    <select id="cnGlobalUsersStatus" aria-label="Filter by account status">
+      <option value="all">All account states</option><option value="active">Active</option><option value="approved">Approved</option>
+      <option value="pending">Pending</option><option value="suspended">Suspended</option>
+      <option value="login_disabled">Login disabled</option><option value="missing_profile">Missing profile</option>
+      <option value="missing_auth_user">Missing Auth account</option>
+    </select>
+    <button type="button" id="cnGlobalUsersSearchButton" class="cn-gu-btn">Search</button>
+  </div>
+  <p id="cnGlobalUsersMessage" class="cn-gu-message" role="status">The global directory loads when this section is opened.</p>
+  <div class="cn-gu-table-wrap">
+    <table>
+      <thead><tr><th>User</th><th>Role</th><th>Institution</th><th>Account state</th><th>Last sign-in</th><th>Security</th><th>Details</th></tr></thead>
+      <tbody id="cnGlobalUsersRows"><tr><td colspan="7" class="cn-gu-empty">Open Global User Management to load accounts.</td></tr></tbody>
+    </table>
+  </div>
+  <div class="cn-gu-pagination">
+    <span id="cnGlobalUsersCount">No records loaded</span>
+    <div class="cn-gu-page-actions">
+      <span id="cnGlobalUsersPage">Page 0 of 0</span>
+      <button type="button" id="cnGlobalUsersPrev" class="cn-gu-btn" disabled>Previous</button>
+      <button type="button" id="cnGlobalUsersNext" class="cn-gu-btn" disabled>Next</button>
+    </div>
+  </div>
+  <dialog id="cnGlobalUserDialog" aria-label="User account details"></dialog>
+</section>
+
 <section id="staff-management" class="tab-content" style="display:none;padding:0 4px;">
   <style>
     #staff-management .staff-directory-header{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:20px}
@@ -14725,7 +14835,7 @@ body.profile-dark-mode #profile .profile-extra-panel select{background:#20364f!i
                 }
             });
             if (typeof loadSectionData === 'function') loadSectionData(tabId);
-            if (tabId === 'staff-management' && typeof window.initStaffDirectory === 'function') window.initStaffDirectory();
+            if (tabId === 'staff-management' && typeof window.initStaffDirectory === 'function') window.initStaffDirectory();\n            if (tabId === 'global-users' && typeof window.loadGlobalUserManagement === 'function') window.loadGlobalUserManagement();
         };
     }
 
@@ -14878,7 +14988,7 @@ body.profile-dark-mode #profile .profile-extra-panel select{background:#20364f!i
  <!-- ============================================ -->
 <!-- SUPER ADMIN PROFILE MODULE                   -->
 <!-- ============================================ -->
-<script src="js/superadmin-staff-directory.js?v=20261119-staff-directory-v1" defer></script>
+<script src="js/superadmin-staff-directory.js?v=20261119-staff-directory-v1" defer></script>\n<script src="js/campus-nexus-global-users.js?v=20261119-global-users-v1" defer></script>
 <script src="js/superadmin-profile.js?v=20261119-admin-role-label-v6" defer></script>
 <script src="js/superadmin-audit-centre.js?v=20261118-tenant-audit-v1" defer></script>
 <script src="js/superadmin-lecturer-reports-review.js?v=20261109-portfolio1" defer></script>
