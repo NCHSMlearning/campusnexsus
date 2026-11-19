@@ -167,8 +167,8 @@
           ? '<a href="' + esc(registrationUrl) + '" target="_blank" rel="noopener">Registration link</a><button class="cn-row-action" type="button" data-copy-registration="' + esc(i.id) + '">Copy</button>'
           : esc(i.portal_domain || "Domain not configured")) + '</td>' +
         '<td><div class="cn-row-actions"><button class="cn-row-action" type="button" data-edit="' + esc(i.id) + '">Manage</button>' +
-        (i.status === "suspended" ? '<button class="cn-row-action" type="button" data-status="' + esc(i.id) + '" data-next="active">Activate</button>' :
-        '<button class="cn-row-action cn-row-secondary" type="button" data-status="' + esc(i.id) + '" data-next="suspended">Suspend</button>') +
+        (i.status !== "active" ? '<button class="cn-row-action" type="button" data-status="' + esc(i.id) + '" data-next="active" aria-label="Activate ' + esc(i.name) + '">Activate</button>' :
+        '<button class="cn-row-action cn-row-secondary" type="button" data-status="' + esc(i.id) + '" data-next="suspended" aria-label="Suspend ' + esc(i.name) + '">Suspend</button>') +
         '</div></td></tr>';
     }).join("");
     host.querySelectorAll("[data-copy-registration]").forEach(button => button.addEventListener("click", async () => {
