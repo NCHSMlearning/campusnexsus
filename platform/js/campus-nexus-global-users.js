@@ -1,7 +1,7 @@
 /* Campus Nexus — Global User Management
  * Platform-wide directory. Cross-institution data is delivered only by
  * server-side SECURITY DEFINER RPCs guarded by the primary platform admin.
- * This first release is read-only; no browser-side Auth administration.
+ * Institution membership controls are available; global Auth account controls remain server-managed.
  */
 (() => {
   'use strict';
