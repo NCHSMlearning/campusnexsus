@@ -166,12 +166,100 @@
       wrapper.append(dt, dd);
       grid.appendChild(wrapper);
     });
-    const note = document.createElement('p');
-    note.className = 'cn-gu-dialog-note';
-    note.textContent = 'Read-only account details. Access changes are not enabled in this release.';
-    dialog.append(header, grid, note);
+    dialog.append(header, grid);
+
+    const isPlatformAccount = ['superadmin', 'platform_operator'].includes(String(user.role || '').toLowerCase());
+    if (user.user_id && user.institution_id && !isPlatformAccount) {
+      const controls = document.createElement('section');
+      controls.className = 'cn-gu-management';
+      const heading = document.createElement('h4');
+      heading.textContent = 'Institution membership controls';
+      const description = document.createElement('p');
+      description.textContent = 'These actions affect this institution only. They do not disable the person’s global sign-in or memberships at other institutions.';
+      const roleLabelNode = document.createElement('label');
+      roleLabelNode.textContent = 'Institution role';
+      roleLabelNode.htmlFor = 'cnGlobalUserRoleEdit';
+      const roleSelect = document.createElement('select');
+      roleSelect.id = 'cnGlobalUserRoleEdit';
+      [
+        ['student','Student'], ['lecturer','Lecturer'], ['institution_admin','Institution administrator'],
+        ['finance_officer','Finance officer'], ['director','Director'], ['applicant','Applicant']
+      ].forEach(([value,label]) => roleSelect.add(new Option(label,value)));
+      if ([...roleSelect.options].some(option => option.value === user.role)) roleSelect.value = user.role;
+      const saveRole = document.createElement('button');
+      saveRole.type = 'button';
+      saveRole.className = 'cn-gu-action-btn primary';
+      saveRole.textContent = 'Save role';
+      saveRole.addEventListener('click', () => applyMembershipAction(user,'set_role',roleSelect.value,saveRole));
+      const statusActions = document.createElement('div');
+      statusActions.className = 'cn-gu-status-actions';
+      const suspend = document.createElement('button');
+      suspend.type = 'button';
+      suspend.className = 'cn-gu-action-btn danger';
+      suspend.textContent = 'Suspend membership';
+      suspend.addEventListener('click', () => applyMembershipAction(user,'set_status','suspended',suspend));
+      const activate = document.createElement('button');
+      activate.type = 'button';
+      activate.className = 'cn-gu-action-btn';
+      activate.textContent = 'Reactivate membership';
+      activate.addEventListener('click', () => applyMembershipAction(user,'set_status','active',activate));
+      statusActions.append(suspend,activate);
+      const feedback = document.createElement('p');
+      feedback.className = 'cn-gu-action-feedback';
+      feedback.id = 'cnGlobalUserActionFeedback';
+      controls.append(heading,description,roleLabelNode,roleSelect,saveRole,statusActions,feedback);
+      dialog.appendChild(controls);
+    } else {
+      const note = document.createElement('p');
+      note.className = 'cn-gu-dialog-note';
+      note.textContent = isPlatformAccount
+        ? 'Platform-level accounts are protected from institution membership changes.'
+        : 'This account has no manageable institution membership.';
+      dialog.appendChild(note);
+    }
+
     if (typeof dialog.showModal === 'function') dialog.showModal();
     else dialog.setAttribute('open', '');
+  }
+
+  async function applyMembershipAction(user, action, value, button) {
+    if (!state.authorized || !state.client) {
+      setMessage('Your platform administrator session is not available. Sign in again.', true);
+      return;
+    }
+    const prompts = {
+      set_status: value === 'suspended'
+        ? 'Suspend this user’s membership in ' + (user.institution_name || 'the selected institution') + '?'
+        : 'Reactivate this user’s membership in ' + (user.institution_name || 'the selected institution') + '?',
+      set_role: 'Change this user’s role in ' + (user.institution_name || 'the selected institution') + ' to ' + roleLabel(value) + '?'
+    };
+    if (!window.confirm(prompts[action] || 'Apply this institution membership change?')) return;
+    const original = button.textContent;
+    button.disabled = true;
+    button.textContent = 'Saving…';
+    const feedback = $('cnGlobalUserActionFeedback');
+    if (feedback) feedback.textContent = '';
+    try {
+      const { data, error } = await state.client.rpc('platform_manage_institution_user', {
+        p_user_id: user.user_id,
+        p_institution_id: user.institution_id,
+        p_action: action,
+        p_value: value,
+        p_context: { source: 'global_user_management', user_agent: navigator.userAgent }
+      });
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.message || 'The membership change was not confirmed.');
+      if (typeof $('cnGlobalUserDialog')?.close === 'function') $('cnGlobalUserDialog').close();
+      setMessage(data.message || 'Institution membership updated.');
+      await load();
+    } catch (error) {
+      console.error('[Campus Nexus membership control]', error);
+      if (feedback) feedback.textContent = error.message || 'Unable to update institution membership.';
+      setMessage(error.message || 'Unable to update institution membership.', true);
+    } finally {
+      button.disabled = false;
+      button.textContent = original;
+    }
   }
 
   function populateInstitutions() {
