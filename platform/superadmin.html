@@ -942,6 +942,8 @@ main.main>header{width:100%;max-width:100%;min-width:0}
     <span>Global User Management</span>
   </a>
 </li>
+<li style="margin-bottom:2px;"><a href="#" data-tab="operator-permissions" style="display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;color:white;text-decoration:none;font-size:14px;font-weight:600;"><i class="fas fa-user-shield" style="width:20px;text-align:center;color:#5eead4;"></i><span>Operator Permissions</span></a></li>
+
 
                 <!-- SECTION 2: USER MANAGEMENT              -->
                 <!-- ======================================== -->
@@ -14356,6 +14358,45 @@ body.profile-dark-mode #profile .profile-extra-panel select{background:#20364f!i
   </div>
   <dialog id="cnGlobalUserDialog" aria-label="User account details"></dialog>
 </section>
+<section id="operator-permissions" class="tab-content" style="display:none;padding:0 4px;">
+ <style>
+ #operator-permissions{color:#0f172a;max-width:100%;padding-bottom:28px}
+ #operator-permissions .cn-op-panel{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:18px;margin:14px 0;box-shadow:0 3px 12px rgba(15,23,42,.035)}
+ #operator-permissions h2{font-size:24px;margin:0 0 6px;color:#0f172a}
+ #operator-permissions p{color:#64748b;font-size:13px;line-height:1.55}
+ #operator-permissions .cn-op-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+ #operator-permissions label{display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:5px}
+ #operator-permissions input,#operator-permissions select{width:100%;min-width:0;padding:10px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;color:#0f172a}
+ #operator-permissions button{border:0;border-radius:8px;padding:10px 14px;font-weight:700;cursor:pointer}
+ #operator-permissions .cn-op-primary{background:#0f766e;color:#fff}
+ #operator-permissions .cn-op-grant{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid #e2e8f0}
+ #operator-permissions .cn-op-grant:last-child{border-bottom:0}
+ #operator-permissions .cn-op-grant strong,#operator-permissions .cn-op-grant small{display:block}
+ #operator-permissions .cn-op-grant small{color:#64748b;font-size:11px;margin-top:4px;overflow-wrap:anywhere}
+ #operator-permissions .cn-op-revoke{background:#fff1f2;color:#be123c;border:1px solid #fecdd3}
+ #operator-permissions .cn-op-empty{padding:14px;background:#f8fafc;border-radius:8px}
+ #operator-permissions .is-error{color:#b91c1c}
+ @media(max-width:680px){#operator-permissions .cn-op-form{grid-template-columns:1fr}#operator-permissions .cn-op-grant{align-items:flex-start}}
+ </style>
+ <div class="cn-op-panel">
+  <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center">
+   <div><div style="font-size:10px;letter-spacing:.12em;font-weight:800;color:#0f766e;text-transform:uppercase">Platform governance</div><h2>Operator Permissions Centre</h2><p>Grant narrowly scoped capabilities to trusted operator accounts. All grants and revocations are recorded in the platform audit log.</p></div>
+   <button id="cnOperatorRefresh" type="button" class="cn-op-primary">Refresh permissions</button>
+  </div>
+  <div style="background:#f0fdfa;border:1px solid #99f6e4;border-radius:9px;padding:12px;font-size:12px;color:#115e59;margin:12px 0">Only the primary platform superadmin can manage grants. A blank institution scope applies across institutions; selecting an institution restricts the grant to that institution. This centre does not grant superadmin privileges.</div>
+  <div class="cn-op-form">
+   <div><label for="cnOperatorSearch">Find an existing user</label><div style="display:flex;gap:7px"><input id="cnOperatorSearch" type="search" placeholder="Search name or email"><button id="cnOperatorSearchButton" type="button" class="cn-op-primary">Search</button></div></div>
+   <div><label for="cnOperatorCandidate">User account</label><select id="cnOperatorCandidate"><option value="">Select a user account</option></select></div>
+   <div><label for="cnOperatorPermission">Permission</label><select id="cnOperatorPermission"><option value="institutions.view">View institutions</option><option value="institutions.manage">Manage institutions</option><option value="users.view">View platform users</option><option value="users.manage">Manage platform users</option><option value="billing.view">View billing</option><option value="billing.manage">Manage billing</option><option value="security.view">View security controls</option><option value="audit.view">View audit logs</option><option value="platform.settings.manage">Manage platform settings</option></select></div>
+   <div><label for="cnOperatorScope">Institution scope</label><select id="cnOperatorScope"><option value="">All institutions (global scope)</option></select></div>
+   <div style="grid-column:1/-1"><label for="cnOperatorNote">Reason / audit note (optional)</label><input id="cnOperatorNote" type="text" maxlength="500" placeholder="Why is this permission being granted?"></div>
+  </div>
+  <div style="margin-top:14px"><button id="cnOperatorGrant" type="button" class="cn-op-primary">Grant selected permission</button></div>
+  <p id="cnOperatorMessage" role="status" aria-live="polite"></p>
+ </div>
+ <div class="cn-op-panel"><h2 style="font-size:18px">Active permission grants</h2><p>Revoke access immediately when an operator no longer requires a capability.</p><div id="cnOperatorGrantRows"><p class="cn-op-empty">Loading active grants…</p></div></div>
+</section>
+
 
 <section id="staff-management" class="tab-content" style="display:none;padding:0 4px;">
   <style>
@@ -15001,6 +15042,7 @@ body.profile-dark-mode #profile .profile-extra-panel select{background:#20364f!i
 <!-- SUPER ADMIN PROFILE MODULE                   -->
 <!-- ============================================ -->
 <script src="js/superadmin-staff-directory.js?v=20261119-staff-directory-v1" defer></script>\n<script src="js/campus-nexus-global-users.js?v=20261119-global-users-v4" defer></script>
+<script src="js/campus-nexus-operator-permissions.js?v=20261119-operator-permissions-v1" defer></script>
 <script src="js/superadmin-profile.js?v=20261119-admin-role-label-v6" defer></script>
 <script src="js/superadmin-audit-centre.js?v=20261118-tenant-audit-v1" defer></script>
 <script src="js/superadmin-lecturer-reports-review.js?v=20261109-portfolio1" defer></script>
