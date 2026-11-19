@@ -1,5 +1,8 @@
 -- CampusNexus production hardening: remove table-maintenance privileges
 -- from browser roles while preserving the CRUD operations used by the CMS.
+-- Default privileges are managed by the database object owners and are
+-- intentionally not altered by this migration.
+
 begin;
 
 do $$
@@ -19,12 +22,6 @@ begin
   end loop;
 end
 $$;
-
--- Prevent the same excessive privileges from being reintroduced on new tables.
-alter default privileges for role postgres in schema public
-  revoke truncate, references, trigger, maintain on tables from anon, authenticated;
-alter default privileges for role supabase_admin in schema public
-  revoke truncate, references, trigger, maintain on tables from anon, authenticated;
 
 -- Pin the SECURITY DEFINER helper to an empty search_path and qualify every object.
 -- It remains executable only by signed-in users because RLS policies call it.
