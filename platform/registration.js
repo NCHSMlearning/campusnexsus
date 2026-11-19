@@ -1759,7 +1759,7 @@ document.getElementById('register-form').addEventListener('submit', async functi
             resolvedInstitutionContext = await resolveInstitutionContext(suppliedCode, window.location.hostname);
         }
         const institutionCode = normalizeSchoolCode(resolvedInstitutionContext.school_code);
-        if (!/^[0-9]{12}$/.test(institutionCode)) {
+        if (!/^[0-9]{3}$/.test(institutionCode)) {
             throw new Error('The institution school code could not be verified. Please reload the registration link.');
         }
 
