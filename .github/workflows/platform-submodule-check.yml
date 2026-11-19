@@ -1,0 +1,56 @@
+name: Validate Digital Campus source migration
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".gitmodules"
+      - "platform/**"
+      - ".github/workflows/platform-submodule-check.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - ".gitmodules"
+      - "platform/**"
+      - ".github/workflows/platform-submodule-check.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-platform-source:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out CampusNexus with the complete Digital Campus submodule
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Verify source repository and required application entry points
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f .gitmodules
+          grep -q 'path = platform/full-source' .gitmodules
+          grep -q 'NCHSM-Digital-campus-' .gitmodules
+
+          source_dir="platform/full-source"
+          test -d "$source_dir/.git" || test -f "$source_dir/.git"
+          for file in login.html superadmin.html student.html lecturer.html admin.html; do
+            if [ ! -s "$source_dir/$file" ]; then
+              echo "::error::Missing required application entry point: $source_dir/$file"
+              exit 1
+            fi
+          done
+
+          for dir in js css images supabase proxy-api; do
+            if [ ! -d "$source_dir/$dir" ]; then
+              echo "::error::Missing required application directory: $source_dir/$dir"
+              exit 1
+            fi
+          done
+
+          echo "Digital Campus submodule is initialized and required application source is present."
+          git -C "$source_dir" log -1 --format='Source commit: %H%nSource commit date: %cI'
