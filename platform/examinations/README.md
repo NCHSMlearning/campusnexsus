@@ -5,6 +5,7 @@ This folder preserves the existing NCHSM administration and examination implemen
 ## Source files copied
 - `admin.html` — administration dashboard shell
 - `adminexams.html` — admin examination dashboard and workflows
+- `exam_dashboard.html` — student exam dashboard and exam entry interface
 - `admin.js` — administration dashboard logic
 - `style.css` — administration dashboard styling
 - `js/admindashboard.js` — examination dashboard logic, question/attempt handling and related workflows
