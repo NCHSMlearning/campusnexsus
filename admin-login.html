@@ -416,7 +416,14 @@
             const {data:enrollment,error:enrollError}=await supabaseClient.auth.mfa.enroll({factorType:'totp',friendlyName});
             if(enrollError)throw enrollError;
             pendingFactorId=enrollment.id;
-            document.getElementById('mfaQr').src='data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(enrollment.totp.qr_code);
+            const qrCode=enrollment?.totp?.qr_code||'';
+            // supabase-js returns qr_code as a complete SVG data URL. Older
+            // responses may contain raw SVG, so normalize without double-prefixing.
+            const qrImage=document.getElementById('mfaQr');
+            if(!qrCode)throw new Error('Supabase did not return an authenticator QR code. Please retry setup.');
+            qrImage.onerror=()=>{qrImage.hidden=true;showError('The authenticator QR code could not be displayed. Use the setup key below or restart setup.');};
+            qrImage.onload=()=>{qrImage.hidden=false;};
+            qrImage.src=/^data:image\\/svg\\+xml/i.test(qrCode)?qrCode:'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(qrCode);
             document.getElementById('mfaSecret').textContent=enrollment.totp.secret;
             showMfaPanel('Set up administrator two-step verification','Scan this QR code using an authenticator app. Enter the generated 6-digit code below to activate two-step verification. Setup is required before accessing the admin dashboard.',true);
         }
