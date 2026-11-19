@@ -158,7 +158,7 @@
       const status = i.status === "active" ? "Active" : i.status === "suspended" ? "Suspended" : "Pending";
       const registrationUrl = safeWebUrl(i._registrationUrl);
       return '<tr><td><div class="cn-school"><span class="cn-school-mark" style="background:' + esc(i.primary_color || "#082f49") + '">' +
-        (i.logo_url ? '<img src="' + esc(i.logo_url) + '" alt="" onerror="this.style.display=\'none\'">' : '<i class="fas fa-school"></i>') +
+        (safeWebUrl(i.logo_url,true) ? '<img src="' + esc(safeWebUrl(i.logo_url,true)) + '" alt="" onerror="this.style.display=\\'none\\'">' : '<i class="fas fa-school"></i>') +
         '</span><span><strong>' + esc(i.name) + '</strong><small>' + esc(i.short_code) + ' · ' + esc(i.country || "") + '</small></span></div></td>' +
         '<td><span class="cn-status cn-status-' + esc(i.status) + '">' + status + '</span></td>' +
         '<td>' + esc(i._subscription?.plan_name || "—") + '<small class="cn-subline">' +
