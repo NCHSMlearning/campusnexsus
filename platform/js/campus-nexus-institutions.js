@@ -229,7 +229,7 @@
       const member = memberships.find(x => x.institution_id === i.id && x.status === "active" && x.role === "institution_admin");
       const registration = registrationLinks.find(x => x.institution_id === i.id);
       const host = String(i.portal_domain || "").trim().replace(/^https?:\/\//i,"").replace(/\/$/,"");
-      const registrationUrl = host
+      const registrationUrl = i.portal_mode === "custom_website" ? "" : host
         ? "https://" + host + "/register"
         : registration ? new URL("full-source/registration.html",window.location.href).href + "?institution_code=" + encodeURIComponent(registration.code) : "";
       const portalUrl = i.portal_mode === "custom_website" && i.custom_login_url
