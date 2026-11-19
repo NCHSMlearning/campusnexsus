@@ -72,8 +72,10 @@
   }
   async function init(){
     if(state.ready)return;state.ready=true;
+    const nav=document.querySelector('#mainNav a[data-tab="operator-permissions"]');
+    if(nav)nav.style.display='none';
     try{
-      await access();await loadInstitutions();await search();await loadGrants();
+      await access();if(nav)nav.style.display='flex';await loadInstitutions();await search();await loadGrants();
       $('cnOperatorSearch').addEventListener('keydown',e=>{if(e.key==='Enter')search().catch(e=>message(e.message,true));});
       $('cnOperatorSearchButton').addEventListener('click',()=>search().catch(e=>message(e.message,true)));
       $('cnOperatorGrant').addEventListener('click',()=>{
