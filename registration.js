@@ -225,40 +225,50 @@ function updateRegistrationSchoolCodeUrl(schoolCode) {
 }
 
 function renderInstitutionContextBanner(context, form) {
-    let banner = document.getElementById('cn-institution-context-banner');
-    if (!banner) {
-        banner = document.createElement('section');
-        banner.id = 'cn-institution-context-banner';
-        banner.style.cssText = 'display:flex;align-items:center;gap:14px;padding:16px 18px;margin:0 0 18px;border:1px solid #cbd5e1;border-radius:14px;background:#f8fafc;color:#0f172a;';
-        form.parentNode.insertBefore(banner, form);
-    }
-    banner.replaceChildren();
-    const primary = /^#[0-9a-f]{6}$/i.test(String(context.primary_color || '')) ? context.primary_color : '#082f49';
-    banner.style.borderLeft = '5px solid ' + primary;
+    const masthead = document.getElementById('campus-nexus-registration-brand');
+    if (!masthead) return;
+
+    masthead.replaceChildren();
+    masthead.classList.add('institution-masthead');
+
+    const identity = document.createElement('div');
+    identity.className = 'institution-identity';
+
     if (context.logo_url && /^https:\/\//i.test(context.logo_url)) {
+        const logoFrame = document.createElement('div');
+        logoFrame.className = 'institution-logo-frame';
         const logo = document.createElement('img');
         logo.src = context.logo_url;
-        logo.alt = '';
+        logo.alt = (context.institution_name || 'Institution') + ' logo';
         logo.referrerPolicy = 'no-referrer';
-        logo.style.cssText = 'width:54px;height:54px;object-fit:contain;border-radius:8px;background:#fff;padding:4px;';
-        banner.appendChild(logo);
+        logo.loading = 'eager';
+        logo.onerror = () => logoFrame.remove();
+        logoFrame.appendChild(logo);
+        identity.appendChild(logoFrame);
     }
-    const copy = document.createElement('div');
-    copy.style.cssText = 'display:flex;flex-direction:column;gap:4px;min-width:0;';
-    const title = document.createElement('strong');
+
+    const title = document.createElement('h1');
+    title.className = 'institution-name';
     title.textContent = context.institution_name || 'Your institution';
-    title.style.cssText = 'font-size:16px;color:' + primary + ';';
-    const subtitle = document.createElement('span');
-    subtitle.textContent = 'Institution registration · School code: ' + context.school_code;
-    subtitle.style.cssText = 'font-size:12px;color:#475569;';
-    copy.append(title, subtitle);
+    identity.appendChild(title);
+
+    const addresses = document.createElement('div');
+    addresses.className = 'institution-addresses';
     [context.physical_address, context.postal_address].filter(Boolean).forEach(value => {
         const address = document.createElement('span');
         address.textContent = value;
-        address.style.cssText = 'font-size:12px;color:#64748b;';
-        copy.appendChild(address);
+        addresses.appendChild(address);
     });
-    banner.appendChild(copy);
+    if (addresses.childElementCount) identity.appendChild(addresses);
+
+    const portal = document.createElement('div');
+    portal.className = 'institution-portal-label';
+    portal.textContent = 'Official Student & Lecturer Registration Portal';
+    const powered = document.createElement('div');
+    powered.className = 'campus-nexus-credit';
+    powered.textContent = 'Powered by Campus Nexus';
+
+    masthead.append(identity, portal, powered);
 }
 
 async function initializeInstitutionRegistration() {
