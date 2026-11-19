@@ -171,7 +171,7 @@
         '<td><span class="cn-status cn-status-' + esc(i.status) + '">' + status + '</span></td>' +
         '<td>' + esc(i._subscription?.plan_name || "—") + '<small class="cn-subline">' +
         (i._subscription ? esc(i._subscription.currency) + " " + Number(i._subscription.amount).toLocaleString() + " / " + esc(i._subscription.billing_cycle) : "Not configured") + '</small></td>' +
-        '<td>' + esc(i.contact_email || "—") + '</td><td>' + (i.portal_mode === "campus_nexus" ? '<span class="cn-muted">Shared Campus Nexus login</span><small class="cn-subline">campusnexus.co.ke/login</small>' : (portalUrl ? '<a href="' + esc(portalUrl) + '" target="_blank" rel="noopener">Open institution portal</a>' : 'Custom portal URL not configured')) +
+        '<td>' + esc(i.contact_email || "—") + '</td><td>' + (portalUrl ? '<a href="' + esc(portalUrl) + '" target="_blank" rel="noopener">' + (i.portal_mode === "custom_website" ? "Open institution portal" : "Campus Nexus login") + '</a>' : 'Login portal not configured') +
         (registrationUrl ? '<br><a href="' + esc(registrationUrl) + '" target="_blank" rel="noopener">Registration</a><button class="cn-row-action" type="button" data-copy-registration="' + esc(i.id) + '">Copy</button>' : '') + '</td>' +
         '<td><div class="cn-row-actions"><button class="cn-row-action" type="button" data-edit="' + esc(i.id) + '">Manage</button>' +
         (i.status !== "active" ? '<button class="cn-row-action" type="button" data-status="' + esc(i.id) + '" data-next="active" aria-label="Activate ' + esc(i.name) + '">Activate</button>' :
@@ -238,14 +238,12 @@
       const sub = subscriptions.find(x => x.institution_id === i.id);
       const member = memberships.find(x => x.institution_id === i.id && x.status === "active" && x.role === "institution_admin");
       const registration = registrationLinks.find(x => x.institution_id === i.id);
-      const host = String(i.portal_domain || "").trim().replace(/^https?:\/\//i,"").replace(/\/$/,"");
       const schoolCode = String(i.school_code || "").trim();
-      const registrationUrl = i.portal_mode === "custom_website" ? "" : host
-        ? "https://" + host + "/register?school_code=" + encodeURIComponent(schoolCode)
-        : registration ? new URL("full-source/register.html",window.location.href).href + "?school_code=" + encodeURIComponent(schoolCode) : "";
-      // Shared Campus Nexus sign-in is centrally hosted; do not mistake the institution's marketing domain for its login URL.
+      const hasSchoolCode = /^[0-9]{3}$/.test(schoolCode);
+      const registrationUrl = i.portal_mode === "custom_website" ? "" :
+        (hasSchoolCode ? "https://campusnexus.co.ke/register?school_code=" + encodeURIComponent(schoolCode) : "");
       const portalUrl = i.portal_mode === "custom_website" && i.custom_login_url
-        ? i.custom_login_url : "";
+        ? i.custom_login_url : "https://campusnexus.co.ke/login";
       return {...i, _modules:modules.filter(x => x.institution_id === i.id && x.enabled).map(x => x.module_key),
         _subscription:sub || null, _subscriptionId:sub?.id || null, _adminUserId:member?.user_id || null,
         _registrationUrl:registrationUrl, _portalUrl:portalUrl, _registrationCode:registration?.code || null};
