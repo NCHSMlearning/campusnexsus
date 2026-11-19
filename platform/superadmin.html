@@ -1688,6 +1688,11 @@ main.main>header{width:100%;max-width:100%;min-width:0}
 <!-- ============================================================ -->
 <!-- 🚀 ULTRA MODERN DASHBOARD - COMPLETE WITH ALL FEATURES        -->
 <!-- ============================================================ -->
+
+
+
+<section id="dashboard" class="tab-content active" style="padding: 0 4px;">
+
     <!-- CAMPUS NEXUS: GLOBAL INSTITUTION FILTER -->
     <section id="cnPlatformOverview" aria-label="Global institution filter">
       <div class="cn-global-filter">
@@ -1708,8 +1713,6 @@ main.main>header{width:100%;max-width:100%;min-width:0}
       </div>
     </section>
 
-
-<section id="dashboard" class="tab-content active" style="padding: 0 4px;">
     
     <!-- ====== TOP BANNER WITH ALL CONTROLS ====== -->
     <div style="
@@ -14112,6 +14115,39 @@ body.profile-dark-mode #profile .profile-extra-panel select{background:#20364f!i
 #institutions .cn-module-check{margin-left:auto;opacity:0;color:#0f766e}
 #institutions .cn-module-option:has(input:checked) .cn-module-check{opacity:1}
 @media(max-width:760px){#institutions .cn-palette{grid-template-columns:repeat(3,minmax(0,1fr))}#institutions .cn-module-grid{grid-template-columns:1fr}#institutions .cn-modules-heading{display:block}#institutions .cn-module-count{display:inline-block;margin-top:10px}}
+
+/* Campus Nexus platform workspace refinements */
+#cnPlatformOverview{margin:0 0 18px;max-width:100%}
+#cnPlatformOverview .cn-global-filter{display:grid;grid-template-columns:minmax(220px,1.4fr) minmax(190px,.8fr) auto auto auto;align-items:center;gap:12px;padding:16px 18px;background:linear-gradient(120deg,#082f49,#0f766e);border:1px solid rgba(15,118,110,.18);border-radius:16px;box-shadow:0 8px 24px rgba(8,47,73,.12);color:#fff}
+#cnPlatformOverview .cn-global-filter-copy{display:flex;flex-direction:column;gap:4px;min-width:0}
+#cnPlatformOverview .cn-global-eyebrow{font-size:9px;font-weight:800;letter-spacing:.12em;color:#99f6e4}
+#cnPlatformOverview .cn-global-filter-copy strong{font-size:18px;line-height:1.25;color:#fff}
+#cnPlatformOverview .cn-global-filter-copy small{font-size:11px;line-height:1.4;color:rgba(255,255,255,.76)}
+#cnPlatformOverview .cn-global-select-wrap{display:flex;flex-direction:column;gap:5px;font-size:10px;font-weight:700;color:#d5f4ef}
+#cnPlatformOverview .cn-global-select-wrap select{width:100%;min-height:40px;padding:8px 11px;border:1px solid rgba(255,255,255,.25);border-radius:9px;background:#fff;color:#0f172a;font-size:12px}
+#cnPlatformOverview .cn-global-updated{font-size:10px;color:#d5f4ef;white-space:nowrap}
+#cnPlatformOverview .cn-global-refresh,#cnPlatformOverview .cn-global-manage{min-height:40px;padding:9px 12px;border:1px solid rgba(255,255,255,.3);border-radius:9px;background:rgba(255,255,255,.12);color:#fff;font-size:11px;font-weight:800;cursor:pointer}
+#cnPlatformOverview .cn-global-manage{background:#fff;color:#0f766e;border-color:#fff}
+#institutions .cn-table-wrap{width:100%;max-width:100%;overflow-x:auto;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;border:1px solid #e2e8f0;border-radius:12px}
+#institutions .cn-table-wrap table{min-width:900px;width:100%;border-collapse:separate;border-spacing:0}
+#institutions .cn-table-wrap th,#institutions .cn-table-wrap td{white-space:nowrap;vertical-align:middle}
+#institutions .cn-table-wrap th:first-child,#institutions .cn-table-wrap td:first-child{position:sticky;left:0;z-index:1;background:#fff}
+#institutions .cn-table-wrap thead th:first-child{z-index:2;background:#f8fafc}
+#institutions .cn-row-actions{flex-wrap:wrap}
+#institutions .cn-palette{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}
+#institutions .cn-palette>label{display:flex;flex-direction:column;gap:6px;min-width:0;padding:10px;border:1px solid #e2e8f0;border-radius:10px;background:#f8fafc;font-size:10px;font-weight:700;color:#475569}
+#institutions .cn-palette input[type=color]{width:100%;height:38px;min-height:38px;padding:3px;cursor:pointer}
+#institutions .cn-module-group{margin:12px 0}
+#institutions .cn-module-group-title{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;color:#0f3b52;font-size:11px;font-weight:800}
+#institutions .cn-module-group-title small{color:#94a3b8;font-weight:600}
+#institutions .cn-module-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+#institutions .cn-module-option{min-width:0}
+#institutions .cn-module-copy{overflow-wrap:anywhere}
+#institutions button:focus-visible,#institutions input:focus-visible,#institutions select:focus-visible,#cnPlatformOverview button:focus-visible,#cnPlatformOverview select:focus-visible{outline:3px solid rgba(20,184,166,.35);outline-offset:2px}
+@media(max-width:1100px){#cnPlatformOverview .cn-global-filter{grid-template-columns:minmax(0,1fr) minmax(180px,.8fr)}#cnPlatformOverview .cn-global-updated{white-space:normal}}
+@media(max-width:760px){#cnPlatformOverview .cn-global-filter{grid-template-columns:1fr;padding:14px}#cnPlatformOverview .cn-global-filter-copy strong{font-size:16px}#cnPlatformOverview .cn-global-refresh,#cnPlatformOverview .cn-global-manage{width:100%}#institutions .cn-stats{grid-template-columns:repeat(2,minmax(0,1fr))}#institutions .cn-grid{grid-template-columns:1fr}#institutions .cn-span{grid-column:1}#institutions .cn-palette{grid-template-columns:repeat(3,minmax(0,1fr))}#institutions .cn-module-grid{grid-template-columns:1fr}#institutions .cn-panel{padding:14px}#institutions .cn-head{padding:18px;border-radius:14px}#institutions .cn-head h2{font-size:19px}#institutions .cn-panel-head{align-items:flex-start;flex-wrap:wrap}}
+@media(max-width:420px){#institutions .cn-stats{grid-template-columns:1fr}#institutions .cn-palette{grid-template-columns:repeat(2,minmax(0,1fr))}#institutions .cn-head-actions{width:100%}#institutions .cn-head-actions button{flex:1}}
+
 </style>
 
 <div class="cn-head">
