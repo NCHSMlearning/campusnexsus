@@ -188,7 +188,7 @@ input:focus{border-color:#087fc5;box-shadow:0 0 0 4px rgba(8,127,197,.12)}
           <label for="adminEmail">Administrator Email</label>
           <div class="input-wrap">
             <i data-lucide="mail"></i>
-            <input id="adminEmail" name="email" type="email" placeholder="administrator@nchsm.ac.ke" autocomplete="username" required>
+            <input id="adminEmail" name="email" type="email" placeholder="platform.admin@yourdomain.com" autocomplete="username" required>
           </div>
         </div>
 
@@ -293,12 +293,12 @@ function icons(){if(window.lucide)lucide.createIcons()}
 
 function setTheme(name){
  document.documentElement.setAttribute("data-theme",name);
- localStorage.setItem("nchsm_theme",name);
+ localStorage.setItem("campus_nexus_admin_theme",name);
  $("themeLabel").textContent=name==="dark"?"Light":"Dark";
  icons();
 }
 function initTheme(){
- const saved=localStorage.getItem("nchsm_theme")||"light";
+ const saved=localStorage.getItem("campus_nexus_admin_theme")||"light";
  setTheme(saved);
  $("themeToggle").addEventListener("click",()=>setTheme(document.documentElement.getAttribute("data-theme")==="dark"?"light":"dark"));
 }
