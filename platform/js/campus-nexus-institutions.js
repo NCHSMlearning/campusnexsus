@@ -243,7 +243,10 @@
       const registrationUrl = i.portal_mode === "custom_website" ? "" :
         (hasSchoolCode ? "https://campusnexus.co.ke/register?school_code=" + encodeURIComponent(schoolCode) : "");
       const portalUrl = i.portal_mode === "custom_website" && i.custom_login_url
-        ? i.custom_login_url : "https://campusnexus.co.ke/login";
+        ? i.custom_login_url
+        : (hasSchoolCode
+          ? "https://campusnexus.co.ke/login?school_code=" + encodeURIComponent(schoolCode)
+          : "https://campusnexus.co.ke/login");
       return {...i, _modules:modules.filter(x => x.institution_id === i.id && x.enabled).map(x => x.module_key),
         _subscription:sub || null, _subscriptionId:sub?.id || null, _adminUserId:member?.user_id || null,
         _registrationUrl:registrationUrl, _portalUrl:portalUrl, _registrationCode:registration?.code || null};
