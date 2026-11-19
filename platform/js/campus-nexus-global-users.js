@@ -295,7 +295,7 @@
     if (nav) nav.style.display = 'none';
     try {
       await verifyAccess();
-      if (nav) nav.style.display = '';
+      if (nav) nav.style.display = 'flex';
       bindControls();
       await loadInstitutions();
     } catch (error) {
