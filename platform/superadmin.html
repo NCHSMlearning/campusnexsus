@@ -14211,8 +14211,8 @@ body.profile-dark-mode #profile .profile-extra-panel select{background:#20364f!i
       <div class="cn-field" id="cnCustomLoginWrap"><label for="cnInstitutionCustomLogin">Custom login / registration URL</label><input id="cnInstitutionCustomLogin" type="url" placeholder="https://institution.ac.ke/login"><small class="cn-help">Required when using a custom institutional website.</small></div>
       <div class="cn-field"><label for="cnInstitutionAdminPortal">Administrator portal URL</label><input id="cnInstitutionAdminPortal" type="url" placeholder="https://institution.ac.ke/admin or leave blank for Campus Nexus"><small class="cn-help">Set a dedicated administrator entry point, or leave blank to use the institution-scoped Campus Nexus admin portal.</small></div>
       <div class="cn-step-title cn-span"><span class="cn-step-number">4</span> Access, subscription & services</div>
-      <div class="cn-field"><label for="cnInstitutionStatus">Institution status</label><select id="cnInstitutionStatus"><option value="active">Active</option><option value="pending">Pending setup</option><option value="suspended">Suspended</option></select></div>
-      <div class="cn-field"><label for="cnInstitutionAdmin">Institution administrator email (existing portal account)</label><input id="cnInstitutionAdmin" type="email" placeholder="admin@institution.ac.ke"></div>
+      <div class="cn-field"><label for="cnInstitutionStatus">Institution status</label><select id="cnInstitutionStatus"><option value="pending" selected>Pending setup</option><option value="active">Active</option><option value="suspended">Suspended</option></select><small class="cn-help">New institutions start pending until the administrator, portal and modules have been checked.</small></div>
+      <div class="cn-field"><label for="cnInstitutionAdmin">Institution administrator email (existing Campus Nexus account)</label><input id="cnInstitutionAdmin" type="email" placeholder="admin@institution.ac.ke"></div>
       <div class="cn-field"><label for="cnInstitutionPlan">Subscription package</label><select id="cnInstitutionPlan"><option>Starter</option><option>Growth</option><option>Professional</option><option>Enterprise</option><option>Legacy Institution</option><option>Custom</option></select></div>
       <div class="cn-field"><label for="cnInstitutionAmount">Subscription amount (KES)</label><input id="cnInstitutionAmount" type="number" min="0" step="100" value="5000" required></div>
       <div class="cn-field"><label for="cnInstitutionCycle">Billing cycle</label><select id="cnInstitutionCycle"><option value="monthly">Monthly</option><option value="quarterly">Quarterly</option><option value="annually">Annually</option><option value="custom">Custom</option></select></div>
@@ -15036,7 +15036,7 @@ body.profile-dark-mode #profile .profile-extra-panel select{background:#20364f!i
 <!-- MAIN APPLICATION - ES MODULE                  -->
 <!-- ============================================ -->
 <script type="module" src="script.js?v=20261118-tenant-scope-v1" defer></script>
-<script type="module" src="js/campus-nexus-institutions.js?v=20261119-atomic-provisioning-v1"></script>
+<script type="module" src="js/campus-nexus-institutions.js?v=20261119-onboarding-test-v2"></script>
 <script type="module" src="js/campus-nexus-dashboard-filter.js?v=20261119-institution-admin-v3"></script>
 <!-- ============================================ -->
  <!-- ============================================ -->
