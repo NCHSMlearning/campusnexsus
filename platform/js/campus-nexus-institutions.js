@@ -285,7 +285,7 @@
         p_plan_name:$("cnInstitutionPlan").value,
         p_amount:amount,
         p_billing_cycle:$("cnInstitutionCycle").value,
-        p_admin_email:adminEmail || null
+        p_admin_email:adminEmail || (editingId ? institutions.find(item => item.id === editingId)?.admin_email : null) || null
       });
       if (error) throw error;
       const saved = result?.institution;
