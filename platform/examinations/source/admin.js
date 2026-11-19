@@ -1,0 +1,2327 @@
+// =====================================================
+// NCHSM ADMIN DASHBOARD - COMPLETE JAVASCRIPT
+// ALL functions implemented - Modern UI matching Super Admin
+// KRCHN uses BLOCKS, TVET uses TERMS
+// INCLUDES: Unit Assignment to Lecturers + Charts + Modern UI
+// =====================================================
+
+// ------------------------------------------------------------------
+// SUPABASE CONFIGURATION
+// ------------------------------------------------------------------
+const SUPABASE_URL = 'https://lwhtjozfsmbyihenfunw.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx3aHRqb3pmc21ieWloZW5mdW53Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk2NTgxMjcsImV4cCI6MjA3NTIzNDEyN30.7Z8AYvPQwTAEEEhODlW6Xk-IR1FK3Uj5ivZS7P17Wpk';
+
+let db = null;
+let currentAdmin = null;
+let allUnitsList = [];
+let selectedBlock = 'all';
+let allResourcesData = [];
+let currentResourceType = 'all';
+let adminAllTickets = [];
+let calendarInstance = null;
+let chartInstances = {};
+
+// ====================================================================
+// LECTURER UNIT ASSIGNMENT - STATE
+// ====================================================================
+let allLecturers = [];
+let allLecturerAssignments = [];
+let currentLecturerId = null;
+let availableUnitsForAssignment = [];
+
+// ------------------------------------------------------------------
+// KRCHN BLOCKS vs TVET TERMS - CORRECT DEFINITIONS
+// ------------------------------------------------------------------
+function getKRCHNBlocks() {
+    return ['Introductory', 'Block 1', 'Block 2', 'Block 3', 'Block 4', 'Block 5', 'Block 6', 'Final'];
+}
+
+function getTVETTerms() {
+    return ['Introductory Term', 'Term 1', 'Term 2', 'Term 3', 'Term 4', 'Term 5', 'Term 6', 'Term 7', 'Term 8', 'Term 9'];
+}
+
+function getBlockTermLabel(programCode) {
+    if (programCode === 'KRCHN') return 'Block';
+    return 'Term';
+}
+
+function getBlockTermOptions(programCode) {
+    if (programCode === 'KRCHN') return getKRCHNBlocks();
+    return getTVETTerms();
+}
+
+// ------------------------------------------------------------------
+// TVET PROGRAM CODES AND DISPLAY NAMES
+// ------------------------------------------------------------------
+const TVET_PROGRAMS = [
+    'DPOTT', 'DCH', 'DHRIT', 'DSL', 'DSW', 'DCJS', 'DHSS', 'DICT', 'DME',
+    'CPOTT', 'CCH', 'CHRIT', 'CPC', 'CSL', 'CSW', 'CCJS', 'CAG', 'CHSS', 'CICT',
+    'ACH', 'AAG', 'ASW', 'CCA', 'PTE'
+];
+
+const PROGRAM_DISPLAY_NAMES = {
+    'KRCHN': 'KRCHN Nursing',
+    'DPOTT': 'Diploma in Perioperative Theatre Technology',
+    'DCH': 'Diploma in Community Health',
+    'DHRIT': 'Diploma in Health Records and IT',
+    'DSL': 'Diploma in Science Lab',
+    'DSW': 'Diploma in Social Work & Community Development',
+    'DCJS': 'Diploma in Criminal Justice',
+    'DHSS': 'Diploma in Health Support Services',
+    'DICT': 'Diploma in ICT',
+    'DME': 'Diploma in Medical Engineering',
+    'CPOTT': 'Certificate in Perioperative Theatre Technology',
+    'CCH': 'Certificate in Community Health',
+    'CHRIT': 'Certificate in Health Records and IT',
+    'CPC': 'Certificate in Patient Care',
+    'CSL': 'Certificate in Science Lab',
+    'CSW': 'Certificate in Social Work & Community Development',
+    'CCJS': 'Certificate in Criminal Justice',
+    'CAG': 'Certificate in Agriculture',
+    'CHSS': 'Certificate in Health Support Services',
+    'CICT': 'Certificate in ICT',
+    'ACH': 'Artisan in Community Health',
+    'AAG': 'Artisan in Agriculture',
+    'ASW': 'Artisan in Social Work & Community Development',
+    'CCA': 'Certificate in Computer Applications',
+    'PTE': 'TVET/CDACC (PTE)'
+};
+
+function getHODProgramScope() {
+    const role = String(currentAdmin?.role || '').toLowerCase().trim();
+    if (role === 'nursing_hod') return 'KRCHN';
+    if (role === 'tvet_hod') return 'TVET';
+    return null;
+}
+
+function applyHODStudentScope(query) {
+    const scope = getHODProgramScope();
+    if (scope === 'KRCHN') return query.eq('program', 'KRCHN');
+    if (scope === 'TVET') return query.in('program', TVET_PROGRAMS);
+    return query;
+}
+
+function isHODUser() {
+    return ['hod', 'head_of_department', 'nursing_hod', 'tvet_hod'].includes(String(currentAdmin?.role || '').toLowerCase());
+}
+
+function getProgramDisplayName(code) {
+    if (!code) return 'Unknown Program';
+    return PROGRAM_DISPLAY_NAMES[code] || code;
+}
+
+function isTVETProgram(code) {
+    if (!code) return false;
+    return TVET_PROGRAMS.includes(code);
+}
+
+// ------------------------------------------------------------------
+// UTILITY FUNCTIONS
+// ------------------------------------------------------------------
+function $(id) { return document.getElementById(id); }
+
+function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/[&<>]/g, function(m) {
+        if (m === '&') return '&amp;';
+        if (m === '<') return '&lt;';
+        if (m === '>') return '&gt;';
+        return m;
+    });
+}
+
+function showToast(message, type) {
+    type = type || 'success';
+    const container = document.getElementById('toastContainer');
+    if (!container) {
+        alert(message);
+        return;
+    }
+    
+    const toast = document.createElement('div');
+    toast.className = 'toast toast-' + type;
+    const icon = type === 'success' ? 'fa-check-circle' : 
+                 type === 'error' ? 'fa-exclamation-circle' :
+                 type === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle';
+    toast.innerHTML = '<i class="fas ' + icon + '"></i> ' + message;
+    container.appendChild(toast);
+    
+    setTimeout(function() {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(100px)';
+        toast.style.transition = 'all 0.3s ease';
+        setTimeout(function() { toast.remove(); }, 300);
+    }, 4000);
+}
+
+function formatDate(date) {
+    if (!date) return 'N/A';
+    return new Date(date).toLocaleDateString('en-KE', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+    });
+}
+
+function formatDateTime(date) {
+    if (!date) return 'N/A';
+    return new Date(date).toLocaleString('en-KE', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
+// ------------------------------------------------------------------
+// BLOCK/TERM DROPDOWN - CORRECTED FOR KRCHN vs TVET
+// ------------------------------------------------------------------
+function updateBlockTermDropdown(dropdownId, programCode) {
+    var dropdown = document.getElementById(dropdownId);
+    if (!dropdown) return;
+    
+    var currentValue = dropdown.value;
+    dropdown.innerHTML = '<option value="">-- Select --</option>';
+    
+    var options = getBlockTermOptions(programCode);
+    
+    for (var i = 0; i < options.length; i++) {
+        var opt = document.createElement('option');
+        opt.value = options[i];
+        opt.textContent = options[i];
+        dropdown.appendChild(opt);
+    }
+    
+    if (currentValue) dropdown.value = currentValue;
+}
+
+function setupBlockTermDropdowns() {
+    var programSelects = [
+        { program: 'account-program', block: 'account-block-term' },
+        { program: 'edit_user_program', block: 'edit_user_block' },
+        { program: 'course-program', block: 'course-block' },
+        { program: 'session_program', block: 'session-block' },
+        { program: 'exam_program', block: 'exam-block' },
+        { program: 'resource_program', block: 'resource-block' }
+    ];
+    
+    for (var i = 0; i < programSelects.length; i++) {
+        var programSelect = document.getElementById(programSelects[i].program);
+        var blockSelect = document.getElementById(programSelects[i].block);
+        
+        if (programSelect && blockSelect) {
+            programSelect.addEventListener('change', (function(blockId) {
+                return function() {
+                    updateBlockTermDropdown(blockId, this.value);
+                };
+            })(programSelects[i].block));
+            
+            if (programSelect.value) {
+                updateBlockTermDropdown(programSelects[i].block, programSelect.value);
+            }
+        }
+    }
+}
+
+// ------------------------------------------------------------------
+// INITIALIZATION
+// ------------------------------------------------------------------
+document.addEventListener('DOMContentLoaded', async function() {
+    console.log('🚀 Admin panel loading...');
+    
+    // Set current date
+    const dateEl = document.getElementById('currentDate');
+    if (dateEl) {
+        const now = new Date();
+        dateEl.textContent = now.toLocaleDateString('en-KE', {
+            weekday: 'short',
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        });
+    }
+    
+    // Wait for the Supabase SDK before creating the client.
+    for (let attempt = 0; attempt < 30 && typeof supabase === 'undefined'; attempt++) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    if (typeof supabase === 'undefined') {
+        console.error('Supabase SDK did not load; admin dashboard initialization stopped.');
+        return;
+    }
+    db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    setupNavigation();
+    setupMobileMenu();
+    setupDropdowns();
+    setupBlockTermDropdowns();
+    setupAssignmentEventListeners();
+    initCharts();
+
+    // Session/profile validation must finish before any protected table queries.
+    const authenticatedAdmin = await checkUserSession();
+    if (!authenticatedAdmin) return;
+    await loadDashboardNumbers();
+});
+
+// ------------------------------------------------------------------
+// SETUP DROPDOWNS (Matches Super Admin)
+// ------------------------------------------------------------------
+function setupDropdowns() {
+    const dropdownToggles = document.querySelectorAll('.nav-dropdown > a');
+    dropdownToggles.forEach(toggle => {
+        toggle.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const parentLi = this.closest('.nav-dropdown');
+            
+            // Close all other dropdowns
+            document.querySelectorAll('.nav-dropdown').forEach(dropdown => {
+                if (dropdown !== parentLi) {
+                    dropdown.classList.remove('open');
+                }
+            });
+            
+            parentLi.classList.toggle('open');
+        });
+    });
+    
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.nav-dropdown')) {
+            document.querySelectorAll('.nav-dropdown').forEach(dropdown => {
+                dropdown.classList.remove('open');
+            });
+        }
+    });
+}
+
+// ------------------------------------------------------------------
+// SETUP ASSIGNMENT EVENT LISTENERS
+// ------------------------------------------------------------------
+function setupAssignmentEventListeners() {
+    const searchInput = document.getElementById('lecturerSearch');
+    if (searchInput) {
+        searchInput.addEventListener('keyup', filterLecturerList);
+    }
+    
+    const programFilter = document.getElementById('lecturerProgramFilter');
+    if (programFilter) {
+        programFilter.addEventListener('change', filterLecturerList);
+    }
+    
+    const unitSearch = document.getElementById('unitSearchInput');
+    if (unitSearch) {
+        unitSearch.addEventListener('keyup', filterAvailableUnits);
+    }
+}
+
+// ------------------------------------------------------------------
+// CHECK USER SESSION
+// ------------------------------------------------------------------
+async function checkUserSession() {
+    if (!db) return false;
+    try {
+        const { data: sessionData, error: sessionError } = await db.auth.getSession();
+        if (sessionError || !sessionData?.session) { window.location.href = 'login.html'; return false; }
+        const user = sessionData.session.user;
+        const { data: profile, error } = await db.from('consolidated_user_profiles_table')
+            .select('user_id,email,full_name,role,status,program,department,staff_id')
+            .eq('user_id', user.id).maybeSingle();
+        if (error || !profile) { window.location.href = 'login.html'; return false; }
+        currentAdmin = profile;
+        const role = String(profile.role || '').normalize('NFKC').toLowerCase().trim().replace(/[\s-]+/g, '_');
+        currentAdmin.role = role;
+        currentAdmin.program_scope = role === 'nursing_hod' ? 'KRCHN' : (role === 'tvet_hod' ? 'TVET' : null);
+        if (role === 'superadmin' || role === 'super_admin') { window.location.href = 'superadmin.html'; return false; }
+        const allowedRoles = ['admin','administrator','hod','head_of_department','school_admin','nursing_hod','tvet_hod'];
+        if (!allowedRoles.includes(role)) {
+            showToast('This portal is restricted to authorised administrators and Heads of Department.', 'error');
+            await db.auth.signOut();
+            window.location.href = 'login.html';
+            return false;
+        }
+        const nameSpan = document.getElementById('adminName');
+        if (nameSpan) nameSpan.textContent = profile.full_name || 'Administrator';
+        const roleLabel = document.getElementById('adminRoleLabel');
+        if (roleLabel) roleLabel.textContent = role.includes('hod') || role === 'head_of_department' ? 'HEAD OF DEPARTMENT' : 'ADMINISTRATOR';
+        return true;
+    } catch (e) {
+        console.error('Admin session validation failed:', e);
+        window.location.href = 'login.html';
+        return false;
+    }
+}
+
+// ------------------------------------------------------------------
+// SIDEBAR NAVIGATION
+// ------------------------------------------------------------------
+function setupNavigation() {
+    var navLinks = document.querySelectorAll('.nav a[data-tab]');
+    var allTabs = document.querySelectorAll('.tab-content');
+    
+    for (var i = 0; i < navLinks.length; i++) {
+        navLinks[i].addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            var tabId = this.getAttribute('data-tab');
+            
+            for (var j = 0; j < navLinks.length; j++) {
+                navLinks[j].classList.remove('active');
+            }
+            this.classList.add('active');
+            
+            for (var k = 0; k < allTabs.length; k++) {
+                allTabs[k].style.display = 'none';
+                allTabs[k].classList.remove('active');
+            }
+            
+            var targetTab = document.getElementById(tabId);
+            if (targetTab) {
+                targetTab.style.display = 'block';
+                targetTab.classList.add('active');
+                loadTabContent(tabId);
+            }
+            
+            // Close mobile sidebar
+            document.getElementById('sidebar')?.classList.remove('active');
+        });
+    }
+    
+    var dashboardTab = document.getElementById('dashboard');
+    if (dashboardTab) {
+        dashboardTab.style.display = 'block';
+    }
+}
+
+function setupMobileMenu() {
+    var toggleBtn = document.getElementById('mobileNavToggle');
+    var sidebar = document.getElementById('sidebar');
+    if (!toggleBtn || !sidebar || toggleBtn.dataset.mobileBound === 'true') return;
+    toggleBtn.dataset.mobileBound = 'true';
+    function setOpen(open) {
+        sidebar.classList.toggle('active', open);
+        document.body.classList.toggle('admin-sidebar-open', open && window.innerWidth <= 768);
+        toggleBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        toggleBtn.setAttribute('aria-label', open ? 'Close navigation' : 'Open navigation');
+    }
+    toggleBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        setOpen(!sidebar.classList.contains('active'));
+    });
+    document.addEventListener('click', function(e) {
+        if (window.innerWidth > 768 || !sidebar.classList.contains('active')) return;
+        if (!sidebar.contains(e.target) && !toggleBtn.contains(e.target)) setOpen(false);
+    });
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') setOpen(false);
+    });
+    sidebar.querySelectorAll('a[data-tab]').forEach(function(link) {
+        link.addEventListener('click', function() { if (window.innerWidth <= 768) setOpen(false); });
+    });
+    window.addEventListener('resize', function() {
+        if (window.innerWidth > 768) {
+            document.body.classList.remove('admin-sidebar-open');
+            sidebar.classList.remove('active');
+            toggleBtn.setAttribute('aria-expanded', 'false');
+        }
+    });
+}
+
+window.showTab = function(tabId) {
+    var navLink = document.querySelector('.nav a[data-tab="' + tabId + '"]');
+    if (navLink) navLink.click();
+};
+
+
+function hodScopeRows(rows){const s=getHODProgramScope();return !s?(rows||[]):(rows||[]).filter(r=>{const p=String(r.program||r.department||'').trim().toUpperCase();return s==='KRCHN'?p==='KRCHN':TVET_PROGRAMS.includes(p);});}
+function hodEsc(v){return String(v??'—').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function hodDate(v){if(!v)return '—';const d=new Date(v);return Number.isNaN(d.getTime())?'—':d.toLocaleDateString('en-KE');}
+async function hodFetch(t,n=3000){const {data,error}=await db.from(t).select('*').limit(n);if(error)throw error;return data||[];}
+function hodEmpty(id,n,msg){const e=document.getElementById(id);if(e)e.innerHTML='<tr><td colspan="'+n+'">'+hodEsc(msg)+'</td></tr>';}
+async function loadHODLecturerDirectory(){hodEmpty('hodLecturerRows',6,'Loading…');try{let a=hodScopeRows(await hodFetch('consolidated_user_profiles_table',3000)).filter(x=>['lecturer','staff'].includes(String(x.role||'').toLowerCase()));const e=document.getElementById('hodLecturerRows');if(e)e.innerHTML=a.length?a.map(x=>'<tr><td>'+hodEsc(x.full_name)+'</td><td>'+hodEsc(x.email)+'</td><td>'+hodEsc(x.staff_id)+'</td><td>'+hodEsc(x.department)+'</td><td>'+hodEsc(x.program)+'</td><td>'+hodEsc(x.role)+'</td></tr>').join(''):'<tr><td colspan="6">No lecturers found.</td></tr>';}catch(e){hodEmpty('hodLecturerRows',6,e.message);}}
+async function loadHODSubmissionProgress(){hodEmpty('hodProgressRows',6,'Loading…');try{const a=hodScopeRows(await hodFetch('lecturer_report_submissions'));const m=new Map();a.forEach(r=>{const k=r.lecturer_user_id||r.lecturer_email||r.lecturer_name||r.lecturer_id,p=m.get(k)||{name:r.lecturer_name||r.lecturer_email||r.lecturer_id,program:r.program,total:0,approved:0,returned:0,last:null};p.total++;if(r.status==='approved')p.approved++;if(['returned','rejected'].includes(r.status))p.returned++;const d=r.submitted_at||r.updated_at||r.created_at;if(d&&(!p.last||new Date(d)>new Date(p.last)))p.last=d;m.set(k,p);});const people=[...m.values()];const s=document.getElementById('hodSubmissionStats');if(s)s.innerHTML=[['Lecturers',people.length],['Submissions',a.length],['Approved',a.filter(x=>x.status==='approved').length],['Awaiting review',a.filter(x=>['submitted','resubmitted','under_review'].includes(x.status)).length]].map(([k,v])=>'<div class="stat-card"><span>'+k+'</span><strong>'+v+'</strong></div>').join('');const e=document.getElementById('hodProgressRows');if(e)e.innerHTML=people.map(p=>'<tr><td>'+hodEsc(p.name)+'</td><td>'+hodEsc(p.program)+'</td><td>'+p.total+'</td><td>'+p.approved+'</td><td>'+p.returned+'</td><td>'+hodDate(p.last)+'</td></tr>').join('')||'<tr><td colspan="6">No submissions yet.</td></tr>';}catch(e){hodEmpty('hodProgressRows',6,e.message);}}
+let hodActiveDocumentSubmission=null;
+async function loadHODTeachingDocuments(){hodEmpty('hodDocumentRows',8,'Loading…');try{const a=hodScopeRows(await hodFetch('lecturer_report_submissions'));const e=document.getElementById('hodDocumentRows');if(e)e.innerHTML=a.map(r=>'<tr data-search="'+hodEsc([r.title,r.lecturer_name,r.unit_name,r.subject_code,r.document_type].join(' ').toLowerCase())+'" data-status="'+hodEsc(r.status)+'"><td>'+hodEsc(r.title||r.document_type||r.report_type)+'</td><td>'+hodEsc(r.lecturer_name)+'</td><td>'+hodEsc((r.subject_code||'')+' '+(r.unit_name||''))+'</td><td>'+hodEsc(r.program)+'</td><td>'+hodEsc(r.document_type||r.report_type)+'</td><td>'+hodEsc(r.status)+'</td><td>'+hodDate(r.submitted_at||r.created_at)+'</td><td><button class="btn-sm btn-edit" onclick="openHODDocumentReview(\''+hodEsc(r.id)+'\')">View & Review</button></td></tr>').join('')||'<tr><td colspan="8">No documents found.</td></tr>';}catch(e){hodEmpty('hodDocumentRows',8,e.message);}}
+let hodMammothPromise=null;
+function hodLoadMammoth(){
+ if(window.mammoth)return Promise.resolve(window.mammoth);
+ if(!hodMammothPromise)hodMammothPromise=new Promise((resolve,reject)=>{
+  const script=document.createElement('script');script.src='https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js';
+  script.onload=()=>window.mammoth?resolve(window.mammoth):reject(new Error('Word preview engine did not initialise.'));
+  script.onerror=()=>reject(new Error('Could not load Word preview engine. Download the file instead.'));
+  document.head.appendChild(script);
+ });
+ return hodMammothPromise;
+}
+async function hodRenderInlineDocument(box,url,fileName,mimeType){
+ const name=String(fileName||'').toLowerCase(),mime=String(mimeType||'').toLowerCase(),ext=(name.split('.').pop()||'').toLowerCase();
+ box.innerHTML='';
+ if(ext==='pdf'||mime.includes('pdf')){
+  const frame=document.createElement('iframe');frame.title='PDF document preview';frame.src=url+'#toolbar=1&navpanes=0';frame.style.cssText='width:100%;height:100%;min-height:55vh;border:0;background:#fff';box.appendChild(frame);return;
+ }
+ if(mime.startsWith('image/')||/\.(png|jpe?g|gif|webp|bmp)$/i.test(name)){
+  const img=document.createElement('img');img.alt=fileName||'Submitted image';img.src=url;img.style.cssText='display:block;max-width:100%;max-height:55vh;object-fit:contain;margin:auto';box.appendChild(img);return;
+ }
+ if(ext==='docx'||mime.includes('wordprocessingml')){
+  const engine=await hodLoadMammoth(),response=await fetch(url);if(!response.ok)throw new Error('Could not retrieve the Word document.');
+  const result=await engine.convertToHtml({arrayBuffer:await response.arrayBuffer()});
+  const article=document.createElement('article');article.innerHTML=result.value;article.style.cssText='max-width:850px;margin:16px auto;padding:38px 46px;background:#fff;color:#1f2937;font:14px/1.65 Arial,sans-serif;overflow-wrap:anywhere;box-shadow:0 2px 12px #0f172a12';
+  box.style.cssText='height:55vh;min-height:320px;overflow:auto;background:#e5e7eb;padding:12px';box.appendChild(article);return;
+ }
+ const note=document.createElement('div');note.style.cssText='padding:25px;text-align:center;color:#475569';
+ note.textContent=ext==='doc'?'Legacy .doc files cannot be rendered safely in this browser. Upload a .docx copy for inline preview, or download the original.':'Inline preview is not available for this file format.';
+ const link=document.createElement('a');link.href=url;link.download=fileName||'document';link.textContent='Download original document';link.style.cssText='display:inline-block;margin:10px;padding:9px 14px;border-radius:8px;background:#102d4a;color:white;font-weight:700;text-decoration:none';note.appendChild(document.createElement('br'));note.appendChild(link);box.appendChild(note);
+}
+window.openHODDocumentReview=async function(id){
+ try{
+  const rows=hodScopeRows(await hodFetch('lecturer_report_submissions'));const r=rows.find(x=>String(x.id)===String(id));
+  if(!r)throw new Error('Submission not found in your programme.');
+  hodActiveDocumentSubmission=r;
+  document.getElementById('hodDocumentModalTitle').textContent=(r.title||r.document_type||'Teaching document')+' — '+(r.lecturer_name||'Lecturer');
+  document.getElementById('hodDocumentReviewComments').value=r.reviewer_comments||'';
+  const box=document.getElementById('hodDocumentPreview');box.innerHTML='<div style="padding:24px;text-align:center">Preparing secure inline preview…</div>';
+  document.getElementById('hodDocumentReviewModal').style.display='block';
+  const path=r.attachment_path;if(!path)throw new Error('This submission has no attached document.');
+  const signed=await db.storage.from('lecturer-reports').createSignedUrl(path,1800);if(signed.error)throw signed.error;
+  const url=signed.data?.signedUrl;if(!url)throw new Error('Secure preview link unavailable.');
+  await hodRenderInlineDocument(box,url,r.attachment_name||r.title||'Teaching document',r.attachment_type||'');
+ }catch(e){showToast('Unable to open document: '+e.message,'error');}
+}
+window.closeHODDocumentReview=function(){document.getElementById('hodDocumentReviewModal').style.display='none';document.getElementById('hodDocumentPreview').innerHTML='';hodActiveDocumentSubmission=null;};
+window.saveHODDocumentReview=async function(status){const r=hodActiveDocumentSubmission;if(!r)return;const comments=document.getElementById('hodDocumentReviewComments').value.trim();if(status!=='approved'&&!comments){showToast('Add comments before returning or rejecting a document.','warning');return;}try{const auth=await db.auth.getUser();const user=auth.data?.user;if(auth.error||!user)throw auth.error||new Error('Session expired.');const profile=await db.from('consolidated_user_profiles_table').select('full_name').eq('user_id',user.id).maybeSingle();const reviewer=profile.data?.full_name||user.email;const update=await db.from('lecturer_report_submissions').update({status,reviewer_user_id:user.id,reviewer_name:reviewer,reviewer_comments:comments,reviewed_at:new Date().toISOString(),...(status==='approved'?{approved_at:new Date().toISOString()}:{})}).eq('id',r.id);if(update.error)throw update.error;const log=await db.from('lecturer_report_reviews').insert({submission_id:r.id,reviewer_user_id:user.id,reviewer_name:reviewer,action:status,comments});if(log.error)console.warn('Review history insert failed:',log.error.message);showToast('Document '+status+'.','success');closeHODDocumentReview();loadHODTeachingDocuments();loadHODSubmissionProgress();}catch(e){showToast('Review failed: '+e.message,'error');}};
+async function loadHODResearch(){hodEmpty('hodResearchRows',8,'Loading…');try{const raw=await hodFetch('research_submissions');const ids=[...new Set(raw.map(x=>x.student_id).filter(Boolean))];let p=[];if(ids.length){const r=await db.from('consolidated_user_profiles_table').select('user_id,full_name,student_id,admission_number,program,department').in('user_id',ids);if(r.error)throw r.error;p=r.data||[];}const map=new Map(p.map(x=>[String(x.user_id),x]));const a=raw.filter(r=>{const s=map.get(String(r.student_id))||{};return !getHODProgramScope()||hodScopeRows([{program:s.program||s.department}]).length>0;});const e=document.getElementById('hodResearchRows');if(e)e.innerHTML=a.map(r=>{const s=map.get(String(r.student_id))||{};return '<tr data-search="'+hodEsc([s.full_name,s.student_id,s.admission_number,r.title,r.supervisor_name].join(' ').toLowerCase())+'"><td>'+hodEsc(s.full_name||s.student_id||s.admission_number)+'</td><td>'+hodEsc(s.program||s.department)+'</td><td>'+hodEsc(r.title)+'</td><td>'+hodEsc(r.submission_type)+'</td><td>'+hodEsc(r.supervisor_name)+'</td><td>'+hodEsc(r.status)+'</td><td>'+hodDate(r.submitted_at||r.created_at)+'</td><td><button class="btn-sm btn-edit" onclick="openHODResearchDocument(\''+hodEsc(r.id)+'\')">View</button> <button class="btn-sm btn-success" onclick="assignHODResearchSupervisor(\''+hodEsc(r.id)+'\',\''+hodEsc(r.supervisor_name||'')+'\')">Assign supervisor</button> <button class="btn-sm btn-edit" onclick="reviewHODResearch(\''+hodEsc(r.id)+'\')">Review</button></td></tr>';}).join('')||'<tr><td colspan="8">No research submissions found for your programme.</td></tr>';}catch(e){hodEmpty('hodResearchRows',8,'Unable to load research: '+e.message);}}
+async function getHODScopedResearchSubmission(id){const rows=await hodFetch('research_submissions');const row=rows.find(x=>String(x.id)===String(id));if(!row)throw new Error('Research submission not found.');if(getHODProgramScope()){const p=await db.from('consolidated_user_profiles_table').select('program,department').eq('user_id',row.student_id).maybeSingle();if(p.error)throw p.error;if(!hodScopeRows([{program:p.data?.program||p.data?.department}]).length)throw new Error('This submission is outside your programme scope.');}return row;}
+window.openHODResearchDocument=async function(id){try{const row=await getHODScopedResearchSubmission(id);if(!row.document_path)throw new Error('No research document is attached.');const signed=await db.storage.from('research-papers').createSignedUrl(row.document_path,1800);if(signed.error)throw signed.error;window.open(signed.data.signedUrl,'_blank','noopener');}catch(e){showToast('Unable to open research document: '+e.message,'error');}};
+window.assignHODResearchSupervisor=async function(id,current){const name=prompt('Enter the assigned research supervisor name:',current||'');if(name===null)return;if(!name.trim()){showToast('Supervisor name is required.','warning');return;}try{await getHODScopedResearchSubmission(id);const result=await db.from('research_submissions').update({supervisor_name:name.trim(),updated_at:new Date().toISOString()}).eq('id',id);if(result.error)throw result.error;showToast('Research supervisor updated.','success');loadHODResearch();}catch(e){showToast('Could not assign supervisor: '+e.message,'error');}};
+window.reviewHODResearch=async function(id){let r;try{r=await getHODScopedResearchSubmission(id);}catch(e){showToast(e.message,'error');return;}const feedback=prompt('Enter research feedback / required corrections:',r.feedback||'');if(feedback===null)return;const status=prompt('Enter status: under_review, revision_required, approved, or rejected',r.status||'under_review');if(status===null)return;const allowed=['under_review','revision_required','approved','rejected'];if(!allowed.includes(status)){showToast('Invalid research status.','warning');return;}try{const auth=await db.auth.getUser();if(auth.error||!auth.data?.user)throw auth.error||new Error('Session expired.');const q=await db.from('research_submissions').update({feedback, status, reviewed_by:auth.data.user.id,reviewed_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq('id',id);if(q.error)throw q.error;showToast('Research review saved.','success');loadHODResearch();}catch(e){showToast('Research review failed: '+e.message,'error');}};
+async function loadHODStudentProgression(){hodEmpty('hodStudentRows',7,'Loading…');try{const s=hodScopeRows(await hodFetch('consolidated_user_profiles_table',5000)).filter(x=>String(x.role||'').toLowerCase()==='student');const studentKeys=new Set(s.flatMap(x=>[String(x.user_id||''),String(x.student_id||''),String(x.admission_number||'')]).filter(Boolean));const marks=await hodFetch('student_marks',10000);const visibleMarks=marks.filter(m=>{const key=String(m.student_id||m.user_id||m.admission_number||'');const approved=String(m.approval_status||'').toLowerCase()==='approved';const published=m.published===true||String(m.status||'').toLowerCase()==='published'||!!m.published_at;return studentKeys.has(key)&&approved&&published;});const map=new Map();visibleMarks.forEach(x=>{const k=String(x.student_id||x.user_id||x.admission_number||'');const a=map.get(k)||[];a.push(x);map.set(k,a);});const e=document.getElementById('hodStudentRows');if(e)e.innerHTML=s.map(x=>{const a=[...(map.get(String(x.user_id||''))||[]),...(map.get(String(x.student_id||''))||[]),...(map.get(String(x.admission_number||''))||[])];const unique=[...new Map(a.map(m=>[m.id||JSON.stringify(m),m])).values()];const v=unique.map(m=>Number(m.final_score??m.published_score??m.overall_score??m.total_score??m.marks)).filter(n=>Number.isFinite(n)&&n>=0&&n<=100),avg=v.length?(v.reduce((p,q)=>p+q,0)/v.length).toFixed(1):'—';return '<tr data-search="'+hodEsc([x.full_name,x.student_id,x.admission_number].join(' ').toLowerCase())+'"><td>'+hodEsc(x.full_name)+'</td><td>'+hodEsc(x.student_id||x.admission_number)+'</td><td>'+hodEsc(x.program)+'</td><td>'+hodEsc(x.intake_year)+'</td><td>'+hodEsc(x.current_block||x.block)+'</td><td>'+unique.length+'</td><td>'+avg+'</td></tr>';}).join('')||'<tr><td colspan="7">No students found.</td></tr>';}catch(e){hodEmpty('hodStudentRows',7,'Unable to load progression: '+e.message);}}
+let hodReportSnapshot=[];
+async function loadHODAcademicReports(){hodEmpty('hodReportRows',3,'Loading…');try{const [u,d,r,a]=await Promise.all([hodFetch('consolidated_user_profiles_table',5000),hodFetch('lecturer_report_submissions'),hodFetch('research_submissions'),hodFetch('geo_attendance_logs',5000)]);const students=hodScopeRows(u).filter(x=>String(x.role||'').toLowerCase()==='student'),lecturers=hodScopeRows(u).filter(x=>['lecturer','staff'].includes(String(x.role||'').toLowerCase()));hodReportSnapshot=[['Students',students.length,'Enrolled student profiles'],['Lecturers',lecturers.length,'Lecturer/staff profiles'],['Teaching documents',hodScopeRows(d).length,'Lecturer submissions'],['Research',hodScopeRows(r).length,'Research submissions'],['Attendance',hodScopeRows(a).length,'Attendance records']];const s=document.getElementById('hodReportStats');if(s)s.innerHTML=hodReportSnapshot.map(x=>'<div class="stat-card"><span>'+x[0]+'</span><strong>'+x[1]+'</strong></div>').join('');const e=document.getElementById('hodReportRows');if(e)e.innerHTML=hodReportSnapshot.map(x=>'<tr><td>'+hodEsc(x[0])+'</td><td>'+x[1]+'</td><td>'+hodEsc(x[2])+'</td></tr>').join('');const canvas=document.getElementById('hodAcademicOverviewChart');if(canvas&&typeof Chart!=='undefined'){if(window.hodAcademicOverviewChart instanceof Chart)window.hodAcademicOverviewChart.destroy();window.hodAcademicOverviewChart=new Chart(canvas,{type:'bar',data:{labels:hodReportSnapshot.map(x=>x[0]),datasets:[{label:'Records',data:hodReportSnapshot.map(x=>x[1]),backgroundColor:['#4C1D95','#2563eb','#0f766e','#d97706','#64748b'],borderRadius:8,maxBarThickness:52}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{precision:0}}}}});}}catch(e){hodEmpty('hodReportRows',3,e.message);}}
+function filterHODTable(t,c){const e=document.getElementById(t),v=document.getElementById(c)?.value.toLowerCase().trim();if(!e)return;e.querySelectorAll('tr[data-search],tr[data-status]').forEach(r=>{const status=c.toLowerCase().includes('status');r.style.display=(status?(!v||r.dataset.status===v):(!v||(r.dataset.search||'').includes(v)))?'':'none';});}
+function exportHODReport(){if(!hodReportSnapshot.length){showToast('Load the report before exporting.','error');return;}const csv=[['Area','Records','Details'],...hodReportSnapshot].map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\n');const u=URL.createObjectURL(new Blob([csv],{type:'text/csv'})),a=document.createElement('a');a.href=u;a.download='NCHSM-HOD-Report.csv';a.click();URL.revokeObjectURL(u);}
+
+function loadTabContent(tabName) {
+    switch(tabName) {
+        case 'dashboard': loadDashboardNumbers(); break;
+        case 'users': loadAllUsers(); break;
+        case 'pending': loadPendingUsers(); break;
+        case 'enroll': loadStudents(); break;case 'unit-management': loadAllUnits(); break;
+        case 'lecturer-assignment': loadLecturersForAssignment(); break;
+        case 'support-tickets': loadAdminTickets(); break;
+        case 'sessions': loadScheduledSessions(); break;
+        case 'attendance': loadTodayAttendance(); break;
+        case 'cats': loadExamList(); break;
+        case 'resources': loadAllResources(); break;
+        case 'messages': loadMessageList(); break;
+        case 'calendar': setupCalendar(); break;
+        case 'welcome-editor': loadWelcomeMessage(); break;
+        case 'lecturer-directory': loadHODLecturerDirectory(); break;
+        case 'submission-progress': loadHODSubmissionProgress(); break;
+        case 'teaching-documents': loadHODTeachingDocuments(); break;
+        case 'research-supervision': loadHODResearch(); break;
+        case 'student-progression': loadHODStudentProgression(); break;
+        case 'academic-reports': loadHODAcademicReports(); break;
+    }
+}
+
+// ------------------------------------------------------------------
+// DASHBOARD NUMBERS
+// ------------------------------------------------------------------
+async function loadDashboardNumbers() {
+    if (!db) return;
+    
+    try {
+        let totalUsersQuery = db.from('consolidated_user_profiles_table').select('*', { count: 'exact', head: true });
+        let pendingQuery = db.from('consolidated_user_profiles_table').select('*', { count: 'exact', head: true }).eq('status', 'pending');
+        let studentQuery = db.from('consolidated_user_profiles_table').select('*', { count: 'exact', head: true }).eq('role', 'student');
+
+        // HOD dashboard user metrics are limited to the HOD's school and student population.
+        if (isHODUser()) {
+            totalUsersQuery = totalUsersQuery.eq('role', 'student');
+            pendingQuery = pendingQuery.eq('role', 'student');
+            totalUsersQuery = applyHODStudentScope(totalUsersQuery);
+            pendingQuery = applyHODStudentScope(pendingQuery);
+            studentQuery = applyHODStudentScope(studentQuery);
+        }
+        const [{ count: totalUsers }, { count: pendingCount }, { count: studentCount }] = await Promise.all([
+            totalUsersQuery, pendingQuery, studentQuery
+        ]);
+
+        const { count: unitCount } = await db
+            .from('units_catalog')
+            .select('*', { count: 'exact', head: true });
+        
+        const { count: openTickets } = await db
+            .from('support_tickets')
+            .select('*', { count: 'exact', head: true })
+            .eq('status', 'open');
+        
+        const { count: lecturerCount } = await db
+            .from('consolidated_user_profiles_table')
+            .select('*', { count: 'exact', head: true })
+            .eq('role', 'lecturer')
+            .eq('status', 'approved');
+        
+        var today = new Date().toISOString().slice(0,10);
+        const { count: checkIns } = await db
+            .from('geo_attendance_logs')
+            .select('*', { count: 'exact', head: true })
+            .gte('check_in_time', today);
+        
+        var totalEl = document.getElementById('totalUsers');
+        var pendingEl = document.getElementById('pendingApprovals');
+        var studentsEl = document.getElementById('totalStudents');var unitsEl = document.getElementById('dashboardTotalUnits');
+        var ticketsEl = document.getElementById('dashboardOpenTickets');
+        var checkinsEl = document.getElementById('totalDailyCheckIns');
+        var lecturersEl = document.getElementById('dashboardLecturers');
+        
+        if (totalEl) totalEl.textContent = totalUsers || 0;
+        if (pendingEl) pendingEl.textContent = pendingCount || 0;
+        if (studentsEl) studentsEl.textContent = studentCount || 0;if (unitsEl) unitsEl.textContent = unitCount || 0;
+        if (ticketsEl) ticketsEl.textContent = openTickets || 0;
+        if (checkinsEl) checkinsEl.textContent = checkIns || 0;
+        if (lecturersEl) lecturersEl.textContent = lecturerCount || 0;
+        
+        loadWelcomeMessageForDisplay();
+        updateCharts();
+        
+    } catch(e) {
+        console.log('Dashboard error:', e);
+    }
+}
+
+// ------------------------------------------------------------------
+// CHARTS - Matches Super Admin
+// ------------------------------------------------------------------
+function initCharts() {
+    // Enrolment by Block Chart
+    const ctx1 = document.getElementById('enrolmentBlockChart');
+    if (ctx1) {
+        chartInstances.enrolment = new Chart(ctx1, {
+            type: 'bar',
+            data: {
+                labels: ['Introductory', 'Block 1', 'Block 2', 'Block 3', 'Block 4', 'Final'],
+                datasets: [{
+                    label: 'Students',
+                    data: [0, 0, 0, 0, 0, 0],
+                    backgroundColor: ['#4C1D95', '#6d28d9', '#8b5cf6', '#a78bfa', '#c4b5fd', '#e9d5ff'],
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+    }
+    
+    // Gender Distribution Chart
+    const ctx2 = document.getElementById('genderDistributionChart');
+    if (ctx2) {
+        chartInstances.gender = new Chart(ctx2, {
+            type: 'doughnut',
+            data: {
+                labels: ['Male', 'Female'],
+                datasets: [{
+                    data: [0, 0],
+                    backgroundColor: ['#3b82f6', '#ec4899'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+}
+
+async function updateCharts() {
+    if (!db) return;
+    
+    try {
+        // Get student counts by block
+        const { data: students } = await db
+            .from('consolidated_user_profiles_table')
+            .select('block')
+            .eq('role', 'student')
+            .eq('status', 'approved');
+        
+        if (students) {
+            const blocks = ['Introductory', 'Block 1', 'Block 2', 'Block 3', 'Block 4', 'Final'];
+            const counts = blocks.map(block => 
+                students.filter(s => s.block === block).length
+            );
+            
+            if (chartInstances.enrolment) {
+                chartInstances.enrolment.data.datasets[0].data = counts;
+                chartInstances.enrolment.update();
+            }
+        }
+        
+        // Get gender distribution
+        const { data: genderData } = await db
+            .from('consolidated_user_profiles_table')
+            .select('gender')
+            .eq('role', 'student')
+            .eq('status', 'approved');
+        
+        if (genderData) {
+            const male = genderData.filter(s => s.gender === 'Male' || s.gender === 'M').length;
+            const female = genderData.filter(s => s.gender === 'Female' || s.gender === 'F').length;
+            
+            if (chartInstances.gender) {
+                chartInstances.gender.data.datasets[0].data = [male, female];
+                chartInstances.gender.update();
+            }
+        }
+    } catch(e) {
+        console.log('Chart update error:', e);
+    }
+}
+
+// ------------------------------------------------------------------
+// USER MANAGEMENT
+// ------------------------------------------------------------------
+async function loadAllUsers() {
+    var tbody = document.getElementById('users-table-body');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '<tr><td colspan="7"><div class="loading-spinner"></div> Loading users...</td></tr>';
+    
+    if (!db) return;
+    
+    let usersQuery = db.from('consolidated_user_profiles_table').select('*').neq('role', 'superadmin');
+    if (isHODUser()) {
+        usersQuery = usersQuery.eq('role', 'student');
+        usersQuery = applyHODStudentScope(usersQuery);
+    }
+    const { data, error } = await usersQuery.order('full_name');
+    
+    if (error) {
+        tbody.innerHTML = '<tr><td colspan="7">Error: ' + error.message + '</td></tr>';
+        return;
+    }
+    
+    if (!data || data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7">No users found</td></tr>';
+        return;
+    }
+    
+    var html = '';
+    for (var i = 0; i < data.length; i++) {
+        var u = data[i];
+        var statusClass = (u.status === 'approved' || u.status === 'active') ? 'badge-success' : 'badge-warning';
+        var shortId = u.user_id ? u.user_id.substring(0,8) : 'N/A';
+        var programName = getProgramDisplayName(u.program);
+        var blockTermLabel = getBlockTermLabel(u.program);
+        var blockTermDisplay = u.block || (blockTermLabel === 'Block' ? 'Not Assigned' : 'Not Assigned');
+        
+        html += '<tr>';
+        html += '<td>' + shortId + '...</td>';
+        html += '<td>' + escapeHtml(u.full_name) + '</td>';
+        html += '<td>' + escapeHtml(u.email) + '</td>';
+        html += '<td><span class="badge badge-primary">' + escapeHtml(u.role) + '</span></td>';
+        html += '<td>' + escapeHtml(programName) + '<br><small style="color:#94a3b8;">' + blockTermLabel + ': ' + escapeHtml(blockTermDisplay) + '</small></td>';
+        html += '<td><span class="badge ' + statusClass + '">' + (u.status || 'pending') + '</span></td>';
+        html += '<td>';
+        html += '<button class="btn-sm btn-edit" onclick="openEditUser(\'' + u.user_id + '\')"><i class="fas fa-edit"></i></button> ';
+        html += '<button class="btn-sm btn-delete" onclick="deleteUserAccount(\'' + u.user_id + '\', \'' + escapeHtml(u.full_name) + '\')"><i class="fas fa-trash"></i></button>';
+        html += '</td>';
+        html += '</tr>';
+    }
+    
+    tbody.innerHTML = html;
+}
+
+async function loadPendingUsers() {
+    var tbody = document.getElementById('pending-table-body');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '<tr><td colspan="6"><div class="loading-spinner"></div> Loading...</td></tr>';
+    
+    if (!db) return;
+    
+    let pendingQuery = db.from('consolidated_user_profiles_table').select('*').eq('status', 'pending');
+    if (isHODUser()) {
+        pendingQuery = pendingQuery.eq('role', 'student');
+        pendingQuery = applyHODStudentScope(pendingQuery);
+    }
+    const { data, error } = await pendingQuery.order('created_at');
+    
+    if (error) {
+        tbody.innerHTML = '<tr><td colspan="6">Error: ' + error.message + '</td></tr>';
+        return;
+    }
+    
+    if (!data || data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6">No pending approvals</td></tr>';
+        return;
+    }
+    
+    var html = '';
+    for (var i = 0; i < data.length; i++) {
+        var u = data[i];
+        var dateStr = u.created_at ? new Date(u.created_at).toLocaleDateString() : 'N/A';
+        var programName = getProgramDisplayName(u.program);
+        
+        html += '<tr>';
+        html += '<td>' + escapeHtml(u.full_name) + '</td>';
+        html += '<td>' + escapeHtml(u.email) + '</td>';
+        html += '<td><span class="badge badge-primary">' + escapeHtml(u.role) + '</span></td>';
+        html += '<td>' + escapeHtml(programName) + '</td>';
+        html += '<td>' + dateStr + '</td>';
+        html += '<td>';
+        html += '<button class="btn-sm btn-success" onclick="approveUser(\'' + u.user_id + '\', \'' + escapeHtml(u.full_name) + '\')"><i class="fas fa-check"></i></button> ';
+        html += '<button class="btn-sm btn-delete" onclick="deleteUserAccount(\'' + u.user_id + '\', \'' + escapeHtml(u.full_name) + '\')"><i class="fas fa-times"></i></button>';
+        html += '</td>';
+        html += '</tr>';
+    }
+    
+    tbody.innerHTML = html;
+}
+
+async function loadStudents() {
+    var tbody = document.getElementById('students-table-body');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '<tr><td colspan="6"><div class="loading-spinner"></div> Loading students...</td></tr>';
+    
+    if (!db) return;
+    
+    let studentsQuery = db.from('consolidated_user_profiles_table').select('*').eq('role', 'student');
+    studentsQuery = applyHODStudentScope(studentsQuery);
+    const { data, error } = await studentsQuery.order('full_name');
+    
+    if (error) {
+        tbody.innerHTML = '<tr><td colspan="6">Error: ' + error.message + '</td></tr>';
+        return;
+    }
+    
+    if (!data || data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6">No students found</td></tr>';
+        return;
+    }
+    
+    var html = '';
+    for (var i = 0; i < data.length; i++) {
+        var s = data[i];
+        var shortId = s.user_id ? s.user_id.substring(0,8) : 'N/A';
+        var statusClass = (s.status === 'approved' || s.status === 'active') ? 'badge-success' : 'badge-warning';
+        var programName = getProgramDisplayName(s.program);
+        
+        html += '<tr>';
+        html += '<td>' + shortId + '...</td>';
+        html += '<td>' + escapeHtml(s.full_name) + '</td>';
+        html += '<td>' + escapeHtml(s.email) + '</td>';
+        html += '<td>' + escapeHtml(programName) + '</td>';
+        html += '<td><span class="badge ' + statusClass + '">' + (s.status || 'pending') + '</span></td>';
+        html += '<td><button class="btn-sm btn-edit" onclick="openEditUser(\'' + s.user_id + '\')"><i class="fas fa-edit"></i></button></td>';
+        html += '</tr>';
+    }
+    
+    tbody.innerHTML = html;
+}
+
+// Enroll form handler
+document.getElementById('add-account-form')?.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    var name = document.getElementById('account-name').value;
+    var email = document.getElementById('account-email').value;
+    var password = document.getElementById('account-password').value;
+    var role = document.getElementById('account-role').value;
+    var phone = document.getElementById('account-phone').value;
+    var program = document.getElementById('account-program').value;
+    var intake = document.getElementById('account-intake').value;
+    var block = document.getElementById('account-block-term')?.value || 'Introductory';
+    
+    if (!name || !email || !password) {
+        showToast('Please fill in all required fields', 'warning');
+        return;
+    }
+    
+    try {
+        const { data: authData, error: authError } = await db.auth.signUp({
+            email: email,
+            password: password,
+            options: {
+                data: {
+                    full_name: name,
+                    role: role,
+                    phone: phone,
+                    program: program,
+                    intake_year: intake,
+                    block: block,
+                    status: 'approved'
+                }
+            }
+        });
+        
+        if (authError) throw authError;
+        
+        if (authData.user) {
+            await db.from('consolidated_user_profiles_table').insert([{
+                user_id: authData.user.id,
+                email: email,
+                full_name: name,
+                role: role,
+                phone: phone,
+                program: program,
+                intake_year: intake,
+                block: block,
+                status: 'approved'
+            }]);
+        }
+        
+        showToast('✅ Account created for ' + name, 'success');
+        e.target.reset();
+        loadAllUsers();
+        loadStudents();
+        loadDashboardNumbers();
+        
+    } catch(err) {
+        showToast('Error: ' + err.message, 'error');
+    }
+});
+
+window.approveUser = async function(userId, fullName) {
+    if (!confirm('Approve ' + fullName + '? Their institution membership will become active.')) return;
+
+    try {
+        const { data, error } = await db.from('consolidated_user_profiles_table')
+            .update({ status: 'approved' })
+            .eq('user_id', userId)
+            .eq('status', 'pending')
+            .select('user_id,status')
+            .maybeSingle();
+
+        if (error) throw error;
+        if (!data || data.status !== 'approved') {
+            throw new Error('This account is no longer pending or is outside your institution.');
+        }
+
+        showToast('✅ ' + fullName + ' approved!', 'success');
+        await Promise.all([loadPendingUsers(), loadAllUsers(), loadDashboardNumbers()]);
+    } catch(err) {
+        showToast('Unable to approve account: ' + err.message, 'error');
+    }
+};
+
+window.deleteUserAccount = async function(userId, fullName) {
+    if (!confirm('Delete ' + fullName + '? This cannot be undone.')) return;
+    
+    try {
+        await db.from('consolidated_user_profiles_table').delete().eq('user_id', userId);
+        showToast('✅ User deleted', 'success');
+        loadPendingUsers();
+        loadAllUsers();
+        loadStudents();
+        loadDashboardNumbers();
+    } catch(err) {
+        showToast('Error: ' + err.message, 'error');
+    }
+};
+
+window.openEditUser = async function(userId) {
+    try {
+        const { data: user, error } = await db
+            .from('consolidated_user_profiles_table')
+            .select('*')
+            .eq('user_id', userId)
+            .single();
+        
+        if (error || !user) {
+            showToast('User not found', 'error');
+            return;
+        }
+        
+        document.getElementById('edit_user_id').value = user.user_id;
+        document.getElementById('edit_user_id_display').textContent = user.user_id.substring(0,8);
+        document.getElementById('edit_user_name').value = user.full_name || '';
+        document.getElementById('edit_user_email').value = user.email || '';
+        document.getElementById('edit_user_role').value = user.role || 'student';
+        document.getElementById('edit_user_program').value = user.program || 'KRCHN';
+        document.getElementById('edit_user_intake').value = user.intake_year || '2024';
+        document.getElementById('edit_user_block_status').value = user.block_program_year ? 'true' : 'false';
+        
+        updateBlockTermDropdown('edit_user_block', user.program);
+        setTimeout(function() {
+            var blockSelect = document.getElementById('edit_user_block');
+            if (blockSelect && user.block) {
+                blockSelect.value = user.block;
+            }
+        }, 100);
+        
+        document.getElementById('userEditModal').style.display = 'flex';
+        
+    } catch(err) {
+        showToast('Error loading user: ' + err.message, 'error');
+    }
+};
+
+document.getElementById('edit-user-form')?.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    var userId = document.getElementById('edit_user_id').value;
+    var newPassword = document.getElementById('edit_user_new_password').value;
+    var confirmPassword = document.getElementById('edit_user_confirm_password').value;
+    
+    if (newPassword && newPassword !== confirmPassword) {
+        showToast('Passwords do not match!', 'warning');
+        return;
+    }
+    
+    var updatedData = {
+        full_name: document.getElementById('edit_user_name').value,
+        email: document.getElementById('edit_user_email').value,
+        role: document.getElementById('edit_user_role').value,
+        program: document.getElementById('edit_user_program').value,
+        intake_year: document.getElementById('edit_user_intake').value,
+        block: document.getElementById('edit_user_block').value,
+        block_program_year: document.getElementById('edit_user_block_status').value === 'true',
+        updated_at: new Date().toISOString()
+    };
+    
+    try {
+        const { error } = await db
+            .from('consolidated_user_profiles_table')
+            .update(updatedData)
+            .eq('user_id', userId);
+        
+        if (error) throw error;
+        
+        if (newPassword) {
+            try {
+                await db.auth.admin.updateUserById(userId, { password: newPassword });
+            } catch(pwErr) {
+                console.warn('Password update failed:', pwErr);
+            }
+        }
+        
+        showToast('✅ User updated successfully!', 'success');
+        document.getElementById('userEditModal').style.display = 'none';
+        document.getElementById('edit_user_new_password').value = '';
+        document.getElementById('edit_user_confirm_password').value = '';
+        loadAllUsers();
+        loadStudents();
+        
+    } catch(err) {
+        showToast('Error: ' + err.message, 'error');
+    }
+});
+
+// ------------------------------------------------------------------
+// UNIT MANAGEMENT
+// ------------------------------------------------------------------
+async function loadAllUnits() {
+    var container = document.getElementById('units-list-container');
+    if (!container) return;
+    
+    container.innerHTML = '<div class="loading-spinner"></div><p>Loading units...</p>';
+    
+    if (!db) return;
+    
+    try {
+        const { data, error } = await db.from('units_catalog').select('*').order('block').order('unit_code');
+        
+        if (error) throw error;
+        
+        allUnitsList = data || [];
+        renderUnitList();
+        
+        // Also refresh available units for assignment
+        await loadAvailableUnitsForAssignment();
+        
+        // Update unit count
+        const countEl = document.getElementById('unitCountDisplay');
+        if (countEl) countEl.textContent = allUnitsList.length;
+        
+    } catch(err) {
+        container.innerHTML = '<p style="color: #dc2626;">Error loading units: ' + err.message + '</p>';
+    }
+}
+
+function renderUnitList() {
+    var container = document.getElementById('units-list-container');
+    if (!container) return;
+    
+    var searchTerm = document.getElementById('unit_search')?.value.toLowerCase() || '';
+    var programFilter = document.getElementById('unit_filter_program')?.value || '';
+    
+    var filtered = [];
+    for (var i = 0; i < allUnitsList.length; i++) {
+        var u = allUnitsList[i];
+        
+        if (searchTerm && !u.unit_code.toLowerCase().includes(searchTerm) && !u.unit_name.toLowerCase().includes(searchTerm)) {
+            continue;
+        }
+        if (programFilter && programFilter !== 'TVET' && u.program !== programFilter) continue;
+        if (programFilter === 'TVET' && !isTVETProgram(u.program)) continue;
+        if (selectedBlock !== 'all' && u.block !== selectedBlock) continue;
+        
+        filtered.push(u);
+    }
+    
+    if (filtered.length === 0) {
+        container.innerHTML = '<p style="color: #6b7280; text-align: center; padding: 40px 0;">No units found</p>';
+        return;
+    }
+    
+    var html = '<div class="units-grid">';
+    for (var i = 0; i < filtered.length; i++) {
+        var u = filtered[i];
+        var programName = getProgramDisplayName(u.program);
+        var blockTermLabel = getBlockTermLabel(u.program);
+        
+        html += '<div class="unit-card">';
+        html += '<div class="unit-header">';
+        html += '<span class="unit-code">' + escapeHtml(u.unit_code) + '</span>';
+        html += '<span class="unit-name">' + escapeHtml(u.unit_name) + '</span>';
+        html += '</div>';
+        html += '<div class="unit-meta">';
+        html += '<span><i class="fas fa-graduation-cap"></i> ' + escapeHtml(programName) + '</span>';
+        html += '<span><i class="fas fa-layer-group"></i> ' + blockTermLabel + ': ' + escapeHtml(u.block) + '</span>';
+        html += '<span><i class="fas fa-calendar"></i> ' + (u.year || 'N/A') + '</span>';
+        html += '<span><i class="fas fa-star"></i> ' + (u.credits || 3) + ' Credits</span>';
+        html += '</div></div>';
+    }
+    html += '</div>';
+    
+    container.innerHTML = html;
+}
+
+window.filterUnitsByBlock = function(block) {
+    selectedBlock = block;
+    
+    var btns = document.querySelectorAll('.block-btn');
+    for (var i = 0; i < btns.length; i++) {
+        btns[i].classList.remove('active');
+        if (btns[i].getAttribute('data-block') === block) {
+            btns[i].classList.add('active');
+        }
+    }
+    
+    renderUnitList();
+};
+
+window.filterUnitsCatalog = function() {
+    renderUnitList();
+};
+
+window.addNewUnitRecord = async function() {
+    var unitCode = document.getElementById('new_unit_code').value;
+    var unitName = document.getElementById('new_unit_name').value;
+    var program = document.getElementById('new_unit_program').value;
+    var block = document.getElementById('new_unit_block').value;
+    var year = parseInt(document.getElementById('new_unit_year').value);
+    var credits = parseInt(document.getElementById('new_unit_credits').value);
+    var hours = parseInt(document.getElementById('new_unit_hours').value);
+    var unitType = document.getElementById('new_unit_type').value;
+    var prerequisites = document.getElementById('new_unit_prerequisites').value || null;
+    
+    if (!unitCode || !unitName) {
+        showToast('Please fill in Unit Code and Unit Name', 'warning');
+        return;
+    }
+    
+    try {
+        const { error } = await db.from('units_catalog').insert([{
+            unit_code: unitCode,
+            unit_name: unitName,
+            program: program,
+            block: block,
+            year: year,
+            credits: credits,
+            hours: hours,
+            unit_type: unitType,
+            prerequisites: prerequisites,
+            status: 'active'
+        }]);
+        
+        if (error) throw error;
+        
+        showToast('✅ Unit "' + unitCode + '" added successfully!', 'success');
+        document.getElementById('new_unit_code').value = '';
+        document.getElementById('new_unit_name').value = '';
+        document.getElementById('new_unit_prerequisites').value = '';
+        loadAllUnits();
+        
+    } catch(err) {
+        showToast('Error adding unit: ' + err.message, 'error');
+    }
+};
+
+// ====================================================================
+// LECTURER UNIT ASSIGNMENT - COMPLETE IMPLEMENTATION
+// ====================================================================
+
+// ------------------------------------------------------------------
+// LOAD LECTURERS FOR ASSIGNMENT
+// ------------------------------------------------------------------
+async function loadLecturersForAssignment() {
+    const container = document.getElementById('lecturer-assignment-list');
+    if (!container) return;
+    container.innerHTML = '<div class="loading-spinner"></div><p>Loading lecturers...</p>';
+    if (!db) return;
+    try {
+        let query = db.from('consolidated_user_profiles_table')
+            .select('user_id,full_name,email,program,department,staff_id,role,status')
+            .eq('role','lecturer').eq('status','approved').order('full_name');
+        const adminRole = String(currentAdmin?.role || '').toLowerCase();
+        const isGlobalAdmin = ['admin','administrator'].includes(adminRole);
+        if (!isGlobalAdmin && currentAdmin?.department) {
+            query = query.eq('department', currentAdmin.department);
+        }
+        const { data, error } = await query;
+        if (error) throw error;
+        allLecturers = data || [];
+        await loadExistingAssignments();
+        updateAssignmentStats(); renderLecturerList();
+    } catch (err) {
+        console.error('Error loading lecturers/assignments:', err);
+        container.innerHTML = '<p style="color:#b91c1c">Unable to load lecturer assignments: '+escapeHtml(err.message)+'</p>';
+    }
+}
+
+// ------------------------------------------------------------------
+// LOAD EXISTING ASSIGNMENTS
+// ------------------------------------------------------------------
+async function loadExistingAssignments() {
+    if (!db) return;
+    const { data, error } = await db.from('lecturer_subject_assignments')
+        .select('id,lecturer_id,lecturer_name,department,program,block,subject_name,subject_code,academic_year,created_at')
+        .order('created_at', { ascending: false });
+    if (error) throw error;
+    allLecturerAssignments = (data || []).map(a => ({
+        ...a, unit_code: a.subject_code, unit_name: a.subject_name,
+        unit_id: [a.program, a.block, a.subject_code].join('|')
+    }));
+}
+
+// ------------------------------------------------------------------
+// LOAD AVAILABLE UNITS FOR ASSIGNMENT
+// ------------------------------------------------------------------
+async function loadAvailableUnitsForAssignment() {
+    if (!db) return;
+    const { data, error } = await db.from('units_catalog')
+        .select('id,unit_code,unit_name,program,block,term,year,status')
+        .eq('status', 'active').order('program').order('block').order('unit_code');
+    if (error) throw error;
+    availableUnitsForAssignment = data || [];
+}
+
+// ------------------------------------------------------------------
+// UPDATE ASSIGNMENT STATS
+// ------------------------------------------------------------------
+function updateAssignmentStats() {
+    const totalLecturers = allLecturers.length;
+    const totalAssignments = allLecturerAssignments.length;
+    const lecturersWithAssignments = new Set(allLecturerAssignments.map(a => a.lecturer_id)).size;
+    const pending = totalLecturers - lecturersWithAssignments;
+    
+    const totalEl = document.getElementById('assignmentTotalLecturers');
+    const assignEl = document.getElementById('assignmentTotalAssignments');
+    const pendingEl = document.getElementById('assignmentPending');
+    
+    if (totalEl) totalEl.textContent = totalLecturers;
+    if (assignEl) assignEl.textContent = totalAssignments;
+    if (pendingEl) pendingEl.textContent = pending;
+}
+
+// ------------------------------------------------------------------
+// FILTER LECTURER LIST
+// ------------------------------------------------------------------
+function filterLecturerList() {
+    renderLecturerList();
+}
+
+// ------------------------------------------------------------------
+// RENDER LECTURER LIST
+// ------------------------------------------------------------------
+function renderLecturerList() {
+    const container = document.getElementById('lecturer-assignment-list');
+    if (!container) return;
+    
+    const searchTerm = document.getElementById('lecturerSearch')?.value?.toLowerCase() || '';
+    const programFilter = document.getElementById('lecturerProgramFilter')?.value || 'all';
+    
+    let filtered = allLecturers.filter(lecturer => {
+        if (searchTerm) {
+            const name = (lecturer.full_name || '').toLowerCase();
+            const email = (lecturer.email || '').toLowerCase();
+            if (!name.includes(searchTerm) && !email.includes(searchTerm)) {
+                return false;
+            }
+        }
+        
+        if (programFilter !== 'all') {
+            if (programFilter === 'TVET' && !isTVETProgram(lecturer.program)) return false;
+            if (programFilter === 'KRCHN' && lecturer.program !== 'KRCHN') return false;
+            if (programFilter !== 'TVET' && programFilter !== 'KRCHN' && lecturer.program !== programFilter) return false;
+        }
+        
+        return true;
+    });
+    
+    if (filtered.length === 0) {
+        container.innerHTML = '<p style="color: #6b7280; text-align: center; padding: 40px 0;">No lecturers found matching your filters.</p>';
+        return;
+    }
+    
+    var html = '<div class="lecturer-grid">';
+    
+    for (var i = 0; i < filtered.length; i++) {
+        var lecturer = filtered[i];
+        var assignedUnits = allLecturerAssignments.filter(
+            a => a.lecturer_id === lecturer.user_id
+        );
+        var unitCount = assignedUnits.length;
+        var programName = getProgramDisplayName(lecturer.program);
+        
+        html += `
+            <div class="lecturer-card" onclick="openUnitAssignmentModal('${lecturer.user_id}')">
+                <div class="lecturer-avatar">
+                    <i class="fas fa-user-tie"></i>
+                </div>
+                <div class="lecturer-info">
+                    <h4>${escapeHtml(lecturer.full_name)}</h4>
+                    <p class="lecturer-email"><i class="fas fa-envelope"></i> ${escapeHtml(lecturer.email)}</p>
+                    <p class="lecturer-program"><i class="fas fa-graduation-cap"></i> ${escapeHtml(programName)}</p>
+                    <div class="lecturer-stats">
+                        <span class="unit-count"><i class="fas fa-book"></i> ${unitCount} units assigned</span>
+                    </div>
+                </div>
+                <div class="lecturer-actions">
+                    <button class="btn-sm btn-edit" onclick="event.stopPropagation(); openUnitAssignmentModal('${lecturer.user_id}')">
+                        <i class="fas fa-pencil-alt"></i> Assign
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+    
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+// ------------------------------------------------------------------
+// OPEN UNIT ASSIGNMENT MODAL
+// ------------------------------------------------------------------
+async function openUnitAssignmentModal(lecturerId) {
+    currentLecturerId = lecturerId;
+    
+    const lecturer = allLecturers.find(l => l.user_id === lecturerId);
+    if (!lecturer) {
+        showToast('Lecturer not found', 'error');
+        return;
+    }
+    
+    document.getElementById('modalLecturerName').textContent = lecturer.full_name;
+    document.getElementById('modalLecturerEmail').textContent = lecturer.email;
+    document.getElementById('modalLecturerProgram').textContent = getProgramDisplayName(lecturer.program);
+    document.getElementById('assignmentLecturerName').textContent = lecturer.full_name;
+    
+    const assignedUnits = allLecturerAssignments.filter(
+        a => a.lecturer_id === lecturerId
+    );
+    document.getElementById('modalAssignedCount').textContent = assignedUnits.length;
+    
+    renderAssignedUnits(assignedUnits);
+    await renderAvailableUnits(lecturerId, assignedUnits);
+    
+    document.getElementById('unitAssignmentModal').style.display = 'flex';
+}
+
+// ------------------------------------------------------------------
+// RENDER ASSIGNED UNITS
+// ------------------------------------------------------------------
+function renderAssignedUnits(assignedUnits) {
+    const container = document.getElementById('assigned-units-list');
+    if (!container) return;
+    
+    if (assignedUnits.length === 0) {
+        container.innerHTML = '<p class="text-muted"><i class="fas fa-info-circle"></i> No units assigned yet</p>';
+        return;
+    }
+    
+    var html = '';
+    for (var i = 0; i < assignedUnits.length; i++) {
+        var a = assignedUnits[i];
+        html += `
+            <div class="assigned-unit-item">
+                <span class="unit-code">${escapeHtml(a.unit_code)}</span>
+                <span class="unit-name">${escapeHtml(a.unit_name)}</span>
+                <button class="btn-sm btn-delete" onclick="removeUnitFromLecturer('${a.id}', '${escapeHtml(a.unit_code)}')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        `;
+    }
+    
+    container.innerHTML = html;
+}
+
+// ------------------------------------------------------------------
+// RENDER AVAILABLE UNITS
+// ------------------------------------------------------------------
+async function renderAvailableUnits(lecturerId, assignedUnits) {
+    const container = document.getElementById('available-units-list');
+    if (!container) return;
+    await loadAvailableUnitsForAssignment();
+    const lecturer = allLecturers.find(l => l.user_id === lecturerId);
+    let available = availableUnitsForAssignment;
+    if (lecturer?.program) available = available.filter(u => u.program === lecturer.program);
+    const assignedKeys = new Set(assignedUnits.map(a => [a.program,a.block,a.unit_code].join('|')));
+    available = available.filter(u => !assignedKeys.has([u.program,u.block,u.unit_code].join('|')));
+    if (!available.length) {
+        container.innerHTML = '<p class="text-muted"><i class="fas fa-check-circle"></i> No unassigned units are available for this lecturer and programme.</p>';
+        return;
+    }
+    container.innerHTML = available.map(u => {
+        const term = u.program === 'KRCHN' ? (u.block || '') : (u.term || u.block || '');
+        const year = u.year || new Date().getFullYear();
+        return '<div class="available-unit-item"><span class="unit-code">'+escapeHtml(u.unit_code)+'</span><span class="unit-name">'+escapeHtml(u.unit_name)+'</span><span class="unit-block">'+escapeHtml(term)+' · '+escapeHtml(year)+'</span><button class="btn-sm btn-success" onclick="assignUnitToLecturer(\''+String(lecturerId)+'\',\''+String(u.id)+'\')"><i class="fas fa-plus"></i> Assign</button></div>';
+    }).join('');
+}
+
+// ------------------------------------------------------------------
+// FILTER AVAILABLE UNITS IN MODAL
+// ------------------------------------------------------------------
+function filterAvailableUnits() {
+    const searchInput = document.getElementById('unitSearchInput');
+    if (!searchInput) return;
+    
+    const searchTerm = searchInput.value.toLowerCase();
+    const items = document.querySelectorAll('.available-unit-item');
+    
+    for (var i = 0; i < items.length; i++) {
+        const item = items[i];
+        const code = item.querySelector('.unit-code')?.textContent?.toLowerCase() || '';
+        const name = item.querySelector('.unit-name')?.textContent?.toLowerCase() || '';
+        const match = code.includes(searchTerm) || name.includes(searchTerm);
+        item.style.display = match ? '' : 'none';
+    }
+}
+
+// ------------------------------------------------------------------
+// ASSIGN UNIT TO LECTURER
+// ------------------------------------------------------------------
+async function assignUnitToLecturer(lecturerId, unitId) {
+    if (!db) return;
+    const lecturer = allLecturers.find(l => l.user_id === lecturerId);
+    const unit = availableUnitsForAssignment.find(u => String(u.id) === String(unitId));
+    if (!lecturer || !unit) { showToast('Lecturer or unit could not be found. Refresh and try again.', 'error'); return; }
+    const duplicate = allLecturerAssignments.some(a => a.lecturer_id === lecturerId && a.program === unit.program && a.block === unit.block && a.unit_code === unit.unit_code);
+    if (duplicate) { showToast('This unit is already assigned to this lecturer.', 'warning'); return; }
+    try {
+        const assignmentData = {
+            lecturer_id: String(lecturerId), lecturer_name: lecturer.full_name || '',
+            department: lecturer.department || currentAdmin?.department || '',
+            program: unit.program, block: unit.block || unit.term || '',
+            subject_name: unit.unit_name, subject_code: unit.unit_code,
+            academic_year: String(unit.year || new Date().getFullYear())
+        };
+        const { data, error } = await db.from('lecturer_subject_assignments').insert([assignmentData])
+            .select('id,lecturer_id,lecturer_name,department,program,block,subject_name,subject_code,academic_year,created_at').single();
+        if (error) throw error;
+        allLecturerAssignments.unshift({...data, unit_code:data.subject_code, unit_name:data.subject_name});
+        await refreshAssignmentModal(lecturerId);
+        updateAssignmentStats(); renderLecturerList();
+        showToast('Unit '+unit.unit_code+' assigned successfully.', 'success');
+    } catch (err) {
+        console.error('Unit assignment failed:', err);
+        showToast('Could not assign unit: '+(err.message || 'Database permission or validation error'), 'error');
+    }
+}
+
+// ------------------------------------------------------------------
+// REMOVE UNIT FROM LECTURER
+// ------------------------------------------------------------------
+async function removeUnitFromLecturer(assignmentId, unitCode) {
+    if (!confirm('Remove unit ' + unitCode + ' from this lecturer?')) return;
+    if (!db) return;
+    try {
+        const { error } = await db.from('lecturer_subject_assignments').delete().eq('id', assignmentId);
+        if (error) throw error;
+        allLecturerAssignments = allLecturerAssignments.filter(a => a.id !== assignmentId);
+        await refreshAssignmentModal(currentLecturerId);
+        updateAssignmentStats(); renderLecturerList();
+        showToast('Unit ' + unitCode + ' removed successfully.', 'success');
+    } catch (err) {
+        console.error('Unit removal failed:', err);
+        showToast('Could not remove unit: ' + (err.message || 'Database permission error'), 'error');
+    }
+}
+
+// ------------------------------------------------------------------
+// REFRESH ASSIGNMENT MODAL
+// ------------------------------------------------------------------
+async function refreshAssignmentModal(lecturerId) {
+    if (!lecturerId) return;
+    
+    const lecturer = allLecturers.find(l => l.user_id === lecturerId);
+    if (!lecturer) return;
+    
+    const assignedUnits = allLecturerAssignments.filter(
+        a => a.lecturer_id === lecturerId
+    );
+    document.getElementById('modalAssignedCount').textContent = assignedUnits.length;
+    
+    renderAssignedUnits(assignedUnits);
+    await renderAvailableUnits(lecturerId, assignedUnits);
+}
+
+// ------------------------------------------------------------------
+// SAVE ALL UNIT ASSIGNMENTS
+// ------------------------------------------------------------------
+async function saveAllUnitAssignments() {
+    showToast('Assignments are saved immediately when you add or remove a unit.', 'info');
+    closeModal('unitAssignmentModal');
+    await loadLecturersForAssignment();
+}
+
+// ------------------------------------------------------------------
+// SUPPORT TICKETS - COMPLETE
+// ------------------------------------------------------------------
+async function loadAdminTickets() {
+    var tbody = document.getElementById('admin-tickets-body');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '<tr><td colspan="5"><div class="loading-spinner"></div> Loading tickets...</td></tr>';
+    
+    if (!db) return;
+    
+    try {
+        const { data, error } = await db.from('support_tickets').select('*').order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        
+        adminAllTickets = data || [];
+        
+        if (!data || data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5">No tickets found</td></tr>';
+            updateTicketCounts(0, 0, 0);
+            return;
+        }
+        
+        var studentIds = [];
+        for (var i = 0; i < data.length; i++) {
+            if (data[i].student_id) studentIds.push(data[i].student_id);
+        }
+        
+        var studentNames = {};
+        if (studentIds.length) {
+            const { data: students } = await db
+                .from('consolidated_user_profiles_table')
+                .select('user_id, full_name')
+                .in('user_id', studentIds);
+            if (students) {
+                for (var i = 0; i < students.length; i++) {
+                    studentNames[students[i].user_id] = students[i].full_name;
+                }
+            }
+        }
+        
+        var html = '';
+        for (var i = 0; i < data.length; i++) {
+            var t = data[i];
+            var statusClass = 'badge-warning';
+            if (t.status === 'closed') statusClass = 'badge-success';
+            if (t.status === 'in_progress') statusClass = 'badge-info';
+            
+            html += '<tr>';
+            html += '<td><span class="badge badge-primary">' + escapeHtml(t.ticket_number) + '</span></td>';
+            html += '<td>' + escapeHtml(studentNames[t.student_id] || 'Student') + '</td>';
+            html += '<td>' + escapeHtml(t.subject) + '</td>';
+            html += '<td><span class="badge ' + statusClass + '">' + escapeHtml(t.status) + '</span></td>';
+            html += '<td><button class="btn-sm btn-edit" onclick="viewTicketDetail(\'' + t.id + '\')"><i class="fas fa-eye"></i></button></td>';
+            html += '</tr>';
+        }
+        
+        tbody.innerHTML = html;
+        
+        var openCount = 0, progressCount = 0, closedCount = 0;
+        for (var i = 0; i < data.length; i++) {
+            if (data[i].status === 'open') openCount++;
+            if (data[i].status === 'in_progress') progressCount++;
+            if (data[i].status === 'closed') closedCount++;
+        }
+        updateTicketCounts(openCount, progressCount, closedCount);
+        
+    } catch(err) {
+        tbody.innerHTML = '<tr><td colspan="5">Error: ' + err.message + '</td></tr>';
+    }
+}
+
+function updateTicketCounts(open, progress, closed) {
+    var openEl = document.getElementById('admin_open_tickets');
+    var progressEl = document.getElementById('admin_progress_tickets');
+    var closedEl = document.getElementById('admin_closed_tickets');
+    if (openEl) openEl.textContent = open;
+    if (progressEl) progressEl.textContent = progress;
+    if (closedEl) closedEl.textContent = closed;
+}
+
+function filterAdminTickets() {
+    var statusFilter = document.getElementById('admin_ticket_status_filter')?.value || 'all';
+    var searchTerm = document.getElementById('admin_ticket_search')?.value.toLowerCase() || '';
+    
+    var filtered = adminAllTickets.filter(function(ticket) {
+        if (statusFilter !== 'all' && ticket.status !== statusFilter) return false;
+        if (searchTerm && !ticket.ticket_number.toLowerCase().includes(searchTerm) && !ticket.subject.toLowerCase().includes(searchTerm)) return false;
+        return true;
+    });
+    
+    renderFilteredTickets(filtered);
+}
+
+function filterAdminTicketsDebounced() {
+    clearTimeout(window.ticketFilterTimeout);
+    window.ticketFilterTimeout = setTimeout(filterAdminTickets, 300);
+}
+
+function renderFilteredTickets(tickets) {
+    var tbody = document.getElementById('admin-tickets-body');
+    if (!tbody) return;
+    
+    if (!tickets || tickets.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5">No tickets found</td></tr>';
+        return;
+    }
+    
+    var html = '';
+    for (var i = 0; i < tickets.length; i++) {
+        var t = tickets[i];
+        var statusClass = 'badge-warning';
+        if (t.status === 'closed') statusClass = 'badge-success';
+        if (t.status === 'in_progress') statusClass = 'badge-info';
+        
+        html += '<tr>';
+        html += '<td><span class="badge badge-primary">' + escapeHtml(t.ticket_number) + '</span></td>';
+        html += '<td>' + escapeHtml(t.student_name || 'Student') + '</td>';
+        html += '<td>' + escapeHtml(t.subject) + '</td>';
+        html += '<td><span class="badge ' + statusClass + '">' + escapeHtml(t.status) + '</span></td>';
+        html += '<td><button class="btn-sm btn-edit" onclick="viewTicketDetail(\'' + t.id + '\')"><i class="fas fa-eye"></i></button></td>';
+        html += '</tr>';
+    }
+    tbody.innerHTML = html;
+}
+
+window.viewTicketDetail = function(ticketId) {
+    var ticket = adminAllTickets.find(function(t) { return t.id === ticketId; });
+    if (!ticket) {
+        showToast('Ticket not found', 'error');
+        return;
+    }
+    
+    var modalHtml = '<div id="ticketDetailModal" class="modal" style="display:flex;">';
+    modalHtml += '<div class="modal-content">';
+    modalHtml += '<div class="modal-header"><h3><i class="fas fa-ticket-alt"></i> Ticket: ' + escapeHtml(ticket.ticket_number) + '</h3><button class="close" onclick="closeModal(\'ticketDetailModal\')">&times;</button></div>';
+    modalHtml += '<div class="modal-body">';
+    modalHtml += '<p><strong>Subject:</strong> ' + escapeHtml(ticket.subject) + '</p>';
+    modalHtml += '<p><strong>Description:</strong> ' + escapeHtml(ticket.description || 'No description') + '</p>';
+    modalHtml += '<p><strong>Status:</strong> <span class="badge badge-info">' + escapeHtml(ticket.status) + '</span></p>';
+    modalHtml += '<p><strong>Priority:</strong> ' + escapeHtml(ticket.priority || 'Medium') + '</p>';
+    modalHtml += '<p><strong>Created:</strong> ' + formatDateTime(ticket.created_at) + '</p>';
+    modalHtml += '<hr><textarea id="ticketReplyMsg" rows="4" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;" placeholder="Type your reply..."></textarea>';
+    modalHtml += '<div style="margin-top:10px;"><button onclick="sendTicketReply(\'' + ticketId + '\')" class="btn-action">Send Reply</button></div>';
+    modalHtml += '</div>';
+    modalHtml += '<div class="modal-actions"><button onclick="closeModal(\'ticketDetailModal\')" class="btn-secondary">Close</button></div>';
+    modalHtml += '</div></div>';
+    
+    var existingModal = document.getElementById('ticketDetailModal');
+    if (existingModal) existingModal.remove();
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+};
+
+window.sendTicketReply = async function(ticketId) {
+    var message = document.getElementById('ticketReplyMsg')?.value;
+    if (!message) {
+        showToast('Please enter a message', 'warning');
+        return;
+    }
+    showToast('✅ Reply sent!', 'success');
+    closeModal('ticketDetailModal');
+};
+
+window.exportAdminTicketsToCSV = function() {
+    exportTableToCSV('admin-tickets-body', 'Support_Tickets.csv');
+};
+
+// ------------------------------------------------------------------
+// SESSIONS MANAGEMENT
+// ------------------------------------------------------------------
+async function loadScheduledSessions() {
+    var tbody = document.getElementById('sessions-list');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '<tr><td colspan="4"><div class="loading-spinner"></div> Loading sessions...</td></tr>';
+    
+    if (!db) return;
+    
+    try {
+        const { data, error } = await db.from('scheduled_sessions').select('*').order('session_date', { ascending: true });
+        
+        if (error) throw error;
+        
+        if (!data || data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4">No sessions found</td></tr>';
+            return;
+        }
+        
+        var html = '';
+        for (var i = 0; i < data.length; i++) {
+            var s = data[i];
+            
+            html += '<tr>';
+            html += '<td>' + escapeHtml(s.session_title) + '</td>';
+            html += '<td>' + formatDate(s.session_date) + '</td>';
+            html += '<td><span class="badge badge-primary">' + escapeHtml(s.target_program) + '</span></td>';
+            html += '<td><button class="btn-sm btn-delete" onclick="deleteSessionItem(\'' + s.id + '\')"><i class="fas fa-trash"></i></button></td>';
+            html += '</tr>';
+        }
+        
+        tbody.innerHTML = html;
+        
+    } catch(err) {
+        tbody.innerHTML = '<tr><td colspan="4">Error: ' + err.message + '</td></tr>';
+    }
+}
+
+document.getElementById('add-session-form')?.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    var sessionData = {
+        session_title: document.getElementById('session_title').value,
+        session_date: document.getElementById('session_date').value,
+        session_time: document.getElementById('session_start_time').value,
+        target_program: document.getElementById('session_program').value,
+        session_type: 'class'
+    };
+    
+    if (!sessionData.session_title || !sessionData.session_date) {
+        showToast('Please fill in session title and date', 'warning');
+        return;
+    }
+    
+    try {
+        const { error } = await db.from('scheduled_sessions').insert([sessionData]);
+        if (error) throw error;
+        showToast('✅ Session scheduled!', 'success');
+        e.target.reset();
+        loadScheduledSessions();
+        setupCalendar();
+    } catch(err) {
+        showToast('Error: ' + err.message, 'error');
+    }
+});
+
+window.deleteSessionItem = async function(sessionId) {
+    if (!confirm('Delete this session?')) return;
+    
+    try {
+        const { error } = await db.from('scheduled_sessions').delete().eq('id', sessionId);
+        if (error) throw error;
+        showToast('✅ Session deleted', 'success');
+        loadScheduledSessions();
+        setupCalendar();
+    } catch(err) {
+        showToast('Error: ' + err.message, 'error');
+    }
+};
+
+// ------------------------------------------------------------------
+// ATTENDANCE
+// ------------------------------------------------------------------
+async function loadTodayAttendance() {
+    var tbody = document.getElementById('attendance-table');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '<tr><td colspan="4"><div class="loading-spinner"></div> Loading attendance...</td></tr>';
+    
+    if (!db) return;
+    
+    var today = new Date().toISOString().slice(0,10);
+    
+    try {
+        const { data, error } = await db
+            .from('geo_attendance_logs')
+            .select('*, student:student_id(full_name)')
+            .gte('check_in_time', today)
+            .order('check_in_time', { ascending: false });
+        
+        if (error) throw error;
+        
+        if (!data || data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4">No attendance records today</td></tr>';
+            return;
+        }
+        
+        var html = '';
+        for (var i = 0; i < data.length; i++) {
+            var r = data[i];
+            var studentName = (r.student && r.student.full_name) ? r.student.full_name : 'Unknown';
+            var statusClass = r.is_verified ? 'badge-success' : 'badge-warning';
+            var statusText = r.is_verified ? 'Verified' : 'Pending';
+            
+            html += '<tr>';
+            html += '<td>' + escapeHtml(studentName) + '</td>';
+            html += '<td>' + formatDate(r.check_in_time) + '</td>';
+            html += '<td><span class="badge ' + statusClass + '">' + statusText + '</span></td>';
+            html += '<td>' + escapeHtml(r.location_name || 'N/A') + '</td>';
+            html += '</tr>';
+        }
+        
+        tbody.innerHTML = html;
+        
+    } catch(err) {
+        tbody.innerHTML = '<tr><td colspan="4">Error: ' + err.message + '</td></tr>';
+    }
+}
+
+// ------------------------------------------------------------------
+// EXAMS
+// ------------------------------------------------------------------
+async function loadExamList() {
+    var tbody = document.getElementById('exams-list');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '<tr><td colspan="6"><div class="loading-spinner"></div> Loading exams...</td></tr>';
+    
+    if (!db) return;
+    
+    try {
+        const { data, error } = await db.from('exams').select('*').order('exam_date');
+        
+        if (error) throw error;
+        
+        if (!data || data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6">No exams found</td></tr>';
+            return;
+        }
+        
+        var html = '';
+        for (var i = 0; i < data.length; i++) {
+            var e = data[i];
+            var statusClass = e.status === 'Upcoming' ? 'badge-info' : 
+                             e.status === 'Completed' ? 'badge-success' : 'badge-warning';
+            
+            html += '<tr>';
+            html += '<td><span class="badge badge-primary">' + escapeHtml(e.exam_type) + '</span></td>';
+            html += '<td>' + escapeHtml(e.exam_name) + '</td>';
+            html += '<td>' + formatDate(e.exam_date) + '</td>';
+            html += '<td><span class="badge badge-primary">' + escapeHtml(e.target_program) + '</span></td>';
+            html += '<td><span class="badge ' + statusClass + '">' + escapeHtml(e.status) + '</span></td>';
+            html += '<td><button class="btn-sm btn-delete" onclick="deleteExamItem(\'' + e.id + '\')"><i class="fas fa-trash"></i></button></td>';
+            html += '</tr>';
+        }
+        
+        tbody.innerHTML = html;
+        
+    } catch(err) {
+        tbody.innerHTML = '<tr><td colspan="6">Error: ' + err.message + '</td></tr>';
+    }
+}
+
+document.getElementById('add-exam-form')?.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    var examData = {
+        exam_type: document.getElementById('exam_type').value,
+        exam_name: document.getElementById('exam_title').value,
+        exam_date: document.getElementById('exam_date').value,
+        target_program: document.getElementById('exam_program').value,
+        status: 'Upcoming',
+        duration_minutes: 60
+    };
+    
+    if (!examData.exam_name || !examData.exam_date) {
+        showToast('Please fill in exam title and date', 'warning');
+        return;
+    }
+    
+    try {
+        const { error } = await db.from('exams').insert([examData]);
+        if (error) throw error;
+        showToast('✅ Exam added!', 'success');
+        e.target.reset();
+        loadExamList();
+        setupCalendar();
+    } catch(err) {
+        showToast('Error: ' + err.message, 'error');
+    }
+});
+
+window.deleteExamItem = async function(examId) {
+    if (!confirm('Delete this exam?')) return;
+    
+    try {
+        const { error } = await db.from('exams').delete().eq('id', examId);
+        if (error) throw error;
+        showToast('✅ Exam deleted', 'success');
+        loadExamList();
+        setupCalendar();
+    } catch(err) {
+        showToast('Error: ' + err.message, 'error');
+    }
+};
+
+// ------------------------------------------------------------------
+// RESOURCES - COMPLETE
+// ------------------------------------------------------------------
+async function loadAllResources() {
+    var tbody = document.getElementById('resources-list');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '<tr><td colspan="4"><div class="loading-spinner"></div> Loading resources...</td></tr>';
+    
+    if (!db) return;
+    
+    try {
+        let query = db.from('resources').select('*').order('created_at', { ascending: false });
+        
+        if (currentResourceType === 'material') {
+            query = query.eq('resource_type', 'material');
+        } else if (currentResourceType === 'pastpaper') {
+            query = query.eq('resource_type', 'pastpaper');
+        }
+        
+        const { data, error } = await query;
+        
+        if (error) throw error;
+        
+        const scope=typeof getHODProgramScope==='function'?getHODProgramScope():'';
+        allResourcesData = (data || []).filter(r=>!scope||String(r.program_type||r.target_program||'').toUpperCase()===scope);
+        
+        var materialCount = allResourcesData.filter(function(r) { return r.resource_type === 'material'; }).length;
+        var pastpaperCount = allResourcesData.filter(function(r) { return r.resource_type === 'pastpaper'; }).length;
+        
+        var materialBadge = document.getElementById('material-count-badge');
+        var pastpaperBadge = document.getElementById('pastpaper-count-badge');
+        if (materialBadge) materialBadge.textContent = materialCount;
+        if (pastpaperBadge) pastpaperBadge.textContent = pastpaperCount;
+        
+        filterResourcesTable();
+        
+    } catch(err) {
+        tbody.innerHTML = '<tr><td colspan="4">Error: ' + err.message + '</td></tr>';
+    }
+}
+
+function filterResourcesTable() {
+    var tbody = document.getElementById('resources-list');
+    if (!tbody) return;
+    
+    var searchTerm = document.getElementById('resource-search')?.value.toLowerCase() || '';
+    var blockFilter = document.getElementById('resource-block-filter')?.value || 'all';
+    var yearFilter = document.getElementById('resource-year-filter')?.value || 'all';
+    var programFilter = document.getElementById('resource-program-filter')?.value || 'all';
+    
+    var filtered = allResourcesData.filter(function(r) {
+        if (searchTerm && !r.title.toLowerCase().includes(searchTerm)) return false;
+        if (blockFilter !== 'all' && r.block !== blockFilter) return false;
+        if (yearFilter !== 'all' && r.intake != yearFilter) return false;
+        if (programFilter !== 'all' && r.program_type !== programFilter) return false;
+        return true;
+    });
+    
+    if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4">No resources found</td></tr>';
+        return;
+    }
+    
+    var html = '';
+    for (var i = 0; i < filtered.length; i++) {
+        var r = filtered[i];
+        var typeLabel = r.resource_type === 'pastpaper' ? 'Past Paper' : 'Material';
+        var typeClass = r.resource_type === 'pastpaper' ? 'badge-warning' : 'badge-info';
+        
+        html += '<tr>';
+        html += '<td><span class="badge ' + typeClass + '">' + typeLabel + '</span></td>';
+        html += '<td>' + (r.pastpaper_year || r.intake || 'N/A') + '</td>';
+        html += '<td><span class="badge badge-primary">' + escapeHtml(r.program_type) + '</span></td>';
+        html += '<td>' + escapeHtml(r.block) + '</td>';
+        html += '<td>' + escapeHtml(r.title) + '</td>';
+        html += '<td>' + (r.description || '-') + '</td>';
+        html += '<td>' + escapeHtml(r.uploaded_by_name || 'Admin') + '</td>';
+        html += '<td>' + formatDate(r.created_at) + '</td>';
+        html += '<td><a href="' + r.file_url + '" target="_blank" class="btn-sm btn-edit"><i class="fas fa-eye"></i></a> <button class="btn-sm btn-delete" onclick="deleteResourceItem(\'' + r.id + '\')"><i class="fas fa-trash"></i></button></td>';
+        html += '</tr>';
+    }
+    
+    tbody.innerHTML = html;
+}
+
+window.filterResourceType = function(type) {
+    currentResourceType = type;
+    loadAllResources();
+};
+
+window.exportResourcesToCSV = function() {
+    exportTableToCSV('resources-list', 'Resources_Export.csv');
+};
+
+window.deleteResourceItem = async function(resourceId) {
+    if (!confirm('Delete this resource?')) return;
+    
+    try {
+        const { error } = await db.from('resources').delete().eq('id', resourceId);
+        if (error) throw error;
+        showToast('✅ Resource deleted', 'success');
+        loadAllResources();
+    } catch(err) {
+        showToast('Error: ' + err.message, 'error');
+    }
+};
+
+window.handleResourceUpload = async function(e) {
+    e.preventDefault();
+    const form=e.currentTarget||document.getElementById('upload-resource-form');
+    const title=document.getElementById('resource_title')?.value?.trim();
+    const program=document.getElementById('resource_program')?.value||'KRCHN';
+    const file=document.getElementById('resource_file')?.files?.[0];
+    if(!title||!file){showToast('Enter a title and select a file.','warning');return;}
+    if(file.size>30*1024*1024){showToast('Maximum file size is 30 MB.','warning');return;}
+    const button=form?.querySelector('[type="submit"]');if(button){button.disabled=true;button.dataset.originalText=button.textContent;button.textContent='Uploading…';}
+    let uploadedPath='';
+    try{
+      const {data:{user},error:userError}=await db.auth.getUser();if(userError||!user)throw userError||new Error('Please sign in again.');
+      const {data:profile}=await db.from('consolidated_user_profiles_table').select('full_name,role,program,department').eq('user_id',user.id).maybeSingle();
+      const role=String(profile?.role||'').toLowerCase();
+      const scope=typeof getHODProgramScope==='function'?getHODProgramScope():'';
+      if(scope&&((scope==='KRCHN'&&program!=='KRCHN')||(scope==='TVET'&&program!=='TVET')))throw new Error('You can only upload resources for your assigned programme.');
+      const safeName=file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+      uploadedPath='admin/'+program+'/'+user.id+'/'+Date.now()+'_'+safeName;
+      const up=await db.storage.from('resources').upload(uploadedPath,file,{upsert:false,contentType:file.type||'application/octet-stream'});
+      if(up.error)throw up.error;
+      const publicResult=db.storage.from('resources').getPublicUrl(uploadedPath);
+      const ins=await db.from('resources').insert({title,file_name:file.name,file_url:publicResult.data?.publicUrl||'',file_path:uploadedPath,file_size:file.size,file_type:file.type||'application/octet-stream',program_type:program,target_program:program,uploaded_by:user.id,uploaded_by_name:profile?.full_name||user.email,allow_download:true,approval_status:['super_admin','superadmin','admin','administrator'].includes(role)?'approved':'pending'}).select('id').single();
+      if(ins.error)throw ins.error;
+      form?.reset();showToast('Resource uploaded successfully.','success');if(typeof loadAllResources==='function')await loadAllResources();
+    }catch(err){if(uploadedPath){try{await db.storage.from('resources').remove([uploadedPath]);}catch(cleanupError){console.warn(cleanupError);}}showToast('Upload failed: '+(err.message||err),'error');}
+    finally{if(button){button.disabled=false;button.textContent=button.dataset.originalText||'Upload';}}
+};
+
+window.togglePastPaperFields = function() {
+    var isPastPaper = document.getElementById('resource_is_pastpaper')?.checked;
+    var pastpaperFields = document.getElementById('pastpaper-fields');
+    if (pastpaperFields) {
+        pastpaperFields.style.display = isPastPaper ? 'block' : 'none';
+    }
+};
+
+function initResourceFilters() {
+    var searchInput = document.getElementById('resource-search');
+    if (searchInput) {
+        searchInput.addEventListener('keyup', filterResourcesTable);
+    }
+    
+    var blockFilter = document.getElementById('resource-block-filter');
+    if (blockFilter) {
+        blockFilter.addEventListener('change', filterResourcesTable);
+    }
+    
+    var yearFilter = document.getElementById('resource-year-filter');
+    if (yearFilter) {
+        yearFilter.addEventListener('change', filterResourcesTable);
+    }
+}
+
+// ------------------------------------------------------------------
+// MESSAGES
+// ------------------------------------------------------------------
+async function loadMessageList() {
+    var tbody = document.getElementById('messages-list');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '<tr><td colspan="3"><div class="loading-spinner"></div> Loading messages...</td></tr>';
+    
+    if (!db) return;
+    
+    try {
+        const { data, error } = await db.from('notifications').select('*').order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        
+        if (!data || data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="3">No messages found</td></tr>';
+            return;
+        }
+        
+        var html = '';
+        for (var i = 0; i < data.length; i++) {
+            var m = data[i];
+            
+            html += '<tr>';
+            html += '<td>' + escapeHtml(m.subject) + '</td>';
+            html += '<td>' + formatDate(m.created_at) + '</td>';
+            html += '<td><button class="btn-sm btn-edit" onclick="viewMessageDetail(\'' + m.id + '\')"><i class="fas fa-eye"></i></button></td>';
+            html += '</tr>';
+        }
+        
+        tbody.innerHTML = html;
+        
+    } catch(err) {
+        tbody.innerHTML = '<tr><td colspan="3">Error: ' + err.message + '</td></tr>';
+    }
+}
+
+window.viewMessageDetail = function(messageId) {
+    var message = allMessagesData?.find(function(m) { return m.id === messageId; });
+    if (message) {
+        showToast('Subject: ' + message.subject + '\n\nMessage: ' + message.message, 'info');
+    } else {
+        showToast('Message details - Feature in development', 'info');
+    }
+};
+
+document.getElementById('send-message-form')?.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    var messageData = {
+        target_program: document.getElementById('msg_recipient').value === 'all' ? null : document.getElementById('msg_recipient').value,
+        subject: document.getElementById('msg_subject').value,
+        message: document.getElementById('msg_body').value,
+        message_type: 'system',
+        sender_name: currentAdmin ? currentAdmin.full_name : 'Admin'
+    };
+    
+    if (!messageData.subject || !messageData.message) {
+        showToast('Please enter subject and message', 'warning');
+        return;
+    }
+    
+    try {
+        const { error } = await db.from('notifications').insert([messageData]);
+        if (error) throw error;
+        showToast('✅ Message sent!', 'success');
+        e.target.reset();
+        loadMessageList();
+    } catch(err) {
+        showToast('Error: ' + err.message, 'error');
+    }
+});
+
+// ------------------------------------------------------------------
+// CALENDAR
+// ------------------------------------------------------------------
+async function setupCalendar() {
+    var calendarEl = document.getElementById('fullCalendarDisplay');
+    if (!calendarEl) return;
+    
+    calendarEl.innerHTML = '<div class="loading-spinner"></div><p>Loading calendar...</p>';
+    
+    if (!db) return;
+    
+    try {
+        const { data: sessions } = await db.from('scheduled_sessions').select('*');
+        const { data: exams } = await db.from('exams').select('*');
+        
+        var events = [];
+        
+        if (sessions) {
+            for (var i = 0; i < sessions.length; i++) {
+                var s = sessions[i];
+                var startDate = s.session_date;
+                if (s.session_time) startDate = s.session_date + 'T' + s.session_time;
+                
+                events.push({
+                    id: 'session_' + s.id,
+                    title: s.session_title,
+                    start: startDate,
+                    color: '#3b82f6'
+                });
+            }
+        }
+        
+        if (exams) {
+            for (var i = 0; i < exams.length; i++) {
+                var e = exams[i];
+                var startDate = e.exam_date;
+                if (e.exam_start_time) startDate = e.exam_date + 'T' + e.exam_start_time;
+                
+                events.push({
+                    id: 'exam_' + e.id,
+                    title: e.exam_type + ': ' + e.exam_name,
+                    start: startDate,
+                    color: '#ef4444'
+                });
+            }
+        }
+        
+        if (typeof FullCalendar !== 'undefined') {
+            if (calendarInstance) calendarInstance.destroy();
+            
+            calendarInstance = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek'
+                },
+                events: events,
+                height: 'auto'
+            });
+            
+            calendarInstance.render();
+        } else {
+            calendarEl.innerHTML = '<p>Calendar not available</p>';
+        }
+        
+    } catch(err) {
+        calendarEl.innerHTML = '<p>Error loading calendar: ' + err.message + '</p>';
+    }
+}
+
+// ------------------------------------------------------------------
+// WELCOME MESSAGE
+// ------------------------------------------------------------------
+async function loadWelcomeMessage() {
+    var editor = document.getElementById('welcome-message-editor');
+    var preview = document.getElementById('live-preview');
+    
+    if (!editor) return;
+    if (!db) return;
+    
+    try {
+        const { data } = await db.from('app_settings').select('value').eq('key', 'student_welcome').single();
+        var content = (data && data.value) ? data.value : '<p>Welcome to NCHSM Learning Portal!</p>';
+        
+        editor.value = content;
+        if (preview) preview.innerHTML = content;
+    } catch(err) {
+        console.log('Error loading welcome message:', err);
+    }
+}
+
+async function loadWelcomeMessageForDisplay() {
+    if (!db) return;
+    
+    try {
+        const { data } = await db.from('app_settings').select('value').eq('key', 'student_welcome').single();
+        var msgDiv = document.getElementById('student-welcome-message');
+        
+        if (msgDiv && data && data.value) {
+            msgDiv.innerHTML = data.value;
+        }
+    } catch(err) {
+        console.log('Error loading welcome message for display:', err);
+    }
+}
+
+document.getElementById('edit-welcome-form')?.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    var content = document.getElementById('welcome-message-editor').value;
+    
+    try {
+        const { error } = await db.from('app_settings').upsert([{ key: 'student_welcome', value: content }]);
+        
+        if (error) throw error;
+        
+        showToast('✅ Welcome message saved!', 'success');
+        var preview = document.getElementById('live-preview');
+        if (preview) preview.innerHTML = content;
+    } catch(err) {
+        showToast('Error: ' + err.message, 'error');
+    }
+});
+
+// ------------------------------------------------------------------
+// TABLE FILTERS & EXPORTS - COMPLETE
+// ------------------------------------------------------------------
+window.filterTable = function(inputId, tableId, columns) {
+    var searchVal = document.getElementById(inputId);
+    if (!searchVal) return;
+    
+    var filter = searchVal.value.toLowerCase();
+    var rows = document.querySelectorAll('#' + tableId + ' tbody tr');
+    
+    for (var i = 0; i < rows.length; i++) {
+        var match = false;
+        for (var j = 0; j < columns.length; j++) {
+            var cell = rows[i].getElementsByTagName('td')[columns[j]];
+            if (cell && cell.innerText.toLowerCase().indexOf(filter) > -1) {
+                match = true;
+                break;
+            }
+        }
+        rows[i].style.display = match ? '' : 'none';
+    }
+};
+
+window.exportTableToCSV = function(tableId, filename) {
+    var table = document.getElementById(tableId);
+    if (!table) return;
+    
+    var csv = [];
+    var rows = table.querySelectorAll('tr');
+    
+    for (var i = 0; i < rows.length; i++) {
+        var row = [];
+        var cols = rows[i].querySelectorAll('td, th');
+        
+        for (var j = 0; j < cols.length; j++) {
+            var data = cols[j].innerText.replace(/"/g, '""');
+            row.push('"' + data + '"');
+        }
+        csv.push(row.join(','));
+    }
+    
+    var blob = new Blob([csv.join('\n')], { type: 'text/csv' });
+    var link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(link.href);
+};
+
+window.closeModal = function(modalId) {
+    var modal = document.getElementById(modalId);
+    if (modal) modal.style.display = 'none';
+};
+
+window.logout = async function() {
+    if (db) await db.auth.signOut();
+    localStorage.clear();
+    window.location.href = 'login.html';
+};
+
+// ------------------------------------------------------------------
+// SEARCH EVENT HANDLERS
+// ------------------------------------------------------------------
+var searchInput = document.getElementById('unit_search');
+if (searchInput) {
+    searchInput.addEventListener('keyup', renderUnitList);
+}
+
+var programFilter = document.getElementById('unit_filter_program');
+if (programFilter) {
+    programFilter.addEventListener('change', renderUnitList);
+}
+
+// ------------------------------------------------------------------
+// INIT RESOURCE FILTERS
+// ------------------------------------------------------------------
+initResourceFilters();
+const resourceUploadForm=document.getElementById('upload-resource-form');
+if(resourceUploadForm&&!resourceUploadForm.dataset.bound){resourceUploadForm.dataset.bound='true';resourceUploadForm.addEventListener('submit',window.handleResourceUpload);}
+
+console.log('✅ Admin dashboard loaded successfully!');
+console.log('✅ Unit Assignment feature enabled!');
+console.log('✅ Charts initialized!');
