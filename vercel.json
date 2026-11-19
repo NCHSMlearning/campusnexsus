@@ -6,7 +6,7 @@
     },
     {
       "source": "/register",
-      "destination": "/platform/full-source/register.html"
+      "destination": "/register.html"
     }
   ]
 }
