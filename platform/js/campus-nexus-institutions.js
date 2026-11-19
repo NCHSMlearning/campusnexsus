@@ -240,7 +240,7 @@
       const schoolCode = String(i.school_code || "").trim();
       const registrationUrl = i.portal_mode === "custom_website" ? "" : host
         ? "https://" + host + "/register?school_code=" + encodeURIComponent(schoolCode)
-        : registration ? new URL("full-source/registration.html",window.location.href).href + "?school_code=" + encodeURIComponent(schoolCode) : "";
+        : registration ? new URL("full-source/register.html",window.location.href).href + "?school_code=" + encodeURIComponent(schoolCode) : "";
       const portalUrl = i.portal_mode === "custom_website" && i.custom_login_url
         ? i.custom_login_url
         : host ? "https://" + host : "";
