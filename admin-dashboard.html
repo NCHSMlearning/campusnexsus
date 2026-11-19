@@ -1390,7 +1390,7 @@
                 <div><h2><i class="fas fa-shield-alt"></i> Administrator Audit Trail</h2><p class="page-subtitle">Recorded changes made by authorized administrators.</p></div>
                 <button class="btn" onclick="loadAuditLogs()"><i class="fas fa-sync-alt"></i> Refresh</button>
             </div>
-            <div class="table-container"><table><thead><tr><th>Date &amp; Time</th><th>Administrator</th><th>Action</th><th>Module</th><th>Record</th></tr></thead><tbody id="auditTableBody"><tr><td colspan="5">Select Audit Logs to load activity.</td></tr></tbody></table></div>
+            <div class="table-container"><table><thead><tr><th>Date &amp; Time</th><th>Administrator</th><th>Action</th><th>Module</th><th>Record</th><th>IP Address</th><th>Device</th><th>User Agent</th></tr></thead><tbody id="auditTableBody"><tr><td colspan="8">Select Audit Logs to load activity.</td></tr></tbody></table></div>
         </div>
 </main>
 </div>
@@ -1511,11 +1511,23 @@ function viewBooking(id){
 }
 async function loadAuditLogs(){
  const body=document.getElementById('auditTableBody');if(!body)return;
- body.innerHTML='<tr><td colspan="5">Loading audit records…</td></tr>';
- const {data,error}=await supabaseClient.from('admin_audit_logs').select('id,actor_email,action,table_name,record_id,created_at').order('created_at',{ascending:false}).limit(200);
- if(error){body.innerHTML='<tr><td colspan="5">Unable to load audit records: '+adminEscape(error.message)+'</td></tr>';return;}
- if(!data||!data.length){body.innerHTML='<tr><td colspan="5">No administrator changes have been recorded yet.</td></tr>';return;}
- body.innerHTML=data.map(x=>'<tr><td>'+adminEscape(new Date(x.created_at).toLocaleString())+'</td><td>'+adminEscape(x.actor_email||'Administrator')+'</td><td>'+adminEscape(x.action)+'</td><td>'+adminEscape(x.table_name)+'</td><td>'+adminEscape(x.record_id||'—')+'</td></tr>').join('');
+ body.innerHTML='<tr><td colspan="8">Loading audit records…</td></tr>';
+ const {data,error}=await supabaseClient.from('admin_audit_logs')
+  .select('id,actor_email,action,table_name,record_id,created_at,ip_address,device_type,user_agent,request_id')
+  .order('created_at',{ascending:false}).limit(200);
+ if(error){body.innerHTML='<tr><td colspan="8">Unable to load audit records: '+adminEscape(error.message)+'</td></tr>';return;}
+ if(!data||!data.length){body.innerHTML='<tr><td colspan="8">No administrator changes have been recorded yet. New sign-in and sign-out events will appear here.</td></tr>';return;}
+ body.innerHTML=data.map(x=>{
+  const ua=String(x.user_agent||'Not captured');
+  return '<tr><td>'+adminEscape(new Date(x.created_at).toLocaleString())+
+   '</td><td>'+adminEscape(x.actor_email||'Administrator')+
+   '</td><td>'+adminEscape(x.action)+
+   '</td><td>'+adminEscape(x.table_name)+
+   '</td><td>'+adminEscape(x.record_id||'—')+
+   '</td><td>'+adminEscape(x.ip_address||'Not captured')+
+   '</td><td>'+adminEscape(x.device_type||'Unknown')+
+   '</td><td title="'+adminEscape(ua)+'">'+adminEscape(ua.length>72?ua.slice(0,69)+'…':ua)+'</td></tr>';
+ }).join('');
 }
 function switchTab(tab) {
     currentTab = tab;
