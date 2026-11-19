@@ -1947,6 +1947,13 @@ verifyStaffLogin: async function(identifier, password) {
             if (profileError) throw profileError;
             linkedProfile = profile;
             if (linkedProfile?.user_id) uuid = linkedProfile.user_id;
+            if (linkedProfile && ['student', 'lecturer'].includes(String(linkedProfile.role || '').toLowerCase())) {
+                const approved = ['approved', 'active'].includes(String(linkedProfile.status || '').toLowerCase());
+                if (!approved || linkedProfile.login_enabled === false) {
+                    this.showError('Your account is awaiting institution administrator approval. You will be able to sign in once approved.');
+                    return null;
+                }
+            }
             twoFactorEnabled = !!linkedProfile?.two_factor_enabled;
             twoFactorSecret = linkedProfile?.two_factor_secret || null;
             twoFactorVerified = !!linkedProfile?.two_factor_verified;
@@ -2069,7 +2076,7 @@ executeLogin: async function(identifier, password) {
 
         const { data: profile, error: profileError } = await this.supabase
             .from('consolidated_user_profiles_table')
-            .select('user_id, email, full_name, role, program, department, staff_id, status, two_factor_enabled, two_factor_secret, two_factor_verified')
+            .select('user_id, email, full_name, role, program, department, staff_id, status, login_enabled, two_factor_enabled, two_factor_secret, two_factor_verified')
             .eq('user_id', authData.user.id)
             .maybeSingle();
 
@@ -2083,9 +2090,9 @@ executeLogin: async function(identifier, password) {
         }
 
         const validStatuses = ['approved', 'active'];
-        if (!validStatuses.includes(String(profile.status || '').toLowerCase())) {
+        if (!validStatuses.includes(String(profile.status || '').toLowerCase()) || profile.login_enabled === false) {
             await this.supabase.auth.signOut();
-            throw new Error('Account pending approval. Please wait.');
+            throw new Error('Your account is awaiting institution administrator approval. You will be able to sign in once approved.');
         }
 
         return {
@@ -2800,8 +2807,8 @@ executeLogin: async function(identifier, password) {
             }
             
             const validStatuses = ['approved', 'active'];
-            if (!validStatuses.includes(profile.status?.toLowerCase())) {
-                this.showError('Account pending approval. Please wait.');
+            if (!validStatuses.includes(String(profile.status || '').toLowerCase()) || profile.login_enabled === false) {
+                this.showError('Your account is awaiting institution administrator approval. You will be able to sign in once approved.');
                 if (loginButton) {
                     loginButton.disabled = false;
                     buttonText.textContent = 'Sign In';
@@ -3226,6 +3233,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (profileError || !profile) {
                 console.warn('Existing Supabase session has no matching portal profile.');
+                return;
+            }
+            if (!['approved', 'active'].includes(String(profile.status || '').toLowerCase()) ||
+                profile.login_enabled === false) {
+                await client.auth.signOut();
+                localStorage.removeItem('userProfile');
+                localStorage.removeItem('currentUserId');
+                console.warn('Pending or disabled account session was cleared.');
                 return;
             }
 
