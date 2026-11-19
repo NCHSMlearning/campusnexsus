@@ -100,6 +100,7 @@
     if ($("cnInstitutionAmount")) $("cnInstitutionAmount").value = "5000";
     applyBrandColors();
     if ($("cnInstitutionPortalMode")) $("cnInstitutionPortalMode").value = "campus_nexus";
+    document.querySelectorAll('input[name="cnInstitutionPortalModeChoice"]').forEach(input => { input.checked = input.value === "campus_nexus"; });
     if ($("cnInstitutionCustomLogin")) $("cnInstitutionCustomLogin").value = "";
     if ($("cnInstitutionAdminPortal")) $("cnInstitutionAdminPortal").value = "";
     renderModuleOptions(MODULES.map(([key]) => key));
@@ -127,6 +128,7 @@
     $("cnInstitutionPlan").value = item._subscription?.plan_name || "Starter";
     $("cnInstitutionCycle").value = item._subscription?.billing_cycle || "monthly";
     $("cnInstitutionAdmin").value = item.admin_email || "";
+    document.querySelectorAll('input[name="cnInstitutionPortalModeChoice"]').forEach(input => { input.checked = input.value === (item.portal_mode || "campus_nexus"); });
     $("cnInstitutionPortalMode")?.dispatchEvent(new Event("change"));
     renderModuleOptions(item._modules || []);
     $("cnInstitutionSave").textContent = "Update institution";
@@ -169,7 +171,7 @@
         '<td><span class="cn-status cn-status-' + esc(i.status) + '">' + status + '</span></td>' +
         '<td>' + esc(i._subscription?.plan_name || "—") + '<small class="cn-subline">' +
         (i._subscription ? esc(i._subscription.currency) + " " + Number(i._subscription.amount).toLocaleString() + " / " + esc(i._subscription.billing_cycle) : "Not configured") + '</small></td>' +
-        '<td>' + esc(i.contact_email || "—") + '</td><td>' + (portalUrl ? '<a href="' + esc(portalUrl) + '" target="_blank" rel="noopener">Open portal</a>' : esc(i.portal_domain || "Domain not configured")) +
+        '<td>' + esc(i.contact_email || "—") + '</td><td>' + (i.portal_mode === "campus_nexus" ? '<span class="cn-muted">Shared Campus Nexus login</span><small class="cn-subline">campusnexus.co.ke/login</small>' : (portalUrl ? '<a href="' + esc(portalUrl) + '" target="_blank" rel="noopener">Open institution portal</a>' : 'Custom portal URL not configured')) +
         (registrationUrl ? '<br><a href="' + esc(registrationUrl) + '" target="_blank" rel="noopener">Registration</a><button class="cn-row-action" type="button" data-copy-registration="' + esc(i.id) + '">Copy</button>' : '') + '</td>' +
         '<td><div class="cn-row-actions"><button class="cn-row-action" type="button" data-edit="' + esc(i.id) + '">Manage</button>' +
         (i.status !== "active" ? '<button class="cn-row-action" type="button" data-status="' + esc(i.id) + '" data-next="active" aria-label="Activate ' + esc(i.name) + '">Activate</button>' :
@@ -241,9 +243,9 @@
       const registrationUrl = i.portal_mode === "custom_website" ? "" : host
         ? "https://" + host + "/register?school_code=" + encodeURIComponent(schoolCode)
         : registration ? new URL("full-source/register.html",window.location.href).href + "?school_code=" + encodeURIComponent(schoolCode) : "";
+      // Shared Campus Nexus sign-in is centrally hosted; do not mistake the institution's marketing domain for its login URL.
       const portalUrl = i.portal_mode === "custom_website" && i.custom_login_url
-        ? i.custom_login_url
-        : host ? "https://" + host : "";
+        ? i.custom_login_url : "";
       return {...i, _modules:modules.filter(x => x.institution_id === i.id && x.enabled).map(x => x.module_key),
         _subscription:sub || null, _subscriptionId:sub?.id || null, _adminUserId:member?.user_id || null,
         _registrationUrl:registrationUrl, _portalUrl:portalUrl, _registrationCode:registration?.code || null};
@@ -263,7 +265,8 @@
     const adminEmail = $("cnInstitutionAdmin").value.trim().toLowerCase();
     const amount = Number($("cnInstitutionAmount").value);
     if (!Number.isFinite(amount) || amount < 0) return notify("Enter a valid subscription amount.", "error");
-    const portalMode = $("cnInstitutionPortalMode").value;
+    const portalMode = document.querySelector('input[name="cnInstitutionPortalModeChoice"]:checked')?.value || "campus_nexus";
+    $("cnInstitutionPortalMode").value = portalMode;
     const customLogin = $("cnInstitutionCustomLogin").value.trim();
     const website = $("cnInstitutionWebsite").value.trim();
     const logo = $("cnInstitutionLogo").value.trim();
@@ -336,12 +339,16 @@
     $("cnInstitutionSlug").addEventListener("input",e => e.target.dataset.edited = "1");
     $("cnInstitutionCode").addEventListener("input",e => e.target.dataset.edited = "1");
     $("cnInstitutionRefresh").addEventListener("click",() => loadInstitutions().catch(e => notify(e.message,"error")));
-    $("cnInstitutionPortalMode")?.addEventListener("change", () => {
-      const custom = $("cnInstitutionPortalMode").value === "custom_website";
+    const syncPortalChoice = () => {
+      const selected = document.querySelector('input[name="cnInstitutionPortalModeChoice"]:checked')?.value || "campus_nexus";
+      $("cnInstitutionPortalMode").value = selected;
+      const custom = selected === "custom_website";
       $("cnCustomLoginWrap")?.classList.toggle("is-visible", custom);
       if ($("cnInstitutionCustomLogin")) $("cnInstitutionCustomLogin").required = custom;
-    });
-    $("cnInstitutionPortalMode")?.dispatchEvent(new Event("change"));
+    };
+    document.querySelectorAll('input[name="cnInstitutionPortalModeChoice"]').forEach(input => input.addEventListener("change", syncPortalChoice));
+    $("cnInstitutionPortalMode")?.addEventListener("change", syncPortalChoice);
+    syncPortalChoice();
     try {
       await verifyPlatformAdmin();
       await loadInstitutions();
