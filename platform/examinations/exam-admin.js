@@ -13,7 +13,7 @@ async function boot(){
   sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
   const {data:{session},error:sessionError}=await sb.auth.getSession();
   if(sessionError) throw sessionError;
-  if(!session?.user){window.location.replace("/login?returnTo=%2Fexams");return}
+  if(!session?.user){window.location.replace("/login?redirect=%2Fexams");return}
   authUser=session.user;
   const {data:memberships,error:memberError}=await sb.from("institution_users").select("institution_id,role,status").eq("user_id",authUser.id).eq("role","institution_admin").eq("status","active");
   if(memberError) throw memberError;
