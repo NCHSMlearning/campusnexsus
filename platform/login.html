@@ -13,7 +13,7 @@
         script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://accounts.google.com https://unpkg.com https://www.gstatic.com https://challenges.cloudflare.com;
         style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com;
         font-src 'self' https://fonts.gstatic.com;
-        img-src 'self' data: https://raw.githubusercontent.com https://www.gstatic.com https://img.icons8.com https://api.qrserver.com;
+        img-src 'self' data: https://lwhtjozfsmbyihenfunw.supabase.co https://raw.githubusercontent.com https://www.gstatic.com https://img.icons8.com https://api.qrserver.com;
         connect-src 'self' https://*.supabase.co https://api.ipify.org https://api.pwnedpasswords.com https://challenges.cloudflare.com https://cdn.jsdelivr.net https://accounts.google.com;
         frame-src https://accounts.google.com https://challenges.cloudflare.com;
         worker-src 'self' blob:;
@@ -37,7 +37,7 @@
     <!-- Preload background -->
     <link rel="preload" 
           as="image" 
-          href="images/campus-header.jpg">
+          href="https://raw.githubusercontent.com/NCHSMlearning/NCHSM-Digital-campus-/main/images/campus-header.jpg">
     
     <!-- External CSS -->
     
@@ -1899,7 +1899,7 @@ body.dark-theme #loginButton,body.dark-theme .login-button{background:linear-gra
                                 </div>
                                 <span class="tooltip" title="We'll keep you signed in for 30 days">ⓘ</span>
                             </div>
-                            <a href="forgot-password.html" class="forgot-link" aria-label="Forgot password?">
+                            <a href="/forgot-password" class="forgot-link" aria-label="Forgot password?">
                                 Forgot Password?
                             </a>
                         </div>
@@ -1960,7 +1960,7 @@ body.dark-theme #loginButton,body.dark-theme .login-button{background:linear-gra
                     
                     <!-- Signup -->
                     <div class="signup-section">
-                        <a href="register.html" class="signup-link">
+                        <a href="/register" class="signup-link">
                             <i data-feather="user-plus"></i>
                             Create New Account
                         </a>
@@ -2128,8 +2128,6 @@ body.dark-theme #loginButton,body.dark-theme .login-button{background:linear-gra
 
     <!-- ===== MAIN SECURITY SCRIPT ===== -->
     <script src="login-script.js?v=20261119-institution-admin-v1"></script>
-<script src="js/login-maintenance.js?v=20261111-maintenance3"></script>
-
 <div id="nchsmAuthLoading" aria-hidden="true" role="status">
   <div class="nchsm-loading-card">
     <div class="nchsm-loading-logo"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23082f49'/%3E%3Cpath d='M12 18h12v28H12zm14 0h12v28H26zm14 0h12v28H40z' fill='%235eead4'/%3E%3C/svg%3E" alt="Campus Nexus"></div>
@@ -2162,6 +2160,39 @@ body.dark-theme #loginButton,body.dark-theme .login-button{background:linear-gra
 </script>
 
 
-<script src="/js/nchsm-mobile-enhancements.js?v=8" defer></script>
+<script id="campus-nexus-institution-login-branding">
+(function(){
+  "use strict";
+  const params = new URLSearchParams(window.location.search);
+  const schoolCode = (params.get("school_code") || "").trim();
+  if (!schoolCode || !window.supabase?.createClient) return;
+  const client = window.supabase.createClient(
+    "https://lwhtjozfsmbyihenfunw.supabase.co",
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx3aHRqb3pmc21ieWloZW5mdW53IiwiaWF0IjoxNzU5NjU4MTI3LCJleHAiOjIwNzUyMzQxMjd9.7Z8AYvPQwTAEEEhODlW6Xk-IR1FK3Uj5ivZS7P17Wpk"
+  );
+  client.rpc("resolve_institution_registration_context",{p_code:schoolCode,p_host:null})
+    .then(({data,error})=>{
+      if(error || !data?.institution_id) return;
+      const logo = document.querySelector(".logo-wrapper .logo img");
+      const name = document.querySelector(".logo-wrapper .college-name");
+      const welcome = document.querySelector(".welcome-section h2");
+      if(logo && data.logo_url && /^https:\/\//i.test(data.logo_url)){
+        logo.src=data.logo_url;
+        logo.alt=(data.institution_name || "Institution")+" logo";
+      }
+      if(name) name.textContent=data.institution_name || "Your institution";
+      if(welcome) welcome.textContent="Welcome to "+(data.institution_name || "your institution");
+      document.title=(data.institution_name || "Institution")+" | Secure Sign In";
+      const motto=document.querySelector(".logo-wrapper .motto");
+      if(motto){
+        const lines=[data.physical_address,data.postal_address].filter(Boolean);
+        motto.textContent=lines.join(" · ") || "Secure institution portal";
+      }
+      document.documentElement.dataset.institutionLogin="true";
+    })
+    .catch(error=>console.warn("Institution login branding could not be loaded:",error));
+})();
+</script>
+
 </body>
 </html>
