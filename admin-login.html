@@ -404,10 +404,17 @@
             const {data:factors,error}=await supabaseClient.auth.mfa.listFactors();if(error)throw error;
             const verified=(factors?.totp||[]).filter(f=>f.status==='verified');
             if(verified.length){pendingFactorId=verified[0].id;showMfaPanel('Two-step verification','Enter the current 6-digit code from your authenticator app to complete administrator sign-in.',false);return;}
+            // Clean up abandoned pending enrollments, but do not let an old friendly-name
+            // reservation prevent the administrator from completing setup.
             for(const factor of (factors?.totp||[]).filter(f=>f.status!=='verified')){
-                const {error:removeError}=await supabaseClient.auth.mfa.unenroll({factorId:factor.id});if(removeError)throw removeError;
+                const {error:removeError}=await supabaseClient.auth.mfa.unenroll({factorId:factor.id});
+                if(removeError)console.warn('Could not remove an earlier pending authenticator factor:',removeError.message);
             }
-            const {data:enrollment,error:enrollError}=await supabaseClient.auth.mfa.enroll({factorType:'totp',friendlyName:'CampusNexus Administrator'});if(enrollError)throw enrollError;
+            // Supabase requires a unique friendly name per user. A timestamp avoids
+            // collisions with an earlier pending/removed factor during recovery.
+            const friendlyName='CampusNexus Administrator '+new Date().toISOString().replace(/[:.]/g,'-');
+            const {data:enrollment,error:enrollError}=await supabaseClient.auth.mfa.enroll({factorType:'totp',friendlyName});
+            if(enrollError)throw enrollError;
             pendingFactorId=enrollment.id;
             document.getElementById('mfaQr').src='data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(enrollment.totp.qr_code);
             document.getElementById('mfaSecret').textContent=enrollment.totp.secret;
