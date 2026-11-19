@@ -2659,6 +2659,12 @@ document.addEventListener('DOMContentLoaded', async function() {
     try {
         const {data:{user},error:userError}=await supabaseClient.auth.getUser();
         if(userError||!user)throw new Error('Your administrator session has expired. Please sign in again.');
+        const {data:assurance,error:assuranceError}=await supabaseClient.auth.mfa.getAuthenticatorAssuranceLevel();
+        if(assuranceError||assurance?.currentLevel!=='aal2'){
+            localStorage.removeItem('campusnexus_admin');
+            window.location.replace('admin-login.html');
+            return;
+        }
         const {data:membership,error:membershipError}=await supabaseClient.from('cms_admins').select('role').eq('user_id',user.id).maybeSingle();
         if(membershipError||!membership||!['admin','editor'].includes(membership.role))throw new Error('This account is not authorized to access the administration portal.');
         let localProfile={};try{localProfile=JSON.parse(localStorage.getItem('campusnexus_admin')||'{}')}catch(_){}
