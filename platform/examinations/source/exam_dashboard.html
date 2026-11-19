@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>NCHSM Student Exam Portal - Auto Update</title>
+<link rel="icon" href="https://raw.githubusercontent.com/NCHSMlearning/e-learning/main/images/Logo_NCHSM.png">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Poppins', sans-serif; background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%); min-height: 100vh; }
+body::before { content: ''; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at 20% 50%, rgba(11, 42, 74, 0.03) 0%, transparent 50%); pointer-events: none; z-index: 0; }
+header { text-align: center; padding: 25px 20px; background: linear-gradient(135deg, #0A3D62 0%, #073450 100%); color: white; position: relative; overflow: hidden; }
+header::before { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(253,185,19,0.1) 0%, transparent 70%); animation: rotate 20s linear infinite; }
+@keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.logo { width: 70px; margin-bottom: 10px; border-radius: 50%; border: 3px solid #FDB913; padding: 5px; background: white; position: relative; z-index: 1; transition: transform 0.3s ease; }
+.logo:hover { transform: scale(1.05); }
+h1 { font-size: 1.8rem; letter-spacing: -0.5px; font-weight: 700; position: relative; z-index: 1; }
+.header-subtitle { font-size: 0.85rem; opacity: 0.9; position: relative; z-index: 1; }
+.exam-list { max-width: 1400px; margin: 30px auto; padding: 0 25px; position: relative; z-index: 1; }
+.user-info-bar { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border-radius: 20px; padding: 20px 28px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08); border: 1px solid rgba(253, 185, 19, 0.2); transition: all 0.3s ease; }
+.user-info-bar:hover { box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12); transform: translateY(-2px); }
+.user-details h3 { color: #0A3D62; font-size: 1.1rem; font-weight: 700; }
+.user-details p { color: #64748B; font-size: 0.85rem; margin-top: 4px; }
+.user-details .student-id-badge { display: inline-block; background: #FDB913; color: #0A3D62; padding: 2px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 600; margin-top: 6px; }
+.action-buttons { display: flex; gap: 12px; }
+.refresh-btn, .logout-btn { padding: 10px 22px; border-radius: 12px; font-weight: 600; font-size: 0.85rem; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; border: none; font-family: inherit; }
+.refresh-btn { background: linear-gradient(135deg, #8B5CF6, #7C3AED); color: white; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3); }
+.refresh-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4); }
+.logout-btn { background: linear-gradient(135deg, #EF4444, #DC2626); color: white; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3); }
+.logout-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4); }
+.exam-card { background: white; border-radius: 24px; padding: 24px; margin-bottom: 24px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05); transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); border: 1px solid rgba(0, 0, 0, 0.05); position: relative; overflow: hidden; }
+.exam-card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: linear-gradient(90deg, #0A3D62, #FDB913, #0A3D62); transform: scaleX(0); transition: transform 0.5s ease; }
+.exam-card:hover::before { transform: scaleX(1); }
+.exam-card:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1); }
+.exam-header { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
+.exam-title { font-size: 1.25rem; font-weight: 700; color: #0A3D62; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.exam-meta { display: flex; flex-wrap: wrap; gap: 16px; font-size: 0.8rem; color: #64748B; margin: 12px 0; }
+    .badge { display: inline-block; padding: 5px 14px; border-radius: 30px; font-size: 0.7rem; font-weight: 600; }
+.badge { display: inline-block; padding: 5px 14px; border-radius: 30px; font-size: 0.7rem; font-weight: 600; }
+.badge-upcoming { background: linear-gradient(135deg, #DBEAFE, #BFDBFE); color: #1E40AF; }
+.badge-completed { background: linear-gradient(135deg, #D1FAE5, #A7F3D0); color: #065F46; }
+.badge-pending { background: linear-gradient(135deg, #FEF3C7, #FDE68A); color: #92400E; }
+.grade-info { margin-top: 16px; padding: 16px 20px; border-radius: 16px; font-size: 0.9rem; transition: all 0.3s ease; }
+.grade-pass { background: linear-gradient(135deg, #D1FAE5, #A7F3D0); border-left: 4px solid #38A169; }
+.grade-fail { background: linear-gradient(135deg, #FEE2E2, #FECACA); border-left: 4px solid #DC2626; }
+.grade-not-released { background: #F1F5F9; border-left: 4px solid #64748B; opacity: 0.8; }
+.score-large { font-size: 1.8rem; font-weight: 800; margin-right: 12px; color: #0A3D62; }
+.exam-actions { display: flex; gap: 12px; margin-top: 18px; flex-wrap: wrap; }
+.btn-start, .btn-details, .btn-pending { padding: 10px 24px; border-radius: 12px; font-weight: 600; font-size: 0.85rem; transition: all 0.3s ease; cursor: pointer; border: none; font-family: inherit; }
+.btn-start { background: linear-gradient(135deg, #38A169, #2F855A); color: white; box-shadow: 0 4px 12px rgba(56, 161, 105, 0.3); }
+.btn-start:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(56, 161, 105, 0.4); }
+.btn-details { background: linear-gradient(135deg, #3B82F6, #2563EB); color: white; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); }
+.btn-details:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4); }
+.btn-pending { background: #94A3B8; color: white; cursor: not-allowed; opacity: 0.7; }
+.exam-container { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 2000; flex-direction: column; animation: fadeIn 0.3s ease; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.exam-header-bar { background: linear-gradient(135deg, #0A3D62, #073450); color: white; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); }
+.exam-header-bar h3 { margin: 0; font-size: 1rem; font-weight: 500; }
+.exam-iframe { flex: 1; width: 100%; border: none; background: white; }
+.modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(8px); z-index: 3000; align-items: center; justify-content: center; }
+.modal-content { background: white; padding: 32px; border-radius: 28px; max-width: 550px; max-height: 80vh; overflow-y: auto; width: 90%; animation: modalSlideIn 0.3s ease; box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25); }
+@keyframes modalSlideIn { from { opacity: 0; transform: translateY(-30px); } to { opacity: 1; transform: translateY(0); } }
+.close-modal { float: right; font-size: 28px; cursor: pointer; color: #64748B; transition: color 0.2s; }
+.close-modal:hover { color: #DC2626; }
+.toast { position: fixed; bottom: 24px; right: 24px; padding: 14px 24px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15); z-index: 10000; animation: slideInRight 0.3s ease; font-size: 0.85rem; font-weight: 500; backdrop-filter: blur(10px); }
+.toast-success { background: linear-gradient(135deg, #10B981, #059669); color: white; }
+.toast-info { background: linear-gradient(135deg, #3B82F6, #2563EB); color: white; }
+.toast-warning { background: linear-gradient(135deg, #F59E0B, #D97706); color: white; }
+@keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+.loading-skeleton { background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%); background-size: 200% 100%; animation: loading 1.5s infinite; border-radius: 12px; }
+@keyframes loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+.auto-update-badge { position: fixed; bottom: 20px; left: 20px; background: rgba(0,0,0,0.75); color: #10B981; padding: 6px 14px; border-radius: 30px; font-size: 0.7rem; font-family: monospace; z-index: 9999; backdrop-filter: blur(5px); pointer-events: none; animation: pulse 2s infinite; }
+@keyframes pulse { 0%, 100% { opacity: 0.7; } 50% { opacity: 1; } }
+@media (max-width: 768px) { .exam-title { font-size: 1rem; } .exam-meta { gap: 10px; } .btn-start, .btn-details, .btn-pending { padding: 8px 16px; font-size: 0.75rem; } .user-info-bar { padding: 15px 20px; } .exam-card { padding: 18px; } h1 { font-size: 1.3rem; } .logo { width: 50px; } .auto-update-badge { font-size: 0.6rem; bottom: 10px; left: 10px; } }
+@media (max-width: 480px) { .exam-list { padding: 0 15px; } .user-details h3 { font-size: 0.9rem; } .exam-title { font-size: 0.9rem; } }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/js/dashboard-maintenance.js?v=20261111" defer></script>
+</head>
+<body>
+
+<header>
+    <img src="https://raw.githubusercontent.com/NCHSMlearning/e-learning/main/images/Logo_NCHSM.png" class="logo" alt="Logo">
+    <h1>📚 NCHSM Exam Portal</h1>
+    <div class="header-subtitle">Secure • Proctored • Excellence • Auto-Updating</div>
+</header>
+
+<div class="exam-list">
+    <div class="user-info-bar" id="userInfoBar">
+        <div class="user-details" id="userInfo">Loading profile...</div>
+        <div class="action-buttons">
+            <button class="refresh-btn" onclick="manualRefresh()">🔄 Refresh Now</button>
+            <button class="logout-btn" onclick="logout()">🚪 Logout</button>
+        </div>
+    </div>
+    <div id="examList">Loading exams...</div>
+</div>
+
+<div id="examContainer" class="exam-container">
+    <div class="exam-header-bar">
+        <h3 id="examTitle">Taking Exam...</h3>
+    </div>
+    <iframe id="examIframe" class="exam-iframe" src="about:blank"></iframe>
+</div>
+
+<div id="resultsModal" class="modal">
+    <div class="modal-content">
+        <span class="close-modal" onclick="closeModal()">&times;</span>
+        <div id="modalContent"></div>
+    </div>
+</div>
+
+<div class="auto-update-badge" id="autoUpdateStatus">
+    🔄 Auto-update active | Checking every 30s
+</div>
+
+<script>
+const SUPABASE_URL = 'https://lwhtjozfsmbyihenfunw.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx3aHRqb3pmc21ieWloZW5mdW53Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk2NTgxMjcsImV4cCI6MjA3NTIzNDEyN30.7Z8AYvPQwTAEEEhODlW6Xk-IR1FK3Uj5ivZS7P17Wpk';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let currentUserId = null;
+let studentProfile = null;
+let currentExamId = null;
+let isLoading = false;
+let autoCloseTimeout = null;
+let autoRefreshInterval = null;
+
+function getExamLink(exam) { return exam.exam_link || exam.online_link || null; }
+
+function filterExamsByStudent(exams) {
+    if (!studentProfile) return exams;
+    
+    return exams.filter(exam => {
+        if (!getExamLink(exam)) return false;
+        if (!exam.program_type && !exam.block_term && !exam.intake_year) return true;
+        
+        let programMatch = true;
+        if (exam.program_type && exam.program_type !== 'General') {
+            programMatch = exam.program_type === studentProfile.program;
+        }
+        
+        let blockMatch = true;
+        if (exam.block_term && exam.block_term !== 'General') {
+            blockMatch = exam.block_term === studentProfile.block;
+        }
+        
+        let intakeMatch = true;
+        if (exam.intake_year && exam.intake_year !== 'General') {
+            intakeMatch = exam.intake_year == studentProfile.intake_year;
+        }
+        
+        return programMatch && blockMatch && intakeMatch;
+    });
+}
+
+async function saveExamResult(examId, scoreData) {
+    try {
+        // Check if result already exists
+        const { data: existing } = await sb
+            .from('exam_grades')
+            .select('id')
+            .eq('student_id', currentUserId)
+            .eq('exam_id', examId)
+            .eq('question_id', '00000000-0000-0000-0000-000000000000');
+        
+        // FIXED: Use PENDING_REVIEW instead of PENDING
+        const gradeData = {
+            student_id: currentUserId,
+            exam_id: parseInt(examId),
+            question_id: '00000000-0000-0000-0000-000000000000',
+            marks: scoreData.marks || scoreData.score || 0,
+            total_score: scoreData.percentage || scoreData.total_score || 0,
+            cat_1_score: scoreData.cat1 || scoreData.score || 0,
+            result_status: 'PENDING_REVIEW',  // ← FIXED: This is the key change
+            graded_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+        };
+        
+        console.log('💾 Saving grade:', gradeData);
+        
+        let result;
+        if (existing && existing.length > 0) {
+            console.log('Updating existing grade...');
+            result = await sb
+                .from('exam_grades')
+                .update(gradeData)
+                .eq('student_id', currentUserId)
+                .eq('exam_id', examId)
+                .eq('question_id', '00000000-0000-0000-0000-000000000000');
+        } else {
+            console.log('Inserting new grade...');
+            result = await sb
+                .from('exam_grades')
+                .insert([gradeData]);
+        }
+        
+        if (result.error) {
+            console.error('Database error:', result.error);
+            throw result.error;
+        }
+        
+        console.log('✅ Exam result saved successfully!');
+        return true;
+    } catch (error) {
+        console.error('Error saving exam result:', error);
+        return false;
+    }
+}
+
+async function loadExamContent(examId, examName) {
+    try {
+        // First check if exam already taken
+        const { data: existingGrade } = await sb
+            .from('exam_grades')
+            .select('id')
+            .eq('student_id', currentUserId)
+            .eq('exam_id', examId)
+            .eq('question_id', '00000000-0000-0000-0000-000000000000');
+        
+        if (existingGrade && existingGrade.length > 0) {
+            showToast('You have already taken this exam!', 'warning');
+            return;
+        }
+        
+        const { data: exam, error } = await sb
+            .from('exams')
+            .select('online_link, exam_link')
+            .eq('id', examId)
+            .single();
+            
+        if (error) throw error;
+        
+        // Get the base link from the exam record
+        let baseLink = exam?.exam_link || exam?.online_link;
+        if (!baseLink) { 
+            showToast('No exam link configured', 'warning'); 
+            return; 
+        }
+        
+        // --- FIX: Build the full URL with parameters ---
+        // Remove any existing query parameters
+        const baseUrl = baseLink.split('?')[0];
+        
+        // Build the URL with user_id and exam_id
+        const fullUrl = `${baseUrl}?user_id=${currentUserId}&exam_id=${examId}`;
+        
+        console.log('🔗 Opening exam portal:', fullUrl);
+        
+        currentExamId = examId;
+        document.getElementById('examTitle').innerHTML = `📝 ${examName}`;
+        
+        const iframe = document.getElementById('examIframe');
+        iframe.src = fullUrl;  // ← Use the full URL with parameters
+        
+        document.getElementById('examContainer').style.display = 'flex';
+        document.querySelector('header').style.display = 'none';
+        document.querySelector('.exam-list').style.display = 'none';
+        
+        showToast('Exam loaded. Good luck!', 'success');
+    } catch(err) {
+        console.error(err);
+        showToast('Error loading exam', 'warning');
+    }
+}
+
+function startExam(examId, examName) {
+    if (!currentUserId) { logout(); return; }
+    loadExamContent(examId, examName);
+}
+
+// Handle exam submission from iframe
+// Handle exam submission from iframe
+window.addEventListener('message', async function(event) {
+    console.log('📨 Received message:', event.data);
+    
+    if (event.data === 'exam_completed' || event.data?.type === 'exam_completed') {
+        showToast('✅ Exam submitted! Saving results...', 'success');
+        
+        let scoreData = {
+            marks: event.data?.score || event.data?.marks || 0,
+            percentage: event.data?.percentage || event.data?.total_score || 0,
+            cat1: event.data?.cat1 || event.data?.score || 0,
+            status: 'PENDING_REVIEW'  // ← FIXED
+        };
+        
+        console.log('📊 Score data:', scoreData);
+        
+        if (currentExamId) {
+            const saved = await saveExamResult(currentExamId, scoreData);
+            if (saved) {
+                showToast('✅ Exam results saved! Awaiting admin review.', 'success');
+                setTimeout(() => loadExams(false), 1000);
+            } else {
+                showToast('⚠️ Results saved but grade submission had issues.', 'warning');
+            }
+        }
+        
+        // Auto close
+        if (autoCloseTimeout) clearTimeout(autoCloseTimeout);
+        autoCloseTimeout = setTimeout(() => {
+            document.getElementById('examIframe').src = 'about:blank';
+            document.getElementById('examContainer').style.display = 'none';
+            document.querySelector('header').style.display = 'block';
+            document.querySelector('.exam-list').style.display = 'block';
+            manualRefresh();
+            showToast('Exam closed. Results pending admin release.', 'info');
+        }, 2000);
+    }
+});
+document.addEventListener('visibilitychange', function() {
+    if (!document.hidden && !isLoading && currentUserId && 
+        document.getElementById('examContainer').style.display !== 'flex') {
+        updateAutoUpdateStatus('🔄 Tab active - refreshing...');
+        loadExams(false);
+        setTimeout(() => updateAutoUpdateStatus('✅ Auto-update active'), 2000);
+    }
+});
+
+function startAutoRefresh() {
+    if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+    autoRefreshInterval = setInterval(() => {
+        if (!document.hidden && !isLoading && currentUserId && 
+            document.getElementById('examContainer').style.display !== 'flex') {
+            loadExams(false);
+        }
+    }, 30000);
+}
+
+function updateAutoUpdateStatus(message) {
+    const badge = document.getElementById('autoUpdateStatus');
+    if (badge) badge.innerHTML = `🔔 ${message}`;
+}
+
+async function loadExams(showLoading = true) {
+    if (isLoading) return;
+    isLoading = true;
+    if (showLoading) document.getElementById('examList').innerHTML = '<div class="exam-card loading-skeleton" style="height: 200px;"></div>';
+    
+    currentUserId = localStorage.getItem('currentUserId');
+    
+   if (!currentUserId || currentUserId === 'null') {
+    console.warn('⚠️ No user ID found, redirecting to student dashboard');
+    // ✅ Redirect to student dashboard instead of exam_login
+    window.location.href = 'student.html';
+    return;
+}
+    try {
+        // ============================================
+        // 1. FETCH USER PROFILE
+        // ============================================
+        const { data: profile } = await sb
+            .from('consolidated_user_profiles_table')
+            .select('*')
+            .eq('user_id', currentUserId);
+        
+        if (profile && profile.length > 0) {
+            studentProfile = profile[0];
+        }
+        
+        // Display user info
+        const studentIdDisplay = studentProfile?.student_id ? `<span class="student-id-badge">ID: ${studentProfile.student_id}</span>` : '';
+        document.getElementById('userInfo').innerHTML = `
+            <strong>👤 ${studentProfile?.full_name || 'Student'}</strong><br>
+            📚 ${studentProfile?.program || 'Not Assigned'} | Block ${studentProfile?.block || 'Not Assigned'} | Intake: ${studentProfile?.intake_year || 'Not Assigned'}
+            <br>${studentIdDisplay}
+        `;
+        
+        // ============================================
+        // 2. FETCH EXAMS, GRADES, RELEASED RESULTS
+        // ============================================
+        const [examsResult, gradesResult, releasedResult] = await Promise.all([
+            sb
+                .from('exams')
+                .select('*')
+                .not('online_link', 'is', null)
+                .order('exam_date', { ascending: true }),
+            
+            sb
+                .from('exam_grades')
+                .select('*')
+                .eq('student_id', currentUserId)
+                .eq('question_id', '00000000-0000-0000-0000-000000000000'),
+            
+            sb
+                .from('released_exam_results')
+                .select('result_id')
+        ]);
+        
+        const exams = examsResult.data || [];
+        const grades = gradesResult.data || [];
+        const releasedSet = new Set(releasedResult.data?.map(r => String(r.result_id)) || []);
+        
+        console.log(`📊 Found ${exams.length} exams, ${grades.length} grades, ${releasedSet.size} released`);
+        
+        // ============================================
+        // 3. FILTER EXAMS FOR THIS STUDENT
+        // ============================================
+        const filteredExams = exams.filter(exam => {
+            if (!exam.online_link && !exam.exam_link) return false;
+            
+            let programMatch = true;
+            if (exam.program_type && exam.program_type !== 'General') {
+                programMatch = exam.program_type === studentProfile?.program;
+            }
+            
+            let blockMatch = true;
+            if (studentProfile?.block) {
+                const examBlock = exam.block_term || exam.block;
+                if (examBlock && examBlock !== 'General') {
+                    blockMatch = examBlock === studentProfile.block;
+                }
+            }
+            
+            let intakeMatch = true;
+            if (exam.intake_year && exam.intake_year !== 'General') {
+                intakeMatch = exam.intake_year == studentProfile?.intake_year;
+            }
+            
+            return programMatch && blockMatch && intakeMatch;
+        });
+        
+        console.log(`✅ Filtered to ${filteredExams.length} exams for this student`);
+        
+        const container = document.getElementById('examList');
+        container.innerHTML = '';
+        
+        if (!filteredExams.length) {
+            container.innerHTML = '<div class="exam-card">📭 No exams available for your Program, Block, or Intake Year.</div>';
+            isLoading = false;
+            return;
+        }
+        
+        // ============================================
+        // 4. PROCESS EACH EXAM
+        // ============================================
+        const kenyaNow = new Date(new Date().getTime() + (3 * 60 * 60 * 1000));
+        
+        for (const exam of filteredExams) {
+            const examDisplayName = exam.exam_name || exam.title || 'Exam';
+            const safeExamName = examDisplayName.replace(/'/g, "\\'");
+            
+            // ============================================
+            // DETERMINE EXAM TYPE AND TOTAL MARKS
+            // ============================================
+            const examType = (exam.exam_type || '').toUpperCase();
+            const isCatExam = examType.includes('CAT');
+            const isFinalExam = examType === 'EXAM' || examType === 'FINAL' || examType === 'END_TERM';
+            
+            // ✅ FIXED: CAT = 30, EXAM = 70, others = marks_out_of or total_marks
+            let totalMarks = 100; // Default fallback
+            
+            if (isCatExam) {
+                totalMarks = 30; // CAT exams: ALWAYS 30 marks
+            } else if (isFinalExam) {
+                totalMarks = 70; // Final exams: ALWAYS 70 marks
+            } else {
+                totalMarks = exam.marks_out_of || exam.total_marks || 100;
+            }
+            
+            // ✅ Pass mark = 60% of total marks
+            const passMark = Math.round(totalMarks * 0.6);
+            
+            console.log(`📊 Exam: ${examDisplayName}, Type: ${exam.exam_type}, Total: ${totalMarks}, Pass: ${passMark} (60%)`);
+            
+            // ----- Build exam start/end times -----
+            let examStartDateTime = null;
+            let examEndDateTime = null;
+            let formattedExamDateTime = 'TBA';
+            
+            if (exam.exam_date && exam.exam_start_time) {
+                const [year, month, day] = exam.exam_date.split('-');
+                const [hours, minutes] = exam.exam_start_time.split(':');
+                examStartDateTime = new Date(Date.UTC(year, month-1, day, hours, minutes, 0));
+                examStartDateTime = new Date(examStartDateTime.getTime() + (3 * 60 * 60 * 1000));
+                examEndDateTime = new Date(examStartDateTime.getTime() + (exam.duration_minutes || 40) * 60000);
+                
+                const dateOptions = { month: 'short', day: 'numeric', year: 'numeric' };
+                formattedExamDateTime = new Date(exam.exam_date).toLocaleDateString('en-US', dateOptions);
+                if (exam.exam_start_time) {
+                    const [h, m] = exam.exam_start_time.split(':');
+                    const hour12 = parseInt(h) % 12 || 12;
+                    const ampm = parseInt(h) >= 12 ? 'PM' : 'AM';
+                    formattedExamDateTime += ` at ${hour12}:${m} ${ampm}`;
+                }
+            }
+            
+            // ----- Check for existing grade -----
+            const grade = grades?.find(g => String(g.exam_id) === String(exam.id));
+            const hasGrade = grade && (grade.marks !== null || grade.total_score !== null);
+            const isReleased = grade ? releasedSet.has(String(grade.id)) : false;
+            const hasFinalStatus = grade && (grade.result_status === 'PASS' || grade.result_status === 'FAIL');
+            const isPendingReview = grade && (grade.result_status === 'PENDING_REVIEW' || grade.result_status === 'PENDING');
+            
+            // ----- Check if exam is released by admin -----
+            const approvalStatus = String(exam.approval_status || '').toLowerCase();
+            const legacyReleasedStatus = ['released','active','published','available'].includes(String(exam.status || '').toLowerCase()) || exam.released === true;
+            const approvalBlocksAccess = approvalStatus === 'pending' ||
+                                         approvalStatus === 'rejected' ||
+                                         (approvalStatus === 'approved' && exam.is_published !== true && !legacyReleasedStatus);
+            const isExamReleased = !approvalBlocksAccess && (
+                                   exam.status === 'Released' ||
+                                   exam.status === 'Active' ||
+                                   exam.status === 'Published' ||
+                                   exam.status === 'Available' ||
+                                   exam.released === true ||
+                                   exam.is_published === true
+            );
+            
+            // ----- Determine exam status -----
+            let examStatus = 'upcoming';
+            let canStartExam = false;
+            let timerHtml = '';
+            let countdownText = '';
+            
+            if (examStartDateTime && examEndDateTime) {
+                if (kenyaNow < examStartDateTime) {
+                    // UPCOMING
+                    examStatus = 'upcoming';
+                    const diffMs = examStartDateTime - kenyaNow;
+                    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+                    const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+                    const diffDays = Math.floor(diffHours / 24);
+                    
+                    if (diffDays > 0) {
+                        countdownText = `${diffDays}d ${diffHours % 24}h ${diffMinutes}m`;
+                    } else if (diffHours > 0) {
+                        countdownText = `${diffHours}h ${diffMinutes}m`;
+                    } else {
+                        countdownText = `${diffMinutes}m`;
+                    }
+                    
+                    timerHtml = `<div class="exam-timer timer-upcoming">
+                        <span class="timer-icon">⏰</span> 
+                        Starts in: <span class="timer-countdown" data-exam-start="${examStartDateTime.toISOString()}">${countdownText}</span>
+                    </div>`;
+                    canStartExam = false;
+                    
+                } else if (kenyaNow >= examStartDateTime && kenyaNow <= examEndDateTime) {
+                    // AVAILABLE NOW
+                    examStatus = 'available';
+                    const timeLeftMs = examEndDateTime - kenyaNow;
+                    const minutesLeft = Math.floor(timeLeftMs / 60000);
+                    const secondsLeft = Math.floor((timeLeftMs % 60000) / 1000);
+                    
+                    timerHtml = `<div class="exam-timer timer-available">
+                        <span class="timer-icon">🔴</span> 
+                        Time left: <span class="timer-countdown" data-exam-end="${examEndDateTime.toISOString()}" id="timer-${exam.id}">${minutesLeft}m ${secondsLeft}s</span>
+                    </div>`;
+                    canStartExam = true;
+                    
+                } else if (kenyaNow > examEndDateTime) {
+                    // EXPIRED
+                    examStatus = 'expired';
+                    timerHtml = `<div class="exam-timer timer-expired">
+                        <span class="timer-icon">⏱️</span> 
+                        Exam Closed
+                    </div>`;
+                    canStartExam = false;
+                }
+            }
+            
+            // ----- Build status badge, action button, grade HTML -----
+            let statusBadge = '';
+            let actionButton = '';
+            let gradeHtml = '';
+            let displayPercentage = null;
+            let isCompleted = false;
+            
+            // CASE 1: RELEASED RESULTS (PASS or FAIL)
+            if (hasGrade && isReleased && hasFinalStatus) {
+                isCompleted = true;
+                
+                // ✅ FIXED: Get the actual score based on exam type
+                let displayScore = 0;
+                if (isCatExam) {
+                    displayScore = grade?.cat_1_score || grade?.cat_2_score || grade?.marks || 0;
+                    displayScore = Math.min(displayScore, 30);
+                } else if (isFinalExam) {
+                    displayScore = grade?.exam_score || grade?.marks || 0;
+                    displayScore = Math.min(displayScore, 70);
+                } else {
+                    displayScore = grade?.marks || 0;
+                    displayScore = Math.min(displayScore, totalMarks);
+                }
+                
+                // ✅ Calculate percentage using totalMarks
+                const percentage = totalMarks > 0 ? (displayScore / totalMarks) * 100 : 0;
+                displayPercentage = Math.round(percentage);
+                
+                // ✅ Pass mark = 60% of total marks (in marks, not percentage)
+                const passMarks = Math.round(totalMarks * 0.6);
+                const isPassed = displayScore >= passMarks;
+                
+                statusBadge = '<span class="badge badge-completed">✅ Results Released</span>';
+                actionButton = `<button class="btn-details" onclick="viewResult(${exam.id})">📋 View Results</button>`;
+                
+                const gradeClass = isPassed ? 'grade-pass' : 'grade-fail';
+                const passText = isPassed ? 'PASS ✓' : 'FAIL ✗';
+                
+                // Grade text based on percentage
+                let gradeText = '';
+                if (isPassed) {
+                    if (displayPercentage >= 80) gradeText = '🌟 Distinction';
+                    else if (displayPercentage >= 70) gradeText = '💎 Credit';
+                    else if (displayPercentage >= 60) gradeText = '✅ Pass';
+                } else if (displayPercentage > 0) {
+                    gradeText = '❌ Fail';
+                } else {
+                    gradeText = '⏳ Pending';
+                }
+                
+                const examTypeLabel = isCatExam ? '(CAT)' : isFinalExam ? '(Final Exam)' : '';
+                
+                gradeHtml = `<div class="grade-info ${gradeClass}">
+                    <span class="score-large">${displayPercentage}%</span> <strong>${passText}</strong>
+                    <div>Score: ${displayScore} / ${totalMarks} marks ${examTypeLabel}</div>
+                    <div style="font-size: 0.8rem; color: #64748B;">Pass mark: ${passMarks} marks (60%) | ${gradeText}</div>
+                </div>`;
+            }
+            // CASE 2: PENDING RELEASE
+            else if (hasGrade && !isReleased) {
+                examStatus = 'pending_release';
+                statusBadge = '<span class="badge badge-pending">⏳ Pending Release</span>';
+                actionButton = `<button class="btn-pending" disabled>⏳ Awaiting Admin Release</button>`;
+                gradeHtml = `<div class="grade-info grade-not-released">
+                    <span style="font-size: 1.2rem;">⏳</span> <strong>Pending Release</strong>
+                    <div>Results will appear here after admin review.</div>
+                </div>`;
+            }
+            // CASE 3: READY TO START
+            else if (examStatus === 'available' && canStartExam && isExamReleased && (exam.online_link || exam.exam_link) && !hasGrade) {
+                statusBadge = '<span class="badge badge-upcoming" style="background: linear-gradient(135deg, #D1FAE5, #A7F3D0); color: #065F46;">🔴 Live Now</span>';
+                actionButton = `<button class="btn-start" onclick="startExam(${exam.id}, '${safeExamName}')">▶ Start Exam</button>`;
+            }
+            // CASE 4: UPCOMING
+            else if (examStatus === 'upcoming' || !isExamReleased) {
+                statusBadge = '<span class="badge badge-upcoming">📝 Not Started</span>';
+                if (!isExamReleased) {
+                    actionButton = `<button class="btn-pending" disabled>⏳ Pending Admin Release</button>`;
+                } else {
+                    const displayText = countdownText || 'soon';
+                    actionButton = `<button class="btn-pending" disabled>⏳ Starts in ${displayText}</button>`;
+                }
+            }
+            // CASE 5: EXPIRED / MISSED
+            else if (examStatus === 'expired' && !hasGrade) {
+                statusBadge = '<span class="badge badge-pending">⏱️ Missed</span>';
+                actionButton = `<button class="btn-pending" disabled>⏱️ Exam Closed</button>`;
+            }
+            // CASE 6: DEFAULT
+            else {
+                statusBadge = '<span class="badge badge-upcoming">📝 Not Started</span>';
+                if (examStatus === 'available' && isExamReleased && (exam.online_link || exam.exam_link) && !hasGrade) {
+                    actionButton = `<button class="btn-start" onclick="startExam(${exam.id}, '${safeExamName}')">▶ Start Exam</button>`;
+                } else if (isExamReleased && examStatus === 'upcoming') {
+                    const displayText = countdownText || 'soon';
+                    actionButton = `<button class="btn-pending" disabled>⏳ Starts in ${displayText}</button>`;
+                } else if (!isExamReleased) {
+                    actionButton = `<button class="btn-pending" disabled>⏳ Pending Release</button>`;
+                } else {
+                    actionButton = `<button class="btn-pending" disabled>⏳ Not Available</button>`;
+                }
+            }
+            
+            // ----- Build the exam card -----
+            const examTypeLabel = isCatExam ? 'marks (CAT)' : isFinalExam ? 'marks (Final Exam)' : 'marks';
+            
+            container.innerHTML += `
+                <div class="exam-card ${examStatus === 'available' ? 'exam-status-available' : ''}" data-exam-id="${exam.id}">
+                    <div class="exam-header">
+                        <div class="exam-title">
+                            ${examDisplayName} ${statusBadge}
+                        </div>
+                        <div style="font-size: 0.75rem; color: #64748B;">
+                            ${formattedExamDateTime}
+                        </div>
+                    </div>
+                    <div class="exam-meta">
+                        <span>📋 ${exam.exam_type || 'EXAM'}</span>
+                        <span>⏱️ ${exam.duration_minutes || 30} minutes</span>
+                        <span>📊 ${totalMarks} ${examTypeLabel}</span>
+                        <span>🎯 Pass: ${passMark} marks (60%)</span>
+                        ${exam.block_term ? `<span>📌 ${exam.block_term}</span>` : ''}
+                    </div>
+                    ${timerHtml}
+                    ${gradeHtml}
+                    <div class="exam-actions">
+                        ${actionButton}
+                    </div>
+                </div>
+            `;
+        }
+        
+        console.log('✅ Exams loaded successfully');
+        
+    } catch (err) { 
+        console.error('Error in loadExams:', err); 
+        document.getElementById('examList').innerHTML = '<div class="exam-card">⚠️ Error loading exams. Please refresh.</div>'; 
+    }
+    isLoading = false;
+}
+
+    // ========== LIVE TIMER UPDATES ==========
+function updateAllTimers() {
+    const now = new Date();
+    const kenyaNow = new Date(now.getTime() + (3 * 60 * 60 * 1000));
+    
+    document.querySelectorAll('.exam-timer .timer-countdown').forEach(el => {
+        // Check for exam end time (active exam)
+        const examEnd = el.dataset.examEnd;
+        if (examEnd) {
+            const endTime = new Date(examEnd);
+            const timeLeftMs = endTime - kenyaNow;
+            
+            if (timeLeftMs > 0) {
+                const minutesLeft = Math.floor(timeLeftMs / 60000);
+                const secondsLeft = Math.floor((timeLeftMs % 60000) / 1000);
+                el.textContent = `${minutesLeft}m ${secondsLeft}s`;
+            } else {
+                el.textContent = '0m 0s';
+                const timerDiv = el.closest('.exam-timer');
+                if (timerDiv) {
+                    timerDiv.className = 'exam-timer timer-expired';
+                    timerDiv.innerHTML = '<span class="timer-icon">⏱️</span> Exam Closed';
+                }
+            }
+        }
+        
+        // Check for exam start time (upcoming exam)
+        const examStart = el.dataset.examStart;
+        if (examStart) {
+            const startTime = new Date(examStart);
+            const timeLeftMs = startTime - kenyaNow;
+            
+            if (timeLeftMs > 0) {
+                const diffHours = Math.floor(timeLeftMs / (1000 * 60 * 60));
+                const diffMinutes = Math.floor((timeLeftMs % (1000 * 60 * 60)) / (1000 * 60));
+                el.textContent = `${diffHours}h ${diffMinutes}m`;
+            } else {
+                // Exam should have started, refresh to update status
+                el.textContent = 'Starting now...';
+                setTimeout(() => loadExams(false), 2000);
+            }
+        }
+    });
+}
+
+// Start timer updates every second
+setInterval(updateAllTimers, 1000);
+async function viewResult(examId) {
+    try {
+        const { data: grade, error } = await sb
+            .from('exam_grades')
+            .select('*')
+            .eq('student_id', currentUserId)
+            .eq('exam_id', examId)
+            .eq('question_id', '00000000-0000-0000-0000-000000000000')
+            .single();
+        
+        if (error) throw error;
+        
+        // Fetch the exam to get exam_type
+        const { data: exam, error: examError } = await sb
+            .from('exams')
+            .select('exam_type, marks_out_of, total_marks, pass_mark, title, exam_name')
+            .eq('id', examId)
+            .single();
+        
+        if (examError) throw examError;
+        
+        const examType = (exam?.exam_type || '').toUpperCase();
+        const isCatExam = examType.includes('CAT');
+        const isFinalExam = examType === 'EXAM' || examType === 'FINAL' || examType === 'END_TERM';
+        
+        // ✅ Determine total marks
+        let totalMarks = 100; // Default fallback
+        
+        if (isCatExam) {
+            totalMarks = 30; // CAT = 30 marks
+        } else if (isFinalExam) {
+            totalMarks = 70; // Final Exam = 70 marks
+        } else {
+            totalMarks = exam?.marks_out_of || exam?.total_marks || 100;
+        }
+        
+        // ✅ Get the actual score
+        let displayScore = 0;
+        if (isCatExam) {
+            displayScore = grade?.cat_1_score || grade?.cat_2_score || grade?.marks || 0;
+            displayScore = Math.min(displayScore, 30);
+        } else if (isFinalExam) {
+            displayScore = grade?.exam_score || grade?.marks || 0;
+            displayScore = Math.min(displayScore, 70);
+        } else {
+            displayScore = grade?.marks || 0;
+            displayScore = Math.min(displayScore, totalMarks);
+        }
+        
+        // ✅ Calculate percentage
+        const calcPercentage = totalMarks > 0 ? (displayScore / totalMarks) * 100 : 0;
+        const percentage = Math.round(calcPercentage);
+        
+        // ✅ Pass mark = 60% of total marks
+        const passMark = Math.round(totalMarks * 0.6);
+        const isPassed = displayScore >= passMark;
+        
+        let gradeText = '';
+        let gradeColor = '';
+        let gradeBg = '';
+        let passText = '';
+        
+        if (isPassed) {
+            if (percentage >= 80) {
+                gradeText = 'DISTINCTION';
+                gradeColor = '#065F46';
+                gradeBg = '#D1FAE5';
+            } else if (percentage >= 70) {
+                gradeText = 'CREDIT';
+                gradeColor = '#1E40AF';
+                gradeBg = '#DBEAFE';
+            } else if (percentage >= 60) {
+                gradeText = 'PASS';
+                gradeColor = '#92400E';
+                gradeBg = '#FEF3C7';
+            }
+            passText = '✅ PASS ✓';
+        } else if (percentage > 0) {
+            gradeText = 'FAIL';
+            gradeColor = '#991B1B';
+            gradeBg = '#FEE2E2';
+            passText = '❌ FAIL ✗';
+        } else {
+            gradeText = 'PENDING';
+            gradeColor = '#6B7280';
+            gradeBg = '#F3F4F6';
+            passText = '⏳ Pending';
+        }
+        
+        const studentIdDisplay = studentProfile?.student_id ? `<p><strong>Student ID:</strong> ${studentProfile.student_id}</p>` : '';
+        const examName = exam?.title || exam?.exam_name || 'Exam';
+        const examTypeLabel = isCatExam ? 'CAT (30 marks)' : isFinalExam ? 'Final Exam (70 marks)' : 'Standard Exam';
+        
+        document.getElementById('modalContent').innerHTML = `
+            <h2>📊 Exam Results</h2>
+            <p style="color: #64748B; margin-bottom: 15px;">${examName}</p>
+            <div style="background:${isPassed ? 'linear-gradient(135deg, #D1FAE5, #A7F3D0)' : percentage > 0 ? 'linear-gradient(135deg, #FEE2E2, #FECACA)' : '#F3F4F6'}; padding:25px; border-radius:20px; margin:20px 0;">
+                <h3 style="margin-bottom:15px;">${passText}</h3>
+                <p><strong>Score:</strong> ${displayScore} / ${totalMarks} marks</p>
+                <p><strong>Percentage:</strong> ${percentage}%</p>
+                <p><strong>Pass Mark:</strong> ${passMark} marks (60%)</p>
+                <p><strong>Grade:</strong> <span style="background: ${gradeBg}; color: ${gradeColor}; padding: 4px 12px; border-radius: 20px; font-weight: 700;">${gradeText}</span></p>
+                ${studentIdDisplay}
+                <p style="font-size: 0.75rem; color: #64748B; margin-top: 10px;">
+                    <strong>Exam Type:</strong> ${examTypeLabel}
+                </p>
+            </div>
+            <p style="color:#64748B; font-size:0.85rem;">Results officially released by exam administrator.</p>
+        `;
+        document.getElementById('resultsModal').style.display = 'flex';
+        
+    } catch (error) {
+        console.error('Error viewing result:', error);
+        showToast('Error loading exam results', 'warning');
+    }
+}
+function manualRefresh() { 
+    updateAutoUpdateStatus('🔄 Manual refresh...');
+    loadExams(false);
+    setTimeout(() => updateAutoUpdateStatus('✅ Auto-update active'), 2000);
+}
+
+function closeModal() { document.getElementById('resultsModal').style.display = 'none'; }
+
+function logout() { 
+    if (autoCloseTimeout) clearTimeout(autoCloseTimeout);
+    if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+    sb.auth.signOut().then(() => {
+        localStorage.clear();
+        sessionStorage.clear();
+        window.location.href = 'exam_login.html';
+    }).catch(() => {
+        localStorage.clear();
+        sessionStorage.clear();
+        window.location.href = 'exam_login.html';
+    });
+}
+
+function showToast(msg, type) {
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.innerHTML = msg;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 5000);
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+    loadExams();
+    startAutoRefresh();
+});
+
+window.startExam = startExam;
+window.manualRefresh = manualRefresh;
+window.closeModal = closeModal;
+window.logout = logout;
+window.viewResult = viewResult;
+</script>
+
+<script src="/js/nchsm-mobile-enhancements.js?v=7" defer></script>
+</body>
+</html>
