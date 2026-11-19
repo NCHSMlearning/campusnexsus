@@ -282,6 +282,15 @@
             }
         }
     .login-security-note{margin-top:18px;text-align:center;color:#64748b;font-size:12px}.login-security-note i{color:#10b981;margin-right:6px}
+    
+        .mfa-panel{display:none;margin-top:20px;padding:22px;border:1px solid #dbeafe;border-radius:16px;background:#f8fafc}
+        .mfa-panel.show{display:block}.mfa-panel h2{font-size:1.15rem;color:#0A3D62;margin-bottom:8px}
+        .mfa-panel p{font-size:.86rem;line-height:1.55;color:#64748b;margin-bottom:14px}
+        .mfa-qr{display:block;width:190px;height:190px;object-fit:contain;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:10px;margin:14px auto}
+        .mfa-secret{display:block;overflow-wrap:anywhere;padding:10px;background:#eef2ff;border-radius:8px;font-family:monospace;font-size:.85rem;color:#1e3a8a;margin:10px 0}
+        .mfa-code{width:100%;padding:13px;border:2px solid #cbd5e1;border-radius:10px;font-size:1.2rem;letter-spacing:.3em;text-align:center;margin:8px 0 14px}
+        .mfa-help{font-size:.76rem!important;color:#64748b!important}.mfa-submit{width:100%;padding:13px;border:0;border-radius:10px;background:#0A3D62;color:#fff;font-weight:700;cursor:pointer}
+        .mfa-submit:disabled{opacity:.6;cursor:not-allowed}.mfa-panel[hidden]{display:none}
     </style>
 </head>
 <body>
@@ -305,6 +314,17 @@
             <span id="successText">Account created successfully! Please sign in.</span>
         </div>
 
+
+        <section id="mfaPanel" class="mfa-panel" aria-live="polite" hidden>
+            <h2 id="mfaTitle">Secure your administrator account</h2>
+            <p id="mfaDescription">Use an authenticator app such as Google Authenticator, Microsoft Authenticator or 1Password.</p>
+            <img id="mfaQr" class="mfa-qr" alt="Authenticator setup QR code" hidden>
+            <div id="mfaSecretWrap" hidden><p class="mfa-help">If you cannot scan the QR code, enter this setup key manually:</p><code id="mfaSecret" class="mfa-secret"></code></div>
+            <label for="mfaCode" style="display:block;font-size:.85rem;font-weight:700;color:#1e293b">6-digit authenticator code</label>
+            <input id="mfaCode" class="mfa-code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" placeholder="000000" aria-label="6-digit authenticator code">
+            <button id="mfaSubmit" class="mfa-submit" type="button">Verify and continue</button>
+            <p class="mfa-help" style="margin-top:12px">Do not share your authenticator code with anyone. Keep your phone's time set automatically.</p>
+        </section>
         <!-- Login Form -->
         <form id="loginForm" onsubmit="handleLogin(event)">
             <div class="form-group">
@@ -343,153 +363,94 @@
          SUPABASE CONFIG - FIXED
          ============================================================ -->
     <script>
-        // ============================================================
-        // SUPABASE CONFIGURATION
-        // ============================================================
-        const SUPABASE_URL = 'https://irahplkvocaakjxuisto.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlyYWhwbGt2b2NhYWtqeHVpc3RvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4ODY5ODQsImV4cCI6MjEwMzQ2Mjk4NH0.BFOwdRVDz4r1oYgUjm8zQbthqblGRq4c3WQWQaOhu7g';
-
-        // Initialize Supabase client - use a different variable name to avoid conflicts
-        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-        // ============================================================
-        // STATE
-        // ============================================================
-
-        // ============================================================
-        // HANDLE LOGIN
-        // ============================================================
-        async function handleLogin(event) {
-            event.preventDefault();
-
-            const email = document.getElementById('email').value.trim();
-            const password = document.getElementById('password').value.trim();
-            const rememberMe = document.getElementById('rememberMe').checked;
-
-            const errorMessage = document.getElementById('errorMessage');
-            const errorText = document.getElementById('errorText');
-            const loginBtn = document.getElementById('loginBtn');
-            const loginBtnText = document.getElementById('loginBtnText');
-
-            errorMessage.classList.remove('show');
-            document.getElementById('successMessage').classList.remove('show');
-
-            if (!email || !password) {
-                showError('Please enter both email and password.');
-                return;
+        const SUPABASE_URL='https://irahplkvocaakjxuisto.supabase.co';
+        const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlyYWhwbGt2b2NhYWtqeHVpc3RvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4ODY5ODQsImV4cCI6MjEwMzQ2Mjk4NH0.BFOwdRVDz4r1oYgUjm8zQbthqblGRq4c3WQWQaOhu7g';
+        const supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+        let pendingAdmin=null,pendingFactorId=null;
+        function showError(message){document.getElementById('errorText').textContent=message;document.getElementById('errorMessage').classList.add('show');}
+        function clearMessages(){document.getElementById('errorMessage').classList.remove('show');document.getElementById('successMessage').classList.remove('show');}
+        function resetButton(){document.getElementById('loginBtn').disabled=false;document.getElementById('loginBtnText').textContent='Sign In';}
+        function setMfaBusy(busy){const b=document.getElementById('mfaSubmit');b.disabled=busy;b.textContent=busy?'Verifying…':'Verify and continue';}
+        async function getAdminSession(user){
+            const {data:membership,error}=await supabaseClient.from('cms_admins').select('role').eq('user_id',user.id).maybeSingle();
+            if(error||!membership||!['admin','editor'].includes(membership.role)){
+                try{await supabaseClient.functions.invoke('admin-audit-event',{body:{action:'ACCESS_DENIED'}});}catch(_){}
+                await supabaseClient.auth.signOut();
+                throw new Error('This account is not authorized to access the CampusNexus administration portal.');
             }
-
-            loginBtn.disabled = true;
-            loginBtnText.innerHTML = '<span class="loading-spinner"></span> Signing in...';
-
-            try {
-                const { data, error } = await supabaseClient.auth.signInWithPassword({
-                    email: email,
-                    password: password
-                });
-
-                if (error) {
-                    console.error('Auth error:', error);
-                    
-                    if (error.message.includes('Invalid login credentials')) {
-                        showError('Invalid email or password. Please try again.');
-                    } else if (error.message.includes('Email not confirmed')) {
-                        showError('Please confirm your email address first.');
-                    } else {
-                        showError(error.message || 'Login failed. Please try again.');
-                    }
-                    resetButton();
-                    return;
-                }
-
-                const user = data.user;
-                const { data: membership, error: membershipError } = await supabaseClient.from('cms_admins').select('role').eq('user_id', user.id).maybeSingle();
-                if (membershipError || !membership || !['admin','editor'].includes(membership.role)) { try { await supabaseClient.functions.invoke('admin-audit-event',{body:{action:'LOGIN'}}); } catch (_) {} await supabaseClient.auth.signOut(); showError('This account is not authorized to access the CampusNexus administration portal.'); resetButton(); return; }
-                const { data: profile } = await supabaseClient.from('users').select('name').eq('id', user.id).maybeSingle();
-                const session = { id:user.id, email:user.email, name:profile?.name || user.user_metadata?.name || user.email?.split('@')[0] || 'Admin', role:membership.role, loggedInAt:new Date().toISOString() };
-                localStorage.setItem('campusnexus_admin', JSON.stringify(session));
-                try { const {error:auditError}=await supabaseClient.functions.invoke('admin-audit-event',{body:{action:'LOGIN'}}); if(auditError)console.warn('Login audit could not be recorded:',auditError.message); } catch(auditError) { console.warn('Login audit unavailable:',auditError); }
-                if (rememberMe) localStorage.setItem('campusnexus_remember', 'true');
-                window.location.href = 'admin-dashboard.html';
-
-            } catch (error) {
-                console.error('Login error:', error);
-                showError('An unexpected error occurred. Please try again.');
-                resetButton();
-            }
+            const {data:profile}=await supabaseClient.from('users').select('name').eq('id',user.id).maybeSingle();
+            return {id:user.id,email:user.email,name:profile?.name||user.user_metadata?.name||user.email?.split('@')[0]||'Admin',role:membership.role,loggedInAt:new Date().toISOString()};
         }
-
-        // ============================================================
-        // FORM SUBMISSION
-        // ============================================================
-        document.addEventListener('DOMContentLoaded', function() {
-            const admin = localStorage.getItem('campusnexus_admin');
-            if (admin) {
-                try {
-                    const session = JSON.parse(admin);
-                    if (session && session.id) {
-                        window.location.href = 'admin-dashboard.html';
-                        return;
-                    }
-                } catch(e) {}
+        async function finishAdminLogin(){
+            if(!pendingAdmin)throw new Error('Administrator session is missing.');
+            const {data,error}=await supabaseClient.auth.mfa.getAuthenticatorAssuranceLevel();
+            if(error)throw error;
+            if(data?.currentLevel!=='aal2')throw new Error('Authenticator verification is required before opening the administrator dashboard.');
+            localStorage.setItem('campusnexus_admin',JSON.stringify(pendingAdmin));
+            try{const {error:auditError}=await supabaseClient.functions.invoke('admin-audit-event',{body:{action:'LOGIN'}});if(auditError)console.warn('Login audit failed:',auditError.message);}catch(e){console.warn('Login audit unavailable:',e);}
+            if(document.getElementById('rememberMe').checked)localStorage.setItem('campusnexus_remember','true');
+            window.location.replace('admin-dashboard.html');
+        }
+        function showMfaPanel(title,description,setup){
+            document.getElementById('loginForm').style.display='none';
+            const panel=document.getElementById('mfaPanel');panel.hidden=false;panel.classList.add('show');
+            document.getElementById('mfaTitle').textContent=title;document.getElementById('mfaDescription').textContent=description;
+            document.getElementById('mfaQr').hidden=!setup;document.getElementById('mfaSecretWrap').hidden=!setup;
+            document.getElementById('mfaCode').value='';document.getElementById('mfaCode').focus();clearMessages();
+        }
+        async function startAdminMfa(){
+            const {data:aal,error:aalError}=await supabaseClient.auth.mfa.getAuthenticatorAssuranceLevel();if(aalError)throw aalError;
+            if(aal?.currentLevel==='aal2'){await finishAdminLogin();return;}
+            const {data:factors,error}=await supabaseClient.auth.mfa.listFactors();if(error)throw error;
+            const verified=(factors?.totp||[]).filter(f=>f.status==='verified');
+            if(verified.length){pendingFactorId=verified[0].id;showMfaPanel('Two-step verification','Enter the current 6-digit code from your authenticator app to complete administrator sign-in.',false);return;}
+            for(const factor of (factors?.totp||[]).filter(f=>f.status!=='verified')){
+                const {error:removeError}=await supabaseClient.auth.mfa.unenroll({factorId:factor.id});if(removeError)throw removeError;
             }
-
-            const form = document.getElementById('loginForm');
-            form.addEventListener('submit', handleLogin);
-
-            document.getElementById('email').focus();
+            const {data:enrollment,error:enrollError}=await supabaseClient.auth.mfa.enroll({factorType:'totp',friendlyName:'CampusNexus Administrator'});if(enrollError)throw enrollError;
+            pendingFactorId=enrollment.id;
+            document.getElementById('mfaQr').src='data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(enrollment.totp.qr_code);
+            document.getElementById('mfaSecret').textContent=enrollment.totp.secret;
+            showMfaPanel('Set up administrator two-step verification','Scan this QR code using an authenticator app. Enter the generated 6-digit code below to activate two-step verification. Setup is required before accessing the admin dashboard.',true);
+        }
+        async function verifyAdminMfa(){
+            clearMessages();const code=document.getElementById('mfaCode').value.replace(/\D/g,'');
+            if(!/^\d{6}$/.test(code)){showError('Enter the 6-digit code from your authenticator app.');return;}
+            if(!pendingFactorId){showError('The MFA session expired. Sign in again to restart verification.');return;}
+            setMfaBusy(true);
+            try{
+                const {data:challenge,error:challengeError}=await supabaseClient.auth.mfa.challenge({factorId:pendingFactorId});if(challengeError)throw challengeError;
+                const {error:verifyError}=await supabaseClient.auth.mfa.verify({factorId:pendingFactorId,challengeId:challenge.id,code});if(verifyError)throw verifyError;
+                await finishAdminLogin();
+            }catch(error){console.error('MFA verification failed:',error);showError(error.message||'Code verification failed. Check your phone time and try again.');document.getElementById('mfaCode').select();}
+            finally{setMfaBusy(false);}
+        }
+        async function handleLogin(event){
+            event.preventDefault();clearMessages();const email=document.getElementById('email').value.trim(),password=document.getElementById('password').value;
+            const btn=document.getElementById('loginBtn');btn.disabled=true;document.getElementById('loginBtnText').innerHTML='<span class="loading-spinner"></span> Signing in…';
+            try{
+                const {data,error}=await supabaseClient.auth.signInWithPassword({email,password});
+                if(error){if(error.message.includes('Invalid login credentials'))throw new Error('Invalid email or password. Please try again.');if(error.message.includes('Email not confirmed'))throw new Error('Please confirm your email address first.');throw error;}
+                pendingAdmin=await getAdminSession(data.user);await startAdminMfa();
+            }catch(error){console.error('Admin sign-in failed:',error);showError(error.message||'Sign-in failed. Please try again.');resetButton();}
+        }
+        document.getElementById('loginForm').addEventListener('submit',handleLogin);
+        document.getElementById('mfaSubmit').addEventListener('click',verifyAdminMfa);
+        document.getElementById('mfaCode').addEventListener('keydown',e=>{if(e.key==='Enter')verifyAdminMfa();});
+        document.addEventListener('DOMContentLoaded',async()=>{
+            document.getElementById('email').focus();const {data:{session}}=await supabaseClient.auth.getSession();if(!session)return;
+            try{pendingAdmin=await getAdminSession(session.user);await startAdminMfa();}
+            catch(error){console.warn('Existing admin session check:',error);await supabaseClient.auth.signOut();localStorage.removeItem('campusnexus_admin');}
         });
-
-        // ============================================================
-        // HELPERS
-        // ============================================================
-        function showError(message) {
-            const errorMessage = document.getElementById('errorMessage');
-            const errorText = document.getElementById('errorText');
-            errorText.textContent = message;
-            errorMessage.classList.add('show');
-        }
-
-        function resetButton() {
-            const loginBtn = document.getElementById('loginBtn');
-            const loginBtnText = document.getElementById('loginBtnText');
-            loginBtn.disabled = false;
-            loginBtnText.textContent = 'Sign In';
-        }
-
-        function showForgotPassword() {
-            const email = document.getElementById('email').value.trim();
-            if (!email) {
-                showError('Please enter your email address first.');
-                return;
-            }
-
-            if (confirm(`Send password reset email to ${email}?`)) {
-                supabaseClient.auth.resetPasswordForEmail(email, {
-                    redirectTo: window.location.origin + '/admin-reset-password.html'
-                }).then(({ error }) => {
-                    if (error) {
-                        showError(error.message);
-                    } else {
-                        const successMessage = document.getElementById('successMessage');
-                        const successText = document.getElementById('successText');
-                        successText.textContent = 'Password reset email sent! Check your inbox.';
-                        successMessage.classList.add('show');
-                        setTimeout(() => successMessage.classList.remove('show'), 5000);
-                    }
+        function showForgotPassword(){
+            const email=document.getElementById('email').value.trim();if(!email){showError('Please enter your email address first.');return;}
+            if(confirm(`Send password reset email to ${email}?`)){
+                supabaseClient.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+'/admin-reset-password.html'}).then(({error})=>{
+                    if(error)showError(error.message);else{document.getElementById('successText').textContent='Password reset email sent! Check your inbox.';document.getElementById('successMessage').classList.add('show');}
                 });
             }
         }
-
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                document.getElementById('errorMessage').classList.remove('show');
-                document.getElementById('successMessage').classList.remove('show');
-            }
-        });
-
-        console.log('🔐 CampusNexus Admin Login');
-        console.log('📧 Use real email + password to login');
+        document.addEventListener('keydown',e=>{if(e.key==='Escape')clearMessages();});
     </script>
 </body>
 </html>
