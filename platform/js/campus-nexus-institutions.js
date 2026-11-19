@@ -182,9 +182,11 @@
       if (!window.confirm("Are you sure you want to " + verb + " " + item.name + "?")) return;
       button.disabled = true;
       try {
-        const {error} = await sb.from("institutions").update({status:nextStatus,updated_at:new Date().toISOString()}).eq("id",item.id);
+        const {data:statusResult,error} = await sb.rpc("platform_set_institution_status",{
+          p_institution_id:item.id,p_status:nextStatus
+        });
         if (error) throw error;
-        await writeAudit(item.id,"institution_" + nextStatus,{previous_status:item.status,new_status:nextStatus});
+        if (!statusResult?.institution_id) throw new Error("The status change was not confirmed by the server.");
         notify(item.name + " has been " + (nextStatus === "active" ? "activated." : "suspended."),"success");
         await loadInstitutions();
       } catch (error) {
@@ -221,20 +223,12 @@
         ? i.custom_login_url
         : host
           ? "https://" + host + "/register"
-          : registration ? window.location.origin + "/registration.html?institution_code=" + encodeURIComponent(registration.code) : "";
+          : registration ? new URL("full-source/registration.html",window.location.href).href + "?institution_code=" + encodeURIComponent(registration.code) : "";
       return {...i, _modules:modules.filter(x => x.institution_id === i.id && x.enabled).map(x => x.module_key),
         _subscription:sub || null, _subscriptionId:sub?.id || null, _adminUserId:member?.user_id || null,
         _registrationUrl:registrationUrl, _registrationCode:registration?.code || null};
     });
     renderRows();
-  }
-
-  async function writeAudit(institutionId, action, details) {
-    const { error } = await sb.from("platform_audit_logs").insert({
-      actor_user_id:currentUser.id, institution_id:institutionId || null,
-      action, entity_type:"institution", entity_id:institutionId || null, details
-    });
-    if (error) console.warn("Institution saved; audit log insert failed:", error.message);
   }
 
   async function saveInstitution(event) {
@@ -249,89 +243,58 @@
     const adminEmail = $("cnInstitutionAdmin").value.trim().toLowerCase();
     const amount = Number($("cnInstitutionAmount").value);
     if (!Number.isFinite(amount) || amount < 0) return notify("Enter a valid subscription amount.", "error");
+    const portalMode = $("cnInstitutionPortalMode").value;
+    const customLogin = $("cnInstitutionCustomLogin").value.trim();
+    const website = $("cnInstitutionWebsite").value.trim();
+    const logo = $("cnInstitutionLogo").value.trim();
+    const isHttpUrl = value => { try { const u = new URL(value); return ["http:","https:"].includes(u.protocol); } catch (_) { return false; } };
+    if (portalMode === "custom_website" && (!isHttpUrl(customLogin) || !customLogin.startsWith("https://"))) {
+      return notify("The custom login URL must be a valid HTTPS address.", "error");
+    }
+    if (website && !isHttpUrl(website)) return notify("Enter a valid website URL beginning with https:// or http://.", "error");
+    if (logo && (!isHttpUrl(logo) || !logo.startsWith("https://"))) return notify("The institution logo URL must use HTTPS.", "error");
     const payload = {
+      ...(editingId ? {id:editingId} : {}),
       name, short_code:code, slug, institution_type:$("cnInstitutionType").value,
       country:$("cnInstitutionCountry").value.trim() || "Kenya",
       contact_email:$("cnInstitutionEmail").value.trim() || null,
-      admin_email:adminEmail || null,
       contact_phone:$("cnInstitutionPhone").value.trim() || null,
-      website_url:$("cnInstitutionWebsite").value.trim() || null,
-      logo_url:$("cnInstitutionLogo").value.trim() || null,
+      website_url:website || null, logo_url:logo || null,
       portal_domain:$("cnInstitutionDomain").value.trim() || null,
       primary_color:$("cnInstitutionColor").value,
       secondary_color:$("cnInstitutionAccent").value,
       brand_colors:readBrandColors(),
-      portal_mode:$("cnInstitutionPortalMode").value,
-      custom_login_url:$("cnInstitutionPortalMode").value === "custom_website" ? ($("cnInstitutionCustomLogin").value.trim() || null) : null,
+      portal_mode:portalMode,
+      custom_login_url:portalMode === "custom_website" ? customLogin : null,
       administrator_portal_url:$("cnInstitutionAdminPortal").value.trim() || null,
-      status:$("cnInstitutionStatus").value,
-      onboarding_status:"configuring",
-      created_by:currentUser.id
+      status:$("cnInstitutionStatus").value
     };
-    if ($("cnInstitutionPortalMode").value === "custom_website" && !$("cnInstitutionCustomLogin").value.trim()) {
-      return notify("Enter the institution's custom login or registration URL.", "error");
-    }
     const enabledModules = [...document.querySelectorAll('input[name="cnModule"]:checked')].map(x => x.value);
     setBusy(true);
     try {
-      let saved, error;
-      if (editingId) {
-        ({data:saved,error} = await sb.from("institutions").update({...payload,created_by:undefined,updated_at:new Date().toISOString()}).eq("id",editingId).select("*").single());
-      } else {
-        ({data:saved,error} = await sb.from("institutions").insert(payload).select("*").single());
-      }
+      const {data:result,error} = await sb.rpc("platform_save_institution",{
+        p_payload:payload,
+        p_modules:enabledModules,
+        p_plan_name:$("cnInstitutionPlan").value,
+        p_amount:amount,
+        p_billing_cycle:$("cnInstitutionCycle").value,
+        p_admin_email:adminEmail || null
+      });
       if (error) throw error;
-
-      // Create an institution-specific, unguessable registration link.
-      const {data:existingLinks,error:linkReadError} = await sb.from("institution_registration_links")
-        .select("id,code").eq("institution_id",saved.id).eq("is_active",true).order("created_at",{ascending:false}).limit(1);
-      if (linkReadError) throw linkReadError;
-      let registrationCode = existingLinks?.[0]?.code || "";
-      if (!registrationCode || registrationCode.length < 40) {
-        const bytes = new Uint8Array(24);
-        crypto.getRandomValues(bytes);
-        registrationCode = Array.from(bytes,b=>b.toString(16).padStart(2,"0")).join("");
-        if (existingLinks?.[0]?.id) {
-          const {error:deactivateError} = await sb.from("institution_registration_links")
-            .update({is_active:false}).eq("id",existingLinks[0].id);
-          if (deactivateError) throw deactivateError;
-        }
-        const {error:linkCreateError} = await sb.from("institution_registration_links").insert({
-          institution_id:saved.id,code:registrationCode,label:saved.name + " public registration",
-          is_active:true,created_by:currentUser.id
-        });
-        if (linkCreateError) throw linkCreateError;
+      const saved = result?.institution;
+      if (!saved?.id || !result?.registration_code) {
+        throw new Error("The server did not confirm the complete institution setup.");
       }
-
-      const moduleRows = MODULES.map(([module_key]) => ({institution_id:saved.id,module_key,enabled:enabledModules.includes(module_key),updated_at:new Date().toISOString()}));
-      const {error:moduleError} = await sb.from("institution_modules").upsert(moduleRows,{onConflict:"institution_id,module_key"});
-      if (moduleError) throw moduleError;
-
-      const subPayload = {institution_id:saved.id,plan_name:$("cnInstitutionPlan").value,amount,currency:"KES",
-        billing_cycle:$("cnInstitutionCycle").value,status:"active"};
-      const existingSub = institutions.find(x => x.id === saved.id)?._subscriptionId;
-      const subResult = existingSub
-        ? await sb.from("institution_subscriptions").update({...subPayload,updated_at:new Date().toISOString()}).eq("id",existingSub)
-        : await sb.from("institution_subscriptions").insert(subPayload);
-      if (subResult.error) throw subResult.error;
-
-      let adminNotice = "";
-      if (adminEmail) {
-        const {data:assignment,error:assignmentError} = await sb.rpc("platform_assign_institution_admin",{
-          p_institution_id:saved.id,p_email:adminEmail
-        });
-        if (assignmentError) throw assignmentError;
-        if (!assignment?.assigned) adminNotice = " " + (assignment?.message ||
-          "The email is saved. The account will receive institution administrator access after registration and sign-in.");
-      }
-      await writeAudit(saved.id,editingId ? "institution_updated" : "institution_created",
-        {name:saved.name,short_code:saved.short_code,status:saved.status,modules:enabledModules,subscription_plan:subPayload.plan_name,admin_email:adminEmail || null});
-      notify((editingId ? "Institution updated." : "Institution created successfully.") + adminNotice,"success");
+      const assignment = result.admin_assignment;
+      const adminNotice = adminEmail && assignment && assignment.assigned !== true
+        ? " " + (assignment.message || "Administrator access will be activated after the account completes registration and email verification.")
+        : "";
+      notify((editingId ? "Institution updated successfully." : "Institution created successfully.") + adminNotice,"success");
       resetForm();
       await loadInstitutions();
     } catch (error) {
       console.error("Campus Nexus institution save failed:",error);
-      notify(error.message || "Unable to save institution. Check your access and try again.","error");
+      notify(error.message || "Unable to save institution. No partial setup should have been committed.","error");
     } finally { setBusy(false); }
   }
 
