@@ -1,19 +1,40 @@
-# Examination module source staging
+# Campus Nexus Examination Management
 
-This folder preserves the existing NCHSM administration and examination implementation as the starting source for the Campus Nexus examination module.
+## Active tenant-scoped entry point
+- Public route: `/exams` (also `/admin-exams`)
+- Page: `platform/examinations/index.html`
+- Client logic: `platform/examinations/exam-admin.js`
+- Styles: `platform/examinations/exam-admin.css`
 
-## Source files copied
-- `admin.html` — administration dashboard shell
-- `adminexams.html` — admin examination dashboard and workflows
-- `exam_dashboard.html` — student exam dashboard and exam entry interface
-- `admin.js` — administration dashboard logic
-- `style.css` — administration dashboard styling
-- `js/admindashboard.js` — examination dashboard logic, question/attempt handling and related workflows
-- `js/admin-questions.js` — question-bank management
-- `js/admin-exams-access-audit.js` — examination dashboard access audit
-- `css/admindashboard.css` and `css/admin-exams-modern.css` — exam dashboard styling
+The active page uses the shared Digital Campus Supabase authentication project and verifies the signed-in user before loading institution data. Institution administrators must have an active `institution_users` membership with role `institution_admin`. Platform superadmins can select an institution. The page checks the institution's enabled `admin_exams` or `examinations` module before loading records.
 
-## Important integration status
-These are preserved source files, not yet a live Campus Nexus route. The original NCHSM `config.js`, NCHSM maintenance gate, and NCHSM-only mobile script were intentionally not copied into this staging folder. The HTML still references the original app's global configuration and some root-absolute assets. Before enabling this module, adapt authentication, Supabase access, institution scoping/RLS, navigation, storage, audit logging and asset paths to the Campus Nexus platform. Do not point this module at a production tenant until those checks are complete.
+Current implemented workflows:
+- Institution-scoped examination list and dashboard metrics
+- Create examination drafts with programme, block, date, duration, total marks and pass mark
+- Submit new examinations in `pending` approval state; they are not automatically published
+- View and add MCQ questions to an institution's examinations
+- Review institution-scoped proctoring events
+- Review examination attendance
+- Review attempt status and attempt-level scores
 
-The original NCHSM Digital Campus remains unchanged and continues to serve `nchsm.co.ke`.
+## Database security
+The shared Digital Campus database already contains institution records and the exam tables. Restrictive RLS tenant boundaries now scope child exam records by the parent exam's `institution_id` for:
+- `exam_questions`
+- `exam_grades`
+- `exam_heartbeats`
+- `exam_attendance`
+- `released_exam_results`
+- `questions`
+
+An additional institution-admin policy allows attendance management only for exams in the administrator's institution. Existing RLS boundaries on `exams`, `exam_attempts`, and `exam_proctoring_logs` remain in place.
+
+## Preserved legacy source
+The original NCHSM admin/examination source remains under `source/`:
+- `admin.html`, `adminexams.html`, `admin.js`, `style.css`
+- `js/admindashboard.js`, `js/admin-questions.js`, `js/admin-exams-access-audit.js`
+- `css/admindashboard.css`, `css/admin-exams-modern.css`
+
+These files are preserved for feature-by-feature migration. They are not the active route. Their legacy RPCs and NCHSM assumptions require a separate authorization and tenant-context review before exposing the full legacy console to institution administrators.
+
+## Operational note
+The live page requires a user with an active institution administrator membership, or a platform superadmin session. Nyanchwa's examination module is enabled, but its active administrator membership must be claimed/assigned before a Nyanchwa institution administrator can enter.
