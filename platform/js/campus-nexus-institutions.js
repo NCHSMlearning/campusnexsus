@@ -163,7 +163,9 @@
       const moduleState = (i._modules || []).length + " modules enabled";
       return '<tr><td><div class="cn-school"><span class="cn-school-mark" style="background:' + esc(i.primary_color || "#082f49") + '">' +
         (safeWebUrl(i.logo_url,true) ? '<img src="' + esc(safeWebUrl(i.logo_url,true)) + '" alt="" onerror="this.style.display=\'none\'">' : '<i class="fas fa-school"></i>') +
-        '</span><span><strong>' + esc(i.name) + '</strong><small>' + esc(i.short_code) + ' · ' + esc(i.country || "") + '</small></span></div></td>' +
+        '</span><span><strong>' + esc(i.name) + '</strong><small>' + esc(i.short_code) + ' · ' + esc(i.country || "") + ' · School code: ' + esc(i.school_code || "Not assigned") + '</small>' +
+        (i.school_code ? '<button class="cn-row-action" type="button" data-copy-school-code="' + esc(i.id) + '">Copy school code</button>' : '') +
+        '</span></div></td>' +
         '<td><span class="cn-status cn-status-' + esc(i.status) + '">' + status + '</span></td>' +
         '<td>' + esc(i._subscription?.plan_name || "—") + '<small class="cn-subline">' +
         (i._subscription ? esc(i._subscription.currency) + " " + Number(i._subscription.amount).toLocaleString() + " / " + esc(i._subscription.billing_cycle) : "Not configured") + '</small></td>' +
@@ -179,6 +181,12 @@
       if (!item?._registrationUrl) return;
       try { await navigator.clipboard.writeText(item._registrationUrl); notify("Registration link copied.","success"); }
       catch (_) { notify(item._registrationUrl,"info"); }
+    }));
+    host.querySelectorAll("[data-copy-school-code]").forEach(button => button.addEventListener("click", async () => {
+      const item = institutions.find(i => i.id === button.dataset.copySchoolCode);
+      if (!item?.school_code) return;
+      try { await navigator.clipboard.writeText(String(item.school_code)); notify("School code copied.","success"); }
+      catch (_) { notify(String(item.school_code),"info"); }
     }));
     host.querySelectorAll("[data-edit]").forEach(button => button.addEventListener("click", () => {
       const item = institutions.find(i => i.id === button.dataset.edit);
@@ -229,9 +237,10 @@
       const member = memberships.find(x => x.institution_id === i.id && x.status === "active" && x.role === "institution_admin");
       const registration = registrationLinks.find(x => x.institution_id === i.id);
       const host = String(i.portal_domain || "").trim().replace(/^https?:\/\//i,"").replace(/\/$/,"");
+      const schoolCode = String(i.school_code || "").trim();
       const registrationUrl = i.portal_mode === "custom_website" ? "" : host
-        ? "https://" + host + "/register"
-        : registration ? new URL("full-source/registration.html",window.location.href).href + "?institution_code=" + encodeURIComponent(registration.code) : "";
+        ? "https://" + host + "/register?school_code=" + encodeURIComponent(schoolCode)
+        : registration ? new URL("full-source/registration.html",window.location.href).href + "?school_code=" + encodeURIComponent(schoolCode) : "";
       const portalUrl = i.portal_mode === "custom_website" && i.custom_login_url
         ? i.custom_login_url
         : host ? "https://" + host : "";
