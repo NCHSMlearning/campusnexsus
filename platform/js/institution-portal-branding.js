@@ -103,7 +103,20 @@
       img.style.objectFit = "contain";
     });
 
+    document.querySelectorAll(".lecturer-command-brand h1").forEach(el => {
+      el.textContent = name + " Lecturer Portal";
+    });
+    document.querySelectorAll(".lecturer-command-brand p").forEach(el => {
+      el.textContent = "Lecturer workspace · teaching, examinations, results and student monitoring";
+    });
     document.querySelectorAll(".nchsm-header-title").forEach(el => { el.textContent = name; });
+    document.querySelectorAll(".logo-circle").forEach(el => {
+      const img = document.createElement("img");
+      img.src = logo;
+      img.alt = name + " logo";
+      img.style.cssText = "width:100%;height:100%;object-fit:contain;border-radius:inherit";
+      el.replaceChildren(img);
+    });
     document.querySelectorAll(".nchsm-header-subtitle").forEach(el => {
       if (/student portal|digital student portal/i.test(el.textContent)) el.textContent = "Student Portal";
     });
