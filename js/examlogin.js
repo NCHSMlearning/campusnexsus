@@ -2,7 +2,7 @@
 'use strict';
 const form=document.getElementById('examLoginForm'),email=document.getElementById('email'),password=document.getElementById('password'),button=document.getElementById('submitBtn'),message=document.getElementById('message');
 const show=(text,type='error')=>{message.textContent=text;message.className='message '+type};
-const nextPath=()=>{const p=new URLSearchParams(location.search).get('redirect');return p&&p.startsWith('/')&&!p.startsWith('//')?p:'/platform/student-exams.html'};
+const nextPath=()=>{const p=new URLSearchParams(location.search).get('redirect');return p&&p.startsWith('/')&&!p.startsWith('//')?p:'/studentexam.html'};
 document.getElementById('togglePassword').addEventListener('click',()=>{const visible=password.type==='password';password.type=visible?'text':'password';document.getElementById('togglePassword').textContent=visible?'Hide':'Show'});
 async function clientReady(){const c=window.sb||window.supabaseClient;if(c&&typeof c.auth?.signInWithPassword==='function')return c;throw new Error('The sign-in service is unavailable. Refresh this page and try again.')}
 form.addEventListener('submit',async e=>{
