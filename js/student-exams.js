@@ -5,7 +5,8 @@ const $=id=>document.getElementById(id);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const val=(...xs)=>xs.find(x=>x!==undefined&&x!==null&&String(x).trim()!=='');
 const norm=v=>String(v??'').trim().toLowerCase();
-const client=()=>window.db?.supabase||window.supabase||window.supabaseClient||null;
+// Reuse the persistent Supabase client, never the CDN namespace.
+const client=()=>[window.sb,window.supabaseClient,window.db?.supabase].find(c=>c&&typeof c.from==='function'&&typeof c.auth?.getSession==='function')||null;
 function notify(message){const el=$('toast');el.textContent=message;el.classList.add('show');clearTimeout(notify.timer);notify.timer=setTimeout(()=>el.classList.remove('show'),3200)}
 function isTvet(p){return /TVET|DIPLOMA|CERTIFICATE|ARTISAN/i.test(String(val(p.program_type,p.program,p.program_name,'')))}
 function studentBlock(p){return String(val(p.block_term,p.block,p.term,p.year_of_study,'General'))}
@@ -71,8 +72,14 @@ async function loadExams(){
  render();
 }
 async function init(){
- state.client=client();if(!state.client)throw new Error('Student database connection is unavailable. Refresh and try again.');
- const {data,error}=await state.client.auth.getSession();const session=data?.session;
+ if(window.db&&typeof window.db.initialize==='function'){
+  try{await window.db.initialize()}catch(initError){if(!client())throw initError}
+ }
+ state.client=client();
+ if(!state.client)throw new Error('Student database connection is unavailable. Refresh and try again.');
+ const {data,error}=await state.client.auth.getSession();
+ if(error)throw error;
+ const session=data?.session;
  if(error||!session?.user){location.replace('/examlogin.html?redirect='+encodeURIComponent('/studentexam.html'));return}
  state.user=session.user;
  const profileResult=await state.client.from('consolidated_user_profiles_table').select('*').eq('user_id',session.user.id).maybeSingle();
@@ -88,6 +95,6 @@ async function init(){
 }
 $('refresh-btn').addEventListener('click',()=>loadExams().catch(e=>notify(e.message||'Could not refresh examinations.')));
 $('search-input').addEventListener('input',render);$('status-filter').addEventListener('change',render);
-$('logout-btn').addEventListener('click',async()=>{await state.client?.auth.signOut();location.replace('/examlogin.html')});
+$('logout-btn').addEventListener('click',async()=>{try{if(state.client)await state.client.auth.signOut({scope:'local'})}finally{location.replace('/examlogin.html')}});
 document.addEventListener('DOMContentLoaded',()=>init().catch(e=>{$('exam-panel').innerHTML='<div class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><p>'+esc(e.message||'Unable to load your examinations.')+'</p><button class="secondary-btn" onclick="location.reload()">Try again</button></div>'}));
 })();
