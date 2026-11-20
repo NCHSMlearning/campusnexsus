@@ -45,12 +45,12 @@
       .login-button:hover{box-shadow:0 14px 30px ${primary}55!important}
     `;
 
-    const initials = name.split(/\\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join("").toUpperCase();
+    const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join("").toUpperCase();
     const logoImages = document.querySelectorAll(
       ".logo-wrapper .logo img, .mobile-header .logo img, .welcome-icon.logo-welcome img, .nchsm-loading-logo img"
     );
     logoImages.forEach(function (img) {
-      if (institution.logo_url && /^https:\\/\\//i.test(institution.logo_url)) {
+      if (institution.logo_url && /^https:\/\/\//i.test(institution.logo_url)) {
         img.src = institution.logo_url;
         img.alt = name + " logo";
         img.hidden = false;
