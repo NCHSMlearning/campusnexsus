@@ -16,10 +16,25 @@
       window.db && window.db.supabase,
       window.NCHSMLogin && window.NCHSMLogin.supabase
     ];
-    return candidates.find(client =>
+    const existing = candidates.find(client =>
       client && typeof client.from === "function" &&
       client.auth && typeof client.auth.getUser === "function"
-    ) || null;
+    );
+    if (existing) return existing;
+
+    // Some legacy administrator pages load the Supabase SDK but do not expose
+    // their client globally. Create a branding-only client using the same
+    // project and default persisted auth storage; do not replace app globals.
+    if (window.supabase && typeof window.supabase.createClient === "function") {
+      try {
+        window.cnInstitutionBrandingClient = window.cnInstitutionBrandingClient ||
+          window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        return window.cnInstitutionBrandingClient;
+      } catch (error) {
+        console.warn("[Campus Nexus] Could not initialize branding client:", error);
+      }
+    }
+    return null;
   }
 
   function safeColor(value, fallback) {
@@ -123,8 +138,9 @@
     const loadingHeading = document.querySelector("#loading-screen .welcome-text h1");
     if (loadingHeading) loadingHeading.textContent = "Welcome to " + name + " Student Portal";
 
-    const favicon = document.querySelector('link[rel~="icon"],link[rel="apple-touch-icon"]');
-    if (favicon) favicon.href = logo;
+    document.querySelectorAll('link[rel~="icon"],link[rel="apple-touch-icon"]').forEach(link => {
+      link.href = logo;
+    });
     document.title = name + " | " + (document.title || "Institution Portal").replace(/^NCHSM\s*/i, "").replace(/^Campus Nexus\s*\|?\s*/i, "");
 
     document.dispatchEvent(new CustomEvent("campusnexus:institution-branding-applied", {
