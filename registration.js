@@ -1406,18 +1406,23 @@ function loadDraft() {
 // SUCCESS ANIMATION
 // ============================================
 // ============================================
-function getInstitutionLoginUrl() {
+function getInstitutionLoginUrl(accountRole) {
     const code = normalizeSchoolCode(
         resolvedInstitutionContext?.school_code ||
         new URLSearchParams(window.location.search).get('school_code') ||
         ''
     );
-    const url = new URL('/login.html', window.location.origin);
+    // Student registrations enter through the dedicated examination login.
+    // Lecturer registrations continue to the standard institutional login.
+    const destination = String(accountRole || document.getElementById('role')?.value || '').toLowerCase() === 'student'
+        ? '/examlogin.html'
+        : '/login.html';
+    const url = new URL(destination, window.location.origin);
     if (/^[a-z0-9]{3,64}$/i.test(code)) url.searchParams.set('school_code', code);
     return url.toString();
 }
 
-function showSuccessAnimation(intakeDisplay) {
+function showSuccessAnimation(intakeDisplay, accountRole) {
     const colors = ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#14b8a6'];
     for (let i = 0; i < 80; i++) {
         const piece = document.createElement('div');
@@ -1436,14 +1441,14 @@ function showSuccessAnimation(intakeDisplay) {
     document.getElementById('successIntakeText').textContent = intakeDisplay || 'N/A';
     document.getElementById('successOverlay').classList.add('show');
     const loginButton = document.getElementById('success-login-btn');
-    if (loginButton) loginButton.onclick = () => window.location.assign(getInstitutionLoginUrl());
+    if (loginButton) loginButton.onclick = () => window.location.assign(getInstitutionLoginUrl(accountRole));
     let countdown = 5;
     const countdownEl = document.getElementById('successCountdown');
     const interval = setInterval(() => {
         countdown--;
         if (countdown <= 0) {
             clearInterval(interval);
-            window.location.replace(getInstitutionLoginUrl());
+            window.location.replace(getInstitutionLoginUrl(accountRole));
         } else {
             countdownEl.textContent = countdown;
         }
@@ -1948,7 +1953,7 @@ document.getElementById('register-form').addEventListener('submit', async functi
         const displayIntake = getDisplayIntake(program_type, intakeData.intake_year, intakeData.intake_month);
         showFeedback(`✅ Registration submitted! Your account is pending administrator approval. You will be able to log in once approved.`, 'success');
         
-        showSuccessAnimation(displayIntake);
+        showSuccessAnimation(displayIntake, role);
         localStorage.removeItem('registration_draft');
         
         btn.disabled = false;
