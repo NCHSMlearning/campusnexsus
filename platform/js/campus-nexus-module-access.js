@@ -28,11 +28,16 @@
 
   const routeModule = (path) => {
     const p = String(path || "").toLowerCase();
+    if (/\/platform\/student\.html$/.test(p)) return "student_portal";
+    if (/\/platform\/lecturer\.html$/.test(p)) return "lecturer_portal";
+    if (/\/platform\/admin\.html$/.test(p)) return "administrator_portal";
     if (/admin.?exams|exam.?dashboard|examinations\/source\/admin/.test(p)) return "admin_exams";
     if (/student.?exams|studentexam|examlogin/.test(p)) return "examinations";
     if (/lecturerexams/.test(p)) return "examinations";
     if (/proctor/.test(p)) return "proctoring";
     if (/resources|learning|lms|courseware/.test(p)) return "learning_management";
+    if (/analytics|reports|performance-report/.test(p)) return "analytics_reports";
+    if (/academic|curriculum|programme|program-management/.test(p)) return "academic_management";
     if (/attendance/.test(p)) return "attendance";
     if (/finance|payment|invoice/.test(p)) return "finance";
     if (/admission/.test(p)) return "admissions";
@@ -50,6 +55,13 @@
     const value = tab + " " + route + " " + (el.textContent || "").trim();
     return MODULES.find(([, pattern]) => pattern.test(value))?.[0] || null;
   };
+
+  function routeAllowed(moduleKey, enabled) {
+    if (moduleKey === "student_portal") return enabled.has("student_management") || enabled.has("examinations") || enabled.has("learning_management");
+    if (moduleKey === "lecturer_portal") return enabled.has("lecturer_portal") || enabled.has("admin_exams") || enabled.has("examinations") || enabled.has("learning_management");
+    if (moduleKey === "administrator_portal") return enabled.has("administrator_portal");
+    return enabled.has(moduleKey);
+  }
 
   function showBlocked(moduleKey, errorMessage) {
     const old = document.getElementById("cn-module-access-block");
@@ -137,7 +149,7 @@
     };
     applyNavigation(enabled);
     const required = routeModule(window.location.pathname);
-    if (required && !enabled.has(required)) {
+    if (required && !routeAllowed(required,enabled)) {
       showBlocked(required);
       return;
     }
