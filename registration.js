@@ -204,8 +204,8 @@ function normalizeSchoolCode(value) {
 
 async function resolveInstitutionContext(code, host) {
     const normalizedCode = normalizeSchoolCode(code);
-    if (normalizedCode && !/^[0-9]{3}$/.test(normalizedCode)) {
-        throw new Error('School codes must contain exactly 3 digits.');
+    if (normalizedCode && !/^[a-z0-9]{3,20}$/i.test(normalizedCode)) {
+        throw new Error('Enter a valid school or registration code.');
     }
     const { data, error } = await sb.rpc('resolve_institution_registration_context', {
         p_code: normalizedCode || null,
@@ -216,6 +216,42 @@ async function resolveInstitutionContext(code, host) {
         throw new Error('School code not recognised, institution inactive, or registration is currently closed.');
     }
     return data;
+}
+
+async function loadInstitutionPrograms(context) {
+    const select = document.getElementById('program_type');
+    if (!select) return;
+    select.replaceChildren(new Option('-- Select Your Program --', ''));
+    select.disabled = true;
+    try {
+        if (!context?.institution_id) throw new Error('Institution identity is missing.');
+        const { data, error } = await sb.from('programs')
+            .select('program_code, program_name, category, description, status')
+            .eq('institution_id', context.institution_id).eq('status', 'active')
+            .order('program_name', { ascending: true });
+        if (error) throw error;
+        const programs = (data || []).filter(p => p.program_code && p.program_name);
+        select.replaceChildren(new Option('-- Select Your Program --', ''));
+        if (!programs.length) {
+            const empty = new Option('No active programmes configured', ''); empty.disabled = true; select.add(empty);
+            const hint = document.getElementById('programDescription');
+            if (hint) hint.textContent = 'This institution has not configured any active programmes yet. Please contact its administrator.';
+            return;
+        }
+        const groups = new Map();
+        programs.forEach(p => { const key = String(p.category || 'Available Programmes').trim(); if (!groups.has(key)) groups.set(key, []); groups.get(key).push(p); });
+        groups.forEach((items, category) => {
+            const group = document.createElement('optgroup'); group.label = category;
+            items.forEach(p => { const option = new Option(p.program_name, p.program_code); option.dataset.desc = p.description || p.program_name; option.dataset.category = p.category || ''; group.appendChild(option); });
+            select.appendChild(group);
+        });
+        select.disabled = false;
+    } catch (error) {
+        console.error('Unable to load institution programmes:', error);
+        select.replaceChildren(new Option('-- Programme list unavailable --', ''));
+        const hint = document.getElementById('programDescription');
+        if (hint) hint.textContent = 'We could not load this institution’s programme list. Please refresh or contact the institution administrator.';
+    }
 }
 
 function updateRegistrationSchoolCodeUrl(schoolCode) {
@@ -263,7 +299,12 @@ function renderInstitutionContextBanner(context, form) {
 
     document.documentElement.dataset.institutionName = context.institution_name || 'Your institution';
     document.documentElement.dataset.schoolCode = context.school_code || '';
-    document.title = (context.institution_name || 'Institution') + ' (' + context.school_code + ') | Registration';
+    document.title = (context.institution_name || 'Institution') + ' | Registration';
+    const validColor = value => /^#[0-9a-f]{6}$/i.test(String(value || '')) ? value : null;
+    const primary = validColor(context.primary_color);
+    const secondary = validColor(context.secondary_color);
+    if (primary) document.documentElement.style.setProperty('--primary-700', primary);
+    if (secondary) document.documentElement.style.setProperty('--success-600', secondary);
 
     const addresses = document.createElement('div');
     addresses.className = 'institution-addresses';
@@ -297,17 +338,17 @@ async function initializeInstitutionRegistration() {
     heading.textContent = 'Enter your school code';
     heading.style.cssText = 'margin:0 0 8px;color:#082f49;font-size:22px;';
     const intro = document.createElement('p');
-    intro.textContent = 'Enter the 3-digit school code provided by your institution. We will identify your school and open the correct registration form.';
+    intro.textContent = 'Enter the school code or registration link code provided by your institution. We will identify your school and open the correct registration form.';
     intro.style.cssText = 'margin:0 0 16px;color:#475569;line-height:1.5;';
     const input = document.createElement('input');
     input.type = 'text';
     input.inputMode = 'numeric';
     input.autocomplete = 'off';
-    input.maxLength = 3;
-    input.pattern = '[0-9]{3}';
-    input.addEventListener('input', () => { input.value = input.value.replace(/\D/g, '').slice(0, 3); });
-    input.placeholder = 'Enter 3-digit school code';
-    input.setAttribute('aria-label', '3-digit school code');
+    input.maxLength = 20;
+    input.pattern = '[A-Za-z0-9]{3,20}';
+    input.addEventListener('input', () => { input.value = input.value.replace(/[^a-z0-9]/gi, '').slice(0, 20); });
+    input.placeholder = 'Enter your institution school code';
+    input.setAttribute('aria-label', 'School or registration code');
     input.style.cssText = 'box-sizing:border-box;width:100%;padding:13px 14px;border:1px solid #cbd5e1;border-radius:10px;font-size:17px;letter-spacing:1px;';
     const button = document.createElement('button');
     button.type = 'button';
@@ -322,6 +363,7 @@ async function initializeInstitutionRegistration() {
     const showContext = (context) => {
         resolvedInstitutionContext = context;
         renderInstitutionContextBanner(context, form);
+        loadInstitutionPrograms(context);
         updateRegistrationSchoolCodeUrl(context.school_code);
         gate.remove();
         form.hidden = false;
@@ -347,9 +389,9 @@ async function initializeInstitutionRegistration() {
 
     button.addEventListener('click', async () => {
         const code = normalizeSchoolCode(input.value);
-        if (!/^[0-9]{3}$/.test(code)) {
+        if (!/^[a-z0-9]{3,20}$/i.test(code)) {
             message.style.color = '#b91c1c';
-            message.textContent = 'Enter the complete 3-digit school code.';
+            message.textContent = 'Enter your complete school or registration code.';
             return;
         }
         await resolve(code, null);
@@ -365,8 +407,6 @@ async function initializeInstitutionRegistration() {
     const suppliedCode = params.get('school_code') || params.get('institution_code') || params.get('institution') || '';
     if (suppliedCode) {
         await resolve(suppliedCode, null);
-    } else if (!['localhost', '127.0.0.1'].includes(window.location.hostname)) {
-        await resolve('', window.location.hostname);
     } else {
         input.focus();
     }
@@ -518,7 +558,8 @@ async function getLastStudentAdmissionNumber(programType) {
         const { data, error } = await sb
             .from('consolidated_user_profiles_table')
             .select('student_id')
-            .eq('program', programType)
+             .eq('program', programType)
+            .eq('institution_id', resolvedInstitutionContext?.institution_id)
             .like('student_id', `${programType}%`)
             .order('created_at', { ascending: false })
             .limit(1);
@@ -622,14 +663,7 @@ function validateStudentId(studentId) {
         const number = match[2];
         const monthNum = Number(match[3]);
         const rawYear = match[4];
-        const allowedPrograms = [
-            'DPOTT', 'DCH', 'DHRIT', 'DSL', 'DSW', 'DCJS', 'DHSS', 'DICT', 'DME',
-            'CPOTT', 'CCH', 'CHRIT', 'CPC', 'CSL', 'CSW', 'CCJS', 'CAG', 'CHSS', 'CICT',
-            'CCG', 'COMT', 'KRCHN', 'ACH', 'AAG', 'ASW', 'CCA', 'PTE'
-        ];
-        if (!allowedPrograms.includes(program)) {
-            return { valid: false, message: `Unrecognized programme code "${program}". Check your registration number or contact the college.` };
-        }
+        // The programme code is checked against this institution’s active programme list during submission.
         if (monthNum < 1 || monthNum > 12) {
             return { valid: false, message: 'Month must be between 01 and 12.' };
         }
@@ -670,6 +704,7 @@ async function checkStudentIdExists(studentId) {
             .from('consolidated_user_profiles_table')
             .select('student_id')
             .eq('student_id', sanitized)
+            .eq('institution_id', resolvedInstitutionContext?.institution_id)
             .maybeSingle();
         
         if (error) {
@@ -966,7 +1001,7 @@ function goToStep(step) {
                     }
                     
                     const statusEl = document.getElementById('student-id-status');
-                    if (statusEl && statusEl.classList.contains('checking') && !studentId.startsWith('NCHSM-')) {
+                    if (statusEl && statusEl.classList.contains('checking')) {
                         errors.push({
                             field: 'Student ID',
                             message: 'Please wait, checking Student ID availability...',
@@ -975,7 +1010,7 @@ function goToStep(step) {
                         continue;
                     }
                     
-                    if (statusEl && statusEl.classList.contains('invalid') && !studentId.startsWith('NCHSM-')) {
+                    if (statusEl && statusEl.classList.contains('invalid')) {
                         input.style.borderColor = '#DC2626';
                         errors.push({
                             field: 'Student ID',
@@ -1044,8 +1079,9 @@ function updateProgress() {
 // ============================================
 function updateIntakePreview() {
     const program = document.getElementById('program_type').value;
-    const isDCHN = program === 'DCHN';
-    const isTVET = program && program !== '' && program !== 'DCHN';
+    const selectedProgram = document.getElementById('program_type')?.selectedOptions?.[0];
+    const isDCHN = program === 'DCHN' || program === 'KRCHN' || /nurs/i.test(selectedProgram?.dataset?.category || '');
+    const isTVET = program && program !== '' && !isDCHN;
     
     if (isDCHN) {
         document.getElementById('krchn-intake').classList.remove('hidden');
@@ -1099,7 +1135,7 @@ function getDisplayIntake(program, year, month) {
         'SEP': 'September', 'OCT': 'October', 'NOV': 'November', 'DEC': 'December'
     };
     
-    if (program === 'DCHN') {
+    if (program === 'DCHN' || program === 'KRCHN' || /nurs/i.test(document.getElementById('program_type')?.selectedOptions?.[0]?.dataset?.category || '')) {
         return `March ${fullYear}`;
     }
     
@@ -1380,7 +1416,7 @@ function getInstitutionLoginUrl() {
         ''
     );
     const url = new URL('/login.html', window.location.origin);
-    if (/^[0-9]{3}$/.test(code)) url.searchParams.set('school_code', code);
+    if (/^[a-z0-9]{3,20}$/i.test(code)) url.searchParams.set('school_code', code);
     return url.toString();
 }
 
@@ -1420,111 +1456,6 @@ function showSuccessAnimation(intakeDisplay) {
 // ============================================
 // ============================================
 // ADD LECTURER TO STAFF_RECORDS
-// ============================================
-// ============================================
-async function addStaffToRecords(userId, email, fullName, staffId, department, phone, gender, program) {
-    try {
-        const sanitizedEmail = sanitizeInput(email);
-        const sanitizedFullName = sanitizeInput(fullName);
-        const sanitizedDepartment = sanitizeInput(department);
-        const sanitizedPhone = sanitizeInput(phone || '');
-        const sanitizedGender = sanitizeInput(gender || 'Male');
-        const sanitizedProgram = sanitizeInput(program || 'N/A');
-        
-        if (containsSQLInjection(sanitizedEmail) || containsSQLInjection(sanitizedFullName)) {
-            console.error('❌ SQL injection detected in staff data');
-            return false;
-        }
-        
-        const { data: existing } = await sb
-            .from('staff_records')
-            .select('id')
-            .eq('email', sanitizedEmail)
-            .maybeSingle();
-        
-        if (existing) {
-            console.log('⚠️ Staff already exists in staff_records:', sanitizedEmail);
-            return true;
-        }
-        
-        let finalStaffId = staffId;
-        if (!finalStaffId || finalStaffId.trim() === '') {
-            const deptCodes = {
-                'Nursing': 'NUR',
-                'TVET': 'TVT',
-                'Community Health': 'COM',
-                'Health Records': 'HRT',
-                'ICT': 'ICT',
-                'Administration': 'ADM'
-            };
-            
-            const deptCode = deptCodes[sanitizedDepartment] || 'STA';
-            
-            const { data: deptStaff } = await sb
-                .from('staff_records')
-                .select('id')
-                .ilike('id', 'NCHSM' + deptCode + '-%')
-                .order('created_at', { ascending: false });
-            
-            let nextNumber = 1;
-            if (deptStaff && deptStaff.length > 0) {
-                const lastId = deptStaff[0].id;
-                const match = lastId.match(new RegExp('NCHSM' + deptCode + '-(\\d+)'));
-                if (match) {
-                    nextNumber = parseInt(match[1]) + 1;
-                } else {
-                    nextNumber = deptStaff.length + 1;
-                }
-            }
-            
-            finalStaffId = 'NCHSM' + deptCode + '-' + String(nextNumber).padStart(3, '0');
-            console.log('🆕 Auto-generated Staff ID:', finalStaffId);
-        }
-        
-        const nameParts = sanitizedFullName.trim().split(' ');
-        const firstName = nameParts[0] || '';
-        const otherNames = nameParts.slice(1).join(' ') || '';
-        
-        if (!sanitizedDepartment) {
-            console.error('❌ Department is required for lecturer registration');
-            return false;
-        }
-        
-        const staffData = {
-            id: finalStaffId,
-            title: 'Mr.',
-            first_name: firstName,
-            other_names: otherNames,
-            department: sanitizedDepartment,
-            designation: 'lecturer',
-            email: sanitizedEmail,
-            phone: sanitizedPhone || '',
-            gender: sanitizedGender || 'Male',
-            login_enabled: false,
-            status: 'pending',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            program: sanitizedProgram
-        };
-        
-        const { error } = await sb
-            .from('staff_records')
-            .insert([staffData]);
-        
-        if (error) {
-            console.error('❌ Failed to add staff to staff_records:', error);
-            return false;
-        }
-        
-        console.log('✅ Staff added to staff_records with ID:', finalStaffId);
-        return true;
-        
-    } catch (error) {
-        console.error('❌ Error adding staff to staff_records:', error);
-        return false;
-    }
-}
-
 // ============================================
 // ============================================
 // FORM SUBMISSION - SECURE VERSION WITH DUPLICATE CHECKS
@@ -1758,6 +1689,9 @@ document.getElementById('register-form').addEventListener('submit', async functi
             if (!validation.valid) {
                 throw new Error(validation.message);
             }
+            if (validation.program && validation.program !== program_type) {
+                throw new Error('Your student ID programme code does not match the programme selected above.');
+            }
             
             // CHECK FOR DUPLICATE STUDENT ID - JUST LIKE EMAIL CHECK
             // This prevents two students from registering with the same ID
@@ -1778,7 +1712,9 @@ document.getElementById('register-form').addEventListener('submit', async functi
                 // Don't block registration if we can't check - let the database handle it
             }
             
-            if (!program_type) throw new Error('Please select your program.');
+            if (!program_type) throw new Error('Please select a programme offered by your institution.');
+            const selectedProgram = document.getElementById('program_type')?.selectedOptions?.[0];
+            if (!selectedProgram || selectedProgram.disabled || !selectedProgram.value) throw new Error('The selected programme is not available for this institution.');
             
             const intakeData = getIntakeData();
             if (!intakeData.intake_year) throw new Error('Please select your intake year.');
@@ -1786,7 +1722,7 @@ document.getElementById('register-form').addEventListener('submit', async functi
         
         // 12. Lecturer-specific validation
         if (role === 'lecturer') {
-            if (!department) throw new Error('Please select your department.');
+            if (!department) throw new Error('Please enter your department.');
         }
         
         // 13. Proceed with registration
@@ -1796,14 +1732,11 @@ document.getElementById('register-form').addEventListener('submit', async functi
         const intakeData = getIntakeData();
         
         // Resolve and bind the account to the institution verified by its school code.
-        if (!resolvedInstitutionContext) {
-            const registrationParams = new URLSearchParams(window.location.search);
-            const suppliedCode = registrationParams.get('school_code') ||
-                registrationParams.get('institution_code') || registrationParams.get('institution') || '';
-            resolvedInstitutionContext = await resolveInstitutionContext(suppliedCode, window.location.hostname);
+        if (!resolvedInstitutionContext?.institution_id) {
+            throw new Error('Your institution has not been verified. Please reload and enter your school code.');
         }
         const institutionCode = normalizeSchoolCode(resolvedInstitutionContext.school_code);
-        if (!/^[0-9]{3}$/.test(institutionCode)) {
+        if (!/^[a-z0-9]{3,20}$/i.test(institutionCode)) {
             throw new Error('The institution school code could not be verified. Please reload the registration link.');
         }
 
