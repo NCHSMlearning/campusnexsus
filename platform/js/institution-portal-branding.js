@@ -69,6 +69,23 @@
     const root = document.documentElement;
     root.dataset.institutionPortal = "true";
     root.dataset.institutionId = institution.id;
+    root.dataset.institutionName = name;
+    root.dataset.institutionCode = institution.short_code || institution.school_code || "";
+    root.dataset.schoolCode = institution.school_code || institution.short_code || "";
+
+    // Keep the application shell, splash screen and PWA install labels aligned
+    // with the authenticated institution instead of legacy hardcoded branding.
+    const splashTitle = document.querySelector("#loading-screen .welcome-text h1");
+    if (splashTitle) splashTitle.textContent = name + " Portal";
+    const splashSubtitle = document.querySelector("#loading-screen .subtitle");
+    if (splashSubtitle) splashSubtitle.textContent = "Your Academic Hub";
+    document.querySelectorAll('meta[name="application-name"],meta[name="apple-mobile-web-app-title"]').forEach(meta => { meta.content = name + " Portal"; });
+    document.querySelectorAll("[data-institution-name]").forEach(el => { el.textContent = name; });
+    document.querySelectorAll("[data-institution-code]").forEach(el => { el.textContent = institution.short_code || institution.school_code || ""; });
+    document.querySelectorAll(".nchsm-pwa-install,[data-pwa-install],#installBtn,#installButton").forEach(button => {
+      const label = button.querySelector("span") || button;
+      if (/install\\s+nchsm/i.test(label.textContent || "")) label.textContent = "Install " + (institution.short_code || name) + " Portal";
+    });
     root.style.setProperty("--cn-institution-primary", primary);
     root.style.setProperty("--cn-institution-secondary", secondary);
     root.style.setProperty("--cn-institution-gold", gold);
