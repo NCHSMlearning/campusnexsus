@@ -1489,14 +1489,9 @@ async function loadSectionData(tabId) {
         // Only handle links that actually point to an existing section.
         if (!document.getElementById(tabId)) return;
 
+        // Keep propagation enabled so module-specific click listeners can
+        // initialize their data after the selected section becomes visible.
         event.preventDefault();
-        event.stopPropagation();
-
-        // Stop older sidebar handlers from opening/hiding the wrong section.
-        if (typeof event.stopImmediatePropagation === 'function') {
-            event.stopImmediatePropagation();
-        }
-
         setActiveSection(tabId);
     }
 
