@@ -22,13 +22,13 @@ Deno.serve(async(req:Request)=>{
   const {data:institution,error:institutionError}=await admin.from("institutions").select("id,name,admin_email,school_code").eq("id",institutionId).single();
   if(institutionError||!institution)return json({success:false,error:"Institution not found"},404);
   if(String(institution.admin_email||"").trim().toLowerCase()!==email)return json({success:false,error:"Administrator email does not match the institution record"},409);
-  const {data:activeAdmins}=await admin.from("institution_users").select("user_id").eq("institution_id",institutionId).eq("role","institution_admin").eq("status","active").limit(1);
-  if(activeAdmins?.length) return json({success:false,error:"This institution already has an active administrator account. Use the existing administrator reassignment workflow instead of creating a second primary account."},409);
   const {data:existingProfile}=await admin.from("consolidated_user_profiles_table").select("user_id,role,institution_id").eq("email",email).maybeSingle();
   if(existingProfile){
    if(existingProfile.role==="institution_admin"&&existingProfile.institution_id===institutionId)return json({success:true,already_provisioned:true,email,message:"Administrator account is already linked to this institution."});
    return json({success:false,error:"This email already belongs to a Campus Nexus account. Use the existing-account assignment workflow instead of creating a duplicate."},409);
   }
+  const {data:activeAdmins}=await admin.from("institution_users").select("user_id").eq("institution_id",institutionId).eq("role","institution_admin").eq("status","active").limit(1);
+  if(activeAdmins?.length) return json({success:false,error:"This institution already has an active administrator account. Use the existing administrator reassignment workflow instead of creating a second primary account."},409);
   const {data:invite,error:inviteError}=await admin.auth.admin.inviteUserByEmail(email,{data:{full_name:fullName,phone,role:"institution_admin",institution_id:institutionId,institution_name:institution.name},redirectTo:"https://campusnexus.co.ke/platform/set-password.html?school_code="+encodeURIComponent(institution.school_code||"")});
   if(inviteError||!invite?.user)return json({success:false,error:inviteError?.message||"Supabase could not create the invitation"},400);
   const userId=invite.user.id;
