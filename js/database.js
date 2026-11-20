@@ -1,0 +1,1947 @@
+// database.js - Complete database operations with Login/Logout Tracking
+class Database {
+    constructor() {
+        this.supabase = null;
+        this.currentUserId = null;
+        this.currentUserProfile = null;
+        this.cachedData = {
+            courses: [],
+            exams: [],
+            clinicalAreas: [],
+            resources: [],
+            messages: [],
+            supplementaryUnits: [],
+            supplementaryRegistrations: [],
+            failedUnits: []
+        };
+        this.isInitialized = false;
+        this.initializationPromise = null;
+        this.profileModule = null;
+        this.connectionCount = 0;
+        this.lastConnectionTime = null;
+    }
+
+    // Initialize database connection with GitHub Secrets
+    async initialize() {
+        if (this.isInitialized && this.supabase) {
+            return this.supabase;
+        }
+
+        if (this.initializationPromise) {
+            return this.initializationPromise;
+        }
+
+        this.initializationPromise = (async () => {
+            try {
+                const config = window.APP_CONFIG;
+
+                if (!config?.SUPABASE_URL || !config?.SUPABASE_ANON_KEY) {
+                    throw new Error('Supabase configuration is missing. Check config.js.');
+                }
+
+                // Reuse the READY client created by config.js first.
+                // config.js exposes the real Supabase client as window.sb.
+                if (
+                    window.sb &&
+                    typeof window.sb.from === 'function' &&
+                    window.sb.auth &&
+                    typeof window.sb.auth.getSession === 'function'
+                ) {
+                    this.supabase = window.sb;
+
+                    console.log(
+                        '✅ Database: Using Supabase client from window.sb'
+                    );
+
+                } else if (
+                    window.NCHSMLogin?.supabase &&
+                    typeof window.NCHSMLogin.supabase.from === 'function'
+                ) {
+                    this.supabase = window.NCHSMLogin.supabase;
+
+                    console.log(
+                        '✅ Database: Using existing Supabase connection from login'
+                    );
+
+                } else if (
+                    window.db?.supabase &&
+                    window.db !== this &&
+                    typeof window.db.supabase.from === 'function'
+                ) {
+                    this.supabase = window.db.supabase;
+
+                    console.log(
+                        '✅ Database: Using existing Supabase connection from db'
+                    );
+
+                } else if (
+                    window.supabase &&
+                    typeof window.supabase.from === 'function'
+                ) {
+                    // Only use window.supabase when it is the actual client.
+                    // The Supabase CDN normally exposes a namespace there,
+                    // which has createClient() but not from().
+                    this.supabase = window.supabase;
+
+                    console.log(
+                        '✅ Database: Using global Supabase client'
+                    );
+
+                } else {
+                    if (!window.supabaseClient && typeof supabase === 'undefined') {
+                        throw new Error('Supabase library is not available.');
+                    }
+
+                    const createClient =
+                        window.supabaseClient?.createClient ||
+                        (typeof supabase !== 'undefined' && supabase.createClient);
+
+                    if (typeof createClient !== 'function') {
+                        throw new Error('Supabase createClient function is not available.');
+                    }
+
+                    this.supabase = createClient(config.SUPABASE_URL, config.SUPABASE_ANON_KEY, {
+                        auth: {
+                            persistSession: true,
+                            autoRefreshToken: true,
+                            detectSessionInUrl: true
+                        }
+                    });
+                }
+
+                if (!this.supabase?.auth) {
+                    throw new Error('Supabase authentication client is unavailable.');
+                }
+
+                // Stable alias for the actual client.
+                window.supabaseClient = this.supabase;
+
+                await this.testConnection();
+
+                // ============================================================
+                // 🔐 RESTORE USER ID WHEN THE SESSION IS ALREADY AVAILABLE
+                // This is intentionally non-fatal: database initialization
+                // must still succeed for a page while Supabase restores auth.
+                // ============================================================
+                try {
+                    const { data: sessionData } = await this.supabase.auth.getSession();
+                    const restoredUser = sessionData?.session?.user;
+                    if (restoredUser?.id) {
+                        this.currentUserId = restoredUser.id;
+                        window.currentUserId = restoredUser.id;
+                        window.currentUser = restoredUser;
+                        console.log('✅ Database: restored authenticated user:', restoredUser.id);
+                    } else {
+                        console.log('⏳ Database: no session yet; auth restoration may still be in progress.');
+                    }
+                } catch (sessionError) {
+                    console.warn('⚠️ Database: initial session restore deferred:', sessionError?.message || sessionError);
+                }
+
+                this.isInitialized = true;
+                this.connectionCount += 1;
+                this.lastConnectionTime = new Date();
+
+                return this.supabase;
+            } catch (error) {
+                this.isInitialized = false;
+                this.supabase = this.supabase || null;
+                this.showConfigurationError(error);
+                throw error;
+            } finally {
+                this.initializationPromise = null;
+            }
+        })();
+
+        return this.initializationPromise;
+    }
+
+    async testConnection() {
+        try {
+            // Simple test query
+            const { error } = await this.supabase.auth.getSession();
+
+            if (error) {
+                throw new Error('Supabase authentication failed: ' + error.message);
+            }
+
+            console.log('🔌 Database connection test passed');
+            return true;
+
+        } catch (error) {
+            console.error('🔌 Database connection test failed:', error.message);
+
+            // Provide helpful error messages
+            if (error.message.includes('JWT')) {
+                throw new Error('Invalid Supabase API key. Check your SUPABASE_ANON_KEY in GitHub Secrets.');
+            } else if (error.message.includes('fetch')) {
+                throw new Error('Network error. Check your SUPABASE_URL in GitHub Secrets.');
+            } else if (error.message.includes('CORS')) {
+                throw new Error('CORS error. Add your domain to Supabase CORS settings.');
+            } else {
+                throw error;
+            }
+        }
+    }
+
+    // Show configuration error UI
+    showConfigurationError(error) {
+        const errorHtml = `
+            <div style="
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 9999;
+                padding: 20px;
+                font-family: 'Inter', sans-serif;
+            ">
+                <div style="
+                    background: white;
+                    border-radius: 16px;
+                    padding: 40px;
+                    max-width: 600px;
+                    width: 100%;
+                    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+                    text-align: center;
+                ">
+                    <div style="margin-bottom: 30px;">
+                        <div style="
+                            width: 80px;
+                            height: 80px;
+                            background: #ef4444;
+                            border-radius: 50%;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            margin: 0 auto 20px;
+                        ">
+                            <i class="fas fa-database" style="font-size: 36px; color: white;"></i>
+                        </div>
+                        <h1 style="color: #1f2937; margin-bottom: 10px;">Configuration Error</h1>
+                        <p style="color: #6b7280; margin-bottom: 20px;">
+                            Failed to load application configuration.
+                        </p>
+                    </div>
+                    
+                    <div style="
+                        background: #f3f4f6;
+                        border-radius: 12px;
+                        padding: 20px;
+                        margin-bottom: 30px;
+                        text-align: left;
+                    ">
+                        <h3 style="color: #374151; margin-bottom: 10px;">Error Details:</h3>
+                        <code style="
+                            background: #1f2937;
+                            color: #10b981;
+                            padding: 10px;
+                            border-radius: 6px;
+                            display: block;
+                            font-family: monospace;
+                            font-size: 14px;
+                            overflow-x: auto;
+                        ">
+                            ${error.message}
+                        </code>
+                    </div>
+                    
+                    <div style="
+                        background: #f0f9ff;
+                        border-radius: 12px;
+                        padding: 20px;
+                        margin-bottom: 30px;
+                        text-align: left;
+                        border-left: 4px solid #0ea5e9;
+                    ">
+                        <h3 style="color: #0369a1; margin-bottom: 10px;">
+                            <i class="fas fa-info-circle"></i> How to Fix:
+                        </h3>
+                        <ol style="color: #374151; margin-left: 20px;">
+                            <li>Check if <strong>config.js</strong> file exists</li>
+                            <li>Verify GitHub Secrets are properly set (SUPABASE_URL, SUPABASE_ANON_KEY)</li>
+                            <li>Check browser console for detailed errors</li>
+                            <li>Ensure GitHub Actions workflow generated config.js</li>
+                        </ol>
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px; justify-content: center;">
+                        <button onclick="window.location.reload()" style="
+                            background: #4f46e5;
+                            color: white;
+                            border: none;
+                            padding: 12px 24px;
+                            border-radius: 8px;
+                            cursor: pointer;
+                            font-weight: 600;
+                            display: flex;
+                            align-items: center;
+                            gap: 8px;
+                        ">
+                            <i class="fas fa-redo"></i> Try Again
+                        </button>
+                        
+                        <button onclick="showGitHubSecretsHelp()" style="
+                            background: #6b7280;
+                            color: white;
+                            border: none;
+                            padding: 12px 24px;
+                            border-radius: 8px;
+                            cursor: pointer;
+                            font-weight: 600;
+                            display: flex;
+                            align-items: center;
+                            gap: 8px;
+                        ">
+                            <i class="fas fa-question-circle"></i> GitHub Secrets Help
+                        </button>
+                    </div>
+                    
+                    ${window.APP_CONFIG ? `
+                    <div style="margin-top: 20px; color: #9ca3af; font-size: 12px;">
+                        <i class="fas fa-code-branch"></i> 
+                        Build: ${window.APP_CONFIG.BUILD_TIME} | 
+                        Commit: ${window.APP_CONFIG.COMMIT_SHA?.substring(0, 7) || 'unknown'} |
+                        Config: ${window.APP_CONFIG.SUPABASE_URL ? 'Loaded' : 'Missing'}
+                    </div>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+
+        document.body.innerHTML = errorHtml;
+    }
+
+    // ============================================================
+    // 🔥 FIXED: AUTHENTICATION FUNCTIONS - NO AUTO-REDIRECT!
+    // ============================================================
+
+    /**
+     * Return the current authenticated session.
+     * This is the single gate used by database operations that require a user.
+     */
+    async getAuthenticatedSession() {
+        if (!this.supabase?.auth) {
+            throw new Error('Database is not initialized.');
+        }
+
+        // Supabase may briefly return a null session while the persisted
+        // session is being restored after a hard refresh. Retry instead of
+        // treating that short window as a real logout.
+        let data = null;
+        let error = null;
+        for (let attempt = 0; attempt < 12; attempt++) {
+            try {
+                const result = await this.supabase.auth.getSession();
+                data = result?.data || null;
+                error = result?.error || null;
+                if (error) throw error;
+                if (data?.session?.user?.id) break;
+            } catch (err) {
+                error = err;
+                if (attempt === 11) throw err;
+            }
+
+            await new Promise(resolve => setTimeout(resolve, 250));
+        }
+
+        if (error) {
+            throw error;
+        }
+
+        const session = data?.session;
+
+        if (!session?.user?.id) {
+            this.currentUserId = null;
+            this.currentUserProfile = null;
+            throw new Error('No authenticated user session.');
+        }
+
+        // Keep the local user identity synchronized with Supabase.
+        if (this.currentUserId && this.currentUserId !== session.user.id) {
+            this.clearUserState();
+        }
+
+        this.currentUserId = session.user.id;
+        return session;
+    }
+
+    /**
+     * Require an authenticated user before accessing user-scoped data.
+     */
+    async requireAuthenticatedUser() {
+        const session = await this.getAuthenticatedSession();
+        return session.user.id;
+    }
+
+    /**
+     * Clear user-scoped state without signing the user out.
+     */
+    clearUserState() {
+        this.currentUserId = null;
+        this.currentUserProfile = null;
+
+        // Keep global identity references synchronized with Database.
+        // This is only local in-memory state; actual Supabase sign-out is
+        // performed by logout().
+        if (window.currentUserId !== undefined) window.currentUserId = null;
+        if (window.currentUserProfile !== undefined) window.currentUserProfile = null;
+
+        this.cachedData = {
+            courses: [],
+            exams: [],
+            attendance: [],
+            resources: [],
+            messages: [],
+            calendar: []
+        };
+    }
+
+    // ============================================================
+    // 🔎 AUTH STATE DIAGNOSTIC
+    // ============================================================
+    async getAuthStateSnapshot() {
+        try {
+            const sessionResult = await this.supabase?.auth?.getSession();
+            const session = sessionResult?.data?.session || null;
+            return {
+                authenticated: !!session?.user?.id,
+                userId: session?.user?.id || this.currentUserId || null,
+                hasLocalUserId: !!this.currentUserId,
+                hasProfile: !!this.currentUserProfile
+            };
+        } catch (error) {
+            return {
+                authenticated: false,
+                userId: this.currentUserId || null,
+                hasLocalUserId: !!this.currentUserId,
+                hasProfile: !!this.currentUserProfile,
+                error: error?.message || String(error)
+            };
+        }
+    }
+
+    async checkAuth() {
+        try {
+            await this.initialize();
+
+            const session = await this.getAuthenticatedSession();
+            const userId = session.user.id;
+
+            // Keep all application identity references synchronized.
+            window.currentUserId = userId;
+            window.currentUser = session.user;
+
+            const profile = await this.loadUserProfile(userId);
+
+            if (profile) {
+                window.currentUserProfile = profile;
+                this.currentUserProfile = profile;
+            }
+
+            if (!profile) {
+                return false;
+            }
+
+            const requiredAcademicFields = ['program', 'block', 'intake_year'];
+            const missingFields = requiredAcademicFields.filter(
+                field => profile[field] === null ||
+                         profile[field] === undefined ||
+                         String(profile[field]).trim() === ''
+            );
+
+            if (missingFields.length > 0) {
+                console.warn('Profile is missing required academic fields:', missingFields);
+                this.showIncompleteProfileWarning(missingFields);
+                return false;
+            }
+
+            await this.recordLoginTime();
+            return true;
+        } catch (error) {
+            console.error('Authentication check failed:', error);
+
+            if (error?.message === 'No authenticated user session.') {
+                // This is a genuine unauthenticated state after restoration
+                // attempts have completed. Do not call signOut() here.
+                this.showDatabaseError('Your session has expired. Please sign in again.');
+            } else {
+                this.showDatabaseError(error?.message || 'Unable to verify your account.');
+            }
+
+            return false;
+        }
+    }
+
+    async loadUserProfile(userId = null) {
+        try {
+            console.log('👤 Loading user profile...');
+
+            // ============================================================
+            // 🔐 HARD-REFRESH SAFE AUTH RESTORE
+            // Never treat a temporarily empty currentUserId as a logout.
+            // Supabase may still be restoring the persisted session.
+            // ============================================================
+            if (userId && !this.currentUserId) {
+                this.currentUserId = userId;
+            }
+
+            if (!this.currentUserId) {
+                try {
+                    await this.getAuthenticatedSession();
+                } catch (authError) {
+                    // Give Supabase a final short restoration window before
+                    // showing any user-facing error.
+                    console.warn('⏳ Waiting for Supabase session restoration...', authError?.message || authError);
+
+                    let restored = false;
+                    for (let attempt = 0; attempt < 8; attempt++) {
+                        await new Promise(resolve => setTimeout(resolve, 250));
+                        try {
+                            await this.getAuthenticatedSession();
+                            restored = !!this.currentUserId;
+                            if (restored) break;
+                        } catch (_) {
+                            // Keep waiting. A hard refresh can briefly expose
+                            // a null session while the persisted token loads.
+                        }
+                    }
+
+                    if (!restored) {
+                        console.warn('ℹ️ No authenticated session after restoration window.');
+                        // Do NOT replace the whole page with a "No User ID"
+                        // error from this low-level profile loader.
+                        return null;
+                    }
+                }
+            }
+
+            // Final authoritative guard.
+            if (!this.currentUserId) {
+                console.warn('⚠️ Profile load skipped: authenticated user ID is not ready.');
+                return null;
+            }
+
+            // Try consolidated_user_profiles_table
+            const { data: consolidatedProfile, error: consolidatedError } = await this.supabase
+                .from('consolidated_user_profiles_table')
+                .select('*')
+                .eq('user_id', this.currentUserId)
+                .maybeSingle();
+
+            if (!consolidatedError && consolidatedProfile) {
+                console.log('✅ User loaded from consolidated_user_profiles_table');
+
+                // The consolidated view can expose the student's course under
+                // program_type (and older records may use department/program_name).
+                // Normalize aliases for the application without writing invented data.
+                const normalizedProfile = {
+                    ...consolidatedProfile,
+                    program: String(
+                        consolidatedProfile.program ||
+                        consolidatedProfile.program_type ||
+                        consolidatedProfile.program_name ||
+                        consolidatedProfile.department ||
+                        ''
+                    ).trim(),
+                    block: consolidatedProfile.block ?? consolidatedProfile.current_block ?? null,
+                    intake_year: consolidatedProfile.intake_year ?? consolidatedProfile.year_of_intake ?? null
+                };
+
+                this.currentUserProfile = normalizedProfile;
+                window.currentUserProfile = normalizedProfile;
+
+                const missingFields = ['program', 'block', 'intake_year'].filter(field =>
+                    normalizedProfile[field] === null ||
+                    normalizedProfile[field] === undefined ||
+                    String(normalizedProfile[field]).trim() === ''
+                );
+
+                if (missingFields.length) {
+                    console.warn('Student profile has unresolved academic fields:', missingFields, {
+                        user_id: normalizedProfile.user_id,
+                        student_id: normalizedProfile.student_id
+                    });
+                    // Do not discard a valid authenticated profile here. The portal
+                    // remains accessible; academic features can handle absent metadata.
+                }
+
+                return normalizedProfile;
+            }
+
+            // Try profiles table
+            const { data: regularProfile, error: regularError } = await this.supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', this.currentUserId)
+                .maybeSingle();
+
+            if (!regularError && regularProfile) {
+                console.log('✅ User loaded from profiles table');
+                this.currentUserProfile = regularProfile;
+                return regularProfile;
+            }
+
+            // Try by email
+            const { data: userData } = await this.supabase.auth.getUser();
+            if (userData?.user?.email) {
+                const { data: emailProfile, error: emailError } = await this.supabase
+                    .from('consolidated_user_profiles_table')
+                    .select('*')
+                    .eq('email', userData.user.email)
+                    .maybeSingle();
+
+                if (!emailError && emailProfile) {
+                    console.log('✅ User loaded by email from consolidated table');
+                    const normalizedProfile = {
+                        ...emailProfile,
+                        program: String(
+                            emailProfile.program ||
+                            emailProfile.program_type ||
+                            emailProfile.program_name ||
+                            emailProfile.department ||
+                            ''
+                        ).trim(),
+                        block: emailProfile.block ?? emailProfile.current_block ?? null,
+                        intake_year: emailProfile.intake_year ?? emailProfile.year_of_intake ?? null
+                    };
+                    this.currentUserProfile = normalizedProfile;
+                    window.currentUserProfile = normalizedProfile;
+                    return normalizedProfile;
+                }
+            }
+
+            // ============================================================
+            // 🔥 FIX: NO MORE FALLBACK PROFILE!
+            // Instead, show a clear error message
+            // ============================================================
+            console.error('❌ No profile found for user:', this.currentUserId);
+
+            // ✅ Show error instead of creating fake data
+            this.showNoProfileError();
+
+            // ✅ Return null instead of fake profile
+            this.currentUserProfile = null;
+            return null;
+
+        } catch (error) {
+            console.error('❌ Failed to load profile:', error);
+            this.showDatabaseError('Error loading profile: ' + error.message);
+            this.currentUserProfile = null;
+            return null;
+        }
+    }
+
+    // ============================================================
+    // ✅ ERROR DISPLAY FUNCTIONS
+    // ============================================================
+
+    showIncompleteProfileWarning(missingFields) {
+        // Remove existing overlay if any
+        const existing = document.querySelector('.db-error-overlay');
+        if (existing) existing.remove();
+
+        const overlay = document.createElement('div');
+        overlay.className = 'db-error-overlay';
+        overlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
+            z-index: 99999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Inter', sans-serif;
+        `;
+        overlay.innerHTML = `
+            <div style="
+                background: white;
+                border-radius: 16px;
+                padding: 40px;
+                max-width: 500px;
+                width: 90%;
+                box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+                text-align: center;
+                animation: slideUp 0.3s ease;
+            ">
+                <div style="font-size: 48px; margin-bottom: 16px;">⚠️</div>
+                <h3 style="color: #d97706; margin: 0 0 8px 0;">Incomplete Profile</h3>
+                <p style="color: #6b7280; margin: 0 0 12px 0;">
+                    Your student profile is missing required information:
+                </p>
+                <div style="background: #fef3c7; border-radius: 8px; padding: 12px; margin-bottom: 20px;">
+                    <strong style="color: #92400e;">Missing:</strong>
+                    <span style="color: #78350f;">${missingFields.join(', ')}</span>
+                </div>
+                <p style="color: #6b7280; font-size: 14px; margin-bottom: 20px;">
+                    Please contact the administrator to complete your profile.
+                </p>
+                <button onclick="window.location.href='/login.html'" style="
+                    background: #4C1D95;
+                    color: white;
+                    border: none;
+                    padding: 12px 32px;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-weight: 600;
+                    font-size: 16px;
+                    transition: all 0.3s ease;
+                " onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+                    Go to Login
+                </button>
+                <br><br>
+                <button onclick="location.reload()" style="
+                    background: transparent;
+                    color: #4C1D95;
+                    border: none;
+                    cursor: pointer;
+                    font-weight: 500;
+                    font-size: 14px;
+                    text-decoration: underline;
+                ">
+                    Try Again
+                </button>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+    }
+
+    showNoProfileError() {
+        const existing = document.querySelector('.db-error-overlay');
+        if (existing) existing.remove();
+
+        const overlay = document.createElement('div');
+        overlay.className = 'db-error-overlay';
+        overlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
+            z-index: 99999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Inter', sans-serif;
+        `;
+        overlay.innerHTML = `
+            <div style="
+                background: white;
+                border-radius: 16px;
+                padding: 40px;
+                max-width: 500px;
+                width: 90%;
+                box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+                text-align: center;
+                animation: slideUp 0.3s ease;
+            ">
+                <div style="font-size: 48px; margin-bottom: 16px;">🚫</div>
+                <h3 style="color: #dc2626; margin: 0 0 8px 0;">Profile Not Found</h3>
+                <p style="color: #6b7280; margin: 0 0 20px 0;">
+                    No student profile was found for your account.
+                    Please contact support to set up your profile.
+                </p>
+                <button onclick="window.location.href='/login.html'" style="
+                    background: #4C1D95;
+                    color: white;
+                    border: none;
+                    padding: 12px 32px;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-weight: 600;
+                    font-size: 16px;
+                    transition: all 0.3s ease;
+                " onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+                    Go to Login
+                </button>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+    }
+
+    showDatabaseError(message) {
+        const existing = document.querySelector('.db-error-overlay');
+        if (existing) existing.remove();
+
+        const overlay = document.createElement('div');
+        overlay.className = 'db-error-overlay';
+        overlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
+            z-index: 99999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Inter', sans-serif;
+        `;
+        overlay.innerHTML = `
+            <div style="
+                background: white;
+                border-radius: 16px;
+                padding: 40px;
+                max-width: 500px;
+                width: 90%;
+                box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+                text-align: center;
+                animation: slideUp 0.3s ease;
+            ">
+                <div style="font-size: 48px; margin-bottom: 16px;">💥</div>
+                <h3 style="color: #dc2626; margin: 0 0 8px 0;">Database Error</h3>
+                <p style="color: #6b7280; margin: 0 0 20px 0;">
+                    ${message}
+                </p>
+                <button onclick="location.reload()" style="
+                    background: #4C1D95;
+                    color: white;
+                    border: none;
+                    padding: 12px 32px;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-weight: 600;
+                    font-size: 16px;
+                    transition: all 0.3s ease;
+                " onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+                    Try Again
+                </button>
+                <br><br>
+                <button onclick="window.location.href='/login.html'" style="
+                    background: transparent;
+                    color: #4C1D95;
+                    border: none;
+                    cursor: pointer;
+                    font-weight: 500;
+                    font-size: 14px;
+                    text-decoration: underline;
+                ">
+                    Go to Login
+                </button>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+    }
+
+    // Record login time
+    async recordLoginTime() {
+        if (!this.currentUserId) {
+            console.warn('No user ID to record login time');
+            return;
+        }
+
+        try {
+            const nowISO = new Date().toISOString();
+
+            const { error } = await this.supabase
+                .from('consolidated_user_profiles_table')
+                .update({
+                    last_login: nowISO,
+                    last_activity: nowISO,
+                    updated_at: nowISO
+                })
+                .eq('user_id', this.currentUserId);
+
+            if (error) {
+                console.error("Failed to record login time:", error);
+            } else {
+                console.log(`✅ Login time recorded at ${nowISO}`);
+            }
+
+        } catch (error) {
+            console.error("Login recording error:", error);
+        }
+    }
+
+    // Record logout time
+    async recordLogoutTime() {
+        if (!this.currentUserId) {
+            console.warn('No user ID to record logout time');
+            return;
+        }
+
+        try {
+            const nowISO = new Date().toISOString();
+
+            const { error } = await this.supabase
+                .from('consolidated_user_profiles_table')
+                .update({
+                    last_activity: nowISO,
+                    last_logout: nowISO,
+                    updated_at: nowISO
+                })
+                .eq('user_id', this.currentUserId);
+
+            if (error) {
+                console.error("Failed to record logout time:", error);
+            } else {
+                console.log(`✅ Logout time recorded at ${nowISO}`);
+            }
+
+        } catch (error) {
+            console.error("Logout recording error:", error);
+        }
+    }
+
+    // Updated: Logout with tracking
+    async logout() {
+        try {
+            await this.recordLogoutTime();
+            this.supabase.realtime.channels.forEach(channel => this.supabase.removeChannel(channel));
+            await this.supabase.auth.signOut();
+            this.clearUserState();
+            this.clearCache();
+            window.location.href = "login.html";
+        } catch (error) {
+            console.error("Logout error:", error);
+            window.location.href = "login.html";
+        }
+    }
+
+    // Load profile data
+    async loadProfileData() {
+        console.log('🔄 Database.loadProfileData() called');
+
+        if (this.profileModule) {
+            console.log('🎯 Loading profile via module...');
+            await this.profileModule.loadProfile();
+        } else if (typeof window.loadProfile === 'function') {
+            console.log('🎯 Loading profile via global function...');
+            await window.loadProfile();
+        } else if (this.currentUserId && this.supabase) {
+            console.log('🎯 Loading profile directly...');
+            await this.loadUserProfile();
+        }
+    }
+
+    // ============================================================
+    // SUPPLEMENTARY REGISTRATION FUNCTIONS
+    // ============================================================
+
+    async getFailedUnits() {
+        if (this.cachedData.failedUnits.length > 0) {
+            return this.cachedData.failedUnits;
+        }
+
+        if (!this.currentUserId) {
+            console.warn('No user ID to get failed units');
+            return [];
+        }
+
+        try {
+            const { data: grades, error } = await this.supabase
+                .from('exam_grades')
+                .select('*, exams:exam_id(unit_code, course_name, block_term, exam_name, program_type)')
+                .eq('student_id', this.currentUserId);
+
+            if (error) throw error;
+
+            const failedUnits = [];
+            const processed = new Set();
+
+            if (grades) {
+                for (const grade of grades) {
+                    const score = grade.total_score || grade.marks || 0;
+                    const unitCode = grade.exams?.unit_code || grade.subject_name || grade.exam_name;
+
+                    if (score < 50 && unitCode && !processed.has(unitCode)) {
+                        processed.add(unitCode);
+
+                        const { data: existingReg } = await this.supabase
+                            .from('student_unit_registrations')
+                            .select('id, status')
+                            .eq('student_id', this.currentUserId)
+                            .eq('unit_code', unitCode)
+                            .in('reg_type', ['Supplementary', 'Resit', 'Retake'])
+                            .maybeSingle();
+
+                        let regType = 'Supplementary';
+                        if (score < 30) regType = 'Retake';
+                        else if (score < 40) regType = 'Resit';
+
+                        failedUnits.push({
+                            unit_code: unitCode,
+                            unit_name: grade.exams?.course_name || grade.subject_name || unitCode,
+                            block: grade.exams?.block_term || 'N/A',
+                            score: score,
+                            reg_type: regType,
+                            status: existingReg ? existingReg.status : 'Eligible',
+                            existing_id: existingReg?.id || null
+                        });
+                    }
+                }
+            }
+
+            this.cachedData.failedUnits = failedUnits;
+            return failedUnits;
+
+        } catch (error) {
+            console.error('Error loading failed units:', error);
+            return [];
+        }
+    }
+
+    async getSupplementaryRegistrations() {
+        if (this.cachedData.supplementaryRegistrations.length > 0) {
+            return this.cachedData.supplementaryRegistrations;
+        }
+
+        if (!this.currentUserId) {
+            console.warn('No user ID to get supplementary registrations');
+            return [];
+        }
+
+        try {
+            const { data, error } = await this.supabase
+                .from('student_unit_registrations')
+                .select('*')
+                .eq('student_id', this.currentUserId)
+                .in('reg_type', ['Supplementary', 'Resit', 'Retake'])
+                .order('submitted_date', { ascending: false });
+
+            if (error) throw error;
+
+            this.cachedData.supplementaryRegistrations = data || [];
+            return this.cachedData.supplementaryRegistrations;
+
+        } catch (error) {
+            console.error('Error loading supplementary registrations:', error);
+            return [];
+        }
+    }
+
+    async registerSupplementaryUnits(units, paymentRef = null) {
+        const userId = await this.requireAuthenticatedUser();
+        if (!this.currentUserProfile) {
+            await this.loadUserProfile(userId);
+        }
+        if (!this.currentUserProfile?.program ||
+            !this.currentUserProfile?.block ||
+            !this.currentUserProfile?.intake_year) {
+            throw new Error('Your academic profile is incomplete. Supplementary registration cannot continue.');
+        }
+
+
+        if (!this.currentUserId) {
+            return { success: false, error: 'User not logged in' };
+        }
+
+        try {
+            const registrations = units.map(unit => ({
+                student_id: this.currentUserId,
+                unit_code: unit.unit_code,
+                unit_name: unit.unit_name || 'Unknown Unit',
+                block: unit.block || null,
+                reg_type: unit.reg_type || 'Supplementary',
+                status: 'pending',
+                payment_reference: paymentRef || null,
+                submitted_date: new Date().toISOString().split('T')[0],
+                created_at: new Date().toISOString(),
+                program: this.currentUserProfile?.program || null,
+                intake_year: this.currentUserProfile?.intake_year || new Date().getFullYear()
+            }));
+
+            const { data, error } = await this.supabase
+                .from('student_unit_registrations')
+                .insert(registrations)
+                .select();
+
+            if (error) throw error;
+
+            this.cachedData.supplementaryRegistrations = [];
+            this.cachedData.failedUnits = [];
+
+            return { success: true, data: data };
+
+        } catch (error) {
+            console.error('Error registering supplementary units:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    async getSupplementaryExamCard(registrationId) {
+        if (!this.currentUserId) {
+            return { success: false, error: 'User not logged in' };
+        }
+
+        try {
+            const { data: registration, error } = await this.supabase
+                .from('student_unit_registrations')
+                .select('*')
+                .eq('id', registrationId)
+                .eq('student_id', this.currentUserId)
+                .eq('status', 'approved')
+                .single();
+
+            if (error) throw error;
+
+            const profile = this.currentUserProfile || await this.loadUserProfile();
+
+            return {
+                success: true,
+                registration: registration,
+                profile: profile
+            };
+
+        } catch (error) {
+            console.error('Error getting exam card:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    // ============================================================
+    // DASHBOARD FUNCTIONS
+    // ============================================================
+
+    async getDashboardMetrics() {
+        const userId = this.currentUserId;
+
+        try {
+            const { data, error } = await this.supabase.rpc('get_student_dashboard', {
+                p_user_id: userId
+            });
+
+            if (error) throw error;
+
+            const profile = this.currentUserProfile || {};
+            const courses = await this.getCourses();
+            const resources = await this.getResources();
+            const failedUnits = await this.getFailedUnits();
+            const suppRegistrations = await this.getSupplementaryRegistrations();
+
+            return {
+                attendance: data.attendance || { rate: 0, verified: 0, total: 0, pending: 0 },
+                examCard: data.examCard || { approved: 0, eligible: false },
+                nurseiq: data.nurseiq || { questions: 0, accuracy: 0 },
+                exam: data.exam || null,
+                announcement: data.announcement || null,
+                resources: resources.length || 0,
+                courses: courses.length || 0,
+                lastLogin: profile?.last_login || null,
+                lastLogout: profile?.last_logout || null,
+                loginCount: profile?.login_count || 0,
+                failedUnits: failedUnits.length || 0,
+                supplementaryRegistrations: suppRegistrations.length || 0,
+                hasSupplementaryEligibility: failedUnits.length > 0
+            };
+
+        } catch (error) {
+            console.error('Failed to get dashboard metrics:', error);
+            return await this.getDashboardMetricsFallback();
+        }
+    }
+
+    async getDashboardMetricsFallback() {
+        const userId = this.currentUserId;
+
+        try {
+            const { data: logs, error: logsError } = await this.supabase
+                .from('geo_attendance_logs')
+                .select('is_verified')
+                .eq('student_id', userId);
+
+            const totalLogs = logs?.length || 0;
+            const verifiedCount = logs?.filter(l => l.is_verified === true).length || 0;
+            const attendanceRate = totalLogs > 0 ? Math.round((verifiedCount / totalLogs) * 100) : 0;
+
+            const { data: profile } = await this.supabase
+                .from('consolidated_user_profiles_table')
+                .select('last_login, last_logout, last_activity, login_count')
+                .eq('user_id', userId)
+                .single();
+
+            const courses = await this.getCourses();
+            const coursesCount = courses.length;
+
+            const resources = await this.getResources();
+            const resourcesCount = resources.length;
+
+            const exams = await this.getExams();
+            const upcomingExam = exams
+                .filter(exam => new Date(exam.exam_date) > new Date())
+                .sort((a, b) => new Date(a.exam_date) - new Date(b.exam_date))[0] || null;
+
+            const failedUnits = await this.getFailedUnits();
+            const suppRegistrations = await this.getSupplementaryRegistrations();
+
+            return {
+                attendance: {
+                    rate: attendanceRate,
+                    verified: verifiedCount,
+                    total: totalLogs,
+                    pending: totalLogs - verifiedCount
+                },
+                examCard: { approved: coursesCount, eligible: coursesCount > 0 },
+                nurseiq: { questions: 0, accuracy: 0 },
+                exam: upcomingExam,
+                announcement: null,
+                resources: resourcesCount,
+                courses: coursesCount,
+                lastLogin: profile?.last_login || null,
+                lastLogout: profile?.last_logout || null,
+                loginCount: profile?.login_count || 0,
+                failedUnits: failedUnits.length || 0,
+                supplementaryRegistrations: suppRegistrations.length || 0,
+                hasSupplementaryEligibility: failedUnits.length > 0
+            };
+
+        } catch (error) {
+            console.error('Failed to get dashboard metrics (fallback):', error);
+            return null;
+        }
+    }
+
+    // ============================================================
+    // COURSES FUNCTIONS
+    // ============================================================
+
+    async getCourses() {
+        if (this.cachedData.courses.length > 0) {
+            return this.cachedData.courses;
+        }
+
+        const program = this.currentUserProfile?.program || this.currentUserProfile?.department;
+        const intakeYear = this.currentUserProfile?.intake_year;
+        const block = this.currentUserProfile?.block || this.currentUserProfile?.current_block;
+
+        if (!program || !intakeYear) {
+            return [];
+        }
+
+        try {
+            const blockFilter = `block.eq.${block},block.is.null,block.eq.General`;
+            const programFilter = `target_program.eq.${program}`;
+
+            const { data: courses, error } = await this.supabase
+                .from('courses')
+                .select('*')
+                .or(programFilter)
+                .eq('intake_year', intakeYear)
+                .or(blockFilter)
+                .order('course_name', { ascending: true });
+
+            if (error) throw error;
+
+            this.cachedData.courses = courses || [];
+            return this.cachedData.courses;
+
+        } catch (error) {
+            console.error("Failed to load courses:", error);
+            return [];
+        }
+    }
+
+    // ============================================================
+    // EXAMS FUNCTIONS
+    // ============================================================
+
+    async getExams() {
+        if (this.cachedData.exams.length > 0) {
+            return this.cachedData.exams;
+        }
+
+        const program = this.currentUserProfile?.program || this.currentUserProfile?.department;
+        const block = this.currentUserProfile?.block || this.currentUserProfile?.current_block;
+        const intakeYear = this.currentUserProfile?.intake_year;
+        const studentId = this.currentUserId;
+
+        if (!program || !intakeYear) {
+            return [];
+        }
+
+        try {
+            const { data: exams, error: examsError } = await this.supabase
+                .from('exams_with_courses')
+                .select(`
+                    id,
+                    exam_name,
+                    exam_type,  
+                    exam_date,
+                    status,
+                    block_term,
+                    program_type,
+                    exam_link,
+                    course_name
+                `)
+                .or(`program_type.eq.${program},program_type.eq.General`)
+                .or(`block_term.eq.${block},block_term.is.null,block_term.eq.General`)
+                .eq('intake_year', intakeYear)
+                .order('exam_date', { ascending: true });
+
+            if (examsError) throw examsError;
+
+            const { data: grades, error: gradesError } = await this.supabase
+                .from('exam_grades')
+                .select(`
+                    exam_id,
+                    student_id,
+                    cat_1_score,
+                    cat_2_score,
+                    exam_score,
+                    total_score,
+                    result_status,
+                    marks,
+                    graded_by,
+                    graded_at
+                `)
+                .eq('student_id', studentId)
+                .eq('question_id', '00000000-0000-0000-0000-000000000000')
+                .order('graded_at', { ascending: false });
+
+            if (gradesError) throw gradesError;
+
+            this.cachedData.exams = exams.map(exam => {
+                const grade = grades?.find(g => String(g.exam_id) === String(exam.id));
+                return { ...exam, grade: grade || null };
+            });
+
+            return this.cachedData.exams;
+
+        } catch (error) {
+            console.error('Failed to load exams:', error);
+            return [];
+        }
+    }
+
+    // ============================================================
+    // ATTENDANCE FUNCTIONS
+    // ============================================================
+
+    async getClinicalTargets() {
+        if (this.cachedData.clinicalAreas.length > 0) {
+            return this.cachedData.clinicalAreas;
+        }
+
+        const program = this.currentUserProfile?.program || this.currentUserProfile?.department;
+        const intakeYear = this.currentUserProfile?.intake_year;
+        const blockTerm = this.currentUserProfile?.block || this.currentUserProfile?.current_block || null;
+
+        if (!program || !intakeYear) {
+            return [];
+        }
+
+        try {
+            const { data: areaData, error: areaError } = await this.supabase
+                .from('clinical_areas')
+                .select('id, name, latitude, longitude, block, program, intake_year')
+                .ilike('program', program)
+                .ilike('intake_year', intakeYear)
+                .or(blockTerm ? `block.ilike.${blockTerm},block.is.null` : 'block.is.null');
+
+            if (areaError) throw areaError;
+
+            const { data: nameData, error: nameError } = await this.supabase
+                .from('clinical_names')
+                .select('id, uuid, clinical_area_name, latitude, longitude, program, intake_year, block_term')
+                .ilike('program', program)
+                .ilike('intake_year', intakeYear)
+                .or(blockTerm ? `block_term.ilike.${blockTerm},block_term.is.null` : 'block_term.is.null');
+
+            if (nameError) throw nameError;
+
+            const mappedNames = (nameData || []).map(n => ({
+                id: n.uuid,
+                original_id: n.id,
+                name: n.clinical_area_name,
+                latitude: n.latitude,
+                longitude: n.longitude,
+                block: n.block_term || null
+            }));
+
+            this.cachedData.clinicalAreas = [...(areaData || []), ...mappedNames]
+                .filter((v, i, a) => a.findIndex(t => t.name === v.name) === i)
+                .sort((a, b) => a.name.localeCompare(b.name));
+
+            return this.cachedData.clinicalAreas;
+
+        } catch (error) {
+            console.error("Error loading clinical areas:", error);
+            return [];
+        }
+    }
+
+    async getClassTargets() {
+        const program = this.currentUserProfile?.program || this.currentUserProfile?.department;
+        const intakeYear = this.currentUserProfile?.intake_year;
+        const block = this.currentUserProfile?.block || this.currentUserProfile?.current_block || null;
+
+        if (!program || !intakeYear) {
+            return [];
+        }
+
+        try {
+            let query = this.supabase.from('courses_sections')
+                .select('id, name, code, latitude, longitude')
+                .eq('program', program)
+                .eq('intake_year', intakeYear);
+
+            if (block) query = query.or(`block.eq.${block},block.is.null`);
+            else query = query.is('block', null);
+
+            const { data, error } = await query.order('name');
+
+            if (error) throw error;
+
+            return (data || []).map(c => ({
+                id: c.id,
+                name: c.name,
+                code: c.code,
+                latitude: c.latitude,
+                longitude: c.longitude
+            }));
+
+        } catch (error) {
+            console.error("Error loading class targets:", error);
+            return [];
+        }
+    }
+
+    async getAttendanceHistory() {
+        try {
+            const { data: logs, error } = await this.supabase
+                .from('geo_attendance_logs')
+                .select('check_in_time, session_type, target_name, is_verified')
+                .eq('student_id', this.currentUserId)
+                .order('check_in_time', { ascending: false })
+                .limit(100);
+
+            if (error) throw error;
+            return logs || [];
+
+        } catch (error) {
+            console.error("Failed to load attendance history:", error);
+            return [];
+        }
+    }
+
+    async checkInAttendance(sessionType, targetId, targetName, location, studentProgram) {
+        try {
+            const deviceId = localStorage.getItem('device_id') || crypto.randomUUID();
+            localStorage.setItem('device_id', deviceId);
+
+            const checkInTime = new Date().toISOString();
+
+            const targets = sessionType === 'Clinical' ?
+                await this.getClinicalTargets() :
+                await this.getClassTargets();
+
+            const target = targets.find(t => t.id === targetId);
+
+            if (!target || (target.latitude === null || target.longitude === null)) {
+                throw new Error('Target location coordinates not found');
+            }
+
+            const R = 6371000;
+            const toRad = x => x * Math.PI / 180;
+            const dLat = toRad(location.lat - target.latitude);
+            const dLon = toRad(location.lon - target.longitude);
+            const lat1 = toRad(location.lat);
+            const lat2 = toRad(target.latitude);
+            const a = Math.sin(dLat/2)**2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon/2)**2;
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            const distanceMeters = R * c;
+            const isVerified = distanceMeters <= 200;
+
+            const { error } = await this.supabase.rpc('check_in_and_defer_fk', {
+                p_student_id: this.currentUserId,
+                p_check_in_time: checkInTime,
+                p_session_type: sessionType === 'Clinical' ? 'Clinical' : 'Class',
+                p_target_id: target.id,
+                p_target_name: target.name,
+                p_latitude: location.lat,
+                p_longitude: location.lon,
+                p_accuracy_m: location.acc,
+                p_location_friendly_name: location.friendly,
+                p_program: studentProgram,
+                p_block: this.currentUserProfile.block || this.currentUserProfile.current_block,
+                p_intake_year: this.currentUserProfile.intake_year,
+                p_device_id: deviceId,
+                p_is_verified: isVerified,
+                p_course_id: sessionType === 'Class' ? target.id : null,
+                p_student_name: this.currentUserProfile.full_name || 'Unknown Student'
+            });
+
+            if (error) throw error;
+
+            await this.updateLastActivity();
+
+            return { success: true, verified: isVerified };
+
+        } catch (error) {
+            console.error('Check-in failed:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    // ============================================================
+    // RESOURCES FUNCTIONS
+    // ============================================================
+
+    async getResources() {
+        if (this.cachedData.resources.length > 0) {
+            return this.cachedData.resources;
+        }
+
+        const program = this.currentUserProfile?.program;
+        const block = this.currentUserProfile?.block || this.currentUserProfile?.current_block;
+        const intakeYear = this.currentUserProfile?.intake_year;
+
+        if (!program || !intakeYear || !block) {
+            return [];
+        }
+
+        try {
+            const { data: resources, error } = await this.supabase
+                .from('resources')
+                .select('id, title, file_path, file_url, program_type, block, intake, uploaded_by_name, created_at, description, file_type')
+                .eq('program_type', program)
+                .eq('block', block)
+                .eq('intake', intakeYear)
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+
+            this.cachedData.resources = resources || [];
+            return this.cachedData.resources;
+
+        } catch (err) {
+            console.error("Error loading resources:", err);
+            return [];
+        }
+    }
+
+    // ============================================================
+    // MESSAGES FUNCTIONS
+    // ============================================================
+
+    async getMessages() {
+        if (this.cachedData.messages.length > 0) {
+            return this.cachedData.messages;
+        }
+
+        const program = this.currentUserProfile?.program || this.currentUserProfile?.department;
+
+        try {
+            const { data: personalMessages, error: personalError } = await this.supabase
+                .from('student_messages')
+                .select('*')
+                .or(`recipient_id.eq.${this.currentUserId},recipient_program.eq.${program}`)
+                .order('created_at', { ascending: false });
+
+            if (personalError) throw personalError;
+
+            const { data: notifications, error: notifError } = await this.supabase
+                .from('notifications')
+                .select('*')
+                .or(`target_program.eq.${program},target_program.is.null`)
+                .order('created_at', { ascending: false });
+
+            if (notifError) throw notifError;
+
+            this.cachedData.messages = [
+                ...(personalMessages || []).map(m => ({ ...m, type: 'Personal' })),
+                ...(notifications || []).map(n => ({ ...n, type: 'Announcement' }))
+            ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+            return this.cachedData.messages;
+
+        } catch (error) {
+            console.error("Failed to load messages:", error);
+            return [];
+        }
+    }
+
+    async sendMessage(message) {
+        try {
+            const { data, error } = await this.supabase
+                .from('student_messages')
+                .insert({
+                    student_id: this.currentUserId,
+                    student_name: this.currentUserProfile.full_name,
+                    student_program: this.currentUserProfile.program || this.currentUserProfile.department,
+                    message: message,
+                    created_at: new Date().toISOString(),
+                    is_read: false
+                });
+
+            if (error) throw error;
+
+            await this.updateLastActivity();
+
+            return { success: true };
+
+        } catch (error) {
+            console.error("Failed to send message:", error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    // ============================================================
+    // CALENDAR FUNCTIONS
+    // ============================================================
+
+    async getCalendarEvents() {
+        const program = this.currentUserProfile?.program || this.currentUserProfile?.department;
+        const block = this.currentUserProfile?.block || this.currentUserProfile?.current_block;
+        const intakeYear = this.currentUserProfile?.intake_year;
+
+        if (!program || !block || !intakeYear) {
+            return [];
+        }
+
+        try {
+            const { data: events, error } = await this.supabase
+                .from('calendar_events')
+                .select('event_name, event_date, type, description, target_program, target_block, target_intake_year')
+                .or(`target_program.eq.${program},target_program.eq.General`)
+                .or(`target_block.eq.${block},target_block.is.null`)
+                .eq('target_intake_year', intakeYear);
+
+            if (error) throw error;
+
+            const exams = await this.getExams();
+            const examEvents = exams.map(exam => ({
+                event_name: exam.exam_name,
+                event_date: exam.exam_date,
+                type: 'Exam',
+                description: `${exam.status || 'Scheduled'} - Block ${exam.block_term}`
+            }));
+
+            return [...(events || []), ...examEvents]
+                .sort((a, b) => new Date(a.event_date) - new Date(b.event_date));
+
+        } catch (error) {
+            console.error("Failed to load calendar events:", error);
+            return [];
+        }
+    }
+
+    // ============================================================
+    // NURSEIQ FUNCTIONS
+    // ============================================================
+
+    async getNurseIQQuestions(unitCatalogId = null) {
+        try {
+            let query = this.supabase
+                .from('medical_assessments')
+                .select(`
+                    *,
+                    unit:units_catalog!medical_assessments_unit_catalog_id_fkey (
+                        id,
+                        unit_code,
+                        unit_name,
+                        color,
+                        description,
+                        program,
+                        block
+                    )
+                `)
+                .eq('is_active', true)
+                .eq('is_published', true);
+
+            if (unitCatalogId) {
+                query = query.eq('unit_catalog_id', unitCatalogId);
+            }
+
+            const { data: questions, error } = await query;
+            if (error) throw error;
+            return questions || [];
+        } catch (error) {
+            console.error('Error loading NurseIQ questions:', error);
+            return [];
+        }
+    }
+
+    async getNurseIQCourses() {
+        try {
+            const questions = await this.getNurseIQQuestions();
+            const unitsMap = {};
+
+            questions.forEach(question => {
+                const unitId = question.unit_catalog_id;
+                const unit = question.unit || {};
+                if (!unitId || !unit.unit_code) return;
+
+                if (!unitsMap[unitId]) {
+                    unitsMap[unitId] = {
+                        id: unitId,
+                        name: unit.unit_name || question.unit_name || 'Unit',
+                        unit_code: unit.unit_code,
+                        color: unit.color || '#4f46e5',
+                        description: unit.description || '',
+                        questions: [],
+                        stats: {
+                            total: 0,
+                            active: 0,
+                            hard: 0,
+                            medium: 0,
+                            easy: 0,
+                            lastUpdated: null
+                        }
+                    };
+                }
+
+                unitsMap[unitId].questions.push(question);
+                unitsMap[unitId].stats.total++;
+                unitsMap[unitId].stats.active++;
+
+                if (question.difficulty === 'hard') unitsMap[unitId].stats.hard++;
+                else if (question.difficulty === 'medium') unitsMap[unitId].stats.medium++;
+                else if (question.difficulty === 'easy') unitsMap[unitId].stats.easy++;
+
+                if (question.updated_at) {
+                    const updatedDate = new Date(question.updated_at);
+                    if (!unitsMap[unitId].stats.lastUpdated || updatedDate > unitsMap[unitId].stats.lastUpdated) {
+                        unitsMap[unitId].stats.lastUpdated = updatedDate;
+                    }
+                }
+            });
+
+            return Object.values(unitsMap);
+        } catch (error) {
+            console.error('Error loading NurseIQ units:', error);
+            return [];
+        }
+    }
+
+    // UTILITY FUNCTIONS
+    // ============================================================
+
+    clearCache() {
+        this.cachedData = {
+            courses: [],
+            exams: [],
+            clinicalAreas: [],
+            resources: [],
+            messages: [],
+            supplementaryUnits: [],
+            supplementaryRegistrations: [],
+            failedUnits: []
+        };
+        console.log('🧹 Cache cleared');
+    }
+
+    async updateLastActivity() {
+        if (!this.currentUserId) return;
+
+        try {
+            const { error } = await this.supabase
+                .from('consolidated_user_profiles_table')
+                .update({
+                    last_activity: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                })
+                .eq('user_id', this.currentUserId);
+
+            if (error) console.error("Failed to update last activity:", error);
+
+        } catch (error) {
+            console.error("Last activity update error:", error);
+        }
+    }
+
+    async updateProfile(updates) {
+        try {
+            const { error } = await this.supabase
+                .from('consolidated_user_profiles_table')
+                .update({
+                    ...updates,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('user_id', this.currentUserId);
+
+            if (error) throw error;
+
+            this.currentUserProfile = { ...this.currentUserProfile, ...updates };
+
+            if (window.currentUser) {
+                window.currentUser = { ...window.currentUser, ...updates };
+            }
+
+            await this.updateLastActivity();
+
+            return { success: true };
+
+        } catch (error) {
+            console.error('Failed to update profile:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    // ============================================================
+    // 📸 PHOTO HANDLING - CORRECTED
+    // ============================================================
+
+    async uploadPassportPhoto(file) {
+        try {
+            const supabase = this.supabase;
+            const userId = this.currentUserId;
+
+            if (!userId) {
+                throw new Error('No user ID found');
+            }
+
+            const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+            if (!validTypes.includes(file.type)) {
+                return { success: false, error: 'Invalid file type. Please upload JPG, PNG, or WebP.' };
+            }
+
+            if (file.size > 2 * 1024 * 1024) {
+                return { success: false, error: 'File too large. Maximum size is 2 MB.' };
+            }
+
+            const fileExt = file.name.split('.').pop();
+            const filePath = `profiles/${userId}/photo.${fileExt}`;
+
+            console.log('📸 Uploading photo to:', filePath);
+
+            const { error: uploadError } = await supabase.storage
+                .from('user-documents')
+                .upload(filePath, file, {
+                    cacheControl: '3600',
+                    upsert: true,
+                    contentType: file.type
+                });
+
+            if (uploadError) {
+                console.error('❌ Upload error:', uploadError);
+                throw uploadError;
+            }
+
+            const { data: urlData } = supabase.storage
+                .from('user-documents')
+                .getPublicUrl(filePath);
+
+            const publicUrl = urlData.publicUrl;
+
+            const { error: updateError } = await supabase
+                .from('consolidated_user_profiles_table')
+                .update({
+                    profile_photo_url: filePath,
+                    passport_url: publicUrl,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('user_id', userId);
+
+            if (updateError) throw updateError;
+
+            if (this.currentUserProfile) {
+                this.currentUserProfile.profile_photo_url = filePath;
+                this.currentUserProfile.passport_url = publicUrl;
+            }
+
+            await this.updateLastActivity();
+
+            console.log('✅ Photo uploaded successfully:', filePath);
+            console.log('🔗 Public URL:', publicUrl);
+
+            return { success: true, filePath: filePath, publicUrl: publicUrl };
+
+        } catch (error) {
+            console.error('❌ Failed to upload photo:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    getPhotoUrl(userId = null) {
+        const id = userId || this.currentUserId;
+        if (!id) return null;
+
+        const profile = this.currentUserProfile;
+        if (!profile) return null;
+
+        const photoPath = profile.profile_photo_url || profile.passport_url;
+        if (!photoPath) return null;
+
+        if (photoPath.startsWith('http')) {
+            return photoPath;
+        }
+
+        const supabaseUrl = window.APP_CONFIG?.SUPABASE_URL;
+        if (!supabaseUrl) throw new Error('Supabase URL is not configured.');
+        return `${supabaseUrl}/storage/v1/object/public/user-documents/${photoPath}`;
+    }
+
+    getCurrentUserProfile() {
+        return this.currentUserProfile;
+    }
+
+    getInstance() {
+        return this;
+    }
+}
+
+// ========== GLOBAL INITIALIZATION ==========
+
+window.db = new Database();
+
+window.getDatabase = async function() {
+    await window.db.initialize();
+    if (!window.db.supabase) {
+        throw new Error('Database connection is unavailable.');
+    }
+    return window.db;
+};
+
+window.initDatabase = async function() {
+    try {
+        console.log('🔧 Initializing database via global function...');
+        const dbInstance = await window.db.initialize();
+        console.log('✅ Database init result:', dbInstance ? 'Success' : 'Failed');
+        return dbInstance;
+    } catch (error) {
+        console.error('❌ Database initialization error:', error);
+        return null;
+    }
+};
+
+function showGitHubSecretsHelp() {
+    const helpText = `
+# GitHub Secrets Configuration
+
+## Required Secrets:
+1. SUPABASE_URL - Your Supabase project URL
+   Example: https://lwhtjozfsmbyihenfunw.supabase.co
+
+2. SUPABASE_ANON_KEY - Your Supabase anonymous key
+   Example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+3. LOCATIONIQ_API_KEY - LocationIQ API key (optional for geolocation)
+
+## How to Add Secrets:
+1. Go to your GitHub repository
+2. Click Settings → Secrets and variables → Actions
+3. Click "New repository secret"
+4. Add each secret with the correct name and value
+    `;
+
+    alert(helpText);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('📄 database.js loaded - DOM ready');
+});
+
+console.log('✅ database.js loaded with Supplementary Registration support and corrected photo upload!');
+
+// Global guard for modules that need a verified authenticated user.
+// Modules should call this immediately before user-scoped database work.
+window.requireAuthenticatedUser = async function () {
+    if (!window.db) {
+        throw new Error('Database is not available.');
+    }
+    return window.db.requireAuthenticatedUser();
+};
