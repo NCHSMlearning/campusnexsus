@@ -2210,7 +2210,7 @@ body.dark-theme #loginButton,body.dark-theme .login-button{background:linear-gra
       #campus-nexus-school-code-gate-panel h2{margin:0 0 8px;font-size:23px;color:#123653}
       #campus-nexus-school-code-gate-panel p{margin:0 0 18px;color:#64748b;font-size:14px;line-height:1.55}
       #campus-nexus-school-code-gate-panel label{display:block;font-size:13px;font-weight:700;margin-bottom:7px}
-      #campus-nexus-school-code-gate-panel input{box-sizing:border-box;width:100%;height:48px;border:1px solid #cbd5e1;border-radius:10px;padding:0 13px;font:600 16px inherit;letter-spacing:.08em;outline:none}
+      #campus-nexus-school-code-gate-panel input{box-sizing:border-box;width:100%;height:48px;border:1px solid #cbd5e1;border-radius:10px;padding:0 13px;font:600 16px system-ui,sans-serif;letter-spacing:.08em;outline:none}
       #campus-nexus-school-code-gate-panel input:focus{border-color:#0f766e;box-shadow:0 0 0 3px rgba(15,118,110,.13)}
       #campus-nexus-school-code-gate-panel button{width:100%;height:48px;margin-top:14px;border:0;border-radius:10px;background:#0f766e;color:#fff;font-weight:700;font-size:15px;cursor:pointer}
       #campus-nexus-school-code-gate-panel .cn-code-error{min-height:18px;margin-top:10px;color:#b91c1c;font-size:13px}
@@ -2233,7 +2233,7 @@ body.dark-theme #loginButton,body.dark-theme .login-button{background:linear-gra
       try {
         const client = window.supabase.createClient(
           "https://lwhtjozfsmbyihenfunw.supabase.co",
-          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJIUzI1NiIsInR5cCI6IkpXVCJ9"
+          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx3aHRqb3pmc21ieWloZW5mdW53IiwiaWF0IjoxNzU5NjU4MTI3LCJleHAiOjIwNzUyMzQxMjd9.7Z8AYvPQwTAEEEhODlW6Xk-IR1FK3Uj5ivZS7P17Wpk"
         );
         const result = await client.rpc("resolve_institution_registration_context", {p_code:code,p_host:null});
         if (result.error || !result.data?.institution_id) throw new Error("We could not find an institution with that school code. Check the code and try again.");
