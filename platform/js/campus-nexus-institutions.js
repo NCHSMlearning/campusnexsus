@@ -28,7 +28,7 @@
     ]]
   ];
   const MODULES = MODULE_GROUPS.flatMap(([, items]) => items);
-  let sb, currentUser, editingId = null, institutions = [];
+  let sb, currentUser, editingId = null, institutions = [], selectedLogoFile = null;
 
   const $ = (id) => document.getElementById(id);
   const esc = (value) => String(value ?? "").replace(/[&<>"']/g, c => ({
@@ -90,6 +90,75 @@
     const ids = ["cnInstitutionColor","cnInstitutionAccent","cnInstitutionColor3","cnInstitutionColor4","cnInstitutionColor5","cnInstitutionColor6"];
     const defaults = ["#082f49","#0f766e","#d4a017","#2563eb","#7c3aed","#db2777"];
     ids.forEach((id,index) => { if ($(id)) $(id).value = colors[index] || defaults[index]; });
+  }
+
+  function setupLogoUploader() {
+    const logoInput = $("cnInstitutionLogo");
+    if (!logoInput || $("cnInstitutionLogoUpload")) return;
+    const wrap = document.createElement("div");
+    wrap.id = "cnInstitutionLogoUpload";
+    wrap.className = "cn-logo-upload";
+    wrap.innerHTML = `
+      <style>
+        .cn-logo-upload{margin-top:12px;padding:14px;border:1px dashed #94a3b8;border-radius:12px;background:#f8fafc}
+        .cn-logo-upload-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+        .cn-logo-preview{width:76px;height:76px;display:grid;place-items:center;overflow:hidden;border:1px solid #cbd5e1;border-radius:12px;background:#fff;color:#64748b}
+        .cn-logo-preview img{width:100%;height:100%;object-fit:contain}
+        .cn-logo-upload-actions{display:flex;flex-direction:column;gap:7px;min-width:190px;flex:1}
+        .cn-logo-upload-actions input{max-width:100%}
+        .cn-logo-upload-note{font-size:12px;color:#64748b;margin:0}
+        .cn-logo-clear{align-self:flex-start;border:0;background:transparent;color:#b91c1c;font-size:12px;cursor:pointer;padding:2px 0}
+      </style>
+      <div class="cn-logo-upload-row">
+        <div class="cn-logo-preview" id="cnInstitutionLogoPreview"><i class="fas fa-school"></i></div>
+        <div class="cn-logo-upload-actions">
+          <label for="cnInstitutionLogoFile"><strong>Upload institution logo</strong></label>
+          <input id="cnInstitutionLogoFile" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml">
+          <p class="cn-logo-upload-note">PNG, JPG, WebP or SVG · Maximum 2 MB. A preview appears before saving.</p>
+          <button type="button" class="cn-logo-clear" id="cnInstitutionLogoClear">Clear selected logo</button>
+        </div>
+      </div>`;
+    const field = logoInput.closest(".form-group,.form-field,.field, .mb-3") || logoInput.parentElement;
+    field.insertAdjacentElement("afterend", wrap);
+    const preview = $("cnInstitutionLogoPreview");
+    const showPreview = src => {
+      preview.innerHTML = src ? '<img alt="Institution logo preview">' : '<i class="fas fa-school"></i>';
+      if (src) preview.querySelector("img").src = src;
+    };
+    const existing = safeWebUrl(logoInput.value, true);
+    if (existing) showPreview(existing);
+    $("cnInstitutionLogoFile").addEventListener("change", event => {
+      const file = event.target.files?.[0] || null;
+      if (!file) { selectedLogoFile = null; showPreview(safeWebUrl(logoInput.value, true)); return; }
+      const allowed = ["image/png","image/jpeg","image/webp","image/svg+xml"];
+      if (!allowed.includes(file.type)) {
+        event.target.value = "";
+        selectedLogoFile = null;
+        notify("Choose a PNG, JPG, WebP or SVG image.", "error");
+        return;
+      }
+      if (file.size > 2 * 1024 * 1024) {
+        event.target.value = "";
+        selectedLogoFile = null;
+        notify("The logo must be 2 MB or smaller.", "error");
+        return;
+      }
+      selectedLogoFile = file;
+      showPreview(URL.createObjectURL(file));
+    });
+    $("cnInstitutionLogoClear").addEventListener("click", () => {
+      selectedLogoFile = null;
+      $("cnInstitutionLogoFile").value = "";
+      logoInput.value = "";
+      showPreview("");
+    });
+  }
+
+  function syncLogoPreview() {
+    const preview = $("cnInstitutionLogoPreview");
+    if (!preview || selectedLogoFile) return;
+    const url = safeWebUrl($("cnInstitutionLogo")?.value, true);
+    preview.innerHTML = url ? '<img alt="Institution logo preview" src="' + esc(url) + '">' : '<i class="fas fa-school"></i>';
   }
 
   function resetForm() {
@@ -270,7 +339,7 @@
     $("cnInstitutionPortalMode").value = portalMode;
     const customLogin = $("cnInstitutionCustomLogin").value.trim();
     const website = $("cnInstitutionWebsite").value.trim();
-    const logo = $("cnInstitutionLogo").value.trim();
+    let logo = $("cnInstitutionLogo").value.trim();\n    let uploadedLogoPath = null;
     const isHttpUrl = value => { try { const u = new URL(value); return ["http:","https:"].includes(u.protocol); } catch (_) { return false; } };
     if (portalMode === "custom_website" && (!isHttpUrl(customLogin) || !customLogin.startsWith("https://"))) {
       return notify("The custom login URL must be a valid HTTPS address.", "error");
