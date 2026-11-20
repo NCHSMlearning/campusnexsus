@@ -104,6 +104,25 @@
     const examEnabled = ["examinations","admin_exams","proctoring"].some(key => selected.includes(key));
     const lmsEnabled = selected.includes("learning_management");
     host.innerHTML =
+      '<style id="cn-module-inline-styles">' +
+      '.cn-module-group{display:block;margin:16px 0 20px;padding:16px;border:1px solid #e2eaf0;border-radius:15px;background:linear-gradient(145deg,#fff 0%,#f8fbfd 100%);box-shadow:0 4px 14px rgba(8,47,73,.045)}' +
+      '.cn-module-group-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 13px;padding-bottom:10px;border-bottom:1px solid #e8eef2;color:#082f49;font-size:13px;font-weight:800;letter-spacing:.01em}' +
+      '.cn-module-group-title small{padding:4px 9px;border-radius:999px;background:#e8f3f4;color:#0f766e;font-size:10px;font-weight:800;white-space:nowrap}' +
+      '.cn-module-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,245px),1fr));gap:10px}' +
+      '.cn-module-option{position:relative;display:flex;align-items:flex-start;gap:11px;min-width:0;min-height:78px;padding:13px 42px 13px 13px;border:1px solid #dce6ec;border-radius:12px;background:#fff;cursor:pointer;transition:border-color .18s ease,background .18s ease,box-shadow .18s ease,transform .18s ease}' +
+      '.cn-module-option:hover{border-color:#78aaa9;background:#fbffff;box-shadow:0 5px 14px rgba(8,47,73,.07);transform:translateY(-1px)}' +
+      '.cn-module-option:has(input:checked){border-color:#0f766e;background:linear-gradient(135deg,#f0fdfa,#fff);box-shadow:0 0 0 2px rgba(15,118,110,.10)}' +
+      '.cn-module-option input{width:18px;height:18px;flex:0 0 18px;margin:2px 0 0;accent-color:#0f766e;cursor:pointer}' +
+      '.cn-module-copy{display:flex;flex-direction:column;gap:5px;min-width:0}' +
+      '.cn-module-copy strong{color:#0f2f49;font-size:12px;font-weight:800;line-height:1.35}' +
+      '.cn-module-copy small{color:#64748b;font-size:10.5px;font-weight:500;line-height:1.45}' +
+      '.cn-module-check{position:absolute;right:12px;top:50%;width:23px;height:23px;display:grid;place-items:center;transform:translateY(-50%);border:1px solid #d9e3e9;border-radius:8px;background:#f8fafc;color:transparent;font-size:10px;transition:all .18s ease}' +
+      '.cn-module-option:has(input:checked) .cn-module-check{border-color:#0f766e;background:#0f766e;color:#fff}' +
+      '.cn-module-coming-soon{opacity:.62;cursor:not-allowed;filter:saturate(.65)}' +
+      '.cn-module-coming-soon:hover{transform:none;box-shadow:none;border-color:#dce6ec;background:#fff}' +
+      '.cn-module-coming-soon input{cursor:not-allowed}' +
+      '@media(max-width:600px){.cn-module-group{padding:12px;margin:12px 0 16px}.cn-module-grid{grid-template-columns:minmax(0,1fr);gap:8px}.cn-module-option{min-height:72px;padding:12px 40px 12px 11px}}' +
+      '</style>' +
       '<section class="cn-product-access"><div class="cn-product-access-heading"><strong>Choose the institution products</strong><small>These choices control which main workspace the institution can use. You can enable either product or both.</small></div><div class="cn-product-access-grid">' +
       '<label class="cn-product-choice"><input id="cnProductExam" type="checkbox" ' + (examEnabled ? "checked" : "") + '><span class="cn-product-choice-icon"><i class="fas fa-file-signature"></i></span><span><strong>Examination Dashboard</strong><small>Exam setup, student examination access, proctoring and exam administration</small></span></label>' +
       '<label class="cn-product-choice"><input id="cnProductLms" type="checkbox" ' + (lmsEnabled ? "checked" : "") + '><span class="cn-product-choice-icon"><i class="fas fa-book-open"></i></span><span><strong>Learning Management System (LMS)</strong><small>Courses, learning resources, lessons, assignments and classroom tools</small></span></label>' +
