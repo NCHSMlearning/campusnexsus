@@ -6,7 +6,7 @@ let selectedInstitution=null;
 const show=(text,type='error')=>{message.textContent=text;message.className='message '+type};
 const nextPath=()=>{const p=new URLSearchParams(location.search).get('redirect');return p&&p.startsWith('/')&&!p.startsWith('//')?p:'/studentexam.html'};
 function clientReady(){const c=window.examSupabase;if(c&&typeof c.auth?.signInWithPassword==='function')return c;throw new Error(window.__EXAM_CONFIG_ERROR__||'The examination sign-in service is unavailable. Refresh and try again.')}
-function initials(name){return String(name||'School').trim().split(/\\s+/).slice(0,2).map(x=>x[0]||'').join('').toUpperCase()||'SC'}
+function initials(name){return String(name||'School').trim().split(/\s+/).slice(0,2).map(x=>x[0]||'').join('').toUpperCase()||'SC'}
 function paintInstitution(institution){
  selectedInstitution=institution;
  const name=String(institution.name||'Your Institution');
@@ -16,7 +16,7 @@ function paintInstitution(institution){
  $('schoolCodeBadge').hidden=false;
  const logo=$('schoolLogo');
  logo.replaceChildren();
- if(institution.logo_url&&/^https:\\/\\//i.test(institution.logo_url)){
+ if(institution.logo_url&&/^https:\/\//i.test(institution.logo_url)){
   const img=document.createElement('img');img.src=institution.logo_url;img.alt=name+' logo';
   img.onerror=()=>{logo.textContent=initials(name)};logo.appendChild(img);
  }else{logo.textContent=initials(name)}
