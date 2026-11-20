@@ -1054,6 +1054,63 @@ body{background:var(--admin-canvas)!important;color:var(--admin-ink)!important}
 }
 </style>
 
+
+<style id="cn-superadmin-dashboard-stat-colors">
+/* Rich, consistent metric cards — keep values live and preserve click actions */
+#dashboard .dashboard-card{
+  --stat:#0f766e;--stat-soft:#e8f7f5;--stat-wash:#f5fbfa;
+  position:relative!important;isolation:isolate;overflow:hidden!important;
+  border:1px solid color-mix(in srgb,var(--stat) 18%,#e2e8f0)!important;
+  border-top:0!important;border-radius:17px!important;
+  background:linear-gradient(145deg,#fff 0%,var(--stat-wash) 100%)!important;
+  box-shadow:0 5px 18px rgba(8,47,73,.065)!important;
+  padding:19px 20px!important;
+  transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease!important;
+}
+#dashboard .dashboard-card:before{
+  content:"";position:absolute;inset:0 auto 0 0;width:5px;
+  background:linear-gradient(180deg,var(--stat),color-mix(in srgb,var(--stat) 40%,white));
+  z-index:-1;
+}
+#dashboard .dashboard-card:after{
+  content:"";position:absolute;width:130px;height:130px;border-radius:50%;
+  right:-52px;top:-65px;background:var(--stat);opacity:.055;pointer-events:none;z-index:-1;
+}
+#dashboard .dashboard-card:hover{
+  transform:translateY(-4px)!important;
+  border-color:color-mix(in srgb,var(--stat) 38%,#dbe5ec)!important;
+  box-shadow:0 13px 28px color-mix(in srgb,var(--stat) 15%,transparent)!important;
+}
+#dashboard .dashboard-card h3{color:var(--stat)!important;font-weight:800!important;opacity:1!important;letter-spacing:.055em!important}
+#dashboard .dashboard-card .data{color:var(--stat)!important;font-size:clamp(25px,2vw,33px)!important;font-weight:850!important;line-height:1.12!important;letter-spacing:-.045em!important;margin-top:5px!important}
+#dashboard .dashboard-card .minor-data{color:#64748b!important;font-size:11px!important;font-weight:550!important}
+#dashboard .dashboard-card>div:first-child>div:last-child{
+  width:46px!important;height:46px!important;min-width:46px!important;
+  border-radius:14px!important;display:flex!important;align-items:center!important;justify-content:center!important;
+  background:color-mix(in srgb,var(--stat) 12%,white)!important;
+  border:1px solid color-mix(in srgb,var(--stat) 15%,white)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.8)!important;
+}
+#dashboard .dashboard-card>div:first-child>div:last-child i{color:var(--stat)!important;font-size:18px!important}
+#dashboard .dashboard-card>div:last-child{background:linear-gradient(90deg,var(--stat),color-mix(in srgb,var(--stat) 20%,transparent))!important;height:3px!important;opacity:.9!important}
+#dashboard .dashboard-card [id$="Growth"]{font-weight:800!important}
+#dashboard .dashboard-card[onclick*="showTab('users')"]{--stat:#2563eb;--stat-soft:#dbeafe;--stat-wash:#f1f6ff}
+#dashboard .dashboard-card[onclick*="showTab('pending')"]{--stat:#d97706;--stat-soft:#fef3c7;--stat-wash:#fffbeb}
+#dashboard .dashboard-card[onclick*="showTab('enroll')"]{--stat:#059669;--stat-soft:#d1fae5;--stat-wash:#effcf6}
+#dashboard .dashboard-card[onclick*="showTab('support-tickets')"]{--stat:#7c3aed;--stat-soft:#ede9fe;--stat-wash:#f7f4ff}
+#dashboard .dashboard-card[onclick*="showTab('attendance')"]{--stat:#0891b2;--stat-soft:#cffafe;--stat-wash:#effcff}
+#dashboard .dashboard-card[onclick*="showTab('session-management')"]{--stat:#0f766e;--stat-soft:#ccfbf1;--stat-wash:#effcf9}
+#dashboard .dashboard-card[onclick*="showTab('system-health')"]{--stat:#16a34a;--stat-soft:#dcfce7;--stat-wash:#f2fcf4}
+#dashboard .dashboard-card[onclick*="showTab('analytics-module')"]{--stat:#9333ea;--stat-soft:#f3e8ff;--stat-wash:#fbf7ff}
+@media(max-width:600px){
+ #dashboard .dashboard-card{padding:13px!important;border-radius:14px!important;min-height:112px}
+ #dashboard .dashboard-card>div:first-child>div:last-child{width:38px!important;height:38px!important;min-width:38px!important;border-radius:11px!important}
+ #dashboard .dashboard-card>div:first-child>div:last-child i{font-size:15px!important}
+ #dashboard .dashboard-card .data{font-size:clamp(21px,6vw,27px)!important}
+ #dashboard .dashboard-card h3{font-size:10px!important;line-height:1.35!important}
+}
+@media(prefers-reduced-motion:reduce){#dashboard .dashboard-card{transition:none!important}}
+</style>
 </head>
 <body>
     <div class="container">
