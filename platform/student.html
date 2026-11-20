@@ -11986,6 +11986,37 @@ async function initializeApp() {
         window.db.currentUserId = userSession.user.id;
         await window.db.loadUserProfile();
 
+        // Verify the restored session belongs to an approved student before
+        // exposing the student portal. A valid Supabase session alone is not
+        // sufficient for tenant access.
+        let authenticatedStudentProfile = window.db.currentUserProfile || null;
+        if (!authenticatedStudentProfile) {
+            const { data: profileRow, error: profileError } = await window.db.supabase
+                .from('consolidated_user_profiles_table')
+                .select('user_id,role,status,login_enabled,institution_id')
+                .eq('user_id', userSession.user.id)
+                .maybeSingle();
+            if (profileError) throw profileError;
+            authenticatedStudentProfile = profileRow;
+            window.db.currentUserProfile = profileRow;
+            window.currentUserProfile = profileRow;
+        }
+
+        const studentRole = String(authenticatedStudentProfile?.role || '').trim().toLowerCase();
+        const studentStatus = String(authenticatedStudentProfile?.status || '').trim().toLowerCase();
+        const isApprovedStudent = studentRole === 'student'
+            && ['approved', 'active'].includes(studentStatus)
+            && authenticatedStudentProfile?.login_enabled !== false
+            && !!authenticatedStudentProfile?.institution_id;
+
+        if (!isApprovedStudent) {
+            console.warn('Student portal access denied: profile is not an active approved student.');
+            const returnTo = window.location.pathname + window.location.search + window.location.hash;
+            const loginUrl = '/login.html?redirect=' + encodeURIComponent(returnTo);
+            window.location.replace(loginUrl);
+            return;
+        }
+
         // ===== AUTHENTICATED HEADER IDENTITY =====
         // Always derive the header identity from the real authenticated student.
         // The old header fell back to the literal word "Student", which produced
