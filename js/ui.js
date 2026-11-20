@@ -107,6 +107,12 @@ class UIModule {
     }
     
     async safeInitialize() {
+        // The Campus Nexus student page has a single authoritative boot flow in
+        // student.html. Do not start a second delayed UI/database/module boot.
+        if (window.__CAMPUS_NEXUS_STUDENT_BOOT__) {
+            console.log('⏭️ Student portal boot is owned by student.html; skipping duplicate UIModule startup.');
+            return;
+        }
         console.log('🛡️ Safe initialization starting...');
         await this.waitForDatabase();
         await this.delay(500);
