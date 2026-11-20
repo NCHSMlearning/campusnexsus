@@ -839,6 +839,178 @@ main.main>header{width:100%;max-width:100%;min-width:0}
 }
 </style>
 
+
+<style id="cn-superadmin-audit-fix">
+
+/* =========================================================
+   CAMPUS NEXUS — SUPER ADMIN WORKSPACE DESIGN SYSTEM
+   Applies consistently to all 55 workspaces and their
+   dynamically rendered controls without changing behavior.
+   ========================================================= */
+:root{
+  --purple-dark:#082f49!important;
+  --purple-light:#0f766e!important;
+  --yellow-accent:#eab54b!important;
+  --yellow-data:#0f766e!important;
+  --background-light:#f3f7fa!important;
+  --surface-card:#ffffff!important;
+  --text-dark:#172b3a!important;
+  --text-muted:#647989!important;
+  --border-color:#dce6ec!important;
+  --admin-navy:#082f49;
+  --admin-teal:#0f766e;
+  --admin-gold:#eab54b;
+  --admin-ink:#172b3a;
+  --admin-muted:#647989;
+  --admin-line:#dce6ec;
+  --admin-surface:#fff;
+  --admin-canvas:#f3f7fa;
+}
+html{scroll-behavior:smooth}
+body{background:var(--admin-canvas)!important;color:var(--admin-ink)!important}
+.main{background:var(--admin-canvas)!important;min-width:0!important}
+.main>header,main.main>header{
+  padding:0 0 18px!important;margin:0 0 24px!important;
+  border-bottom:1px solid var(--admin-line)!important;
+}
+.main>header h1,main.main>header h1{
+  color:var(--admin-navy)!important;font-size:clamp(1.45rem,2.3vw,2rem)!important;
+  line-height:1.2!important;font-weight:800!important;letter-spacing:-.035em!important;
+}
+.main .subtitle{color:var(--admin-muted)!important}
+.tab-content{min-width:0;animation:cnWorkspaceEnter .18s ease-out}
+@keyframes cnWorkspaceEnter{from{opacity:.65;transform:translateY(4px)}to{opacity:1;transform:none}}
+.tab-content>h2:first-child,.tab-content>div>h2:first-child{
+  color:var(--admin-navy)!important;font-size:clamp(1.2rem,2vw,1.55rem)!important;
+  font-weight:800!important;letter-spacing:-.025em!important;margin:0 0 18px!important;
+}
+.tab-content h3{color:var(--admin-navy)!important;font-weight:750!important;letter-spacing:-.015em}
+.tab-content h4{color:#24465b!important;font-weight:700!important}
+.tab-content p{line-height:1.55}
+.tab-content .card,.tab-content .analytics-card,.tab-content .health-card,
+.tab-content .task-item,.tab-content .security-settings,.tab-content .error-logs,
+.tab-content .unit-card,.tab-content .student-group-card,.tab-content .api-key-item,
+.tab-content [class*="panel"],.tab-content [class*="Panel"],.tab-content [class*="section-card"]{
+  border:1px solid var(--admin-line)!important;border-radius:14px!important;
+  box-shadow:0 4px 16px rgba(8,47,73,.055)!important;
+}
+.tab-content .card,.tab-content .analytics-card,.tab-content .health-card,
+.tab-content .task-item,.tab-content .unit-card{background:#fff!important}
+.tab-content .card:hover,.tab-content .unit-card:hover{
+  box-shadow:0 9px 24px rgba(8,47,73,.10)!important;transform:translateY(-2px)
+}
+.tab-content .cards,.tab-content .analytics-grid,.tab-content .health-cards,
+.tab-content .scheduled-tasks{gap:16px!important}
+.tab-content .toolbar,.tab-content .filter-bar,.tab-content .inline-form,
+.tab-content .viz-controls{
+  padding:14px!important;gap:12px!important;border:1px solid var(--admin-line)!important;
+  border-radius:12px!important;background:#fff!important;
+  box-shadow:0 3px 12px rgba(8,47,73,.045)!important;
+}
+.tab-content input:not([type=checkbox]):not([type=radio]):not([type=file]),
+.tab-content select,.tab-content textarea{
+  min-height:40px;border:1px solid #cbd9e2!important;border-radius:9px!important;
+  background:#fff!important;color:var(--admin-ink)!important;
+  box-shadow:none!important;font:inherit!important;max-width:100%;
+}
+.tab-content textarea{min-height:100px}
+.tab-content input:focus,.tab-content select:focus,.tab-content textarea:focus{
+  outline:0!important;border-color:#0f766e!important;
+  box-shadow:0 0 0 3px rgba(15,118,110,.13)!important
+}
+.tab-content input::placeholder,.tab-content textarea::placeholder{color:#91a2ae!important}
+.tab-content button,.tab-content .btn,.tab-content a.btn{
+  border-radius:9px!important;font-weight:650!important;transition:background .16s ease,border-color .16s ease,box-shadow .16s ease,transform .16s ease!important
+}
+.tab-content button:focus-visible,.tab-content a:focus-visible,
+#mainNav a:focus-visible{outline:3px solid rgba(20,184,166,.35)!important;outline-offset:2px!important}
+.tab-content button:disabled{opacity:.55!important;cursor:not-allowed!important;transform:none!important}
+.tab-content button.btn-action,.tab-content .btn-action,
+.tab-content button.btn-primary,.tab-content .btn-primary,
+.tab-content button[type=submit]{
+  background:var(--admin-teal)!important;border-color:var(--admin-teal)!important;color:#fff!important
+}
+.tab-content button.btn-action:hover,.tab-content .btn-action:hover,
+.tab-content button.btn-primary:hover,.tab-content .btn-primary:hover,
+.tab-content button[type=submit]:hover{background:#0b625c!important;box-shadow:0 5px 14px rgba(15,118,110,.2)!important}
+.tab-content .btn-danger,.tab-content .btn-delete{background:#b42332!important;color:#fff!important}
+.tab-content .btn-approve,.tab-content .btn-success{background:#087e61!important;color:#fff!important}
+.tab-content table{
+  width:100%;border:1px solid var(--admin-line)!important;border-radius:12px!important;
+  border-collapse:separate!important;border-spacing:0!important;background:#fff!important;
+  box-shadow:0 3px 12px rgba(8,47,73,.04)!important
+}
+.tab-content table th{
+  background:#edf4f7!important;color:#29485b!important;font-size:11px!important;
+  font-weight:800!important;letter-spacing:.045em!important;text-transform:uppercase!important;
+  border-bottom:1px solid #d8e4ea!important;white-space:nowrap
+}
+.tab-content table td{color:#344d5c;border-bottom:1px solid #edf1f4!important;vertical-align:middle}
+.tab-content table tr:last-child td{border-bottom:0!important}
+.tab-content table tbody tr:hover td{background:#f5fafb!important}
+.tab-content .table-responsive,.tab-content .table-container,
+.tab-content .table-wrapper,.tab-content .nchsm-table-scroll{
+  max-width:100%!important;overflow-x:auto!important;-webkit-overflow-scrolling:touch!important
+}
+.tab-content .badge,.tab-content [class*="badge-"]{
+  border-radius:999px!important;font-weight:700!important;letter-spacing:.01em
+}
+.tab-content .progress-bar{background:#e5edf1!important;border-radius:999px!important}
+.tab-content .progress-fill{background:linear-gradient(90deg,#0f766e,#2ab3a5)!important;border-radius:999px!important}
+.tab-content .quick-btn{border:1px solid var(--admin-line)!important;background:#f7fafb!important;color:var(--admin-navy)!important}
+.tab-content .quick-btn:hover{background:#e9f5f3!important;border-color:#9bcac4!important}
+.tab-content .modal{padding:16px!important;backdrop-filter:blur(5px)!important}
+.tab-content .modal-content,.modal .modal-content{
+  width:min(760px,calc(100vw - 28px))!important;max-width:760px!important;
+  max-height:min(90dvh,900px)!important;overflow:auto!important;
+  padding:0!important;border:1px solid #dbe5eb!important;border-radius:16px!important;
+  background:#fff!important;box-shadow:0 24px 70px rgba(3,24,39,.28)!important
+}
+.modal .modal-header{padding:18px 22px!important;background:#f7fafb!important;border-bottom:1px solid var(--admin-line)!important}
+.modal .modal-header h2,.modal .modal-header h3{color:var(--admin-navy)!important}
+.modal .modal-body{padding:20px 22px!important}
+.modal .modal-actions{padding:14px 22px!important;border-top:1px solid var(--admin-line)!important;background:#fbfdfe!important}
+#sidebar{background:linear-gradient(180deg,#082f49 0%,#06263b 100%)!important}
+#mainNav a.active{background:rgba(20,184,166,.17)!important;border-left-color:#5eead4!important;color:#fff!important}
+#mainNav a.active i{color:#5eead4!important}
+#mainNav .nav-section span{color:#9fb9c9!important}
+#dashboard .card,.tab-content .card{border-top:3px solid #dce9ed!important}
+#dashboard .card .data,.tab-content .card .data{color:var(--admin-teal)!important}
+#institutions .cn-head,#institutions .cn-panel{border-radius:14px!important}
+#institutions .cn-stat{border:1px solid var(--admin-line)!important;border-radius:12px!important;box-shadow:0 3px 12px rgba(8,47,73,.05)!important}
+#analytics-module .analytics-card,#data-visualization .analytics-card,
+#system-health .health-card{border-radius:14px!important}
+#transcriptStudentList{grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr))!important}
+#transcriptSelectedCount,#transcriptSelectedCountDisplay{font-variant-numeric:tabular-nums}
+@media(max-width:900px){
+ .main{padding:22px 18px!important}
+ .tab-content .cards,.tab-content .analytics-grid,.tab-content .health-cards{grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr))!important}
+ .tab-content .toolbar,.tab-content .filter-bar,.tab-content .inline-form{align-items:stretch!important}
+}
+@media(max-width:600px){
+ .main{padding:16px 12px 28px!important}
+ .main>header,main.main>header{margin-bottom:18px!important}
+ .main>header h1,main.main>header h1{font-size:1.4rem!important}
+ .tab-content>h2:first-child,.tab-content>div>h2:first-child{font-size:1.2rem!important}
+ .tab-content .cards,.tab-content .analytics-grid,.tab-content .health-cards,
+ .tab-content .scheduled-tasks{grid-template-columns:minmax(0,1fr)!important;gap:12px!important}
+ .tab-content .card,.tab-content .analytics-card,.tab-content .health-card{padding:15px!important}
+ .tab-content .toolbar,.tab-content .filter-bar,.tab-content .inline-form{padding:11px!important}
+ .tab-content input:not([type=checkbox]):not([type=radio]):not([type=file]),
+ .tab-content select,.tab-content textarea{width:100%!important;min-width:0!important}
+ .tab-content .modal{padding:8px!important;align-items:flex-end!important}
+ .tab-content .modal-content,.modal .modal-content{
+   width:100%!important;max-width:none!important;max-height:92dvh!important;border-radius:16px 16px 8px 8px!important
+ }
+ .modal .modal-body{padding:15px!important}
+ .modal .modal-actions{padding:12px 15px!important;flex-wrap:wrap}
+ .tab-content table{min-width:620px}
+}
+@media(prefers-reduced-motion:reduce){
+ .tab-content,.tab-content *{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}
+}
+
+</style>
 </head>
 <body>
     <div class="container">
@@ -6479,7 +6651,7 @@ main.main>header{width:100%;max-width:100%;min-width:0}
                 <i class="fas fa-times"></i> Deselect
             </button>
             <button onclick="generateSelectedTranscripts()" style="padding: 5px 14px; background: #059669; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: 600;">
-                <i class="fas fa-file-pdf"></i> Generate Selected (<span id="transcriptSelectedCount">0</span>)
+                <i class="fas fa-file-pdf"></i> Generate Selected (<span id="transcriptSelectedCount" data-transcript-selected-count>0</span>)
             </button>
             <button onclick="exportAllTranscripts()" style="padding: 5px 14px; background: #FDB913; color: #0A3D62; border: none; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: 600;">
                 <i class="fas fa-file-excel"></i> Export CSV
@@ -6545,7 +6717,7 @@ main.main>header{width:100%;max-width:100%;min-width:0}
                 </div>
                 <div style="display: flex; gap: 6px; flex-wrap: wrap;">
                     <span style="background: #f1f5f9; padding: 4px 12px; border-radius: 12px; font-size: 11px; color: #475569;">
-                        Selected: <strong id="transcriptSelectedCount">0</strong>
+                        Selected: <strong id="transcriptSelectedCountDisplay" data-transcript-selected-count>0</strong>
                     </span>
                 </div>
             </div>
@@ -15313,7 +15485,6 @@ function resetSidebarColor() {
 })();
 
 console.log('✅ Sidebar color functions loaded');
-</script>
 </script>
 <!-- ============================================ -->
 <!-- SEARCH FUNCTION - ADD TO YOUR PAGE           -->
