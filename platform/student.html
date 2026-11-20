@@ -12529,12 +12529,13 @@ if ('serviceWorker' in navigator) {
 // PWA Install Prompt
 let deferredPrompt;
 const installBtn = document.createElement('button');
+installBtn.className = 'nchsm-pwa-install';
 
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
     
-    installBtn.innerHTML = '<i class="fab fa-windows"></i> Install NCHSM Portal Portal';
+    installBtn.innerHTML = '<i class="fab fa-windows"></i> Install NCHSM Portal';
     installBtn.style.cssText = `
         position: fixed;
         bottom: 20px;
