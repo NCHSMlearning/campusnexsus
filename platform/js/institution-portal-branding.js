@@ -136,8 +136,8 @@
         el.textContent = name + " " + roleHeading;
       }
     });
-    const loadingHeading = document.querySelector("#loading-screen .welcome-text h1");
-    if (loadingHeading) loadingHeading.textContent = "Welcome to " + name + " " + roleHeading;
+    const finalSplashHeading = document.querySelector("#loading-screen .welcome-text h1");
+    if (finalSplashHeading) finalSplashHeading.textContent = "Welcome to " + name + " " + roleHeading;
 
     document.querySelectorAll(".nchsm-pwa-install,[data-pwa-install],#installBtn,#installButton").forEach(button => {
       if (!/install/i.test(button.textContent || "")) return;
