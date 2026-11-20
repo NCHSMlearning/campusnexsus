@@ -8,13 +8,13 @@ const norm=v=>String(v??'').trim().toLowerCase();
 // Reuse the persistent Supabase client, never the CDN namespace.
 const client=()=>[window.examSupabase,window.sb,window.supabaseClient,window.db?.supabase].find(c=>c&&typeof c.from==='function'&&typeof c.auth?.getSession==='function')||null;
 function activateModule(id,updateHash=true){
- const allowed=['examinations','timetable','announcements','exam-history','exam-support'];
+ const allowed=['dashboard','examinations','timetable','announcements','exam-history','exam-support'];
  const active=allowed.includes(id)?id:'examinations';
  document.querySelectorAll('.module-view').forEach(section=>{const on=section.id===active;section.classList.toggle('active',on);section.hidden=!on;});
  document.querySelectorAll('.exam-nav a[data-module]').forEach(link=>{const on=link.dataset.module===active;link.classList.toggle('active',on);if(on)link.setAttribute('aria-current','page');else link.removeAttribute('aria-current');});
- const labels={examinations:'Examination Centre',timetable:'Examination Timetable',announcements:'Institution Announcements','exam-history':'Examination History','exam-support':'Examination Support'};
+ const labels={dashboard:'Student Dashboard',examinations:'Examination Centre',timetable:'Examination Timetable',announcements:'Institution Announcements','exam-history':'Examination History','exam-support':'Examination Support'};
  const heading=document.querySelector('.header-left>div>b');if(heading)heading.textContent=labels[active];
- const hero=document.querySelector('.hero'),stats=document.querySelector('.stats-grid');if(hero)hero.hidden=active!=='examinations';if(stats)stats.hidden=active!=='examinations';
+ const hero=document.querySelector('.hero');if(hero)hero.hidden=true;
  if(updateHash&&location.hash!=='#'+active)history.replaceState(null,'','#'+active);
  window.scrollTo({top:0,behavior:'smooth'});
 }
@@ -63,12 +63,21 @@ function examState(exam){
 }
 function onlineHref(exam){const raw=val(exam.exam_link,exam.online_link,'');if(!raw)return '';try{const url=new URL(raw,location.origin);return ['http:','https:'].includes(url.protocol)?url.href:''}catch(_){return ''}}
 function dateLabel(exam){const d=startsAt(exam);return d?d.toLocaleString('en-KE',{timeZone:'Africa/Nairobi',dateStyle:'medium',timeStyle:'short'})+' EAT':'Schedule to be confirmed'}
+function renderDashboard(){
+ const counts={upcoming:0,open:0,closed:0};
+ state.exams.forEach(e=>{const s=examState(e);if(counts[s]!==undefined)counts[s]++;});
+ const completed=state.history.filter(a=>!!a.submitted_at).length;
+ $('stat-total').textContent=state.exams.length;$('stat-upcoming').textContent=counts.upcoming;$('stat-open').textContent=state.exams.filter(e=>examState(e)==='open'&&val(e.exam_link,e.online_link)).length;$('stat-completed').textContent=completed;
+ const total=Math.max(state.exams.length,1);
+ $('status-chart').innerHTML=[['Available now',counts.open,'#16835b'],['Upcoming',counts.upcoming,'#c58a25'],['Closed',counts.closed,'#71849a']].map(([label,n,color])=>'<div class="chart-bar-row"><span>'+label+'</span><div class="chart-track"><i style="width:'+Math.round(n/total*100)+'%;background:'+color+'"></i></div><b>'+n+'</b></div>').join('')+(state.exams.length?'':'<p class="chart-empty">No examination data is available yet.</p>');
+ const days=[];for(let i=6;i>=0;i--){const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()-i);const key=d.toLocaleDateString('en-CA');const count=state.history.filter(a=>{const raw=a.submitted_at||a.started_at;return raw&&new Date(raw).toLocaleDateString('en-CA')===key;}).length;days.push({label:d.toLocaleDateString('en',{weekday:'short'}),count});}
+ const max=Math.max(...days.map(x=>x.count),1);
+ $('activity-chart').innerHTML='<div class="activity-bars">'+days.map(d=>'<div class="activity-column"><b>'+d.count+'</b><i style="height:'+Math.max(5,d.count/max*100)+'%"></i><small>'+d.label+'</small></div>').join('')+'</div><div class="chart-footnote">Last 7 days · '+completed+' submitted in total</div>';
+}
 function render(){
  const q=norm($('search-input').value),filter=$('status-filter').value;
  const rows=state.exams.map(exam=>({exam,status:examState(exam)})).filter(x=>(filter==='all'||filter===x.status)&&(!q||norm([x.exam.title,x.exam.exam_name,x.exam.course_name,x.exam.unit_name,x.exam.exam_type].join(' ')).includes(q)));
- $('stat-total').textContent=state.exams.length;
- $('stat-upcoming').textContent=state.exams.filter(e=>examState(e)==='upcoming').length;
- $('stat-open').textContent=state.exams.filter(e=>examState(e)==='open'&&val(e.exam_link,e.online_link)).length;
+ renderDashboard();
  if(!rows.length){$('exam-panel').innerHTML='<div class="empty-state"><i class="fa-regular fa-calendar-xmark"></i><p>'+(state.exams.length?'No examinations match this filter.':'No approved and published examinations have been assigned to your programme, intake and block yet.')+'</p></div>';return}
  $('exam-panel').innerHTML='<div class="exam-grid">'+rows.map(({exam,status})=>{
   const title=val(exam.title,exam.exam_name,exam.name,'Examination');
@@ -105,7 +114,7 @@ async function loadAnnouncements(){
 async function loadHistory(){
  const panel=$('history-panel');panel.innerHTML='<div class="loading-state"><span class="spinner"></span><p>Loading your examination history…</p></div>';
  const {data,error}=await state.client.from('exam_attempts').select('id,exam_id,attempt_number,status,started_at,submitted_at').eq('student_id',state.user.id).order('started_at',{ascending:false}).limit(30);
- if(error)throw error;state.history=data||[];
+ if(error)throw error;state.history=data||[];renderDashboard();
  panel.innerHTML=state.history.length?'<div class="portal-list">'+state.history.map(a=>{const e=state.exams.find(x=>String(x.id)===String(a.exam_id));return '<article class="portal-list-item"><div class="portal-list-icon"><i class="fa-solid fa-file-circle-check"></i></div><div class="portal-list-copy"><b>'+esc(val(e?.title,e?.exam_name,'Examination'))+'</b><small>Attempt '+esc(a.attempt_number)+' · '+esc(a.submitted_at?'Submitted':'In progress')+'</small></div><div class="portal-list-date">'+esc(a.submitted_at?new Date(a.submitted_at).toLocaleString('en-KE',{dateStyle:'medium',timeStyle:'short'}):a.started_at?new Date(a.started_at).toLocaleString('en-KE',{dateStyle:'medium',timeStyle:'short'}):'')+'</div></article>'}).join('')+'</div>':'<div class="empty-state"><i class="fa-regular fa-folder-open"></i><p>You have no examination attempts yet.</p></div>';
 }
 async function submitSupport(event){
@@ -165,13 +174,13 @@ async function init(){
  $('side-admission').textContent=val(p.admission_number,p.student_id,'Student account');
  $('student-meta').textContent=[val(p.program,p.program_name,'Programme not assigned'),studentBlock(p)!=='General'?studentBlock(p):'',val(p.intake_year,p.intake,'')].filter(Boolean).join(' • ');
  await loadExams();
- renderTimetable();
+ renderTimetable();renderDashboard();
  loadAnnouncements().catch(e=>{$('announcements-panel').innerHTML='<div class="empty-state"><p>Announcements are temporarily unavailable.</p></div>';console.warn(e)});
  loadHistory().catch(e=>{$('history-panel').innerHTML='<div class="empty-state"><p>Examination history is temporarily unavailable.</p></div>';console.warn(e)});
 }
 document.querySelectorAll('.exam-nav a[data-module]').forEach(link=>link.addEventListener('click',event=>{event.preventDefault();activateModule(link.dataset.module);document.getElementById('exam-sidebar').classList.remove('show');document.getElementById('mobile-scrim').classList.remove('show');}));
 window.addEventListener('hashchange',()=>activateModule(location.hash.slice(1),false));
-activateModule(location.hash.slice(1)||'examinations',false);
+activateModule(location.hash.slice(1)||'dashboard',false);
 $('refresh-btn').addEventListener('click',()=>loadExams().then(renderTimetable).catch(e=>notify(e.message||'Could not refresh examinations.')));
 $('refresh-announcements').addEventListener('click',()=>loadAnnouncements().catch(e=>notify(e.message||'Could not load announcements.')));
 $('refresh-history').addEventListener('click',()=>loadHistory().catch(e=>notify(e.message||'Could not load examination history.')));
