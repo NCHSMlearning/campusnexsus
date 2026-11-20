@@ -2168,7 +2168,7 @@ body.dark-theme #loginButton,body.dark-theme .login-button{background:linear-gra
   if (!schoolCode || !window.supabase?.createClient) return;
   const client = window.supabase.createClient(
     "https://lwhtjozfsmbyihenfunw.supabase.co",
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx3aHRqb3pmc21ieWloZW5mdW53IiwiaWF0IjoxNzU5NjU4MTI3LCJleHAiOjIwNzUyMzQxMjd9.7Z8AYvPQwTAEEEhODlW6Xk-IR1FK3Uj5ivZS7P17Wpk"
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx3aHRqb3pmc21ieWloZW5mdW53Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk2NTgxMjcsImV4cCI6MjA3NTIzNDEyN30.7Z8AYvPQwTAEEEhODlW6Xk-IR1FK3Uj5ivZS7P17Wpk"
   );
   client.rpc("resolve_institution_registration_context",{p_code:schoolCode,p_host:null})
     .then(({data,error})=>{
@@ -2233,10 +2233,11 @@ body.dark-theme #loginButton,body.dark-theme .login-button{background:linear-gra
       try {
         const client = window.supabase.createClient(
           "https://lwhtjozfsmbyihenfunw.supabase.co",
-          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx3aHRqb3pmc21ieWloZW5mdW53IiwiaWF0IjoxNzU5NjU4MTI3LCJleHAiOjIwNzUyMzQxMjd9.7Z8AYvPQwTAEEEhODlW6Xk-IR1FK3Uj5ivZS7P17Wpk"
+          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx3aHRqb3pmc21ieWloZW5mdW53Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk2NTgxMjcsImV4cCI6MjA3NTIzNDEyN30.7Z8AYvPQwTAEEEhODlW6Xk-IR1FK3Uj5ivZS7P17Wpk"
         );
         const result = await client.rpc("resolve_institution_registration_context", {p_code:code,p_host:null});
-        if (result.error || !result.data?.institution_id) throw new Error("We could not find an institution with that school code. Check the code and try again.");
+        if (result.error) throw new Error("School-code verification failed: " + (result.error.message || "Unable to contact the institution service."));
+        if (!result.data?.institution_id) throw new Error("No active institution was found for that school code. Check the code or contact the platform administrator.");
         const next = new URL(window.location.href);
         next.searchParams.set("school_code", code);
         window.location.replace(next.toString());
