@@ -9,6 +9,14 @@
       "destination": "/platform/student.html"
     },
     {
+      "source": "/platform/student",
+      "destination": "/platform/student.html"
+    },
+    {
+      "source": "/platform/student/",
+      "destination": "/platform/student.html"
+    },
+    {
       "source": "/student",
       "destination": "/platform/student.html"
     },
