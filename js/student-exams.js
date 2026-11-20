@@ -7,6 +7,17 @@ const val=(...xs)=>xs.find(x=>x!==undefined&&x!==null&&String(x).trim()!=='');
 const norm=v=>String(v??'').trim().toLowerCase();
 // Reuse the persistent Supabase client, never the CDN namespace.
 const client=()=>[window.examSupabase,window.sb,window.supabaseClient,window.db?.supabase].find(c=>c&&typeof c.from==='function'&&typeof c.auth?.getSession==='function')||null;
+function activateModule(id,updateHash=true){
+ const allowed=['examinations','timetable','announcements','exam-history','exam-support'];
+ const active=allowed.includes(id)?id:'examinations';
+ document.querySelectorAll('.module-view').forEach(section=>{const on=section.id===active;section.classList.toggle('active',on);section.hidden=!on;});
+ document.querySelectorAll('.exam-nav a[data-module]').forEach(link=>{const on=link.dataset.module===active;link.classList.toggle('active',on);if(on)link.setAttribute('aria-current','page');else link.removeAttribute('aria-current');});
+ const labels={examinations:'Examination Centre',timetable:'Examination Timetable',announcements:'Institution Announcements','exam-history':'Examination History','exam-support':'Examination Support'};
+ const heading=document.querySelector('.header-left>div>b');if(heading)heading.textContent=labels[active];
+ const hero=document.querySelector('.hero'),stats=document.querySelector('.stats-grid');if(hero)hero.hidden=active!=='examinations';if(stats)stats.hidden=active!=='examinations';
+ if(updateHash&&location.hash!=='#'+active)history.replaceState(null,'','#'+active);
+ window.scrollTo({top:0,behavior:'smooth'});
+}
 function notify(message){const el=$('toast');el.textContent=message;el.classList.add('show');clearTimeout(notify.timer);notify.timer=setTimeout(()=>el.classList.remove('show'),3200)}
 function isTvet(p){return /TVET|DIPLOMA|CERTIFICATE|ARTISAN/i.test(String(val(p.program_type,p.program,p.program_name,'')))}
 function studentBlock(p){return String(val(p.current_block,p.block_term,p.block,p.term,p.year_of_study,'General'))}
@@ -158,6 +169,9 @@ async function init(){
  loadAnnouncements().catch(e=>{$('announcements-panel').innerHTML='<div class="empty-state"><p>Announcements are temporarily unavailable.</p></div>';console.warn(e)});
  loadHistory().catch(e=>{$('history-panel').innerHTML='<div class="empty-state"><p>Examination history is temporarily unavailable.</p></div>';console.warn(e)});
 }
+document.querySelectorAll('.exam-nav a[data-module]').forEach(link=>link.addEventListener('click',event=>{event.preventDefault();activateModule(link.dataset.module);document.getElementById('exam-sidebar').classList.remove('show');document.getElementById('mobile-scrim').classList.remove('show');}));
+window.addEventListener('hashchange',()=>activateModule(location.hash.slice(1),false));
+activateModule(location.hash.slice(1)||'examinations',false);
 $('refresh-btn').addEventListener('click',()=>loadExams().then(renderTimetable).catch(e=>notify(e.message||'Could not refresh examinations.')));
 $('refresh-announcements').addEventListener('click',()=>loadAnnouncements().catch(e=>notify(e.message||'Could not load announcements.')));
 $('refresh-history').addEventListener('click',()=>loadHistory().catch(e=>notify(e.message||'Could not load examination history.')));
