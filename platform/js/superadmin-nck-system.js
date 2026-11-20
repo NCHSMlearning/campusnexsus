@@ -1860,31 +1860,91 @@ function escapeHtml(str) {
     return div.innerHTML;
 }
 
-function showNotification(message, isError = false) {
-    const container = document.getElementById('notification-container') || document.body;
-    
+function showNotification(message, type = 'success') {
+    // Accept both the legacy boolean API and the shared string-based API.
+    const normalizedType = typeof type === 'boolean'
+        ? (type ? 'error' : 'success')
+        : String(type || 'success').toLowerCase();
+    const allowedTypes = ['success', 'error', 'warning', 'info'];
+    const kind = allowedTypes.includes(normalizedType) ? normalizedType : 'info';
+
+    const styles = {
+        success: { background: '#ecfdf5', color: '#065f46', border: '#a7f3d0', icon: '✓' },
+        error:   { background: '#fef2f2', color: '#991b1b', border: '#fecaca', icon: '✕' },
+        warning: { background: '#fffbeb', color: '#92400e', border: '#fde68a', icon: '!' },
+        info:    { background: '#eff6ff', color: '#1e40af', border: '#bfdbfe', icon: 'i' }
+    };
+    const palette = styles[kind];
+
+    let container = document.getElementById('notification-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'notification-container';
+        document.body.appendChild(container);
+    }
+    container.style.cssText = [
+        'position:fixed',
+        'top:calc(14px + env(safe-area-inset-top, 0px))',
+        'left:14px',
+        'right:auto',
+        'bottom:auto',
+        'z-index:100000',
+        'display:flex',
+        'flex-direction:column',
+        'align-items:flex-start',
+        'gap:8px',
+        'width:max-content',
+        'max-width:calc(100vw - 28px)',
+        'pointer-events:none'
+    ].join(';');
+
     const notif = document.createElement('div');
-    notif.style.cssText = `
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        padding: 12px 24px;
-        border-radius: 8px;
-        font-weight: 600;
-        z-index: 99999;
-        max-width: 400px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        animation: slideInRight 0.3s ease;
-        ${isError ? 'background: #fee2e2; color: #991b1b; border: 1px solid #fecaca;' : 'background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0;'}
-    `;
-    notif.innerHTML = `${isError ? '❌' : '✅'} ${message}`;
+    notif.setAttribute('role', kind === 'error' ? 'alert' : 'status');
+    notif.setAttribute('aria-live', kind === 'error' ? 'assertive' : 'polite');
+    notif.style.cssText = [
+        'display:flex',
+        'align-items:center',
+        'gap:10px',
+        'width:fit-content',
+        'max-width:100%',
+        'padding:10px 14px',
+        'border-radius:10px',
+        'font:600 13px/1.4 system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif',
+        'letter-spacing:normal',
+        'box-shadow:0 8px 24px rgba(15,23,42,.14)',
+        'border:1px solid ' + palette.border,
+        'background:' + palette.background,
+        'color:' + palette.color,
+        'overflow-wrap:anywhere',
+        'opacity:0',
+        'transform:translateY(-8px)',
+        'transition:opacity .2s ease,transform .2s ease',
+        'pointer-events:auto'
+    ].join(';');
+
+    const icon = document.createElement('span');
+    icon.textContent = palette.icon;
+    icon.setAttribute('aria-hidden', 'true');
+    icon.style.cssText = 'display:inline-flex;align-items:center;justify-content:center;flex:0 0 20px;width:20px;height:20px;border-radius:50%;background:' + palette.color + ';color:#fff;font-size:13px;font-weight:800;';
+
+    const text = document.createElement('span');
+    text.textContent = String(message ?? '');
+    text.style.cssText = 'min-width:0;';
+
+    notif.append(icon, text);
     container.appendChild(notif);
-    
-    setTimeout(() => {
+    requestAnimationFrame(() => {
+        notif.style.opacity = '1';
+        notif.style.transform = 'translateY(0)';
+    });
+
+    const dismiss = () => {
         notif.style.opacity = '0';
-        notif.style.transition = 'opacity 0.3s';
-        setTimeout(() => notif.remove(), 300);
-    }, 4000);
+        notif.style.transform = 'translateY(-8px)';
+        setTimeout(() => notif.remove(), 220);
+    };
+    const timeout = setTimeout(dismiss, kind === 'error' ? 6000 : 4000);
+    notif.addEventListener('click', () => { clearTimeout(timeout); dismiss(); });
 }
 
 function showLoading(message = 'Loading...') {
