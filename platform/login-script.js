@@ -449,7 +449,7 @@ window.NCHSMLogin = {
                 }
             }
             
-            const appName = 'NCHSM Portal';
+            const appName = (document.documentElement.dataset.institutionName || 'Campus Nexus') + ' Portal';
             const otpauth = `otpauth://totp/${encodeURIComponent(appName)}:${encodeURIComponent(email)}?secret=${secret}&issuer=${encodeURIComponent(appName)}`;
             const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(otpauth)}`;
             
