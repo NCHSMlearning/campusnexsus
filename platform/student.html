@@ -11959,17 +11959,41 @@ async function initializeApp() {
         if (!config.SUPABASE_ANON_KEY || config.SUPABASE_ANON_KEY === '%%SUPABASE_ANON_KEY%%') throw new Error('SUPABASE_ANON_KEY not configured');
         
         if (typeof window.db === 'undefined') throw new Error('Database module not loaded');
-        
-        const dbInstance = await window.db.initialize();
-        if (!dbInstance) throw new Error('Database initialization failed');
-        
-        console.log('✅ Database initialized');
-        
-        let userSession = null;
-        if (window.db.supabase) {
-            userSession = await getSessionWithRestoreRetry(window.db.supabase);
+
+        // Match the working Student Examinations portal startup:
+        // reuse config.js's persistent Supabase client directly. Do not run
+        // Database.initialize()/testConnection() before checking the session.
+        const studentSupabase = [
+            window.examSupabase,
+            window.sb,
+            window.supabaseClient,
+            window.NCHSMLogin?.supabase,
+            window.db?.supabase
+        ].find(client =>
+            client &&
+            typeof client.from === 'function' &&
+            typeof client.auth?.getSession === 'function'
+        ) || null;
+
+        if (!studentSupabase) {
+            throw new Error(window.__EXAM_CONFIG_ERROR__ || 'Student database connection is unavailable. Please refresh this page.');
         }
-        
+
+        const { data: sessionData, error: sessionError } = await studentSupabase.auth.getSession();
+        if (sessionError) throw sessionError;
+        const userSession = sessionData?.session || null;
+
+        // Publish the persistent client to legacy modules without starting a
+        // second Supabase client or a competing authentication lifecycle.
+        window.db.supabase = studentSupabase;
+        window.db.isInitialized = true;
+        window.db.currentUserId = userSession?.user?.id || null;
+        window.sb = studentSupabase;
+        window.supabaseClient = studentSupabase;
+        window.supabase = studentSupabase;
+        window.currentUserId = userSession?.user?.id || null;
+        window.currentUser = userSession?.user || null;
+
         if (!userSession) {
             // No valid session after Supabase's restore window: return to sign-in.
             // Preserve the intended deep link so it can be restored after login.
@@ -11985,23 +12009,35 @@ async function initializeApp() {
         
 
         window.db.currentUserId = userSession.user.id;
-        await window.db.loadUserProfile();
+        window.currentUserId = userSession.user.id;
+        window.currentUser = userSession.user;
 
-        // Verify the restored session belongs to an approved student before
-        // exposing the student portal. A valid Supabase session alone is not
-        // sufficient for tenant access.
-        let authenticatedStudentProfile = window.db.currentUserProfile || null;
-        if (!authenticatedStudentProfile) {
-            const { data: profileRow, error: profileError } = await window.db.supabase
-                .from('consolidated_user_profiles_table')
-                .select('user_id,role,status,login_enabled,institution_id')
-                .eq('user_id', userSession.user.id)
-                .maybeSingle();
-            if (profileError) throw profileError;
-            authenticatedStudentProfile = profileRow;
-            window.db.currentUserProfile = profileRow;
-            window.currentUserProfile = profileRow;
-        }
+        // Follow student-exams.js: query the signed-in student's own profile
+        // directly, then enforce the institution approval checks below.
+        const { data: profileRow, error: profileError } = await studentSupabase
+            .from('consolidated_user_profiles_table')
+            .select('*')
+            .eq('user_id', userSession.user.id)
+            .maybeSingle();
+        if (profileError) throw profileError;
+        if (!profileRow) throw new Error('Your student profile could not be found. Please contact your institution administrator.');
+
+        const authenticatedStudentProfile = {
+            ...profileRow,
+            program: String(
+                profileRow.program ||
+                profileRow.program_type ||
+                profileRow.program_name ||
+                profileRow.department ||
+                ''
+            ).trim(),
+            block: profileRow.block ?? profileRow.current_block ?? null,
+            intake_year: profileRow.intake_year ?? profileRow.year_of_intake ?? null
+        };
+        window.db.currentUserProfile = authenticatedStudentProfile;
+        window.currentUserProfile = authenticatedStudentProfile;
+        window.app = window.app || {};
+        window.app.user = authenticatedStudentProfile;
 
         const studentRole = String(authenticatedStudentProfile?.role || '').trim().toLowerCase();
         const studentStatus = String(authenticatedStudentProfile?.status || '').trim().toLowerCase();
