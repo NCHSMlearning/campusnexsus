@@ -1,0 +1,3499 @@
+/* ================================================================
+   LECTURER REPORTS — MARKS-INTEGRATED MODULE
+   Version: 2026-09-fix3
+   Source of marks: student_marks
+   Student/class source: consolidated_user_profiles_table
+   Assignment source: lecturer_subject_assignments
+
+   FIX NOTES (2026-09-fix3):
+   - lecturer_subject_assignments.lecturer_id stores the STAFF RECORD id
+     (09b84122-...), NOT the auth UUID (9f1452e8-...).
+   - Identity is resolved asynchronously with fallbacks.
+   - submissionPayloadFromForm is ASYNC and resolves the auth UUID
+     directly from supabase.auth.getUser() when window.currentUser is
+     empty — this satisfies the RLS policy
+     WITH CHECK (auth.uid() = lecturer_user_id).
+   - Payload sends BOTH column names:
+       title/document_title, block/class_block
+     so the DB works whether or not you ran the ALTER TABLE.
+   - attachment_* columns are NOT sent on update; only attachment_count.
+   - Reader functions (renderSubmittedReports, editReturnedReport) read
+     title/block with fallbacks to document_title/class_block.
+   - openSubmissionAttachment accepts a submission id and lists the
+     storage folder to find the file.
+   - Bootstrap listens on DOCUMENT for 'lecturerMainReady'
+     (matches lecturer-main.js which uses document.dispatchEvent).
+================================================================ */
+
+(function () {
+    'use strict';
+
+    const LecturerReports = window.LecturerReports || {};
+
+    LecturerReports.reports = Array.isArray(LecturerReports.reports)
+        ? LecturerReports.reports
+        : [];
+
+    LecturerReports.currentFilters = LecturerReports.currentFilters || {
+        search: '',
+        type: 'all',
+        unit: 'all',
+        date: 'all'
+    };
+
+    LecturerReports.currentReport = null;
+    LecturerReports.submittedRows = Array.isArray(LecturerReports.submittedRows) ? LecturerReports.submittedRows : [];
+    LecturerReports.submittedFilters = LecturerReports.submittedFilters || { search: '', documentType: '', status: '' };
+    LecturerReports._cache = LecturerReports._cache || {};
+    LecturerReports._initialized = false;
+
+    /* ============================================================
+       DATABASE
+    ============================================================ */
+
+    function db() {
+        // The lecturer portal's canonical Supabase client is owned by LecturerDatabase.
+        // Prefer it first; window.supabase may be the CDN namespace, not a client.
+        const candidates = [
+            window.lecturerDB?.supabase,
+            window.supabaseClient,
+            window._supabase,
+            window.db?.supabase,
+            window.db,
+            window.sb,
+            window.supabase
+        ];
+        return candidates.find(candidate =>
+            candidate && typeof candidate.from === 'function' &&
+            candidate.auth && typeof candidate.auth.getUser === 'function'
+        ) || null;
+    }
+
+    function esc(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    function currentProgram() {
+        return window.CURRENT_PROGRAM || window.currentProgram || 'KRCHN';
+    }
+
+    function currentProgramType() {
+        if (typeof window.getProgramType === 'function') {
+            try { return window.getProgramType(); } catch (_) {}
+        }
+        return window.CURRENT_PROGRAM_TYPE || 'KRCHN';
+    }
+
+    /* ============================================================
+       LECTURER IDENTITY RESOLUTION
+    ============================================================ */
+
+    const _identityCache = {
+        authUuid: null,
+        staffId: null,
+        email: null,
+        name: null,
+        resolved: false,
+        promise: null
+    };
+
+    function currentLecturerEmailSync() {
+        const u = window.currentUser || {};
+        const lecturer = window.me_currentLecturer || {};
+
+        const direct = (
+            u.email ||
+            lecturer?.staff?.email ||
+            lecturer?.profile?.email ||
+            ''
+        );
+        if (direct) return direct;
+
+        try {
+            const s = JSON.parse(
+                localStorage.getItem('lecturerSession') ||
+                sessionStorage.getItem('lecturerSession') ||
+                '{}'
+            );
+            return s.email || '';
+        } catch (_) {
+            return '';
+        }
+    }
+
+    function currentLecturerIdSync() {
+        const u = window.currentUser || {};
+        const lecturer = window.me_currentLecturer || {};
+
+        const staffId =
+            lecturer?.staff?.id ||
+            window.CORRECT_LECTURER_ID ||
+            _identityCache.staffId ||
+            '';
+
+        if (staffId) return String(staffId);
+
+        if (u.staff_id) return String(u.staff_id);
+        if (u.id) return String(u.id);
+        if (lecturer?.profile?.id) return String(lecturer.profile.id);
+
+        return '';
+    }
+
+    async function resolveLecturerIdentity() {
+        if (_identityCache.resolved) return _identityCache;
+        if (_identityCache.promise) return _identityCache.promise;
+
+        _identityCache.promise = (async () => {
+            const supabase = db();
+
+            /* 1. Already populated by the marks module */
+            const lecturer = window.me_currentLecturer || {};
+            // Only staff.id (or CORRECT_LECTURER_ID) is a staff-record key.
+            // profile.id is commonly an auth/profile UUID and must not be treated
+            // as lecturer_subject_assignments.lecturer_id.
+            if (lecturer?.staff?.id || window.CORRECT_LECTURER_ID) {
+                _identityCache.authUuid =
+                    window.currentUser?.id ||
+                    lecturer?.profile?.user_id ||
+                    null;
+                _identityCache.staffId =
+                    lecturer?.staff?.id ||
+                    window.CORRECT_LECTURER_ID ||
+                    null;
+                _identityCache.email =
+                    lecturer?.staff?.email ||
+                    lecturer?.profile?.email ||
+                    currentLecturerEmailSync();
+                _identityCache.name =
+                    lecturer?.staff?.full_name ||
+                    lecturer?.profile?.full_name ||
+                    null;
+                _identityCache.resolved = true;
+                console.log('📋 [Reports] identity from me_currentLecturer:', {
+                    staffId: _identityCache.staffId,
+                    authUuid: _identityCache.authUuid
+                });
+                return _identityCache;
+            }
+
+            /* 1b. lecturer-main.js already resolved it globally */
+            if (window.CORRECT_LECTURER_ID) {
+                _identityCache.staffId = String(window.CORRECT_LECTURER_ID);
+                _identityCache.authUuid = window.currentUser?.id || null;
+                _identityCache.email = currentLecturerEmailSync();
+                _identityCache.resolved = true;
+                console.log('📋 [Reports] identity from CORRECT_LECTURER_ID:', {
+                    staffId: _identityCache.staffId,
+                    authUuid: _identityCache.authUuid
+                });
+                return _identityCache;
+            }
+
+            /* 2. Auth user + email */
+            let authUuid = window.currentUser?.id || null;
+            let email = currentLecturerEmailSync();
+
+            if (supabase) {
+                try {
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if (user) {
+                        authUuid = authUuid || user.id || null;
+                        email = email || user.email || null;
+                    }
+                } catch (e) {
+                    console.warn('[Reports] auth.getUser failed:', e?.message);
+                }
+            }
+
+            _identityCache.authUuid = authUuid;
+            _identityCache.email = email;
+
+            /* 3. Look up staff record by email */
+            if (supabase && email) {
+                try {
+                    const { data: staff, error: staffError } = await supabase
+                        .from('staff_records')
+                        .select('id, first_name, other_names, email, program, department')
+                        .eq('email', email)
+                        .maybeSingle();
+
+                    if (!staffError && staff?.id) {
+                        _identityCache.staffId = staff.id;
+                        _identityCache.name =
+                            [staff.first_name, staff.other_names]
+                                .filter(Boolean).join(' ').trim() ||
+                            _identityCache.name;
+
+                        window.CORRECT_LECTURER_ID = staff.id;
+                    }
+                } catch (e) {
+                    console.warn('[Reports] staff lookup failed:', e?.message);
+                }
+            }
+
+            /* 4. Fallback: profile table → then by name */
+            if (!_identityCache.staffId && supabase && authUuid) {
+                try {
+                    const { data: profile } = await supabase
+                        .from('consolidated_user_profiles_table')
+                        .select('full_name, program, department')
+                        .eq('user_id', authUuid)
+                        .maybeSingle();
+
+                    if (profile?.full_name) {
+                        _identityCache.name =
+                            _identityCache.name || profile.full_name;
+
+                        const parts = String(profile.full_name).trim().split(/\s+/);
+                        const first = parts[0];
+                        if (first) {
+                            const { data: matches } = await supabase
+                                .from('staff_records')
+                                .select('id, first_name, other_names')
+                                .ilike('first_name', `%${first}%`)
+                                .limit(5);
+
+                            if (matches?.length) {
+                                const full = String(profile.full_name).toLowerCase();
+                                const exact = matches.find(m => {
+                                    const candidate = [m.first_name, m.other_names]
+                                        .filter(Boolean).join(' ').toLowerCase();
+                                    return candidate === full;
+                                });
+                                _identityCache.staffId = (exact || matches[0]).id;
+                                window.CORRECT_LECTURER_ID = _identityCache.staffId;
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.warn('[Reports] profile fallback failed:', e?.message);
+                }
+            }
+
+            _identityCache.resolved = true;
+
+            console.log('📋 [Reports] identity resolved:', {
+                staffId: _identityCache.staffId,
+                authUuid: _identityCache.authUuid,
+                email: _identityCache.email
+            });
+
+            return _identityCache;
+        })();
+
+        return _identityCache.promise;
+    }
+
+    function currentLecturerId() {
+        return currentLecturerIdSync();
+    }
+
+    function currentLecturerEmail() {
+        return currentLecturerEmailSync();
+    }
+
+    function currentAcademicYear() {
+        return (
+            document.getElementById('me_year_select')?.value ||
+            window.me_currentYear ||
+            new Date().getFullYear().toString()
+        );
+    }
+
+    /* ============================================================
+       GRADING
+    ============================================================ */
+
+    function grading(score, programType) {
+        const n = Number(score) || 0;
+        const type = programType || currentProgramType();
+
+        if (type === 'TVET') {
+            if (n >= 80) return { grade: 'A', rating: 'MASTERY', points: 4.0 };
+            if (n >= 65) return { grade: 'B', rating: 'PROFICIENT', points: 3.0 };
+            if (n >= 50) return { grade: 'C', rating: 'COMPETENT', points: 2.0 };
+            return { grade: 'E', rating: 'NOT YET COMPETENT', points: 0.0 };
+        }
+
+        if (n >= 75) return { grade: 'A', rating: 'Distinction', points: 4.0 };
+        if (n >= 65) return { grade: 'B', rating: 'Credit', points: 3.0 };
+        if (n >= 60) return { grade: 'C', rating: 'Pass', points: 2.0 };
+        return { grade: 'D', rating: 'Fail', points: 0.0 };
+    }
+
+    function passingThreshold(programType) {
+        return (programType || currentProgramType()) === 'TVET' ? 50 : 60;
+    }
+
+    function calculateTotal(cat1, cat2, exam, type) {
+        const c1 = Math.min(Number(cat1) || 0, 30);
+        const c2 = Math.min(Number(cat2) || 0, 30);
+        const ex = Math.min(Number(exam) || 0, 70);
+
+        let total = 0;
+
+        switch (type || 'full') {
+            case 'single_cat':
+                total = c1 + ex;
+                break;
+            case 'exam_only':
+                total = Math.min(Number(exam) || 0, 100);
+                break;
+            case 'cats_only':
+                total = ((c1 + c2) / 60) * 100;
+                break;
+            case 'cat_only':
+                total = (c1 / 30) * 100;
+                break;
+            case 'full':
+            default:
+                total = (((c1 + c2) / 60) * 30) + ex;
+                break;
+        }
+
+        return Math.round(total * 10) / 10;
+    }
+
+    function normalizeMark(row) {
+        const assessmentType = row.assessment_type || 'full';
+
+        const cat1 = Number(row.cat1_score) || 0;
+        const cat2 = Number(row.cat2_score) || 0;
+        const exam = Number(row.exam_score) || 0;
+
+        const storedFinal = Number(row.final_score);
+        const total = Number.isFinite(storedFinal)
+            ? storedFinal
+            : calculateTotal(cat1, cat2, exam, assessmentType);
+
+        const gradeInfo = grading(total, currentProgramType());
+
+        return {
+            id: row.id,
+            admission: row.admission_number || '',
+            name: row.student_name || 'Unknown',
+            block: row.block || '',
+            unit: row.subject_name || '',
+            academicYear: row.academic_year || '',
+            assessmentType,
+
+            cat1,
+            cat2,
+            exam,
+            total,
+
+            grade: row.grade || gradeInfo.grade,
+            rating: gradeInfo.rating,
+            points: gradeInfo.points,
+
+            approvalStatus: row.approval_status || 'draft',
+            published: row.published === true,
+
+            retakeScore: row.retake_score != null
+                ? Number(row.retake_score)
+                : null,
+            retakeCount: Number(row.retake_count) || 0,
+            retakeStatus: row.retake_status || '',
+
+            createdAt: row.created_at || null,
+            updatedAt: row.updated_at || null
+        };
+    }
+
+    /* ============================================================
+       LOAD ASSIGNMENTS
+    ============================================================ */
+
+    async function loadAssignedUnits(options = {}) {
+        const supabase = db();
+        if (!supabase) {
+            throw new Error('Reports could not connect to the database. Check the lecturer database session.');
+        }
+
+        // The main portal can dispatch its ready event before the lecturer identity
+        // has finished resolving. Retry briefly instead of permanently rendering empty selects.
+        let identity = null;
+        let lecturerId = '';
+        const attempts = options.retryIdentity === false ? 1 : 6;
+        for (let attempt = 0; attempt < attempts; attempt++) {
+            identity = await resolveLecturerIdentity();
+            lecturerId = String(identity?.staffId || currentLecturerIdSync() || '').trim();
+            if (lecturerId) break;
+            if (attempt < attempts - 1) {
+                _identityCache.resolved = false;
+                _identityCache.promise = null;
+                await new Promise(resolve => setTimeout(resolve, 300));
+            }
+        }
+
+        if (!lecturerId) {
+            throw new Error('Your lecturer/staff ID is not ready. Reopen Reports after the lecturer portal finishes loading.');
+        }
+
+        // Reuse the exact canonical assignment ID already resolved by Sessions
+        // when that module has completed initialization.
+        const sessionsId = String(window.LecturerSessions?.lecturerAssignmentId || '').trim();
+        if (sessionsId) lecturerId = sessionsId;
+
+        const key = `assignments:${lecturerId}`;
+        // Never permanently cache an empty assignment result; identity can still
+        // be resolving or may have used the auth UUID rather than staff-record ID.
+        if (Array.isArray(LecturerReports._cache[key]) && LecturerReports._cache[key].length > 0) {
+            return LecturerReports._cache[key];
+        }
+
+        const fetchAssignments = async id => {
+            const result = await supabase
+                .from('lecturer_subject_assignments')
+                .select('subject_name, subject_code, block, program, academic_year, lecturer_id, lecturer_name')
+                .eq('lecturer_id', String(id));
+            if (result.error) throw result.error;
+            return (result.data || []).filter(a => a.subject_name || a.subject_code);
+        };
+
+        // Match the proven Sessions module first: it reads the live lecturer
+        // profile and queries lecturer_subject_assignments by lecturer_name.
+        const sessionProfile = (() => {
+            try { return window.lecturerDB?.getCurrentUserProfile?.() || null; }
+            catch (_) { return null; }
+        })();
+        const sessionName = String(sessionProfile?.full_name || '').trim();
+        const sessionProgram = String(window.LecturerSessions?.currentProgram || sessionProfile?.program || '').trim();
+        let rows = [];
+        if (sessionName) {
+            const { data: nameRows, error: nameError } = await supabase
+                .from('lecturer_subject_assignments')
+                .select('subject_name, subject_code, block, program, academic_year, lecturer_id, lecturer_name')
+                .ilike('lecturer_name', `%${sessionName}%`);
+            if (nameError) {
+                console.error('[Reports] Sessions-compatible lecturer_name query failed:', nameError);
+                throw new Error('Could not load assigned units by lecturer name: ' + (nameError.message || 'query failed'));
+            }
+            const allNameRows = (nameRows || []).filter(a => a.subject_name || a.subject_code);
+            const programRows = sessionProgram
+                ? allNameRows.filter(a => String(a.program || '').toLowerCase() === sessionProgram.toLowerCase())
+                : [];
+            rows = programRows.length ? programRows : allNameRows;
+            if (rows.length) {
+                const ids = [...new Set(rows.map(a => String(a.lecturer_id || '')).filter(Boolean))];
+                if (ids.length === 1) lecturerId = ids[0];
+                console.info('[Reports] using Sessions-compatible name lookup', {
+                    lecturerName: sessionName, program: sessionProgram, assignments: rows.length
+                });
+            }
+        }
+
+        if (!rows.length) {
+
+        try {
+            rows = await fetchAssignments(lecturerId);
+        } catch (error) {
+            console.error('LecturerReports: assignment query failed', error);
+            throw new Error('Could not load assigned units: ' + (error.message || 'database query failed'));
+        }
+        }
+
+        // Resolve the canonical staff row by email when the first ID returns no
+        // assignments, then retry by staff primary key and the Sessions module's
+        // lecturer_name matching strategy. This handles older assignment rows.
+        const email = String(identity?.email || currentLecturerEmailSync() || '').trim();
+        const liveProfile = (() => {
+            try { return window.lecturerDB?.getCurrentUserProfile?.() || {}; }
+            catch (_) { return {}; }
+        })();
+        let fullName = String(identity?.name || window.me_currentLecturer?.staff?.full_name ||
+            window.me_currentLecturer?.profile?.full_name || liveProfile.full_name ||
+            liveProfile.name || liveProfile.display_name || '').trim();
+        let canonicalId = '';
+
+        if (!rows.length && email) {
+            try {
+                const { data: staff, error: staffError } = await supabase
+                    .from('staff_records')
+                    .select('id, email, first_name, other_names')
+                    .ilike('email', email)
+                    .maybeSingle();
+                if (staffError) throw staffError;
+                if (staff?.id) {
+                    canonicalId = String(staff.id);
+                    fullName = [staff.first_name, staff.other_names].filter(Boolean).join(' ').trim() || fullName;
+                    if (canonicalId !== lecturerId) rows = await fetchAssignments(canonicalId);
+                    if (rows.length) {
+                        lecturerId = canonicalId;
+                        window.CORRECT_LECTURER_ID = canonicalId;
+                        _identityCache.staffId = canonicalId;
+                        _identityCache.email = staff.email || email;
+                        _identityCache.name = fullName;
+                    }
+                }
+            } catch (fallbackError) {
+                console.warn('[Reports] staff-record fallback failed:', fallbackError?.message || fallbackError);
+            }
+        }
+
+        if (!rows.length && fullName) {
+            try {
+                // Match the Sessions module's proven lookup strategy: resolve
+                // assignments by the lecturer's name, then use the assignment FK.
+                const escapedName = fullName.replace(/[%_]/g, ' ').trim();
+                const { data: namedRows, error: nameError } = await supabase
+                    .from('lecturer_subject_assignments')
+                    .select('subject_name, subject_code, block, program, academic_year, lecturer_id, lecturer_name')
+                    .ilike('lecturer_name', `%${escapedName}%`);
+                if (nameError) throw nameError;
+                rows = (namedRows || []).filter(a => a.subject_name || a.subject_code);
+                if (rows.length) {
+                    const matchedIds = [...new Set(rows.map(a => String(a.lecturer_id || '')).filter(Boolean))];
+                    if (matchedIds.length === 1) {
+                        lecturerId = matchedIds[0];
+                        window.CORRECT_LECTURER_ID = lecturerId;
+                        _identityCache.staffId = lecturerId;
+                    }
+                    console.info('[Reports] recovered assigned units using Sessions-compatible lecturer-name lookup', {
+                        name: fullName, count: rows.length, lecturerId
+                    });
+                }
+            } catch (nameFallbackError) {
+                console.warn('[Reports] lecturer-name fallback failed:', nameFallbackError?.message || nameFallbackError);
+            }
+        }
+
+        if (!rows.length) {
+            console.warn('[Reports] no assignments found by current ID, email-linked staff ID, or lecturer name', {
+                lecturerId, email, fullName
+            });
+        }
+        LecturerReports._cache[`assignments:${lecturerId}`] = rows;
+        console.log(`📚 [Reports] loaded ${rows.length} assigned unit(s) for lecturer ${lecturerId}`);
+        return rows;
+    }
+
+    function assignmentMatches(mark, assignments) {
+        if (!assignments.length) return false;
+
+        return assignments.some(a => {
+            const unitMatch =
+                a.subject_name === mark.unit ||
+                a.subject_code === mark.unit;
+
+            if (!unitMatch) return false;
+
+            const blockMatch =
+                !a.block ||
+                !mark.block ||
+                a.block === mark.block;
+
+            const programMatch =
+                !a.program ||
+                a.program === currentProgram();
+
+            const yearMatch =
+                !a.academic_year ||
+                String(a.academic_year) === String(mark.academicYear);
+
+            return blockMatch && programMatch && yearMatch;
+        });
+    }
+
+    /* ============================================================
+       LOAD MARKS
+    ============================================================ */
+
+    async function loadMarks(options = {}) {
+        const supabase = db();
+        if (!supabase) throw new Error('Supabase/database connection unavailable.');
+
+        const assignments = await loadAssignedUnits();
+
+        if (!assignments.length) {
+            return { marks: [], assignments: [], students: [] };
+        }
+
+        const year = options.year || currentAcademicYear();
+
+        const unitNames = [
+            ...new Set(
+                assignments
+                    .map(a => a.subject_name)
+                    .filter(Boolean)
+            )
+        ];
+
+        if (!unitNames.length) {
+            return { marks: [], assignments, students: [] };
+        }
+
+        const { data: markRows, error: markError } = await supabase
+            .from('student_marks')
+            .select(`
+                id,
+                admission_number,
+                student_name,
+                block,
+                subject_name,
+                academic_year,
+                assessment_type,
+                cat1_score,
+                cat2_score,
+                exam_score,
+                final_score,
+                grade,
+                approval_status,
+                published,
+                retake_score,
+                retake_count,
+                retake_status,
+                created_at,
+                updated_at
+            `)
+            .in('subject_name', unitNames)
+            .eq('academic_year', year);
+
+        if (markError) throw markError;
+
+        let marks = (markRows || []).map(normalizeMark);
+
+        marks = marks.filter(m => assignmentMatches(m, assignments));
+
+        if (options.unit) {
+            marks = marks.filter(m => m.unit === options.unit);
+        }
+
+        if (options.block && options.block !== 'all') {
+            marks = marks.filter(m => m.block === options.block);
+        }
+
+        const admissions = [...new Set(
+            marks.map(m => m.admission).filter(Boolean)
+        )];
+
+        let students = [];
+
+        if (admissions.length) {
+            const { data: studentRows, error: studentError } = await supabase
+                .from('consolidated_user_profiles_table')
+                .select('student_id, full_name, block, intake_year, program')
+                .eq('role', 'student')
+                .in('student_id', admissions);
+
+            if (studentError) {
+                console.warn(
+                    'LecturerReports: student profile lookup failed',
+                    studentError
+                );
+            }
+
+            students = studentRows || [];
+        }
+
+        const studentMap = {};
+        students.forEach(s => {
+            studentMap[s.student_id] = s;
+        });
+
+        marks = marks.map(m => {
+            const s = studentMap[m.admission];
+            return {
+                ...m,
+                studentName: s?.full_name || m.name,
+                intakeYear: s?.intake_year || '',
+                studentProgram: s?.program || currentProgram()
+            };
+        });
+
+        return { marks, assignments, students };
+    }
+
+    /* ============================================================
+       STATISTICS
+    ============================================================ */
+
+    function average(values) {
+        const nums = values.map(Number).filter(Number.isFinite);
+        if (!nums.length) return 0;
+        return nums.reduce((a, b) => a + b, 0) / nums.length;
+    }
+
+    function median(values) {
+        const nums = values
+            .map(Number)
+            .filter(Number.isFinite)
+            .sort((a, b) => a - b);
+
+        if (!nums.length) return 0;
+
+        const middle = Math.floor(nums.length / 2);
+
+        return nums.length % 2
+            ? nums[middle]
+            : (nums[middle - 1] + nums[middle]) / 2;
+    }
+
+    function distribution(marks) {
+        const out = {};
+        marks.forEach(m => {
+            const g = m.grade || grading(m.total).grade;
+            out[g] = (out[g] || 0) + 1;
+        });
+        return out;
+    }
+
+    function calculateStatistics(marks) {
+        const threshold = passingThreshold();
+
+        const scored = marks.filter(m =>
+            Number.isFinite(Number(m.total)) &&
+            Number(m.total) > 0
+        );
+
+        const totals = scored.map(m => Number(m.total));
+
+        const passed = scored.filter(m => m.total >= threshold);
+        const failed = scored.filter(m => m.total < threshold);
+
+        return {
+            totalStudents: marks.length,
+            studentsWithMarks: scored.length,
+            studentsWithoutMarks: marks.length - scored.length,
+
+            mean: average(totals),
+            median: median(totals),
+            highest: totals.length ? Math.max(...totals) : 0,
+            lowest: totals.length ? Math.min(...totals) : 0,
+
+            passCount: passed.length,
+            failCount: failed.length,
+
+            passRate: scored.length ? (passed.length / scored.length) * 100 : 0,
+            failRate: scored.length ? (failed.length / scored.length) * 100 : 0,
+
+            gradeDistribution: distribution(scored),
+
+            approval: {
+                draft: marks.filter(m => m.approvalStatus === 'draft').length,
+                pending: marks.filter(m => m.approvalStatus === 'pending').length,
+                approved: marks.filter(m => m.approvalStatus === 'approved').length,
+                rejected: marks.filter(m => m.approvalStatus === 'rejected').length
+            },
+
+            retakes: marks.filter(m => m.retakeCount > 0).length,
+            published: marks.filter(m => m.published).length,
+
+            attendance: null
+        };
+    }
+
+    /* ============================================================
+       REPORT BUILDERS
+    ============================================================ */
+
+    function reportTitle(type) {
+        const names = {
+            AttendanceSummary: 'Attendance Summary',
+            CourseGradeBook: 'Grade Book',
+            AssessmentSummary: 'Assessment Summary',
+            PerformanceAnalysis: 'Performance Analysis',
+            EnrollmentList: 'Class List',
+            UnitProgress: 'Unit Progress',
+            AtRiskStudents: 'Students Requiring Attention',
+            ExamPerformance: 'Exam Performance',
+            AssignmentPerformance: 'Assignment Performance',
+            ComprehensiveUnitReport: 'Comprehensive Unit Report',
+            WeeklyReport: 'Weekly Lecturer Report',
+            TeachingLearningReport: 'Teaching & Learning Report',
+            AssessmentReport: 'Assessment / Examination Report',
+            AttendanceReport: 'Attendance Report',
+            ClinicalPracticalReport: 'Clinical / Practical Report',
+            StudentPerformanceReport: 'Student Performance Report',
+            UnitProgressReport: 'Unit Progress Report',
+            EndOfSemesterReport: 'End-of-Semester Report',
+            OtherReport: 'Other Report'
+        };
+        return names[type] || type || 'Academic Report';
+    }
+
+    function selectedFormData() {
+        return {
+            unit: document.getElementById('reportUnit')?.value || '',
+            block: document.getElementById('reportClass')?.value || 'all',
+            type: document.getElementById('reportType')?.value || 'CourseGradeBook',
+            period: document.getElementById('reportPeriod')?.value || 'current',
+            format: document.getElementById('reportFormat')?.value || 'PDF',
+            startDate: document.getElementById('reportStartDate')?.value || '',
+            endDate: document.getElementById('reportEndDate')?.value || '',
+            includeAttendance: !!document.getElementById('includeAttendance')?.checked,
+            includeGrades: !!document.getElementById('includeGrades')?.checked,
+            includeAssessments: !!document.getElementById('includeAssessments')?.checked,
+            includeExams: !!document.getElementById('includeExams')?.checked,
+            includeAssignments: !!document.getElementById('includeAssignments')?.checked,
+            includeComments: !!document.getElementById('includeComments')?.checked,
+            includeCharts: !!document.getElementById('includeCharts')?.checked
+        };
+    }
+
+    function periodLabel(form) {
+        const map = {
+            current: 'Current Term / Semester',
+            month: 'Current Month',
+            week: 'Current Week',
+            all: 'All Available Data',
+            custom: `${form.startDate || '—'} to ${form.endDate || '—'}`
+        };
+        return map[form.period] || form.period;
+    }
+
+    function buildRows(marks, type) {
+        if (type === 'EnrollmentList') {
+            return marks.map((m, i) => ({
+                '#': i + 1,
+                Admission: m.admission,
+                Student: m.studentName || m.name,
+                Class: m.block,
+                Unit: m.unit
+            }));
+        }
+
+        if (type === 'ExamPerformance') {
+            return marks.map((m, i) => ({
+                '#': i + 1,
+                Admission: m.admission,
+                Student: m.studentName || m.name,
+                CAT1: m.cat1 || '',
+                CAT2: m.cat2 || '',
+                Exam: m.exam || '',
+                Total: m.total || '',
+                Grade: m.grade || '',
+                Status: m.total >= passingThreshold() ? 'PASS' : 'FAIL'
+            }));
+        }
+
+        if (type === 'AssignmentPerformance') {
+            return marks.map((m, i) => ({
+                '#': i + 1,
+                Admission: m.admission,
+                Student: m.studentName || m.name,
+                CAT1: m.cat1 || '',
+                CAT2: m.cat2 || '',
+                Total: m.total || '',
+                Grade: m.grade || ''
+            }));
+        }
+
+        return marks.map((m, i) => ({
+            '#': i + 1,
+            Admission: m.admission,
+            Student: m.studentName || m.name,
+            CAT1: m.cat1 || '',
+            CAT2: m.cat2 || '',
+            Exam: m.exam || '',
+            Total: m.total || '',
+            Grade: m.grade || '',
+            Points: m.points,
+            Rating: m.rating,
+            Status: m.total > 0
+                ? (m.total >= passingThreshold() ? 'PASS' : 'FAIL')
+                : 'N/A',
+            Approval: m.approvalStatus
+        }));
+    }
+
+    function reportDateRange(form) {
+        const now = new Date();
+        const start = form.startDate ? new Date(form.startDate + 'T00:00:00') : null;
+        const end = form.endDate ? new Date(form.endDate + 'T23:59:59.999') : null;
+        if (form.period === 'custom') return { start, end };
+        if (form.period === 'week') {
+            const day = now.getDay();
+            const mondayOffset = day === 0 ? -6 : 1 - day;
+            const from = new Date(now);
+            from.setDate(now.getDate() + mondayOffset);
+            from.setHours(0,0,0,0);
+            const to = new Date(from);
+            to.setDate(from.getDate() + 7);
+            to.setMilliseconds(-1);
+            return { start: from, end: to };
+        }
+        if (form.period === 'month') {
+            return {
+                start: new Date(now.getFullYear(), now.getMonth(), 1),
+                end: new Date(now.getFullYear(), now.getMonth() + 1, 1, 0, 0, 0, -1)
+            };
+        }
+        if (form.period === 'current') {
+            const from = new Date(now.getFullYear(), 0, 1);
+            const to = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
+            return { start: from, end: to };
+        }
+        return { start: null, end: null };
+    }
+
+    function inReportRange(value, range) {
+        if (!value) return !range.start && !range.end;
+        const date = new Date(value);
+        if (!Number.isFinite(date.getTime())) return false;
+        return (!range.start || date >= range.start) && (!range.end || date <= range.end);
+    }
+
+    async function buildSmartAttendanceReport(form) {
+        const supabase = db();
+        if (!supabase) throw new Error('Database connection unavailable.');
+        const range = reportDateRange(form);
+        let query = supabase.from('geo_attendance_logs').select('*').order('check_in_time', { ascending: false });
+        if (range.start) query = query.gte('check_in_time', range.start.toISOString());
+        if (range.end) query = query.lte('check_in_time', range.end.toISOString());
+        const { data, error } = await query;
+        if (error) throw new Error('Could not load attendance data: ' + error.message);
+
+        const assignments = await loadAssignedUnits();
+        const assignedBlocks = [...new Set(assignments.map(a => String(a.block || '').trim()).filter(Boolean))];
+        const selectedBlock = String(form.block || 'all').trim();
+        let logs = (data || []).filter(log => {
+            const logProgram = String(log.program || log.student_program || '').trim();
+            if (logProgram && logProgram.toLowerCase() !== currentProgram().toLowerCase()) return false;
+            const block = String(log.block || log.class_block || log.student_block || '').trim();
+            if (selectedBlock !== 'all' && block && block !== selectedBlock) return false;
+            if (selectedBlock === 'all' && block && assignedBlocks.length && !assignedBlocks.includes(block)) return false;
+            return inReportRange(log.check_in_time || log.attendance_date || log.session_date || log.created_at, range);
+        });
+
+        const unique = new Map();
+        logs.forEach(log => {
+            const key = [
+                log.user_id || log.student_id || log.registration_number || log.student_name || 'unknown',
+                log.session_id || '',
+                String(log.check_in_time || log.attendance_date || log.session_date || '').slice(0,10)
+            ].join('|');
+            const old = unique.get(key);
+            if (!old || String(log.check_in_time || '') > String(old.check_in_time || '')) unique.set(key, log);
+        });
+        logs = [...unique.values()];
+        const countStatus = status => logs.filter(log =>
+            String(log.attendance_status || log.status || '').toLowerCase() === status ||
+            (status === 'present' && log.is_verified === true)
+        ).length;
+        const rows = logs.map((log, i) => ({
+            '#': i + 1,
+            Date: log.check_in_time || log.attendance_date || log.session_date || log.created_at || '',
+            Student: log.student_name || log.full_name || log.name || '',
+            Admission: log.registration_number || log.student_id || log.admission_number || '',
+            Program: log.program || log.student_program || currentProgram(),
+            Block: log.block || log.class_block || log.student_block || '',
+            Unit: log.unit_name || log.subject_name || log.session_title || '',
+            Status: log.attendance_status || log.status || (log.is_verified ? 'Present' : 'Pending'),
+            Verified: log.is_verified === true ? 'Yes' : 'No',
+            'Check-in': log.check_in_time || '',
+            'Check-out': log.check_out_time || ''
+        }));
+        return {
+            marks: [],
+            rows,
+            statistics: {
+                totalRecords: logs.length,
+                present: countStatus('present') + countStatus('verified'),
+                late: countStatus('late'),
+                absent: countStatus('absent'),
+                pending: countStatus('pending'),
+                verified: logs.filter(log => log.is_verified === true).length
+            },
+            source: 'geo_attendance_logs'
+        };
+    }
+
+    async function buildSmartEnrollmentReport(form) {
+        const supabase = db();
+        if (!supabase) throw new Error('Database connection unavailable.');
+        const assignments = await loadAssignedUnits();
+        if (!assignments.length) throw new Error('No assigned units/classes were found for your lecturer account.');
+
+        const assignedBlocks = [...new Set(assignments.map(a => String(a.block || '').trim()).filter(Boolean))];
+        const selectedBlock = String(form.block || 'all').trim();
+        const allowedBlocks = selectedBlock === 'all' ? assignedBlocks : [selectedBlock];
+        if (selectedBlock !== 'all' && assignedBlocks.length && !assignedBlocks.includes(selectedBlock)) {
+            throw new Error('The selected block is not assigned to your lecturer account.');
+        }
+
+        const { data: profiles, error: profileError } = await supabase
+            .from('consolidated_user_profiles_table')
+            .select('user_id, student_id, full_name, email, phone, block, intake_year, program, department, role, status')
+            .eq('role', 'student');
+        if (profileError) throw new Error('Could not load student enrolments: ' + profileError.message);
+
+        const normalize = value => String(value || '').trim().toLowerCase();
+        let students = (profiles || []).filter(student => {
+            const program = student.program || student.department || '';
+            if (program && normalize(program) !== normalize(currentProgram())) return false;
+            const block = String(student.block || '').trim();
+            if (allowedBlocks.length && block && !allowedBlocks.includes(block)) return false;
+            if (selectedBlock !== 'all' && block && block !== selectedBlock) return false;
+            return true;
+        });
+
+        const ids = [...new Set(students.map(s => String(s.student_id || '').trim()).filter(Boolean))];
+        let registrations = [];
+        if (ids.length) {
+            const { data, error } = await supabase.from('student_unit_registrations').select('*').in('student_id', ids);
+            if (error) {
+                console.warn('[Reports] Unit registrations unavailable; exporting assigned-block student roster only:', error);
+            } else {
+                registrations = data || [];
+            }
+        }
+
+        const assignedUnits = assignments.filter(a =>
+            selectedBlock === 'all' || String(a.block || '').trim() === selectedBlock
+        );
+        const selectedUnit = String(form.unit || '').trim();
+        const filteredRegistrations = registrations.filter(reg => {
+            const regUnit = String(reg.subject_name || reg.unit_name || reg.unit || reg.subject_code || '').trim();
+            const regBlock = String(reg.block || reg.class_block || '').trim();
+            if (selectedUnit && regUnit && normalize(regUnit) !== normalize(selectedUnit)) return false;
+            if (selectedBlock !== 'all' && regBlock && regBlock !== selectedBlock) return false;
+            return true;
+        });
+
+        const rows = students.map((student, i) => {
+            const admission = String(student.student_id || '').trim();
+            const regs = filteredRegistrations.filter(reg => String(reg.student_id || '').trim() === admission);
+            const regUnits = [...new Set(regs.map(reg => reg.subject_name || reg.unit_name || reg.unit || reg.subject_code).filter(Boolean))];
+            return {
+                '#': i + 1,
+                Student: student.full_name || '',
+                Admission: admission,
+                Email: student.email || '',
+                Phone: student.phone || '',
+                Program: student.program || student.department || currentProgram(),
+                Block: student.block || '',
+                Intake: student.intake_year || '',
+                'Registered Units': regUnits.join('; ') || (selectedUnit || assignedUnits.map(a => a.subject_name || a.subject_code).filter(Boolean).join('; ')),
+                'Registration Count': regs.length,
+                Status: student.status || 'Active'
+            };
+        });
+        return {
+            marks: [],
+            rows,
+            statistics: {
+                totalStudents: students.length,
+                totalUnitRegistrations: filteredRegistrations.length,
+                assignedUnits: [...new Set(assignedUnits.map(a => a.subject_name || a.subject_code).filter(Boolean))].length,
+                block: selectedBlock === 'all' ? 'All Assigned Blocks' : selectedBlock
+            },
+            source: 'consolidated_user_profiles_table + student_unit_registrations'
+        };
+    }
+
+    async function buildSmartExamReport(form) {
+        const supabase = db();
+        if (!supabase) throw new Error('Database connection unavailable.');
+        const [marksResult, examResult] = await Promise.all([
+            loadMarks({ unit: form.unit || null, block: form.block || 'all', year: currentAcademicYear() }),
+            supabase.from('exams').select('*').order('exam_date', { ascending: false })
+        ]);
+        if (examResult.error) {
+            console.warn('[Reports] Exam catalogue query failed; using marked exam records only:', examResult.error);
+        }
+        const normalize = value => String(value || '').trim().toLowerCase();
+        const assignments = await loadAssignedUnits();
+        const assignedCodes = new Set(assignments.map(a => normalize(a.subject_code)).filter(Boolean));
+        let exams = (examResult.data || []).filter(exam => {
+            const program = exam.target_program || exam.program || '';
+            if (program && normalize(program) !== normalize(currentProgram())) return false;
+            const unit = exam.subject_name || exam.unit_name || exam.subject_code || exam.course_name || '';
+            if (form.unit && unit && normalize(unit) !== normalize(form.unit) &&
+                normalize(exam.subject_code) !== normalize(form.unit)) return false;
+            const block = String(exam.block || exam.class_block || '').trim();
+            if (form.block && form.block !== 'all' && block && block !== form.block) return false;
+            if (assignedCodes.size && exam.subject_code && !assignedCodes.has(normalize(exam.subject_code)) &&
+                !assignments.some(a => normalize(a.subject_name) === normalize(unit))) return false;
+            return true;
+        });
+        const marks = marksResult.marks.filter(mark => {
+            const assessment = normalize(mark.assessmentType);
+            return !assessment || assessment.includes('exam') || Number(mark.exam) > 0;
+        });
+        let rows = buildRows(marks, 'ExamPerformance');
+        if (!rows.length) {
+            rows = exams.map((exam, index) => ({
+                '#': index + 1,
+                Exam: exam.title || exam.exam_name || exam.name || 'Examination',
+                Unit: exam.subject_name || exam.unit_name || exam.subject_code || form.unit || '',
+                Program: exam.target_program || exam.program || currentProgram(),
+                Block: exam.block || exam.class_block || form.block || '',
+                Date: exam.exam_date || exam.start_time || '',
+                Status: exam.approval_status || (exam.is_published ? 'Published' : 'Not published')
+            }));
+        } else {
+            rows = rows.map(row => ({
+                ...row,
+                'Exam Catalogue Count': exams.length
+            }));
+        }
+        return {
+            marks,
+            rows,
+            statistics: { ...calculateStatistics(marks), examCatalogueCount: exams.length },
+            source: 'exams + student_marks'
+        };
+    }
+
+    async function buildSmartCATReport(form) {
+        const result = await loadMarks({
+            unit: form.unit || null,
+            block: form.block || 'all',
+            year: currentAcademicYear()
+        });
+        const marks = result.marks.filter(mark => {
+            const type = String(mark.assessmentType || '').toLowerCase();
+            return type.includes('cat') || Number(mark.cat1) > 0 || Number(mark.cat2) > 0;
+        });
+        return {
+            marks,
+            rows: marks.map((mark, index) => ({
+                '#': index + 1,
+                Admission: mark.admission,
+                Student: mark.studentName || mark.name,
+                Block: mark.block,
+                Unit: mark.unit,
+                CAT1: mark.cat1 || '',
+                CAT2: mark.cat2 || '',
+                Total: Number(mark.cat1 || 0) + Number(mark.cat2 || 0),
+                Grade: mark.grade || '',
+                Status: mark.approvalStatus || ''
+            })),
+            statistics: { ...calculateStatistics(marks), catRecords: marks.length },
+            source: 'student_marks'
+        };
+    }
+
+    async function buildReport(form = selectedFormData()) {
+        const type = String(form.type || '');
+        let result;
+        let marks = [];
+        let rows;
+        let stats;
+
+        if (['AttendanceSummary', 'AttendanceReport'].includes(type)) {
+            result = await buildSmartAttendanceReport(form);
+            rows = result.rows;
+            stats = result.statistics;
+        } else if (type === 'ExamPerformance') {
+            result = await buildSmartExamReport(form);
+            marks = result.marks;
+            rows = result.rows;
+            stats = result.statistics;
+        } else if (type === 'AssessmentSummary' || type === 'AssignmentPerformance') {
+            result = await buildSmartCATReport(form);
+            marks = result.marks;
+            rows = result.rows;
+            stats = result.statistics;
+        } else if (type === 'EnrollmentList') {
+            result = await buildSmartEnrollmentReport(form);
+            rows = result.rows;
+            stats = result.statistics;
+        } else {
+            result = await loadMarks({
+                unit: form.unit || null,
+                block: form.block || 'all',
+                year: currentAcademicYear()
+            });
+            marks = result.marks;
+            stats = calculateStatistics(marks);
+            rows = buildRows(marks, type);
+        }
+
+        return {
+            id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
+            title: reportTitle(type),
+            type,
+            unit: form.unit || 'All Assigned Units',
+            block: form.block === 'all' ? 'All Assigned Classes' : form.block,
+            program: currentProgram(),
+            programType: currentProgramType(),
+            academicYear: currentAcademicYear(),
+            period: periodLabel(form),
+            generatedAt: new Date().toISOString(),
+            lecturer: {
+                id: currentLecturerIdSync(),
+                email: currentLecturerEmailSync(),
+                name: window.currentUser?.full_name ||
+                    window.currentUser?.name ||
+                    window.me_currentLecturer?.profile?.full_name ||
+                    window.me_currentLecturer?.staff?.full_name ||
+                    'Lecturer'
+            },
+            statistics: stats,
+            rows,
+            marks,
+            source: result.source || 'student_marks',
+            grading: {
+                passingThreshold: passingThreshold(),
+                system: currentProgramType() === 'TVET' ? 'TVET Competency-Based Grading' : 'Nursing Grading System'
+            },
+            options: form
+        };
+    }
+
+    /* ============================================================
+       FORM / SELECTS
+    ============================================================ */
+
+    async function populateReportSelectors() {
+        let assignments;
+        try {
+            assignments = await loadAssignedUnits();
+        } catch (error) {
+            console.error('[Reports] unit selector population failed:', error);
+            const unitSelect = document.getElementById('reportUnit');
+            if (unitSelect) {
+                unitSelect.innerHTML = '<option value="">Assigned units unavailable — use Refresh</option>';
+                unitSelect.disabled = false;
+                unitSelect.title = error.message || 'Could not load assigned units';
+            }
+            const submissionSelect = document.getElementById('submissionReportUnit');
+            if (submissionSelect) {
+                submissionSelect.innerHTML = '<option value="">Assigned units unavailable — use Refresh</option>';
+                submissionSelect.disabled = false;
+                submissionSelect.title = error.message || 'Could not load assigned units';
+            }
+            showReportNotice('Could not load assigned units: ' + (error.message || error), 'error');
+            throw error;
+        }
+
+        const unitSelect = document.getElementById('reportUnit');
+        const unitFilter = document.getElementById('reportUnitFilter');
+        const classSelect = document.getElementById('reportClass');
+
+        const units = [
+            ...new Map(
+                assignments.map(a => [
+                    a.subject_name || a.subject_code,
+                    a
+                ])
+            ).values()
+        ];
+
+        if (unitSelect) {
+            const current = unitSelect.value;
+            unitSelect.innerHTML =
+                '<option value="">-- Select Assigned Unit --</option>';
+
+            units.forEach(u => {
+                const option = document.createElement('option');
+                option.value = u.subject_name || u.subject_code;
+                option.dataset.code = u.subject_code || '';
+                option.textContent =
+                    `${u.subject_code ? u.subject_code + ' - ' : ''}${u.subject_name || u.subject_code}`;
+                unitSelect.appendChild(option);
+            });
+
+            if (current) unitSelect.value = current;
+        }
+
+        if (unitFilter) {
+            const current = unitFilter.value;
+            unitFilter.innerHTML = '<option value="all">All My Units</option>';
+
+            units.forEach(u => {
+                const option = document.createElement('option');
+                option.value = u.subject_name || u.subject_code;
+                option.textContent = u.subject_name || u.subject_code;
+                unitFilter.appendChild(option);
+            });
+
+            if (current) unitFilter.value = current;
+        }
+
+        if (classSelect) {
+            const current = classSelect.value;
+            const blocks = [
+                ...new Set(
+                    assignments.map(a => a.block).filter(Boolean)
+                )
+            ];
+
+            classSelect.innerHTML = '<option value="all">All My Classes</option>';
+
+            blocks.forEach(block => {
+                const option = document.createElement('option');
+                option.value = block;
+                option.textContent = block.replace(/_/g, ' ');
+                classSelect.appendChild(option);
+            });
+
+            if (current) classSelect.value = current;
+        }
+    }
+
+    /* ============================================================
+       GENERATE
+    ============================================================ */
+
+    LecturerReports.generateReport = async function () {
+        const form = selectedFormData();
+
+        if (!form.unit) {
+            showReportNotice('Select an assigned unit first.', 'warning');
+            return;
+        }
+
+        if (!form.type) {
+            showReportNotice('Select a report type.', 'warning');
+            return;
+        }
+
+        try {
+            setReportBusy(true, 'Generating report from marks...');
+            const report = await buildReport(form);
+            LecturerReports.currentReport = report;
+
+            LecturerReports.reports.unshift({
+                ...report,
+                generatedAt: report.generatedAt
+            });
+
+            saveLocalReports();
+            renderReports(LecturerReports.reports);
+            updateSummary(report.marks, report.statistics);
+            updateAnalytics(LecturerReports.reports);
+
+            if (form.format === 'PDF') {
+                await LecturerReports.exportToPDF();
+            } else if (form.format === 'Excel') {
+                LecturerReports.exportToExcel();
+            } else if (form.format === 'CSV') {
+                exportCurrentCSV(report);
+            } else {
+                await LecturerReports.previewReport();
+            }
+
+            showReportNotice(
+                `Report generated from ${report.marks.length} student mark records.`,
+                'success'
+            );
+        } catch (error) {
+            console.error('LecturerReports.generateReport:', error);
+            showReportNotice(
+                'Could not generate report: ' + error.message,
+                'error'
+            );
+        } finally {
+            setReportBusy(false);
+        }
+    };
+
+    LecturerReports.quickReport = async function (type) {
+        const typeEl = document.getElementById('reportType');
+        if (typeEl) typeEl.value = type;
+
+        const unitEl = document.getElementById('reportUnit');
+
+        if (unitEl && !unitEl.value) {
+            const assignments = await loadAssignedUnits();
+            const first = assignments.find(a => a.subject_name);
+            if (first) unitEl.value = first.subject_name;
+        }
+
+        await LecturerReports.generateReport();
+    };
+
+    /* ============================================================
+       PREVIEW
+    ============================================================ */
+
+    LecturerReports.previewReport = async function () {
+        try {
+            let report = LecturerReports.currentReport;
+            if (!report) {
+                report = await buildReport(selectedFormData());
+                LecturerReports.currentReport = report;
+            }
+
+            const modal = document.getElementById('reportPreviewModal');
+            const content = document.getElementById('reportPreviewContent');
+            if (!modal || !content) return;
+
+            content.innerHTML = renderPreview(report);
+            modal.style.display = 'flex';
+        } catch (error) {
+            console.error(error);
+            showReportNotice(
+                'Unable to preview report: ' + error.message,
+                'error'
+            );
+        }
+    };
+
+    LecturerReports.closePreview = function () {
+        const modal = document.getElementById('reportPreviewModal');
+        if (modal) modal.style.display = 'none';
+    };
+
+    function renderPreview(report) {
+        const s = report.statistics;
+
+        const gradeHtml = Object.entries(s.gradeDistribution)
+            .map(([grade, count]) =>
+                `<span style="display:inline-flex;align-items:center;gap:5px;background:#f1f5f9;padding:5px 9px;border-radius:15px;margin:3px;font-size:11px;">
+                    <strong>${esc(grade)}</strong> ${count}
+                </span>`
+            ).join('');
+
+        const rows = report.rows || [];
+        const headers = rows.length ? Object.keys(rows[0]) : [];
+
+        const tableHead = headers.map(h =>
+            `<th style="padding:9px;text-align:left;border-bottom:1px solid #e2e8f0;white-space:nowrap;">${esc(h)}</th>`
+        ).join('');
+
+        const tableBody = rows.map(row =>
+            `<tr>${headers.map(h =>
+                `<td style="padding:8px;border-bottom:1px solid #f1f5f9;white-space:nowrap;">${esc(row[h])}</td>`
+            ).join('')}</tr>`
+        ).join('');
+
+        return `
+            <div id="lecturerReportPrintable"
+                 style="font-family:Arial,sans-serif;color:#1e293b;background:#fff;">
+                <div style="border-bottom:3px solid #4C1D95;padding-bottom:14px;margin-bottom:16px;">
+                    <h2 style="margin:0;color:#0A3D62;font-size:21px;">
+                        ${esc(report.title)}
+                    </h2>
+                    <div style="margin-top:6px;font-size:12px;color:#64748b;">
+                        ${esc(report.program)}
+                        • ${esc(report.block)}
+                        • Academic Year ${esc(report.academicYear)}
+                    </div>
+                    <div style="margin-top:4px;font-size:12px;color:#64748b;">
+                        Unit: <strong>${esc(report.unit)}</strong>
+                        • Period: ${esc(report.period)}
+                    </div>
+                    <div style="margin-top:4px;font-size:11px;color:#94a3b8;">
+                        Generated ${new Date(report.generatedAt).toLocaleString()}
+                    </div>
+                </div>
+
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px;">
+                    ${metricBox('Students', s.totalStudents)}
+                    ${metricBox('Mean', s.mean.toFixed(1) + '%')}
+                    ${metricBox('Pass Rate', s.passRate.toFixed(1) + '%')}
+                    ${metricBox('Highest', s.highest.toFixed(1) + '%')}
+                    ${metricBox('Lowest', s.lowest.toFixed(1) + '%')}
+                    ${metricBox('Pass', s.passCount)}
+                    ${metricBox('Fail', s.failCount)}
+                    ${metricBox('Retakes', s.retakes)}
+                </div>
+
+                <div style="padding:12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:9px;margin-bottom:15px;">
+                    <strong style="font-size:12px;">Grade Distribution</strong>
+                    <div style="margin-top:6px;">${gradeHtml || '<span style="color:#94a3b8;">No graded records</span>'}</div>
+                </div>
+
+                <div style="padding:10px 12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:9px;margin-bottom:15px;font-size:11px;">
+                    <strong>Grading:</strong>
+                    ${esc(report.grading.system)}
+                    • Passing threshold:
+                    <strong>${report.grading.passingThreshold}%</strong>
+                </div>
+
+                <div style="overflow:auto;border:1px solid #e2e8f0;border-radius:8px;">
+                    <table style="width:100%;border-collapse:collapse;font-size:10px;">
+                        <thead style="background:#f8fafc;">
+                            <tr>${tableHead}</tr>
+                        </thead>
+                        <tbody>${tableBody ||
+                            `<tr><td colspan="${Math.max(headers.length,1)}" style="padding:25px;text-align:center;color:#94a3b8;">No marks found.</td></tr>`
+                        }</tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+    }
+
+    function metricBox(label, value) {
+        return `
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:9px;text-align:center;">
+                <div style="font-size:9px;color:#94a3b8;text-transform:uppercase;font-weight:700;">${label}</div>
+                <strong style="display:block;font-size:16px;color:#0A3D62;margin-top:2px;">${value}</strong>
+            </div>
+        `;
+    }
+
+    /* ============================================================
+       CSV / EXCEL
+    ============================================================ */
+
+    function exportCurrentCSV(report) {
+        if (!report) return;
+        const rows = report.rows || [];
+
+        if (!rows.length) {
+            showReportNotice('No data available to export.', 'warning');
+            return;
+        }
+
+        const headers = Object.keys(rows[0]);
+        const csv = [
+            headers.map(csvCell).join(','),
+            ...rows.map(row => headers.map(h => csvCell(row[h])).join(','))
+        ].join('\n');
+
+        downloadBlob(
+            csv,
+            safeFilename(`${report.title}_${report.unit}`) + '.csv',
+            'text/csv;charset=utf-8;'
+        );
+
+        showReportNotice('CSV report downloaded.', 'success');
+    }
+
+    function csvCell(value) {
+        return `"${String(value ?? '').replace(/"/g, '""')}"`;
+    }
+
+    LecturerReports.exportToExcel = function () {
+        const report = LecturerReports.currentReport;
+
+        if (!report) {
+            showReportNotice('Generate or preview a report first.', 'warning');
+            return;
+        }
+
+        if (window.XLSX) {
+            const rows = report.rows || [];
+            const ws = XLSX.utils.json_to_sheet(rows);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Report');
+            XLSX.writeFile(
+                wb,
+                safeFilename(`${report.title}_${report.unit}`) + '.xlsx'
+            );
+        } else {
+            const html = excelCompatibleHTML(report);
+            downloadBlob(
+                html,
+                safeFilename(`${report.title}_${report.unit}`) + '.xls',
+                'application/vnd.ms-excel'
+            );
+        }
+
+        showReportNotice('Excel report downloaded.', 'success');
+    };
+
+    function excelCompatibleHTML(report) {
+        const rows = report.rows || [];
+        const headers = rows.length ? Object.keys(rows[0]) : [];
+
+        return `
+            <html>
+            <head><meta charset="UTF-8"></head>
+            <body>
+                <h2>${esc(report.title)}</h2>
+                <p>${esc(report.unit)} — ${esc(report.block)}</p>
+                <table border="1">
+                    <tr>${headers.map(h => `<th>${esc(h)}</th>`).join('')}</tr>
+                    ${rows.map(r =>
+                        `<tr>${headers.map(h => `<td>${esc(r[h])}</td>`).join('')}</tr>`
+                    ).join('')}
+                </table>
+            </body>
+            </html>
+        `;
+    }
+
+    /* ============================================================
+       PDF
+    ============================================================ */
+
+    LecturerReports.exportToPDF = async function () {
+        let report = LecturerReports.currentReport;
+
+        if (!report) {
+            report = await buildReport(selectedFormData());
+            LecturerReports.currentReport = report;
+        }
+
+        if (window.jspdf?.jsPDF) {
+            const doc = new window.jspdf.jsPDF({
+                orientation: 'landscape',
+                unit: 'mm',
+                format: 'a4'
+            });
+
+            const s = report.statistics;
+
+            doc.setFontSize(17);
+            doc.text(report.title, 14, 15);
+
+            doc.setFontSize(9);
+            doc.text(
+                `${report.program} | ${report.unit} | ${report.block}`,
+                14, 22
+            );
+
+            doc.text(
+                `Academic Year: ${report.academicYear} | Period: ${report.period}`,
+                14, 27
+            );
+
+            doc.text(
+                `Students: ${s.totalStudents} | Mean: ${s.mean.toFixed(1)}% | Pass Rate: ${s.passRate.toFixed(1)}% | Highest: ${s.highest.toFixed(1)}% | Lowest: ${s.lowest.toFixed(1)}%`,
+                14, 33
+            );
+
+            if (typeof doc.autoTable === 'function') {
+                const rows = report.rows || [];
+                const headers = rows.length ? Object.keys(rows[0]) : [];
+
+                doc.autoTable({
+                    startY: 40,
+                    head: [headers],
+                    body: rows.map(r => headers.map(h => r[h] ?? '')),
+                    styles: { fontSize: 7 },
+                    headStyles: { fillColor: [76, 29, 149] }
+                });
+            } else {
+                doc.setFontSize(8);
+                doc.text(
+                    'Install/load jsPDF AutoTable for a full tabular PDF export.',
+                    14, 42
+                );
+            }
+
+            doc.save(
+                safeFilename(`${report.title}_${report.unit}`) + '.pdf'
+            );
+
+            showReportNotice('PDF report downloaded.', 'success');
+            return;
+        }
+
+        await LecturerReports.previewReport();
+
+        showReportNotice(
+            'PDF library is not loaded. Use Print → Save as PDF, or load jsPDF + AutoTable.',
+            'info'
+        );
+    };
+
+    LecturerReports.exportPreviewToPDF = LecturerReports.exportToPDF;
+
+    LecturerReports.printPreview = function () {
+        const report = LecturerReports.currentReport;
+        if (!report) return;
+
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) {
+            showReportNotice('Please allow pop-ups to print the report.', 'warning');
+            return;
+        }
+
+        printWindow.document.write(`
+            <!doctype html>
+            <html>
+            <head>
+                <title>${esc(report.title)}</title>
+                <style>
+                    @page { size: landscape; margin: 10mm; }
+                    body { font-family: Arial, sans-serif; margin: 0; }
+                    table { page-break-inside: auto; }
+                    tr { page-break-inside: avoid; }
+                </style>
+            </head>
+            <body>
+                ${renderPreview(report)}
+                <script>
+                    window.onload = function(){
+                        setTimeout(function(){ window.print(); }, 300);
+                    };
+                <\/script>
+            </body>
+            </html>
+        `);
+
+        printWindow.document.close();
+    };
+
+    /* ============================================================
+       REPORT LIST / LOCAL STORAGE
+    ============================================================ */
+
+    function storageKey() {
+        return `lecturer_reports_${currentLecturerIdSync() || currentLecturerEmailSync() || 'unknown'}`;
+    }
+
+    function saveLocalReports() {
+        try {
+            const compact = LecturerReports.reports.slice(0, 50).map(r => ({
+                id: r.id,
+                title: r.title,
+                type: r.type,
+                unit: r.unit,
+                block: r.block,
+                program: r.program,
+                academicYear: r.academicYear,
+                period: r.period,
+                generatedAt: r.generatedAt,
+                statistics: r.statistics
+            }));
+
+            localStorage.setItem(storageKey(), JSON.stringify(compact));
+        } catch (e) {
+            console.warn('Could not save report history:', e);
+        }
+    }
+
+    function loadLocalReports() {
+        try {
+            const raw = localStorage.getItem(storageKey());
+            if (!raw) return [];
+            const data = JSON.parse(raw);
+            return Array.isArray(data) ? data : [];
+        } catch (_) {
+            return [];
+        }
+    }
+
+    function renderReports(reports) {
+        const tbody = document.getElementById('reportsTable');
+        const countEl = document.getElementById('reportCountDisplay');
+        const filterEl = document.getElementById('reportFilterCount');
+
+        if (!tbody) return;
+
+        const list = filterReports(reports || []);
+
+        if (countEl) countEl.textContent = list.length;
+        if (filterEl) {
+            filterEl.textContent =
+                `Showing ${list.length} of ${(reports || []).length} reports`;
+        }
+
+        if (!list.length) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="8" style="padding:45px;text-align:center;color:#94a3b8;">
+                        <i class="fas fa-file-circle-xmark" style="font-size:32px;margin-bottom:10px;"></i>
+                        <div style="font-weight:700;color:#64748b;">No reports found</div>
+                        <small>Generate a report from your assigned unit and marks.</small>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = list.map((r, index) => `
+            <tr style="border-bottom:1px solid #f1f5f9;">
+                <td style="padding:11px 15px;">
+                    <strong style="color:#334155;">${esc(r.title)}</strong>
+                    <div style="font-size:10px;color:#94a3b8;">
+                        ${esc(r.program || '')}
+                    </div>
+                </td>
+                <td style="padding:11px 15px;color:#475569;">${esc(r.unit)}</td>
+                <td style="padding:11px 15px;color:#475569;">${esc(r.block)}</td>
+                <td style="padding:11px 15px;">
+                    <span style="background:#ede9fe;color:#5b21b6;padding:4px 7px;border-radius:10px;font-size:10px;">
+                        ${esc(reportTitle(r.type))}
+                    </span>
+                </td>
+                <td style="padding:11px 15px;color:#64748b;">${esc(r.period || '')}</td>
+                <td style="padding:11px 15px;color:#64748b;">
+                    ${r.generatedAt ? new Date(r.generatedAt).toLocaleString() : '—'}
+                </td>
+                <td style="padding:11px 15px;text-align:center;">
+                    <span style="font-weight:700;color:#475569;">
+                        ${esc(r.options?.format || 'Report')}
+                    </span>
+                </td>
+                <td style="padding:11px 15px;text-align:center;white-space:nowrap;">
+                    <button type="button"
+                        onclick="LecturerReports.openHistoryReport(${index})"
+                        title="Preview"
+                        style="border:0;background:#ede9fe;color:#5b21b6;padding:6px 8px;border-radius:6px;cursor:pointer;">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function filterReports(reports) {
+        const f = LecturerReports.currentFilters;
+
+        return (reports || []).filter(r => {
+            const search = String(f.search || '').trim().toLowerCase();
+
+            const searchMatch = !search ||
+                `${r.title} ${r.unit} ${r.block} ${r.type}`
+                    .toLowerCase()
+                    .includes(search);
+
+            const typeMatch =
+                !f.type || f.type === 'all' || r.type === f.type;
+
+            const unitMatch =
+                !f.unit || f.unit === 'all' || r.unit === f.unit;
+
+            let dateMatch = true;
+
+            if (f.date && f.date !== 'all' && r.generatedAt) {
+                const d = new Date(r.generatedAt);
+                const now = new Date();
+
+                if (f.date === 'today') {
+                    dateMatch = d.toDateString() === now.toDateString();
+                } else if (f.date === 'week') {
+                    const weekAgo = new Date(now);
+                    weekAgo.setDate(now.getDate() - 7);
+                    dateMatch = d >= weekAgo;
+                } else if (f.date === 'month') {
+                    dateMatch =
+                        d.getMonth() === now.getMonth() &&
+                        d.getFullYear() === now.getFullYear();
+                }
+            }
+
+            return searchMatch && typeMatch && unitMatch && dateMatch;
+        });
+    }
+
+    LecturerReports.openHistoryReport = async function (index) {
+        const list = filterReports(LecturerReports.reports);
+        const item = list[index];
+        if (!item) return;
+
+        try {
+            setReportBusy(true, 'Refreshing report from current marks...');
+
+            const report = await buildReport({
+                unit: item.unit !== 'All Assigned Units' ? item.unit : '',
+                block: item.block === 'All Classes' ? 'all' : item.block,
+                type: item.type,
+                period: 'all',
+                format: 'HTML',
+                includeAttendance: true,
+                includeGrades: true,
+                includeAssessments: true,
+                includeExams: true,
+                includeAssignments: true,
+                includeComments: false,
+                includeCharts: true
+            });
+
+            LecturerReports.currentReport = report;
+            await LecturerReports.previewReport();
+        } catch (error) {
+            showReportNotice(
+                'Could not reopen report: ' + error.message,
+                'error'
+            );
+        } finally {
+            setReportBusy(false);
+        }
+    };
+
+    LecturerReports.clearFilters = function () {
+        LecturerReports.currentFilters = {
+            search: '',
+            type: 'all',
+            unit: 'all',
+            date: 'all'
+        };
+
+        const ids = {
+            reportSearch: '',
+            reportTypeFilter: 'all',
+            reportUnitFilter: 'all',
+            reportDateFilter: 'all'
+        };
+
+        Object.entries(ids).forEach(([id, value]) => {
+            const el = document.getElementById(id);
+            if (el) el.value = value;
+        });
+
+        renderReports(LecturerReports.reports);
+    };
+
+    LecturerReports.refresh = async function () {
+        try {
+            setReportBusy(true, 'Refreshing marks and reports...');
+
+            _identityCache.resolved = false;
+            _identityCache.promise = null;
+            LecturerReports._cache = {};
+
+            const assignments = await loadAssignedUnits();
+
+            const units = [
+                ...new Set(
+                    assignments.map(a => a.subject_name).filter(Boolean)
+                )
+            ];
+
+            if (LecturerReports.currentReport) {
+                const old = LecturerReports.currentReport;
+
+                LecturerReports.currentReport = await buildReport({
+                    unit: old.unit !== 'All Assigned Units' ? old.unit : '',
+                    block: old.block === 'All Classes' ? 'all' : old.block,
+                    type: old.type,
+                    period: 'all',
+                    format: 'HTML',
+                    includeAttendance: true,
+                    includeGrades: true,
+                    includeAssessments: true,
+                    includeExams: true,
+                    includeAssignments: true,
+                    includeComments: false,
+                    includeCharts: true
+                });
+            }
+
+            await populateReportSelectors();
+
+            renderReports(LecturerReports.reports);
+            updateAnalytics(LecturerReports.reports);
+
+            showReportNotice(
+                `Reports refreshed. ${units.length} assigned unit(s) available.`,
+                'success'
+            );
+        } catch (error) {
+            console.error(error);
+            showReportNotice('Refresh failed: ' + error.message, 'error');
+        } finally {
+            setReportBusy(false);
+        }
+    };
+
+    /* ============================================================
+       EXPORT ALL / JSON / PRINT
+    ============================================================ */
+
+    LecturerReports.exportAllReports = function () {
+        if (!LecturerReports.reports.length) {
+            showReportNotice('No reports available.', 'warning');
+            return;
+        }
+
+        const rows = LecturerReports.reports.map(r => ({
+            Report: r.title,
+            Unit: r.unit,
+            Class: r.block,
+            Type: r.type,
+            Period: r.period,
+            Students: r.statistics?.totalStudents || 0,
+            Mean: r.statistics?.mean?.toFixed?.(1) || '',
+            PassRate: r.statistics?.passRate?.toFixed?.(1) || '',
+            Generated: r.generatedAt ? new Date(r.generatedAt).toLocaleString() : ''
+        }));
+
+        const headers = Object.keys(rows[0]);
+        const csv = [
+            headers.map(csvCell).join(','),
+            ...rows.map(row => headers.map(h => csvCell(row[h])).join(','))
+        ].join('\n');
+
+        downloadBlob(
+            csv,
+            `lecturer_reports_${currentAcademicYear()}.csv`,
+            'text/csv;charset=utf-8;'
+        );
+
+        showReportNotice('All reports exported.', 'success');
+    };
+
+    LecturerReports.exportAllToPDF = async function () {
+        if (!LecturerReports.reports.length) {
+            showReportNotice('No reports available.', 'warning');
+            return;
+        }
+
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) {
+            showReportNotice('Please allow pop-ups to export all reports.', 'warning');
+            return;
+        }
+
+        const content = LecturerReports.reports.map(r =>
+            renderPreview(r)
+        ).join('<div style="page-break-after:always;"></div>');
+
+        printWindow.document.write(`
+            <!doctype html>
+            <html>
+            <head>
+                <title>Lecturer Academic Reports</title>
+                <style>
+                    @page { size: landscape; margin: 10mm; }
+                    body { font-family:Arial,sans-serif; }
+                </style>
+            </head>
+            <body>
+                ${content}
+                <script>
+                    window.onload = function(){
+                        setTimeout(function(){ window.print(); }, 300);
+                    };
+                <\/script>
+            </body>
+            </html>
+        `);
+
+        printWindow.document.close();
+    };
+
+    LecturerReports.exportJSON = function () {
+        if (!LecturerReports.reports.length) {
+            showReportNotice('No reports available.', 'warning');
+            return;
+        }
+
+        const json = JSON.stringify(LecturerReports.reports, null, 2);
+        downloadBlob(
+            json,
+            `lecturer_reports_${currentAcademicYear()}.json`,
+            'application/json;charset=utf-8;'
+        );
+
+        showReportNotice('JSON export downloaded.', 'success');
+    };
+
+    LecturerReports.printReportTable = function () {
+        const table = document.querySelector('#reportsTable');
+        if (!table) return;
+
+        const win = window.open('', '_blank');
+        if (!win) {
+            showReportNotice('Please allow pop-ups to print.', 'warning');
+            return;
+        }
+
+        win.document.write(`
+            <!doctype html>
+            <html>
+            <head>
+                <title>Lecturer Reports</title>
+                <style>
+                    body { font-family:Arial,sans-serif;padding:20px; }
+                    table { width:100%;border-collapse:collapse; }
+                    th,td { border:1px solid #ddd;padding:8px;font-size:11px; }
+                    th { background:#f3f4f6; }
+                </style>
+            </head>
+            <body>
+                <h2>Lecturer Reports</h2>
+                <table>
+                    ${table.closest('table')?.querySelector('thead')?.outerHTML || ''}
+                    <tbody>${table.innerHTML}</tbody>
+                </table>
+                <script>
+                    window.onload = function(){
+                        setTimeout(function(){ window.print(); }, 250);
+                    };
+                <\/script>
+            </body>
+            </html>
+        `);
+
+        win.document.close();
+    };
+
+    LecturerReports.downloadAllReports = LecturerReports.exportAllReports;
+
+    /* ============================================================
+       ANALYTICS
+    ============================================================ */
+
+    function updateSummary(marks, stats) {
+        const set = (id, value) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = value;
+        };
+
+        set('totalReportsCount', LecturerReports.reports.length);
+        set('unitReportsCount', new Set(marks.map(m => m.unit)).size);
+        set('studentReportsCount', new Set(marks.map(m => m.admission)).size);
+        set(
+            'performanceReportsCount',
+            LecturerReports.reports.filter(
+                r => r.type === 'PerformanceAnalysis'
+            ).length
+        );
+        set(
+            'reportEngagementRate',
+            marks.length
+                ? `${((marks.filter(m => m.total > 0).length / marks.length) * 100).toFixed(1)}%`
+                : '—'
+        );
+        set(
+            'reportPassRate',
+            stats ? `${stats.passRate.toFixed(1)}%` : '—'
+        );
+    }
+
+    function updateAnalytics(reports) {
+        const set = (id, value) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = value;
+        };
+
+        if (!reports.length) {
+            set('mostGeneratedType', '—');
+            set('mostActiveUnit', '—');
+            set('reportPopularFormat', '—');
+            set('reportAvgGenerationTime', '—');
+            return;
+        }
+
+        const typeCounts = {};
+        const unitCounts = {};
+        const formatCounts = {};
+
+        reports.forEach(r => {
+            typeCounts[r.type] = (typeCounts[r.type] || 0) + 1;
+            unitCounts[r.unit] = (unitCounts[r.unit] || 0) + 1;
+            const format = r.options?.format || 'Report';
+            formatCounts[format] = (formatCounts[format] || 0) + 1;
+        });
+
+        set(
+            'mostGeneratedType',
+            reportTitle(
+                Object.keys(typeCounts)
+                    .sort((a, b) => typeCounts[b] - typeCounts[a])[0]
+            )
+        );
+
+        set(
+            'mostActiveUnit',
+            Object.keys(unitCounts)
+                .sort((a, b) => unitCounts[b] - unitCounts[a])[0] || '—'
+        );
+
+        const popularFormat =
+            Object.keys(formatCounts)
+                .sort((a, b) => formatCounts[b] - formatCounts[a])[0];
+
+        set('reportPopularFormat', popularFormat || '—');
+
+        const meta = document.getElementById('reportPopularFormatMeta');
+        if (meta) {
+            meta.textContent = popularFormat
+                ? `${formatCounts[popularFormat]} generated`
+                : 'Based on loaded reports';
+        }
+
+        set('reportAvgGenerationTime', '—');
+    }
+
+    /* ============================================================
+       UI HELPERS
+    ============================================================ */
+
+    function setReportBusy(busy, message) {
+        const buttons = document.querySelectorAll(
+            '#reportGenerationForm button'
+        );
+
+        buttons.forEach(btn => {
+            if (btn.dataset.originalDisabled === undefined) {
+                btn.dataset.originalDisabled =
+                    btn.disabled ? '1' : '0';
+            }
+            btn.disabled = busy;
+            btn.style.opacity = busy ? '.65' : '1';
+        });
+
+        if (message) {
+            const title = document.querySelector('#reportGenerationForm h4');
+            if (title && busy) {
+                title.dataset.originalText ||= title.textContent;
+                title.textContent = message;
+            } else if (title && !busy && title.dataset.originalText) {
+                title.textContent = title.dataset.originalText;
+            }
+        }
+    }
+
+    function showReportNotice(message, type) {
+        if (typeof window.showNotification === 'function') {
+            try {
+                window.showNotification(message, type || 'info');
+                return;
+            } catch (_) {}
+        }
+
+        if (window.LecturerUI?.showNotification) {
+            try {
+                window.LecturerUI.showNotification(message, type || 'info');
+                return;
+            } catch (_) {}
+        }
+
+        console.log(`[LecturerReports:${type || 'info'}] ${message}`);
+    }
+
+    function downloadBlob(content, filename, type) {
+        const blob = new Blob([content], { type });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+
+        setTimeout(() => URL.revokeObjectURL(url), 500);
+    }
+
+    function safeFilename(value) {
+        return String(value || 'report')
+            .replace(/[<>:"/\\|?*\x00-\x1F]/g, '_')
+            .replace(/\s+/g, '_')
+            .slice(0, 150);
+    }
+
+    /* ============================================================
+       REPORT SUBMISSION / WEEKLY REPORT WORKFLOW
+    ============================================================ */
+
+    const REPORT_SUBMISSION_TABLE = 'lecturer_report_submissions';
+    const REPORT_STORAGE_BUCKET = 'lecturer-reports';
+
+    const TEACHING_DOCUMENTS = [
+        ['course_outline', 'Course Outline'],
+        ['scheme_of_work', 'Scheme of Work'],
+        ['course_objectives', 'Course Objectives'],
+        ['records_of_work', 'Records of Work'],
+        ['lesson_plan', 'Lesson Plan'],
+        ['teaching_schedule', 'Teaching Schedule'],
+        ['learning_resources', 'Learning Resources / Materials'],
+        ['other_teaching_document', 'Other Teaching Document']
+    ];
+
+    const SUBMISSION_DOCUMENTS = {
+        TeachingLearningReport: TEACHING_DOCUMENTS,
+        AssessmentReport: [
+            ['assessment_plan', 'Assessment Plan'],
+            ['cat_report', 'CAT Report'],
+            ['exam_report', 'Examination Report'],
+            ['mark_sheet', 'Mark Sheet'],
+            ['moderation_report', 'Moderation Report']
+        ],
+        AttendanceReport: [
+            ['weekly_attendance', 'Weekly Attendance'],
+            ['monthly_attendance', 'Monthly Attendance'],
+            ['attendance_exception', 'Attendance Exception Report']
+        ],
+        ClinicalPracticalReport: [
+            ['clinical_plan', 'Clinical Plan'],
+            ['rotation_report', 'Clinical Rotation Report'],
+            ['practical_assessment', 'Practical Assessment Report'],
+            ['clinical_attendance', 'Clinical Attendance Report']
+        ],
+        StudentPerformanceReport: [
+            ['performance_report', 'Student Performance Report'],
+            ['at_risk_report', 'At-Risk Student Report'],
+            ['progress_report', 'Student Progress Report']
+        ],
+        UnitProgressReport: [
+            ['unit_progress', 'Unit Progress Report'],
+            ['content_coverage', 'Content Coverage Report'],
+            ['pending_topics', 'Pending Topics / Coverage Report']
+        ],
+        WeeklyReport: [
+            ['weekly_teaching', 'Weekly Teaching Report'],
+            ['weekly_clinical', 'Weekly Clinical Report'],
+            ['weekly_activity', 'Weekly Activity Report']
+        ],
+        EndOfSemesterReport: [
+            ['course_completion', 'Course Completion Report'],
+            ['unit_report', 'End-of-Semester Unit Report'],
+            ['assessment_summary', 'Semester Assessment Summary'],
+            ['semester_report', 'End-of-Semester Report']
+        ],
+        OtherReport: [
+            ['other', 'Other Report / Document']
+        ]
+    };
+
+    function submissionEl(id) {
+        return document.getElementById(id);
+    }
+
+    function submissionValue(id) {
+        return submissionEl(id)?.value?.trim() || '';
+    }
+
+    function setSubmissionMessage(message, type = 'info') {
+        const el = submissionEl('reportSubmissionMessage');
+        if (!el) {
+            showReportNotice(message, type);
+            return;
+        }
+
+        const styles = {
+            success: ['#ecfdf5', '#047857', '#a7f3d0'],
+            error: ['#fef2f2', '#b91c1c', '#fecaca'],
+            warning: ['#fffbeb', '#b45309', '#fde68a'],
+            info: ['#eff6ff', '#1d4ed8', '#bfdbfe']
+        };
+        const s = styles[type] || styles.info;
+        el.style.display = 'block';
+        el.style.background = s[0];
+        el.style.color = s[1];
+        el.style.border = `1px solid ${s[2]}`;
+        el.textContent = message;
+    }
+
+    function submissionCategoryLabel(type) {
+        const map = {
+            WeeklyReport: 'Weekly Lecturer Report',
+            TeachingLearningReport: 'Teaching & Learning',
+            AssessmentReport: 'Assessment / Examination',
+            AttendanceReport: 'Attendance',
+            ClinicalPracticalReport: 'Clinical / Practical',
+            StudentPerformanceReport: 'Student Performance',
+            UnitProgressReport: 'Unit Progress',
+            EndOfSemesterReport: 'End-of-Semester',
+            OtherReport: 'Other'
+        };
+        return map[type] || type || 'Report';
+    }
+
+    function populateSubmissionSelect(select, rows, placeholder, valueKey, labelFn) {
+        if (!select) return;
+        const current = select.value;
+        select.innerHTML = `<option value="">${esc(placeholder)}</option>`;
+
+        rows.forEach(row => {
+            const value = typeof valueKey === 'function'
+                ? valueKey(row)
+                : row[valueKey];
+            if (!value) return;
+
+            const option = document.createElement('option');
+            option.value = value;
+            option.dataset.code = row.subject_code || '';
+            option.textContent = labelFn ? labelFn(row) : value;
+            select.appendChild(option);
+        });
+
+        if (current && [...select.options].some(o => o.value === current)) {
+            select.value = current;
+        }
+    }
+
+    async function populateSubmissionSelectors() {
+        const assignments = await loadAssignedUnits();
+
+        const units = [
+            ...new Map(
+                assignments.map(a => [
+                    `${a.subject_code || ''}|${a.subject_name || ''}`,
+                    a
+                ])
+            ).values()
+        ];
+
+        const unitSelect = submissionEl('submissionReportUnit');
+        populateSubmissionSelect(
+            unitSelect,
+            units,
+            '-- Select Assigned Unit --',
+            a => a.subject_name || a.subject_code,
+            a => `${a.subject_code ? a.subject_code + ' - ' : ''}${a.subject_name || a.subject_code}`
+        );
+
+        const unitFilter = submissionEl('reportUnitFilter');
+        if (unitFilter) {
+            const existing = [...unitFilter.options].map(o => o.value);
+            units.forEach(u => {
+                const value = u.subject_name || u.subject_code;
+                if (!value || existing.includes(value)) return;
+                const option = document.createElement('option');
+                option.value = value;
+                option.textContent = u.subject_name || u.subject_code;
+                unitFilter.appendChild(option);
+            });
+        }
+
+        const classSelect = submissionEl('submissionReportClass');
+        const blocks = [...new Set(assignments.map(a => a.block).filter(Boolean))];
+        populateSubmissionSelect(
+            classSelect,
+            blocks.map(block => ({ block })),
+            'All Assigned Classes',
+            'block',
+            row => String(row.block).replace(/_/g, ' ')
+        );
+
+        const weeklyUnit = submissionEl('weeklyReportUnit');
+        populateSubmissionSelect(
+            weeklyUnit,
+            units,
+            '-- Select Unit --',
+            a => a.subject_name || a.subject_code,
+            a => `${a.subject_code ? a.subject_code + ' - ' : ''}${a.subject_name || a.subject_code}`
+        );
+
+        const weeklyClass = submissionEl('weeklyReportClass');
+        populateSubmissionSelect(
+            weeklyClass,
+            blocks.map(block => ({ block })),
+            'All Assigned Classes',
+            'block',
+            row => String(row.block).replace(/_/g, ' ')
+        );
+    }
+
+    LecturerReports.handleSubmissionTypeChange = function (type) {
+        const documentField = submissionEl('submissionDocumentTypeField');
+        const documentSelect = submissionEl('submissionDocumentType');
+        const guide = submissionEl('submissionCategoryGuide');
+        const guideText = submissionEl('submissionCategoryGuideText');
+
+        const options = SUBMISSION_DOCUMENTS[type] || [];
+
+        if (documentField) {
+            documentField.style.display = options.length ? '' : 'none';
+        }
+
+        if (documentSelect) {
+            documentSelect.innerHTML =
+                '<option value="">-- Select Document --</option>';
+
+            options.forEach(([value, label]) => {
+                const option = document.createElement('option');
+                option.value = value;
+                option.textContent = label;
+                documentSelect.appendChild(option);
+            });
+
+            documentSelect.required = type === 'TeachingLearningReport';
+        }
+
+        const guides = {
+            TeachingLearningReport:
+                'Select the exact teaching document being submitted. The assigned-unit list is loaded from lecturer_subject_assignments.',
+            WeeklyReport:
+                'Complete the week number, period, topics, activities, challenges and action points. You may include live attendance and marks in the generated report.',
+            AssessmentReport:
+                'Select the assessment document and attach the supporting report or mark sheet where applicable.',
+            ClinicalPracticalReport:
+                'Select the clinical/practical document and attach supporting evidence where applicable.',
+            AttendanceReport:
+                'Select the attendance report type and use the selected assigned unit/class.',
+            StudentPerformanceReport:
+                'Use the live marks data for the selected assigned unit/class where applicable.',
+            UnitProgressReport:
+                'Document content covered, pending topics and progress for the selected assigned unit.',
+            EndOfSemesterReport:
+                'Select the semester document and attach the completed report where applicable.'
+        };
+
+        if (guide && guideText && guides[type]) {
+            guide.style.display = 'block';
+            guideText.textContent = guides[type];
+        } else if (guide) {
+            guide.style.display = 'none';
+        }
+    };
+
+    /* ============================================================
+       SUBMISSION PAYLOAD — ASYNC + RLS-SAFE
+    ============================================================ */
+
+    async function submissionPayloadFromForm(status = 'draft') {
+        const type = submissionValue('submissionReportType');
+        const unit = submissionValue('submissionReportUnit');
+        const block = submissionValue('submissionReportClass') || 'all';
+        const recipient = submissionValue('submissionRecipient');
+
+        /* Pull subject_code from the selected unit option */
+        let subjectCode = null;
+        try {
+            const opt = document.querySelector(
+                `#submissionReportUnit option[value="${CSS.escape(unit)}"]`
+            );
+            subjectCode = opt?.dataset?.code || null;
+        } catch (_) {}
+
+        /* Resolve the auth UUID — this is what the RLS policy checks */
+        let authUuid =
+            window.currentUser?.id ||
+            window.me_currentLecturer?.profile?.user_id ||
+            null;
+
+        if (!authUuid) {
+            const supabase = db();
+            if (supabase) {
+                try {
+                    const { data: { user } } = await supabase.auth.getUser();
+                    authUuid = user?.id || null;
+                } catch (_) {}
+            }
+        }
+
+        if (!authUuid) {
+            console.error('[Reports] No auth UUID — insert will fail RLS');
+        }
+
+        console.log('[Reports] payload identity:',
+            { authUuid, staffId: currentLecturerIdSync() });
+
+        const title = submissionValue('submissionTitle');
+
+        return {
+            /* identity */
+            lecturer_user_id: authUuid,
+            lecturer_id: currentLecturerIdSync(),
+            lecturer_email: currentLecturerEmailSync(),
+            lecturer_name:
+                window.currentUser?.full_name ||
+                window.currentUser?.name ||
+                window.me_currentLecturer?.profile?.full_name ||
+                window.me_currentLecturer?.staff?.full_name ||
+                'Lecturer',
+
+            /* classification */
+            report_type: type,
+            report_category: submissionCategoryLabel(type),
+            document_type: submissionValue('submissionDocumentType') || null,
+
+            /* DB has "title" — also send document_title for admin views */
+            title: title,
+            document_title: title,
+
+            summary: submissionValue('submissionSummary'),
+
+            /* academic context */
+            unit_name: unit,
+            subject_code: subjectCode,
+            program: currentProgram(),
+
+            /* DB has "block" — also send class_block for admin views */
+            block: block,
+            class_block: block,
+
+            academic_year: submissionValue('submissionAcademicYear') || currentAcademicYear(),
+            week_number: Number(submissionValue('submissionWeekNumber')) || null,
+            period_start: submissionValue('submissionPeriodStart') || null,
+            period_end: submissionValue('submissionPeriodEnd') || null,
+
+            /* recipient + options */
+            recipient_role: recipient,
+            include_attendance: !!submissionEl('submissionIncludeAttendance')?.checked,
+            include_grades: !!submissionEl('submissionIncludeGrades')?.checked,
+            include_activities: !!submissionEl('submissionIncludeActivities')?.checked,
+            include_challenges: !!submissionEl('submissionIncludeChallenges')?.checked,
+
+            /* lifecycle */
+            status,
+            submitted_at: status === 'submitted' ? new Date().toISOString() : null,
+            updated_at: new Date().toISOString()
+        };
+    }
+
+    function validateSubmissionPayload(payload) {
+        if (!payload.lecturer_user_id) return 'Lecturer session is not ready (no auth UUID).';
+        if (!payload.lecturer_id) return 'Lecturer session is not ready (no staff ID).';
+        if (!payload.report_type) return 'Select a report category.';
+        if (!payload.unit_name) return 'Select an assigned unit.';
+        if (!payload.title) return 'Enter a report title.';
+        if (!payload.recipient_role) return 'Select who should review the report.';
+        if (!payload.period_start || !payload.period_end) {
+            return 'Select the reporting period.';
+        }
+
+        if (payload.period_end < payload.period_start) {
+            return 'The reporting period end date cannot be before the start date.';
+        }
+
+        if (payload.report_type === 'TeachingLearningReport' && !payload.document_type) {
+            return 'Select the teaching document you are submitting.';
+        }
+
+        return '';
+    }
+
+    async function uploadSubmissionAttachment(file, lecturerId, submissionId) {
+        if (!file) return null;
+
+        const supabase = db();
+        if (!supabase) throw new Error('Supabase/database connection unavailable.');
+
+        const safeName = String(file.name || 'document')
+            .replace(/[^\w.\-]+/g, '_')
+            .slice(-160);
+
+        const path =
+            `${lecturerId}/${new Date().getFullYear()}/${submissionId}/${Date.now()}_${safeName}`;
+
+        const { error } = await supabase.storage
+            .from(REPORT_STORAGE_BUCKET)
+            .upload(path, file, {
+                upsert: false,
+                contentType: file.type || 'application/octet-stream'
+            });
+
+        if (error) throw error;
+
+        return {
+            path,
+            name: file.name,
+            type: file.type || '',
+            size: file.size || 0
+        };
+    }
+
+    async function createOrUpdateSubmission(status = 'draft') {
+        const supabase = db();
+        if (!supabase) throw new Error('Supabase/database connection unavailable.');
+
+        /* async resolver — this is what ensures lecturer_user_id is set */
+        const payload = await submissionPayloadFromForm(status);
+        const validation = validateSubmissionPayload(payload);
+
+        if (validation) {
+            setSubmissionMessage(validation, 'warning');
+            return null;
+        }
+
+        const file = submissionEl('submissionAttachment')?.files?.[0] || null;
+
+        let submissionId =
+            submissionEl('lecturerReportSubmissionForm')?.dataset.submissionId || null;
+
+        let row;
+
+        if (submissionId) {
+            const { data, error } = await supabase
+                .from(REPORT_SUBMISSION_TABLE)
+                .update(payload)
+                .eq('id', submissionId)
+                .eq('lecturer_id', payload.lecturer_id)
+                .select()
+                .single();
+
+            if (error) throw error;
+            row = data;
+        } else {
+            const { data, error } = await supabase
+                .from(REPORT_SUBMISSION_TABLE)
+                .insert(payload)
+                .select()
+                .single();
+
+            if (error) throw error;
+            row = data;
+            submissionId = row.id;
+
+            const form = submissionEl('lecturerReportSubmissionForm');
+            if (form) form.dataset.submissionId = submissionId;
+        }
+
+        if (file) {
+            const uploadedFile = await uploadSubmissionAttachment(file, payload.lecturer_id, submissionId);
+
+            // Save attachment metadata so Super Admin can find the uploaded file
+            // without relying solely on Storage folder discovery.
+            try {
+                const { error: attachmentMetaError } = await supabase
+                    .from('lecturer_report_attachments')
+                    .insert({
+                        submission_id: submissionId,
+                        uploaded_by: payload.lecturer_user_id,
+                        file_name: uploadedFile.name,
+                        storage_path: uploadedFile.path,
+                        mime_type: uploadedFile.type || null,
+                        file_size: uploadedFile.size || 0
+                    });
+                if (attachmentMetaError) {
+                    console.warn('[Reports] File uploaded, but attachment metadata could not be saved; Storage fallback will be used.', attachmentMetaError);
+                }
+            } catch (attachmentMetaError) {
+                console.warn('[Reports] Attachment metadata insert unavailable; Storage fallback will be used.', attachmentMetaError);
+            }
+
+            // Preserve an immutable version record for every uploaded revision.
+            // A new row is written only after the file has successfully reached Storage.
+            try {
+                const { data: latestVersion, error: versionReadError } = await supabase
+                    .from('lecturer_report_document_versions')
+                    .select('version_number')
+                    .eq('submission_id', submissionId)
+                    .order('version_number', { ascending: false })
+                    .limit(1)
+                    .maybeSingle();
+                if (versionReadError) throw versionReadError;
+                const nextVersion = Number(latestVersion?.version_number || 0) + 1;
+                const { data: attachmentMeta } = await supabase
+                    .from('lecturer_report_attachments')
+                    .select('id')
+                    .eq('submission_id', submissionId)
+                    .eq('storage_path', uploadedFile.path)
+                    .maybeSingle();
+                const { error: versionInsertError } = await supabase
+                    .from('lecturer_report_document_versions')
+                    .insert({
+                        submission_id: submissionId,
+                        attachment_id: attachmentMeta?.id || null,
+                        version_number: nextVersion,
+                        file_name: uploadedFile.name,
+                        storage_path: uploadedFile.path,
+                        mime_type: uploadedFile.type || null,
+                        file_size: uploadedFile.size || 0,
+                        uploaded_by: payload.lecturer_user_id
+                    });
+                if (versionInsertError) throw versionInsertError;
+            } catch (versionError) {
+                console.error('[Reports] Upload succeeded, but version history could not be recorded.', versionError);
+                throw new Error('The document uploaded, but version history could not be saved. Contact the administrator before resubmitting to avoid duplicate versions.');
+            }
+
+            /* Keep attachment count in sync with the uploaded file. */
+            const { data: updated, error } = await supabase
+                .from(REPORT_SUBMISSION_TABLE)
+                .update({
+                    attachment_count: 1,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', submissionId)
+                .eq('lecturer_id', payload.lecturer_id)
+                .select()
+                .single();
+
+            if (error) throw error;
+            row = updated;
+        }
+
+        return row;
+    }
+
+    LecturerReports.saveReportDraft = async function () {
+        try {
+            setSubmissionMessage('Saving report draft...', 'info');
+            const row = await createOrUpdateSubmission('draft');
+
+            if (!row) return;
+
+            setSubmissionMessage(
+                'Draft saved successfully. You can continue editing before submitting.',
+                'success'
+            );
+
+            await LecturerReports.refreshSubmittedReports();
+        } catch (error) {
+            console.error('LecturerReports.saveReportDraft:', error);
+            setSubmissionMessage(
+                'Could not save draft: ' + (error.message || error),
+                'error'
+            );
+        }
+    };
+
+    LecturerReports.submitReportForReview = async function () {
+        try {
+            setSubmissionMessage('Submitting report for administrator review...', 'info');
+
+            const row = await createOrUpdateSubmission('submitted');
+            if (!row) return;
+
+            setSubmissionMessage(
+                'Report submitted successfully and is now awaiting administrator review.',
+                'success'
+            );
+
+            await LecturerReports.refreshSubmittedReports();
+        } catch (error) {
+            console.error('LecturerReports.submitReportForReview:', error);
+            setSubmissionMessage(
+                'Could not submit report: ' + (error.message || error),
+                'error'
+            );
+        }
+    };
+
+    LecturerReports.previewSubmission = async function () {
+        const payload = await submissionPayloadFromForm('draft');
+        const validation = validateSubmissionPayload(payload);
+
+        if (validation) {
+            setSubmissionMessage(validation, 'warning');
+            return;
+        }
+
+        const docLabel =
+            SUBMISSION_DOCUMENTS[payload.report_type]
+                ?.find(([value]) => value === payload.document_type)?.[1] ||
+            payload.document_type ||
+            'General Report';
+
+        const attachment = submissionEl('submissionAttachment')?.files?.[0];
+
+        const html = `
+            <div style="font-family:Arial,sans-serif;color:#1e293b;">
+                <h2 style="margin-top:0;color:#0A3D62;">${esc(payload.title)}</h2>
+                <p>
+                    <strong>Category:</strong> ${esc(payload.report_category)}
+                    ${docLabel ? ` • <strong>Document:</strong> ${esc(docLabel)}` : ''}
+                </p>
+                <p><strong>Unit:</strong> ${esc(payload.unit_name)}
+                   • <strong>Class:</strong> ${esc(payload.block)}
+                   • <strong>Academic Year:</strong> ${esc(payload.academic_year)}</p>
+                <p><strong>Period:</strong> ${esc(payload.period_start)} to ${esc(payload.period_end)}</p>
+                <p><strong>Submit To:</strong> ${esc(payload.recipient_role)}</p>
+                ${payload.week_number ? `<p><strong>Week:</strong> ${payload.week_number}</p>` : ''}
+                <div style="margin-top:14px;padding:12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:9px;">
+                    ${esc(payload.summary || 'No summary/remarks entered.')}
+                </div>
+                ${attachment
+                    ? `<p style="margin-top:12px;"><strong>Attachment:</strong> ${esc(attachment.name)}</p>`
+                    : '<p style="margin-top:12px;color:#94a3b8;">No supporting document attached.</p>'}
+            </div>
+        `;
+
+        const modal = submissionPreviewModal();
+        if (modal) {
+            modal.querySelector('[data-preview-body]').innerHTML = html;
+            modal.style.display = 'flex';
+        } else {
+            setSubmissionMessage('Submission details are ready for review.', 'info');
+        }
+    };
+
+    function submissionPreviewModal() {
+        let modal = document.getElementById('lecturerReportSubmissionPreviewModal');
+        if (modal) return modal;
+
+        modal = document.createElement('div');
+        modal.id = 'lecturerReportSubmissionPreviewModal';
+        modal.style.cssText =
+            'display:none;position:fixed;inset:0;background:rgba(15,23,42,.65);z-index:10050;align-items:center;justify-content:center;padding:15px;';
+
+        modal.innerHTML = `
+            <div style="width:min(850px,96vw);max-height:90vh;background:#fff;border-radius:15px;overflow:hidden;display:flex;flex-direction:column;">
+                <div style="padding:14px 18px;background:#f8fafc;border-bottom:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center;">
+                    <strong style="color:#0A3D62;">Review Report Submission</strong>
+                    <button type="button" data-close style="border:0;background:transparent;font-size:24px;cursor:pointer;">&times;</button>
+                </div>
+                <div data-preview-body style="padding:20px;overflow:auto;"></div>
+                <div style="padding:12px 18px;background:#f8fafc;border-top:1px solid #e5e7eb;display:flex;justify-content:flex-end;gap:8px;">
+                    <button type="button" data-close class="lr-btn lr-btn-light">Close</button>
+                    <button type="button" data-submit class="lr-btn lr-btn-green">
+                        <i class="fas fa-paper-plane"></i> Submit for Review
+                    </button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        modal.querySelectorAll('[data-close]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                modal.style.display = 'none';
+            });
+        });
+
+        modal.querySelector('[data-submit]')?.addEventListener('click', async () => {
+            modal.style.display = 'none';
+            await LecturerReports.submitReportForReview();
+        });
+
+        return modal;
+    }
+
+    LecturerReports.resetSubmissionForm = function () {
+        const form = submissionEl('lecturerReportSubmissionForm');
+        if (form) {
+            form.reset();
+            delete form.dataset.submissionId;
+        }
+
+        const documentField = submissionEl('submissionDocumentTypeField');
+        if (documentField) documentField.style.display = 'none';
+
+        const guide = submissionEl('submissionCategoryGuide');
+        if (guide) guide.style.display = 'none';
+
+        setSubmissionMessage('', 'info');
+        const message = submissionEl('reportSubmissionMessage');
+        if (message) message.style.display = 'none';
+    };
+
+    LecturerReports.prepareWeeklyReport = async function () {
+        const unit = submissionValue('weeklyReportUnit');
+        const block = submissionValue('weeklyReportClass') || 'all';
+        const week = submissionValue('weeklyReportWeek');
+        const topic = submissionValue('weeklyReportTopic');
+        const activities = submissionValue('weeklyReportActivities');
+        const challenges = submissionValue('weeklyReportChallenges');
+        const actions = submissionValue('weeklyReportActions');
+        const remarks = submissionValue('weeklyReportRemarks');
+
+        if (!unit) {
+            showReportNotice('Select an assigned unit for the weekly report.', 'warning');
+            return;
+        }
+
+        const title = `Week ${week || '—'} ${unit} Lecturer Report`;
+
+        const summary = [
+            topic ? `Topics covered: ${topic}` : '',
+            activities ? `Activities completed: ${activities}` : '',
+            challenges ? `Challenges: ${challenges}` : '',
+            actions ? `Action points: ${actions}` : '',
+            remarks ? `Lecturer remarks: ${remarks}` : ''
+        ].filter(Boolean).join('\n\n');
+
+        const typeEl = submissionEl('submissionReportType');
+        const unitEl = submissionEl('submissionReportUnit');
+        const classEl = submissionEl('submissionReportClass');
+        const weekEl = submissionEl('submissionWeekNumber');
+        const titleEl = submissionEl('submissionTitle');
+        const summaryEl = submissionEl('submissionSummary');
+
+        if (typeEl) {
+            typeEl.value = 'WeeklyReport';
+            LecturerReports.handleSubmissionTypeChange('WeeklyReport');
+        }
+        if (unitEl) unitEl.value = unit;
+        if (classEl) classEl.value = block;
+        if (weekEl) weekEl.value = week;
+        if (titleEl) titleEl.value = title;
+        if (summaryEl) summaryEl.value = summary;
+
+        submissionEl('lecturerReportSubmissionSection')?.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+        });
+
+        setSubmissionMessage(
+            'Weekly report prepared. Complete the period and recipient, then save or submit it.',
+            'success'
+        );
+    };
+
+    LecturerReports.copyWeeklyToSubmission = LecturerReports.prepareWeeklyReport;
+
+    LecturerReports.refreshSubmittedReports = async function () {
+        const supabase = db();
+        const tbody = submissionEl('submittedReportsTable');
+
+        if (!tbody) return [];
+        if (!supabase) {
+            setSubmittedReportsEmpty('Database connection unavailable. Reopen the Reports section and try Refresh.');
+            return [];
+        }
+
+        try {
+            // Resolve both identifiers: lecturer_id is the staff-record ID,
+            // while lecturer_user_id is the authenticated Supabase UUID.
+            const identity = await resolveLecturerIdentity().catch(() => _identityCache);
+            let authUuid = identity?.authUuid || window.currentUser?.id || null;
+            let staffId = identity?.staffId || window.CORRECT_LECTURER_ID ||
+                window.me_currentLecturer?.staff?.id || null;
+
+            try {
+                const { data: authData } = await supabase.auth.getUser();
+                if (authData?.user?.id) authUuid = authData.user.id;
+            } catch (_) {}
+
+            if (!staffId) {
+                const candidate = currentLecturerIdSync();
+                if (candidate && candidate !== authUuid) staffId = candidate;
+            }
+
+            if (!authUuid && !staffId) {
+                setSubmittedReportsEmpty('Your lecturer identity is still loading. Press Refresh in a moment.');
+                return [];
+            }
+
+            const requests = [];
+            if (staffId) {
+                requests.push(
+                    supabase.from(REPORT_SUBMISSION_TABLE).select('*')
+                        .eq('lecturer_id', String(staffId))
+                        .order('created_at', { ascending: false })
+                );
+            }
+            if (authUuid) {
+                requests.push(
+                    supabase.from(REPORT_SUBMISSION_TABLE).select('*')
+                        .eq('lecturer_user_id', String(authUuid))
+                        .order('created_at', { ascending: false })
+                );
+            }
+
+            const results = await Promise.all(requests);
+            const errors = results.map(result => result.error).filter(Boolean);
+            const rows = results.flatMap(result => result.data || []);
+            const uniqueRows = [...new Map(rows.map(row => [String(row.id), row])).values()]
+                .sort((a, b) => new Date(b.created_at || b.submitted_at || 0) -
+                                new Date(a.created_at || a.submitted_at || 0));
+
+            if (!uniqueRows.length && errors.length === results.length) {
+                throw errors[0];
+            }
+
+            LecturerReports.submittedRows = uniqueRows;
+            renderSubmittedReports(uniqueRows);
+            return uniqueRows;
+        } catch (error) {
+            console.error('LecturerReports.refreshSubmittedReports:', error);
+            setSubmittedReportsEmpty(
+                'Could not load your report catalogue: ' + (error.message || error)
+            );
+            return [];
+        }
+    };
+
+    function setSubmittedReportsEmpty(message) {
+        const tbody = submissionEl('submittedReportsTable');
+        if (!tbody) return;
+
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="9" class="lr-empty">
+                    <i class="fas fa-inbox"></i>
+                    <strong>No report submissions loaded</strong>
+                    ${esc(message)}
+                </td>
+            </tr>
+        `;
+
+        ['submittedReportsCount', 'submittedUnderReviewCount',
+         'submittedReturnedCount', 'submittedApprovedCount']
+            .forEach(id => {
+                const el = submissionEl(id);
+                if (el) el.textContent = '0';
+            });
+    }
+
+    function statusBadge(status) {
+        const map = {
+            draft: ['Draft', '#f1f5f9', '#475569'],
+            submitted: ['Submitted', '#dbeafe', '#1d4ed8'],
+            under_review: ['Under Review', '#fef3c7', '#b45309'],
+            returned: ['Returned for Correction', '#fee2e2', '#b91c1c'],
+            resubmitted: ['Resubmitted', '#ede9fe', '#6d28d9'],
+            approved: ['Approved', '#d1fae5', '#047857'],
+            rejected: ['Rejected', '#fee2e2', '#b91c1c']
+        };
+
+        const [label, bg, color] = map[status] || [status || 'Unknown', '#f1f5f9', '#475569'];
+
+        return `<span style="display:inline-flex;padding:5px 8px;border-radius:999px;background:${bg};color:${color};font-size:10px;font-weight:800;">${esc(label)}</span>`;
+    }
+
+    LecturerReports.applySubmittedReportFilters = function () {
+        const search = String(submissionEl('submittedReportsSearch')?.value || '').trim().toLowerCase();
+        const documentType = String(submissionEl('submittedDocumentTypeFilter')?.value || '').trim();
+        const status = String(submissionEl('submittedStatusFilter')?.value || '').trim();
+        const dateFrom = String(submissionEl('submittedDateFrom')?.value || '').trim();
+        const dateTo = String(submissionEl('submittedDateTo')?.value || '').trim();
+
+        LecturerReports.submittedFilters = { search, documentType, status, dateFrom, dateTo };
+        const rows = (LecturerReports.submittedRows || []).filter(row => {
+            const rowType = String(row.document_type || '').trim();
+            if (documentType && rowType !== documentType) return false;
+            if (status && String(row.status || '') !== status) return false;
+            const rowDate = String(row.submitted_at || row.created_at || row.updated_at || '').slice(0, 10);
+            if (dateFrom && (!rowDate || rowDate < dateFrom)) return false;
+            if (dateTo && (!rowDate || rowDate > dateTo)) return false;
+            if (search) {
+                const text = [
+                    row.title, row.document_title, row.report_type, row.report_category,
+                    row.document_type, row.unit_name, row.block, row.class_block,
+                    row.program, row.academic_year, row.status, row.reviewer_comments
+                ].filter(Boolean).join(' ').toLowerCase();
+                if (!text.includes(search)) return false;
+            }
+            return true;
+        });
+
+        renderSubmittedReports(rows, true);
+    };
+
+    LecturerReports.exportSubmittedReports = function () {
+        const search = String(submissionEl('submittedReportsSearch')?.value || '').trim().toLowerCase();
+        const documentType = String(submissionEl('submittedDocumentTypeFilter')?.value || '').trim();
+        const status = String(submissionEl('submittedStatusFilter')?.value || '').trim();
+        const dateFrom = String(submissionEl('submittedDateFrom')?.value || '').trim();
+        const dateTo = String(submissionEl('submittedDateTo')?.value || '').trim();
+        const rows = (LecturerReports.submittedRows || []).filter(row => {
+            if (documentType && String(row.document_type || '').trim() !== documentType) return false;
+            if (status && String(row.status || '') !== status) return false;
+            const date = String(row.submitted_at || row.created_at || row.updated_at || '').slice(0, 10);
+            if (dateFrom && (!date || date < dateFrom)) return false;
+            if (dateTo && (!date || date > dateTo)) return false;
+            if (search) {
+                const haystack = [row.title,row.document_title,row.report_type,row.report_category,row.document_type,row.unit_name,row.block,row.class_block,row.program,row.academic_year,row.status,row.reviewer_comments]
+                    .filter(Boolean).join(' ').toLowerCase();
+                if (!haystack.includes(search)) return false;
+            }
+            return true;
+        }).sort((a,b) => new Date(b.submitted_at || b.created_at || 0) - new Date(a.submitted_at || a.created_at || 0));
+
+        if (!rows.length) {
+            showReportNotice('There are no submitted reports matching the selected period and filters.', 'warning');
+            return;
+        }
+
+        const columns = [
+            ['Document', r => r.title || r.document_title || ''],
+            ['Report Type', r => r.report_type || ''],
+            ['Document Type', r => r.document_type || ''],
+            ['Unit', r => r.unit_name || ''],
+            ['Class / Block', r => r.block || r.class_block || ''],
+            ['Program', r => r.program || ''],
+            ['Academic Year', r => r.academic_year || ''],
+            ['Period Start', r => r.period_start || ''],
+            ['Period End', r => r.period_end || ''],
+            ['Submitted To', r => r.recipient_role || ''],
+            ['Submitted At', r => r.submitted_at || r.created_at || ''],
+            ['Status', r => r.status || ''],
+            ['Reviewer Comments', r => r.reviewer_comments || r.review_comments || '']
+        ];
+        const csvCell = value => '"' + String(value ?? '').replace(/"/g, '""') + '"';
+        const csv = [columns.map(([label]) => csvCell(label)).join(',')]
+            .concat(rows.map(row => columns.map(([, getter]) => csvCell(getter(row))).join(',')))
+            .join('\r\n');
+        const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'my-submitted-reports-' + (dateFrom || 'all') + '-to-' + (dateTo || 'all') + '.csv';
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+        showReportNotice('Exported ' + rows.length + ' report record(s) to CSV.', 'success');
+    };
+
+    function renderSubmittedReports(rows, filtered = false) {
+        const tbody = submissionEl('submittedReportsTable');
+        if (!tbody) return;
+
+        const list = Array.isArray(rows) ? [...rows] : [];
+        list.sort((a, b) =>
+            new Date(b.submitted_at || b.created_at || b.updated_at || 0) -
+            new Date(a.submitted_at || a.created_at || a.updated_at || 0)
+        );
+
+        const count = submissionEl('submittedReportsCount');
+        const under = submissionEl('submittedUnderReviewCount');
+        const returned = submissionEl('submittedReturnedCount');
+        const approved = submissionEl('submittedApprovedCount');
+
+        if (count) count.textContent = list.length;
+        if (under) under.textContent =
+            list.filter(r => ['submitted', 'under_review', 'resubmitted'].includes(r.status)).length;
+        if (returned) returned.textContent =
+            list.filter(r => r.status === 'returned').length;
+        if (approved) approved.textContent =
+            list.filter(r => r.status === 'approved').length;
+
+        if (!list.length) {
+            setSubmittedReportsEmpty(filtered
+                ? 'No submissions match these filters.'
+                : 'Submit a report to see its review status here.');
+            return;
+        }
+
+        tbody.innerHTML = list.map(r => {
+            const title = r.title || r.document_title || 'Untitled Report';
+            const block = r.block || r.class_block || 'All Classes';
+            const hasAttachment = Number(r.attachment_count) > 0;
+            const documentLabel = r.document_type
+                ? String(r.document_type).replace(/[_-]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+                : (r.report_category || r.report_type || 'Report');
+
+            return `
+                <tr>
+                    <td>
+                        <strong>${esc(title)}</strong>
+                        <div style="font-size:10px;color:#64748b;">${esc(documentLabel)}</div>
+                    </td>
+                    <td>${esc(r.report_type || '—')}</td>
+                    <td>
+                        ${esc(r.unit_name || '—')}
+                        <div style="font-size:10px;color:#94a3b8;">${esc(block)} · ${esc(r.program || '')}</div>
+                    </td>
+                    <td>${esc(r.period_start || '—')} → ${esc(r.period_end || '—')}</td>
+                    <td>${esc(r.recipient_role || '—')}</td>
+                    <td>${r.submitted_at ? new Date(r.submitted_at).toLocaleString() : (r.created_at ? new Date(r.created_at).toLocaleString() : '—')}</td>
+                    <td>${statusBadge(r.status)}</td>
+                    <td>${esc(r.reviewer_comments || r.review_comments || '—')}</td>
+                    <td style="white-space:nowrap;">
+                        ${hasAttachment
+                            ? `<button type="button" class="lr-btn lr-btn-ghost" style="padding:6px 8px;" onclick="LecturerReports.openSubmissionAttachment('${esc(r.id)}')" title="Open submitted file"><i class="fas fa-paperclip"></i> File</button>`
+                            : ''}
+                        ${r.status === 'returned'
+                            ? `<button type="button" class="lr-btn lr-btn-light" style="padding:6px 8px;" onclick="LecturerReports.editReturnedReport('${esc(r.id)}')"><i class="fas fa-edit"></i> Correct</button>`
+                            : ''}
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    LecturerReports.openSubmissionAttachment = async function (submissionIdOrPath) {
+        const supabase = db();
+        if (!supabase || !submissionIdOrPath) return;
+        let paths = [];
+
+        if (String(submissionIdOrPath).includes('/')) {
+            paths = [String(submissionIdOrPath)];
+        } else {
+            const row = (LecturerReports.submittedRows || []).find(item => String(item.id) === String(submissionIdOrPath));
+            const lecturerId = String(row?.lecturer_id || currentLecturerIdSync() || '');
+            const years = [...new Set([
+                new Date(row?.created_at || row?.submitted_at || Date.now()).getFullYear(),
+                new Date().getFullYear()
+            ])];
+            for (const year of years) {
+                const prefix = `${lecturerId}/${year}/${submissionIdOrPath}`;
+                const { data: files, error } = await supabase.storage.from(REPORT_STORAGE_BUCKET)
+                    .list(prefix, { limit: 100, sortBy: { column: 'name', order: 'desc' } });
+                if (!error && files?.length) paths.push(...files.filter(file => file.name).map(file => `${prefix}/${file.name}`));
+            }
+        }
+
+        if (!paths.length) {
+            showReportNotice('No attachment was found for this report. The upload may not have finished or Storage access may be restricted.', 'warning');
+            return;
+        }
+
+        const signed = await Promise.all(paths.map(async path => {
+            const { data, error } = await supabase.storage.from(REPORT_STORAGE_BUCKET).createSignedUrl(path, 900);
+            return error || !data?.signedUrl ? null : { path, url: data.signedUrl };
+        }));
+        const files = signed.filter(Boolean);
+        if (!files.length) {
+            showReportNotice('Could not create a secure preview link. Check the lecturer-reports Storage policies.', 'error');
+            return;
+        }
+
+        let modal = document.getElementById('lecturerSubmittedDocumentPreview');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'lecturerSubmittedDocumentPreview';
+            modal.style.cssText = 'display:none;position:fixed;inset:0;z-index:1000000;background:rgba(15,23,42,.78);padding:12px;align-items:center;justify-content:center;';
+            modal.innerHTML = `<div style="width:min(1100px,98vw);height:min(92vh,950px);background:white;border-radius:14px;overflow:hidden;display:flex;flex-direction:column;">
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 16px;background:#0A3D62;color:white;">
+                    <strong id="lecturerSubmittedPreviewTitle">Document Preview</strong>
+                    <div style="display:flex;gap:8px;align-items:center;"><a id="lecturerSubmittedPreviewOpen" href="#" target="_blank" rel="noopener noreferrer" style="background:white;color:#0A3D62;padding:8px 10px;border-radius:7px;text-decoration:none;font-size:12px;font-weight:700;">Open / Download</a><button type="button" id="lecturerSubmittedPreviewClose" style="border:0;border-radius:7px;background:rgba(255,255,255,.16);color:white;padding:7px 11px;font-size:18px;">×</button></div>
+                </div><div id="lecturerSubmittedPreviewBody" style="flex:1;min-height:0;overflow:auto;display:flex;align-items:center;justify-content:center;background:#f1f5f9;"></div></div>`;
+            document.body.appendChild(modal);
+            modal.addEventListener('click', event => { if (event.target === modal || event.target.id === 'lecturerSubmittedPreviewClose') { modal.style.display='none'; document.getElementById('lecturerSubmittedPreviewBody').innerHTML=''; } });
+        }
+        const row = (LecturerReports.submittedRows || []).find(item => String(item.id) === String(submissionIdOrPath));
+        const path = files[0].path;
+        const url = files[0].url;
+        const name = path.split('/').pop().replace(/^\d+_/, '');
+        const ext = name.split('.').pop().toLowerCase();
+        document.getElementById('lecturerSubmittedPreviewTitle').textContent = name || row?.title || 'Document Preview';
+        document.getElementById('lecturerSubmittedPreviewOpen').href = url;
+        const body = document.getElementById('lecturerSubmittedPreviewBody');
+        if (ext === 'pdf') {
+            body.innerHTML = `<iframe title="Submitted document preview" src="${esc(url)}#toolbar=1&navpanes=0" style="width:100%;height:100%;min-height:500px;border:0;background:white;"></iframe>`;
+        } else if (['png','jpg','jpeg','gif','webp','bmp'].includes(ext)) {
+            body.innerHTML = `<img alt="${esc(name)}" src="${esc(url)}" style="max-width:100%;max-height:100%;object-fit:contain;">`;
+        } else {
+            body.innerHTML = `<div style="padding:28px;text-align:center;color:#475569;"><i class="fas fa-file-alt" style="font-size:42px;color:#0A3D62;"></i><p>Inline preview is not supported for this file type.</p><a href="${esc(url)}" target="_blank" rel="noopener noreferrer">Open or download ${esc(name)}</a></div>`;
+        }
+        modal.style.display = 'flex';
+    };
+
+    LecturerReports.editReturnedReport = async function (id) {
+        const supabase = db();
+        if (!supabase || !id) return;
+
+        try {
+            const { data, error } = await supabase
+                .from(REPORT_SUBMISSION_TABLE)
+                .select('*')
+                .eq('id', id)
+                .eq('lecturer_id', currentLecturerIdSync())
+                .single();
+
+            if (error) throw error;
+            if (!data) return;
+
+            const form = submissionEl('lecturerReportSubmissionForm');
+            if (form) form.dataset.submissionId = data.id;
+
+            const set = (id2, value) => {
+                const el = submissionEl(id2);
+                if (el) el.value = value ?? '';
+            };
+
+            const blockValue = data.block || data.class_block;
+            const titleValue = data.title || data.document_title;
+
+            set('submissionReportType', data.report_type);
+            LecturerReports.handleSubmissionTypeChange(data.report_type);
+            set('submissionDocumentType', data.document_type);
+            set('submissionReportUnit', data.unit_name);
+            set('submissionReportClass', blockValue === 'all' ? '' : blockValue);
+            set('submissionAcademicYear', data.academic_year);
+            set('submissionWeekNumber', data.week_number);
+            set('submissionPeriodStart', data.period_start);
+            set('submissionPeriodEnd', data.period_end);
+            set('submissionRecipient', data.recipient_role);
+            set('submissionTitle', titleValue);
+            set('submissionSummary', data.summary);
+
+            submissionEl('lecturerReportSubmissionSection')?.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+
+            setSubmissionMessage(
+                'Returned report loaded for correction. Save the correction, then submit it again.',
+                'warning'
+            );
+        } catch (error) {
+            showReportNotice(
+                'Could not load returned report: ' + (error.message || error),
+                'error'
+            );
+        }
+    };
+
+    /* ============================================================
+       SCHEDULE
+    ============================================================ */
+
+    LecturerReports.scheduleReport = function () {
+        if (typeof window.openReportScheduleModal === 'function') {
+            window.openReportScheduleModal();
+            return;
+        }
+
+        showReportNotice(
+            'Report scheduling UI is not connected yet. The report itself is ready for scheduled generation.',
+            'info'
+        );
+    };
+
+    /* ============================================================
+       INITIALIZATION
+    ============================================================ */
+
+    LecturerReports.init = async function () {
+        if (LecturerReports._initialized) {
+            _identityCache.resolved = false;
+            _identityCache.promise = null;
+
+            await populateReportSelectors().catch(error => console.warn('[Reports] retrying unit selectors on next open:', error));
+            await populateSubmissionSelectors().catch(error => console.warn('[Reports] submission selectors unavailable:', error));
+            renderReports(LecturerReports.reports);
+            await LecturerReports.refreshSubmittedReports().catch(() => {});
+            return;
+        }
+
+        LecturerReports._initialized = true;
+
+        LecturerReports.reports = loadLocalReports();
+
+        await populateReportSelectors().catch(error => console.warn('[Reports] initial unit selector load failed; user can retry:', error));
+        await populateSubmissionSelectors().catch(error => console.warn('[Reports] initial submission selector load failed:', error));
+
+        renderReports(LecturerReports.reports);
+        updateAnalytics(LecturerReports.reports);
+
+        if (submissionEl('submissionReportType')) {
+            LecturerReports.handleSubmissionTypeChange(
+                submissionEl('submissionReportType').value
+            );
+        }
+
+        LecturerReports.refreshSubmittedReports().catch(error => {
+            console.warn('LecturerReports: submitted reports load skipped:', error);
+        });
+
+        const period = document.getElementById('reportPeriod');
+
+        if (period) {
+            period.addEventListener('change', () => {
+                const box = document.getElementById('reportCustomDateRange');
+                if (box) {
+                    box.style.display =
+                        period.value === 'custom' ? 'grid' : 'none';
+                }
+            });
+        }
+
+        console.log('✅ LecturerReports initialized — marks-integrated');
+    };
+
+    /* ============================================================
+       GLOBAL EXPOSURE
+    ============================================================ */
+
+    window.LecturerReports = LecturerReports;
+
+    window.calculateLecturerReportTotal = calculateTotal;
+    window.getLecturerReportGrade = grading;
+    window.loadLecturerReportMarks = loadMarks;
+    window.buildLecturerReport = buildReport;
+    window.initLecturerReports = LecturerReports.init;
+
+    window.resolveLecturerIdentity = resolveLecturerIdentity;
+
+    /* ============================================================
+       BOOTSTRAP
+    ============================================================ */
+
+    function startReports() {
+        LecturerReports._initialized = false;
+        _identityCache.resolved = false;
+        _identityCache.promise = null;
+        LecturerReports._cache = {};
+
+        LecturerReports.init().catch(error => {
+            console.error('LecturerReports initialization failed:', error);
+        });
+    }
+
+    let _booted = false;
+
+    function bootReports() {
+        if (_booted) return;
+        _booted = true;
+        setTimeout(startReports, 200);
+    }
+
+    document.addEventListener('lecturerMainReady', () => {
+        window.lecturerMainReady_fired = true;
+        bootReports();
+    }, { once: true });
+
+    if (window.__LECTURER_MAIN_READY) {
+        window.lecturerMainReady_fired = true;
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', bootReports, { once: true });
+        } else {
+            bootReports();
+        }
+    } else {
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                if (!_booted) bootReports();
+            }, 2500);
+        }, { once: true });
+    }
+
+})();
