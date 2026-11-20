@@ -123,12 +123,7 @@
     document.querySelectorAll(".lecturer-command-brand h1").forEach(el => {
       el.textContent = name + " Lecturer Portal";
     });
-    document.querySelectorAll(".lecturer-command-brand p").forEach(el => {
-      el.textContent = "Lecturer workspace · teaching, examinations, results and student monitoring";
-    });
     document.querySelectorAll(".lecturer-command-brand h1,.lecturer-command-cap").forEach(el => { el.setAttribute("aria-label", name + " Lecturer Portal"); });
-    document.querySelectorAll(".lecturer-command-brand h1").forEach(el => { el.textContent = name + " Lecturer Portal"; });
-    document.querySelectorAll(".lecturer-command-brand p").forEach(el => { el.textContent = "Lecturer workspace · teaching, examinations, results and student monitoring"; });
     document.querySelectorAll(".lecturer-command-brand h1").forEach(el => { el.title = name + " Lecturer Portal"; });
     document.querySelectorAll(".lecturer-command-brand p").forEach(el => {
       el.textContent = "Lecturer workspace · teaching, examinations, results and student monitoring";
@@ -209,7 +204,7 @@
           orientation: "portrait",
           theme_color: primary,
           background_color: "#ffffff",
-          icons: [{src: logo, sizes: "192x192", type: "image/png", purpose: "any maskable"}]
+          icons: [{src: logo, sizes: "192x192", purpose: "any maskable"}]
         };
         window.cnTenantManifestUrl = URL.createObjectURL(new Blob([JSON.stringify(manifest)], {type:"application/manifest+json"}));
         manifestLink.href = window.cnTenantManifestUrl;
