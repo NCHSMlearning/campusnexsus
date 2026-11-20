@@ -317,6 +317,34 @@
     preview.innerHTML = url ? '<img alt="Institution logo preview" src="' + esc(url) + '">' : '<i class="fas fa-school"></i>';
   }
 
+  function setupInstitutionAdminFields() {
+    const email = $("cnInstitutionAdmin");
+    if (!email || $("cnInstitutionAdminName")) return;
+    const host = document.createElement("div");
+    host.id = "cnInstitutionAdminProvisioning";
+    host.className = "cn-admin-provisioning";
+    host.innerHTML = `
+      <style>
+        .cn-admin-provisioning{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0;padding:16px;border:1px solid #cbdde8;border-radius:14px;background:linear-gradient(135deg,#f5fbff,#f0fbf7)}
+        .cn-admin-provisioning .cn-admin-field{display:flex;flex-direction:column;gap:6px;min-width:0}
+        .cn-admin-provisioning .cn-admin-field:first-child{grid-column:1/-1}
+        .cn-admin-provisioning label{font-size:12px;font-weight:800;color:#12334a}
+        .cn-admin-provisioning input{width:100%;min-height:42px;padding:10px 12px;border:1px solid #cbd5e1;border-radius:9px;background:#fff;color:#0f172a}
+        .cn-admin-provisioning small{grid-column:1/-1;color:#64748b;font-size:11px;line-height:1.5}
+        @media(max-width:600px){.cn-admin-provisioning{grid-template-columns:1fr}.cn-admin-provisioning .cn-admin-field:first-child{grid-column:auto}}
+      </style>
+      <div class="cn-admin-field"><label for="cnInstitutionAdminName">Institution administrator full name *</label><input id="cnInstitutionAdminName" type="text" maxlength="120" autocomplete="name" placeholder="Enter administrator's full name"></div>
+      <div class="cn-admin-field"><label for="cnInstitutionAdminPhone">Administrator phone number</label><input id="cnInstitutionAdminPhone" type="tel" maxlength="30" autocomplete="tel" placeholder="+254 7XX XXX XXX"></div>
+      <small>A secure institution administrator account will be created and an invitation to set a password will be emailed to the administrator.</small>`;
+    const field = email.closest(".form-group,.form-field,.field,.mb-3") || email.parentElement;
+    field.insertAdjacentElement("afterend", host);
+    const label = field.querySelector("label");
+    if (label) label.textContent = "Administrator email address *";
+    email.required = true;
+    email.type = "email";
+    email.autocomplete = "email";
+  }
+
   function resetForm() {
     editingId = null;
     selectedLogoFile = null;
@@ -499,7 +527,7 @@
     const slug = $("cnInstitutionSlug").value.trim().toLowerCase();
     if (!/^[A-Z0-9-]{2,12}$/.test(code)) return notify("Use 2–12 letters, numbers or hyphens for the institution code.", "error");
     if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) return notify("Use a URL-friendly slug (lowercase letters, numbers and hyphens).", "error");
-    const adminEmail = $("cnInstitutionAdmin").value.trim().toLowerCase();
+    const adminEmail = $("cnInstitutionAdmin").value.trim().toLowerCase();\n    const adminName = $("cnInstitutionAdminName")?.value.trim() || "";\n    const adminPhone = $("cnInstitutionAdminPhone")?.value.trim() || "";\n    if (!adminEmail || (!editingId && !adminName)) return notify("Enter the institution administrator name and email address.", "error");
     const amount = Number($("cnInstitutionAmount").value);
     if (!Number.isFinite(amount) || amount < 0) return notify("Enter a valid subscription amount.", "error");
     const portalMode = document.querySelector('input[name="cnInstitutionPortalModeChoice"]:checked')?.value || "campus_nexus";
