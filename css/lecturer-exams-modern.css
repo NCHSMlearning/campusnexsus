@@ -1,0 +1,291 @@
+/* NCHSM Lecturer Portal — modern responsive visual layer */
+:root{--lx-ink:#10243a;--lx-muted:#64748b;--lx-line:#e4ebf2;--lx-surface:#fff;--lx-canvas:#f3f7fb;--lx-navy:#0b2942;--lx-blue:#155b83;--lx-teal:#0d9488;--lx-gold:#f4bd4f;--lx-shadow:0 12px 34px rgba(15,39,64,.07)}
+html{scroll-behavior:smooth}
+body{background:var(--lx-canvas)!important;color:var(--lx-ink);font-family:Inter,system-ui,sans-serif!important}
+.sidebar{background:linear-gradient(180deg,#09253d 0%,#0b3552 58%,#0b2942 100%)!important;box-shadow:10px 0 35px rgba(7,28,48,.12);border-right:1px solid rgba(255,255,255,.07)}
+.sidebar-header{padding:25px 20px!important;border-bottom:1px solid rgba(255,255,255,.1)!important}
+.brand-icon{border-radius:14px!important;background:linear-gradient(145deg,#f4bd4f,#e99a32)!important;color:#102b43!important;box-shadow:0 8px 20px rgba(244,189,79,.22)}
+.brand-text h2{letter-spacing:.3px}
+.menu-label{color:#89a9bf!important;letter-spacing:1.3px!important;font-size:10px!important;font-weight:800!important}
+.sidebar-menu a{margin:4px 10px!important;border-radius:11px!important;color:#d5e3ee!important;transition:background .2s,transform .2s}
+.sidebar-menu a:hover{background:rgba(255,255,255,.09)!important;transform:translateX(2px)}
+.sidebar-menu a.active{background:linear-gradient(100deg,rgba(31,145,173,.3),rgba(255,255,255,.08))!important;color:#fff!important;box-shadow:inset 3px 0 #f4bd4f}
+.sidebar-footer{border-top:1px solid rgba(255,255,255,.1)!important}
+.user-card{background:rgba(255,255,255,.07)!important;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:11px!important}
+.user-card .avatar{background:linear-gradient(145deg,#f4bd4f,#f6d68e)!important;color:#17334b!important;font-weight:800}
+.logout-btn-sidebar{border-radius:10px!important}
+.main-content{background:var(--lx-canvas)!important;padding:24px 28px!important}
+.top-header{background:rgba(255,255,255,.9)!important;border:1px solid var(--lx-line)!important;border-radius:18px!important;padding:15px 20px!important;margin-bottom:24px!important;box-shadow:0 5px 20px rgba(15,39,64,.035)!important;backdrop-filter:blur(12px)}
+.page-title h1{font-size:20px!important;font-weight:800!important;letter-spacing:-.45px;color:var(--lx-ink)!important}
+.page-title p{color:var(--lx-muted)!important;font-size:12px!important}
+.admin-profile{padding:5px 10px;border-radius:12px;background:#f7fafc}
+.admin-avatar{background:linear-gradient(145deg,#0d9488,#155b83)!important;box-shadow:0 5px 14px rgba(13,148,136,.2)}
+.admin-name{font-weight:750!important;color:var(--lx-ink)!important}
+.admin-email{color:#8292a3!important}
+.notification-bell{border-radius:12px!important;background:#f1f6fa!important}
+.tab-content{animation:lxRise .28s ease both}
+@keyframes lxRise{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+.tab-content>div[style*="linear-gradient"]{border-radius:20px!important;padding:24px 27px!important;box-shadow:0 12px 28px rgba(10,45,72,.16)!important;position:relative;overflow:hidden}
+.tab-content>div[style*="linear-gradient"] h2{letter-spacing:-.4px}
+.tab-content>div[style*="linear-gradient"] p{line-height:1.55}
+.stats-grid{gap:15px!important;margin-bottom:22px!important}
+.stat-card{border:1px solid var(--lx-line)!important;border-radius:18px!important;padding:19px!important;box-shadow:var(--lx-shadow)!important;min-height:88px;position:relative;overflow:hidden}
+.stat-card:after{content:"";position:absolute;width:74px;height:74px;border-radius:50%;right:-28px;top:-30px;background:rgba(21,91,131,.045)}
+.stat-card:hover{transform:translateY(-4px)!important;box-shadow:0 16px 35px rgba(15,39,64,.1)!important}
+.stat-card .number{font-size:25px!important;font-weight:800!important;letter-spacing:-.8px;color:var(--lx-ink)!important}
+.stat-card .label{font-size:10px!important;letter-spacing:.8px!important;font-weight:750!important;color:#8292a3!important}
+.stat-card .icon{width:46px!important;height:46px!important;border-radius:14px!important}
+.quick-action-btn{background:#fff!important;border:1px solid var(--lx-line)!important;border-radius:15px!important;padding:18px!important;box-shadow:0 4px 14px rgba(15,39,64,.035);font-size:13px}
+.quick-action-btn i{color:var(--lx-teal);font-size:19px!important}
+.quick-action-btn:hover{background:var(--lx-navy)!important;border-color:var(--lx-navy)!important}
+.quick-action-btn:hover i{color:var(--lx-gold)}
+.exam-filter-panel,.results-filter-panel,#nchsmCoordinatorWorkspace,.tab-content>div[style*="background: white"],.tab-content>div[style*="background: white;"]{border-radius:18px!important;border-color:var(--lx-line)!important;box-shadow:var(--lx-shadow)!important}
+.exam-filter-panel,.results-filter-panel{padding:20px!important}
+.exam-filter-stat{border-radius:10px!important;background:#f4f8fb!important;border-color:#e5edf3!important}
+.exam-filter-field label,.results-filter-field label{font-size:10px!important;letter-spacing:.55px;text-transform:uppercase;color:#60758a!important;font-weight:800!important}
+.exam-filter-field input,.exam-filter-field select,.results-filter-field input,.results-filter-field select{min-height:44px!important;border:1px solid #dbe5ed!important;border-radius:11px!important;padding:10px 13px!important;background:#fbfdff!important;font-size:13px!important;transition:border .2s,box-shadow .2s}
+.exam-filter-field input:focus,.exam-filter-field select:focus,.results-filter-field input:focus,.results-filter-field select:focus{border-color:#159b9b!important;box-shadow:0 0 0 4px rgba(13,148,136,.1)!important;outline:none}
+.exam-filter-reset,.results-filter-reset{border-radius:10px!important;padding:9px 14px!important;font-weight:750!important}
+#examsTable,#resultsTable{border-collapse:separate!important;border-spacing:0!important}
+#examsTable thead th,#resultsTable thead th{background:#f3f7fa!important;color:#52677b!important;font-size:10px!important;text-transform:uppercase;letter-spacing:.65px;padding:14px!important;white-space:nowrap}
+#examsTable tbody td,#resultsTable tbody td{padding:13px 14px!important;border-bottom:1px solid #edf2f6!important;color:#334b60}
+#examsTable tbody tr:hover,#resultsTable tbody tr:hover{background:#f6fbfd!important}
+#examsTable tbody tr:last-child td,#resultsTable tbody tr:last-child td{border-bottom:0!important}
+button,.btn{transition:transform .18s ease,box-shadow .18s ease,background .18s ease}
+button:not(:disabled):hover,.btn:not(:disabled):hover{filter:brightness(1.02)}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid rgba(13,148,136,.22)!important;outline-offset:2px}
+.status-badge{padding:5px 10px!important;font-size:10px!important;letter-spacing:.25px}
+#nchsmCoordinatorWorkspace{border-radius:18px!important}
+#nchsmCoordinatorWorkspace .ch{background:linear-gradient(115deg,#0b2942,#11617a)!important;padding:21px 23px!important}
+#nchsmCoordinatorWorkspace .cb{padding:19px!important}
+#nchsmCoordinatorWorkspace .ctable{border-radius:12px!important;border-color:#e5edf3!important}
+#nchsmCoordinatorWorkspace th{background:#f3f7fa!important;letter-spacing:.6px}
+#nchsmCoordinatorWorkspace td{padding:13px!important}
+#nchsmCoordinatorWorkspace input,#nchsmCoordinatorWorkspace select{min-height:43px!important;border-radius:10px!important}
+#nchsmCoordinatorModal .dialog{border-radius:20px!important;box-shadow:0 25px 80px rgba(0,0,0,.25)}
+#nchsmCoordinatorModal .mh{padding:18px 21px!important}
+#nchsmCoordinatorModal .mb{padding:21px!important}
+#nchsmCoordinatorModal input,#nchsmCoordinatorModal select{min-height:43px!important;border-radius:10px!important}
+.pagination .page-btn{border-radius:9px!important}
+@media(max-width:900px){.main-content{padding:18px!important}.top-header{padding:13px 15px!important}}
+@media(max-width:600px){.main-content{padding:12px!important}.top-header{border-radius:14px!important;margin-bottom:16px!important}.page-title h1{font-size:17px!important}.admin-profile{display:none}.tab-content>div[style*="linear-gradient"]{padding:19px!important;border-radius:16px!important}.stats-grid{gap:9px!important}.stat-card{padding:13px!important;border-radius:14px!important;gap:10px!important}.stat-card .icon{width:38px!important;height:38px!important}.stat-card .number{font-size:20px!important}.exam-filter-panel,.results-filter-panel{padding:14px!important;border-radius:14px!important}.quick-actions{gap:8px!important}.quick-action-btn{padding:14px 9px!important}}
+
+
+/* Final dashboard refinement — aligned to the approved NCHSM concept */
+.main-content{min-width:0;max-width:100%;box-sizing:border-box}
+.top-header{display:flex;align-items:center;justify-content:space-between;gap:18px;min-height:76px}
+.header-actions{display:flex;align-items:center;gap:12px}
+.page-title h1 i{color:var(--lx-teal);margin-right:8px}
+.sidebar{width:258px}
+.main-content{margin-left:258px}
+.sidebar-brand{display:flex;align-items:center;gap:12px}
+.brand-text small{display:block;color:#9bb4c6;font-size:10px;letter-spacing:.7px;margin-top:3px}
+.menu-section{margin-bottom:15px}
+.sidebar-menu a{display:flex;align-items:center;gap:12px;min-height:42px;font-size:12px;font-weight:650}
+.sidebar-menu a i{width:17px;text-align:center;color:#a8c4d5}
+.sidebar-menu a.active i{color:var(--lx-gold)}
+.tab-content{min-width:0}
+.tab-content h2,.tab-content h3{letter-spacing:-.25px}
+.tab-content table{width:100%;min-width:680px}
+.tab-content .table-responsive,.tab-content [style*="overflow-x"]{max-width:100%;overflow-x:auto}
+#resultSearch{width:100%;min-height:46px;border:1px solid #dbe5ed;border-radius:12px;padding:11px 14px;background:#fff;font-size:13px;color:var(--lx-ink)}
+#resultSearch::placeholder{color:#93a4b4}
+#resultSearch[readonly]{cursor:text;background:#f9fbfd}
+#resultSearch:focus{background:#fff;border-color:var(--lx-teal);box-shadow:0 0 0 4px rgba(13,148,136,.1)}
+.btn,.quick-action-btn,button{border-radius:10px}
+.btn-primary,.btn-success{box-shadow:0 5px 13px rgba(13,148,136,.13)}
+.modal-content,.modal-dialog{border-radius:18px!important}
+@media(max-width:900px){.sidebar{width:258px}.main-content{margin-left:0}.top-header{min-height:66px}}
+@media(max-width:600px){.header-actions{gap:7px}.main-content{width:100%;overflow-x:hidden}.tab-content table{min-width:620px}.sidebar{z-index:1200}.stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.quick-actions{grid-template-columns:repeat(2,minmax(0,1fr))}.admin-profile{display:none!important}}
+@media(max-width:380px){.stats-grid{grid-template-columns:1fr 1fr}.stat-card{gap:8px!important}.stat-card .number{font-size:18px!important}}
+
+
+/* Match the approved dashboard mockup proportions and composition */
+.sidebar{width:250px!important}
+.main-content{margin-left:250px!important;width:calc(100% - 250px)!important;max-width:calc(100% - 250px)!important}
+.sidebar-header{min-height:102px!important;display:flex;align-items:center}
+.sidebar-brand{width:100%;padding:20px 18px!important}
+.sidebar-scroll{padding-top:12px}
+.menu-section{margin-bottom:12px!important}
+.sidebar-menu a{min-height:40px!important;padding:9px 12px!important}
+.sidebar-footer{padding:12px 14px!important}
+.user-card{min-height:58px;display:flex;align-items:center;gap:10px}
+.main-content{padding:24px 28px 32px!important}
+.top-header{min-height:76px!important;margin-bottom:24px!important}
+#dashboard>div:first-child{min-height:102px;display:flex;align-items:center}
+#dashboard .stats-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:16px!important}
+#dashboard .stat-card{min-height:88px!important}
+#dashboard .quick-actions{grid-template-columns:repeat(4,minmax(0,1fr))}
+#dashboard>div:nth-of-type(3),#dashboard>div:nth-of-type(4){border-radius:18px!important}
+.nchsm-pwa-install{left:270px!important;bottom:18px!important}
+@media(max-width:900px){
+  .sidebar{width:250px!important;transform:translateX(-250px)}
+  .sidebar.open{transform:translateX(0)}
+  .main-content{margin-left:0!important;width:100%!important;max-width:100%!important}
+  #dashboard .stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:600px){
+  .main-content{padding:12px!important}
+  #dashboard .stats-grid,#dashboard .quick-actions{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .nchsm-pwa-install{left:auto!important;right:76px!important;bottom:18px!important}
+}
+
+/* NCHSM Lecturer Exam Command Centre — aligned to the approved Super Admin visual */
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Manrope:wght@500;600;700;800&display=swap');
+:root{--lx-ink:#102b48;--lx-muted:#70849a;--lx-line:#dce8f2;--lx-bg:#f2f7fc;--lx-navy:#06284a;--lx-blue:#12618e;--lx-gold:#f5bd3d}
+*{box-sizing:border-box}
+html,body{background:var(--lx-bg)!important;font-family:'DM Sans',Inter,system-ui,sans-serif!important;color:var(--lx-ink)!important}
+body{overflow-x:hidden}
+.sidebar{position:fixed!important;inset:0 auto 0 0!important;width:260px!important;height:100vh!important;display:flex!important;flex-direction:column!important;background:linear-gradient(180deg,#061f3e,#092b50 65%,#07365b)!important;border:0!important;box-shadow:8px 0 26px rgba(3,25,48,.14)!important;z-index:1000!important}
+.sidebar-header{height:130px!important;min-height:130px!important;padding:12px 15px!important;display:flex!important;align-items:center!important;border-bottom:1px solid rgba(255,255,255,.13)!important}
+.sidebar-brand{display:flex!important;align-items:center!important;gap:12px!important;width:100%!important;padding:0!important}
+.brand-crest{width:66px;height:96px;flex:0 0 66px;display:flex;align-items:center;justify-content:center}
+.brand-crest img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 5px 10px rgba(0,0,0,.18))}
+.brand-text{min-width:0}
+.brand-text h2{font-family:Manrope,sans-serif!important;font-size:20px!important;line-height:1.05!important;font-weight:800!important;letter-spacing:-.7px!important;color:#fff!important;margin:0 0 6px!important}
+.brand-text h2 span{display:block;color:#fff!important;font-size:18px!important}
+.brand-text small{display:block;color:#c8d9e7!important;font-size:9px!important;line-height:1.4!important;letter-spacing:.2px!important}
+.sidebar-scroll{flex:1!important;overflow-y:auto!important;overflow-x:hidden!important;padding:11px 12px 18px!important}
+.menu-section{margin:10px 0 16px!important}
+.menu-label{padding:0 12px 8px!important;color:#9db7ce!important;font-size:9px!important;font-weight:800!important;letter-spacing:1.35px!important;text-transform:uppercase!important}
+.sidebar-menu{margin:0!important;padding:0!important;list-style:none!important}
+.sidebar-menu li{margin:3px 0!important}
+.sidebar-menu a{display:flex!important;align-items:center!important;gap:12px!important;min-height:42px!important;margin:0!important;padding:10px 12px!important;border-radius:10px!important;color:#e1ebf4!important;font-size:12px!important;font-weight:650!important;text-decoration:none!important}
+.sidebar-menu a i{width:18px!important;flex:0 0 18px!important;color:#b8cee0!important;text-align:center}
+.sidebar-menu a:hover{background:rgba(255,255,255,.09)!important;color:#fff!important}
+.sidebar-menu a.active{background:linear-gradient(100deg,#f7c449,#eaaa22)!important;color:#082b4d!important;box-shadow:0 5px 15px rgba(245,189,61,.18)!important;font-weight:800!important}
+.sidebar-menu a.active i{color:#082b4d!important}
+.badge-sidebar{margin-left:auto!important}
+.sidebar-footer{padding:11px 12px 14px!important;border-top:1px solid rgba(255,255,255,.15)!important;background:rgba(1,18,36,.18)!important}
+.user-card{display:flex!important;align-items:center!important;gap:9px!important;padding:9px 10px!important;border:1px solid rgba(255,255,255,.17)!important;border-radius:12px!important;background:rgba(255,255,255,.07)!important}
+.user-card .avatar{width:36px!important;height:36px!important;display:grid!important;place-items:center!important;border-radius:50%!important;background:#f5bd3d!important;color:#102b48!important;font-weight:900!important}
+.user-card .name{color:#fff!important;font-size:11px!important;font-weight:800!important}
+.user-card .role{color:#b9ccdc!important;font-size:9px!important}
+.logout-btn-sidebar{width:100%!important;margin-top:7px!important;border-radius:9px!important}
+.main-content{margin-left:260px!important;width:calc(100% - 260px)!important;max-width:calc(100% - 260px)!important;min-width:0!important;padding:0 24px 34px!important;background:var(--lx-bg)!important}
+.lecturer-command-topbar{height:78px!important;min-height:78px!important;margin:0 -24px 13px!important;padding:0 25px!important;display:flex!important;align-items:center!important;justify-content:space-between!important;gap:15px!important;border:0!important;border-radius:0 0 18px 18px!important;background:linear-gradient(105deg,#061f3e,#0b3d69 65%,#0a315a)!important;box-shadow:0 7px 22px rgba(5,34,64,.17)!important;color:#fff!important}
+.lecturer-command-brand{display:flex;align-items:center;gap:12px;min-width:0}
+.lecturer-command-cap{width:43px;height:43px;display:grid;place-items:center;flex:0 0 43px;color:#f8c347;font-size:30px}
+.lecturer-command-brand h1{margin:0!important;color:#fff!important;font-family:Manrope,sans-serif!important;font-size:21px!important;font-weight:800!important;letter-spacing:-.65px!important;line-height:1.2!important}
+.lecturer-command-brand p{margin:3px 0 0!important;color:#d5e5f2!important;font-size:10px!important}
+.lecturer-command-topbar .header-actions{display:flex!important;align-items:center!important;gap:13px!important}
+.lecturer-command-topbar .admin-profile{padding:5px 8px!important;border:0!important;background:transparent!important}
+.lecturer-command-topbar .admin-name{color:#fff!important;font-size:11px!important}
+.lecturer-command-topbar .admin-email{color:#c5d8e8!important;font-size:9px!important}
+.lecturer-command-topbar .admin-avatar{width:39px!important;height:39px!important;border-radius:50%!important;background:#0ba9b4!important;color:#fff!important}
+.lecturer-command-topbar .notification-bell{color:#fff!important;background:transparent!important;border:0!important}
+.lecturer-command-topbar .notification-bell>i{font-size:19px}
+.lecturer-command-date{display:flex;align-items:center;gap:7px;color:#d6e5f2;font-size:10px;white-space:nowrap}
+.lecturer-command-date i{font-size:15px;color:#f5bd3d}
+.lecturer-dashboard-hero{position:relative;min-height:102px;margin:0 0 16px;padding:19px 22px;display:flex;align-items:center;gap:15px;overflow:hidden;border-radius:17px;background:linear-gradient(105deg,#075083 0%,#0b4777 56%,#092b65 100%);box-shadow:0 9px 20px rgba(7,55,100,.16)}
+.lecturer-dashboard-hero:after{content:"";position:absolute;right:9%;top:-120px;width:245px;height:245px;border:1px solid rgba(255,255,255,.09);border-radius:50%;box-shadow:0 0 0 22px rgba(255,255,255,.025),0 0 0 46px rgba(255,255,255,.02);pointer-events:none}
+.lecturer-hero-icon{width:58px;height:58px;display:grid;place-items:center;flex:0 0 58px;border-radius:15px;background:rgba(255,255,255,.12);color:#ffc83d;font-size:29px}
+.lecturer-dashboard-hero>div:nth-child(2){position:relative;z-index:1;flex:1}
+.lecturer-dashboard-hero h2{margin:0!important;color:#fff!important;font-family:Manrope,sans-serif!important;font-size:25px!important;font-weight:800!important;letter-spacing:-.65px!important}
+.lecturer-dashboard-hero p{margin:5px 0 0!important;color:#e0edf7!important;font-size:12px!important}
+.lecturer-hero-tag{position:relative;z-index:1;padding:9px 13px;border:1px solid rgba(255,255,255,.22);border-radius:10px;background:rgba(255,255,255,.1);color:#e9f3fa;font-size:10px;font-weight:750;white-space:nowrap}
+#dashboardStats{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:12px!important;margin:0 0 16px!important}
+#dashboardStats .stat-card{min-height:88px!important;padding:15px 16px!important;display:flex!important;align-items:center!important;gap:12px!important;border:1px solid #e0eaf3!important;border-radius:15px!important;background:#fff!important;box-shadow:0 4px 13px rgba(17,65,105,.07)!important;overflow:hidden}
+#dashboardStats .stat-card .icon{width:47px!important;height:47px!important;flex:0 0 47px!important;border-radius:13px!important;display:grid!important;place-items:center!important;font-size:19px!important}
+#dashboardStats .stat-card .number{font-family:Manrope,sans-serif!important;font-size:26px!important;line-height:1.05!important;font-weight:800!important;letter-spacing:-.8px!important;color:#102f50!important}
+#dashboardStats .stat-card .label{margin-top:4px!important;color:#74899e!important;font-size:9px!important;font-weight:800!important;letter-spacing:.7px!important;text-transform:uppercase!important}
+#dashboard>div:has(>.quick-actions),#dashboard>div:has(>#recentExamsList){margin-bottom:15px!important;padding:17px 18px!important;border:1px solid #e0eaf2!important;border-radius:15px!important;background:#fff!important;box-shadow:0 4px 13px rgba(17,65,105,.055)!important}
+#dashboard>div:has(>.quick-actions) h3,#dashboard>div:has(>#recentExamsList) h3{margin:0 0 12px!important;color:#123b60!important;font-family:Manrope,sans-serif!important;font-size:14px!important;font-weight:800!important}
+#dashboard>div:has(>.quick-actions) h3 i,#dashboard>div:has(>#recentExamsList) h3 i{color:#f1b72e!important}
+.quick-actions{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:11px!important}
+.quick-action-btn{min-height:80px!important;padding:13px!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:8px!important;border:1px solid #e0eaf2!important;border-radius:13px!important;background:linear-gradient(180deg,#fff,#fbfdff)!important;color:#0d3d63!important;cursor:pointer!important;transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease!important}
+.quick-action-btn:hover{transform:translateY(-2px)!important;border-color:#b8d4e8!important;box-shadow:0 8px 18px rgba(17,65,105,.08)!important}
+.quick-action-btn>i{font-size:21px!important;color:#0b9d9a!important}
+.quick-action-btn .label{font-size:11px!important;font-weight:750!important;color:#143d60!important}
+#recentExamsList{min-width:0}
+#recentExamsList>div{border-radius:10px!important}
+#recentExamsList>p{padding:24px!important;color:#8a9bae!important}
+.tab-content{animation:lxCommandIn .2s ease both}
+@keyframes lxCommandIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.tab-content>div[style*="linear-gradient"]{border-radius:15px!important;box-shadow:0 8px 20px rgba(7,55,100,.13)!important}
+.exam-filter-panel,.results-filter-panel{border:1px solid #e0eaf2!important;border-radius:13px!important;box-shadow:0 4px 13px rgba(17,65,105,.05)!important}
+.exam-filter-field input,.exam-filter-field select,.results-filter-field input,.results-filter-field select{border-color:#d4e1ed!important;border-radius:9px!important}
+.nchsm-pwa-install{left:278px!important;bottom:18px!important}
+@media(max-width:1100px){.main-content{padding-left:17px!important;padding-right:17px!important}.lecturer-command-topbar{margin-left:-17px!important;margin-right:-17px!important;padding-left:18px!important;padding-right:18px!important}#dashboardStats{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+@media(max-width:900px){.sidebar{width:260px!important;transform:translateX(-260px)}.sidebar.open{transform:translateX(0)}.main-content{margin-left:0!important;width:100%!important;max-width:100%!important}.nchsm-pwa-install{left:auto!important;right:75px!important}}
+@media(max-width:640px){.main-content{padding:0 11px 24px!important}.lecturer-command-topbar{height:auto!important;min-height:70px!important;margin:0 -11px 10px!important;padding:9px 12px!important;border-radius:0 0 13px 13px!important}.lecturer-command-cap{width:34px;height:34px;flex-basis:34px;font-size:24px}.lecturer-command-brand h1{font-size:16px!important}.lecturer-command-brand p{font-size:8px!important;max-width:190px}.lecturer-command-date{display:none!important}.lecturer-command-topbar .admin-profile{display:none!important}.lecturer-dashboard-hero{min-height:82px;padding:13px;border-radius:13px;gap:10px}.lecturer-hero-icon{width:43px;height:43px;flex-basis:43px;font-size:22px}.lecturer-dashboard-hero h2{font-size:18px!important}.lecturer-dashboard-hero p{font-size:9px!important}.lecturer-hero-tag{display:none!important}#dashboardStats{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}#dashboardStats .stat-card{min-height:72px!important;padding:10px!important;gap:8px!important;border-radius:12px!important}#dashboardStats .stat-card .icon{width:37px!important;height:37px!important;flex-basis:37px!important;font-size:15px!important}#dashboardStats .stat-card .number{font-size:21px!important}#dashboardStats .stat-card .label{font-size:8px!important;letter-spacing:.4px!important}.quick-actions{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}.quick-action-btn{min-height:70px!important}.tab-content>div[style*="linear-gradient"]{padding:16px!important}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
+
+/* High-specificity final corrections: override legacy admin dashboard rules */
+body #sidebar.sidebar{width:260px!important;max-width:260px!important;min-width:260px!important;background:linear-gradient(180deg,#061f3e 0%,#092b50 65%,#07365b 100%)!important}
+body #sidebar .sidebar-header{height:112px!important;min-height:112px!important;padding:10px 13px!important;display:flex!important;align-items:center!important;overflow:hidden!important}
+body #sidebar .sidebar-brand{height:90px!important;max-height:90px!important;display:flex!important;align-items:center!important;gap:10px!important;padding:0!important}
+body #sidebar .brand-crest{width:58px!important;height:72px!important;min-width:58px!important;max-width:58px!important;flex:0 0 58px!important;display:flex!important;align-items:center!important;justify-content:center!important;overflow:hidden!important;background:transparent!important}
+body #sidebar .brand-crest img{display:block!important;width:58px!important;height:72px!important;max-width:58px!important;max-height:72px!important;object-fit:contain!important}
+body #sidebar .brand-text{min-width:0!important;max-width:160px!important}
+body #sidebar .brand-text h2{font-size:19px!important;line-height:1.05!important;margin:0 0 5px!important;color:#fff!important}
+body #sidebar .brand-text h2 span{font-size:18px!important;color:#fff!important}
+body #sidebar .brand-text small{font-size:8px!important;line-height:1.3!important;color:#b9d0e2!important}
+body #sidebar .sidebar-scroll{padding-top:10px!important}
+body .main-content{margin-left:260px!important;width:calc(100% - 260px)!important;max-width:calc(100% - 260px)!important;padding:0 22px 32px!important;min-width:0!important}
+body .main-content>.top-header.lecturer-command-topbar{height:78px!important;min-height:78px!important;margin:0 -22px 14px!important;padding:0 23px!important;display:flex!important;align-items:center!important;justify-content:space-between!important;border:0!important;border-radius:0 0 17px 17px!important;background:linear-gradient(105deg,#061f3e,#0b3d69 65%,#0a315a)!important;box-shadow:0 7px 22px rgba(5,34,64,.17)!important;color:#fff!important}
+body .main-content>.top-header.lecturer-command-topbar .lecturer-command-brand h1{font-size:20px!important;color:#fff!important;line-height:1.2!important}
+body .main-content>.top-header.lecturer-command-topbar .lecturer-command-brand p{font-size:10px!important;color:#d5e5f2!important}
+body .main-content>.top-header.lecturer-command-topbar .admin-name{color:#fff!important}
+body .main-content>.top-header.lecturer-command-topbar .admin-email{color:#c5d8e8!important}
+body #dashboard .lecturer-dashboard-hero{position:relative!important;min-height:100px!important;margin:0 0 15px!important;padding:18px 21px!important;display:flex!important;align-items:center!important;gap:14px!important;overflow:hidden!important;border-radius:16px!important;background:linear-gradient(105deg,#075083 0%,#0b4777 56%,#092b65 100%)!important;box-shadow:0 9px 20px rgba(7,55,100,.16)!important;color:#fff!important}
+body #dashboard .lecturer-dashboard-hero h2{margin:0!important;color:#fff!important;font-size:24px!important;font-weight:800!important;line-height:1.2!important}
+body #dashboard .lecturer-dashboard-hero p{margin:5px 0 0!important;color:#e0edf7!important;font-size:11px!important}
+body #dashboard .lecturer-dashboard-hero .lecturer-hero-icon{width:54px!important;height:54px!important;flex:0 0 54px!important;display:grid!important;place-items:center!important;border-radius:14px!important;background:rgba(255,255,255,.13)!important;color:#ffc83d!important;font-size:27px!important}
+body #dashboard .lecturer-dashboard-hero .lecturer-hero-tag{margin-left:auto!important;padding:9px 12px!important;border:1px solid rgba(255,255,255,.24)!important;border-radius:9px!important;background:rgba(255,255,255,.1)!important;color:#e9f3fa!important;font-size:10px!important}
+body #dashboard #dashboardStats{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:12px!important;margin:0 0 15px!important}
+body #dashboard #dashboardStats .stat-card{min-height:86px!important;border:1px solid #e0eaf3!important;border-radius:14px!important;background:#fff!important;box-shadow:0 4px 13px rgba(17,65,105,.07)!important}
+body #dashboard>div:has(>.quick-actions),body #dashboard>div:has(>#recentExamsList){margin:0 0 14px!important;padding:17px 18px!important;border:1px solid #e0eaf2!important;border-radius:15px!important;background:#fff!important;box-shadow:0 4px 13px rgba(17,65,105,.055)!important}
+@media(max-width:900px){body #sidebar.sidebar{width:260px!important;max-width:260px!important;min-width:260px!important;transform:translateX(-260px)!important}body #sidebar.sidebar.open{transform:translateX(0)!important}body .main-content{margin-left:0!important;width:100%!important;max-width:100%!important;padding:0 16px 28px!important}}
+@media(max-width:640px){body #sidebar .sidebar-header{height:96px!important;min-height:96px!important}body #sidebar .brand-crest,body #sidebar .brand-crest img{height:64px!important;max-height:64px!important}body .main-content{padding:0 11px 24px!important}body .main-content>.top-header.lecturer-command-topbar{height:70px!important;min-height:70px!important;margin:0 -11px 10px!important;padding:0 12px!important}body #dashboard .lecturer-dashboard-hero{min-height:80px!important;padding:13px!important}body #dashboard .lecturer-dashboard-hero h2{font-size:18px!important}body #dashboard .lecturer-dashboard-hero .lecturer-hero-tag{display:none!important}}
+
+
+/* Lecturer tables: never hide rows behind entrance animations; keep every table usable on phones. */
+body .main-content .tab-content table,
+body .main-content .tab-content table thead,
+body .main-content .tab-content table tbody{visibility:visible!important;opacity:1!important}
+body .main-content .tab-content table tbody{display:table-row-group!important}
+body .main-content .tab-content table tbody tr{
+  display:table-row!important;
+  visibility:visible!important;
+  opacity:1!important;
+  animation:none!important;
+  transform:none!important;
+}
+body .main-content .tab-content table tbody td{
+  display:table-cell!important;
+  visibility:visible!important;
+  opacity:1!important;
+}
+body .main-content .tab-content table thead tr{display:table-row!important;visibility:visible!important;opacity:1!important}
+body .main-content .tab-content table thead th{display:table-cell!important;visibility:visible!important;opacity:1!important}
+body .main-content .tab-content [style*="overflow-x"]{
+  display:block!important;
+  width:100%!important;
+  max-width:100%!important;
+  overflow-x:auto!important;
+  overflow-y:visible!important;
+  -webkit-overflow-scrolling:touch!important;
+  overscroll-behavior-x:contain;
+}
+body .main-content .tab-content #examsTable,
+body .main-content .tab-content #resultsTable,
+body .main-content .tab-content #attendanceTable,
+body .main-content .tab-content #liveStudentsTable{
+  width:max-content!important;
+  min-width:100%!important;
+  border-collapse:separate!important;
+  border-spacing:0!important;
+}
+@media(max-width:640px){
+  body .main-content .tab-content #examsTable{min-width:900px!important}
+  body .main-content .tab-content #resultsTable{min-width:1050px!important}
+  body .main-content .tab-content #attendanceTable{min-width:900px!important}
+  body .main-content .tab-content #liveStudentsTable{min-width:900px!important}
+  body .main-content .tab-content table tbody tr:hover{transform:none!important}
+  body .main-content .tab-content table th,
+  body .main-content .tab-content table td{white-space:nowrap}
+}
+@media(prefers-reduced-motion:reduce){
+  body .main-content .tab-content table tbody tr{animation:none!important;opacity:1!important;visibility:visible!important}
+}
