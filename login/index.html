@@ -2186,7 +2186,7 @@ body.dark-theme #loginButton,body.dark-theme .login-button{background:linear-gra
     document.head.appendChild(style);
     const panel = document.createElement("div");
     panel.id = "campus-nexus-school-code-gate-panel";
-    panel.innerHTML = '<section class="cn-code-card" role="dialog" aria-modal="true" aria-labelledby="cn-code-title"><h2 id="cn-code-title">Welcome to Campus Nexus</h2><p>Enter your institution school code to continue to the correct login portal.</p><form id="cn-school-code-form"><label for="cn-school-code-input">Institution school code</label><input id="cn-school-code-input" name="school_code" inputmode="numeric" autocomplete="off" maxlength="12" placeholder="Enter school code" required><button type="submit">Continue to login</button><div class="cn-code-error" id="cn-school-code-error" role="alert"></div></form></section>';
+    panel.innerHTML = '<section class="cn-code-card" role="dialog" aria-modal="true" aria-labelledby="cn-code-title"><h2 id="cn-code-title">Welcome to Campus Nexus</h2><p>Enter your institution school code to continue to the correct login portal.</p><form id="cn-school-code-form"><label for="cn-school-code-input">Institution school code</label><input id="cn-school-code-input" name="school_code" inputmode="numeric" autocomplete="off" maxlength="3" pattern="[0-9]{3}" placeholder="Enter school code" required><button type="submit">Continue to login</button><div class="cn-code-error" id="cn-school-code-error" role="alert"></div></form></section>';
     document.body.appendChild(panel);
     const input = panel.querySelector("#cn-school-code-input");
     input.focus();
@@ -2195,7 +2195,7 @@ body.dark-theme #loginButton,body.dark-theme .login-button{background:linear-gra
       const code = input.value.trim();
       const errorBox = panel.querySelector("#cn-school-code-error");
       const button = panel.querySelector("button");
-      if (!code) { errorBox.textContent = "Enter your institution school code."; return; }
+      if (!/^[0-9]{3}$/.test(code)) { errorBox.textContent = "Enter the complete 3-digit school code."; input.focus(); return; }
       if (!window.supabase?.createClient) { errorBox.textContent = "Login service is not ready. Refresh and try again."; return; }
       button.disabled = true; button.textContent = "Checking school code…"; errorBox.textContent = "";
       try {
