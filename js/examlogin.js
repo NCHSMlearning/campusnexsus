@@ -12,6 +12,9 @@ form.addEventListener('submit',async e=>{
   const {data,error}=await client.auth.signInWithPassword({email:email.value.trim(),password:password.value});
   if(error)throw error;
   if(!data?.user)throw new Error('Sign-in could not be completed. Please try again.');
+  // Keep the legacy exam handoff compatible while Supabase remains the source of truth.
+  localStorage.setItem('currentUserId',data.user.id);
+  localStorage.setItem('studentEmail',email.value.trim());
   const {data:profile,error:profileError}=await client.from('consolidated_user_profiles_table').select('*').eq('user_id',data.user.id).maybeSingle();
   if(profileError)throw profileError;
   if(!profile)throw new Error('No Campus Nexus student profile is linked to this account. Contact your institution administrator.');
@@ -19,7 +22,7 @@ form.addEventListener('submit',async e=>{
   if(role!=='student'){await client.auth.signOut();throw new Error('This login is for student examination accounts only. Please use the appropriate portal.')}
   if(!['approved','active'].includes(status)||profile.login_enabled===false){await client.auth.signOut();throw new Error('Your student account is awaiting approval or has been disabled. Contact your institution administrator.')}
   if(!profile.institution_id){await client.auth.signOut();throw new Error('Your student account is not linked to an institution. Contact your institution administrator.')}
-  show('Sign-in successful. Opening your examinations…','info');location.replace(nextPath());
+  show('Sign-in successful. Opening your examinations…','info');location.replace(nextPath()+'?v=20261120-standalone');
  }catch(err){show(err?.message||'Unable to sign in. Check your details and try again.');button.disabled=false;button.textContent='Sign in to examinations'}
 });
 const existing=window.sb||window.supabaseClient;
