@@ -73,7 +73,8 @@ async function loadExams(){
  $('refresh-btn').disabled=true;
  $('exam-panel').innerHTML='<div class="loading-state"><span class="spinner"></span><p>Loading examinations assigned to you…</p></div>';
  try {
-  const {data,error}=await state.client.from('exams').select('*').eq('institution_id',state.profile.institution_id).order('exam_date',{ascending:true,nullsFirst:false});
+  const request=state.client.from('exams').select('*').eq('institution_id',state.profile.institution_id).order('exam_date',{ascending:true,nullsFirst:false});
+  const {data,error}=await Promise.race([request,{then:(_,reject)=>setTimeout(()=>reject(new Error('Examination records are taking too long to load. Check your connection and tap Refresh.')),12000)}]);
   if(error)throw error;
   state.exams=(data||[]).filter(e=>eligible(e,state.profile));
   render();
