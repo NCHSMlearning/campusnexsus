@@ -624,6 +624,7 @@
     bindReliableLogout();
     renderModuleOptions(MODULES.map(([key]) => key));
     setupLogoUploader();
+    setupInstitutionAdminFields();
     ensureInstitutionModal();
     $("cnInstitutionCancel").addEventListener("click",resetForm);
     $("cnInstitutionSearch").addEventListener("input",renderRows);
