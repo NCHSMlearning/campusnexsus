@@ -12172,6 +12172,16 @@ async function initializeApp() {
             window.__CAMPUS_NEXUS_STUDENT_SHELL_READY__ = true;
             window.ui.supabase = window.db.supabase;
             window.ui.currentUser = userSession.user;
+
+            // Bind the portal's navigation, logout, refresh and utility controls
+            // only after authentication. safeInitialize() is intentionally skipped
+            // on this page, so these shell listeners must be initialized here.
+            if (!window.__CAMPUS_NEXUS_STUDENT_UI_EVENTS_READY__) {
+                window.__CAMPUS_NEXUS_STUDENT_UI_EVENTS_READY__ = true;
+                window.ui.setupEventListeners?.();
+                window.ui.setupProfileDropdown?.();
+            }
+
             window.ui.initializeDateTime?.();
             window.ui.setupOfflineIndicator?.();
             window.ui.setupMobileMenuVisibility?.();
