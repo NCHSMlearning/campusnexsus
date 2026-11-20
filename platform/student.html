@@ -11979,9 +11979,10 @@ async function initializeApp() {
             throw new Error(window.__EXAM_CONFIG_ERROR__ || 'Student database connection is unavailable. Please refresh this page.');
         }
 
-        const { data: sessionData, error: sessionError } = await studentSupabase.auth.getSession();
-        if (sessionError) throw sessionError;
-        const userSession = sessionData?.session || null;
+        // Supabase may still be restoring its persisted auth state on a
+        // cold mobile load. Wait for the auth client to finish restoring
+        // before treating an empty first getSession() result as signed out.
+        const userSession = await getSessionWithRestoreRetry(studentSupabase, 20, 500);
 
         // Publish the persistent client to legacy modules without starting a
         // second Supabase client or a competing authentication lifecycle.
