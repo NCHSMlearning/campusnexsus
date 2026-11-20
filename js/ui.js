@@ -1200,7 +1200,7 @@ class UIModule {
         this.loadingScreen.classList.add('app-splash');
         const getTenantLoadingLabels = () => {
             const root = document.documentElement;
-            const name = root.dataset.institutionName || 'NCHSM';
+            const name = root.dataset.institutionName || 'Campus Nexus';
             const code = root.dataset.schoolCode || root.dataset.institutionCode || '';
             const identity = code ? name + ' (' + code + ')' : name;
             return { identity, code };
