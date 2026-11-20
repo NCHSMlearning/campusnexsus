@@ -676,7 +676,7 @@ window.deselectAllTranscriptStudents = function() {
 
 window.updateTranscriptSelectedCount = function() {
     const count = window.transcriptData.selectedStudents.length;
-    const countEls = document.querySelectorAll('#transcriptSelectedCount');
+    const countEls = document.querySelectorAll('[data-transcript-selected-count]');
     countEls.forEach(el => el.textContent = count);
 };
 
