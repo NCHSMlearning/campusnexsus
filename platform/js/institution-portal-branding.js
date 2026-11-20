@@ -131,6 +131,22 @@
       : pageRole === "Administrator" ? "Administrator Portal"
       : pageRole === "Student Examination" ? "Student Examination Portal"
       : pageRole === "Examinations" ? "Examination Portal" : "Institution Portal";
+
+    document.querySelectorAll(".brand-text h2").forEach(el => {
+      const strong = document.createElement("strong");
+      strong.textContent = name;
+      const portal = document.createElement("span");
+      portal.textContent = roleHeading;
+      el.replaceChildren(strong, " ", portal);
+    });
+    if (pageRole === "Lecturer") {
+      document.querySelectorAll(".nrd-kicker").forEach(el => {
+        el.textContent = (name + " LECTURER PORTAL").toUpperCase();
+      });
+    }
+    document.querySelectorAll('input[value="NCHSM Exam Proctoring System"]').forEach(input => {
+      input.value = name + " Examination System";
+    });
     document.querySelectorAll("h1,h2,h3,[role=heading]").forEach(el => {
       const label = String(el.textContent || "").trim();
       if (/NCHSM.*(portal|dashboard|exam)|(?:portal|dashboard|exam).*NCHSM/i.test(label)) {
