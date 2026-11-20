@@ -834,7 +834,7 @@ const FROM_ADDRESS =
             try {
                 const safe = term.replace(/[%_,]/g, ' ');
 
-                const { data, error } = await sb
+                let query = sb
                     .from('consolidated_user_profiles_table')
                     .select('user_id,full_name,email,admission_number,student_id,program,block,current_block,intake_year,intake_month,status,institution_id')
                     .eq('institution_id', this.institutionId)
@@ -843,8 +843,8 @@ const FROM_ADDRESS =
                     .eq('program', this.value(['exam_program', 'examProgram']))
                     .eq('intake_year', String(this.value(['exam_intake', 'examIntake']) || ''));
                 const selectedMonthForSearch = this.value(['exam_intake_month']);
-                if (selectedMonthForSearch) q = q.eq('intake_month', selectedMonthForSearch);
-                const { data, error } = await q
+                if (selectedMonthForSearch) query = query.eq('intake_month', selectedMonthForSearch);
+                const { data, error } = await query
                     .or(
                         'full_name.ilike.%' + safe + '%,' +
                         'email.ilike.%' + safe + '%,' +
