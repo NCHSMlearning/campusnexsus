@@ -27,6 +27,14 @@ jobs:
           fetch-depth: 0
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
+      - name: Verify student examination portal files
+        run: |
+          test -f studentexam.html
+          test -f examlogin.html
+          test -f js/student-exams.js
+          test -f js/examlogin.js
+          test -f css/student-exams.css
+          echo "Student examination portal files are present in the Pages artifact."
       - name: Upload complete static website
         uses: actions/upload-pages-artifact@v3
         with:
