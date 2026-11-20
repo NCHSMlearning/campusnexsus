@@ -204,7 +204,7 @@ function normalizeSchoolCode(value) {
 
 async function resolveInstitutionContext(code, host) {
     const normalizedCode = normalizeSchoolCode(code);
-    if (normalizedCode && !/^[0-9]{12}$/.test(normalizedCode)) throw new Error('School codes must contain exactly 12 digits.');
+    if (normalizedCode && !/^[0-9]{3}$/.test(normalizedCode)) throw new Error('School codes must contain exactly 3 digits.');
     const { data, error } = await sb.rpc('resolve_institution_registration_context', {
         p_code: normalizedCode || null,
         p_host: host || null
@@ -270,15 +270,15 @@ async function initializeInstitutionRegistration() {
     heading.textContent = 'Enter your school code';
     heading.style.cssText = 'margin:0 0 8px;color:#082f49;font-size:22px;';
     const intro = document.createElement('p');
-    intro.textContent = 'Enter the 12-digit school code provided by your institution. We will identify your school and open the correct registration form.';
+    intro.textContent = 'Enter the 3-digit school code provided by your institution. We will identify your school and open the correct registration form.';
     intro.style.cssText = 'margin:0 0 16px;color:#475569;line-height:1.5;';
     const input = document.createElement('input');
     input.type = 'text';
     input.inputMode = 'numeric';
     input.autocomplete = 'off';
-    input.maxLength = 12;
-    input.placeholder = 'Enter 12-digit school code';
-    input.setAttribute('aria-label', '12-digit school code');
+    input.maxLength = 3;
+    input.placeholder = 'Enter 3-digit school code';
+    input.setAttribute('aria-label', '3-digit school code');
     input.style.cssText = 'box-sizing:border-box;width:100%;padding:13px 14px;border:1px solid #cbd5e1;border-radius:10px;font-size:17px;letter-spacing:1px;';
     const button = document.createElement('button');
     button.type = 'button';
@@ -318,9 +318,9 @@ async function initializeInstitutionRegistration() {
 
     button.addEventListener('click', async () => {
         const code = normalizeSchoolCode(input.value);
-        if (!/^[0-9]{12}$/.test(code)) {
+        if (!/^[0-9]{3}$/.test(code)) {
             message.style.color = '#b91c1c';
-            message.textContent = 'Enter the complete 12-digit school code.';
+            message.textContent = 'Enter the complete 3-digit school code.';
             return;
         }
         await resolve(code, null);
