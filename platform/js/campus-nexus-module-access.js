@@ -142,6 +142,7 @@
       return;
     }
     const enabled = new Set(entitlements.data.map(x => String(x).toLowerCase()));
+    enabled.delete("library"); // The library service is not yet implemented for tenant accounts.
     window.CampusNexusModules = {
       ready:true, legacy:false, enabled,
       has:key => enabled.has(String(key || "").toLowerCase()),
