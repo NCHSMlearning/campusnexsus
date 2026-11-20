@@ -520,7 +520,8 @@ const FROM_ADDRESS =
                 // ✅ Primary source: units_catalog
                 const { data, error } = await sb
                     .from('units_catalog')
-                    .select('id, unit_code, unit_name, program, block, assessment_type, status')
+                    .select('id, unit_code, unit_name, program, block, assessment_type, status, institution_id')
+                    .eq('institution_id', this.institutionId)
                     .eq('status', 'active')
                     .order('unit_name', { ascending: true });
 
@@ -551,6 +552,7 @@ const FROM_ADDRESS =
                     const { data } = await sb
                         .from('courses')
                         .select('*')
+                        .eq('institution_id', this.institutionId)
                         .limit(2000);
 
                     this.courses = data || [];
@@ -1011,9 +1013,10 @@ const FROM_ADDRESS =
                     'Loading assessments...</td></tr>';
             }
 
-            if (!sb) {
+            if (!sb || !this.institutionId) {
                 this.exams = [];
                 this.filteredExams = [];
+                if (tbody) tbody.innerHTML = '<tr><td colspan="12" style="padding:28px;text-align:center;color:#b91c1c;">Your lecturer account is not linked to an institution. Contact the institution administrator.</td></tr>';
                 this.render();
                 this.updateStats();
                 return;
@@ -2577,7 +2580,7 @@ const FROM_ADDRESS =
                 '<h1 style="margin:6px 0;font-size:22px;">New ' +
                 this.esc(type) +
                 ' Posted</h1>' +
-                '<p style="margin:6px 0;opacity:.85;font-size:13px;">Nakuru College of Health Sciences and Management</p>' +
+                '<p style="margin:6px 0;opacity:.85;font-size:13px;">Campus Nexus · Institution Assessment Notification</p>' +
                 '</div>' +
 
                 '<div style="padding:28px 32px;">' +
@@ -2626,7 +2629,7 @@ const FROM_ADDRESS =
                 '</table>' +
 
                 '<p style="text-align:center;margin-top:24px;">' +
-                '<a href="https://nchsm.co.ke/student" style="background:#0A3D62;color:#fff;padding:12px 28px;border-radius:10px;text-decoration:none;font-weight:600;">Access Student Portal</a>' +
+                '<a href="https://campusnexus.co.ke/student" style="background:#0A3D62;color:#fff;padding:12px 28px;border-radius:10px;text-decoration:none;font-weight:600;">Access Student Portal</a>' +
                 '</p>' +
 
                 '<p style="color:#94a3b8;font-size:12px;margin-top:20px;">This is an automated Campus Nexus notification.</p>' +
