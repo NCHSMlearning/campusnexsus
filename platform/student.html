@@ -12166,6 +12166,26 @@ async function initializeApp() {
         window.currentUserId = window.db.currentUserId;
         window.currentUserProfile = window.db.currentUserProfile;
 
+        // Initialize only the authenticated shell utilities. The main inline
+        // controller owns auth, tab routing and academic module initialization.
+        if (window.ui && !window.__CAMPUS_NEXUS_STUDENT_SHELL_READY__) {
+            window.__CAMPUS_NEXUS_STUDENT_SHELL_READY__ = true;
+            window.ui.supabase = window.db.supabase;
+            window.ui.currentUser = userSession.user;
+            window.ui.initializeDateTime?.();
+            window.ui.setupOfflineIndicator?.();
+            window.ui.setupMobileMenuVisibility?.();
+            window.ui.startReviewsBadgeUpdater?.();
+
+            const menuButton = document.getElementById('mobile-menu-toggle');
+            const menuOverlay = document.getElementById('overlay');
+            if (menuButton) menuButton.addEventListener('click', (event) => {
+                event.preventDefault();
+                window.ui.toggleMenu?.();
+            }, { once: false });
+            if (menuOverlay) menuOverlay.addEventListener('click', () => window.ui.closeMenu?.(), { once: false });
+        }
+
         // Authenticated shell is ready: restore the tab before module loaders run.
         // Restore the exact page requested by the URL hash BEFORE modules boot.
         // The final restore below also protects it from modules that initialize
