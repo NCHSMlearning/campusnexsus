@@ -1,0 +1,187 @@
+/* Campus Nexus Super Admin — mobile layout hardening
+   Keeps the desktop shell unchanged. */
+@media (max-width: 768px) {
+  html, body {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: clip !important;
+    -webkit-text-size-adjust: 100%;
+  }
+  body { min-width: 0 !important; }
+  .main, main.main, .tab-content, .section-content,
+  .dashboard-content, .content-wrapper {
+    box-sizing: border-box !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+  .main { padding: 76px 12px calc(104px + env(safe-area-inset-bottom, 0px)) !important; }
+  .main > *, main.main > *, .tab-content > * { min-width: 0; max-width: 100%; }
+  /* Tables remain full data tables and get their own horizontal scroll area. */
+  .table-responsive, .table-container, .table-wrapper,
+  .table-scroll, .data-table-wrapper, .dataTables_wrapper,
+  .dataTables_scroll, .dataTables_scrollBody {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+    -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior-x: contain;
+    touch-action: pan-x pan-y;
+    scrollbar-width: thin;
+    scrollbar-color: #94a3b8 #eef2f7;
+  }
+  table, table.data-table, table.dataTable {
+    width: max-content !important;
+    min-width: 100% !important;
+    max-width: none !important;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+  table th, table td {
+    white-space: nowrap;
+    overflow-wrap: normal;
+    word-break: normal;
+  }
+  /* Tables without an existing wrapper still scroll inside the viewport. */
+  .tab-content table:not(.calendar-table),
+  .section-content table:not(.calendar-table) {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  #cnPlatformOverview {
+    box-sizing: border-box !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding: 14px !important;
+    border-radius: 16px !important;
+  }
+  #cnPlatformOverview .cn-platform-head { gap: 12px !important; }
+  #cnPlatformOverview .cn-platform-head > div { min-width: 0; max-width: 100%; }
+  #cnPlatformOverview .cn-platform-head > div:last-child {
+    width: 100%;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+  }
+  #cnPlatformMetricsUpdated { flex: 1 1 100%; min-width: 100%; }
+  #cnPlatformOverview .cn-platform-head button {
+    min-height: 42px;
+    flex: 1 1 auto;
+    white-space: normal;
+  }
+  #cnPlatformOverview .cn-platform-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+  #cnPlatformOverview .cn-platform-card {
+    min-width: 0 !important;
+    padding: 13px 12px !important;
+    overflow-wrap: anywhere;
+  }
+  #cnPlatformOverview .cn-platform-card small {
+    font-size: 10px !important;
+    line-height: 1.45 !important;
+    min-height: 2.9em;
+  }
+  #cnPlatformOverview .cn-platform-card strong { font-size: 25px !important; }
+  #cnPlatformOverview .cn-platform-card em { font-size: 10px !important; line-height: 1.45; }
+  #cnPlatformOverview .cn-platform-lower { grid-template-columns: minmax(0,1fr) !important; }
+  #chatbotToggle {
+    width: 46px !important;
+    height: 46px !important;
+    right: 12px !important;
+    bottom: calc(14px + env(safe-area-inset-bottom, 0px)) !important;
+    font-size: 22px !important;
+    z-index: 900 !important;
+  }
+  #chatbotWindow {
+    left: 8px !important;
+    right: 8px !important;
+    width: auto !important;
+    max-width: none !important;
+    bottom: calc(72px + env(safe-area-inset-bottom, 0px)) !important;
+    max-height: min(68dvh, 620px) !important;
+    height: min(68dvh, 620px) !important;
+    z-index: 950 !important;
+  }
+}
+@media (max-width: 380px) {
+  #cnPlatformOverview .cn-platform-grid { grid-template-columns: 1fr !important; }
+  #cnPlatformOverview .cn-platform-head button { flex-basis: 100%; }
+}
+
+
+/* Campus Nexus dashboard: institution scope and one continuous metric grid */
+#cnPlatformOverview {
+  margin: 0 0 18px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.cn-global-filter {
+  display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+  padding:15px 18px; border:1px solid #dbe5ec; border-radius:16px;
+  background:linear-gradient(115deg,#fff 0%,#f7fbfd 100%);
+  box-shadow:0 4px 16px rgba(8,47,73,.055);
+}
+.cn-global-filter-copy {display:flex; flex-direction:column; gap:3px; flex:1 1 230px; min-width:180px}
+.cn-global-eyebrow {font-size:9px; font-weight:900; letter-spacing:.1em; color:#0f766e}
+.cn-global-filter-copy strong {font-size:16px; color:#082f49; line-height:1.25}
+.cn-global-filter-copy small {font-size:11px; color:#64748b; line-height:1.4}
+.cn-global-select-wrap {display:flex; flex-direction:column; gap:5px; min-width:230px; flex:0 1 290px}
+.cn-global-select-wrap span {font-size:10px; font-weight:800; color:#475569}
+.cn-global-select-wrap select {
+  width:100%; min-height:42px; padding:9px 36px 9px 12px; border:1px solid #cbd5e1;
+  border-radius:10px; background:#fff; color:#0f3348; font-size:12px; font-weight:700;
+}
+.cn-global-updated {font-size:10px; color:#94a3b8; flex:0 1 auto}
+.cn-global-filter button {min-height:40px; padding:9px 13px; border-radius:10px; font-size:11px; font-weight:800; cursor:pointer}
+.cn-global-refresh {border:1px solid #cbd5e1; background:#fff; color:#0f766e}
+.cn-global-manage {border:1px solid #0f766e; background:#0f766e; color:#fff}
+.cn-dashboard-metrics-grid {
+  display:grid !important;
+  grid-template-columns:repeat(auto-fit,minmax(190px,1fr)) !important;
+  gap:16px !important; margin-bottom:18px !important;
+}
+.cn-dashboard-metrics-grid > .dashboard-card,
+.cn-dashboard-metrics-grid > .cn-platform-card {min-width:0}
+.cn-platform-card {
+  box-sizing:border-box; position:relative; overflow:hidden;
+  padding:20px 22px !important; min-height:116px;
+  border:1px solid #e7edf2 !important; border-top:4px solid var(--cn-accent,#0f766e) !important;
+  border-radius:18px !important; background:linear-gradient(135deg,#fff,var(--cn-tint,#f8fafc)) !important;
+  box-shadow:0 2px 8px rgba(0,0,0,.04) !important;
+  cursor:default !important; transition:transform .2s ease,box-shadow .2s ease;
+}
+.cn-platform-card:hover {transform:translateY(-3px);box-shadow:0 9px 24px rgba(8,47,73,.09)!important}
+.cn-platform-card small {display:block;color:#64748b;font-size:10px!important;letter-spacing:.06em;font-weight:800;line-height:1.4;text-transform:uppercase}
+.cn-platform-card strong {display:block;color:var(--cn-accent,#082f49)!important;font-size:29px!important;font-weight:850;margin-top:8px!important;line-height:1.1}
+.cn-platform-card em {display:block;color:#94a3b8;font-size:10px!important;font-style:normal;margin-top:7px!important;line-height:1.4}
+.cn-platform-card .cn-platform-icon {
+  position:absolute;right:17px;top:17px;width:36px;height:36px;border-radius:11px;
+  display:flex;align-items:center;justify-content:center;color:var(--cn-accent,#0f766e);
+  background:var(--cn-tint,#f0fdfa);font-size:14px
+}
+.cn-platform-card.cn-scope-unavailable {opacity:.82}
+.cn-platform-card.cn-scope-unavailable strong {font-size:22px!important}
+@media(max-width:700px) {
+  .cn-global-filter {align-items:stretch;padding:13px;gap:10px}
+  .cn-global-filter-copy,.cn-global-select-wrap {flex:1 1 100%;min-width:0}
+  .cn-global-updated {flex:1 1 100%}
+  .cn-global-filter button {flex:1 1 auto}
+  .cn-dashboard-metrics-grid {grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important}
+  .cn-platform-card {padding:15px!important;min-height:105px}
+  .cn-platform-card strong {font-size:25px!important}
+}
+@media(max-width:380px) {
+  .cn-dashboard-metrics-grid {grid-template-columns:minmax(0,1fr)!important}
+}
