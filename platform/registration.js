@@ -278,7 +278,7 @@ async function initializeInstitutionRegistration() {
     input.autocomplete = 'off';
     input.maxLength = 3;
     input.pattern = '[0-9]{3}';
-    input.addEventListener('input', () => { input.value = input.value.replace(/\\D/g, '').slice(0, 3); });
+    input.addEventListener('input', () => { input.value = input.value.replace(/\D/g, '').slice(0, 3); });
     input.placeholder = 'Enter 3-digit school code';
     input.setAttribute('aria-label', '3-digit school code');
     input.style.cssText = 'box-sizing:border-box;width:100%;padding:13px 14px;border:1px solid #cbd5e1;border-radius:10px;font-size:17px;letter-spacing:1px;';
