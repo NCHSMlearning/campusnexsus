@@ -384,6 +384,7 @@
         logo = publicData?.publicUrl || "";
         if (!logo) throw new Error("Logo uploaded, but its public URL could not be generated.");
         $("cnInstitutionLogo").value = logo;
+        payload.logo_url = logo;
       }
       const {data:result,error} = await sb.rpc("platform_save_institution",{
         p_payload:payload,
