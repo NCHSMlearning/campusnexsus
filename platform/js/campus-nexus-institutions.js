@@ -50,6 +50,41 @@
     if (button) { button.disabled = busy; button.textContent = busy ? "Saving…" : (editingId ? "Update institution" : "Add institution"); }
   };
 
+  function bindReliableLogout() {
+    if (window.__cnSuperAdminLogoutBound) return;
+    window.__cnSuperAdminLogoutBound = true;
+    document.addEventListener("click", async event => {
+      const target = event.target?.closest?.(
+        '#logoutBtn,#logoutButton,#logout,.logout a,.logout button,[data-action="logout"],[data-logout],a[href*="logout"],button[aria-label*="log out" i],button[title*="log out" i]'
+      );
+      if (!target) return;
+      const label = (target.textContent || "").trim();
+      const href = target.getAttribute("href") || "";
+      if (!/logout|sign out/i.test(label + " " + href) && !target.hasAttribute("data-logout")) return;
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      if (target.dataset.cnLoggingOut === "true") return;
+      target.dataset.cnLoggingOut = "true";
+      target.setAttribute("aria-busy","true");
+      try {
+        const client = window.sb || window.supabaseClient || window.supabase;
+        if (!client?.auth?.signOut) throw new Error("Secure sign-out is unavailable. Please reload and try again.");
+        const {error} = await client.auth.signOut({scope:"global"});
+        if (error) throw error;
+        ["userProfile","profileData","currentUser","campusnexus_admin","campusnexus_remember"].forEach(key => {
+          try { localStorage.removeItem(key); sessionStorage.removeItem(key); } catch (_) {}
+        });
+        window.location.replace("/platform/login.html?logged_out=1");
+      } catch (error) {
+        console.error("[Campus Nexus] Logout failed:",error);
+        notify(error.message || "Unable to sign out. Please try again.","error");
+        target.dataset.cnLoggingOut = "false";
+        target.removeAttribute("aria-busy");
+      }
+    }, true);
+  }
+
   async function verifyPlatformAdmin() {
     sb = window.sb || window.supabase;
     if (!sb?.auth) throw new Error("The authenticated Supabase client is not available. Reload the page and sign in again.");
@@ -476,6 +511,7 @@
   async function init() {
     const form = $("cnInstitutionForm");
     if (!form) return;
+    bindReliableLogout();
     renderModuleOptions(MODULES.map(([key]) => key));
     setupLogoUploader();
     ensureInstitutionModal();
