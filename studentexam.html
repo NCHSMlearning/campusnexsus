@@ -5,20 +5,20 @@
 <title>My Examinations | Campus Nexus</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
-<link rel="stylesheet" href="/css/student-exams.css?v=20261120-3">
+<link rel="stylesheet" href="/css/student-exams.css?v=20261120-4">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="/js/exam-supabase.js?v=20261120-1"></script>
 </head>
 <body>
 <div class="exam-app">
 <aside class="exam-sidebar" id="exam-sidebar">
-<a class="exam-brand" href="/student"><span class="brand-symbol"><i class="fa-solid fa-graduation-cap"></i></span><span><b>Campus Nexus</b><small>STUDENT PORTAL</small></span></a>
+<a class="exam-brand" href="/student"><span class="brand-symbol" id="institution-logo-wrap"><i class="fa-solid fa-graduation-cap" id="institution-logo-fallback"></i><img id="institution-logo" alt="Institution logo" hidden></span><span><b id="institution-name">Campus Nexus</b><small id="institution-portal-label">STUDENT PORTAL</small></span></a>
 <div class="side-label">YOUR WORKSPACE</div>
 <nav class="exam-nav"><a href="/student"><i class="fa-solid fa-house"></i><span>Student Dashboard</span></a><a class="active" href="/studentexam.html"><i class="fa-solid fa-file-circle-check"></i><span>Examinations</span><i class="fa-solid fa-chevron-right nav-current"></i></a></nav>
 <div class="sidebar-help"><span class="help-icon"><i class="fa-solid fa-headset"></i></span><b>Need assistance?</b><p>Contact your institution administrator if an assigned examination is missing.</p></div>
 <div class="sidebar-account"><div class="account-avatar" id="avatar">ST</div><div class="account-copy"><b id="side-name">Student</b><small id="side-admission">Loading profile…</small></div><button id="logout-btn" title="Sign out" aria-label="Sign out"><i class="fa-solid fa-arrow-right-from-bracket"></i></button></div>
 </aside>
 <div class="exam-main-wrap">
-<header class="exam-header"><div class="header-left"><button class="mobile-toggle" id="mobile-toggle" aria-label="Open navigation"><i class="fa-solid fa-bars"></i></button><div><span class="header-kicker">CAMPUS NEXUS <i class="fa-solid fa-chevron-right"></i> STUDENT SPACE</span><b>Examination Centre</b></div></div><div class="header-right"><span class="secure-top"><i class="fa-solid fa-shield-halved"></i> Secure student access</span><span class="header-avatar"><i class="fa-regular fa-user"></i></span></div></header>
+<header class="exam-header"><div class="header-left"><button class="mobile-toggle" id="mobile-toggle" aria-label="Open navigation"><i class="fa-solid fa-bars"></i></button><div><span class="header-kicker" id="institution-header-name">CAMPUS NEXUS <i class="fa-solid fa-chevron-right"></i> STUDENT SPACE</span><b>Examination Centre</b></div></div><div class="header-right"><span class="secure-top"><i class="fa-solid fa-shield-halved"></i> Secure student access</span><span class="header-avatar"><i class="fa-regular fa-user"></i></span></div></header>
 <main class="exam-main">
 <section class="hero">
 <div class="hero-orb orb-one"></div><div class="hero-orb orb-two"></div>
@@ -37,7 +37,7 @@
 </section>
 <footer class="exam-footer"><span>© 2026 Campus Nexus</span><span><i class="fa-solid fa-lock"></i> Secure examination access</span><span>Learn <b>•</b> Prepare <b>•</b> Excel</span></footer>
 </main></div></div><div class="mobile-scrim" id="mobile-scrim"></div><div id="toast" class="toast" role="status"></div>
-<script src="/js/student-exams.js?v=20261120-7"></script><script src="/platform/js/institution-portal-branding.js?v=20261120-student-access-v2"></script>
+<script src="/js/student-exams.js?v=20261120-8"></script><script src="/platform/js/institution-portal-branding.js?v=20261120-student-access-v2"></script>
 <script>
 (()=>{const side=document.getElementById('exam-sidebar'),scrim=document.getElementById('mobile-scrim');const close=()=>{side.classList.remove('show');scrim.classList.remove('show')};document.getElementById('mobile-toggle')?.addEventListener('click',()=>{side.classList.toggle('show');scrim.classList.toggle('show')});scrim?.addEventListener('click',close);side?.querySelectorAll('nav a').forEach(a=>a.addEventListener('click',close));})();
 </script>
