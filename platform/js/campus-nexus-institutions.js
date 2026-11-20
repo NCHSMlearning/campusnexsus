@@ -112,9 +112,9 @@
         '<section class="cn-module-group"><div class="cn-module-group-title">' + esc(group) +
         '<small>' + items.length + ' options</small></div><div class="cn-module-grid">' +
         items.map(([key,label,description]) =>
-          '<label class="cn-module-option"><input type="checkbox" name="cnModule" value="' + esc(key) + '"' +
-          (selected.includes(key) ? " checked" : "") + '><span class="cn-module-copy"><strong>' + esc(label) +
-          '</strong><small>' + esc(description) + '</small></span><span class="cn-module-check"><i class="fas fa-check"></i></span></label>'
+          '<label class="cn-module-option' + (key === "library" ? ' cn-module-coming-soon' : '') + '"><input type="checkbox" name="cnModule" value="' + esc(key) + '"' +
+          (key === "library" ? " disabled" : (selected.includes(key) ? " checked" : "")) + '><span class="cn-module-copy"><strong>' + esc(key === "library" ? label + " · Coming soon" : label) +
+          '</strong><small>' + esc(key === "library" ? "Not selectable until the library service and tenant data controls are implemented." : description) + '</small></span><span class="cn-module-check"><i class="fas fa-check"></i></span></label>'
         ).join("") + '</div></section>'
       ).join("");
     const updateCount = () => {
@@ -165,6 +165,8 @@
     institutionModal.setAttribute("aria-hidden","true");
     institutionModal.innerHTML = `
       <style>
+        .cn-module-coming-soon{opacity:.62;cursor:not-allowed;filter:saturate(.65)}
+        .cn-module-coming-soon input{cursor:not-allowed}
         .cn-product-access{grid-column:1/-1;margin:0 0 18px;padding:17px;border:1px solid #cbdde8;border-radius:15px;background:linear-gradient(135deg,#f4fbff,#f2fbf8)}
         .cn-product-access-heading{display:flex;flex-direction:column;gap:5px;margin-bottom:13px}
         .cn-product-access-heading strong{font-size:14px;color:#0f2f49}
@@ -509,7 +511,7 @@
       administrator_portal_url:$("cnInstitutionAdminPortal").value.trim() || null,
       status:$("cnInstitutionStatus").value
     };
-    const enabledModules = [...document.querySelectorAll('input[name="cnModule"]:checked')].map(x => x.value);
+    const enabledModules = [...document.querySelectorAll('input[name="cnModule"]:checked')].map(x => x.value);.filter(key => key !== "library")
     setBusy(true);
     try {
       if (selectedLogoFile) {
