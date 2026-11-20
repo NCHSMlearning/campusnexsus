@@ -841,7 +841,10 @@ const FROM_ADDRESS =
                     .eq('role', 'student')
                     .eq('status', 'approved')
                     .eq('program', this.value(['exam_program', 'examProgram']))
-                    .eq('intake_year', String(this.value(['exam_intake', 'examIntake']) || ''))
+                    .eq('intake_year', String(this.value(['exam_intake', 'examIntake']) || ''));
+                const selectedMonthForSearch = this.value(['exam_intake_month']);
+                if (selectedMonthForSearch) q = q.eq('intake_month', selectedMonthForSearch);
+                const { data, error } = await q
                     .or(
                         'full_name.ilike.%' + safe + '%,' +
                         'email.ilike.%' + safe + '%,' +
@@ -1797,17 +1800,25 @@ const FROM_ADDRESS =
                 row.id = result.data?.id;
 
                 let notificationSummary = null;
+                let notificationError = null;
                 if (this.checked('exam_notify_students')) {
-                    notificationSummary = await this.notifyByEmail(row);
+                    try { notificationSummary = await this.notifyByEmail(row); }
+                    catch (mailError) {
+                        notificationError = mailError.message || String(mailError);
+                        console.warn('Assessment created, but student notifications failed:', mailError);
+                    }
                 }
 
-                const notice = notificationSummary
-                    ? 'Assessment submitted for approval. Email notifications: ' +
-                      notificationSummary.sent + ' sent, ' +
-                      notificationSummary.failed + ' failed, ' +
-                      notificationSummary.noEmail + ' without email.'
-                    : 'Assessment created and submitted for admin approval.';
-                this.notify(notice, notificationSummary?.failed ? 'warning' : 'success');
+                let notice = 'Assessment submitted for institutional approval.';
+                if (notificationSummary) {
+                    notice += ' Email notifications: ' + notificationSummary.sent + ' sent, ' +
+                        notificationSummary.failed + ' failed, ' + notificationSummary.noEmail + ' without email.';
+                } else if (notificationError) {
+                    notice += ' Email notification issue: ' + notificationError;
+                } else {
+                    notice += ' Student email notifications were not requested.';
+                }
+                this.notify(notice, notificationError || notificationSummary?.failed ? 'warning' : 'success');
 
                 this.resetForm(true);
 
