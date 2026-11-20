@@ -204,7 +204,7 @@ function normalizeSchoolCode(value) {
 
 async function resolveInstitutionContext(code, host) {
     const normalizedCode = normalizeSchoolCode(code);
-    if (normalizedCode && !/^[a-z0-9]{3,20}$/i.test(normalizedCode)) {
+    if (normalizedCode && !/^[a-z0-9]{3,64}$/i.test(normalizedCode)) {
         throw new Error('Enter a valid school or registration code.');
     }
     const { data, error } = await sb.rpc('resolve_institution_registration_context', {
@@ -344,9 +344,9 @@ async function initializeInstitutionRegistration() {
     input.type = 'text';
     input.inputMode = 'numeric';
     input.autocomplete = 'off';
-    input.maxLength = 20;
-    input.pattern = '[A-Za-z0-9]{3,20}';
-    input.addEventListener('input', () => { input.value = input.value.replace(/[^a-z0-9]/gi, '').slice(0, 20); });
+    input.maxLength = 64;
+    input.pattern = '[A-Za-z0-9]{3,64}';
+    input.addEventListener('input', () => { input.value = input.value.replace(/[^a-z0-9]/gi, '').slice(0, 64); });
     input.placeholder = 'Enter your institution school code';
     input.setAttribute('aria-label', 'School or registration code');
     input.style.cssText = 'box-sizing:border-box;width:100%;padding:13px 14px;border:1px solid #cbd5e1;border-radius:10px;font-size:17px;letter-spacing:1px;';
@@ -389,7 +389,7 @@ async function initializeInstitutionRegistration() {
 
     button.addEventListener('click', async () => {
         const code = normalizeSchoolCode(input.value);
-        if (!/^[a-z0-9]{3,20}$/i.test(code)) {
+        if (!/^[a-z0-9]{3,64}$/i.test(code)) {
             message.style.color = '#b91c1c';
             message.textContent = 'Enter your complete school or registration code.';
             return;
@@ -1416,7 +1416,7 @@ function getInstitutionLoginUrl() {
         ''
     );
     const url = new URL('/login.html', window.location.origin);
-    if (/^[a-z0-9]{3,20}$/i.test(code)) url.searchParams.set('school_code', code);
+    if (/^[a-z0-9]{3,64}$/i.test(code)) url.searchParams.set('school_code', code);
     return url.toString();
 }
 
@@ -1736,7 +1736,7 @@ document.getElementById('register-form').addEventListener('submit', async functi
             throw new Error('Your institution has not been verified. Please reload and enter your school code.');
         }
         const institutionCode = normalizeSchoolCode(resolvedInstitutionContext.school_code);
-        if (!/^[a-z0-9]{3,20}$/i.test(institutionCode)) {
+        if (!/^[a-z0-9]{3,64}$/i.test(institutionCode)) {
             throw new Error('The institution school code could not be verified. Please reload the registration link.');
         }
 
