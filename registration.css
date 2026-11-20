@@ -1930,3 +1930,13 @@ button:disabled {
     .registration-heading { font-size: 1.45rem; }
     .registration-intro { font-size: .82rem; margin-bottom: 22px; }
 }
+
+
+.institution-school-code {
+    display: block;
+    margin-top: -3px;
+    color: #0f766e;
+    font-size: .78rem;
+    font-weight: 800;
+    letter-spacing: .09em;
+}
