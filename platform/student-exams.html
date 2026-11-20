@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#102d4f">
+  <title>My Examinations | Campus Nexus</title>
+  <link rel="icon" href="/favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/css/student-exams.css?v=20261120-1">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/config.js"></script>
+  <script src="/js/utils.js"></script>
+  <script src="/js/database.js?v=20261024-session-refresh"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="/student"><span class="brand-mark"><i class="fa-solid fa-graduation-cap"></i></span><span><b>Campus Nexus</b><small>Student Portal</small></span></a>
+      <nav>
+        <a href="/student"><i class="fa-solid fa-house"></i> Dashboard</a>
+        <a class="active" href="/student-exams"><i class="fa-solid fa-file-pen"></i> Examinations</a>
+        <a href="/student#academic-reports"><i class="fa-solid fa-chart-line"></i> Academic Results</a>
+      </nav>
+      <div class="sidebar-bottom"><div class="user-mini"><span class="avatar" id="avatar">ST</span><span><b id="side-name">Student</b><small id="side-admission">Loading profile…</small></span></div><button id="logout-btn" class="logout"><i class="fa-solid fa-arrow-right-from-bracket"></i> Sign out</button></div>
+    </aside>
+    <main class="main">
+      <header class="topbar"><div><div class="eyebrow">STUDENT SERVICES / ASSESSMENT</div><h1>Examinations & Results</h1><p>View your scheduled assessments, continue eligible exams and track released results.</p></div><button class="icon-button" id="refresh-btn" aria-label="Refresh"><i class="fa-solid fa-rotate"></i></button></header>
+      <section class="welcome-strip"><div><span class="welcome-label">SIGNED-IN STUDENT</span><h2 id="welcome-name">Loading your profile…</h2><p id="student-meta">Checking your programme and current block</p></div><div class="secure-pill"><i class="fa-solid fa-shield-halved"></i> Secure student access</div></section>
+      <section class="stats-grid">
+        <article class="stat-card"><span class="stat-icon blue"><i class="fa-regular fa-calendar-check"></i></span><div><small>Eligible exams</small><strong id="stat-available">—</strong><span>Scheduled for your class</span></div></article>
+        <article class="stat-card"><span class="stat-icon amber"><i class="fa-solid fa-hourglass-half"></i></span><div><small>Awaiting completion</small><strong id="stat-pending">—</strong><span>Not yet attempted</span></div></article>
+        <article class="stat-card"><span class="stat-icon green"><i class="fa-solid fa-circle-check"></i></span><div><small>Completed exams</small><strong id="stat-completed">—</strong><span>Attempts recorded</span></div></article>
+        <article class="stat-card"><span class="stat-icon violet"><i class="fa-solid fa-award"></i></span><div><small>Released results</small><strong id="stat-released">—</strong><span>Results available to view</span></div></article>
+      </section>
+      <section class="content-card">
+        <div class="section-head"><div><h2>Your assessments</h2><p>Only assessments matching your programme, intake and block are shown.</p></div><div class="tabs" role="tablist"><button class="tab active" data-tab="exams">Examinations</button><button class="tab" data-tab="results">Results & grades</button></div></div>
+        <div class="filters" id="exam-filters"><label class="search"><i class="fa-solid fa-magnifying-glass"></i><input id="search-input" type="search" placeholder="Search by exam or unit name"></label><select id="status-filter" aria-label="Filter assessments"><option value="all">All assessments</option><option value="upcoming">Upcoming</option><option value="open">Available now</option><option value="completed">Completed</option></select></div>
+        <div id="exam-panel"><div class="loading-state"><span class="spinner"></span><p>Loading your examinations…</p></div></div>
+        <div id="results-panel" hidden><div class="results-summary" id="results-summary"></div><div class="table-wrap"><table><thead><tr><th>Assessment / Unit</th><th>Type</th><th>Score</th><th>Status</th><th>Date</th></tr></thead><tbody id="results-body"><tr><td colspan="5" class="empty-cell">Loading results…</td></tr></tbody></table></div><div class="subheading">Published academic marks</div><div class="table-wrap"><table><thead><tr><th>Unit code</th><th>Unit / subject</th><th>Marks</th><th>Grade</th><th>Publication</th></tr></thead><tbody id="marks-body"><tr><td colspan="5" class="empty-cell">Loading published marks…</td></tr></tbody></table></div></div>
+      </section>
+      <footer>Campus Nexus <span>•</span> Student Examination Centre <span>•</span> All times use East Africa Time (EAT).</footer>
+    </main>
+  </div>
+  <div class="exam-modal" id="exam-modal" aria-hidden="true"><div class="exam-modal-card"><div class="modal-head"><div><small>SECURE ASSESSMENT SESSION</small><h2 id="modal-exam-title">Examination</h2></div><button id="close-exam" class="icon-button" aria-label="Close exam"><i class="fa-solid fa-xmark"></i></button></div><div class="frame-note"><i class="fa-solid fa-circle-info"></i> Keep this window open while completing your examination. Closing the assessment window may submit your attempt according to examination rules.</div><iframe id="exam-frame" title="Online examination" allow="fullscreen; clipboard-read; clipboard-write"></iframe></div></div>
+  <div id="toast" class="toast" role="status"></div>
+  <script src="/js/student-exams.js?v=20261120-1"></script>
+  <script src="/platform/js/institution-portal-branding.js?v=20261120-student-access-v2"></script>
+</body>
+</html>
