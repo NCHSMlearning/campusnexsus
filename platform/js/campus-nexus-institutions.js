@@ -527,7 +527,10 @@
     const slug = $("cnInstitutionSlug").value.trim().toLowerCase();
     if (!/^[A-Z0-9-]{2,12}$/.test(code)) return notify("Use 2–12 letters, numbers or hyphens for the institution code.", "error");
     if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) return notify("Use a URL-friendly slug (lowercase letters, numbers and hyphens).", "error");
-    const adminEmail = $("cnInstitutionAdmin").value.trim().toLowerCase();\n    const adminName = $("cnInstitutionAdminName")?.value.trim() || "";\n    const adminPhone = $("cnInstitutionAdminPhone")?.value.trim() || "";\n    if (!adminEmail || (!editingId && !adminName)) return notify("Enter the institution administrator name and email address.", "error");
+    const adminEmail = $("cnInstitutionAdmin").value.trim().toLowerCase();
+    const adminName = $("cnInstitutionAdminName")?.value.trim() || "";
+    const adminPhone = $("cnInstitutionAdminPhone")?.value.trim() || "";
+    if (!adminEmail || (!editingId && !adminName)) return notify("Enter the institution administrator name and email address.", "error");
     const amount = Number($("cnInstitutionAmount").value);
     if (!Number.isFinite(amount) || amount < 0) return notify("Enter a valid subscription amount.", "error");
     const portalMode = document.querySelector('input[name="cnInstitutionPortalModeChoice"]:checked')?.value || "campus_nexus";
@@ -588,11 +591,21 @@
       if (!saved?.id || !result?.registration_code) {
         throw new Error("The server did not confirm the complete institution setup.");
       }
-      const assignment = result.admin_assignment;
-      const adminNotice = adminEmail && assignment && assignment.assigned !== true
-        ? " " + (assignment.message || "Administrator access will be activated after the account completes registration and email verification.")
-        : "";
-      notify((editingId ? "Institution updated successfully." : "Institution created successfully.") + adminNotice,"success");
+      if (adminEmail && adminName) {
+        const {data:provisioned,error:provisionError} = await sb.functions.invoke("provision-institution-admin",{
+          body:{institution_id:saved.id,email:adminEmail,full_name:adminName,phone:adminPhone}
+        });
+        if (provisionError || !provisioned?.success) {
+          editingId = saved.id;
+          $("cnInstitutionSave").textContent = "Retry administrator setup";
+          await loadInstitutions();
+          notify("Institution saved, but administrator account setup did not complete: " +
+            (provisionError?.message || provisioned?.error || "Please check the details and save again."),"error");
+          return;
+        }
+      }
+      notify((editingId ? "Institution updated successfully." : "Institution created successfully.") +
+        (adminEmail && adminName ? " Administrator invitation sent to " + adminEmail + "." : ""),"success");
       resetForm();
       await loadInstitutions();
     } catch (error) {
