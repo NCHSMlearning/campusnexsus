@@ -96,25 +96,34 @@ async function init(){
  if(!p||role!=='student'||!['approved','active'].includes(status)||p?.login_enabled===false||!p?.institution_id){
   throw new Error('Your account is signed in, but it is not currently approved for the student examination centre. Please contact your institution administrator.');
  }
- const institutionResult=await state.client.from('institutions').select('id,name,short_code,school_code,logo_url,primary_color,secondary_color,status').eq('id',p.institution_id).maybeSingle();
- if(institutionResult.error)throw institutionResult.error;
- const institution=institutionResult.data;
- if(!institution)throw new Error('Your institution profile could not be loaded. Please contact your institution administrator.');
- const institutionName=val(institution.name,'Your Institution');
- $('institution-name').textContent=institutionName;
- $('institution-header-name').textContent=institutionName+'  ›  STUDENT EXAMINATION CENTRE';
- $('institution-portal-label').textContent=val(institution.school_code,institution.short_code,'STUDENT PORTAL').toUpperCase();
- const logo=$('institution-logo'),fallback=$('institution-logo-fallback');
- if(institution.logo_url&&/^https:\/\//i.test(institution.logo_url)){
-  logo.src=institution.logo_url;logo.alt=institutionName+' logo';logo.hidden=false;fallback.hidden=true;
-  logo.onerror=()=>{logo.hidden=true;fallback.hidden=false;};
- }else{logo.hidden=true;fallback.hidden=false;}
- const primary=typeof institution.primary_color==='string'&&/^#[0-9a-f]{3,8}$/i.test(institution.primary_color)?institution.primary_color:'#082f55';
- const secondary=typeof institution.secondary_color==='string'&&/^#[0-9a-f]{3,8}$/i.test(institution.secondary_color)?institution.secondary_color:'#0c8990';
- document.documentElement.style.setProperty('--navy',primary);
- document.documentElement.style.setProperty('--navy2',secondary);
- document.documentElement.style.setProperty('--teal',secondary);
- document.title=institutionName+' | Student Examinations';
+ // Institution branding is optional: never let a branding lookup prevent the exam dashboard from opening.
+ try {
+  const institutionResult=await state.client.from('institutions').select('id,name,short_code,school_code,logo_url,primary_color,secondary_color,status').eq('id',p.institution_id).maybeSingle();
+  if(institutionResult.error)throw institutionResult.error;
+  const institution=institutionResult.data;
+  if(!institution)throw new Error('Your institution profile could not be loaded. Please contact your institution administrator.');
+  const institutionName=val(institution.name,'Your Institution');
+  $('institution-name').textContent=institutionName;
+  $('institution-header-name').textContent=institutionName+'  ›  STUDENT EXAMINATION CENTRE';
+  $('institution-portal-label').textContent=val(institution.school_code,institution.short_code,'STUDENT PORTAL').toUpperCase();
+  const logo=$('institution-logo'),fallback=$('institution-logo-fallback');
+  if(institution.logo_url&&/^https:\/\//i.test(institution.logo_url)){
+   logo.src=institution.logo_url;logo.alt=institutionName+' logo';logo.hidden=false;fallback.hidden=true;
+   logo.onerror=()=>{logo.hidden=true;fallback.hidden=false;};
+  }else{logo.hidden=true;fallback.hidden=false;}
+  const primary=typeof institution.primary_color==='string'&&/^#[0-9a-f]{3,8}$/i.test(institution.primary_color)?institution.primary_color:'#082f55';
+  const secondary=typeof institution.secondary_color==='string'&&/^#[0-9a-f]{3,8}$/i.test(institution.secondary_color)?institution.secondary_color:'#0c8990';
+  document.documentElement.style.setProperty('--navy',primary);
+  document.documentElement.style.setProperty('--navy2',secondary);
+  document.documentElement.style.setProperty('--teal',secondary);
+  document.title=institutionName+' | Student Examinations';
+ 
+ } catch(brandingError) {
+  console.warn('Institution branding could not be loaded; continuing with examination dashboard.',brandingError);
+  $('institution-name').textContent='Student Portal';
+  $('institution-header-name').textContent='STUDENT PORTAL  ›  STUDENT EXAMINATION CENTRE';
+  $('institution-portal-label').textContent='STUDENT PORTAL';
+ }
  const name=val(p.full_name,p.name,p.student_name,session.user.user_metadata?.full_name,session.user.email,'Student');
  $('welcome-name').textContent=name;$('side-name').textContent=name;$('avatar').textContent=name.split(/\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase();
  $('side-admission').textContent=val(p.admission_number,p.student_id,'Student account');
