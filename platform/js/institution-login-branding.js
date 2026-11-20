@@ -15,6 +15,8 @@
     }
 
     const name = institution.institution_name || "Your Institution";
+    const schoolCode = String(institution.school_code || code).trim();
+    const identity = schoolCode ? name + " (" + schoolCode + ")" : name;
     const primary = institution.primary_color || institution.brand_colors?.[0] || "#082f49";
     const secondary = institution.secondary_color || institution.brand_colors?.[1] || "#0f766e";
     const gold = institution.brand_colors?.[2] || "#d4a017";
@@ -51,7 +53,7 @@
       ".logo-wrapper .logo img, .mobile-header .logo img, .welcome-icon.logo-welcome img, .nchsm-loading-logo img"
     );
     logoImages.forEach(function (img) {
-      if (institution.logo_url && /^https:\/\/\//i.test(institution.logo_url)) {
+      if (institution.logo_url && /^https:\/\//i.test(institution.logo_url)) {
         img.src = institution.logo_url;
         img.alt = name + " logo";
         img.hidden = false;
@@ -73,6 +75,17 @@
       heading.style.color = "#fff";
       heading.style.maxWidth = "min(100%, 520px)";
       heading.style.overflowWrap = "anywhere";
+      let codeLabel = heading.parentElement && heading.parentElement.querySelector(".cn-login-school-code");
+      if (!codeLabel) {
+        codeLabel = document.createElement("small");
+        codeLabel.className = "cn-login-school-code";
+        heading.insertAdjacentElement("afterend", codeLabel);
+      }
+      codeLabel.textContent = schoolCode ? "School Code: " + schoolCode : "";
+      codeLabel.style.cssText = "display:block;margin-top:5px;color:#fff;font-size:11px;font-weight:700;letter-spacing:.08em;opacity:.9";
+    });
+    document.querySelectorAll(".mobile-header .college-tagline").forEach(function (tagline) {
+      tagline.textContent = "Powered by Campus Nexus";
     });
 
     const motto = document.querySelector(".logo-wrapper .motto");
@@ -87,13 +100,13 @@
     const tagline = document.querySelector(".welcome-section .tagline");
     if (tagline) tagline.textContent = "Your institution's secure learning and administration portal";
     const loginSubtitle = document.querySelector(".welcome-subtitle");
-    if (loginSubtitle) loginSubtitle.textContent = "Sign in to access your " + name + " account";
+    if (loginSubtitle) loginSubtitle.textContent = "Sign in to access " + identity;
     const loadingText = document.getElementById("nchsmLoadingText");
-    if (loadingText) loadingText.textContent = "Securely verifying your " + name + " account. Please wait.";
+    if (loadingText) loadingText.textContent = "Securely verifying your " + identity + " account. Please wait.";
     const loadingTitle = document.querySelector(".nchsm-loading-title");
     if (loadingTitle) loadingTitle.innerHTML = "Signing you <span>in…</span>";
 
-    const pageTitle = name + " | Secure Sign In";
+    const pageTitle = identity + " | Secure Sign In";
     document.title = pageTitle;
 
     const brandLabel = document.querySelector(".login-card h1, .login-card h2, .login-panel h1, .login-panel h2");
@@ -101,7 +114,7 @@
       brandLabel.textContent = "Welcome Back";
     }
 
-    console.info("[Campus Nexus] Institution branding applied:", name, "school code:", code);
+    console.info("[Campus Nexus] Institution branding applied:", identity);
   }
 
   async function loadBranding() {
