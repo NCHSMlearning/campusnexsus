@@ -666,6 +666,179 @@ main.main>header{width:100%;max-width:100%;min-width:0}
     <link rel="stylesheet" href="css/nchsm-superadmin-responsive.css?v=20261119b">
 
 <style id="teaching-portfolio-inactive-guard">#mainNav a[aria-disabled="true"][data-tab="lecturer-reports-review"]{pointer-events:none!important;user-select:none!important}#lecturer-reports-review{display:none!important}</style>
+
+<style id="cn-superadmin-inline-polish">
+/* Campus Nexus Super Admin — embedded interface styling */
+:root{
+ --cn-navy:#082f49;--cn-navy-deep:#06263b;--cn-teal:#0f766e;
+ --cn-teal-bright:#14b8a6;--cn-gold:#eab54b;--cn-ink:#163247;
+ --cn-muted:#64748b;--cn-line:#e2eaf0;--cn-surface:#fff;--cn-canvas:#f4f8fb;
+ --cn-shadow:0 8px 24px rgba(8,47,73,.065);
+}
+#dashboard.tab-content{
+ padding:0 4px 30px!important;color:var(--cn-ink);
+}
+#dashboard>.dashboard-header,
+#dashboard>.section-header{margin-bottom:18px}
+#dashboard>div:first-of-type{
+ border-radius:20px!important;
+ background:linear-gradient(118deg,#082f49 0%,#0f5268 58%,#0f766e 100%)!important;
+ border:1px solid rgba(255,255,255,.12)!important;
+ box-shadow:0 14px 34px rgba(8,47,73,.17)!important;
+}
+#cnPlatformOverview{margin:0 0 18px!important}
+#cnPlatformOverview .cn-global-filter{
+ display:flex!important;align-items:center!important;gap:14px!important;
+ padding:17px 19px!important;border:1px solid #dce7ed!important;
+ border-radius:16px!important;background:linear-gradient(120deg,#fff,#f3fafb)!important;
+ box-shadow:var(--cn-shadow)!important;
+}
+#cnPlatformOverview .cn-global-filter-copy strong{color:var(--cn-navy)!important;font-size:17px!important;font-weight:800!important}
+#cnPlatformOverview .cn-global-filter-copy small{color:var(--cn-muted)!important;font-size:11px!important}
+#cnPlatformOverview .cn-global-eyebrow{color:var(--cn-teal)!important;font-weight:850!important;letter-spacing:.11em!important}
+#cnPlatformOverview select,
+#cnPlatformOverview button{
+ min-height:41px!important;border-radius:10px!important;font-size:12px!important;font-weight:750!important;
+}
+#cnPlatformOverview select{border:1px solid #cbd9e2!important;background:#fff!important;color:var(--cn-navy)!important;padding:8px 12px!important}
+#cnPlatformOverview .cn-global-refresh{background:#fff!important;color:var(--cn-teal)!important;border:1px solid #b9d6d5!important}
+#cnPlatformOverview .cn-global-manage{background:var(--cn-teal)!important;color:#fff!important;border:1px solid var(--cn-teal)!important}
+#dashboard .cn-dashboard-metrics-grid{
+ display:grid!important;grid-template-columns:repeat(auto-fit,minmax(190px,1fr))!important;
+ gap:14px!important;margin:0 0 22px!important;
+}
+#dashboard .dashboard-card,#dashboard .card,#dashboard .analytics-card,
+#dashboard .health-card,#dashboard .task-item{
+ box-sizing:border-box!important;min-width:0!important;border:1px solid var(--cn-line)!important;
+ border-radius:16px!important;background:#fff!important;box-shadow:var(--cn-shadow)!important;
+}
+#dashboard .dashboard-card,#dashboard .card{padding:19px!important}
+#dashboard .dashboard-card h3,#dashboard .card h3{color:var(--cn-navy)!important;font-size:13px!important;font-weight:800!important}
+#dashboard .dashboard-card .data,#dashboard .card .data{color:var(--cn-navy)!important;font-size:29px!important;font-weight:850!important;letter-spacing:-.04em!important}
+#dashboard .dashboard-card .minor-data,#dashboard .card .minor-data{color:#718096!important;font-size:11px!important;line-height:1.5!important}
+#dashboard .analytics-grid{display:grid!important;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr))!important;gap:16px!important;margin:0 0 20px!important}
+#dashboard .analytics-card{padding:19px!important;overflow:hidden!important}
+#dashboard .analytics-card h3,#dashboard .analytics-card h4{margin:0 0 14px!important;color:var(--cn-navy)!important;font-size:14px!important;font-weight:800!important}
+#dashboard .analytics-card canvas{max-width:100%!important}
+#dashboard .health-cards,#dashboard .scheduled-tasks{gap:14px!important}
+#dashboard .quick-action-buttons{gap:12px!important}
+#dashboard .quick-btn{
+ min-height:88px!important;border:1px solid var(--cn-line)!important;background:#fff!important;
+ color:var(--cn-navy)!important;font-size:12px!important;font-weight:750!important;
+ box-shadow:0 3px 12px rgba(8,47,73,.045)!important;
+}
+#dashboard .quick-btn:hover{background:#effcf9!important;border-color:#9dd8ce!important;color:var(--cn-teal)!important}
+#dashboard table,#dashboard .table-responsive table{
+ border:1px solid var(--cn-line)!important;border-radius:13px!important;background:#fff!important;
+}
+#dashboard table th{background:#edf5f7!important;color:#24465a!important;font-size:10px!important;font-weight:850!important;text-transform:uppercase!important;letter-spacing:.045em!important}
+#dashboard table td{color:#334155!important;font-size:12px!important}
+#dashboard table th,#dashboard table td{padding:11px 13px!important;border-bottom:1px solid #eaf0f4!important}
+#dashboard .filter-bar,#dashboard .toolbar,#dashboard .inline-form{
+ border:1px solid var(--cn-line)!important;border-radius:13px!important;background:#fff!important;
+ box-shadow:0 3px 12px rgba(8,47,73,.035)!important;padding:14px!important;
+}
+#dashboard input,#dashboard select,#dashboard textarea{
+ min-height:39px;border:1px solid #cbd9e2!important;border-radius:9px!important;
+ background:#fff!important;color:var(--cn-ink)!important;padding:8px 11px!important;font-size:12px!important;
+}
+#dashboard button,.tab-content button.btn-action{
+ border-radius:9px!important;font-weight:750!important;transition:filter .16s ease,transform .16s ease,box-shadow .16s ease;
+}
+#dashboard button:hover,.tab-content button.btn-action:hover{filter:brightness(1.04);transform:translateY(-1px)}
+/* All Super Admin workspaces: consistent page headings and section surfaces */
+.tab-content:not(#dashboard){
+ box-sizing:border-box!important;max-width:100%!important;color:var(--cn-ink)!important;
+}
+.tab-content:not(#dashboard)>h2:first-child,
+.tab-content:not(#dashboard)>div>h2:first-child{
+ color:var(--cn-navy)!important;font-size:clamp(19px,2vw,25px)!important;
+ font-weight:850!important;letter-spacing:-.025em!important;line-height:1.25!important;
+}
+.tab-content:not(#dashboard)>h2:first-child{margin:0 0 18px!important}
+.tab-content:not(#dashboard)>h2:first-child i{color:var(--cn-teal)!important;margin-right:8px}
+.tab-content:not(#dashboard) h3{color:var(--cn-navy);font-weight:800}
+.tab-content:not(#dashboard) h4{color:#24465a;font-weight:800}
+.tab-content:not(#dashboard) .cards,
+.tab-content:not(#dashboard) .analytics-grid,
+.tab-content:not(#dashboard) .health-cards,
+.tab-content:not(#dashboard) .scheduled-tasks{gap:14px!important}
+.tab-content:not(#dashboard) .card,
+.tab-content:not(#dashboard) .analytics-card,
+.tab-content:not(#dashboard) .health-card,
+.tab-content:not(#dashboard) .task-item,
+.tab-content:not(#dashboard) .security-settings,
+.tab-content:not(#dashboard) .error-logs{
+ border:1px solid var(--cn-line)!important;border-radius:15px!important;
+ box-shadow:var(--cn-shadow)!important;background:#fff!important;
+}
+.tab-content:not(#dashboard) .card{padding:18px!important}
+.tab-content:not(#dashboard) .data{color:var(--cn-navy)!important;font-size:27px!important;font-weight:850!important}
+.tab-content:not(#dashboard) .minor-data{color:var(--cn-muted)!important;font-size:11px!important}
+.tab-content:not(#dashboard) table{
+ border:1px solid var(--cn-line)!important;border-radius:12px!important;
+}
+.tab-content:not(#dashboard) table th{
+ background:#edf5f7!important;color:#24465a!important;font-size:10px!important;
+ font-weight:850!important;text-transform:uppercase!important;letter-spacing:.04em!important;
+}
+.tab-content:not(#dashboard) table td{font-size:12px!important;color:#334155!important}
+.tab-content:not(#dashboard) table th,.tab-content:not(#dashboard) table td{
+ padding:11px 12px!important;border-bottom:1px solid #eaf0f4!important;
+}
+.tab-content:not(#dashboard) input:not([type=checkbox]):not([type=radio]):not([type=file]),
+.tab-content:not(#dashboard) select,.tab-content:not(#dashboard) textarea{
+ border:1px solid #cbd9e2!important;border-radius:9px!important;
+ background:#fff!important;color:var(--cn-ink)!important;min-height:39px!important;
+ padding:8px 11px!important;font-size:12px!important;box-sizing:border-box!important;
+}
+.tab-content:not(#dashboard) .filter-bar,
+.tab-content:not(#dashboard) .toolbar,
+.tab-content:not(#dashboard) .inline-form,
+.tab-content:not(#dashboard) .viz-controls{
+ gap:10px!important;border-radius:13px!important;
+}
+.tab-content:not(#dashboard) .btn-action,
+.tab-content:not(#dashboard) button.btn-action{
+ background:var(--cn-teal)!important;color:#fff!important;border:1px solid var(--cn-teal)!important;
+ border-radius:9px!important;padding:9px 14px!important;font-size:12px!important;font-weight:750!important;
+}
+.tab-content:not(#dashboard) .progress-fill{background:linear-gradient(90deg,var(--cn-teal),#2dd4bf)!important}
+.tab-content:not(#dashboard) .badge-success{background:#dcfce7!important;color:#166534!important}
+.tab-content:not(#dashboard) .badge-warning{background:#fef3c7!important;color:#92400e!important}
+.tab-content:not(#dashboard) .badge-danger{background:#fee2e2!important;color:#991b1b!important}
+.tab-content:not(#dashboard) .badge-info{background:#e0f2fe!important;color:#075985!important}
+/* New institution workspace and academic intelligence headers */
+#institutions .cn-head{background:linear-gradient(120deg,#082f49,#0f766e)!important;border-radius:18px!important;box-shadow:0 12px 28px rgba(8,47,73,.14)!important}
+#institutions .cn-stat{border:1px solid var(--cn-line)!important;border-radius:15px!important;box-shadow:var(--cn-shadow)!important}
+#institutions .cn-panel{border:1px solid var(--cn-line)!important;border-radius:15px!important;box-shadow:var(--cn-shadow)!important;background:#fff!important}
+#analytics-module>.analytics-grid .analytics-card{border-radius:15px!important}
+#data-visualization .analytics-card{border:1px solid var(--cn-line)!important;border-radius:15px!important;box-shadow:var(--cn-shadow)!important;padding:18px!important}
+#system-health .health-card{border-radius:15px!important}
+@media(max-width:900px){
+ #dashboard .cn-dashboard-metrics-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important}
+ #cnPlatformOverview .cn-global-filter{align-items:stretch!important}
+}
+@media(max-width:600px){
+ #dashboard.tab-content{padding:0 0 24px!important}
+ #dashboard>div:first-of-type{padding:17px!important;border-radius:16px!important}
+ #dashboard .cn-dashboard-metrics-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:9px!important}
+ #dashboard .dashboard-card,#dashboard .card{padding:13px!important}
+ #dashboard .dashboard-card .data,#dashboard .card .data{font-size:23px!important}
+ #dashboard .analytics-grid{grid-template-columns:minmax(0,1fr)!important}
+ #cnPlatformOverview .cn-global-filter{padding:13px!important}
+ #cnPlatformOverview .cn-global-select-wrap{min-width:0!important;width:100%!important}
+ #cnPlatformOverview .cn-global-filter button{flex:1 1 auto!important}
+ .tab-content:not(#dashboard){padding-left:0!important;padding-right:0!important}
+ .tab-content:not(#dashboard) .cards{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:9px!important}
+ .tab-content:not(#dashboard) .card{padding:13px!important}
+}
+@media(max-width:380px){
+ #dashboard .cn-dashboard-metrics-grid{grid-template-columns:minmax(0,1fr)!important}
+ .tab-content:not(#dashboard) .cards{grid-template-columns:minmax(0,1fr)!important}
+}
+</style>
+
 </head>
 <body>
     <div class="container">
