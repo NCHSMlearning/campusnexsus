@@ -1198,19 +1198,41 @@ class UIModule {
             return;
         }
         this.loadingScreen.classList.add('app-splash');
-        const institutionName = document.documentElement.dataset.institutionName || 'NCHSM';
-        const welcomeText = this.loadingScreen.querySelector('.welcome-text h1');
-        if (welcomeText) welcomeText.textContent = institutionName + ' Portal';
-        const subtitle = this.loadingScreen.querySelector('.subtitle');
-        if (subtitle) subtitle.textContent = 'Your Academic Hub';
+        const getTenantLoadingLabels = () => {
+            const root = document.documentElement;
+            const name = root.dataset.institutionName || 'NCHSM';
+            const code = root.dataset.schoolCode || root.dataset.institutionCode || '';
+            const identity = code ? name + ' (' + code + ')' : name;
+            return { identity, code };
+        };
+        const applyTenantLoadingLabels = () => {
+            const labels = getTenantLoadingLabels();
+            const welcomeText = this.loadingScreen && this.loadingScreen.querySelector('.welcome-text h1');
+            if (welcomeText) welcomeText.textContent = 'Welcome to ' + labels.identity;
+            const subtitle = this.loadingScreen && this.loadingScreen.querySelector('.subtitle');
+            if (subtitle) subtitle.textContent = labels.code ? 'School Code: ' + labels.code : 'Your Academic Hub';
+        };
+        applyTenantLoadingLabels();
+        document.addEventListener('campusnexus:institution-branding-applied', applyTenantLoadingLabels);
     }
     
     createFallbackLoadingScreen() {
         const fallback = document.createElement('div');
         fallback.id = 'loading-fallback';
         fallback.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);display:flex;justify-content:center;align-items:center;z-index:9999;color:white';
-        const institutionName = document.documentElement.dataset.institutionName || 'NCHSM';
-        fallback.innerHTML = '<div style="text-align:center"><h1>' + institutionName + ' Portal</h1><p>Loading...</p></div>';
+        const root = document.documentElement;
+        const institutionName = root.dataset.institutionName || 'NCHSM';
+        const schoolCode = root.dataset.schoolCode || root.dataset.institutionCode || '';
+        const identity = schoolCode ? institutionName + ' (' + schoolCode + ')' : institutionName;
+        fallback.innerHTML = '<div style="text-align:center"><h1>Welcome to ' + identity + '</h1><p>' +
+            (schoolCode ? 'School Code: ' + schoolCode : 'Loading...') + '</p></div>';
+        document.addEventListener('campusnexus:institution-branding-applied', () => {
+            const updatedName = root.dataset.institutionName || institutionName;
+            const updatedCode = root.dataset.schoolCode || root.dataset.institutionCode || '';
+            const updatedIdentity = updatedCode ? updatedName + ' (' + updatedCode + ')' : updatedName;
+            fallback.querySelector('h1').textContent = 'Welcome to ' + updatedIdentity;
+            fallback.querySelector('p').textContent = updatedCode ? 'School Code: ' + updatedCode : 'Loading...';
+        });
         document.body.appendChild(fallback);
         this.loadingScreen = fallback;
     }
