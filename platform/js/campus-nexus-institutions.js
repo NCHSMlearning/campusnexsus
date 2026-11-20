@@ -163,6 +163,8 @@
 
   function resetForm() {
     editingId = null;
+    selectedLogoFile = null;
+    if ($("cnInstitutionLogoFile")) $("cnInstitutionLogoFile").value = "";
     $("cnInstitutionForm")?.reset();
     if ($("cnInstitutionStatus")) $("cnInstitutionStatus").value = "pending";
     if ($("cnInstitutionType")) $("cnInstitutionType").value = "college";
@@ -173,6 +175,7 @@
     if ($("cnInstitutionCustomLogin")) $("cnInstitutionCustomLogin").value = "";
     if ($("cnInstitutionAdminPortal")) $("cnInstitutionAdminPortal").value = "";
     renderModuleOptions(MODULES.map(([key]) => key));
+    syncLogoPreview();
     $("cnInstitutionSave").textContent = "Add institution";
     $("cnInstitutionFormTitle").textContent = "Register a new institution";
     $("cnInstitutionCancel").hidden = true;
@@ -199,7 +202,10 @@
     $("cnInstitutionAdmin").value = item.admin_email || "";
     document.querySelectorAll('input[name="cnInstitutionPortalModeChoice"]').forEach(input => { input.checked = input.value === (item.portal_mode || "campus_nexus"); });
     $("cnInstitutionPortalMode")?.dispatchEvent(new Event("change"));
+    selectedLogoFile = null;
+    if ($("cnInstitutionLogoFile")) $("cnInstitutionLogoFile").value = "";
     renderModuleOptions(item._modules || []);
+    syncLogoPreview();
     $("cnInstitutionSave").textContent = "Update institution";
     $("cnInstitutionFormTitle").textContent = "Edit institution";
     $("cnInstitutionCancel").hidden = false;
@@ -339,7 +345,8 @@
     $("cnInstitutionPortalMode").value = portalMode;
     const customLogin = $("cnInstitutionCustomLogin").value.trim();
     const website = $("cnInstitutionWebsite").value.trim();
-    let logo = $("cnInstitutionLogo").value.trim();\n    let uploadedLogoPath = null;
+    let logo = $("cnInstitutionLogo").value.trim();
+    let uploadedLogoPath = null;
     const isHttpUrl = value => { try { const u = new URL(value); return ["http:","https:"].includes(u.protocol); } catch (_) { return false; } };
     if (portalMode === "custom_website" && (!isHttpUrl(customLogin) || !customLogin.startsWith("https://"))) {
       return notify("The custom login URL must be a valid HTTPS address.", "error");
@@ -365,6 +372,19 @@
     const enabledModules = [...document.querySelectorAll('input[name="cnModule"]:checked')].map(x => x.value);
     setBusy(true);
     try {
+      if (selectedLogoFile) {
+        const ext = ({ "image/png":"png", "image/jpeg":"jpg", "image/webp":"webp", "image/svg+xml":"svg" })[selectedLogoFile.type];
+        if (!ext || selectedLogoFile.size > 2 * 1024 * 1024) throw new Error("Choose a supported logo image no larger than 2 MB.");
+        uploadedLogoPath = (editingId || "new") + "/" + slug + "-" + Date.now() + "." + ext;
+        const { error:uploadError } = await sb.storage.from("institution-logos").upload(uploadedLogoPath, selectedLogoFile, {
+          cacheControl:"3600", upsert:false, contentType:selectedLogoFile.type
+        });
+        if (uploadError) throw uploadError;
+        const { data:publicData } = sb.storage.from("institution-logos").getPublicUrl(uploadedLogoPath);
+        logo = publicData?.publicUrl || "";
+        if (!logo) throw new Error("Logo uploaded, but its public URL could not be generated.");
+        $("cnInstitutionLogo").value = logo;
+      }
       const {data:result,error} = await sb.rpc("platform_save_institution",{
         p_payload:payload,
         p_modules:enabledModules,
@@ -386,6 +406,10 @@
       resetForm();
       await loadInstitutions();
     } catch (error) {
+      if (uploadedLogoPath) {
+        try { await sb.storage.from("institution-logos").remove([uploadedLogoPath]); }
+        catch (cleanupError) { console.warn("Could not clean up an unused institution logo:", cleanupError); }
+      }
       console.error("Campus Nexus institution save failed:",error);
       notify(error.message || "Unable to save institution. No partial setup should have been committed.","error");
     } finally { setBusy(false); }
@@ -395,6 +419,7 @@
     const form = $("cnInstitutionForm");
     if (!form) return;
     renderModuleOptions(MODULES.map(([key]) => key));
+    setupLogoUploader();
     $("cnInstitutionCancel").addEventListener("click",resetForm);
     $("cnInstitutionSearch").addEventListener("input",renderRows);
     $("cnInstitutionFilter").addEventListener("change",renderRows);
