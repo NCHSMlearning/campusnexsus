@@ -9,7 +9,7 @@ const norm=v=>String(v??'').trim().toLowerCase();
 const client=()=>[window.sb,window.supabaseClient,window.db?.supabase].find(c=>c&&typeof c.from==='function'&&typeof c.auth?.getSession==='function')||null;
 function notify(message){const el=$('toast');el.textContent=message;el.classList.add('show');clearTimeout(notify.timer);notify.timer=setTimeout(()=>el.classList.remove('show'),3200)}
 function isTvet(p){return /TVET|DIPLOMA|CERTIFICATE|ARTISAN/i.test(String(val(p.program_type,p.program,p.program_name,'')))}
-function studentBlock(p){return String(val(p.block_term,p.block,p.term,p.year_of_study,'General'))}
+function studentBlock(p){return String(val(p.current_block,p.block_term,p.block,p.term,p.year_of_study,'General'))}
 function matchesBlock(exam,p){
  const eb=String(val(exam.block,exam.block_term,exam.term,'General')),sb=studentBlock(p);
  if(['general','all'].includes(norm(eb))||norm(sb)==='general'||norm(eb)===norm(sb))return true;
@@ -20,18 +20,21 @@ function matchesBlock(exam,p){
 }
 function eligible(exam,p){
  const studentProgram=norm(val(p.program,p.program_name,p.program_type,''));
- const examProgram=norm(val(exam.program_type,exam.target_program,''));
+ const examProgram=norm(val(exam.target_program,exam.program_type,''));
  const studentIntake=val(p.intake_year,p.intake,p.admission_year);
  const examIntake=exam.intake_year;
  if(exam.institution_id&&String(exam.institution_id)!==String(p.institution_id))return false;
  const programOk=!examProgram||['general','all'].includes(examProgram)||examProgram===studentProgram||(!isTvet(p)&&examProgram==='krchn')||(isTvet(p)&&examProgram==='tvet');
  const intakeOk=examIntake===undefined||examIntake===null||norm(examIntake)==='general'||String(examIntake)===String(studentIntake);
- return programOk&&intakeOk&&matchesBlock(exam,p);
+ const approval=norm(exam.approval_status);
+ const approved=approval==='approved'&&exam.is_published===true;
+ const notDraft=!['draft','cancelled','rejected'].includes(norm(exam.status));
+ return approved&&notDraft&&programOk&&intakeOk&&matchesBlock(exam,p);
 }
 function startsAt(exam){
- const date=val(exam.exam_date,exam.start_date,exam.scheduled_at);
+ const date=val(exam.start_time,exam.exam_date,exam.start_date,exam.scheduled_at);
  if(!date)return null;
- const time=val(exam.exam_start_time,exam.start_time);
+ const time=val(exam.exam_start_time);
  if(time&&/^\d{1,2}:\d{2}/.test(String(time))&&!String(date).includes('T'))return new Date(String(date).slice(0,10)+'T'+String(time).slice(0,5)+':00+03:00');
  const d=new Date(date);return Number.isNaN(d.getTime())?null:d;
 }
@@ -40,7 +43,9 @@ function examState(exam){
  if(['closed','expired','completed','cancelled'].includes(status))return 'closed';
  const start=startsAt(exam),duration=Number(exam.duration_minutes)||40;
  const now=Date.now();
- if(start){const end=start.getTime()+duration*60000;if(now<start.getTime())return 'upcoming';if(now<=end)return 'open';return 'closed'}
+ const explicitEnd=val(exam.end_time);
+ const endAt=explicitEnd?new Date(explicitEnd):null;
+ if(start){const end=endAt&&!Number.isNaN(endAt.getTime())?endAt.getTime():start.getTime()+duration*60000;if(now<start.getTime())return 'upcoming';if(now<=end)return 'open';return 'closed'}
  if(['upcoming','scheduled','pending'].includes(status))return 'upcoming';
  if(['published','active','open','available'].includes(status))return 'open';
  return 'open';
@@ -53,7 +58,7 @@ function render(){
  $('stat-total').textContent=state.exams.length;
  $('stat-upcoming').textContent=state.exams.filter(e=>examState(e)==='upcoming').length;
  $('stat-open').textContent=state.exams.filter(e=>examState(e)==='open'&&val(e.exam_link,e.online_link)).length;
- if(!rows.length){$('exam-panel').innerHTML='<div class="empty-state"><i class="fa-regular fa-calendar-xmark"></i><p>No examinations match this filter. Check again later or refresh the list.</p></div>';return}
+ if(!rows.length){$('exam-panel').innerHTML='<div class="empty-state"><i class="fa-regular fa-calendar-xmark"></i><p>'+(state.exams.length?'No examinations match this filter.':'No approved and published examinations have been assigned to your programme, intake and block yet.')+'</p></div>';return}
  $('exam-panel').innerHTML='<div class="exam-grid">'+rows.map(({exam,status})=>{
   const title=val(exam.title,exam.exam_name,exam.name,'Examination');
   const unit=val(exam.course_name,exam.unit_name,exam.subject_name,exam.course?.course_name,'General assessment');
@@ -65,11 +70,15 @@ function render(){
  }).join('')+'</div>';
 }
 async function loadExams(){
+ $('refresh-btn').disabled=true;
  $('exam-panel').innerHTML='<div class="loading-state"><span class="spinner"></span><p>Loading examinations assigned to you…</p></div>';
- const {data,error}=await state.client.from('exams').select('*, course:course_id(course_name)').eq('institution_id',state.profile.institution_id).order('exam_date',{ascending:true});
- if(error)throw error;
- state.exams=(data||[]).filter(e=>eligible(e,state.profile));
- render();
+ try {
+  const {data,error}=await state.client.from('exams').select('*, course:course_id(course_name)').eq('institution_id',state.profile.institution_id).order('exam_date',{ascending:true,nullsFirst:false});
+  if(error)throw error;
+  state.exams=(data||[]).filter(e=>eligible(e,state.profile));
+  render();
+ } finally { $('refresh-btn').disabled=false; }
+}
 }
 async function init(){
  if(window.db&&typeof window.db.initialize==='function'){
