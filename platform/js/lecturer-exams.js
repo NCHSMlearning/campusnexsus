@@ -485,26 +485,23 @@ const FROM_ADDRESS =
 
         bindDynamicProgramEvents() {
             const program = this.firstEl(['exam_program', 'examProgram']);
-            const block   = this.firstEl(['exam_block_term', 'examBlockTerm']);
+            const block = this.firstEl(['exam_block_term', 'examBlockTerm']);
+            const intake = this.firstEl(['exam_intake', 'examIntake']);
+            const intakeMonth = this.$('exam_intake_month');
 
             const onFilterChange = async () => {
                 await this.loadClasses();
-
                 const input = this.$('createCourseSearchInput');
                 this.searchCourses(input ? input.value : '');
-
                 await this.updateStudentCount();
             };
 
-            if (program && program.dataset.examBound !== '1') {
-                program.dataset.examBound = '1';
-                program.addEventListener('change', onFilterChange);
-            }
-
-            if (block && block.dataset.examBound !== '1') {
-                block.dataset.examBound = '1';
-                block.addEventListener('change', onFilterChange);
-            }
+            [program, block, intake, intakeMonth].filter(Boolean).forEach(el => {
+                if (el.dataset.examBound !== '1') {
+                    el.dataset.examBound = '1';
+                    el.addEventListener('change', onFilterChange);
+                }
+            });
         },
 
         // --------------------------------------------------------
