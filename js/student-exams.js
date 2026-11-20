@@ -6,7 +6,7 @@ const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const val=(...xs)=>xs.find(x=>x!==undefined&&x!==null&&String(x).trim()!=='');
 const norm=v=>String(v??'').trim().toLowerCase();
 // Reuse the persistent Supabase client, never the CDN namespace.
-const client=()=>[window.sb,window.supabaseClient,window.db?.supabase].find(c=>c&&typeof c.from==='function'&&typeof c.auth?.getSession==='function')||null;
+const client=()=>[window.examSupabase,window.sb,window.supabaseClient,window.db?.supabase].find(c=>c&&typeof c.from==='function'&&typeof c.auth?.getSession==='function')||null;
 function notify(message){const el=$('toast');el.textContent=message;el.classList.add('show');clearTimeout(notify.timer);notify.timer=setTimeout(()=>el.classList.remove('show'),3200)}
 function isTvet(p){return /TVET|DIPLOMA|CERTIFICATE|ARTISAN/i.test(String(val(p.program_type,p.program,p.program_name,'')))}
 function studentBlock(p){return String(val(p.current_block,p.block_term,p.block,p.term,p.year_of_study,'General'))}
@@ -83,7 +83,7 @@ async function init(){
  // Use the already-persisted Supabase client directly. Do not run the
  // legacy database bootstrap here; it can delay page startup unnecessarily.
  state.client=client();
- if(!state.client)throw new Error('Student database connection is unavailable. Please refresh this page.');
+ if(!state.client)throw new Error(window.__EXAM_CONFIG_ERROR__||'Student database connection is unavailable. Please refresh this page.');
  const {data,error}=await state.client.auth.getSession();
  if(error)throw error;
  const session=data?.session;
