@@ -25,6 +25,7 @@
     document.documentElement.style.setProperty("--institution-primary", primary);
     document.documentElement.style.setProperty("--institution-secondary", secondary);
     document.documentElement.dataset.institutionLogin = "true";
+    document.documentElement.dataset.institutionName = name;
     document.documentElement.dataset.institutionId = institution.institution_id;
     document.documentElement.dataset.schoolCode = institution.school_code || code;
 
