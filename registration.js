@@ -588,10 +588,9 @@ async function generateSequentialStudentNumber(programType) {
         const lastStudentId = await getLastStudentAdmissionNumber(programType);
         
         if (lastStudentId) {
-            const match = lastStudentId.match(new RegExp(`${programType}/(\\d{4,5})/(\\d{2})/(\\d{2,4})`));
+            const match = lastStudentId.match(new RegExp(`${programType}/(\\d{1,6})/(?:MAR|(\\d{1,2}))/(\\d{2,4})`));
             if (match) {
                 const number = parseInt(match[1]);
-                const month = match[2];
                 const yearMatch = match[3];
                 
                 const currentYearSuffix = year.toString().slice(-2);
@@ -611,13 +610,14 @@ async function generateSequentialStudentNumber(programType) {
         console.error('Error generating sequential number:', error);
     }
     
-    const padLength = programType === 'DCHN' ? 4 : 5;
-    const paddedNumber = String(nextNumber).padStart(padLength, '0');
+    const selectedProgram = document.getElementById('program_type')?.selectedOptions?.[0];
+    const isNursingProgram = programType === 'DCHN' || programType === 'KRCHN' || /nurs/i.test(selectedProgram?.dataset?.category || '');
+    const paddedNumber = String(nextNumber).padStart(isNursingProgram ? 4 : 5, '0');
     
     const now = new Date();
     const month = String(now.getMonth() + 1).padStart(2, '0');
     
-    if (programType === 'DCHN') {
+    if (isNursingProgram) {
         return `${programType}/${paddedNumber}/MAR/${year}`;
     }
     
@@ -642,19 +642,15 @@ function validateStudentId(studentId) {
         return { valid: false, message: 'Invalid characters detected' };
     }
 
-    // DCHN format: DCHN/0001/MAR/2024. Permit historical and future years.
-    const dchnMatch = cleaned.match(/^DCHN\/(\d{1,6})\/MAR\/(\d{4})$/);
-    if (dchnMatch) {
-        const number = dchnMatch[1].padStart(4, '0');
-        const yearNum = Number(dchnMatch[2]);
-        if (yearNum < 2000 || yearNum > new Date().getFullYear() + 10) {
-            return { valid: false, message: 'Enter a valid four-digit intake year.' };
-        }
-        return {
-            valid: true, format: 'dchn', program: 'DCHN', number,
-            month: 'MAR', year: dchnMatch[2],
-            display: `DCHN/${number}/MAR/${dchnMatch[2]}`
-        };
+    // Nursing programme IDs use PROGRAM/0001/MAR/YYYY and support institution-specific nursing codes.
+    const nursingMatch = cleaned.match(/^([A-Z]{2,8})\/(\d{1,6})\/MAR\/(\d{4})$/);
+    if (nursingMatch) {
+        const program = nursingMatch[1];
+        const number = nursingMatch[2].padStart(4, '0');
+        const yearNum = Number(nursingMatch[3]);
+        if (yearNum < 2000 || yearNum > new Date().getFullYear() + 10) return { valid: false, message: 'Enter a valid four-digit intake year.' };
+        const display = program + '/' + number + '/MAR/' + nursingMatch[3];
+        return { valid: true, format: 'nursing', program, number, month: 'MAR', year: nursingMatch[3], display, canonical: display };
     }
 
     const match = cleaned.match(/^([A-Z]{2,8})\/(\d{1,8})\/(\d{1,2})\/(\d{2}|\d{4})$/);
