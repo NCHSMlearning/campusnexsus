@@ -2260,7 +2260,7 @@ body{background:var(--admin-canvas)!important;color:var(--admin-ink)!important}
                     </h3>
                 </div>
                 <p style="color: rgba(255,255,255,0.7); margin: 0; font-size: 0.8rem; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                    <span><i class="fas fa-sync-alt fa-spin" style="color: #FDB913;"></i> Legacy NCHSM system data</span>
+                    <span><i class="fas fa-sync-alt fa-spin" style="color: #FDB913;"></i> Legacy academic records · institution migration pending</span>
                     <span style="color: rgba(255,255,255,0.15);">|</span>
                     <span id="liveUpdateTime" style="font-size: 0.7rem; opacity: 0.7;">
                         <i class="far fa-clock"></i> <span id="liveTimestamp">--:--:--</span>
@@ -15960,5 +15960,57 @@ document.addEventListener('DOMContentLoaded',function(){
 </script>
 <script src="js/superadmin-notifications.js?v=20261120-toast-v1" defer></script>
 <script src="js/nchsm-superadmin-responsive.js?v=20261119b" defer></script>
+
+<style id="cn-superadmin-mobile-drawer-final">
+@media(max-width:1100px){
+  #sidebar{overscroll-behavior:contain!important;touch-action:pan-y!important}
+  #mainNav{overscroll-behavior:contain!important;touch-action:pan-y!important}
+  body.sidebar-open{overflow:hidden!important}
+  #sidebar .sidebar-account-footer{padding-bottom:calc(10px + env(safe-area-inset-bottom,0px))!important}
+}
+</style>
+<script id="cn-superadmin-mobile-module-close">
+(function(){
+ 'use strict';
+ function bind(){
+  const sidebar=document.getElementById('sidebar');
+  const toggle=document.getElementById('mobileNavToggle');
+  const nav=document.getElementById('mainNav');
+  if(!sidebar||!nav||nav.dataset.cnAutoCloseBound==='true')return;
+  nav.dataset.cnAutoCloseBound='true';
+  function closeAfterNavigation(){
+   if(window.innerWidth>1100)return;
+   requestAnimationFrame(function(){
+    sidebar.classList.remove('active');
+    document.body.classList.remove('sidebar-open');
+    if(toggle){
+     toggle.setAttribute('aria-expanded','false');
+     toggle.setAttribute('aria-label','Open navigation');
+    }
+   });
+  }
+  /* Capture the actual module link, then let the existing delegated
+     handler call showTab() normally. Close only after that handler runs. */
+  nav.addEventListener('click',function(event){
+   const link=event.target.closest('a[data-tab]');
+   if(!link||link.getAttribute('aria-disabled')==='true')return;
+   closeAfterNavigation();
+  },true);
+  /* Keep drawer state in sync if another script opens/closes it. */
+  if(toggle){
+   const observer=new MutationObserver(function(){
+    const open=sidebar.classList.contains('active');
+    document.body.classList.toggle('sidebar-open',open);
+    toggle.setAttribute('aria-expanded',String(open));
+    toggle.setAttribute('aria-label',open?'Close navigation':'Open navigation');
+   });
+   observer.observe(sidebar,{attributes:true,attributeFilter:['class']});
+  }
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bind,{once:true});
+ else bind();
+})();
+</script>
+
 </body>
 </html>
