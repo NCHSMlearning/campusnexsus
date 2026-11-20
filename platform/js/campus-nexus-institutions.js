@@ -511,7 +511,7 @@
       administrator_portal_url:$("cnInstitutionAdminPortal").value.trim() || null,
       status:$("cnInstitutionStatus").value
     };
-    const enabledModules = [...document.querySelectorAll('input[name="cnModule"]:checked')].map(x => x.value);.filter(key => key !== "library")
+    const enabledModules = [...document.querySelectorAll('input[name="cnModule"]:checked')].map(x => x.value).filter(key => key !== "library");
     setBusy(true);
     try {
       if (selectedLogoFile) {
