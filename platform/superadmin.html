@@ -1111,6 +1111,48 @@ body{background:var(--admin-canvas)!important;color:var(--admin-ink)!important}
 }
 @media(prefers-reduced-motion:reduce){#dashboard .dashboard-card{transition:none!important}}
 </style>
+
+<style id="cn-superadmin-dashboard-stat-layout">
+/* Dashboard metric cards: readable grid at phone/tablet widths */
+#dashboard .cn-dashboard-metrics-grid,
+#dashboard>div[style*="grid-template-columns"]:has(>.dashboard-card){
+ display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;
+ align-items:stretch!important;gap:14px!important;
+}
+#dashboard .dashboard-card{
+ min-width:0!important;min-height:132px!important;height:auto!important;
+ display:flex!important;flex-direction:column!important;justify-content:space-between!important;
+ overflow:hidden!important;overflow-wrap:anywhere!important;
+}
+#dashboard .dashboard-card>div:first-child{display:flex!important;align-items:flex-start!important;justify-content:space-between!important;gap:10px!important;min-width:0}
+#dashboard .dashboard-card>div:first-child>div:first-child{min-width:0!important;flex:1 1 auto}
+#dashboard .dashboard-card h3{white-space:normal!important;overflow-wrap:anywhere!important;word-break:normal!important;line-height:1.35!important}
+#dashboard .dashboard-card .minor-data{white-space:normal!important;overflow-wrap:anywhere!important;line-height:1.4!important}
+#dashboard .dashboard-card canvas{max-width:100%!important}
+@media(max-width:1100px){
+ #dashboard .cn-dashboard-metrics-grid,
+ #dashboard>div[style*="grid-template-columns"]:has(>.dashboard-card){
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:12px!important
+ }
+ #dashboard .dashboard-card{min-height:124px!important}
+}
+@media(max-width:520px){
+ #dashboard .cn-dashboard-metrics-grid,
+ #dashboard>div[style*="grid-template-columns"]:has(>.dashboard-card){
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:9px!important
+ }
+ #dashboard .dashboard-card{min-height:118px!important;padding:13px!important}
+ #dashboard .dashboard-card .data{font-size:clamp(22px,6vw,28px)!important}
+ #dashboard .dashboard-card h3{font-size:10px!important;letter-spacing:.04em!important}
+ #dashboard .dashboard-card .minor-data{font-size:10px!important}
+}
+@media(max-width:360px){
+ #dashboard .cn-dashboard-metrics-grid,
+ #dashboard>div[style*="grid-template-columns"]:has(>.dashboard-card){
+  grid-template-columns:minmax(0,1fr)!important
+ }
+}
+</style>
 </head>
 <body>
     <div class="container">
