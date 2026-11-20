@@ -30,6 +30,7 @@ let studentIdCheckInProgress = false;
 let emailCheckTimeout = null;
 let emailCheckInProgress = false;
 let resolvedInstitutionContext = null;
+let resolvedRegistrationCode = '';
 
 // ============================================
 // STORED DOCUMENTS DATA
@@ -377,6 +378,7 @@ async function initializeInstitutionRegistration() {
         message.textContent = 'Verifying your institution…';
         try {
             const context = await resolveInstitutionContext(code, host);
+            resolvedRegistrationCode = normalizeSchoolCode(code || context.school_code || '');
             showContext(context);
         } catch (error) {
             message.style.color = '#b91c1c';
@@ -1732,16 +1734,17 @@ document.getElementById('register-form').addEventListener('submit', async functi
             throw new Error('Your institution has not been verified. Please reload and enter your school code.');
         }
         const institutionCode = normalizeSchoolCode(resolvedInstitutionContext.school_code);
-        if (!/^[a-z0-9]{3,64}$/i.test(institutionCode)) {
-            throw new Error('The institution school code could not be verified. Please reload the registration link.');
+        const registrationCode = normalizeSchoolCode(resolvedRegistrationCode);
+        if (!/^[a-z0-9]{3,64}$/i.test(institutionCode) || !/^[a-z0-9]{3,64}$/i.test(registrationCode)) {
+            throw new Error('The institution registration code could not be verified. Please reload the registration link.');
         }
 
         let userMetadata = {
             full_name, role, phone, alt_phone, national_id,
             date_of_birth: dob, gender, address, status: 'pending',
             student_type: selectedStudentType,
-            school_code: institutionCode,
-            institution_code: institutionCode,
+            school_code: registrationCode,
+            institution_code: registrationCode,
             registration_source: 'campus_nexus_school_registration'
         };
         
