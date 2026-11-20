@@ -1952,6 +1952,18 @@ async function loadSuperadminExamInstitutions(){
   const {data,error}=await db.from('institutions').select('id,name,school_code').order('name');if(error)throw error;
   const rows=data||[];select.innerHTML='<option value="">Choose institution</option>'+rows.map(x=>'<option value="'+escapeHtml(x.id)+'">'+escapeHtml(x.name)+(x.school_code?' · '+escapeHtml(x.school_code):'')+'</option>').join('');
   if(rows.length===1)select.value=rows[0].id;
+  if(!select.dataset.examScopeBound){
+   select.dataset.examScopeBound='true';
+   select.addEventListener('change',()=>{
+    ExamCache.clear();
+    selectedStudentsForNotification=[];
+    allStudentsForProgram=[];
+    updateSelectedStudentsDisplay();
+    loadExams(true);
+    loadStudentsForNotification();
+   });
+  }
+  if(select.value) await loadExams(true);
  }catch(e){console.error('Could not load exam institution list:',e);select.innerHTML='<option value="">Institution list unavailable</option>';showFeedback('Unable to load institutions for exam creation: '+(e.message||'Access denied'),'error');}
 }
 document.addEventListener('DOMContentLoaded',loadSuperadminExamInstitutions);
