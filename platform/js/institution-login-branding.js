@@ -45,32 +45,34 @@
       .login-button:hover{box-shadow:0 14px 30px ${primary}55!important}
     `;
 
-    const logoImage = document.querySelector(".logo-wrapper .logo img");
-    const logoBox = document.querySelector(".logo-wrapper .logo");
-    if (logoImage && institution.logo_url && /^https:\/\//i.test(institution.logo_url)) {
-      logoImage.src = institution.logo_url;
-      logoImage.alt = name + " logo";
-      logoImage.hidden = false;
-    } else if (logoBox) {
-      // No institution logo has been uploaded: show a clean institution monogram,
-      // not the generic Campus Nexus mark.
-      const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join("").toUpperCase();
-      logoBox.innerHTML = "";
-      const monogram = document.createElement("span");
-      monogram.textContent = initials || "IN";
-      monogram.setAttribute("aria-label", name + " initials");
-      monogram.style.cssText = "display:grid;place-items:center;width:100%;height:100%;border-radius:inherit;background:"+primary+";color:#fff;font-weight:800;font-size:24px;letter-spacing:.04em;";
-      logoBox.appendChild(monogram);
-      logoBox.style.background = "#fff";
-    }
+    const initials = name.split(/\\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join("").toUpperCase();
+    const logoImages = document.querySelectorAll(
+      ".logo-wrapper .logo img, .mobile-header .logo img, .welcome-icon.logo-welcome img, .nchsm-loading-logo img"
+    );
+    logoImages.forEach(function (img) {
+      if (institution.logo_url && /^https:\\/\\//i.test(institution.logo_url)) {
+        img.src = institution.logo_url;
+        img.alt = name + " logo";
+        img.hidden = false;
+      } else {
+        const holder = img.parentElement;
+        if (!holder) return;
+        const monogram = document.createElement("span");
+        monogram.textContent = initials || "IN";
+        monogram.setAttribute("aria-label", name + " initials");
+        monogram.style.cssText = "display:grid;place-items:center;width:100%;height:100%;border-radius:inherit;background:"+primary+";color:#fff;font-weight:800;font-size:clamp(17px,3vw,25px);letter-spacing:.04em;";
+        holder.replaceChildren(monogram);
+        holder.style.background = "#fff";
+        holder.style.overflow = "hidden";
+      }
+    });
 
-    const heading = document.querySelector(".logo-wrapper .college-name");
-    if (heading) {
+    document.querySelectorAll(".logo-wrapper .college-name, .mobile-header .college-name").forEach(function (heading) {
       heading.textContent = name;
       heading.style.color = "#fff";
       heading.style.maxWidth = "min(100%, 520px)";
       heading.style.overflowWrap = "anywhere";
-    }
+    });
 
     const motto = document.querySelector(".logo-wrapper .motto");
     if (motto) {
@@ -83,6 +85,12 @@
 
     const tagline = document.querySelector(".welcome-section .tagline");
     if (tagline) tagline.textContent = "Your institution's secure learning and administration portal";
+    const loginSubtitle = document.querySelector(".welcome-subtitle");
+    if (loginSubtitle) loginSubtitle.textContent = "Sign in to access your " + name + " account";
+    const loadingText = document.getElementById("nchsmLoadingText");
+    if (loadingText) loadingText.textContent = "Securely verifying your " + name + " account. Please wait.";
+    const loadingTitle = document.querySelector(".nchsm-loading-title");
+    if (loadingTitle) loadingTitle.innerHTML = "Signing you <span>in…</span>";
 
     const pageTitle = name + " | Secure Sign In";
     document.title = pageTitle;
