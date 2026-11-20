@@ -97,7 +97,7 @@
     }));
     document.querySelectorAll(".nav-group,.menu-group,.menu-section").forEach(group => {
       const children = [...group.querySelectorAll("a,button,[role='menuitem'],[data-tab]")];
-      if (children.length && children.every(el => el.hidden)) group.hidden = true;
+      if (children.length) group.hidden = children.every(el => el.hidden);
     });
     document.documentElement.dataset.cnModuleEntitlementsReady = "true";
   }
