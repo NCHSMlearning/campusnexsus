@@ -1,41 +1,23 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "cleanUrls": true,
+  "trailingSlash": false,
   "rewrites": [
     {
-      "source": "/platform/student",
-      "destination": "/platform/student.html"
-    },
-    {
-      "source": "/platform/student/",
-      "destination": "/platform/student.html"
-    },
-    {
       "source": "/student",
-      "destination": "/platform/student.html"
-    },
-    {
-      "source": "/student.html",
-      "destination": "/platform/student.html"
-    },
-    {
-      "source": "/login.html",
-      "destination": "/platform/login.html"
+      "destination": "/platform/student"
     },
     {
       "source": "/login",
-      "destination": "/platform/login.html"
-    },
-    {
-      "source": "/register",
-      "destination": "/register.html"
+      "destination": "/platform/login"
     },
     {
       "source": "/exams",
-      "destination": "/platform/examinations/index.html"
+      "destination": "/platform/examinations"
     },
     {
       "source": "/admin-exams",
-      "destination": "/platform/examinations/index.html"
+      "destination": "/platform/examinations"
     }
-  ],
-  "cleanUrls": true
+  ]
 }
