@@ -27,6 +27,18 @@ jobs:
           fetch-depth: 0
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
+      - name: Generate clean student portal routes
+        run: |
+          test -f platform/student.html
+          mkdir -p student platform/student
+          cp platform/student.html student/index.html
+          cp platform/student.html platform/student/index.html
+          # The copied page now lives one directory deeper; make its only
+          # relative script reference resolve to the shared platform asset.
+          sed -i 's|src="code-protection.js"|src="/platform/code-protection.js"|g' student/index.html platform/student/index.html
+          test -s student/index.html
+          test -s platform/student/index.html
+          echo "Generated /student/ and /platform/student/ from the canonical student portal."
       - name: Verify student examination portal files
         run: |
           test -f studentexam.html
