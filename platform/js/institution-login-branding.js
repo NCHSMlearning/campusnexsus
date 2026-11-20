@@ -38,7 +38,7 @@
       document.head.appendChild(theme);
     }
     theme.textContent = `
-      .left-panel{background:linear-gradient(180deg, ${primary}b8 0%, ${primary}d9 48%, ${primary}f2 100%),url("images/campus-header.jpg") center center/cover no-repeat!important}
+      .left-panel{background:linear-gradient(180deg, ${primary}b8 0%, ${primary}d9 48%, ${primary}f2 100%)!important}
       .left-panel:before{background:radial-gradient(circle at 80% 15%,${secondary}55,transparent 34%),linear-gradient(135deg,${primary}22,transparent 55%)!important}
       .left-panel:after{background:linear-gradient(180deg,${primary}12,${primary}55)!important}
       .college-name .gold,.gold{color:${gold}!important}
