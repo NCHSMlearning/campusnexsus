@@ -1,6 +1,6 @@
 (function(){
 'use strict';
-const state={client:null,user:null,profile:null,exams:[],announcements:[],history:[]};
+const state={client:null,user:null,profile:null,exams:[],announcements:[],history:[],dashboardStats:null};
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const val=(...xs)=>xs.find(x=>x!==undefined&&x!==null&&String(x).trim()!=='');
@@ -66,11 +66,15 @@ function dateLabel(exam){const d=startsAt(exam);return d?d.toLocaleString('en-KE
 function renderDashboard(){
  const counts={upcoming:0,open:0,closed:0};
  state.exams.forEach(e=>{const s=examState(e);if(counts[s]!==undefined)counts[s]++;});
- const completed=state.history.filter(a=>!!a.submitted_at).length;
- $('stat-total').textContent=state.exams.length;$('stat-upcoming').textContent=counts.upcoming;$('stat-open').textContent=state.exams.filter(e=>examState(e)==='open'&&val(e.exam_link,e.online_link)).length;$('stat-completed').textContent=completed;
- const total=Math.max(state.exams.length,1);
- $('status-chart').innerHTML=[['Available now',counts.open,'#16835b'],['Upcoming',counts.upcoming,'#c58a25'],['Closed',counts.closed,'#71849a']].map(([label,n,color])=>'<div class="chart-bar-row"><span>'+label+'</span><div class="chart-track"><i style="width:'+Math.round(n/total*100)+'%;background:'+color+'"></i></div><b>'+n+'</b></div>').join('')+(state.exams.length?'':'<p class="chart-empty">No examination data is available yet.</p>');
- const days=[];for(let i=6;i>=0;i--){const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()-i);const key=d.toLocaleDateString('en-CA');const count=state.history.filter(a=>{const raw=a.submitted_at||a.started_at;return raw&&new Date(raw).toLocaleDateString('en-CA')===key;}).length;days.push({label:d.toLocaleDateString('en',{weekday:'short'}),count});}
+ const stats=state.dashboardStats||{};
+ const completed=Number(stats.submitted??state.history.filter(a=>!!a.submitted_at).length);
+ const totalCount=Number(stats.total??state.exams.length);
+ const upcoming=Number(stats.upcoming??counts.upcoming),open=Number(stats.open??state.exams.filter(e=>examState(e)==='open'&&val(e.exam_link,e.online_link)).length),closed=Number(stats.closed??counts.closed);
+ $('stat-total').textContent=totalCount;$('stat-upcoming').textContent=upcoming;$('stat-open').textContent=open;$('stat-completed').textContent=completed;
+ const total=Math.max(totalCount,1);
+ $('status-chart').innerHTML=[['Available now',open,'#16835b'],['Upcoming',upcoming,'#c58a25'],['Closed',closed,'#71849a']].map(([label,n,color])=>'<div class="chart-bar-row"><span>'+label+'</span><div class="chart-track"><i style="width:'+Math.min(100,Math.round(n/total*100))+'%;background:'+color+'"></i></div><b>'+n+'</b></div>').join('')+(totalCount?'':'<p class="chart-empty">No approved examinations are assigned to your programme yet.</p>');
+ const serverActivity=Array.isArray(stats.activity)?stats.activity:null;
+ const days=[];for(let i=6;i>=0;i--){const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()-i);const key=d.toLocaleDateString('en-CA');const serverDay=serverActivity?.find(x=>String(x.day).slice(0,10)===key);const count=serverDay?Number(serverDay.count):state.history.filter(a=>{const raw=a.submitted_at||a.started_at;return raw&&new Date(raw).toLocaleDateString('en-CA')===key;}).length;days.push({label:d.toLocaleDateString('en',{weekday:'short'}),count});}
  const max=Math.max(...days.map(x=>x.count),1);
  $('activity-chart').innerHTML='<div class="activity-bars">'+days.map(d=>'<div class="activity-column"><b>'+d.count+'</b><i style="height:'+Math.max(5,d.count/max*100)+'%"></i><small>'+d.label+'</small></div>').join('')+'</div><div class="chart-footnote">Last 7 days · '+completed+' submitted in total</div>';
 }
@@ -88,6 +92,12 @@ function render(){
   const action=status==='open'&&link?'<a class="primary-btn" href="'+esc(link)+'" target="_blank" rel="noopener noreferrer">Start Online Examination <i class="fa-solid fa-arrow-up-right-from-square"></i></a>':status==='open'?'<button class="secondary-btn" disabled>Online link not yet added</button>':status==='upcoming'?'<button class="secondary-btn" disabled>Opens at scheduled time</button>':'<button class="secondary-btn" disabled>Examination closed</button>';
   return '<article class="exam-card"><div class="exam-card-top"><div><h3>'+esc(title)+'</h3><div class="exam-unit">'+esc(unit)+'</div></div><span class="status '+badge+'">'+label+'</span></div><div class="exam-meta"><span><i class="fa-regular fa-calendar"></i>'+esc(dateLabel(exam))+'</span><span><i class="fa-solid fa-layer-group"></i>'+esc(val(exam.exam_type,'Examination'))+'</span><span><i class="fa-regular fa-hourglass-half"></i>'+esc((Number(exam.duration_minutes)||40)+' minutes')+'</span></div><div class="exam-actions"><span class="exam-date">'+esc(val(exam.block_term,exam.block,exam.term,'All blocks'))+' · '+esc(val(exam.intake_year,'All intakes'))+'</span>'+action+'</div></article>';
  }).join('')+'</div>';
+}
+async function loadDashboardStats(){
+ const {data,error}=await state.client.rpc('get_student_exam_dashboard_stats');
+ if(error)throw error;
+ state.dashboardStats=Array.isArray(data)?data[0]:data;
+ renderDashboard();
 }
 async function loadExams(){
  $('refresh-btn').disabled=true;
@@ -173,7 +183,8 @@ async function init(){
  $('welcome-name').textContent=name;$('side-name').textContent=name;$('avatar').textContent=name.split(/\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase();
  $('side-admission').textContent=val(p.admission_number,p.student_id,'Student account');
  $('student-meta').textContent=[val(p.program,p.program_name,'Programme not assigned'),studentBlock(p)!=='General'?studentBlock(p):'',val(p.intake_year,p.intake,'')].filter(Boolean).join(' • ');
- await loadExams();
+ await loadDashboardStats().catch(e=>{console.warn('Dashboard statistics RPC unavailable; using student-visible records.',e);});
+ await loadExams().catch(e=>{console.error('Student examination list failed:',e);$('exam-panel').innerHTML='<div class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><p>Examination list could not be loaded. Your dashboard statistics are shown where available.</p></div>';});
  renderTimetable();renderDashboard();
  loadAnnouncements().catch(e=>{$('announcements-panel').innerHTML='<div class="empty-state"><p>Announcements are temporarily unavailable.</p></div>';console.warn(e)});
  loadHistory().catch(e=>{$('history-panel').innerHTML='<div class="empty-state"><p>Examination history is temporarily unavailable.</p></div>';console.warn(e)});
