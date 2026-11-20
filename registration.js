@@ -203,8 +203,12 @@ function normalizeSchoolCode(value) {
 }
 
 async function resolveInstitutionContext(code, host) {
+    const normalizedCode = normalizeSchoolCode(code);
+    if (normalizedCode && !/^[0-9]{12}$/.test(normalizedCode)) {
+        throw new Error('School codes must contain exactly 12 digits.');
+    }
     const { data, error } = await sb.rpc('resolve_institution_registration_context', {
-        p_code: code || null,
+        p_code: normalizedCode || null,
         p_host: host || null
     });
     if (error) throw error;
