@@ -41,7 +41,7 @@ async function loadSchool(){
  loadButton.disabled=true;loadButton.textContent='Loading…';schoolStatus.textContent='Looking up your institution…';
  try{
   const client=clientReady();
-  const result=await client.from('institutions').select('id,name,school_code,short_code,logo_url,primary_color,secondary_color,status').or('school_code.ilike.'+code+',short_code.ilike.'+code).limit(2);
+  const result=await client.rpc('lookup_exam_institution',{p_school_code:code});
   if(result.error)throw result.error;
   const rows=result.data||[];
   if(!rows.length)throw new Error('No institution was found for that school code. Check the code and try again.');
