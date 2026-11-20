@@ -203,7 +203,7 @@
     }
 
     const result = await client.from("institutions")
-      .select("id,name,short_code,logo_url,primary_color,secondary_color,brand_colors,physical_address,postal_address,status")
+      .select("id,name,short_code,school_code,logo_url,primary_color,secondary_color,brand_colors,physical_address,postal_address,status")
       .eq("id", institutionId).maybeSingle();
     if (result.error) throw result.error;
     if (!result.data || String(result.data.status || "").toLowerCase() === "suspended") return;
