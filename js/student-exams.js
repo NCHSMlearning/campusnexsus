@@ -73,13 +73,13 @@ async function loadExams(){
 async function init(){
  state.client=client();if(!state.client)throw new Error('Student database connection is unavailable. Refresh and try again.');
  const {data,error}=await state.client.auth.getSession();const session=data?.session;
- if(error||!session?.user){location.replace('/login.html?redirect='+encodeURIComponent(location.pathname));return}
+ if(error||!session?.user){location.replace('/examlogin.html?redirect='+encodeURIComponent(location.pathname));return}
  state.user=session.user;
  const profileResult=await state.client.from('consolidated_user_profiles_table').select('*').eq('user_id',session.user.id).maybeSingle();
  if(profileResult.error)throw profileResult.error;
  state.profile=profileResult.data;
  const p=state.profile,role=norm(p?.role),status=norm(p?.status);
- if(role!=='student'||!['approved','active'].includes(status)||p?.login_enabled===false||!p?.institution_id){location.replace('/login.html?redirect='+encodeURIComponent(location.pathname));return}
+ if(role!=='student'||!['approved','active'].includes(status)||p?.login_enabled===false||!p?.institution_id){location.replace('/examlogin.html?redirect='+encodeURIComponent(location.pathname));return}
  const name=val(p.full_name,p.name,p.student_name,session.user.user_metadata?.full_name,session.user.email,'Student');
  $('welcome-name').textContent=name;$('side-name').textContent=name;$('avatar').textContent=name.split(/\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase();
  $('side-admission').textContent=val(p.admission_number,p.student_id,'Student account');
@@ -88,6 +88,6 @@ async function init(){
 }
 $('refresh-btn').addEventListener('click',()=>loadExams().catch(e=>notify(e.message||'Could not refresh examinations.')));
 $('search-input').addEventListener('input',render);$('status-filter').addEventListener('change',render);
-$('logout-btn').addEventListener('click',async()=>{await state.client?.auth.signOut();location.replace('/login.html')});
+$('logout-btn').addEventListener('click',async()=>{await state.client?.auth.signOut();location.replace('/examlogin.html')});
 document.addEventListener('DOMContentLoaded',()=>init().catch(e=>{$('exam-panel').innerHTML='<div class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><p>'+esc(e.message||'Unable to load your examinations.')+'</p><button class="secondary-btn" onclick="location.reload()">Try again</button></div>'}));
 })();
