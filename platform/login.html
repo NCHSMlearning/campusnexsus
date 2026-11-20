@@ -2167,6 +2167,36 @@ body.dark-theme #loginButton,body.dark-theme .login-button{background:linear-gra
   const params = new URLSearchParams(window.location.search);
   if ((params.get("school_code") || "").trim()) return;
 
+  // A restored, approved Supabase session must pass straight through to its
+  // dashboard. Do not cover it with the first-time school-code gate while
+  // login-script.js is restoring the session.
+  async function hasApprovedSession() {
+    const deadline = Date.now() + 6500;
+    let client = null;
+    while (Date.now() < deadline) {
+      client = window.NCHSMLogin && window.NCHSMLogin.supabase;
+      if (client && client.auth && typeof client.auth.getSession === "function") break;
+      await new Promise(resolve => setTimeout(resolve, 150));
+    }
+    if (!client) return false;
+    try {
+      const { data, error } = await client.auth.getSession();
+      const userId = data && data.session && data.session.user && data.session.user.id;
+      if (error || !userId) return false;
+      const { data: profile, error: profileError } = await client
+        .from("consolidated_user_profiles_table")
+        .select("status, login_enabled")
+        .eq("user_id", userId)
+        .maybeSingle();
+      return !profileError && !!profile &&
+        ["approved", "active"].includes(String(profile.status || "").toLowerCase()) &&
+        profile.login_enabled !== false;
+    } catch (error) {
+      console.warn("[Campus Nexus] Could not verify restored session before school-code gate:", error);
+      return false;
+    }
+  }
+
   function mountGate() {
     if (document.getElementById("campus-nexus-school-code-gate-panel")) return;
     const style = document.createElement("style");
@@ -2213,8 +2243,16 @@ body.dark-theme #loginButton,body.dark-theme .login-button{background:linear-gra
       }
     });
   }
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", mountGate, {once:true});
-  else mountGate();
+
+  async function initializeGate() {
+    if (await hasApprovedSession()) {
+      console.info("[Campus Nexus] Approved session restored; skipping school-code gate.");
+      return;
+    }
+    mountGate();
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", initializeGate, {once:true});
+  else initializeGate();
 })();
 </script>
 <script src="/platform/js/institution-login-branding.js?v=20261120-student-dashboard-v2" defer></script>
