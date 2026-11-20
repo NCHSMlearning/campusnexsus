@@ -3,7 +3,7 @@
 const SUPABASE_URL="https://lwhtjozfsmbyihenfunw.supabase.co";
 const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx3aHRqb3pmc21ieWloZW5mdW53Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk2NTgxMjcsImV4cCI6MjA3NTIzNDEyN30.7Z8AYvPQwTAEEEhODlW6Xk-IR1FK3Uj5ivZS7P17Wpk";
 const $=id=>document.getElementById(id);
-let sb,authUser,institution,profile,exams=[],selectedExamId=null;
+let sb,authUser,institution,profile,exams=[],selectedExamId=null,markStudents=[],markUnits=[];
 const escapeHTML=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 function notice(message,error=false){const el=$("notice");el.textContent=message;el.className="notice"+(error?" error":"");el.hidden=false;window.setTimeout(()=>{el.hidden=true},6000)}
 function fail(message){$("bootMessage").textContent=message;$("bootMessage").style.color="#b42318";document.querySelector(".loader").style.display="none"}
@@ -47,6 +47,8 @@ async function boot(){
   $("userName").textContent=profile.full_name||authUser.email||"Administrator";
   showApp();
   await refreshAll();
+  $("markProgram").value=profile.program||"";$("markYear").value=new Date().getFullYear();
+  await Promise.all([loadMarkStudents(),loadMarkUnits()]);
 }
 async function applyInstitutionBranding(){
   const inst=institution;
@@ -109,7 +111,7 @@ async function loadProctoring(){
  $("proctoringTable").innerHTML=data.map(x=>'<tr><td>'+escapeHTML(x.timestamp||"—")+'</td><td>'+escapeHTML(x.student_name||x.student_reg_number||"Student")+'</td><td>'+escapeHTML(examMap.get(String(x.exam_id))||"Examination")+'</td><td>'+escapeHTML(x.event_type||"Event")+'</td><td><span class="badge '+(String(x.severity).toLowerCase()==="high"||String(x.severity).toLowerCase()==="critical"?"red":"amber")+'">'+escapeHTML(x.severity||"info")+'</span></td><td>'+escapeHTML(x.details||"—")+'</td></tr>').join("");
 }
 async function loadAttendance(){
- const {data,error}=await sb.from("exam_attendance").select("id,exam_id,student_name,student_reg_number,status,date,sign_in_time,exam_name").order("date",{ascending:false}).limit(100);
+ const {data,error}=await sb.from("exam_attendance").select("id,exam_id,student_name,student_reg_number,status,date,sign_in_time,exam_name").eq("institution_id",institution.id).order("date",{ascending:false}).limit(100);
  if(error){$("attendanceTable").innerHTML='<tr><td colspan="6" class="empty-state">Attendance is not available: '+escapeHTML(error.message)+'</td></tr>';return}
  const examMap=new Map(exams.map(e=>[String(e.id),e.title||e.exam_name||"Examination"]));
  if(!data?.length){$("attendanceTable").innerHTML='<tr><td colspan="6" class="empty-state">No examination attendance records.</td></tr>';return}
@@ -143,6 +145,34 @@ async function saveQuestion(){
  if(error){notice(error.message,true);return}
  $("questionComposer").hidden=true;$("questionText").value="";["optionA","optionB","optionC","optionD"].forEach(id=>$(id).value="");notice("Question added to the selected examination.");await loadQuestions();
 }
+async function loadMarkStudents(){
+ const select=$("markStudent");select.innerHTML='<option value="">Loading students…</option>';
+ const {data,error}=await sb.from("consolidated_user_profiles_table").select("user_id,full_name,student_id,admission_number,program,block,intake_year,institution_id").eq("institution_id",institution.id).eq("role","student").in("status",["approved","active"]).order("full_name").limit(3000);
+ if(error)throw error;markStudents=data||[];
+ select.innerHTML='<option value="">Choose a student</option>'+markStudents.map(s=>'<option value="'+escapeHTML(s.user_id)+'">'+escapeHTML(s.full_name)+' · '+escapeHTML(s.admission_number||s.student_id||"No admission number")+'</option>').join("");
+}
+async function loadMarkUnits(){
+ const {data,error}=await sb.from("units_catalog").select("id,unit_code,unit_name,program,block,institution_id").eq("institution_id",institution.id).eq("status","active").order("unit_code").limit(1500);
+ if(error)throw error;markUnits=data||[];
+ $("markUnit").innerHTML='<option value="">Choose a unit</option>'+markUnits.map(u=>'<option value="'+u.id+'">'+escapeHTML(u.unit_code+" · "+u.unit_name)+'</option>').join("");
+}
+async function renderStudentMarks(){
+ const student=markStudents.find(s=>s.user_id===$("markStudent").value),body=$("marksTable");
+ if(!student){body.innerHTML='<tr><td colspan="6" class="empty-state">Select a student to view recorded marks.</td></tr>';return}
+ const {data,error}=await sb.from("student_marks").select("id,subject_name,block,final_score,approval_status,published").eq("institution_id",institution.id).eq("student_id",student.user_id).order("created_at",{ascending:false}).limit(100);
+ if(error){body.innerHTML='<tr><td colspan="6" class="empty-state">Marks are not available to this account: '+escapeHTML(error.message)+'</td></tr>';return}
+ body.innerHTML=data?.length?data.map(m=>'<tr><td>'+escapeHTML(student.full_name)+'</td><td>'+escapeHTML(m.subject_name)+'</td><td>'+escapeHTML(m.block)+'</td><td>'+escapeHTML(m.final_score??"—")+'</td><td>'+escapeHTML(m.approval_status||"draft")+'</td><td>'+(m.published?'Published':'Not published')+'</td></tr>').join(""):'<tr><td colspan="6" class="empty-state">No marks recorded for this student.</td></tr>';
+}
+async function saveManualMark(){
+ const student=markStudents.find(s=>s.user_id===$("markStudent").value),unit=markUnits.find(u=>String(u.id)===$("markUnit").value),score=Number($("markScore").value),maximum=Number($("markMaximum").value),block=$("markBlock").value.trim(),year=String($("markYear").value);
+ if(!student||!unit||!block||!year||!Number.isFinite(score)||!Number.isFinite(maximum)||maximum<=0||score<0||score>maximum){$("markFeedback").textContent="Choose a student and unit, then enter a valid block, academic year and score within the maximum marks.";return}
+ if(student.institution_id!==institution.id||unit.institution_id!==institution.id){notice("Student and unit must belong to the selected institution.",true);return}
+ const button=$("saveMarkBtn");button.disabled=true;button.textContent="Saving draft…";
+ const payload={institution_id:institution.id,student_id:student.user_id,admission_number:student.admission_number||student.student_id||student.user_id,student_name:student.full_name,program:student.program||unit.program||"Unassigned",block,subject_name:unit.unit_name,assessment_type:$("markAssessment").value,final_score:score,approval_status:"draft",published:false,academic_year:year,graded_by:authUser.id,submitted_by:authUser.id,submitted_by_name:profile.full_name||authUser.email,points:0};
+ try{const {error}=await sb.from("student_marks").upsert(payload,{onConflict:"admission_number,subject_name,block,academic_year"});if(error)throw error;$("markFeedback").textContent="Marks saved as a draft. They are not approved or visible to students.";notice("Draft marks saved.");await renderStudentMarks();}
+ catch(e){$("markFeedback").textContent=e.message||"Could not save marks.";notice(e.message||"Could not save marks.",true);}
+ finally{button.disabled=false;button.innerHTML='<i class="fa-solid fa-floppy-disk"></i> Save marks as draft';}
+}
 function switchView(view){
  document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("active",x.dataset.view===view));
  document.querySelectorAll(".view").forEach(x=>x.classList.toggle("active",x.id==="view-"+view));
@@ -156,6 +186,7 @@ function bind(){
  $("questionExam").addEventListener("change",loadQuestions);$("addQuestionBtn").addEventListener("click",()=>{$("questionComposer").hidden=false});
  $("cancelQuestion").addEventListener("click",()=>{$("questionComposer").hidden=true});$("saveQuestion").addEventListener("click",saveQuestion);
  $("refreshProctoring").addEventListener("click",loadProctoring);
+ $("markStudent").addEventListener("change",renderStudentMarks);$("saveMarkBtn").addEventListener("click",saveManualMark);
  $("logoutBtn").addEventListener("click",async()=>{await sb.auth.signOut();window.location.replace("/login")});
 }
 document.addEventListener("DOMContentLoaded",()=>{bind();boot().catch(e=>{console.error(e);fail(e.message||"Unable to open examination management.")})});
