@@ -16,7 +16,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <!-- External CSS -->
-    <link rel="stylesheet" href="registration.css?v=20261120-registration-flow-v3">
+    <link rel="stylesheet" href="registration.css?v=20261120-institution-registration-v6">
 </head>
 <body>
 
@@ -26,7 +26,7 @@
     </header>
 
     <h2 class="registration-heading">Create Your Account</h2>
-    <p class="registration-intro">Register as a student or lecturer to access your institution's digital campus.</p>
+    <p class="registration-intro">Choose your account type and submit your details. Your institution will review your application before access is enabled.</p>
 
     <!-- Progress Indicator -->
     <div class="progress-bar">
@@ -57,7 +57,7 @@
                 <label><i data-feather="user"></i> Register As</label>
                 <select id="role" name="role" required>
                     <option value="">-- Select Your Role --</option>
-                    <option value="student" selected>Student</option>
+                    <option value="student">Student</option>
                     <option value="lecturer">Lecturer</option>
                 </select>
             </div>
@@ -204,47 +204,7 @@
                 <!-- PROGRAM SELECTION -->
                 <div class="form-group">
                     <label><i data-feather="book"></i> Program <span style="color: red;">*</span></label>
-                    <select id="program_type" name="program_type" required>
-                        <option value="">-- Select Your Program --</option>
-                        <optgroup label="🎓 Nursing Programs">
-                            <option value="KRCHN" data-desc="Kenya Registered Community Health Nursing - 3.5 years program (Continuing Students)">KRCHN Nursing (Continuing)</option>
-                            <option value="DCHN" data-desc="Diploma in Community Health Nursing - 3.5 years program (New Students)">DCHN Nursing (NEW)</option>
-                        </optgroup>
-                        <optgroup label="🎯 TVET Diploma Programs (6-24 months)">
-                            <option value="DPOTT" data-desc="Diploma in Perioperative Theatre Technology - 2 years">Diploma in Perioperative Theatre Technology</option>
-                            <option value="DCH" data-desc="Diploma in Community Health - 2 years">Diploma in Community Health</option>
-                            <option value="DHRIT" data-desc="Diploma in Health Records and IT - 2 years">Diploma in Health Records and IT</option>
-                            <option value="DSL" data-desc="Diploma in Science Lab - 2 years">Diploma in Science Lab</option>
-                            <option value="DSW" data-desc="Diploma in Social Work - 2 years">Diploma in Social Work</option>
-                            <option value="DCJS" data-desc="Diploma in Criminal Justice - 2 years">Diploma in Criminal Justice</option>
-                            <option value="DHSS" data-desc="Diploma in Health Support Services - 2 years">Diploma in Health Support Services</option>
-                            <option value="DICT" data-desc="Diploma in ICT - 2 years">Diploma in ICT</option>
-                            <option value="DME" data-desc="Diploma in Medical Engineering - 2 years">Diploma in Medical Engineering</option>
-                        </optgroup>
-                        <optgroup label="📜 TVET Certificate Programs (3-12 months)">
-                            <option value="CPOTT" data-desc="Certificate in Perioperative Theatre Technology - 1 year">Certificate in Perioperative Theatre Technology</option>
-                            <option value="CCH" data-desc="Certificate in Community Health - 1 year">Certificate in Community Health</option>
-                            <option value="CHRIT" data-desc="Certificate in Health Records and IT - 1 year">Certificate in Health Records and IT</option>
-                            <option value="CPC" data-desc="Certificate in Patient Care - 6 months">Certificate in Patient Care</option>
-                            <option value="CSL" data-desc="Certificate in Science Lab - 1 year">Certificate in Science Lab</option>
-                            <option value="CSW" data-desc="Certificate in Social Work - 1 year">Certificate in Social Work</option>
-                            <option value="CCJS" data-desc="Certificate in Criminal Justice - 1 year">Certificate in Criminal Justice</option>
-                            <option value="CAG" data-desc="Certificate in Agriculture - 1 year">Certificate in Agriculture</option>
-                            <option value="CHSS" data-desc="Certificate in Health Support Services - 1 year">Certificate in Health Support Services</option>
-                            <option value="CICT" data-desc="Certificate in ICT - 1 year">Certificate in ICT</option>
-                            <option value="CCG" data-desc="Certificate in Caregiver - 6 months">Certificate in Caregiver</option>
-                            <option value="COMT" data-desc="Certificate in Orthopedic Trauma Medicine - 1 year">Certificate in Orthopedic Trauma Medicine</option>
-                        </optgroup>
-                        <optgroup label="🔧 TVET Artisan Programs (2-12 months)">
-                            <option value="ACH" data-desc="Artisan in Community Health - 6 months">Artisan in Community Health</option>
-                            <option value="AAG" data-desc="Artisan in Agriculture - 6 months">Artisan in Agriculture</option>
-                            <option value="ASW" data-desc="Artisan in Social Work - 6 months">Artisan in Social Work</option>
-                        </optgroup>
-                        <optgroup label="📊 Other TVET Programs">
-                            <option value="CCA" data-desc="Certificate in Computer Applications - 3 months">Certificate in Computer Applications (CCA)</option>
-                            <option value="PTE" data-desc="TVET/CDACC - Professional Teaching Experience">TVET/CDACC (PTE)</option>
-                        </optgroup>
-                    </select>
+                    <select id="program_type" name="program_type" required disabled><option value="">Verify your institution to load programmes</option></select>
                     <div class="program-description" id="programDescription">
                         Select a program above to see details
                     </div>
@@ -413,22 +373,14 @@
             <div id="lecturer-fields" class="role-fields" style="display: none;">
                 <div style="background:#e8f4f8;padding:12px 16px;border-radius:12px;margin-bottom:16px;border-left:4px solid #0A3D62;">
                     <p style="font-size:0.8rem;color:#0A3D62;margin:0;font-weight:500;">
-                        🆔 <strong>Staff ID will be auto-generated</strong> after registration (e.g., NCHSMNUR-001, NCHSMTVT-001)
+                        🆔 <strong>Your institution will assign your staff ID</strong> after your registration is reviewed.
                     </p>
                 </div>
                 
                 <div class="two-columns">
                     <div class="form-group">
                         <label><i data-feather="briefcase"></i> Department <span style="color:red;">*</span></label>
-                       <select id="department" name="department">
-                            <option value="">-- Select Department --</option>
-                            <option value="Nursing">Nursing</option>
-                            <option value="TVET">TVET</option>
-                            <option value="Community Health">Community Health</option>
-                            <option value="Health Records">Health Records</option>
-                            <option value="ICT">ICT</option>
-                            <option value="Administration">Administration</option>
-                        </select>
+                       <input type="text" id="department" name="department" placeholder="Enter your department" autocomplete="organization-title">
                     </div>
                     <div class="form-group">
                         <label><i data-feather="calendar"></i> Employment Date <span style="font-weight:400;color:#64748B;">(Optional)</span></label>
@@ -639,9 +591,9 @@
             <button class="modal-close" onclick="closeTermsModal()">&times;</button>
         </div>
         <div class="terms-body">
-            <p style="color:#64748B;margin-bottom:12px;"><strong>Last Updated:</strong> February 2026</p>
+            <p style="color:#64748B;margin-bottom:12px;"><strong>Last Updated:</strong> November 2026</p>
             <h4>1. Acceptance of Terms</h4>
-            <p>By accessing and using the Nakuru College of Health Sciences and Management (NCHSM) Digital Portal, you agree to comply with and be bound by these Terms and Conditions.</p>
+            <p>By accessing and using the this institution's digital campus, you agree to comply with and be bound by these Terms and Conditions.</p>
             <h4>2. User Accounts</h4>
             <p>You must provide accurate and complete information when creating your account. You are responsible for maintaining the confidentiality of your login credentials and for all activities that occur under your account.</p>
             <h4>3. Acceptable Use Policy</h4>
@@ -656,17 +608,17 @@
             <h4>4. Academic Integrity</h4>
             <p>All academic work submitted through the portal must be your own. Plagiarism, cheating, or any form of academic dishonesty is strictly prohibited and may result in disciplinary action.</p>
             <h4>5. Intellectual Property</h4>
-            <p>All content, materials, and resources provided through the NCHSM Digital Portal are protected by copyright and other intellectual property laws.</p>
+            <p>All content, materials, and resources provided through the the institution's digital campus are protected by copyright and other intellectual property laws.</p>
             <h4>6. Privacy and Data Protection</h4>
             <p>Your use of the portal is also governed by our Privacy Policy.</p>
             <h4>7. Termination</h4>
-            <p>NCHSM reserves the right to suspend or terminate your access to the portal for violation of these terms.</p>
+            <p>Your institution reserves the right to suspend or terminate your access to the portal for violation of these terms.</p>
             <h4>8. Limitation of Liability</h4>
-            <p>NCHSM shall not be liable for any indirect, incidental, special, or consequential damages resulting from your use or inability to use the portal.</p>
+            <p>The institution shall not be liable for any indirect, incidental, special, or consequential damages resulting from your use or inability to use the portal.</p>
             <h4>9. Modifications to Terms</h4>
             <p>We reserve the right to modify these terms at any time.</p>
             <h4>10. Contact Information</h4>
-            <p>Email: legal@nchsm.ac.ke<br>Phone: +254 790969743</p>
+            <p>Email: Contact your institution using its officially published contact details.</p>
         </div>
         <div class="modal-footer">
             <button onclick="acceptTerms()">✅ I Agree to Terms</button>
@@ -681,7 +633,7 @@
     <div class="success-card">
         <div class="check-circle">✅</div>
         <h2>🎉 Registration Successful!</h2>
-        <p>Your account has been created and is pending admin approval.</p>
+        <p>Your registration has been submitted. Verify your email and wait for your institution administrator to approve your account before logging in.</p>
         <div id="successIntake" style="background: #f0f7ff; padding: 10px; border-radius: 8px; margin: 15px 0; font-size: 0.9rem;">
             <strong>Intake:</strong> <span id="successIntakeText">March 2026</span>
         </div>
@@ -697,7 +649,7 @@
 <!-- ============================================ -->
 <!-- JAVASCRIPT - registration.js -->
 <!-- ============================================ -->
-<script src="registration.js?v=20261120-registration-flow-v4"></script>
+<script src="registration.js?v=20261120-institution-registration-v6"></script>
 <script src="code-protection.js"></script>
 
 <!-- ============================================ -->
