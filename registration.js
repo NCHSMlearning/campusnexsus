@@ -1796,6 +1796,50 @@ document.getElementById('register-form').addEventListener('submit', async functi
         }
         
         console.log('✅ Auth user created:', authData.user.id);
+
+        // Notify the institution's configured administrator. This is a notification only:
+        // account creation does not depend on email delivery and no verification email is requested.
+        try {
+            const adminEmail = resolvedInstitutionContext?.notification_email;
+            if (adminEmail && authData.session?.access_token) {
+                const applicantName = full_name || email;
+                const institutionName = resolvedInstitutionContext?.institution_name || 'Your institution';
+                const reviewUrl = new URL('/admin-dashboard.html', window.location.origin).toString();
+                const safe = value => String(value || '').replace(/[&<>"']/g, ch => ({
+                    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+                }[ch]));
+                const details = [
+                    ['Applicant', applicantName],
+                    ['Email', email],
+                    ['Account type', role],
+                    ...(role === 'student' ? [['Programme', program_type], ['Student ID', student_id_number]] : [['Department', department]])
+                ];
+                const rows = details.map(([label, value]) =>
+                    '<tr><td style="padding:8px;border-bottom:1px solid #e5e7eb;color:#64748b;">' + safe(label) +
+                    '</td><td style="padding:8px;border-bottom:1px solid #e5e7eb;font-weight:600;">' + safe(value) + '</td></tr>'
+                ).join('');
+                const html = '<div style="font-family:Arial,sans-serif;max-width:640px;margin:auto;color:#172033;">' +
+                    '<h2>New registration awaiting approval</h2><p>A new account has been created for ' +
+                    safe(institutionName) + ' and is awaiting administrator review.</p>' +
+                    '<table style="border-collapse:collapse;width:100%;">' + rows + '</table>' +
+                    '<p style="margin-top:24px;"><a href="' + safe(reviewUrl) +
+                    '" style="background:#0f3b5b;color:#fff;padding:12px 18px;border-radius:8px;text-decoration:none;">Review pending registrations</a></p>' +
+                    '<p style="color:#64748b;font-size:12px;">Campus Nexus · This account remains pending until approved.</p></div>';
+                const { error: notifyError } = await sb.functions.invoke('send-email', {
+                    body: {
+                        to: adminEmail,
+                        subject: 'New ' + role + ' registration awaiting approval - ' + institutionName,
+                        html
+                    }
+                });
+                if (notifyError) console.warn('Administrator email notification failed:', notifyError);
+                else console.log('✅ Institution administrator notification submitted.');
+            } else {
+                console.warn('Administrator notification skipped: no notification email or authenticated session.');
+            }
+        } catch (notifyError) {
+            console.warn('Administrator notification failed; registration remains successful:', notifyError);
+        }
         
         if (role === 'lecturer') {
             // The trusted auth.users trigger creates the institution-bound
@@ -1898,7 +1942,7 @@ document.getElementById('register-form').addEventListener('submit', async functi
         await Promise.allSettled(uploadPromises);
         
         const displayIntake = getDisplayIntake(program_type, intakeData.intake_year, intakeData.intake_month);
-        showFeedback(`✅ Registration submitted! Please verify your email. Your account will remain pending until your institution administrator approves it.`, 'success');
+        showFeedback(`✅ Registration submitted! Your account is pending administrator approval. You will be able to log in once approved.`, 'success');
         
         showSuccessAnimation(displayIntake);
         localStorage.removeItem('registration_draft');
@@ -2258,7 +2302,7 @@ document.getElementById('password').addEventListener('input', function() {
     console.log('  🔒 Input Sanitization: Enabled');
     console.log('  🔒 SQL Injection Protection: Enabled');
     console.log('  🔒 File Validation: Enabled');
-    console.log('  🔒 Email Verification: Enabled');
+    console.log('  🔔 Institution administrator email notification: Enabled');
     console.log('  📸 Profile photo upload');
     console.log('  📁 Student: KCSE + ID documents');
     console.log('  📁 Lecturer: ID + KRA PIN + University Certificate + CV (Optional)');
