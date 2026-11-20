@@ -16012,5 +16012,65 @@ document.addEventListener('DOMContentLoaded',function(){
 })();
 </script>
 
+
+<style id="cn-superadmin-mobile-drawer-hardfix">
+@media(max-width:768px){
+ #sidebar{transition:left .24s ease!important;will-change:left}
+ #sidebar:not(.active){left:calc(-1 * min(280px,86vw))!important}
+ #sidebar.active{left:0!important}
+}
+</style>
+<script id="cn-superadmin-mobile-drawer-hardfix-js">
+(function(){
+ 'use strict';
+ function init(){
+  const sidebar=document.getElementById('sidebar');
+  const nav=document.getElementById('mainNav');
+  const toggle=document.getElementById('mobileNavToggle');
+  if(!sidebar||!nav||nav.dataset.cnDrawerHardfix==='1')return;
+  nav.dataset.cnDrawerHardfix='1';
+  function closeDrawer(){
+   if(window.matchMedia('(min-width: 769px)').matches)return;
+   sidebar.classList.remove('active');
+   document.body.classList.remove('sidebar-open');
+   document.body.style.overflow='';
+   if(toggle){
+    toggle.setAttribute('aria-expanded','false');
+    toggle.setAttribute('aria-label','Open navigation');
+   }
+  }
+  function scheduleClose(){
+   /* Run after the existing showTab delegated handler has switched panes. */
+   [0,80,220].forEach(delay=>window.setTimeout(closeDrawer,delay));
+  }
+  function onModuleSelection(event){
+   const link=event.target.closest('#mainNav a[data-tab]');
+   if(!link)return;
+   if(link.classList.contains('dropdown-toggle'))return;
+   if(link.getAttribute('aria-disabled')==='true')return;
+   scheduleClose();
+  }
+  /* Capture phase handles taps even when individual modules stop bubbling. */
+  nav.addEventListener('click',onModuleSelection,true);
+  nav.addEventListener('touchend',onModuleSelection,{capture:true,passive:true});
+  if(toggle){
+   toggle.addEventListener('click',function(){
+    window.setTimeout(function(){
+     const open=sidebar.classList.contains('active');
+     document.body.classList.toggle('sidebar-open',open);
+     toggle.setAttribute('aria-expanded',String(open));
+     toggle.setAttribute('aria-label',open?'Close navigation':'Open navigation');
+    },0);
+   });
+  }
+  document.addEventListener('keydown',function(event){
+   if(event.key==='Escape')closeDrawer();
+  });
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});
+ else init();
+})();
+</script>
+
 </body>
 </html>
