@@ -1154,7 +1154,7 @@ async function removeClass(examId, className) {
         const supabase = window.sb || window.supabase;
         const { data: exam } = await supabase.from('exams').select('assigned_classes').eq('id', examId).single();
         const current = (exam?.assigned_classes || []).filter(c => c !== className);
-        const { error } = await supabase.from('exams').update({ assigned_classes: current }).eq('id', examId);
+        const { error } = await supabase.from('exams').update({ assigned_classes: current }).eq('id', examId).eq('institution_id', institutionId);
         if (error) throw error;
         showFeedback(`✅ Removed "${className}"`, 'success');
         renderAssignedClasses(examId, current);
