@@ -12016,7 +12016,7 @@ async function initializeApp() {
         // directly, then enforce the institution approval checks below.
         const { data: profileRow, error: profileError } = await studentSupabase
             .from('consolidated_user_profiles_table')
-            .select('*')
+            .select('user_id,full_name,role,status,login_enabled,institution_id,admission_number,student_id,program,program_type,current_block,block,intake_year,intake_month,admission_year')
             .eq('user_id', userSession.user.id)
             .maybeSingle();
         if (profileError) throw profileError;
