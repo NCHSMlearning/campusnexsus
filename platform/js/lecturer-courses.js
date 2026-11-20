@@ -1,0 +1,797 @@
+// js/lecturer-courses.js - COMPLETE FIXED VERSION WITH TVET SUPPORT
+/**
+ * NCHSM Lecturer Courses Module
+ * Uses the same unit assignments as the marks system
+ * Dynamically finds the correct lecturer ID from assignments
+ * Uses ilike for partial name matching
+ * Supports both Nursing (KRCHN) and TVET programs
+ */
+
+const LecturerCourses = {
+    courses: [],
+    filteredCourses: [],
+    currentFilters: {
+        intake: '',
+        block: '',
+        status: '',
+        search: ''
+    },
+    lecturerAssignmentId: null,
+    isTVET: false,
+    currentProgram: 'KRCHN',
+    
+    // ============================================
+    // PROGRAM TYPE DETECTION
+    // ============================================
+    getProgramType() {
+        return window.CURRENT_PROGRAM_TYPE || 'KRCHN';
+    },
+    
+    isTVETProgram() {
+        return this.getProgramType() === 'TVET';
+    },
+    
+    getBlockDisplay(blockValue) {
+        if (!blockValue) return 'N/A';
+        
+        const programType = this.getProgramType();
+        if (programType === 'TVET') {
+            // TVET: Y1T1 → Year 1 Term 1
+            const match = blockValue.match(/^Y(\d)T(\d)$/);
+            if (match) {
+                const year = parseInt(match[1]);
+                const term = parseInt(match[2]);
+                const termNames = ['', 'First', 'Second', 'Third'];
+                return `Year ${year} ${termNames[term] || term} Term`;
+            }
+            // Handle other TVET formats
+            if (blockValue.includes('Term')) return blockValue;
+            if (blockValue === 'Introductory') return '🌟 Introductory Term';
+            return blockValue;
+        } else {
+            // Nursing: Block 1, Block 2, etc.
+            if (blockValue.startsWith('Block ')) return blockValue;
+            if (blockValue === 'Introductory') return '🌟 Introductory Block';
+            if (blockValue === 'Final') return '🏆 Final Block';
+            return `Block ${blockValue}`;
+        }
+    },
+    
+    getBlockShortName(blockValue) {
+        if (!blockValue) return 'N/A';
+        const programType = this.getProgramType();
+        if (programType === 'TVET') {
+            // Keep Y1T1 format for TVET
+            return blockValue;
+        } else {
+            // Nursing: Block 1, Block 2, etc.
+            if (blockValue.startsWith('Block ')) return blockValue;
+            if (blockValue === 'Introductory') return 'Introductory';
+            if (blockValue === 'Final') return 'Final';
+            return `Block ${blockValue}`;
+        }
+    },
+    
+    getProgramTypeLabel() {
+        return this.isTVETProgram() ? '🔧 TVET' : '🎓 Nursing';
+    },
+    
+    getProgramEmoji() {
+        return this.isTVETProgram() ? '🔧' : '🎓';
+    },
+    
+    // ============================================
+    // INITIALIZATION
+    // ============================================
+    async init() {
+        console.log('📚 Initializing Lecturer Courses...');
+        this.currentProgram = this.getProgramType();
+        this.isTVET = this.isTVETProgram();
+        console.log(`📚 Program Type: ${this.getProgramTypeLabel()}`);
+        
+        await this.resolveLecturerId();
+        await this.loadCourses();
+        this.populateFilters();
+        this.setupEventListeners();
+        this.updateStats();
+        console.log('✅ Lecturer Courses initialized');
+    },
+    
+    // Resolve the assignment foreign key from staff_records.id.
+    // Auth UUID and the human-readable STAFF code are different identifiers.
+    async resolveLecturerId() {
+        try {
+            const supabase = window.lecturerDB?.supabase;
+            if (!supabase) throw new Error('Supabase client is unavailable.');
+
+            const profile = window.lecturerDB?.getCurrentUserProfile() || {};
+            let email = String(profile.email || profile.email_address || window.currentUser?.email || '').trim();
+            if (!email && supabase.auth?.getUser) {
+                const { data: { user }, error } = await supabase.auth.getUser();
+                if (error) throw error;
+                email = String(user?.email || '').trim();
+            }
+            if (!email) throw new Error('Could not resolve authenticated lecturer email.');
+
+            const { data: staff, error } = await supabase
+                .from('staff_records')
+                .select('id, first_name, other_names, email')
+                .ilike('email', email)
+                .maybeSingle();
+            if (error) throw error;
+            if (!staff?.id) throw new Error('No staff record found for this lecturer email.');
+
+            this.lecturerAssignmentId = String(staff.id);
+            window.CORRECT_LECTURER_ID = String(staff.id);
+            console.log('[Lecturer Courses] Assignment ID resolved from staff_records:', this.lecturerAssignmentId);
+            return this.lecturerAssignmentId;
+        } catch (error) {
+            console.error('[Lecturer Courses] Identity resolution failed:', error);
+            this.lecturerAssignmentId = null;
+            return null;
+        }
+    },
+
+    // ============================================
+    // LOAD COURSES - WITH TVET SUPPORT
+    // ============================================
+    async loadCourses() {
+        try {
+            const profile = window.lecturerDB?.getCurrentUserProfile();
+            if (!profile) {
+                console.warn('No lecturer profile found');
+                this.courses = [];
+                this.filteredCourses = [];
+                this.renderTable();
+                this.updateStats();
+                return;
+            }
+            
+            const supabase = window.lecturerDB?.supabase;
+            if (!supabase) {
+                console.warn('Supabase not available');
+                this.courses = [];
+                this.filteredCourses = [];
+                this.renderTable();
+                this.updateStats();
+                return;
+            }
+            
+            const lecturerId = String(this.lecturerAssignmentId || await this.resolveLecturerId() || '').trim();
+            if (!lecturerId) throw new Error('Lecturer staff-record ID could not be resolved.');
+            console.log('[Lecturer Courses] Using staff-record assignment ID:', lecturerId);
+            console.log(`📚 Program Type: ${this.getProgramTypeLabel()}`);
+
+            let units = [];
+            const program = this.currentProgram || profile.program || 'KRCHN';
+
+            // Read only assignments linked to this lecturer's staff_records.id.
+            const { data: assignmentRows, error: assignmentError } = await supabase
+                .from('lecturer_subject_assignments')
+                .select('id, lecturer_id, lecturer_name, subject_name, subject_code, block, program, academic_year')
+                .eq('lecturer_id', lecturerId);
+            if (assignmentError) throw assignmentError;
+
+            const uniqueAssignments = [...new Map((assignmentRows || []).map(row => [
+                String(row.id || [row.lecturer_id, row.subject_name, row.subject_code, row.program, row.block, row.academic_year].join('|')), row
+            ])).values()];
+
+            console.log('[Lecturer Courses] Found own assignments:', uniqueAssignments.length);
+
+            // The official units_catalog is the source of canonical unit codes.
+            // Match assignment rows by code first, then exact unit name.
+            const normalize = value => String(value || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+            const programs = [...new Set(uniqueAssignments.map(x => String(x.program || program).trim()).filter(Boolean))];
+            const catalogResults = await Promise.all(programs.map(p =>
+                supabase.from('units_catalog')
+                    .select('id, unit_code, unit_name, program, block, status')
+                    .ilike('program', p)
+            ));
+            const catalogError = catalogResults.find(r => r.error)?.error;
+            if (catalogError) console.warn('Unable to load unit catalogue for code resolution:', catalogError.message);
+            const catalog = catalogResults.flatMap(r => r.error ? [] : (r.data || []));
+
+            units = uniqueAssignments.map((assignment, index) => {
+                const assignmentProgram = assignment.program || program;
+                const programUnits = catalog.filter(u => normalize(u.program) === normalize(assignmentProgram));
+                const code = normalize(assignment.subject_code);
+                const name = normalize(assignment.subject_name);
+                let matches = code ? programUnits.filter(u => normalize(u.unit_code) === code) : [];
+                if (!matches.length && name) matches = programUnits.filter(u => normalize(u.unit_name) === name);
+                if (matches.length > 1 && assignment.block) {
+                    const blockMatches = matches.filter(u => normalize(u.block) === normalize(assignment.block));
+                    if (blockMatches.length) matches = blockMatches;
+                }
+                const catalogUnit = matches.length === 1 ? matches[0] : null;
+                const unitCode = catalogUnit?.unit_code || assignment.subject_code || '';
+                const unitName = catalogUnit?.unit_name || assignment.subject_name || 'Unnamed Unit';
+                const block = assignment.block || catalogUnit?.block || 'N/A';
+                return {
+                    id: assignment.id || catalogUnit?.id || `unit_${index}`,
+                    unit_id: catalogUnit?.id || assignment.unit_id || assignment.id || `unit_${index}`,
+                    unit_code: unitCode || 'Code unavailable',
+                    course_name: unitName,
+                    target_program: assignmentProgram,
+                    block,
+                    block_display: this.getBlockDisplay(block),
+                    block_short: this.getBlockShortName(block),
+                    intake_year: assignment.academic_year || new Date().getFullYear().toString(),
+                    status: this.determineStatus(assignment),
+                    credits: catalogUnit?.credits || 0,
+                    student_count: 0,
+                    source: 'assignments',
+                    program_type: this.getProgramTypeLabel(),
+                    is_tvet: this.isTVET,
+                    raw: { ...assignment, subject_code: unitCode, subject_name: unitName, catalog_unit_id: catalogUnit?.id || null }
+                };
+            });
+
+            console.log('✅ Assigned units enriched from units_catalog:', units.length);
+
+            // Do not list every active catalogue unit when this lecturer has no
+            // assignment rows; only display units actually assigned to this lecturer.
+
+            // ✅ Set courses
+            this.courses = units;
+            this.filteredCourses = [...this.courses];
+            
+            // ✅ Get student counts for each unit
+            await this.loadStudentCounts();
+            
+            // ✅ Apply initial filters
+            this.applyFilters();
+            
+            // ✅ Update stats
+            this.updateStats();
+            
+            const badge = document.getElementById('courseCountBadge');
+            if (badge) {
+                badge.textContent = this.courses.length;
+            }
+            
+            console.log(`✅ Loaded ${this.courses.length} total units (${this.getProgramTypeLabel()})`);
+            
+        } catch (error) {
+            console.error('Failed to load courses:', error);
+            this.courses = [];
+            this.filteredCourses = [];
+            this.renderTable();
+            this.updateStats();
+        }
+    },
+    
+    // ============================================
+    // DETERMINE STATUS - FIXED
+    // ============================================
+    determineStatus(assignment) {
+        const currentYear = new Date().getFullYear().toString();
+        const year = assignment.academic_year || '';
+        
+        if (!year || year === 'N/A' || year === '') return 'active';
+        if (year === currentYear) return 'active';
+        if (parseInt(year) < parseInt(currentYear)) return 'completed';
+        if (parseInt(year) > parseInt(currentYear)) return 'upcoming';
+        return 'active';
+    },
+    
+    // ============================================
+    // LOAD STUDENT COUNTS PER UNIT - FIXED
+    // ============================================
+    async loadStudentCounts() {
+        const supabase = window.lecturerDB?.supabase;
+        if (!supabase) {
+            console.warn('[Lecturer Courses] Supabase unavailable; registration counts were not loaded.');
+            this.courses.forEach(course => { course.student_count = 0; });
+            return;
+        }
+
+        const normalize = value => String(value || '').trim().toLowerCase().replace(/\\s+/g, ' ');
+        const countStatuses = ['approved', 'completed'];
+
+        // Counts come only from student_unit_registrations. Count unique student IDs
+        // so duplicate registration rows never inflate the unit's student total.
+        await Promise.all(this.courses.map(async course => {
+            try {
+                const unitProgram = course.target_program || this.currentProgram ||
+                    window.lecturerDB?.getCurrentUserProfile()?.program || 'KRCHN';
+                const unitCode = String(course.unit_code || '').trim();
+                const unitName = String(course.course_name || '').trim();
+                let query = supabase.from('student_unit_registrations')
+                    .select('student_id, unit_code, unit_name, program, block, status')
+                    .ilike('program', unitProgram)
+                    .in('status', countStatuses);
+
+                if (unitCode && unitCode !== 'Code unavailable' && unitCode !== 'N/A') {
+                    query = query.ilike('unit_code', unitCode);
+                } else if (unitName && unitName !== 'Unnamed Unit') {
+                    query = query.ilike('unit_name', unitName);
+                } else {
+                    course.student_count = 0;
+                    return;
+                }
+
+                const { data, error } = await query;
+                if (error) throw error;
+
+                const expectedCode = normalize(unitCode);
+                const expectedName = normalize(unitName);
+                const expectedBlock = normalize(course.block);
+                const matched = (data || []).filter(row => {
+                    const sameUnit = expectedCode && expectedCode !== 'code unavailable' && expectedCode !== 'n/a'
+                        ? normalize(row.unit_code) === expectedCode
+                        : normalize(row.unit_name) === expectedName;
+                    const sameBlock = !expectedBlock || expectedBlock === 'n/a' ||
+                        normalize(row.block) === expectedBlock;
+                    return sameUnit && sameBlock && row.student_id;
+                });
+
+                course.student_count = new Set(matched.map(row => String(row.student_id))).size;
+            } catch (error) {
+                console.error('[Lecturer Courses] Unit registration count failed:', {
+                    unit: course.course_name,
+                    code: course.unit_code,
+                    error: error.message
+                });
+                // Never substitute the programme-wide student total; that would
+                // incorrectly attribute every programme student to this unit.
+                course.student_count = 0;
+            }
+        }));
+
+        console.log('📊 Unit student totals loaded from student_unit_registrations.');
+    },
+
+    // ============================================
+    // POPULATE FILTERS - WITH TVET BLOCKS
+    // ============================================
+    populateFilters() {
+        const years = [...new Set(this.courses.map(c => c.intake_year).filter(b => b && b !== 'N/A'))].sort().reverse();
+        const intakeFilter = document.getElementById('intakeYearFilter');
+        if (intakeFilter) {
+            intakeFilter.innerHTML = '<option value="">All Years</option>' +
+                years.map(y => `<option value="${y}">${y}</option>`).join('');
+            
+            const currentYear = new Date().getFullYear().toString();
+            if (years.includes(currentYear)) {
+                intakeFilter.value = currentYear;
+            } else if (years.length > 0) {
+                intakeFilter.value = years[0];
+            }
+        }
+        
+        // ✅ Populate blocks with display names
+        const blocks = [...new Set(this.courses.map(c => c.block).filter(Boolean))];
+        const blockFilter = document.getElementById('academicPeriodFilter');
+        if (blockFilter) {
+            blockFilter.innerHTML = '<option value="">All Blocks</option>';
+            blocks.forEach(b => {
+                const displayName = this.getBlockDisplay(b);
+                blockFilter.innerHTML += `<option value="${b}">${displayName}</option>`;
+            });
+        }
+        
+        const yearEl = document.getElementById('currentAcademicYear');
+        if (yearEl) {
+            yearEl.textContent = new Date().getFullYear();
+        }
+        
+        // ✅ Update program type display
+        const programBadge = document.getElementById('userProgramBadge');
+        if (programBadge) {
+            const typeLabel = this.getProgramTypeLabel();
+            const program = this.currentProgram || 'KRCHN';
+            programBadge.textContent = `${program} (${typeLabel})`;
+            programBadge.style.background = this.isTVET ? 'rgba(139,92,246,0.3)' : 'rgba(76,29,149,0.3)';
+            programBadge.style.border = this.isTVET ? '1px solid #8b5cf6' : '1px solid #4C1D95';
+        }
+        
+        // ✅ Update subtitle
+        const subtitle = document.getElementById('programSubtitle');
+        if (subtitle) {
+            const emoji = this.getProgramEmoji();
+            const typeLabel = this.getProgramTypeLabel();
+            subtitle.textContent = `${emoji} ${typeLabel} - ${this.courses.length} units assigned`;
+        }
+    },
+    
+    // ============================================
+    // RENDER TABLE - WITH TVET BLOCK DISPLAY
+    // ============================================
+    renderTable() {
+        const tbody = document.getElementById('lecturerCoursesTable');
+        if (!tbody) return;
+        
+        const courses = this.filteredCourses;
+        const typeLabel = this.getProgramTypeLabel();
+        const emoji = this.getProgramEmoji();
+        
+        if (!courses || courses.length === 0) {
+            const hasData = this.courses.length > 0;
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" style="padding: 50px 20px; text-align: center; color: #94a3b8;">
+                        <i class="fas fa-book" style="font-size: 48px; display: block; margin-bottom: 15px; color: #e2e8f0;"></i>
+                        <h3 style="color: #475569; margin: 0 0 8px 0;">${hasData ? 'No units match your filters' : 'No Units Assigned'}</h3>
+                        <p style="margin: 0; font-size: 14px;">${hasData ? 'Try adjusting your filters to see more units.' : 'You have not been assigned any units yet.'}</p>
+                        ${!hasData ? '<p style="margin: 5px 0 0 0; font-size: 13px; color: #94a3b8;">Contact the administrator for unit assignments.</p>' : ''}
+                        ${hasData ? `<p style="margin: 5px 0 0 0; font-size: 13px; color: #94a3b8;">Total assigned: ${this.courses.length} units (${typeLabel})</p>` : ''}
+                    </td>
+                </tr>
+            `;
+            const countDisplay = document.getElementById('courseCountDisplay');
+            if (countDisplay) countDisplay.textContent = '0';
+            return;
+        }
+        
+        const currentYear = new Date().getFullYear().toString();
+        
+        tbody.innerHTML = courses.map((course, index) => {
+            const studentCount = course.student_count || 0;
+            const isPast = course.intake_year && course.intake_year !== 'N/A' && parseInt(course.intake_year) < parseInt(currentYear);
+            const rowStyle = isPast ? 'opacity: 0.7;' : '';
+            
+            // ✅ Use block display name
+            const blockDisplay = course.block_display || this.getBlockDisplay(course.block);
+            
+            let status = course.status || 'active';
+            if (isPast && status !== 'completed') status = 'completed';
+            
+            const statusColors = {
+                'active': '#10b981',
+                'completed': '#3b82f6',
+                'upcoming': '#f59e0b',
+                'inactive': '#ef4444'
+            };
+            
+            const statusLabels = {
+                'active': '✅ Active',
+                'completed': '📘 Completed',
+                'upcoming': '⏳ Upcoming',
+                'inactive': '❌ Inactive'
+            };
+            
+            const statusColor = statusColors[status] || '#6b7280';
+            const statusLabel = statusLabels[status] || status;
+            const courseId = course.id || course.unit_id || `course_${index}`;
+            
+            return `
+                <tr style="border-bottom: 1px solid #f1f5f9; transition: background 0.2s; ${rowStyle}" 
+                    onmouseover="this.style.background='#f8fafc'" 
+                    onmouseout="this.style.background='transparent'">
+                    <td style="padding: 14px 18px;">
+                        <span style="font-weight: 700; color: #4C1D95; font-size: 13px;">${this.escapeHtml(course.unit_code || 'N/A')}</span>
+                        ${course.credits ? `<span style="font-size: 10px; color: #94a3b8; display: block;">${course.credits} Credits</span>` : ''}
+                        ${course.is_tvet ? `<span style="font-size: 9px; color: #8b5cf6; display: block;">🔧 TVET</span>` : ''}
+                    </td>
+                    <td style="padding: 14px 18px; font-weight: 600; color: #1e293b;">
+                        ${this.escapeHtml(course.course_name || 'N/A')}
+                        <div style="font-size: 11px; color: #94a3b8; font-weight: 400; margin-top: 2px;">
+                            ${this.escapeHtml(blockDisplay)}
+                            ${course.source ? ` | Source: ${this.escapeHtml(course.source)}` : ''}
+                        </div>
+                    </td>
+                    <td style="padding: 14px 18px;">
+                        <span style="background: ${this.isTVET ? '#ede9fe' : '#dbeafe'}; padding: 2px 10px; border-radius: 12px; font-size: 12px; color: ${this.isTVET ? '#7c3aed' : '#1e40af'};">
+                            ${this.escapeHtml(course.target_program || 'N/A')}
+                        </span>
+                    </td>
+                    <td style="padding: 14px 18px; color: #475569;">
+                        ${this.escapeHtml(blockDisplay)}
+                        ${this.isTVET ? `<div style="font-size: 9px; color: #8b5cf6;">TVET Term</div>` : ''}
+                    </td>
+                    <td style="padding: 14px 18px; color: #475569;">
+                        ${this.escapeHtml(course.intake_year || 'N/A')}
+                        ${isPast ? ' <span style="font-size: 10px; color: #94a3b8;">(Past)</span>' : ''}
+                    </td>
+                    <td style="padding: 14px 18px; text-align: center;">
+                        <span style="font-weight: 600; color: #0A3D62;">${studentCount}</span>
+                    </td>
+                    <td style="padding: 14px 18px; text-align: center;">
+                        <div style="display: flex; gap: 6px; justify-content: center; flex-wrap: wrap;">
+                            <span style="background: ${statusColor}20; color: ${statusColor}; padding: 2px 10px; border-radius: 12px; font-size: 10px; font-weight: 600;">
+                                ${statusLabel}
+                            </span>
+                            <button onclick="LecturerCourses.manageCourse('${courseId}')" 
+                                    style="background: #4C1D95; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;"
+                                    onmouseover="this.style.background='#5b21b6'" onmouseout="this.style.background='#4C1D95'">
+                                <i class="fas fa-chart-bar"></i> Manage
+                            </button>
+                            <button onclick="LecturerCourses.viewStudents('${courseId}')" 
+                                    style="background: #10b981; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;"
+                                    onmouseover="this.style.background='#059669'" onmouseout="this.style.background='#10b981'">
+                                <i class="fas fa-users"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+        
+        const countDisplay = document.getElementById('courseCountDisplay');
+        if (countDisplay) {
+            countDisplay.textContent = courses.length;
+        }
+        
+        const filterCount = document.getElementById('courseFilterCount');
+        if (filterCount) {
+            const total = this.courses.length;
+            if (courses.length === total) {
+                filterCount.textContent = `Showing all ${total} units (${typeLabel})`;
+            } else {
+                filterCount.textContent = `Showing ${courses.length} of ${total} units (${typeLabel})`;
+            }
+        }
+    },
+    
+    // ============================================
+    // UPDATE STATS - WITH TVET SUPPORT
+    // ============================================
+    updateStats() {
+        const courses = this.courses;
+        const currentYear = new Date().getFullYear().toString();
+        const typeLabel = this.getProgramTypeLabel();
+        const emoji = this.getProgramEmoji();
+        
+        // Total units
+        const totalCourses = courses.length;
+        const totalEl = document.getElementById('totalCoursesCount2');
+        if (totalEl) totalEl.textContent = totalCourses;
+        
+        // Total students (sum of all unit enrollments)
+        let totalStudents = 0;
+        courses.forEach(c => {
+            totalStudents += c.student_count || 0;
+        });
+        const studentsEl = document.getElementById('totalStudentsCount2');
+        if (studentsEl) studentsEl.textContent = totalStudents;
+        
+        // Active units (current year)
+        const active = courses.filter(c => {
+            const year = c.intake_year;
+            return year === currentYear || year === 'N/A' || year === '' || c.status === 'active';
+        }).length;
+        const activeEl = document.getElementById('activeCoursesCount');
+        if (activeEl) activeEl.textContent = active;
+        
+        // Completed units (past years)
+        const completed = courses.filter(c => {
+            const year = c.intake_year;
+            return year && year !== 'N/A' && parseInt(year) < parseInt(currentYear);
+        }).length;
+        const completedEl = document.getElementById('completedCoursesCount');
+        if (completedEl) completedEl.textContent = completed;
+        
+        // Badge
+        const badge = document.getElementById('courseCountBadge');
+        if (badge) {
+            badge.textContent = courses.length;
+        }
+        
+        // Dashboard count
+        const dashboardCount = document.getElementById('totalCoursesCount');
+        if (dashboardCount) {
+            dashboardCount.textContent = courses.length;
+        }
+        
+        // Update subtitle
+        const subtitle = document.getElementById('programSubtitle');
+        if (subtitle) {
+            subtitle.textContent = `${emoji} ${typeLabel} - ${totalCourses} units, ${totalStudents} students`;
+        }
+        
+        console.log(`📊 Stats: ${totalCourses} total, ${active} active, ${completed} completed, ${totalStudents} students (${typeLabel})`);
+    },
+    
+    // ============================================
+    // APPLY FILTERS - FIXED
+    // ============================================
+    applyFilters() {
+        const intake = document.getElementById('intakeYearFilter')?.value || '';
+        const block = document.getElementById('academicPeriodFilter')?.value || '';
+        const status = document.getElementById('statusFilter')?.value || '';
+        const search = document.getElementById('courseSearch')?.value?.toLowerCase() || '';
+        
+        this.filteredCourses = this.courses.filter(course => {
+            const matchIntake = !intake || course.intake_year === intake;
+            const matchBlock = !block || course.block === block;
+            const matchStatus = !status || course.status === status;
+            const matchSearch = !search || 
+                course.course_name?.toLowerCase().includes(search) ||
+                course.unit_code?.toLowerCase().includes(search) ||
+                course.target_program?.toLowerCase().includes(search) ||
+                course.block?.toLowerCase().includes(search) ||
+                (course.block_display && course.block_display.toLowerCase().includes(search));
+            
+            return matchIntake && matchBlock && matchStatus && matchSearch;
+        });
+        
+        this.renderTable();
+    },
+    
+    // ============================================
+    // SETUP EVENT LISTENERS - FIXED
+    // ============================================
+    setupEventListeners() {
+        ['intakeYearFilter', 'academicPeriodFilter', 'statusFilter'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener('change', () => this.applyFilters());
+            }
+        });
+        
+        const searchInput = document.getElementById('courseSearch');
+        if (searchInput) {
+            let timeout;
+            searchInput.addEventListener('input', () => {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => this.applyFilters(), 300);
+            });
+        }
+        
+        const searchBtn = document.getElementById('courseSearchBtn');
+        if (searchBtn) {
+            searchBtn.addEventListener('click', () => this.applyFilters());
+        }
+        
+        const clearBtn = document.getElementById('clearCourseFilters');
+        if (clearBtn) {
+            clearBtn.addEventListener('click', () => this.clearFilters());
+        }
+    },
+    
+    // ============================================
+    // CLEAR FILTERS - FIXED
+    // ============================================
+    clearFilters() {
+        const filterIds = ['intakeYearFilter', 'academicPeriodFilter', 'statusFilter'];
+        filterIds.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = '';
+        });
+        
+        const searchEl = document.getElementById('courseSearch');
+        if (searchEl) searchEl.value = '';
+        
+        this.filteredCourses = [...this.courses];
+        this.renderTable();
+        
+        window.showNotification('Filters cleared!', 'info');
+    },
+    
+    // ============================================
+    // MANAGE COURSE - FIXED
+    // ============================================
+    manageCourse(courseId) {
+        const course = this.courses.find(c => c.id === courseId || c.unit_id === courseId);
+        if (!course) {
+            window.showNotification('Course not found.', 'error');
+            return;
+        }
+        
+        // Navigate to marks entry for this unit
+        if (typeof showTab === 'function') {
+            showTab('marks-management');
+        }
+        
+        // Store selected unit in session storage
+        sessionStorage.setItem('selectedUnit', course.course_name);
+        sessionStorage.setItem('selectedUnitBlock', course.block);
+        sessionStorage.setItem('selectedUnitCode', course.unit_code);
+        sessionStorage.setItem('selectedProgramType', this.getProgramType());
+        
+        const typeLabel = this.getProgramTypeLabel();
+        window.showNotification(`📚 Managing: ${course.course_name} (${typeLabel}) - Redirecting to marks entry...`, 'success');
+        
+        // Trigger marks load
+        setTimeout(() => {
+            if (typeof loadMarksEntry === 'function') {
+                loadMarksEntry();
+            }
+        }, 500);
+    },
+    
+    // ============================================
+    // VIEW STUDENTS - FIXED
+    // ============================================
+    viewStudents(courseId) {
+        const course = this.courses.find(c => c.id === courseId || c.unit_id === courseId);
+        if (!course) {
+            window.showNotification('Course not found.', 'error');
+            return;
+        }
+        
+        const typeLabel = this.getProgramTypeLabel();
+        window.showNotification(`👥 Viewing students for: ${course.course_name} (${course.student_count || 0} students) - ${typeLabel}`, 'info');
+        
+        if (typeof showTab === 'function') {
+            showTab('my-students');
+        }
+        
+        sessionStorage.setItem('selectedCourseId', courseId);
+        sessionStorage.setItem('selectedCourseName', course.course_name);
+        sessionStorage.setItem('selectedUnitForStudents', course.course_name);
+        sessionStorage.setItem('selectedProgramType', this.getProgramType());
+    },
+    
+    // ============================================
+    // EXPORT COURSES - WITH TVET SUPPORT
+    // ============================================
+    exportCourses() {
+        const courses = this.filteredCourses || this.courses;
+        if (courses.length === 0) {
+            window.showNotification('No units to export.', 'warning');
+            return;
+        }
+        
+        const typeLabel = this.getProgramTypeLabel();
+        const headers = ['Code', 'Name', 'Program', 'Block', 'Block Display', 'Intake', 'Students', 'Status', 'Program Type'];
+        const rows = courses.map(c => [
+            c.unit_code || 'N/A',
+            c.course_name || 'N/A',
+            c.target_program || 'N/A',
+            c.block || 'N/A',
+            c.block_display || this.getBlockDisplay(c.block),
+            c.intake_year || 'N/A',
+            c.student_count || 0,
+            c.status || 'Active',
+            typeLabel
+        ]);
+        
+        const csv = [headers, ...rows].map(row => row.join(',')).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `units_assigned_${typeLabel}_${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        window.showNotification(`✅ Units exported successfully! (${typeLabel})`, 'success');
+    },
+    
+    // ============================================
+    // ESCAPE HTML
+    // ============================================
+    escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    },
+    
+    // ============================================
+    // REFRESH
+    // ============================================
+    async refresh() {
+        await this.resolveLecturerId();
+        await this.loadCourses();
+        this.populateFilters();
+        this.applyFilters();
+        this.updateStats();
+        window.showNotification('Units refreshed!', 'success');
+    }
+};
+
+// ============================================
+// INITIALIZE ON DOM READY
+// ============================================
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(() => LecturerCourses.init(), 550);
+});
+
+// ============================================
+// GLOBAL EXPOSURE
+// ============================================
+window.LecturerCourses = LecturerCourses;
+window.applyCourseFilters = () => LecturerCourses.applyFilters();
+window.clearCourseFilters = () => LecturerCourses.clearFilters();
+window.searchCourses = () => LecturerCourses.applyFilters();
+window.exportCourses = () => LecturerCourses.exportCourses();
+window.manageCourse = (id) => LecturerCourses.manageCourse(id);
+window.viewCourseStudents = (id) => LecturerCourses.viewStudents(id);
+
+console.log('✅ LecturerCourses module loaded - Complete fix with ilike name matching');
+console.log('✅ TVET Support: Enabled');
+console.log('✅ Available functions: applyCourseFilters, clearCourseFilters, searchCourses, exportCourses, manageCourse, viewCourseStudents');
