@@ -28,6 +28,23 @@
     document.documentElement.dataset.institutionId = institution.institution_id;
     document.documentElement.dataset.schoolCode = institution.school_code || code;
 
+    let theme = document.getElementById("cn-institution-login-theme");
+    if (!theme) {
+      theme = document.createElement("style");
+      theme.id = "cn-institution-login-theme";
+      document.head.appendChild(theme);
+    }
+    theme.textContent = `
+      .left-panel{background:linear-gradient(180deg, ${primary}b8 0%, ${primary}d9 48%, ${primary}f2 100%),url("images/campus-header.jpg") center center/cover no-repeat!important}
+      .left-panel:before{background:radial-gradient(circle at 80% 15%,${secondary}55,transparent 34%),linear-gradient(135deg,${primary}22,transparent 55%)!important}
+      .left-panel:after{background:linear-gradient(180deg,${primary}12,${primary}55)!important}
+      .college-name .gold,.gold{color:${gold}!important}
+      .welcome-section h2:after{background:${gold}!important}
+      .logo-wrapper .logo{border-color:${gold}!important}
+      .login-button{background:linear-gradient(135deg,${secondary},${primary})!important;box-shadow:0 11px 25px ${primary}35!important}
+      .login-button:hover{box-shadow:0 14px 30px ${primary}55!important}
+    `;
+
     const logoImage = document.querySelector(".logo-wrapper .logo img");
     const logoBox = document.querySelector(".logo-wrapper .logo");
     if (logoImage && institution.logo_url && /^https:\/\//i.test(institution.logo_url)) {
