@@ -9,7 +9,7 @@
         'https://lwhtjozfsmbyihenfunw.supabase.co/functions/v1/send-email';
 
 const FROM_ADDRESS =
-        'NCHSM Exam Office <noreply@nakurucollegeofhealthelearning.site>';
+        'Campus Nexus <info@campusnexus.co.ke>';
 
     const STATIC_BLOCKS = [
         'Introductory',
@@ -2490,6 +2490,39 @@ const FROM_ADDRESS =
             return null;
         },
 
+        async sendEmailBatch(recipients, subject, html) {
+            try {
+                const token = await this.getToken();
+                if (!token) return { success: false, error: 'An authenticated session is required to send email.' };
+                if (!Array.isArray(recipients) || !recipients.length || recipients.length > 1000) {
+                    return { success: false, error: 'Email batches must contain between 1 and 1000 recipients.' };
+                }
+                const response = await fetch(EDGE_FUNCTION_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        recipients,
+                        subject,
+                        html,
+                        from: FROM_ADDRESS
+                    })
+                });
+                const json = await response.json().catch(() => ({}));
+                return {
+                    success: response.ok && json.success !== false,
+                    acceptedCount: Number(json.acceptedCount || json.messageIds?.length || (response.ok ? recipients.length : 0)),
+                    data: json,
+                    error: response.ok && json.success !== false ? null : (json.error || json.message || 'Email provider rejected the batch.')
+                };
+            } catch (err) {
+                console.error('sendEmailBatch:', err);
+                return { success: false, error: err.message || 'Batch email request failed.' };
+            }
+        },
+
         async sendEmail(to, subject, html) {
             try {
                 const token = await this.getToken();
@@ -2700,21 +2733,23 @@ const FROM_ADDRESS =
                 throw new Error('No approved students match the selected institution, programme, intake and block. No emails were sent.');
             }
 
-            const recipients = students.filter(student => String(student.email || '').trim());
+            const recipients = [...new Set(students
+                .map(student => String(student.email || '').trim().toLowerCase())
+                .filter(Boolean))];
             const noEmail = students.length - recipients.length;
             const html = this.buildStudentHtml(ex);
+            const subject = '📝 New ' + this.typeLabel(ex.exam_type) + ': ' + (ex.title || ex.exam_name);
             let sent = 0;
             const failures = [];
 
-            for (const student of recipients) {
-                const result = await this.sendEmail(
-                    String(student.email).trim(),
-                    '📝 New ' + this.typeLabel(ex.exam_type) + ': ' + (ex.title || ex.exam_name),
-                    html
-                );
-                if (result.success) sent++;
-                else failures.push({ email: student.email, error: result.error || result.data?.error || 'Delivery failed' });
-                await new Promise(resolve => setTimeout(resolve, 120));
+            for (let offset = 0; offset < recipients.length; offset += 1000) {
+                const batch = recipients.slice(offset, offset + 1000);
+                const result = await this.sendEmailBatch(batch, subject, html);
+                if (result.success) {
+                    sent += Math.min(batch.length, result.acceptedCount || batch.length);
+                } else {
+                    batch.forEach(email => failures.push({ email, error: result.error || 'Batch delivery failed' }));
+                }
             }
 
             const summary = { total: students.length, sent, failed: failures.length, noEmail, failures };
