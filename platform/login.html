@@ -2190,10 +2190,10 @@ body.dark-theme #loginButton,body.dark-theme .login-button{background:linear-gra
     input.focus();
     panel.querySelector("#cn-school-code-form").addEventListener("submit", async function (event) {
       event.preventDefault();
-      const code = input.value.trim();
+      const code = input.value.trim().replace(/[\\s-]+/g, "");
       const errorBox = panel.querySelector("#cn-school-code-error");
       const button = panel.querySelector("button");
-      if (!code) { errorBox.textContent = "Enter your institution school code."; return; }
+      if (!/^[0-9]{12}$/.test(code)) { errorBox.textContent = "Enter the complete 12-digit school code."; return; }
       if (!window.supabase?.createClient) { errorBox.textContent = "Login service is not ready. Refresh and try again."; return; }
       button.disabled = true; button.textContent = "Checking school code…"; errorBox.textContent = "";
       try {
@@ -2217,6 +2217,6 @@ body.dark-theme #loginButton,body.dark-theme .login-button{background:linear-gra
   else mountGate();
 })();
 </script>
-<script src="/platform/js/institution-login-branding.js?v=20261120-school-code-v5" defer></script>
+<script src="/platform/js/institution-login-branding.js?v=20261120-school-code-v6" defer></script>
 </body>
 </html>
