@@ -11947,6 +11947,31 @@ async function getSessionWithRestoreRetry(client, maxAttempts = 20, delayMs = 50
     return window.__nchsmRestoredSession || null;
 }
 
+function showStudentPortalBootError(title, message) {
+    const loadingScreen = document.getElementById('loading-screen');
+    if (loadingScreen) loadingScreen.style.display = 'none';
+
+    const appContent = document.getElementById('app-content');
+    if (appContent) appContent.style.display = 'none';
+
+    let panel = document.getElementById('student-portal-boot-error');
+    if (!panel) {
+        panel = document.createElement('main');
+        panel.id = 'student-portal-boot-error';
+        panel.style.cssText = 'min-height:100vh;box-sizing:border-box;display:flex;align-items:center;justify-content:center;padding:24px;background:#f3f6fb;font-family:Inter,Arial,sans-serif;color:#14263d;';
+        panel.innerHTML = '<section style="width:min(100%,560px);background:#fff;border:1px solid #dbe4ef;border-radius:18px;padding:28px;box-shadow:0 14px 45px rgba(15,35,60,.10)"><div style="width:46px;height:46px;border-radius:13px;background:#fff4e5;color:#b45309;display:grid;place-items:center;font-size:23px;font-weight:800">!</div><h1 id="student-portal-boot-title" style="font-size:22px;margin:18px 0 8px">Student Portal could not start</h1><p id="student-portal-boot-message" style="margin:0;color:#52657d;line-height:1.6;overflow-wrap:anywhere"></p><div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:22px"><button id="student-portal-boot-retry" type="button" style="border:0;border-radius:10px;padding:12px 18px;background:#073b63;color:#fff;font-weight:700">Try again</button><a id="student-portal-boot-login" style="display:inline-flex;align-items:center;border-radius:10px;padding:12px 18px;background:#edf3f9;color:#173b5e;text-decoration:none;font-weight:700">Go to sign in</a></div><p style="font-size:12px;color:#8493a5;margin:18px 0 0">If this continues, share a screenshot of this message with the Campus Nexus support team.</p></section>';
+        document.body.appendChild(panel);
+        panel.querySelector('#student-portal-boot-retry').addEventListener('click', () => window.location.reload());
+    }
+
+    panel.querySelector('#student-portal-boot-title').textContent = title || 'Student Portal could not start';
+    panel.querySelector('#student-portal-boot-message').textContent = message || 'An unexpected startup error occurred.';
+    const returnTo = window.location.pathname + window.location.search + window.location.hash;
+    const safeReturnTo = returnTo && returnTo.startsWith('/') && !returnTo.startsWith('//') ? returnTo : '/student/';
+    panel.querySelector('#student-portal-boot-login').href = '/login.html?redirect=' + encodeURIComponent(safeReturnTo);
+    panel.style.display = 'flex';
+}
+
 async function initializeApp() {
     try {
         console.log('🚀 Starting app initialization...');
@@ -12048,10 +12073,16 @@ async function initializeApp() {
             && !!authenticatedStudentProfile?.institution_id;
 
         if (!isApprovedStudent) {
-            console.warn('Student portal access denied: profile is not an active approved student.');
-            const returnTo = window.location.pathname + window.location.search + window.location.hash;
-            const loginUrl = '/login.html?redirect=' + encodeURIComponent(returnTo);
-            window.location.replace(loginUrl);
+            console.warn('Student portal access denied: profile is not an active approved student.', {
+                role: studentRole,
+                status: studentStatus,
+                hasInstitution: !!authenticatedStudentProfile?.institution_id,
+                loginEnabled: authenticatedStudentProfile?.login_enabled
+            });
+            showStudentPortalBootError(
+                'Student account access is not active',
+                'Your account profile is present, but it is not currently marked as an approved, active student with an assigned institution. Please sign in again or contact your institution administrator to confirm your account approval.'
+            );
             return;
         }
 
@@ -12309,21 +12340,12 @@ async function initializeApp() {
     } catch (error) {
         console.error('❌ Student portal initialization failed:', error);
 
-        // Fail closed: never reveal student content when authentication or
-        // database initialization has not completed successfully.
-        const loadingScreen = document.getElementById('loading-screen');
-        if (loadingScreen) loadingScreen.style.display = 'none';
-        const appContent = document.getElementById('app-content');
-        if (appContent) appContent.style.display = 'none';
-
-        const returnTo = window.location.pathname + window.location.search + window.location.hash;
-        const loginUrl = '/login.html?redirect=' + encodeURIComponent(
-            returnTo && returnTo.startsWith('/') && !returnTo.startsWith('//') ? returnTo : '/student'
+        // Keep student data protected, but never leave users with a blank
+        // screen or silently hide the reason startup failed.
+        showStudentPortalBootError(
+            'Student Portal could not load',
+            error?.message || 'The portal encountered an unexpected startup error. Please try again.'
         );
-
-        // If the auth client could not be initialized, send the visitor to
-        // sign-in rather than rendering an unauthenticated dashboard.
-        window.location.replace(loginUrl);
     }
 }
 
