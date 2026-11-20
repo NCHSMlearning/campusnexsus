@@ -381,6 +381,7 @@ const FROM_ADDRESS =
                 this.loadClasses()
             ]);
 
+            await this.updateStudentCount();
             await this.loadExams();
 
             console.log('✅ LecturerExams ready');
