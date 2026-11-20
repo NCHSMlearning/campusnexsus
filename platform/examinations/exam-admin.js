@@ -18,7 +18,7 @@ async function boot(){
   const [{data:memberships,error:memberError},{data:isSuper,error:superError},{data:prof}] = await Promise.all([
     sb.from("institution_users").select("institution_id,role,status").eq("user_id",authUser.id).eq("role","institution_admin").eq("status","active"),
     sb.rpc("is_current_user_superadmin"),
-    sb.from("consolidated_user_profiles_table").select("full_name,email,role,status").eq("user_id",authUser.id).maybeSingle()
+    sb.from("consolidated_user_profiles_table").select("full_name,email,role,status,program").eq("user_id",authUser.id).maybeSingle()
   ]);
   if(memberError) throw memberError;
   const platformSuperadmin=!superError && isSuper===true;
