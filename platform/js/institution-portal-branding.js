@@ -166,7 +166,9 @@
     });
 
     const loadingHeading = document.querySelector("#loading-screen .welcome-text h1");
-    if (loadingHeading) loadingHeading.textContent = "Welcome to " + name + " Student Portal";
+    if (loadingHeading) loadingHeading.textContent = name + " Portal";
+    const loadingSubtitle = document.querySelector("#loading-screen .subtitle");
+    if (loadingSubtitle) loadingSubtitle.textContent = "Your Academic Hub";
 
     document.querySelectorAll('link[rel~="icon"],link[rel="apple-touch-icon"]').forEach(link => {
       link.href = logo;
