@@ -2206,7 +2206,7 @@ body.dark-theme #loginButton,body.dark-theme .login-button{background:linear-gra
         const result = await client.rpc("resolve_institution_registration_context", {p_code:code,p_host:null});
         if (result.error) throw new Error("School-code verification failed: " + (result.error.message || "Unable to contact the institution service."));
         if (!result.data?.institution_id) throw new Error("No active institution was found for that school code. Check the code or contact the platform administrator.");
-        const next = new URL(window.location.href);
+        const next = new URL("/platform/login.html", window.location.origin);
         next.searchParams.set("school_code", code);
         window.location.replace(next.toString());
       } catch (error) {
