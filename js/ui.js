@@ -1198,8 +1198,9 @@ class UIModule {
             return;
         }
         this.loadingScreen.classList.add('app-splash');
+        const institutionName = document.documentElement.dataset.institutionName || 'NCHSM';
         const welcomeText = this.loadingScreen.querySelector('.welcome-text h1');
-        if (welcomeText) welcomeText.textContent = 'NCHSM Portal';
+        if (welcomeText) welcomeText.textContent = institutionName + ' Portal';
         const subtitle = this.loadingScreen.querySelector('.subtitle');
         if (subtitle) subtitle.textContent = 'Your Academic Hub';
     }
@@ -1208,7 +1209,8 @@ class UIModule {
         const fallback = document.createElement('div');
         fallback.id = 'loading-fallback';
         fallback.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);display:flex;justify-content:center;align-items:center;z-index:9999;color:white';
-        fallback.innerHTML = '<div style="text-align:center"><h1>NCHSM Portal</h1><p>Loading...</p></div>';
+        const institutionName = document.documentElement.dataset.institutionName || 'NCHSM';
+        fallback.innerHTML = '<div style="text-align:center"><h1>' + institutionName + ' Portal</h1><p>Loading...</p></div>';
         document.body.appendChild(fallback);
         this.loadingScreen = fallback;
     }
