@@ -1801,7 +1801,7 @@ const FROM_ADDRESS =
 
                 let notice = 'Assessment submitted for institutional approval.';
                 if (notificationSummary) {
-                    notice += ' Email notifications: ' + notificationSummary.sent + ' sent, ' +
+                    notice += ' Email notifications: ' + notificationSummary.queued + ' queued, ' +
                         notificationSummary.failed + ' failed, ' + notificationSummary.noEmail + ' without email.';
                 } else if (notificationError) {
                     notice += ' Email notification issue: ' + notificationError;
@@ -2739,20 +2739,20 @@ const FROM_ADDRESS =
             const noEmail = students.length - recipients.length;
             const html = this.buildStudentHtml(ex);
             const subject = '📝 New ' + this.typeLabel(ex.exam_type) + ': ' + (ex.title || ex.exam_name);
-            let sent = 0;
+            let queued = 0;
             const failures = [];
 
             for (let offset = 0; offset < recipients.length; offset += 1000) {
                 const batch = recipients.slice(offset, offset + 1000);
                 const result = await this.sendEmailBatch(batch, subject, html);
                 if (result.success) {
-                    sent += Math.min(batch.length, result.acceptedCount || batch.length);
+                    queued += Math.min(batch.length, result.acceptedCount || batch.length);
                 } else {
                     batch.forEach(email => failures.push({ email, error: result.error || 'Batch delivery failed' }));
                 }
             }
 
-            const summary = { total: students.length, sent, failed: failures.length, noEmail, failures };
+            const summary = { total: students.length, queued, failed: failures.length, noEmail, failures };
             console.log('Campus Nexus student notification summary:', summary);
 
             const profile = this.profile();
