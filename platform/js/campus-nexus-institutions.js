@@ -92,6 +92,62 @@
     ids.forEach((id,index) => { if ($(id)) $(id).value = colors[index] || defaults[index]; });
   }
 
+  let institutionModal, institutionFormHome, institutionFormNext;
+  function ensureInstitutionModal() {
+    if (institutionModal) return;
+    const form = $("cnInstitutionForm");
+    if (!form) return;
+    institutionFormHome = form.parentElement;
+    institutionFormNext = form.nextSibling;
+    institutionModal = document.createElement("div");
+    institutionModal.id = "cnInstitutionEditModal";
+    institutionModal.className = "cn-institution-modal";
+    institutionModal.setAttribute("aria-hidden","true");
+    institutionModal.innerHTML = `
+      <style>
+        .cn-institution-modal{position:fixed;inset:0;z-index:10050;display:none;align-items:center;justify-content:center;padding:clamp(10px,3vw,28px);background:rgba(8,20,38,.68);backdrop-filter:blur(5px)}
+        .cn-institution-modal.is-open{display:flex}
+        .cn-institution-dialog{width:min(1120px,100%);max-height:94vh;display:flex;flex-direction:column;background:#fff;border-radius:20px;box-shadow:0 24px 80px rgba(0,0,0,.3);overflow:hidden}
+        .cn-institution-modal-head{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 24px;background:linear-gradient(120deg,#082f49,#0f766e);color:#fff;flex:0 0 auto}
+        .cn-institution-modal-head h2{margin:0;font-size:19px;font-weight:750;color:#fff}
+        .cn-institution-modal-head p{margin:4px 0 0;color:rgba(255,255,255,.8);font-size:12px}
+        .cn-institution-modal-close{width:38px;height:38px;border:1px solid rgba(255,255,255,.35);border-radius:11px;background:rgba(255,255,255,.12);color:#fff;font-size:23px;cursor:pointer}
+        .cn-institution-modal-body{padding:22px 24px;overflow:auto;min-height:0}
+        .cn-institution-modal-body #cnInstitutionForm{width:100%;max-width:none;margin:0}
+        .cn-institution-modal-body #cnInstitutionFormTitle{display:none}
+        body.cn-modal-lock{overflow:hidden}
+        @media(max-width:640px){.cn-institution-modal{padding:0;align-items:flex-end}.cn-institution-dialog{max-height:96vh;border-radius:18px 18px 0 0}.cn-institution-modal-head{padding:15px 17px}.cn-institution-modal-body{padding:16px}}
+        .cn-school-mark img{display:block;width:100%;height:100%;object-fit:contain;background:#fff}
+      </style>
+      <section class="cn-institution-dialog" role="dialog" aria-modal="true" aria-labelledby="cnInstitutionModalHeading">
+        <header class="cn-institution-modal-head"><div><h2 id="cnInstitutionModalHeading">Manage institution</h2><p>Update institution details, branding, access and enabled modules</p></div><button type="button" class="cn-institution-modal-close" aria-label="Close">&times;</button></header>
+        <div class="cn-institution-modal-body" id="cnInstitutionModalBody"></div>
+      </section>`;
+    document.body.appendChild(institutionModal);
+    const close = () => closeInstitutionModal();
+    institutionModal.querySelector(".cn-institution-modal-close").addEventListener("click",close);
+    institutionModal.addEventListener("click",e => { if (e.target === institutionModal) close(); });
+    document.addEventListener("keydown",e => { if (e.key === "Escape" && institutionModal.classList.contains("is-open")) close(); });
+    $("cnInstitutionModalBody").appendChild(form);
+  }
+  function openInstitutionModal() {
+    ensureInstitutionModal();
+    if (!institutionModal) return;
+    institutionModal.classList.add("is-open");
+    institutionModal.setAttribute("aria-hidden","false");
+    document.body.classList.add("cn-modal-lock");
+    $("cnInstitutionModalHeading").textContent = "Manage " + ($("cnInstitutionName")?.value || "institution");
+    $("cnInstitutionModalBody").scrollTop = 0;
+  }
+  function closeInstitutionModal() {
+    if (!institutionModal) return;
+    institutionModal.classList.remove("is-open");
+    institutionModal.setAttribute("aria-hidden","true");
+    document.body.classList.remove("cn-modal-lock");
+    const form = $("cnInstitutionForm");
+    if (form && institutionFormHome) institutionFormHome.insertBefore(form,institutionFormNext);
+  }
+
   function setupLogoUploader() {
     const logoInput = $("cnInstitutionLogo");
     if (!logoInput || $("cnInstitutionLogoUpload")) return;
@@ -179,6 +235,7 @@
     $("cnInstitutionSave").textContent = "Add institution";
     $("cnInstitutionFormTitle").textContent = "Register a new institution";
     $("cnInstitutionCancel").hidden = true;
+    closeInstitutionModal();
   }
 
   function fillForm(item) {
@@ -209,7 +266,7 @@
     $("cnInstitutionSave").textContent = "Update institution";
     $("cnInstitutionFormTitle").textContent = "Edit institution";
     $("cnInstitutionCancel").hidden = false;
-    $("cnInstitutionFormTitle").scrollIntoView({behavior:"smooth",block:"center"});
+    openInstitutionModal();
   }
 
   function renderRows() {
@@ -421,6 +478,7 @@
     if (!form) return;
     renderModuleOptions(MODULES.map(([key]) => key));
     setupLogoUploader();
+    ensureInstitutionModal();
     $("cnInstitutionCancel").addEventListener("click",resetForm);
     $("cnInstitutionSearch").addEventListener("input",renderRows);
     $("cnInstitutionFilter").addEventListener("change",renderRows);
