@@ -272,6 +272,9 @@ const FROM_ADDRESS =
                 const ids = this.selectedStudents.map(student => student.user_id).filter(Boolean);
                 if (!ids.length) return [];
                 query = query.in('user_id', ids);
+                if (program) query = query.eq('program', program);
+                if (intake) query = query.eq('intake_year', String(intake));
+                if (month) query = query.eq('intake_month', month);
             } else if (target === 'program') {
                 if (!program) throw new Error('Select a programme before choosing programme-wide notifications.');
                 query = query.eq('program', program);
@@ -295,7 +298,7 @@ const FROM_ADDRESS =
             if (error) throw error;
 
             let students = data || [];
-            if (target === 'all' || target === 'block') {
+            if (target === 'all' || target === 'block' || (target === 'specific' && block)) {
                 const wantedBlock = String(block || '').trim().toLowerCase().replace(/[_-]+/g, ' ').replace(/\\s+/g, ' ');
                 students = students.filter(student => {
                     const effectiveBlock = String(student.current_block || student.block || '').trim().toLowerCase().replace(/[_-]+/g, ' ').replace(/\\s+/g, ' ');
@@ -849,8 +852,10 @@ const FROM_ADDRESS =
 
                 if (error) throw error;
 
+                const selectedMonth = String(this.value(['exam_intake_month']) || '').trim();
                 const selectedBlock = String(this.value(['exam_block_term', 'examBlockTerm']) || '').trim().toLowerCase().replace(/[_-]+/g, ' ').replace(/\\s+/g, ' ');
                 const scopedData = (data || []).filter(student => {
+                    if (selectedMonth && String(student.intake_month || '').trim().toLowerCase() !== selectedMonth.toLowerCase()) return false;
                     if (!selectedBlock) return true;
                     const effectiveBlock = String(student.current_block || student.block || '').trim().toLowerCase().replace(/[_-]+/g, ' ').replace(/\\s+/g, ' ');
                     return effectiveBlock === selectedBlock;
