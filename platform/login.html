@@ -1958,7 +1958,7 @@ body.dark-theme #loginButton,body.dark-theme .login-button{background:linear-gra
                     
                     <!-- Signup -->
                     <div class="signup-section">
-                        <a href="/register" class="signup-link">
+                        <a href="/register" class="signup-link" id="campus-nexus-signup-link">
                             <i data-feather="user-plus"></i>
                             Create New Account
                         </a>
@@ -2218,5 +2218,20 @@ body.dark-theme #loginButton,body.dark-theme .login-button{background:linear-gra
 })();
 </script>
 <script src="/platform/js/institution-login-branding.js?v=20261120-student-dashboard-v2" defer></script>
+<script id="campus-nexus-preserve-registration-code">
+(function () {
+  const link = document.getElementById('campus-nexus-signup-link');
+  if (!link) return;
+  let code = '';
+  try {
+    code = new URLSearchParams(window.location.search).get('school_code') ||
+      sessionStorage.getItem('campus_nexus_school_code') || '';
+  } catch (_) {}
+  code = String(code).trim();
+  if (/^[0-9]{3}$/.test(code)) {
+    link.href = '/register?school_code=' + encodeURIComponent(code);
+  }
+})();
+</script>
 </body>
 </html>
