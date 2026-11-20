@@ -87,7 +87,8 @@ function trackGALogin(eventName, eventData) {
 // ============================================
 if (window.location.pathname.endsWith('.html')) {
     const cleanPath = window.location.pathname.replace(/\.html$/, '');
-    window.history.replaceState({}, '', cleanPath);
+    // Keep institution routing context when normalizing legacy .html URLs.
+    window.history.replaceState({}, '', cleanPath + window.location.search + window.location.hash);
 }
 
 // ============================================
@@ -1379,8 +1380,21 @@ loadStaffRecords: async function() {
     // ============================================
     clearURLParameters: function() {
         if (window.location.search.length > 0) {
-            const cleanUrl = window.location.protocol + '//' + 
-                window.location.host + window.location.pathname;
+            const currentParams = new URLSearchParams(window.location.search);
+            const schoolCode = (currentParams.get('school_code') || '').trim();
+            const cleanParams = new URLSearchParams();
+
+            // school_code is required to keep the login scoped to its institution.
+            // Remove transient credentials/tokens, but never discard institution context.
+            if (schoolCode) {
+                cleanParams.set('school_code', schoolCode);
+                try { sessionStorage.setItem('campus_nexus_school_code', schoolCode); } catch (_) {}
+            }
+
+            const query = cleanParams.toString();
+            const cleanUrl = window.location.protocol + '//' +
+                window.location.host + window.location.pathname +
+                (query ? '?' + query : '') + window.location.hash;
             window.history.replaceState({}, document.title, cleanUrl);
         }
     },
