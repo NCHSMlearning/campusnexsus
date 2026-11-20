@@ -2193,7 +2193,7 @@ body.dark-theme #loginButton,body.dark-theme .login-button{background:linear-gra
       const code = input.value.trim().replace(/[\\s-]+/g, "");
       const errorBox = panel.querySelector("#cn-school-code-error");
       const button = panel.querySelector("button");
-      if (!/^[0-9]{12}$/.test(code)) { errorBox.textContent = "Enter the complete 12-digit school code."; return; }
+      if (!/^[0-9]{3}$/.test(code)) { errorBox.textContent = "Enter the complete 3-digit school code."; input.focus(); return; }
       if (!window.supabase?.createClient) { errorBox.textContent = "Login service is not ready. Refresh and try again."; return; }
       button.disabled = true; button.textContent = "Checking school code…"; errorBox.textContent = "";
       try {
