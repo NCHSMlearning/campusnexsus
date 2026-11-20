@@ -215,12 +215,13 @@ function getSelectedNotificationBlocks() {
 
 async function loadStudentsForNotification() {
     const program = document.getElementById('exam_program')?.value || '';
+    const institutionId = document.getElementById('exam_institution_id')?.value || '';
     const blocks = getSelectedNotificationBlocks();
     console.log('📋 Loading students for notification:', { program, blocks });
 
     const countEl = document.getElementById('student_notify_count');
 
-    if (!program || !blocks.length) {
+    if (!institutionId || !program || !blocks.length) {
         allStudentsForProgram = [];
         if (countEl) countEl.textContent = '0 students';
         updateSelectedStudentsDisplay();
@@ -233,7 +234,8 @@ async function loadStudentsForNotification() {
 
         const { data, error } = await supabase
             .from('consolidated_user_profiles_table')
-            .select('user_id, full_name, email, program, intake_year, intake_month, block, current_block, status')
+            .select('user_id, full_name, email, program, intake_year, intake_month, block, current_block, status, institution_id')
+            .eq('institution_id', institutionId)
             .eq('role', 'student')
             .eq('status', 'approved')
             .eq('program', program)
@@ -308,8 +310,14 @@ async function loadExams(forceRefresh = false) {
     cacheDomElements();
     const D = window.DOM;
     if (!D.examsTbody) return;
+    const institutionId = document.getElementById('exam_institution_id')?.value || '';
+    if (!institutionId) {
+        D.examsTbody.innerHTML = '<tr><td colspan="13" style="padding:30px;text-align:center;color:#b45309;">Select an institution to view its examinations.</td></tr>';
+        return;
+    }
+    const cacheKey = 'exams_list:' + institutionId;
     if (!forceRefresh) {
-        const cached = ExamCache.get('exams_list');
+        const cached = ExamCache.get(cacheKey);
         if (cached) { renderExamsTable(cached); renderStudentExams(cached); updateExamStats(cached); return; }
     }
     D.examsTbody.innerHTML = `<tr><td colspan="13" style="padding:40px;text-align:center;color:#94a3b8;"><div class="loading-spinner" style="margin:0 auto 12px;"></div><p style="margin-top:10px;font-size:13px;">Loading exams...</p></td></tr>`;
@@ -319,6 +327,7 @@ async function loadExams(forceRefresh = false) {
 
         const { data: exams, error } = await supabase
             .from('exams').select('*')
+            .eq('institution_id', institutionId)
             .order('created_at', { ascending: false })
             .limit(200);
         if (error) throw error;
@@ -326,7 +335,8 @@ async function loadExams(forceRefresh = false) {
         // Load units_catalog and build lookup maps
         const { data: allUnits, error: unitsError } = await supabase
             .from('units_catalog')
-            .select('id, unit_code, unit_name, program, block, status')
+            .select('id, unit_code, unit_name, program, block, status, institution_id')
+            .eq('institution_id', institutionId)
             .eq('status', 'active');
 
         if (unitsError) {
@@ -380,7 +390,7 @@ async function loadExams(forceRefresh = false) {
             console.log(`✅ Attached unit data to ${attached} exams`);
         }
 
-        ExamCache.set('exams_list', exams || []);
+        ExamCache.set(cacheKey, exams || []);
         renderExamsTable(exams || []);
         renderStudentExams(exams || []);
         updateExamStats(exams || []);
@@ -990,7 +1000,9 @@ async function openEditExamModal(id) {
         const supabase = window.sb || window.supabase;
         if (!supabase) throw new Error('Supabase client not available');
 
-        const { data: exam, error } = await supabase.from('exams').select('*').eq('id', id).single();
+        const institutionId = document.getElementById('exam_institution_id')?.value || '';
+        if (!institutionId) throw new Error('Select an institution before opening an examination.');
+        const { data: exam, error } = await supabase.from('exams').select('*').eq('id', id).eq('institution_id', institutionId).single();
         if (error) throw error;
 
         const setVal = (elId, val) => { const el = document.getElementById(elId); if (el) el.value = val || ''; };
@@ -1091,8 +1103,11 @@ async function saveEditedExam(event) {
     try {
         const supabase = window.sb || window.supabase;
         if (!supabase) throw new Error('Supabase client not available');
-        const { error } = await supabase.from('exams').update(data).eq('id', id);
+        const institutionId = document.getElementById('exam_institution_id')?.value || '';
+        if (!institutionId) throw new Error('Select an institution before saving this examination.');
+        const { data: updatedExam, error } = await supabase.from('exams').update(data).eq('id', id).eq('institution_id', institutionId).select('id').maybeSingle();
         if (error) throw error;
+        if (!updatedExam) throw new Error('The examination was not found in the selected institution. Refresh the list and try again.');
         showFeedback('✅ Exam updated successfully!', 'success');
         ExamCache.clear();
         await loadExams(true);
@@ -1118,11 +1133,14 @@ async function addClass(examId) {
     const className = input.value.trim();
     try {
         const supabase = window.sb || window.supabase;
-        const { data: exam } = await supabase.from('exams').select('assigned_classes').eq('id', examId).single();
+        const institutionId = document.getElementById('exam_institution_id')?.value || '';
+        if (!institutionId) throw new Error('Select an institution first.');
+        const { data: exam, error: examError } = await supabase.from('exams').select('assigned_classes').eq('id', examId).eq('institution_id', institutionId).single();
+        if (examError) throw examError;
         const current = exam?.assigned_classes || [];
         if (current.includes(className)) { showFeedback('Already assigned', 'warning'); return; }
         current.push(className);
-        const { error } = await supabase.from('exams').update({ assigned_classes: current }).eq('id', examId);
+        const { error } = await supabase.from('exams').update({ assigned_classes: current }).eq('id', examId).eq('institution_id', institutionId);
         if (error) throw error;
         showFeedback(`✅ Added "${className}"`, 'success');
         input.value = '';
@@ -1147,7 +1165,9 @@ async function deleteExam(id, name) {
     if (!confirm(`Delete "${name}"?`)) return;
     try {
         const supabase = window.sb || window.supabase;
-        const { error } = await supabase.from('exams').delete().eq('id', id);
+        const institutionId = document.getElementById('exam_institution_id')?.value || '';
+        if (!institutionId) throw new Error('Select an institution first.');
+        const { error } = await supabase.from('exams').delete().eq('id', id).eq('institution_id', institutionId);
         if (error) throw error;
         ExamCache.clear();
         showFeedback(`✅ "${name}" deleted`, 'success');
@@ -1159,7 +1179,9 @@ async function closeExam(id) {
     if (!confirm('Close this exam?')) return;
     try {
         const supabase = window.sb || window.supabase;
-        const { error } = await supabase.from('exams').update({ status: 'Completed', updated_at: new Date().toISOString() }).eq('id', id);
+        const institutionId = document.getElementById('exam_institution_id')?.value || '';
+        if (!institutionId) throw new Error('Select an institution first.');
+        const { error } = await supabase.from('exams').update({ status: 'Completed', updated_at: new Date().toISOString() }).eq('id', id).eq('institution_id', institutionId);
         if (error) throw error;
         ExamCache.clear();
         showFeedback('✅ Exam closed', 'success');
