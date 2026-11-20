@@ -50,12 +50,28 @@
       const card = document.createElement("article");
       card.className = "cn-platform-card dashboard-card";
       card.dataset.platformMetric = key;
-      card.style.setProperty("--cn-accent",accent);
-      card.style.setProperty("--cn-tint",tint);
+      card.style.cssText = [
+        "box-sizing:border-box","position:relative","display:flex","flex-direction:column",
+        "align-items:flex-start","justify-content:center","gap:7px","min-width:0",
+        "min-height:132px","padding:22px 22px 20px","overflow:hidden",
+        "border:1px solid #e2eaf0","border-top:4px solid " + accent,
+        "border-radius:18px","background:linear-gradient(135deg,#ffffff 0%," + tint + " 100%)",
+        "box-shadow:0 5px 18px rgba(8,47,73,.07)","transition:transform .2s ease,box-shadow .2s ease",
+        "cursor:default"
+      ].join(";");
       card.innerHTML =
-        '<span class="cn-platform-icon"><i class="fas ' + icon + '"></i></span>' +
-        '<small>' + label + '</small><strong id="cnMetric_' + key + '">' + value + '</strong>' +
-        '<em id="cnMetricDetail_' + key + '">' + detail + '</em>';
+        '<span class="cn-platform-icon" style="position:absolute;right:17px;top:17px;width:38px;height:38px;display:flex;align-items:center;justify-content:center;border-radius:12px;background:' + tint + ';color:' + accent + ';font-size:16px"><i class="fas ' + icon + '"></i></span>' +
+        '<small style="display:block;max-width:calc(100% - 42px);color:#64748b;font-size:10px;font-weight:800;letter-spacing:.07em;line-height:1.45;text-transform:uppercase">' + label + '</small>' +
+        '<strong id="cnMetric_' + key + '" style="display:block;color:' + accent + ';font-size:clamp(25px,2.2vw,32px);font-weight:850;line-height:1.12;letter-spacing:-.04em;margin-top:3px">' + value + '</strong>' +
+        '<em id="cnMetricDetail_' + key + '" style="display:block;color:#64748b;font-size:11px;font-style:normal;line-height:1.45;margin-top:1px">' + detail + '</em>';
+      card.addEventListener("mouseenter", () => {
+        card.style.transform = "translateY(-3px)";
+        card.style.boxShadow = "0 12px 26px rgba(8,47,73,.12)";
+      });
+      card.addEventListener("mouseleave", () => {
+        card.style.transform = "translateY(0)";
+        card.style.boxShadow = "0 5px 18px rgba(8,47,73,.07)";
+      });
       first.appendChild(card);
     });
     return first;
