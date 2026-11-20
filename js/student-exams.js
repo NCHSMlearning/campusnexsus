@@ -73,7 +73,7 @@ async function loadExams(){
  $('refresh-btn').disabled=true;
  $('exam-panel').innerHTML='<div class="loading-state"><span class="spinner"></span><p>Loading examinations assigned to you…</p></div>';
  try {
-  const {data,error}=await state.client.from('exams').select('*, course:course_id(course_name)').eq('institution_id',state.profile.institution_id).order('exam_date',{ascending:true,nullsFirst:false});
+  const {data,error}=await state.client.from('exams').select('*').eq('institution_id',state.profile.institution_id).order('exam_date',{ascending:true,nullsFirst:false});
   if(error)throw error;
   state.exams=(data||[]).filter(e=>eligible(e,state.profile));
   render();
@@ -89,7 +89,7 @@ async function init(){
  const session=data?.session;
  if(!session?.user){location.replace('/examlogin.html?redirect='+encodeURIComponent('/studentexam.html'));return}
  state.user=session.user;
- const profileResult=await state.client.from('consolidated_user_profiles_table').select('*').eq('user_id',session.user.id).maybeSingle();
+ const profileResult=await state.client.from('consolidated_user_profiles_table').select('user_id,full_name,role,status,login_enabled,institution_id,admission_number,student_id,program,program_type,current_block,block,intake_year,intake_month,admission_year').eq('user_id',session.user.id).maybeSingle();
  if(profileResult.error)throw profileResult.error;
  state.profile=profileResult.data;
  const p=state.profile,role=norm(p?.role),status=norm(p?.status);
