@@ -226,10 +226,7 @@ async function loadInstitutionPrograms(context) {
     select.disabled = true;
     try {
         if (!context?.institution_id) throw new Error('Institution identity is missing.');
-        const { data, error } = await sb.from('programs')
-            .select('program_code, program_name, category, description, status')
-            .eq('institution_id', context.institution_id).eq('status', 'active')
-            .order('program_name', { ascending: true });
+        const { data, error } = await sb.rpc('get_public_institution_programs', { p_institution_id: context.institution_id });
         if (error) throw error;
         const programs = (data || []).filter(p => p.program_code && p.program_name);
         select.replaceChildren(new Option('-- Select Your Program --', ''));
@@ -409,6 +406,8 @@ async function initializeInstitutionRegistration() {
     const suppliedCode = params.get('school_code') || params.get('institution_code') || params.get('institution') || '';
     if (suppliedCode) {
         await resolve(suppliedCode, null);
+    } else if (!['localhost', '127.0.0.1'].includes(window.location.hostname)) {
+        await resolve('', window.location.hostname);
     } else {
         input.focus();
     }
