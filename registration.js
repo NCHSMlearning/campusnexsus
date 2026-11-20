@@ -1829,11 +1829,15 @@ document.getElementById('register-form').addEventListener('submit', async functi
                     body: {
                         to: adminEmail,
                         subject: 'New ' + role + ' registration awaiting approval - ' + institutionName,
-                        html
+                        html,
+                        from: 'Campus Nexus <info@campusnexus.co.ke>'
                     }
                 });
-                if (notifyError) console.warn('Administrator email notification failed:', notifyError);
-                else console.log('✅ Institution administrator notification submitted.');
+                if (notifyError || !data?.success) {
+                    console.warn('Administrator email notification failed:', notifyError || data?.error || 'Email gateway did not confirm acceptance.');
+                } else {
+                    console.log('✅ Institution administrator notification accepted by Brevo:', data.messageId || 'message accepted');
+                }
             } else {
                 console.warn('Administrator notification skipped: no notification email or authenticated session.');
             }
