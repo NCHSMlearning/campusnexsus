@@ -73,13 +73,13 @@ async function loadExams(){
 async function init(){
  state.client=client();if(!state.client)throw new Error('Student database connection is unavailable. Refresh and try again.');
  const {data,error}=await state.client.auth.getSession();const session=data?.session;
- if(error||!session?.user){location.replace('/examlogin.html?redirect='+encodeURIComponent(location.pathname));return}
+ if(error||!session?.user){location.replace('/examlogin.html?redirect='+encodeURIComponent('/studentexam.html'));return}
  state.user=session.user;
  const profileResult=await state.client.from('consolidated_user_profiles_table').select('*').eq('user_id',session.user.id).maybeSingle();
  if(profileResult.error)throw profileResult.error;
  state.profile=profileResult.data;
  const p=state.profile,role=norm(p?.role),status=norm(p?.status);
- if(role!=='student'||!['approved','active'].includes(status)||p?.login_enabled===false||!p?.institution_id){location.replace('/examlogin.html?redirect='+encodeURIComponent(location.pathname));return}
+ if(role!=='student'||!['approved','active'].includes(status)||p?.login_enabled===false||!p?.institution_id){location.replace('/examlogin.html?redirect='+encodeURIComponent('/studentexam.html'));return}
  const name=val(p.full_name,p.name,p.student_name,session.user.user_metadata?.full_name,session.user.email,'Student');
  $('welcome-name').textContent=name;$('side-name').textContent=name;$('avatar').textContent=name.split(/\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase();
  $('side-admission').textContent=val(p.admission_number,p.student_id,'Student account');
