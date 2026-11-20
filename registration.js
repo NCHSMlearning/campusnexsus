@@ -1373,6 +1373,17 @@ function loadDraft() {
 // SUCCESS ANIMATION
 // ============================================
 // ============================================
+function getInstitutionLoginUrl() {
+    const code = normalizeSchoolCode(
+        resolvedInstitutionContext?.school_code ||
+        new URLSearchParams(window.location.search).get('school_code') ||
+        ''
+    );
+    const url = new URL('/login.html', window.location.origin);
+    if (/^[0-9]{3}$/.test(code)) url.searchParams.set('school_code', code);
+    return url.toString();
+}
+
 function showSuccessAnimation(intakeDisplay) {
     const colors = ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#14b8a6'];
     for (let i = 0; i < 80; i++) {
@@ -1397,7 +1408,7 @@ function showSuccessAnimation(intakeDisplay) {
         countdown--;
         if (countdown <= 0) {
             clearInterval(interval);
-            window.location.href = 'login.html';
+            window.location.replace(getInstitutionLoginUrl());
         } else {
             countdownEl.textContent = countdown;
         }
@@ -1854,23 +1865,10 @@ document.getElementById('register-form').addEventListener('submit', async functi
         console.log('✅ Auth user created:', authData.user.id);
         
         if (role === 'lecturer') {
-            console.log('👔 Adding lecturer to staff_records...');
-            const staffAdded = await addStaffToRecords(
-                authData.user.id,
-                email,
-                full_name,
-                '',
-                department,
-                phone,
-                gender,
-                program_type
-            );
-            
-            if (staffAdded) {
-                console.log('✅ Lecturer added to staff_records successfully!');
-            } else {
-                console.warn('⚠️ Lecturer not added to staff_records');
-            }
+            // The trusted auth.users trigger creates the institution-bound
+            // lecturer and staff records. Do not write staff_records from the
+            // public browser client (RLS correctly denies anonymous inserts).
+            console.log('✅ Lecturer records are provisioned by the database registration trigger.');
         }
         
         await new Promise(resolve => setTimeout(resolve, 1500));
