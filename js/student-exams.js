@@ -79,7 +79,6 @@ async function loadExams(){
   render();
  } finally { $('refresh-btn').disabled=false; }
 }
-}
 async function init(){
  if(window.db&&typeof window.db.initialize==='function'){
   try{await window.db.initialize()}catch(initError){if(!client())throw initError}
