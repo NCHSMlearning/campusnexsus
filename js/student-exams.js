@@ -80,21 +80,22 @@ async function loadExams(){
  } finally { $('refresh-btn').disabled=false; }
 }
 async function init(){
- if(window.db&&typeof window.db.initialize==='function'){
-  try{await window.db.initialize()}catch(initError){if(!client())throw initError}
- }
+ // Use the already-persisted Supabase client directly. Do not run the
+ // legacy database bootstrap here; it can delay page startup unnecessarily.
  state.client=client();
- if(!state.client)throw new Error('Student database connection is unavailable. Refresh and try again.');
+ if(!state.client)throw new Error('Student database connection is unavailable. Please refresh this page.');
  const {data,error}=await state.client.auth.getSession();
  if(error)throw error;
  const session=data?.session;
- if(error||!session?.user){location.replace('/examlogin.html?redirect='+encodeURIComponent('/studentexam.html'));return}
+ if(!session?.user){location.replace('/examlogin.html?redirect='+encodeURIComponent('/studentexam.html'));return}
  state.user=session.user;
  const profileResult=await state.client.from('consolidated_user_profiles_table').select('*').eq('user_id',session.user.id).maybeSingle();
  if(profileResult.error)throw profileResult.error;
  state.profile=profileResult.data;
  const p=state.profile,role=norm(p?.role),status=norm(p?.status);
- if(role!=='student'||!['approved','active'].includes(status)||p?.login_enabled===false||!p?.institution_id){location.replace('/examlogin.html?redirect='+encodeURIComponent('/studentexam.html'));return}
+ if(!p||role!=='student'||!['approved','active'].includes(status)||p?.login_enabled===false||!p?.institution_id){
+  throw new Error('Your account is signed in, but it is not currently approved for the student examination centre. Please contact your institution administrator.');
+ }
  const name=val(p.full_name,p.name,p.student_name,session.user.user_metadata?.full_name,session.user.email,'Student');
  $('welcome-name').textContent=name;$('side-name').textContent=name;$('avatar').textContent=name.split(/\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase();
  $('side-admission').textContent=val(p.admission_number,p.student_id,'Student account');
