@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/login.html",
+      "destination": "/platform/login.html"
+    },
+    {
       "source": "/login",
       "destination": "/platform/login.html"
     },
