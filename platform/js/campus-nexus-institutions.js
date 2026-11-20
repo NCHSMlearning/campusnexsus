@@ -245,8 +245,8 @@
       const portalUrl = i.portal_mode === "custom_website" && i.custom_login_url
         ? i.custom_login_url
         : (hasSchoolCode
-          ? "https://campusnexus.co.ke/login?school_code=" + encodeURIComponent(schoolCode)
-          : "https://campusnexus.co.ke/login");
+          ? "https://campusnexus.co.ke/platform/login.html?school_code=" + encodeURIComponent(schoolCode)
+          : "https://campusnexus.co.ke/platform/login.html");
       return {...i, _modules:modules.filter(x => x.institution_id === i.id && x.enabled).map(x => x.module_key),
         _subscription:sub || null, _subscriptionId:sub?.id || null, _adminUserId:member?.user_id || null,
         _registrationUrl:registrationUrl, _portalUrl:portalUrl, _registrationCode:registration?.code || null};
