@@ -79,8 +79,9 @@ async function loadAll(){
   client.from('released_exam_results').select('result_id'),
   ]);
  if(examsRes.error)throw examsRes.error;
- state.exams=(examsRes.data||[]).filter(e=>(e.exam_link||e.online_link)&&eligible(e,p));
  state.grades=gradesRes.error?[]:(gradesRes.data||[]);
+ const attemptedExamIds=new Set(state.grades.map(g=>String(g.exam_id)));
+ state.exams=(examsRes.data||[]).filter(e=>(e.exam_link||e.online_link)&&(eligible(e,p)||attemptedExamIds.has(String(e.id))));
  state.released=new Set((releasedRes.data||[]).map(r=>String(r.result_id)));
  const admission=String(val(p.admission_number,p.student_id,'')).trim();
  let marks=[];
