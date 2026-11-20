@@ -1,35 +1,44 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#102d4f">
-<title>Student Examinations | Campus Nexus</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#082f55">
+<title>My Examinations | Campus Nexus</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
-<link rel="stylesheet" href="/css/student-exams.css?v=20261120-2">
+<link rel="stylesheet" href="/css/student-exams.css?v=20261120-3">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="/config.js"></script><script src="/js/utils.js"></script><script src="/js/database.js?v=20261024-session-refresh"></script>
 </head>
 <body>
-<div class="app-shell">
-<aside class="sidebar">
-<a class="brand" href="/student"><span class="brand-mark"><i class="fa-solid fa-graduation-cap"></i></span><span><b>Campus Nexus</b><small>Student Portal</small></span></a>
-<nav><a href="/student"><i class="fa-solid fa-house"></i> Student Dashboard</a><a class="active" href="/studentexam.html"><i class="fa-solid fa-file-pen"></i> Examinations</a></nav>
-<div class="sidebar-bottom"><div class="user-mini"><span class="avatar" id="avatar">ST</span><span><b id="side-name">Student</b><small id="side-admission">Loading profile…</small></span></div><button id="logout-btn" class="logout"><i class="fa-solid fa-arrow-right-from-bracket"></i> Sign out</button></div>
+<div class="exam-app">
+<aside class="exam-sidebar" id="exam-sidebar">
+<a class="exam-brand" href="/student"><span class="brand-symbol"><i class="fa-solid fa-graduation-cap"></i></span><span><b>Campus Nexus</b><small>STUDENT PORTAL</small></span></a>
+<div class="side-label">YOUR WORKSPACE</div>
+<nav class="exam-nav"><a href="/student"><i class="fa-solid fa-house"></i><span>Student Dashboard</span></a><a class="active" href="/studentexam.html"><i class="fa-solid fa-file-circle-check"></i><span>Examinations</span><i class="fa-solid fa-chevron-right nav-current"></i></a></nav>
+<div class="sidebar-help"><span class="help-icon"><i class="fa-solid fa-headset"></i></span><b>Need assistance?</b><p>Contact your institution administrator if an assigned examination is missing.</p></div>
+<div class="sidebar-account"><div class="account-avatar" id="avatar">ST</div><div class="account-copy"><b id="side-name">Student</b><small id="side-admission">Loading profile…</small></div><button id="logout-btn" title="Sign out" aria-label="Sign out"><i class="fa-solid fa-arrow-right-from-bracket"></i></button></div>
 </aside>
-<main class="main">
-<header class="topbar"><div><div class="eyebrow">CAMPUS NEXUS / STUDENT ASSESSMENTS</div><h1>My Examinations</h1><p>Find examinations assigned to your programme and open your online exam when it becomes available.</p></div><button class="icon-button" id="refresh-btn" aria-label="Refresh examinations"><i class="fa-solid fa-rotate"></i></button></header>
-<section class="welcome-strip"><div><span class="welcome-label">STUDENT EXAMINATION CENTRE</span><h2 id="welcome-name">Loading your profile…</h2><p id="student-meta">Checking your programme, intake and block</p></div><div class="secure-pill"><i class="fa-solid fa-shield-halved"></i> Secure student access</div></section>
-<section class="stats-grid">
-<article class="stat-card"><span class="stat-icon blue"><i class="fa-solid fa-list-check"></i></span><div><small>Assigned examinations</small><strong id="stat-total">—</strong><span>For your class</span></div></article>
-<article class="stat-card"><span class="stat-icon amber"><i class="fa-regular fa-clock"></i></span><div><small>Upcoming</small><strong id="stat-upcoming">—</strong><span>Not yet open</span></div></article>
-<article class="stat-card"><span class="stat-icon green"><i class="fa-solid fa-circle-play"></i></span><div><small>Available now</small><strong id="stat-open">—</strong><span>Online exam links ready</span></div></article>
+<div class="exam-main-wrap">
+<header class="exam-header"><div class="header-left"><button class="mobile-toggle" id="mobile-toggle" aria-label="Open navigation"><i class="fa-solid fa-bars"></i></button><div><span class="header-kicker">CAMPUS NEXUS <i class="fa-solid fa-chevron-right"></i> STUDENT SPACE</span><b>Examination Centre</b></div></div><div class="header-right"><span class="secure-top"><i class="fa-solid fa-shield-halved"></i> Secure student access</span><span class="header-avatar"><i class="fa-regular fa-user"></i></span></div></header>
+<main class="exam-main">
+<section class="hero">
+<div class="hero-orb orb-one"></div><div class="hero-orb orb-two"></div>
+<div class="hero-content"><div class="hero-tag"><span></span> YOUR ASSESSMENT SPACE</div><h1>Stay focused.<br><em>Show what you know.</em></h1><p>Welcome back, <strong id="welcome-name">Student</strong>. Your assigned examinations, schedules and online assessment links are all in one place.</p><div class="hero-meta"><span><i class="fa-solid fa-graduation-cap"></i><b id="student-meta">Loading your academic details…</b></span><span><i class="fa-regular fa-clock"></i> All times East Africa Time</span></div></div>
+<div class="hero-art" aria-hidden="true"><div class="art-ring ring-a"></div><div class="art-ring ring-b"></div><div class="art-board"><i class="fa-solid fa-file-pen"></i><span class="art-line line-a"></span><span class="art-line line-b"></span><span class="art-line line-c"></span><span class="art-check"><i class="fa-solid fa-check"></i></span></div><div class="art-star star-a"><i class="fa-solid fa-star"></i></div><div class="art-star star-b"><i class="fa-solid fa-sparkles"></i></div></div>
+</section>
+<section class="stats-grid" aria-label="Examination overview">
+<article class="stat-card stat-total"><div class="stat-icon"><i class="fa-solid fa-layer-group"></i></div><div><small>Assigned examinations</small><strong id="stat-total">—</strong><span>Available for your class</span></div><i class="fa-solid fa-arrow-up-right-dots stat-watermark"></i></article>
+<article class="stat-card stat-upcoming"><div class="stat-icon"><i class="fa-regular fa-calendar-check"></i></div><div><small>Coming up</small><strong id="stat-upcoming">—</strong><span>Scheduled assessments</span></div><i class="fa-regular fa-calendar stat-watermark"></i></article>
+<article class="stat-card stat-open"><div class="stat-icon"><i class="fa-solid fa-circle-play"></i></div><div><small>Ready to start</small><strong id="stat-open">—</strong><span>Online links available</span></div><i class="fa-solid fa-bolt stat-watermark"></i></article>
 </section>
 <section class="content-card">
-<div class="section-head"><div><h2>Examinations assigned to you</h2><p>Choose an available examination to open its online assessment page.</p></div></div>
-<div class="filters"><label class="search"><i class="fa-solid fa-magnifying-glass"></i><input id="search-input" type="search" placeholder="Search examination or unit"></label><select id="status-filter" aria-label="Filter examinations"><option value="all">All examinations</option><option value="open">Available now</option><option value="upcoming">Upcoming</option><option value="closed">Closed</option></select></div>
-<div id="exam-panel" aria-live="polite"><div class="loading-state"><span class="spinner"></span><p>Loading examinations assigned to you…</p></div></div>
+<div class="section-head"><div class="section-title-wrap"><span class="section-icon"><i class="fa-solid fa-clipboard-list"></i></span><div><h2>Your examinations</h2><p>Review your assigned assessments and launch an online examination when it opens.</p></div></div><button class="refresh-btn" id="refresh-btn"><i class="fa-solid fa-rotate"></i><span>Refresh</span></button></div>
+<div class="toolbar"><label class="search-box"><i class="fa-solid fa-magnifying-glass"></i><input id="search-input" type="search" placeholder="Search by examination or unit…"></label><label class="filter-wrap"><i class="fa-solid fa-filter"></i><select id="status-filter" aria-label="Filter examinations"><option value="all">All examinations</option><option value="open">Available now</option><option value="upcoming">Upcoming</option><option value="closed">Closed</option></select></label></div>
+<div id="exam-panel" aria-live="polite"><div class="loading-state"><span class="spinner"></span><p>Preparing your examination list…</p></div></div>
 </section>
-<footer>Campus Nexus <span>•</span> Student Examination Centre <span>•</span> Times displayed in East Africa Time (EAT).</footer>
-</main></div>
-<div id="toast" class="toast" role="status"></div>
-<script src="/js/student-exams.js?v=20261120-2"></script><script src="/platform/js/institution-portal-branding.js?v=20261120-student-access-v2"></script>
+<footer class="exam-footer"><span>© 2026 Campus Nexus</span><span><i class="fa-solid fa-lock"></i> Secure examination access</span><span>Learn <b>•</b> Prepare <b>•</b> Excel</span></footer>
+</main></div></div><div class="mobile-scrim" id="mobile-scrim"></div><div id="toast" class="toast" role="status"></div>
+<script src="/js/student-exams.js?v=20261120-3"></script><script src="/platform/js/institution-portal-branding.js?v=20261120-student-access-v2"></script>
+<script>
+(()=>{const side=document.getElementById('exam-sidebar'),scrim=document.getElementById('mobile-scrim');const close=()=>{side.classList.remove('show');scrim.classList.remove('show')};document.getElementById('mobile-toggle')?.addEventListener('click',()=>{side.classList.toggle('show');scrim.classList.toggle('show')});scrim?.addEventListener('click',close);side?.querySelectorAll('nav a').forEach(a=>a.addEventListener('click',close));})();
+</script>
 </body></html>
