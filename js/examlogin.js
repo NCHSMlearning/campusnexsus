@@ -4,7 +4,7 @@ const form=document.getElementById('examLoginForm'),email=document.getElementByI
 const show=(text,type='error')=>{message.textContent=text;message.className='message '+type};
 const nextPath=()=>{const p=new URLSearchParams(location.search).get('redirect');return p&&p.startsWith('/')&&!p.startsWith('//')?p:'/studentexam.html'};
 document.getElementById('togglePassword').addEventListener('click',()=>{const visible=password.type==='password';password.type=visible?'text':'password';document.getElementById('togglePassword').textContent=visible?'Hide':'Show'});
-async function clientReady(){const c=window.sb||window.supabaseClient;if(c&&typeof c.auth?.signInWithPassword==='function')return c;throw new Error('The sign-in service is unavailable. Refresh this page and try again.')}
+async function clientReady(){const c=window.examSupabase||window.sb||window.supabaseClient;if(c&&typeof c.auth?.signInWithPassword==='function')return c;throw new Error('The sign-in service is unavailable. Refresh this page and try again.')}
 form.addEventListener('submit',async e=>{
  e.preventDefault();message.className='message';button.disabled=true;button.textContent='Signing in…';
  try{
@@ -25,6 +25,6 @@ form.addEventListener('submit',async e=>{
   show('Sign-in successful. Opening your examinations…','info');location.replace(nextPath()+'?v=20261120-standalone');
  }catch(err){show(err?.message||'Unable to sign in. Check your details and try again.');button.disabled=false;button.textContent='Sign in to examinations'}
 });
-const existing=window.sb||window.supabaseClient;
+const existing=window.examSupabase||window.sb||window.supabaseClient;
 if(existing?.auth?.getSession){existing.auth.getSession().then(async({data})=>{if(!data?.session?.user)return;const {data:p}=await existing.from('consolidated_user_profiles_table').select('role,status,login_enabled,institution_id').eq('user_id',data.session.user.id).maybeSingle();if(p&&String(p.role).toLowerCase()==='student'&&['approved','active'].includes(String(p.status).toLowerCase())&&p.login_enabled!==false&&p.institution_id)location.replace(nextPath())}).catch(()=>{})}
 })();
