@@ -1402,6 +1402,8 @@ function showSuccessAnimation(intakeDisplay) {
     }
     document.getElementById('successIntakeText').textContent = intakeDisplay || 'N/A';
     document.getElementById('successOverlay').classList.add('show');
+    const loginButton = document.getElementById('success-login-btn');
+    if (loginButton) loginButton.onclick = () => window.location.assign(getInstitutionLoginUrl());
     let countdown = 5;
     const countdownEl = document.getElementById('successCountdown');
     const interval = setInterval(() => {
