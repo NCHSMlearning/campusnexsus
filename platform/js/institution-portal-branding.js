@@ -76,7 +76,7 @@
     // Keep the application shell, splash screen and PWA install labels aligned
     // with the authenticated institution instead of legacy hardcoded branding.
     const splashTitle = document.querySelector("#loading-screen .welcome-text h1");
-    if (splashTitle) splashTitle.textContent = name + " Portal";
+    if (splashTitle) splashTitle.textContent = name + (window.location.pathname.toLowerCase().includes("student") ? " Student Portal" : " Portal");
     const splashSubtitle = document.querySelector("#loading-screen .subtitle");
     if (splashSubtitle) splashSubtitle.textContent = "Your Academic Hub";
     document.querySelectorAll('meta[name="application-name"],meta[name="apple-mobile-web-app-title"]').forEach(meta => { meta.content = name + " Portal"; });
@@ -123,6 +123,13 @@
     document.querySelectorAll(".lecturer-command-brand h1").forEach(el => {
       el.textContent = name + " Lecturer Portal";
     });
+    document.querySelectorAll(".lecturer-command-brand p").forEach(el => {
+      el.textContent = "Lecturer workspace · teaching, examinations, results and student monitoring";
+    });
+    document.querySelectorAll(".lecturer-command-brand h1,.lecturer-command-cap").forEach(el => { el.setAttribute("aria-label", name + " Lecturer Portal"); });
+    document.querySelectorAll(".lecturer-command-brand h1").forEach(el => { el.textContent = name + " Lecturer Portal"; });
+    document.querySelectorAll(".lecturer-command-brand p").forEach(el => { el.textContent = "Lecturer workspace · teaching, examinations, results and student monitoring"; });
+    document.querySelectorAll(".lecturer-command-brand h1").forEach(el => { el.title = name + " Lecturer Portal"; });
     document.querySelectorAll(".lecturer-command-brand p").forEach(el => {
       el.textContent = "Lecturer workspace · teaching, examinations, results and student monitoring";
     });
@@ -173,7 +180,43 @@
     document.querySelectorAll('link[rel~="icon"],link[rel="apple-touch-icon"]').forEach(link => {
       link.href = logo;
     });
-    document.title = name + " | " + (document.title || "Institution Portal").replace(/^NCHSM\s*/i, "").replace(/^Campus Nexus\s*\|?\s*/i, "");
+    const path = String(window.location.pathname || "").toLowerCase();
+    const pageRole = /lecturerexams|\/lecturer(?:\.html)?$/.test(path) ? "Lecturer"
+      : /\/admin(?:\.html)?$|\/source\/admin(?:exams)?\.html$/.test(path) ? "Administrator"
+      : /exam|examination/.test(path) ? "Examinations"
+      : /student/.test(path) ? "Student" : "Institution";
+    const portalTitle = pageRole === "Institution" ? name + " Portal" : name + " " + pageRole + " Portal";
+    document.title = portalTitle;
+
+    // Tenant-aware PWA metadata: the platform's public manifest remains
+    // Campus Nexus, while an authenticated institution portal advertises
+    // its own install name and current school-code entry URL.
+    document.querySelectorAll('meta[name="application-name"],meta[name="apple-mobile-web-app-title"]').forEach(meta => {
+      meta.content = portalTitle;
+    });
+    const manifestLink = document.querySelector('link[rel="manifest"]');
+    if (manifestLink && window.Blob && window.URL && URL.createObjectURL) {
+      try {
+        if (window.cnTenantManifestUrl) URL.revokeObjectURL(window.cnTenantManifestUrl);
+        const manifest = {
+          id: window.location.pathname + window.location.search,
+          name: portalTitle,
+          short_name: (institution.short_code || name).slice(0, 20),
+          description: name + " secure learning and administration portal",
+          start_url: window.location.pathname + window.location.search,
+          scope: "/platform/",
+          display: "standalone",
+          orientation: "portrait",
+          theme_color: primary,
+          background_color: "#ffffff",
+          icons: [{src: logo, sizes: "192x192", type: "image/png", purpose: "any maskable"}]
+        };
+        window.cnTenantManifestUrl = URL.createObjectURL(new Blob([JSON.stringify(manifest)], {type:"application/manifest+json"}));
+        manifestLink.href = window.cnTenantManifestUrl;
+      } catch (manifestError) {
+        console.warn("[Campus Nexus] Tenant install manifest could not be generated:", manifestError);
+      }
+    }
 
     document.dispatchEvent(new CustomEvent("campusnexus:institution-branding-applied", {
       detail: { institutionId: institution.id, name, logoUrl: institution.logo_url || null }
