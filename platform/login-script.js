@@ -2587,7 +2587,7 @@ executeLogin: async function(identifier, password) {
             admin: 'admin.html',
             superadmin: 'superadmin.html',
             institution_admin: '/exams',
-            student: '/student',
+            student: '/platform/student.html#dashboard',
             lecturer: 'lecturer.html',
             hod: 'admin.html',
             nursing_hod: 'admin.html',
@@ -2604,11 +2604,12 @@ executeLogin: async function(identifier, password) {
                 const path = target.pathname.toLowerCase();
                 const isStudentRoute = role === 'student' && (
                     path === '/student' || path === '/student.html' ||
+                    path === '/platform/student' || path === '/platform/student.html' ||
                     path.startsWith('/student/') ||
                     path === '/exam' || path === '/exam.html'
                 );
                 const isRoleDashboard = (
-                    (role === 'student' && (path === '/student.html' || path === '/student')) ||
+                    (role === 'student' && (path === '/student.html' || path === '/student' || path === '/platform/student' || path === '/platform/student.html')) ||
                     ((role === 'admin' || hodRoles.includes(role)) && (path === '/admin.html' || path === '/admin')) ||
                     (role === 'lecturer' && (path === '/lecturer.html' || path === '/lecturer')) ||
                     (role === 'superadmin' && (path === '/superadmin.html' || path === '/superadmin')) ||
