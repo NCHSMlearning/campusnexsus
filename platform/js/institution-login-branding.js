@@ -92,6 +92,14 @@
     if (motto) {
       const address = [institution.physical_address, institution.postal_address].filter(Boolean).join(" · ");
       motto.textContent = address || "Institution learning portal";
+      let powered = document.querySelector(".logo-wrapper .cn-powered-by");
+      if (!powered) {
+        powered = document.createElement("small");
+        powered.className = "cn-powered-by";
+        motto.insertAdjacentElement("afterend", powered);
+      }
+      powered.textContent = "Powered by Campus Nexus";
+      powered.style.cssText = "display:block;margin-top:7px;font-size:10px;font-weight:600;letter-spacing:.08em;color:rgba(255,255,255,.82)";
     }
 
     const welcome = document.querySelector(".welcome-section h2");
