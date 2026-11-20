@@ -1,6 +1,6 @@
 (function(){
 'use strict';
-const state={client:null,user:null,profile:null,exams:[]};
+const state={client:null,user:null,profile:null,exams:[],announcements:[],history:[]};
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const val=(...xs)=>xs.find(x=>x!==undefined&&x!==null&&String(x).trim()!=='');
@@ -80,6 +80,30 @@ async function loadExams(){
   render();
  } finally { $('refresh-btn').disabled=false; }
 }
+
+function renderTimetable(){
+ const upcoming=state.exams.filter(e=>examState(e)==='upcoming'||examState(e)==='open').sort((a,b)=>(startsAt(a)?.getTime()||0)-(startsAt(b)?.getTime()||0));
+ $('timetable-panel').innerHTML=upcoming.length?'<div class="portal-list">'+upcoming.map(e=>'<article class="portal-list-item"><div class="portal-list-icon"><i class="fa-regular fa-calendar-check"></i></div><div class="portal-list-copy"><b>'+esc(val(e.title,e.exam_name,e.name,'Examination'))+'</b><small>'+esc(val(e.course_name,e.unit_name,e.course_code,'Assessment'))+' · '+esc(val(e.block_term,e.block,'All blocks'))+'</small></div><div class="portal-list-date">'+esc(dateLabel(e))+'</div></article>').join('')+'</div>':'<div class="empty-state"><i class="fa-regular fa-calendar"></i><p>No upcoming examinations have been scheduled for you.</p></div>';
+}
+async function loadAnnouncements(){
+ const panel=$('announcements-panel');panel.innerHTML='<div class="loading-state"><span class="spinner"></span><p>Loading announcements…</p></div>';
+ const {data,error}=await state.client.rpc('get_student_exam_announcements');
+ if(error)throw error;state.announcements=data||[];
+ panel.innerHTML=state.announcements.length?'<div class="portal-list">'+state.announcements.map(a=>'<article class="portal-list-item announcement-item"><div class="portal-list-icon"><i class="fa-solid fa-bullhorn"></i></div><div class="portal-list-copy"><b>'+esc(a.title)+'</b><p>'+esc(a.message)+'</p><small>'+esc(a.created_at?new Date(a.created_at).toLocaleString('en-KE',{dateStyle:'medium',timeStyle:'short'}):'')+'</small></div></article>').join('')+'</div>':'<div class="empty-state"><i class="fa-regular fa-bell"></i><p>There are no current announcements for your class.</p></div>';
+}
+async function loadHistory(){
+ const panel=$('history-panel');panel.innerHTML='<div class="loading-state"><span class="spinner"></span><p>Loading your examination history…</p></div>';
+ const {data,error}=await state.client.from('exam_attempts').select('id,exam_id,attempt_number,status,started_at,submitted_at').eq('student_id',state.user.id).order('started_at',{ascending:false}).limit(30);
+ if(error)throw error;state.history=data||[];
+ panel.innerHTML=state.history.length?'<div class="portal-list">'+state.history.map(a=>{const e=state.exams.find(x=>String(x.id)===String(a.exam_id));return '<article class="portal-list-item"><div class="portal-list-icon"><i class="fa-solid fa-file-circle-check"></i></div><div class="portal-list-copy"><b>'+esc(val(e?.title,e?.exam_name,'Examination'))+'</b><small>Attempt '+esc(a.attempt_number)+' · '+esc(a.submitted_at?'Submitted':'In progress')+'</small></div><div class="portal-list-date">'+esc(a.submitted_at?new Date(a.submitted_at).toLocaleString('en-KE',{dateStyle:'medium',timeStyle:'short'}):a.started_at?new Date(a.started_at).toLocaleString('en-KE',{dateStyle:'medium',timeStyle:'short'}):'')+'</div></article>'}).join('')+'</div>':'<div class="empty-state"><i class="fa-regular fa-folder-open"></i><p>You have no examination attempts yet.</p></div>';
+}
+async function submitSupport(event){
+ event.preventDefault();const btn=$('support-submit'),feedback=$('support-feedback');btn.disabled=true;feedback.textContent='Submitting your request…';
+ try{const {data,error}=await state.client.rpc('submit_student_exam_support_ticket',{p_subject:$('support-subject').value.trim(),p_description:$('support-description').value.trim(),p_category:$('support-category').value});
+ if(error)throw error;const ticket=Array.isArray(data)?data[0]?.ticket_number:data?.ticket_number;feedback.textContent='Your request was submitted. Ticket reference: '+(ticket||'created');$('exam-support-form').reset();notify('Support request submitted successfully.');}
+ catch(e){feedback.textContent=e.message||'Could not submit your request. Please try again.';}
+ finally{btn.disabled=false;}
+}
 async function init(){
  // Use the already-persisted Supabase client directly. Do not run the
  // legacy database bootstrap here; it can delay page startup unnecessarily.
@@ -130,8 +154,14 @@ async function init(){
  $('side-admission').textContent=val(p.admission_number,p.student_id,'Student account');
  $('student-meta').textContent=[val(p.program,p.program_name,'Programme not assigned'),studentBlock(p)!=='General'?studentBlock(p):'',val(p.intake_year,p.intake,'')].filter(Boolean).join(' • ');
  await loadExams();
+ renderTimetable();
+ loadAnnouncements().catch(e=>{$('announcements-panel').innerHTML='<div class="empty-state"><p>Announcements are temporarily unavailable.</p></div>';console.warn(e)});
+ loadHistory().catch(e=>{$('history-panel').innerHTML='<div class="empty-state"><p>Examination history is temporarily unavailable.</p></div>';console.warn(e)});
 }
-$('refresh-btn').addEventListener('click',()=>loadExams().catch(e=>notify(e.message||'Could not refresh examinations.')));
+$('refresh-btn').addEventListener('click',()=>loadExams().then(renderTimetable).catch(e=>notify(e.message||'Could not refresh examinations.')));
+$('refresh-announcements').addEventListener('click',()=>loadAnnouncements().catch(e=>notify(e.message||'Could not load announcements.')));
+$('refresh-history').addEventListener('click',()=>loadHistory().catch(e=>notify(e.message||'Could not load examination history.')));
+$('exam-support-form').addEventListener('submit',submitSupport);
 $('search-input').addEventListener('input',render);$('status-filter').addEventListener('change',render);
 $('logout-btn').addEventListener('click',async()=>{try{if(state.client)await state.client.auth.signOut({scope:'local'})}finally{location.replace('/examlogin.html')}});
 document.addEventListener('DOMContentLoaded',()=>init().catch(e=>{$('exam-panel').innerHTML='<div class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><p>'+esc(e.message||'Unable to load your examinations.')+'</p><button class="secondary-btn" onclick="location.reload()">Try again</button></div>'}));
