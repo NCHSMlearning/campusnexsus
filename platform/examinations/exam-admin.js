@@ -111,7 +111,7 @@ async function loadProctoring(){
  $("proctoringTable").innerHTML=data.map(x=>'<tr><td>'+escapeHTML(x.timestamp||"—")+'</td><td>'+escapeHTML(x.student_name||x.student_reg_number||"Student")+'</td><td>'+escapeHTML(examMap.get(String(x.exam_id))||"Examination")+'</td><td>'+escapeHTML(x.event_type||"Event")+'</td><td><span class="badge '+(String(x.severity).toLowerCase()==="high"||String(x.severity).toLowerCase()==="critical"?"red":"amber")+'">'+escapeHTML(x.severity||"info")+'</span></td><td>'+escapeHTML(x.details||"—")+'</td></tr>').join("");
 }
 async function loadAttendance(){
- const {data,error}=await sb.from("exam_attendance").select("id,exam_id,student_name,student_reg_number,status,date,sign_in_time,exam_name").eq("institution_id",institution.id).order("date",{ascending:false}).limit(100);
+ const {data,error}=await sb.from("exam_attendance").select("id,exam_id,student_name,student_reg_number,status,date,sign_in_time,exam_name").in("exam_id",exams.map(e=>e.id)).order("date",{ascending:false}).limit(100);
  if(error){$("attendanceTable").innerHTML='<tr><td colspan="6" class="empty-state">Attendance is not available: '+escapeHTML(error.message)+'</td></tr>';return}
  const examMap=new Map(exams.map(e=>[String(e.id),e.title||e.exam_name||"Examination"]));
  if(!data?.length){$("attendanceTable").innerHTML='<tr><td colspan="6" class="empty-state">No examination attendance records.</td></tr>';return}
