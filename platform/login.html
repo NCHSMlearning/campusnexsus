@@ -2194,5 +2194,61 @@ body.dark-theme #loginButton,body.dark-theme .login-button{background:linear-gra
 })();
 </script>
 
+
+<script id="campus-nexus-school-code-gate">
+(function () {
+  "use strict";
+  const params = new URLSearchParams(window.location.search);
+  if ((params.get("school_code") || "").trim()) return;
+
+  function mountGate() {
+    if (document.getElementById("campus-nexus-school-code-gate-panel")) return;
+    const style = document.createElement("style");
+    style.textContent = `
+      #campus-nexus-school-code-gate-panel{position:fixed;inset:0;z-index:2147482000;display:grid;place-items:center;padding:20px;background:rgba(7,25,45,.72);backdrop-filter:blur(5px);font-family:inherit}
+      #campus-nexus-school-code-gate-panel .cn-code-card{width:min(100%,420px);background:#fff;border-radius:18px;padding:26px;box-shadow:0 24px 70px rgba(0,0,0,.25);color:#16324a}
+      #campus-nexus-school-code-gate-panel h2{margin:0 0 8px;font-size:23px;color:#123653}
+      #campus-nexus-school-code-gate-panel p{margin:0 0 18px;color:#64748b;font-size:14px;line-height:1.55}
+      #campus-nexus-school-code-gate-panel label{display:block;font-size:13px;font-weight:700;margin-bottom:7px}
+      #campus-nexus-school-code-gate-panel input{box-sizing:border-box;width:100%;height:48px;border:1px solid #cbd5e1;border-radius:10px;padding:0 13px;font:600 16px inherit;letter-spacing:.08em;outline:none}
+      #campus-nexus-school-code-gate-panel input:focus{border-color:#0f766e;box-shadow:0 0 0 3px rgba(15,118,110,.13)}
+      #campus-nexus-school-code-gate-panel button{width:100%;height:48px;margin-top:14px;border:0;border-radius:10px;background:#0f766e;color:#fff;font-weight:700;font-size:15px;cursor:pointer}
+      #campus-nexus-school-code-gate-panel .cn-code-error{min-height:18px;margin-top:10px;color:#b91c1c;font-size:13px}
+    `;
+    document.head.appendChild(style);
+    const panel = document.createElement("div");
+    panel.id = "campus-nexus-school-code-gate-panel";
+    panel.innerHTML = '<section class="cn-code-card" role="dialog" aria-modal="true" aria-labelledby="cn-code-title"><h2 id="cn-code-title">Welcome to Campus Nexus</h2><p>Enter your institution school code to continue to the correct login portal.</p><form id="cn-school-code-form"><label for="cn-school-code-input">Institution school code</label><input id="cn-school-code-input" name="school_code" inputmode="numeric" autocomplete="off" maxlength="12" placeholder="Enter school code" required><button type="submit">Continue to login</button><div class="cn-code-error" id="cn-school-code-error" role="alert"></div></form></section>';
+    document.body.appendChild(panel);
+    const input = panel.querySelector("#cn-school-code-input");
+    input.focus();
+    panel.querySelector("#cn-school-code-form").addEventListener("submit", async function (event) {
+      event.preventDefault();
+      const code = input.value.trim();
+      const errorBox = panel.querySelector("#cn-school-code-error");
+      const button = panel.querySelector("button");
+      if (!code) { errorBox.textContent = "Enter your institution school code."; return; }
+      if (!window.supabase?.createClient) { errorBox.textContent = "Login service is not ready. Refresh and try again."; return; }
+      button.disabled = true; button.textContent = "Checking school code…"; errorBox.textContent = "";
+      try {
+        const client = window.supabase.createClient(
+          "https://lwhtjozfsmbyihenfunw.supabase.co",
+          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJIUzI1NiIsInR5cCI6IkpXVCJ9"
+        );
+        const result = await client.rpc("resolve_institution_registration_context", {p_code:code,p_host:null});
+        if (result.error || !result.data?.institution_id) throw new Error("We could not find an institution with that school code. Check the code and try again.");
+        const next = new URL(window.location.href);
+        next.searchParams.set("school_code", code);
+        window.location.replace(next.toString());
+      } catch (error) {
+        errorBox.textContent = error.message || "Unable to verify that school code.";
+        button.disabled = false; button.textContent = "Continue to login";
+      }
+    });
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", mountGate, {once:true});
+  else mountGate();
+})();
+</script>
 </body>
 </html>
