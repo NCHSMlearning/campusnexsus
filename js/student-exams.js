@@ -98,9 +98,9 @@ async function init(){
  }
  // Institution branding is optional: never let a branding lookup prevent the exam dashboard from opening.
  try {
-  const institutionResult=await state.client.from('institutions').select('id,name,short_code,school_code,logo_url,primary_color,secondary_color,status').eq('id',p.institution_id).maybeSingle();
+  const institutionResult=await state.client.rpc('get_my_exam_institution');
   if(institutionResult.error)throw institutionResult.error;
-  const institution=institutionResult.data;
+  const institution=Array.isArray(institutionResult.data)?institutionResult.data[0]:institutionResult.data;
   if(!institution)throw new Error('Your institution profile could not be loaded. Please contact your institution administrator.');
   const institutionName=val(institution.name,'Your Institution');
   $('institution-name').textContent=institutionName;
