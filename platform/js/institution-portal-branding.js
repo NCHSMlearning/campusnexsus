@@ -129,6 +129,7 @@
     const roleHeading = pageRole === "Student" ? "Student Portal"
       : pageRole === "Lecturer" ? "Lecturer Portal"
       : pageRole === "Administrator" ? "Administrator Portal"
+      : pageRole === "Student Examination" ? "Student Examination Portal"
       : pageRole === "Examinations" ? "Examination Portal" : "Institution Portal";
     document.querySelectorAll("h1,h2,h3,[role=heading]").forEach(el => {
       const label = String(el.textContent || "").trim();
@@ -199,6 +200,7 @@
     const path = String(window.location.pathname || "").toLowerCase();
     const pageRole = /lecturerexams|\/lecturer(?:\.html)?$/.test(path) ? "Lecturer"
       : /\/admin(?:\.html)?$|\/source\/admin(?:exams)?\.html$/.test(path) ? "Administrator"
+      : /exam_dashboard/.test(path) ? "Student Examination"
       : /exam|examination/.test(path) ? "Examinations"
       : /student/.test(path) ? "Student" : "Institution";
     const portalTitle = pageRole === "Institution" ? name + " Portal" : name + " " + pageRole + " Portal";
@@ -225,7 +227,7 @@
           orientation: "portrait",
           theme_color: primary,
           background_color: "#ffffff",
-          icons: [{src: logo, sizes: "192x192", purpose: "any maskable"}]
+          icons: [{src: institution.logo_url && /^https:\/\//i.test(institution.logo_url) ? institution.logo_url : "/images/Logo_NCHSM.png", sizes: "192x192", purpose: "any maskable"}]
         };
         window.cnTenantManifestUrl = URL.createObjectURL(new Blob([JSON.stringify(manifest)], {type:"application/manifest+json"}));
         manifestLink.href = window.cnTenantManifestUrl;
