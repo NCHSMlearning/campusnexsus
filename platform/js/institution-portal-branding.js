@@ -84,7 +84,7 @@
     document.querySelectorAll("[data-institution-code]").forEach(el => { el.textContent = institution.short_code || institution.school_code || ""; });
     document.querySelectorAll(".nchsm-pwa-install,[data-pwa-install],#installBtn,#installButton").forEach(button => {
       const label = button.querySelector("span") || button;
-      if (/install\\s+nchsm/i.test(label.textContent || "")) label.textContent = "Install " + (institution.short_code || name) + " Portal";
+      if (/install\s+nchsm/i.test(label.textContent || "")) label.textContent = "Install " + (institution.short_code || name) + " Portal";
     });
     root.style.setProperty("--cn-institution-primary", primary);
     root.style.setProperty("--cn-institution-secondary", secondary);
@@ -125,6 +125,27 @@
     });
     document.querySelectorAll(".lecturer-command-brand h1,.lecturer-command-cap").forEach(el => { el.setAttribute("aria-label", name + " Lecturer Portal"); });
     document.querySelectorAll(".lecturer-command-brand h1").forEach(el => { el.title = name + " Lecturer Portal"; });
+
+    const roleHeading = pageRole === "Student" ? "Student Portal"
+      : pageRole === "Lecturer" ? "Lecturer Portal"
+      : pageRole === "Administrator" ? "Administrator Portal"
+      : pageRole === "Examinations" ? "Examination Portal" : "Institution Portal";
+    document.querySelectorAll("h1,h2,h3,[role=heading]").forEach(el => {
+      const label = String(el.textContent || "").trim();
+      if (/NCHSM.*(portal|dashboard|exam)|(?:portal|dashboard|exam).*NCHSM/i.test(label)) {
+        el.textContent = name + " " + roleHeading;
+      }
+    });
+    const loadingHeading = document.querySelector("#loading-screen .welcome-text h1");
+    if (loadingHeading) loadingHeading.textContent = "Welcome to " + name + " " + roleHeading;
+
+    document.querySelectorAll(".nchsm-pwa-install,[data-pwa-install],#installBtn,#installButton").forEach(button => {
+      if (!/install/i.test(button.textContent || "")) return;
+      const icon = button.querySelector("i");
+      const label = " Install " + (institution.short_code || name) + " Portal";
+      if (icon) button.replaceChildren(icon, document.createTextNode(label));
+      else button.textContent = label.trim();
+    });
     document.querySelectorAll(".lecturer-command-brand p").forEach(el => {
       el.textContent = "Lecturer workspace · teaching, examinations, results and student monitoring";
     });
