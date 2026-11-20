@@ -1,0 +1,2270 @@
+// js/exam-card.js - v11.3 (TVET/KRCHN Support - Full A4 optimized with Dynamic HOD)
+// FIXED: Retake units display, Past Exam Records, Completed Exam Cards
+
+(function() {
+    'use strict';
+    
+    const CONFIG = {
+        LOGO_URL: 'https://raw.githubusercontent.com/NCHSMlearning/e-learning/main/images/Logo_NCHSM.png',
+        DEFAULT_CREDITS: 3,
+        LOAD_DELAY: 500,
+        DB_TIMEOUT: 10000,
+        MAX_UNITS_DISPLAY: 20,
+        PDF_SCALE: 2.5,
+        A4: {
+            WIDTH_MM: 210,
+            HEIGHT_MM: 297,
+            MARGIN_MM: 20,
+            DPI: 96,
+            get PIXEL_WIDTH() { return this.WIDTH_MM * this.DPI / 25.4; },
+            get PIXEL_HEIGHT() { return this.HEIGHT_MM * this.DPI / 25.4; }
+        }
+    };
+    
+    // TVET Program Codes
+    const TVET_PROGRAMS = [
+        'DPOTT', 'DCH', 'DHRIT', 'DSL', 'DSW', 'DCJS', 'DHSS', 'DICT', 'DME',
+        'CPOTT', 'CCH', 'CHRIT', 'CPC', 'CSL', 'CSW', 'CCJS', 'CAG', 'CHSS', 'CICT',
+        'ACH', 'AAG', 'ASW', 'CCA', 'PTE', 'TVET'
+    ];
+    
+    class ExamCardModule {
+        constructor() {
+            // State
+            this.approvedUnits = [];
+            this.userProfile = null;
+            this.loaded = false;
+            this.userBlock = null;
+            this.userId = null;
+            this.isLoading = false;
+            this.pastExamRecords = [];
+            this.publishedMarks = [];
+            this.completedUnits = [];
+            this.isTVET = false;
+            this.userLevel = 'KRCHN';
+            this._boundHandlers = {};
+            
+            // Initialize
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', () => this.init());
+            } else {
+                this.init();
+            }
+        }
+        
+        // ============================================
+        // TVET DETECTION HELPERS
+        // ============================================
+        
+        isTVETStudent() {
+            if (!this.userProfile) return false;
+            const program = this.userProfile.program || this.userProfile.program_type || '';
+            return TVET_PROGRAMS.includes(program) || program === 'TVET';
+        }
+        
+        getStudentLevel() {
+            if (!this.userProfile) return 'KRCHN';
+            return this.isTVETStudent() ? 'TVET' : 'KRCHN';
+        }
+        
+        getBlockLabel() {
+            return this.isTVET ? 'Current Term:' : 'Current Block:';
+        }
+        
+        getBlockValue() {
+            if (!this.userProfile) return 'N/A';
+            if (this.isTVET) {
+                return this.userProfile.term || 
+                       this.userProfile.current_term || 
+                       this.userProfile.block || 
+                       'Year 1 Term 1';
+            } else {
+                return this.userProfile.block || 
+                       this.userProfile.current_block || 
+                       this.userProfile.term || 
+                       'Introductory';
+            }
+        }
+        
+        // ============================================
+        // GET HOD TITLE DYNAMICALLY
+        // ============================================
+        
+        getHODTitle() {
+            if (!this.userProfile) return 'HOD';
+            
+            const program = this.userProfile.program || this.userProfile.program_type || '';
+            const programUpper = program.toUpperCase().trim();
+            
+            if (TVET_PROGRAMS.includes(programUpper)) {
+                return `HOD ${programUpper}`;
+            }
+            
+            if (programUpper === 'KRCHN' || programUpper.includes('NURSING')) {
+                return 'HOD Nursing';
+            }
+            
+            if (programUpper.includes('HEALTH') || programUpper.includes('MEDICAL') || 
+                programUpper.includes('CLINICAL') || programUpper.includes('PUBLIC')) {
+                if (programUpper.length <= 6) {
+                    return `HOD ${programUpper}`;
+                }
+                const cleanName = program.replace(/DIPLOMA|CERTIFICATE|ARTISAN|IN\s+/gi, '').trim();
+                return cleanName ? `HOD ${cleanName}` : 'HOD';
+            }
+            
+            if (programUpper.length <= 6) {
+                return `HOD ${programUpper}`;
+            }
+            
+            return program ? `HOD ${program}` : 'HOD';
+        }
+        
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+        
+        init() {
+            this.cacheElements();
+            this.setupEventListeners();
+            this.loadRequiredLibraries();
+            this.loadPastExamRecords();
+            setTimeout(() => this.tryLoadIfLoggedIn(), CONFIG.LOAD_DELAY);
+        }
+        
+        cacheElements() {
+            this.examCardContent = document.getElementById('exam-card-content-standalone');
+            this.dashboardExamStatus = document.getElementById('dashboard-exam-status');
+            this.dashboardApprovedUnits = document.getElementById('dashboard-approved-units');
+        }
+        
+        setupEventListeners() {
+            this._boundHandlers = {
+                appReady: () => this.tryLoadIfLoggedIn(),
+                profileLoaded: (e) => {
+                    if (e.detail?.profile) {
+                        this.userProfile = e.detail.profile;
+                        this.updateUserData();
+                        this.loadExamCard();
+                        this.loadPastExamRecords();
+                    }
+                },
+                unitRegistrationReady: () => this.loadExamCard(),
+                tabClick: () => setTimeout(() => this.loadExamCard(), 100)
+            };
+            
+            document.addEventListener('appReady', this._boundHandlers.appReady);
+            document.addEventListener('profileLoaded', this._boundHandlers.profileLoaded);
+            document.addEventListener('unitRegistrationReady', this._boundHandlers.unitRegistrationReady);
+            
+            document.querySelectorAll('[data-tab="hub-exam-card"]').forEach(link => {
+                link.addEventListener('click', this._boundHandlers.tabClick);
+            });
+            
+            document.addEventListener('keydown', (e) => {
+                if (e.ctrlKey && e.key === 'p' && this.loaded) {
+                    // Allow native print dialog
+                }
+            });
+        }
+        
+        destroy() {
+            document.removeEventListener('appReady', this._boundHandlers.appReady);
+            document.removeEventListener('profileLoaded', this._boundHandlers.profileLoaded);
+            document.removeEventListener('unitRegistrationReady', this._boundHandlers.unitRegistrationReady);
+            document.querySelectorAll('[data-tab="hub-exam-card"]').forEach(link => {
+                link.removeEventListener('click', this._boundHandlers.tabClick);
+            });
+            this.approvedUnits = [];
+            this.userProfile = null;
+            this.pastExamRecords = [];
+            this.examCardContent = null;
+        }
+        
+        // ============================================
+        // UTILITY FUNCTIONS
+        // ============================================
+        
+        cleanText(str) {
+            if (!str) return '';
+            return str.replace(/&amp;/g, '&')
+                      .replace(/&#x27;/g, "'")
+                      .replace(/&quot;/g, '"')
+                      .replace(/&lt;/g, '<')
+                      .replace(/&gt;/g, '>')
+                      .replace(/&amp;amp;/g, '&')
+                      .replace(/&amp;quot;/g, '"')
+                      .replace(/&amp;#x27;/g, "'")
+                      .trim();
+        }
+        
+        formatDate(date = new Date()) {
+            return date.toLocaleDateString('en-KE', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+        }
+        
+        getExamPeriod() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = now.getMonth();
+            
+            if (month >= 2 && month <= 5) {
+                return `March - June ${year} (Trimester 1)`;
+            }
+            if (month >= 6 && month <= 9) {
+                return `July - October ${year} (Trimester 2)`;
+            }
+            return `November - February ${year}/${year + 1} (Trimester 3)`;
+        }
+        
+        isExamOver() {
+            const now = new Date();
+            const currentMonth = now.getMonth();
+            const currentYear = now.getFullYear();
+            
+            const examEndDates = {
+                'Trimester 1': new Date(currentYear, 5, 30),
+                'Trimester 2': new Date(currentYear, 9, 30),
+                'Trimester 3': new Date(currentYear + 1, 1, 28)
+            };
+            
+            const period = this.getExamPeriod();
+            let endDate;
+            
+            if (period.includes('Trimester 1')) {
+                endDate = examEndDates['Trimester 1'];
+            } else if (period.includes('Trimester 2')) {
+                endDate = examEndDates['Trimester 2'];
+            } else {
+                endDate = examEndDates['Trimester 3'];
+            }
+            
+            return now > endDate;
+        }
+        
+        // ============================================
+        // LIBRARY LOADING
+        // ============================================
+        
+        loadRequiredLibraries() {
+            const libraries = [
+                { name: 'html2canvas', url: 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js', check: () => typeof html2canvas !== 'undefined' },
+                { name: 'jspdf', url: 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js', check: () => typeof jspdf !== 'undefined' }
+            ];
+            
+            libraries.forEach(lib => {
+                if (!lib.check()) {
+                    const script = document.createElement('script');
+                    script.src = lib.url;
+                    script.async = true;
+                    document.head.appendChild(script);
+                }
+            });
+        }
+        
+        waitForLibraries() {
+            return new Promise((resolve) => {
+                const checkLibraries = setInterval(() => {
+                    if (typeof html2canvas !== 'undefined' && window.jspdf && window.jspdf.jsPDF) {
+                        clearInterval(checkLibraries);
+                        resolve();
+                    }
+                }, 100);
+                
+                setTimeout(() => {
+                    clearInterval(checkLibraries);
+                    resolve();
+                }, 10000);
+            });
+        }
+        
+        // ============================================
+        // USER PROFILE MANAGEMENT
+        // ============================================
+        
+        getUserProfileFromSources() {
+            const sources = [
+                () => window.db?.currentUserProfile,
+                () => window.currentUserProfile,
+                () => window.databaseModule?.currentUserProfile,
+                () => window.app?.user,
+                () => { try { return JSON.parse(localStorage.getItem('userProfile')); } catch(e) { return null; } },
+                () => { try { return JSON.parse(localStorage.getItem('nchsm_user')); } catch(e) { return null; } }
+            ];
+            
+            for (const source of sources) {
+                try {
+                    const profile = source();
+                    if (profile && (profile.id || profile.user_id || profile.student_id)) return profile;
+                } catch(e) {}
+            }
+            return null;
+        }
+        
+        updateUserData() {
+            if (this.userProfile) {
+                this.userId = this.userProfile.user_id || this.userProfile.id || this.userProfile.student_id;
+                this.isTVET = this.isTVETStudent();
+                this.userLevel = this.isTVET ? 'TVET' : 'KRCHN';
+                this.userBlock = this.getBlockValue();
+                
+                console.log('📋 User data updated:', {
+                    userId: this.userId,
+                    block: this.userBlock,
+                    isTVET: this.isTVET,
+                    level: this.userLevel,
+                    program: this.userProfile.program
+                });
+                
+                return true;
+            }
+            return false;
+        }
+        
+        tryLoadIfLoggedIn() {
+            const profile = this.getUserProfileFromSources();
+            if (profile) {
+                this.userProfile = profile;
+                this.updateUserData();
+                this.loadExamCard();
+                this.loadPastExamRecords();
+            } else {
+                this.showLoginMessage();
+            }
+        }
+        
+        // ============================================
+        // DATA FETCHING - LOAD APPROVED UNITS
+        // ============================================
+        
+        async loadApprovedUnitsFromDB() {
+            const supabase = window.db?.supabase || window.supabase;
+            if (!supabase) {
+                console.warn('⚠️ Supabase not available for exam card');
+                return false;
+            }
+            
+            try {
+                let actualUserId = this.userId;
+                
+                if (!actualUserId) {
+                    if (this.userProfile?.user_id) {
+                        actualUserId = this.userProfile.user_id;
+                    } else if (this.userProfile?.id) {
+                        actualUserId = this.userProfile.id;
+                    } else if (this.userProfile?.student_id) {
+                        const { data: userData } = await supabase
+                            .from('consolidated_user_profiles_table')
+                            .select('user_id')
+                            .eq('student_id', this.userProfile.student_id)
+                            .maybeSingle();
+                        if (userData?.user_id) actualUserId = userData.user_id;
+                    }
+                }
+                
+                if (!actualUserId) {
+                    console.error('❌ No user ID found for exam card');
+                    return false;
+                }
+                
+                console.log('🔍 Fetching approved units for user:', actualUserId);
+                
+                const { data, error } = await supabase
+                    .from('student_unit_registrations')
+                    .select('*')
+                    .eq('student_id', actualUserId)
+                    .eq('status', 'approved')
+                    .order('created_at', { ascending: false });
+                
+                if (error) throw error;
+                
+                this.approvedUnits = data || [];
+                console.log(`✅ Found ${this.approvedUnits.length} approved units`);
+                
+                const normalCount = this.approvedUnits.filter(u => u.reg_type === 'Normal' || !u.reg_type).length;
+                const suppCount = this.approvedUnits.filter(u => u.reg_type === 'Supplementary').length;
+                const retakeCount = this.approvedUnits.filter(u => u.reg_type === 'Retake').length;
+                
+                if (suppCount > 0 || retakeCount > 0) {
+                    console.log(`📋 Breakdown: ${normalCount} Normal, ${suppCount} Supplementary, ${retakeCount} Retake`);
+                }
+                
+                return true;
+                
+            } catch (error) {
+                console.error('❌ Error loading approved units:', error);
+                this.showError(`Database error: ${error.message || 'Unknown error'}`);
+                return false;
+            }
+        }
+        
+
+        async loadPublishedMarksFromDB() {
+            const supabase = window.db?.supabase || window.supabase;
+            this.publishedMarks = [];
+            if (!supabase || !this.userProfile) return false;
+            const admissionNumber = String(this.userProfile.admission_number || this.userProfile.student_id || '').trim();
+            const authUserId = this.userProfile.user_id || this.userProfile.id || this.userProfile.student_uuid;
+            try {
+                let rows = [];
+                if (admissionNumber) {
+                    const result = await supabase.from('student_marks').select('*')
+                        .eq('admission_number', admissionNumber).eq('published', true)
+                        .eq('approval_status', 'approved').order('published_at', { ascending: false });
+                    if (result.error) throw result.error;
+                    rows = result.data || [];
+                }
+                if (!rows.length && authUserId) {
+                    const result = await supabase.from('student_marks').select('*')
+                        .eq('student_id', authUserId).eq('published', true)
+                        .eq('approval_status', 'approved').order('published_at', { ascending: false });
+                    if (result.error) throw result.error;
+                    rows = result.data || [];
+                }
+                this.publishedMarks = rows.filter(m => m && m.published === true &&
+                    String(m.approval_status || '').trim().toLowerCase() === 'approved');
+                return true;
+            } catch (error) {
+                console.warn('Could not verify completed units; retaining registrations:', error);
+                this.publishedMarks = [];
+                return false;
+            }
+        }
+
+        normalizeUnitIdentity(value) {
+            return String(value || '').trim().toLowerCase().replace(/&/g, 'and')
+                .replace(/[^a-z0-9]+/g, ' ').replace(/\s+/g, ' ').trim();
+        }
+
+        findPublishedMarkForUnit(unit) {
+            const code = this.normalizeUnitIdentity(unit.unit_code || unit.course_code || unit.code);
+            const name = this.normalizeUnitIdentity(unit.unit_name || unit.subject_name || unit.name);
+            return this.publishedMarks.find(mark => {
+                const markCode = this.normalizeUnitIdentity(mark.unit_code || mark.course_code || mark.subject_code);
+                const markName = this.normalizeUnitIdentity(mark.subject_name || mark.unit_name || mark.course_name);
+                if (code && markCode && code === markCode) return true;
+                return Boolean(name && markName && name === markName);
+            }) || null;
+        }
+
+        isUnitPassed(mark) {
+            if (!mark) return false;
+            const rs = String(mark.retake_status || '').trim().toLowerCase();
+            const retakeScore = Number(mark.retake_score);
+            if (['pass', 'passed', 'competent'].includes(rs) && mark.retake_score !== null &&
+                mark.retake_score !== undefined && mark.retake_score !== '' && Number.isFinite(retakeScore)) return true;
+            const grade = String(mark.published_grade ?? mark.final_grade ?? mark.final_grade_letter ??
+                mark.letter_grade ?? mark.grade_letter ?? mark.result_grade ?? mark.computed_grade ??
+                mark.grade ?? mark.final_status ?? mark.status ?? '').trim().toUpperCase();
+            if (['PASS','PASSED','CREDIT','DISTINCTION','COMPETENT','SATISFACTORY','PROFICIENT','MASTERY'].includes(grade)) return true;
+            if (['FAIL','FAILED','NOT YET COMPETENT','NYC'].includes(grade)) return false;
+            const raw = (['pass', 'passed', 'competent'].includes(rs) && mark.retake_score !== null &&
+                mark.retake_score !== undefined && mark.retake_score !== '') ? mark.retake_score :
+                (mark.final_score ?? mark.published_score ?? mark.overall_score ?? mark.final_total ??
+                mark.total_score ?? mark.total ?? mark.score ?? mark.marks);
+            if (raw === null || raw === undefined || raw === '') return false;
+            const score = Number(raw);
+            if (!Number.isFinite(score)) return false;
+            const program = String(this.userProfile?.program || this.userProfile?.program_type || '').toUpperCase();
+            return score >= (TVET_PROGRAMS.includes(program) || program === 'TVET' ? 50 : 60);
+        }
+
+        separateCompletedUnits() {
+            this.completedUnits = [];
+            const current = [];
+            (this.approvedUnits || []).forEach(unit => {
+                const mark = this.findPublishedMarkForUnit(unit);
+                if (mark && this.isUnitPassed(mark)) this.completedUnits.push({ unit, mark });
+                else current.push(unit);
+            });
+            this.approvedUnits = current;
+            console.log('Exam-card unit split:', { current: current.length, completed: this.completedUnits.length });
+        }
+
+        renderCompletedUnitCards() {
+            const container = document.getElementById('completed-units-table-container');
+            if (!container) {
+                console.warn('Completed-units table container is missing from student.html');
+                return;
+            }
+
+            if (!Array.isArray(this.completedUnits) || this.completedUnits.length === 0) {
+                container.innerHTML = '';
+                container.style.display = 'none';
+                return;
+            }
+
+            const rows = this.completedUnits.map((item, index) => {
+                const unit = item.unit || {};
+                const mark = item.mark || {};
+                const code = this.cleanText(unit.unit_code || unit.course_code || unit.code || mark.unit_code || mark.course_code || '—');
+                const name = this.cleanText(unit.unit_name || unit.subject_name || unit.name || mark.subject_name || mark.unit_name || 'Completed unit');
+                const block = this.cleanText(unit.block || unit.block_term || unit.term || mark.block || mark.block_term || mark.term || '—');
+                const retakePassed = ['pass', 'passed', 'competent'].includes(String(mark.retake_status || '').trim().toLowerCase());
+                const rawScore = retakePassed && mark.retake_score !== null && mark.retake_score !== undefined && mark.retake_score !== ''
+                    ? mark.retake_score
+                    : (mark.final_score ?? mark.published_score ?? mark.overall_score ?? mark.final_total ??
+                       mark.total_score ?? mark.total ?? mark.score ?? mark.marks);
+                const score = rawScore !== null && rawScore !== undefined && rawScore !== ''
+                    ? this.cleanText(String(rawScore)) + '%' : '—';
+                const grade = this.cleanText(mark.published_grade || mark.final_grade || mark.final_grade_letter ||
+                    mark.letter_grade || mark.grade_letter || mark.result_grade || mark.grade || 'PASS');
+
+                return '<tr style="border-bottom:1px solid #e2e8f0;">' +
+                    '<td style="padding:11px 12px;text-align:center;color:#64748b;">' + (index + 1) + '</td>' +
+                    '<td style="padding:11px 12px;font-weight:700;color:#0f3b5d;white-space:nowrap;">' + code + '</td>' +
+                    '<td style="padding:11px 12px;color:#1e293b;font-weight:600;">' + name + '</td>' +
+                    '<td style="padding:11px 12px;text-align:center;color:#475569;">' + block + '</td>' +
+                    '<td style="padding:11px 12px;text-align:center;font-weight:700;color:#166534;">' + score + '</td>' +
+                    '<td style="padding:11px 12px;text-align:center;font-weight:700;color:#166534;">' + grade + '</td>' +
+                    '<td style="padding:11px 12px;text-align:center;"><span style="display:inline-block;background:#dcfce7;color:#166534;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:800;">PASSED</span></td>' +
+                    '</tr>';
+            }).join('');
+
+            container.style.display = 'block';
+            container.innerHTML =
+                '<div style="background:#fff;border:1px solid #bbf7d0;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(15,23,42,.04);">' +
+                    '<div style="padding:14px 18px;background:#f0fdf4;border-bottom:1px solid #bbf7d0;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">' +
+                        '<div><h3 style="margin:0;color:#166534;font-size:15px;font-weight:800;">✓ Passed Units</h3>' +
+                        '<p style="margin:4px 0 0;color:#64748b;font-size:12px;">Approved and published passes are listed here and excluded from the current exam card.</p></div>' +
+                        '<span style="background:#dcfce7;color:#166534;padding:5px 11px;border-radius:20px;font-size:12px;font-weight:800;">' +
+                            this.completedUnits.length + ' completed</span>' +
+                    '</div>' +
+                    '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:13px;min-width:680px;">' +
+                        '<thead><tr style="background:#f8fafc;border-bottom:1px solid #e2e8f0;">' +
+                            '<th style="padding:11px 12px;text-align:center;font-size:11px;color:#64748b;">#</th>' +
+                            '<th style="padding:11px 12px;text-align:left;font-size:11px;color:#64748b;">UNIT CODE</th>' +
+                            '<th style="padding:11px 12px;text-align:left;font-size:11px;color:#64748b;">UNIT NAME</th>' +
+                            '<th style="padding:11px 12px;text-align:center;font-size:11px;color:#64748b;">BLOCK / TERM</th>' +
+                            '<th style="padding:11px 12px;text-align:center;font-size:11px;color:#64748b;">SCORE</th>' +
+                            '<th style="padding:11px 12px;text-align:center;font-size:11px;color:#64748b;">GRADE</th>' +
+                            '<th style="padding:11px 12px;text-align:center;font-size:11px;color:#64748b;">STATUS</th>' +
+                        '</tr></thead><tbody>' + rows + '</tbody></table></div>' +
+                '</div>';
+        }
+
+        // ============================================
+        // LOAD EXAM CARD - FIXED
+        // ============================================
+        
+        async loadExamCard() {
+            if (this.isLoading) return;
+            if (!this.userProfile) { 
+                this.tryLoadIfLoggedIn();
+                return; 
+            }
+            
+            this.isLoading = true;
+            this.showLoading();
+            
+            try {
+                const success = await this.loadApprovedUnitsFromDB();
+                if (success) {
+                    await this.loadPublishedMarksFromDB();
+                    this.separateCompletedUnits();
+                    await this.updateDashboard();
+                    
+                    // Check what types of units we have
+                    const hasNormal = this.approvedUnits.some(u => 
+                        u.reg_type === 'Normal' || !u.reg_type
+                    );
+                    const hasRetake = this.approvedUnits.some(u => 
+                        u.reg_type === 'Retake'
+                    );
+                    const hasSupplementary = this.approvedUnits.some(u => 
+                        u.reg_type === 'Supplementary'
+                    );
+                    
+                    console.log('📊 Unit breakdown:', { 
+                        total: this.approvedUnits.length, 
+                        normal: hasNormal, 
+                        retake: hasRetake, 
+                        supp: hasSupplementary 
+                    });
+                    
+                    if (this.approvedUnits.length === 0) {
+                        this.showNoUnitsMessage();
+                    } else if (!hasNormal && hasRetake && !hasSupplementary) {
+                        this.displayRetakeExamCard();
+                    } else if (!hasNormal && hasSupplementary && !hasRetake) {
+                        this.showSupplementaryOnlyMessage();
+                    } else {
+                        this.displayExamCard();
+                    }
+                    this.renderCompletedUnitCards();
+                    this.loaded = true;
+                } else {
+                    this.showNoUnitsMessage();
+                }
+            } catch (error) {
+                console.warn('Failed to load exam card:', error);
+                this.showErrorMessage();
+            } finally {
+                this.isLoading = false;
+            }
+        }
+        
+        // ============================================
+        // DISPLAY EXAM CARD - MAIN
+        // ============================================
+        
+        displayExamCard() {
+            if (!this.examCardContent) return;
+            
+            const student = this.userProfile;
+            const approvedUnits = this.approvedUnits;
+            const isEligible = approvedUnits.length > 0;
+            const examOver = this.isExamOver();
+            
+            const isTVET = this.isTVETStudent();
+            const blockLabel = isTVET ? 'Current Term:' : 'Current Block:';
+            const blockValue = this.getBlockValue();
+            const hodTitle = this.getHODTitle();
+            
+            const studentIdDisplay = student?.student_id || 
+                                    student?.admission_number || 
+                                    student?.user_id?.substring(0, 8) || 
+                                    'N/A';
+            const programDisplay = student?.program || student?.program_type || 'N/A';
+            
+            const totalCredits = approvedUnits.reduce((sum, unit) => sum + (unit.credits || CONFIG.DEFAULT_CREDITS), 0);
+            
+            const unitCount = approvedUnits.length;
+            const needsCompression = unitCount > CONFIG.MAX_UNITS_DISPLAY;
+            
+            let tableRows = '';
+            let displayUnits = approvedUnits;
+            let compressedCount = 0;
+            
+            if (needsCompression) {
+                displayUnits = approvedUnits.slice(0, CONFIG.MAX_UNITS_DISPLAY);
+                compressedCount = approvedUnits.length - CONFIG.MAX_UNITS_DISPLAY;
+            }
+            
+            tableRows = displayUnits.map((unit, index) => {
+                const unitName = this.cleanText(unit.unit_name || unit.name || '');
+                const unitCode = this.cleanText(unit.unit_code || unit.code || '');
+                const isRetake = unit.reg_type === 'Retake';
+                return `
+                    <tr${isRetake ? ' style="background: #fef3c7;"' : ''}>
+                        <td class="text-center">${index + 1}</td>
+                        <td><strong>${unitCode}</strong></td>
+                        <td>${unitName}${isRetake ? ' <span style="background:#dc2626;color:white;padding:1px 8px;border-radius:10px;font-size:9px;margin-left:8px;">RET</span>' : ''}</td>
+                        <td class="text-center">${unit.credits || CONFIG.DEFAULT_CREDITS}</td>
+                        <td class="signature-cell">
+                            <div class="signature-line"></div>
+                            <span style="font-size: 9px; color: #94a3b8;">Lecturer's Signature</span>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            
+            if (compressedCount > 0) {
+                tableRows += `
+                    <tr class="compressed-row">
+                        <td colspan="5" style="text-align:center; font-style:italic; color:#64748b; padding:8px; background:#f8fafc;">
+                            + ${compressedCount} more ${compressedCount === 1 ? 'unit' : 'units'} registered
+                        </td>
+                    </tr>
+                `;
+            }
+            
+            let statusBadge = '';
+            if (examOver) {
+                statusBadge = `<div class="status-badge completed">✅ COMPLETED</div>`;
+            } else {
+                statusBadge = `<div class="status-badge ${isEligible ? 'eligible' : 'ineligible'}">
+                    ${isEligible ? '✅ ELIGIBLE' : '❌ NOT ELIGIBLE'}
+                </div>`;
+            }
+            
+            const studentTypeBadge = isTVET ? 
+                `<span style="background: #f59e0b; color: #78350f; padding: 2px 10px; border-radius: 12px; font-size: 10px; font-weight: 600; margin-left: 10px;">TVET</span>` :
+                `<span style="background: #2563eb; color: white; padding: 2px 10px; border-radius: 12px; font-size: 10px; font-weight: 600; margin-left: 10px;">KRCHN</span>`;
+            
+            const html = `
+                <div class="exam-card-wrapper" id="exam-card-print-area">
+                    <div class="exam-card-compact" role="region" aria-label="Examination Card">
+                        <!-- Header -->
+                        <div class="card-header">
+                            <img src="${CONFIG.LOGO_URL}" alt="NCHSM Logo" class="card-logo" onerror="this.style.display='none'">
+                            <div class="header-text">
+                                <div class="institution">NAKURU COLLEGE OF HEALTH SCIENCES AND MANAGEMENT</div>
+                                <div class="card-title">
+                                    EXAMINATION CARD
+                                    ${studentTypeBadge}
+                                </div>
+                                <div class="card-subtitle">${examOver ? '(Historical Record)' : '(Exam Entry Permit)'}</div>
+                            </div>
+                            ${statusBadge}
+                        </div>
+                        
+                        <!-- Info Grid -->
+                        <div class="info-grid">
+                            <div class="info-item"><span class="info-label">Name:</span> ${this.cleanText(student?.full_name || 'Not Available')}</div>
+                            <div class="info-item"><span class="info-label">REG NO.:</span> ${this.cleanText(studentIdDisplay)}</div>
+                            <div class="info-item"><span class="info-label">Program:</span> ${this.cleanText(programDisplay)}</div>
+                            <div class="info-item"><span class="info-label">${blockLabel}</span> <strong>${this.cleanText(blockValue)}</strong></div>
+                            <div class="info-item"><span class="info-label">Registered Units:</span> <strong>${approvedUnits.length}</strong></div>
+                            <div class="info-item"><span class="info-label">Total Credits:</span> <strong>${totalCredits}</strong></div>
+                            <div class="info-item"><span class="info-label">Exam Period:</span> ${this.getExamPeriod()}</div>
+                            <div class="info-item"><span class="info-label">Date Issued:</span> ${this.formatDate()}</div>
+                            <div class="info-item"><span class="info-label">Valid Until:</span> ${examOver ? 'Completed' : 'End of Exam Period'}</div>
+                        </div>
+                        
+                        <!-- Units Table -->
+                        ${approvedUnits.length > 0 ? `
+                            <table class="units-table">
+                                <thead>
+                                    <tr>
+                                        <th width="5%">#</th>
+                                        <th width="18%">Unit Code</th>
+                                        <th width="40%">Unit Title</th>
+                                        <th width="7%">Cr</th>
+                                        <th width="30%">Lecturer's Signature</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${tableRows}
+                                    <tr class="total-row">
+                                        <td colspan="3"><strong>TOTAL REGISTERED UNITS: ${approvedUnits.length}</strong></td>
+                                        <td class="text-center"><strong>${totalCredits}</strong></td>
+                                        <td></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        ` : '<div class="no-units">No approved units found. Please register for units.</div>'}
+                        
+                        <!-- Signatures -->
+                        <div class="signatures-row">
+                            <div class="signature">
+                                <div class="sign-line"></div>
+                                <div style="font-weight: 600; font-size: 12px;">${hodTitle}</div>
+                                <div style="font-size: 9px; color: #94a3b8;">Head of Department</div>
+                            </div>
+                            <div class="signature">
+                                <div class="sign-line"></div>
+                                <div style="font-weight: 600; font-size: 12px;">Principal</div>
+                                <div style="font-size: 9px; color: #94a3b8;">NCHSM</div>
+                            </div>
+                            <div class="signature">
+                                <div class="sign-line"></div>
+                                <div style="font-weight: 600; font-size: 12px;">Finance Officer</div>
+                                <div style="font-size: 9px; color: #94a3b8;">NCHSM</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Footer -->
+                        <div class="card-footer">
+                            <div class="rules-header">📋 EXAMINATION RULES & REGULATIONS</div>
+                            <div class="rules-list">
+                                <div class="rule-item">• Present your exam card at each examination hall</div>
+                                <div class="rule-item">• No electronic devices allowed in examination room</div>
+                                <div class="rule-item">• Arrive 30 minutes before examination start time</div>
+                                <div class="rule-item">• Mobile phones must be switched off and stored</div>
+                                <div class="rule-item">• No unauthorized materials allowed</div>
+                            </div>
+                            
+                            <div class="student-section">
+                                <div class="student-declaration">
+                                    I hereby confirm that I have read and understood the examination rules and regulations.
+                                </div>
+                                
+                                <div class="student-sign-line">
+                                    <span class="student-label">Student Signature:</span>
+                                    <span class="signature-line-inline"></span>
+                                    <span class="student-date">Date: ${this.formatDate()}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    ${!examOver && isEligible ? `
+                        <div class="action-buttons">
+                            <button class="download-btn" id="downloadExamCardBtn" aria-label="Download PDF">
+                                📥 Download PDF
+                            </button>
+                            <button class="print-btn" id="printExamCardBtn" aria-label="Print Card">
+                                🖨️ Print Card
+                            </button>
+                            <button class="preview-btn" id="previewExamCardBtn" aria-label="Preview A4">
+                                👁️ A4 Preview
+                            </button>
+                        </div>
+                    ` : ''}
+                    
+                    ${examOver ? `
+                        <div style="text-align: center; margin-top: 12px; font-size: 11px; color: #64748b;">
+                            📜 This is a historical record from the ${this.getExamPeriod()}
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+            
+            this.examCardContent.innerHTML = html;
+            this.addCompactStyles();
+            
+            this.setupActionButtons();
+            this.loadPastExamRecords();
+        }
+        
+        // ============================================
+        // RETAKE EXAM CARD
+        // ============================================
+        
+        displayRetakeExamCard() {
+            if (!this.examCardContent) return;
+            
+            const student = this.userProfile;
+            const retakeUnits = this.approvedUnits.filter(u => 
+                u.reg_type === 'Retake'
+            );
+            
+            let tableRows = retakeUnits.map((unit, index) => {
+                return `
+                    <tr style="background: #fef3c7;">
+                        <td style="padding:10px 8px;text-align:center;border-bottom:1px solid #e2e8f0;">${index + 1}</td>
+                        <td style="padding:10px 8px;border-bottom:1px solid #e2e8f0;"><strong>${this.cleanText(unit.unit_code)}</strong></td>
+                        <td style="padding:10px 8px;border-bottom:1px solid #e2e8f0;">
+                            ${this.cleanText(unit.unit_name)}
+                            <span style="background:#dc2626;color:white;padding:1px 8px;border-radius:10px;font-size:9px;margin-left:8px;">RET</span>
+                        </td>
+                        <td style="padding:10px 8px;text-align:center;border-bottom:1px solid #e2e8f0;">${unit.credits || 1}</td>
+                        <td style="padding:10px 8px;text-align:center;border-bottom:1px solid #e2e8f0;">
+                            <div style="width:80%;margin:8px auto;border-top:2px solid #000;"></div>
+                            <span style="font-size:9px;color:#94a3b8;">Lecturer's Signature</span>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            
+            const totalCredits = retakeUnits.reduce((sum, u) => sum + (u.credits || 1), 0);
+            
+            const html = `
+                <div class="exam-card-wrapper" id="exam-card-print-area">
+                    <div class="exam-card-compact">
+                        <div class="card-header" style="background:linear-gradient(135deg,#dc2626,#b91c1c);">
+                            <img src="${CONFIG.LOGO_URL}" alt="NCHSM Logo" class="card-logo" onerror="this.style.display='none'">
+                            <div class="header-text">
+                                <div class="institution">NAKURU COLLEGE OF HEALTH SCIENCES AND MANAGEMENT</div>
+                                <div class="card-title">
+                                    RETAKE EXAMINATION CARD
+                                    <span style="background:#dc2626;color:white;padding:2px 12px;border-radius:12px;font-size:11px;font-weight:600;">RET</span>
+                                </div>
+                                <div class="card-subtitle">(Retake Exam Entry Permit)</div>
+                            </div>
+                            <div style="background:#dc2626;padding:5px 15px;border-radius:20px;font-size:12px;font-weight:700;">🔄 RETAKE</div>
+                        </div>
+                        
+                        <div class="info-grid">
+                            <div class="info-item"><span class="info-label">Name:</span> ${this.cleanText(student?.full_name || 'N/A')}</div>
+                            <div class="info-item"><span class="info-label">REG NO.:</span> ${this.cleanText(student?.student_id || 'N/A')}</div>
+                            <div class="info-item"><span class="info-label">Program:</span> ${this.cleanText(student?.program || 'N/A')}</div>
+                            <div class="info-item"><span class="info-label">Current Block:</span> <strong>${this.getBlockValue()}</strong></div>
+                            <div class="info-item"><span class="info-label">Retake Units:</span> <strong>${retakeUnits.length}</strong></div>
+                            <div class="info-item"><span class="info-label">Total Credits:</span> <strong>${totalCredits}</strong></div>
+                            <div class="info-item"><span class="info-label">Exam Period:</span> ${this.getExamPeriod()}</div>
+                            <div class="info-item"><span class="info-label">Date Issued:</span> ${this.formatDate()}</div>
+                            <div class="info-item" style="grid-column:span 1;">
+                                <span class="info-label">Type:</span> 
+                                <span style="color:#dc2626;font-weight:700;">RETAKE</span>
+                            </div>
+                        </div>
+                        
+                        <table class="units-table">
+                            <thead>
+                                <tr>
+                                    <th width="5%">#</th>
+                                    <th width="18%">Unit Code</th>
+                                    <th width="40%">Unit Title</th>
+                                    <th width="7%">Cr</th>
+                                    <th width="30%">Lecturer's Signature</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${tableRows}
+                                <tr class="total-row">
+                                    <td colspan="3"><strong>TOTAL RETAKE UNITS: ${retakeUnits.length}</strong></td>
+                                    <td class="text-center"><strong>${totalCredits}</strong></td>
+                                    <td></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        
+                        <div class="signatures-row">
+                            <div class="signature">
+                                <div class="sign-line"></div>
+                                <div style="font-weight:600;font-size:12px;">${this.getHODTitle()}</div>
+                                <div style="font-size:9px;color:#94a3b8;">Head of Department</div>
+                            </div>
+                            <div class="signature">
+                                <div class="sign-line"></div>
+                                <div style="font-weight:600;font-size:12px;">Principal</div>
+                                <div style="font-size:9px;color:#94a3b8;">NCHSM</div>
+                            </div>
+                            <div class="signature">
+                                <div class="sign-line"></div>
+                                <div style="font-weight:600;font-size:12px;">Finance Officer</div>
+                                <div style="font-size:9px;color:#94a3b8;">NCHSM</div>
+                            </div>
+                        </div>
+                        
+                        <div class="card-footer">
+                            <div class="rules-header">📋 RETAKE EXAMINATION RULES & REGULATIONS</div>
+                            <div class="rules-list">
+                                <div class="rule-item">• Present your exam card at each examination hall</div>
+                                <div class="rule-item">• No electronic devices allowed in examination room</div>
+                                <div class="rule-item">• Arrive 30 minutes before examination start time</div>
+                                <div class="rule-item">• Mobile phones must be switched off and stored</div>
+                                <div class="rule-item">• No unauthorized materials allowed</div>
+                            </div>
+                            <div class="student-section">
+                                <div class="student-declaration">
+                                    I hereby confirm that I have read and understood the examination rules and regulations.
+                                </div>
+                                <div class="student-sign-line">
+                                    <span class="student-label">Student Signature:</span>
+                                    <span class="signature-line-inline"></span>
+                                    <span class="student-date">Date: ${this.formatDate()}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button class="download-btn" onclick="window.examCardModule?.downloadExamCardDirect()">📥 Download PDF</button>
+                        <button class="print-btn" onclick="window.examCardModule?.printExamCard()">🖨️ Print Card</button>
+                        <button class="preview-btn" onclick="window.examCardModule?.previewA4()">👁️ A4 Preview</button>
+                    </div>
+                </div>
+            `;
+            
+            this.examCardContent.innerHTML = html;
+            this.addCompactStyles();
+        }
+        
+        // ============================================
+        // SUPPLEMENTARY ONLY MESSAGE
+        // ============================================
+        
+        showSupplementaryOnlyMessage() {
+            if (this.examCardContent) {
+                this.examCardContent.innerHTML = `
+                    <div style="text-align: center; padding: 60px 20px; background: white; border-radius: 12px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+                        <div style="font-size: 48px; margin-bottom: 16px;">📋</div>
+                        <h3 style="color: #B45309;">Supplementary / Retake Units Only</h3>
+                        <p style="color: #64748b; max-width: 500px; margin: 10px auto;">
+                            You have <strong>Supplementary or Retake</strong> units approved, but no <strong>Normal</strong> units.
+                        </p>
+                        <p style="color: #64748b; max-width: 500px; margin: 10px auto;">
+                            Please go to the <strong>Supplementary / Retake</strong> tab to view and download your Supplementary Exam Card.
+                        </p>
+                        <div style="margin-top: 20px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+                            <button onclick="document.querySelector('.reg-sub-tab[data-subtab=\\'supplementary\\']')?.click()" style="
+                                padding: 10px 28px;
+                                background: #B45309;
+                                color: white;
+                                border: none;
+                                border-radius: 8px;
+                                cursor: pointer;
+                                font-weight: 600;
+                                font-size: 14px;
+                                display: inline-flex;
+                                align-items: center;
+                                gap: 8px;
+                            ">
+                                <i class="fas fa-arrow-right"></i> Go to Supplementary Tab
+                            </button>
+                            <button onclick="window.examCardModule?.loadExamCard()" style="
+                                padding: 10px 28px;
+                                background: #f1f5f9;
+                                color: #475569;
+                                border: none;
+                                border-radius: 8px;
+                                cursor: pointer;
+                                font-weight: 500;
+                                font-size: 14px;
+                                display: inline-flex;
+                                align-items: center;
+                                gap: 8px;
+                            ">
+                                <i class="fas fa-sync-alt"></i> Refresh
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+        
+        // ============================================
+        // PAST EXAM RECORDS - FIXED
+        // ============================================
+        
+        async loadPastExamRecords() {
+            try {
+                const supabase = window.db?.supabase || window.supabase;
+                if (!supabase) {
+                    console.warn('⚠️ Supabase not available for past exams');
+                    return;
+                }
+                
+                let userId = this.userId;
+                if (!userId) {
+                    if (this.userProfile?.user_id) userId = this.userProfile.user_id;
+                    else if (this.userProfile?.id) userId = this.userProfile.id;
+                    else if (this.userProfile?.student_id) {
+                        const { data } = await supabase
+                            .from('consolidated_user_profiles_table')
+                            .select('user_id')
+                            .eq('student_id', this.userProfile.student_id)
+                            .maybeSingle();
+                        if (data?.user_id) userId = data.user_id;
+                    }
+                }
+                
+                if (!userId) {
+                    console.warn('⚠️ No user ID for past exams');
+                    return;
+                }
+                
+                console.log('🔍 Fetching past exam records for:', userId);
+                
+                const { data, error } = await supabase
+                    .from('past_exam_records')
+                    .select('*')
+                    .eq('student_id', userId)
+                    .order('created_at', { ascending: false })
+                    .limit(10);
+                
+                if (error) {
+                    console.warn('⚠️ Past exams query error:', error);
+                    return;
+                }
+                
+                if (data && data.length > 0) {
+                    this.pastExamRecords = data;
+                    console.log(`✅ Found ${data.length} past exam records`);
+                    this.displayPastExams();
+                } else {
+                    console.log('📭 No past exam records found');
+                    this.displayNoPastExams();
+                }
+                
+            } catch (error) {
+                console.error('❌ Error loading past exams:', error);
+                this.displayNoPastExams();
+            }
+        }
+        
+        // ============================================
+        // DISPLAY PAST EXAMS - FIXED
+        // ============================================
+        
+        displayPastExams() {
+            const tbody = document.getElementById('pastExamRecordsBody');
+            const count = document.getElementById('pastExamCount');
+            const empty = document.getElementById('pastExamEmpty');
+            if (!tbody) {
+                console.warn('Past-exam table body #pastExamRecordsBody is missing from student.html');
+                return;
+            }
+
+            const records = Array.isArray(this.pastExamRecords) ? this.pastExamRecords : [];
+            if (count) count.textContent = records.length + (records.length === 1 ? ' record' : ' records');
+            if (empty) empty.style.display = records.length ? 'none' : 'block';
+
+            if (!records.length) {
+                this.displayNoPastExams();
+                return;
+            }
+
+            tbody.innerHTML = records.map((record, index) => {
+                const period = this.cleanText(record.period || record.exam_period || record.semester || 'N/A');
+                const units = Number(record.units || record.total_units || record.unit_count || 0);
+                const credits = Number(record.credits || record.total_credits || 0);
+                const rawDate = record.date || record.completed_date || record.created_at;
+                const parsedDate = rawDate ? new Date(rawDate) : null;
+                const date = parsedDate && !Number.isNaN(parsedDate.getTime())
+                    ? parsedDate.toLocaleDateString('en-KE', {year:'numeric',month:'long',day:'numeric'}) : '—';
+                const statusRaw = String(record.status || 'Completed');
+                const status = this.cleanText(statusRaw);
+                const statusLower = statusRaw.toLowerCase();
+                const statusColor = statusLower.includes('pending') ? '#f59e0b' :
+                    (statusLower.includes('fail') ? '#dc2626' :
+                    (statusLower.includes('incomplete') ? '#6b7280' : '#059669'));
+
+                return '<tr style="border-bottom:1px solid #e2e8f0;">' +
+                    '<td style="padding:10px 12px;text-align:center;color:#64748b;">' + (index + 1) + '</td>' +
+                    '<td style="padding:10px 12px;font-weight:600;color:#1e3a5f;">' + period + '</td>' +
+                    '<td style="padding:10px 12px;text-align:center;">' + units + '</td>' +
+                    '<td style="padding:10px 12px;text-align:center;">' + credits + '</td>' +
+                    '<td style="padding:10px 12px;color:#64748b;">' + date + '</td>' +
+                    '<td style="padding:10px 12px;text-align:center;"><span style="background:' + statusColor +
+                    ';color:#fff;padding:3px 12px;border-radius:20px;font-size:11px;font-weight:700;">' +
+                    status.toUpperCase() + '</span></td>' +
+                    '<td style="padding:10px 12px;text-align:center;"><button type="button" data-past-exam-index="' + index +
+                    '" style="background:#1e3a5f;color:#fff;border:0;padding:5px 16px;border-radius:20px;font-size:11px;cursor:pointer;font-weight:600;">View</button></td>' +
+                    '</tr>';
+            }).join('');
+
+            tbody.querySelectorAll('[data-past-exam-index]').forEach(button => {
+                button.addEventListener('click', () => {
+                    const record = this.pastExamRecords[Number(button.getAttribute('data-past-exam-index'))];
+                    if (record) this.viewPastExam(record.id ?? record.exam_id);
+                });
+            });
+        }
+
+        // ============================================
+        // DISPLAY NO PAST EXAMS
+        // ============================================
+
+        displayNoPastExams() {
+            const tbody = document.getElementById('pastExamRecordsBody');
+            const count = document.getElementById('pastExamCount');
+            const empty = document.getElementById('pastExamEmpty');
+            if (count) count.textContent = '0 records';
+            if (empty) empty.style.display = 'block';
+            if (tbody) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:28px 16px;color:#94a3b8;">No previous exam-period records found.</td></tr>';
+            }
+        }
+
+        getPastUnitOutcome(unit) {
+            const explicit = String(
+                unit?.unit_status || unit?.result_status || unit?.pass_status ||
+                unit?.retake_status || unit?.final_status || unit?.result ||
+                unit?.status || unit?.grade || unit?.published_grade || ''
+            ).trim().toLowerCase();
+
+            if (/^(pass|passed|competent|distinction|credit|satisfactory)$/.test(explicit) ||
+                /\b(pass|passed|competent)\b/.test(explicit)) return 'PASSED';
+            if (/^(fail|failed|not passed|not_passed|incomplete|not competent)$/.test(explicit) ||
+                /\b(fail|failed|not passed|not competent)\b/.test(explicit)) return 'NOT PASSED';
+
+            const scoreValue = unit?.final_score ?? unit?.published_score ?? unit?.overall_score ??
+                unit?.final_total ?? unit?.total_score ?? unit?.total ?? unit?.score ?? unit?.marks;
+            if (scoreValue !== null && scoreValue !== undefined && scoreValue !== '' && Number.isFinite(Number(scoreValue))) {
+                return Number(scoreValue) >= 60 ? 'PASSED' : 'NOT PASSED';
+            }
+            return 'STATUS NOT RECORDED';
+        }
+
+        viewPastExam(examId) {
+            const record = this.pastExamRecords.find(r => r.id == examId);
+            if (!record) {
+                alert('Record not found');
+                return;
+            }
+            
+            let unitsList = '';
+            const units = Array.isArray(record.units_list) ? record.units_list : [];
+            if (units.length > 0) {
+                unitsList = units.map((unit, i) => {
+                    const unitName = this.cleanText(unit.unit_name || unit.subject_name || unit.name ||
+                        unit.unit_code || unit.course_code || 'Unit ' + (i + 1));
+                    const outcome = this.getPastUnitOutcome(unit);
+                    const passed = outcome === 'PASSED';
+                    const known = outcome !== 'STATUS NOT RECORDED';
+                    const outcomeStyle = passed
+                        ? 'background:#dcfce7;color:#166534;border:1px solid #86efac;'
+                        : (known
+                            ? 'background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;'
+                            : 'background:#f1f5f9;color:#475569;border:1px solid #cbd5e1;');
+                    return `
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 2px;border-bottom:1px solid #e2e8f0;font-size:13px;">
+                        <span style="font-weight:700;color:#111827;min-width:0;">${i + 1}. ${unitName}</span>
+                        <span style="flex:0 0 auto;padding:4px 10px;border-radius:16px;font-size:10px;font-weight:800;${outcomeStyle}">${outcome}</span>
+                    </div>`;
+                }).join('');
+            }
+            
+            const modal = document.createElement('div');
+            modal.className = 'preview-overlay';
+            modal.setAttribute('role', 'dialog');
+            modal.setAttribute('aria-label', 'Past Exam Record');
+            
+            modal.innerHTML = `
+                <div class="preview-modal">
+                    <button class="preview-close" aria-label="Close">×</button>
+                    
+                    <h3 style="color: #1e3a5f; margin: 0 0 20px 0; font-size: 18px;">
+                        📄 Past Exam Record
+                    </h3>
+                    
+                    <div style="background: #f8fafc; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 13px;">
+                            <div><strong style="color: #64748b;">Period:</strong> ${this.cleanText(record.period || record.exam_period || 'N/A')}</div>
+                            <div><strong style="color: #64748b;">Units Registered:</strong> ${record.units || record.total_units || 0}</div>
+                            <div><strong style="color: #64748b;">Total Credits:</strong> ${record.credits || record.total_credits || 0}</div>
+                            <div><strong style="color: #64748b;">Date:</strong> ${this.formatDate(new Date(record.date || record.completed_date || Date.now()))}</div>
+                            <div style="grid-column: span 2;"><strong style="color: #64748b;">Status:</strong> <span style="color: #059669; font-weight: 600;">${record.status || 'Completed'}</span></div>
+                        </div>
+                    </div>
+                    
+                    ${unitsList ? `
+                        <div style="margin-bottom: 16px;">
+                            <h4 style="font-size: 13px; color: #1e3a5f; margin: 0 0 8px 0;">📋 Units &amp; Results</h4>
+                            <div style="background: #f8fafc; border-radius: 8px; padding: 12px; max-height: 300px; overflow-y: auto;">
+                                ${unitsList}
+                            </div>
+                        </div>
+                    ` : ''}
+                    
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button onclick="this.closest('.preview-overlay').remove()" style="
+                            flex: 1;
+                            padding: 10px;
+                            border: 1px solid #e2e8f0;
+                            border-radius: 8px;
+                            background: white;
+                            cursor: pointer;
+                            font-weight: 500;
+                            min-width: 100px;
+                        ">Close</button>
+                        <button onclick="window.examCardModule.downloadPastExamPDF('${examId}')" style="
+                            flex: 1;
+                            padding: 10px;
+                            border: none;
+                            border-radius: 8px;
+                            background: #1e3a5f;
+                            color: white;
+                            cursor: pointer;
+                            font-weight: 500;
+                            min-width: 100px;
+                        ">📥 Download PDF</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) modal.remove();
+            });
+            
+            modal.querySelector('.preview-close').addEventListener('click', () => {
+                modal.remove();
+            });
+            
+            modal.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') modal.remove();
+            });
+        }
+        
+        // ============================================
+        // UPDATE DASHBOARD
+        // ============================================
+        
+        async updateDashboard() {
+            const approvedCount = this.approvedUnits.length;
+            const examOver = this.isExamOver();
+            
+            if (this.dashboardExamStatus) {
+                if (examOver) {
+                    this.dashboardExamStatus.textContent = 'COMPLETED ✓';
+                    this.dashboardExamStatus.style.color = '#059669';
+                } else {
+                    this.dashboardExamStatus.textContent = approvedCount > 0 ? 'ELIGIBLE' : 'NOT ELIGIBLE';
+                    this.dashboardExamStatus.style.color = approvedCount > 0 ? '#059669' : '#dc2626';
+                }
+            }
+            if (this.dashboardApprovedUnits) {
+                this.dashboardApprovedUnits.textContent = approvedCount;
+            }
+        }
+        
+        // ============================================
+        // UI MESSAGES
+        // ============================================
+        
+        showLoginMessage() {
+            if (this.examCardContent) {
+                this.examCardContent.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #64748b;">
+                        <div style="font-size: 48px; margin-bottom: 16px;">🔒</div>
+                        <h3 style="color: #1e3a5f;">Please Login</h3>
+                        <p>You need to be logged in to view your exam card.</p>
+                    </div>
+                `;
+            }
+        }
+        
+        showLoading() {
+            if (this.examCardContent) {
+                this.examCardContent.innerHTML = `
+                    <div style="text-align:center; padding:30px;">
+                        <div style="display:inline-block; width:30px; height:30px; border:3px solid #e2e8f0; border-top-color:#1e3a5f; border-radius:50%; animation:spin 0.6s linear infinite;"></div>
+                        <p style="margin-top:10px; font-size:12px; color:#64748b;">Loading exam card...</p>
+                    </div>
+                    <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+                `;
+            }
+        }
+        
+        showNoUnitsMessage() {
+            if (this.examCardContent) {
+                const hasCompleted = Array.isArray(this.completedUnits) && this.completedUnits.length > 0;
+                this.examCardContent.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #64748b;">
+                        <div style="font-size: 48px; margin-bottom: 16px;">${hasCompleted ? '🎓' : '📋'}</div>
+                        <h3 style="color: #1e3a5f;">${hasCompleted ? 'All Current Units Completed' : 'No Approved Units'}</h3>
+                        <p>${hasCompleted ? 'You have no outstanding approved units for the current exam period.' : 'You don\'t have any approved units for this exam period.'}</p>
+                        <p style="font-size: 13px; margin-top: 8px;">${hasCompleted ? 'Your passed units are listed in the Completed Exam Cards section below.' : 'Please contact the academic office for assistance.'}</p>
+                    </div>
+                `;
+            }
+        }
+        
+        showErrorMessage() {
+            if (this.examCardContent) {
+                this.examCardContent.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #64748b;">
+                        <div style="font-size: 48px; margin-bottom: 16px;">⚠️</div>
+                        <h3 style="color: #dc2626;">Error Loading Exam Card</h3>
+                        <p>Unable to load your exam card at this time.</p>
+                        <button onclick="window.examCardModule?.loadExamCard()" style="
+                            margin-top: 16px;
+                            padding: 8px 24px;
+                            background: #1e3a5f;
+                            color: white;
+                            border: none;
+                            border-radius: 8px;
+                            cursor: pointer;
+                            font-weight: 500;
+                        ">Retry</button>
+                    </div>
+                `;
+            }
+        }
+        
+        showError(message) {
+            if (this.examCardContent) {
+                this.examCardContent.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #64748b;">
+                        <div style="font-size: 48px; margin-bottom: 16px;">❌</div>
+                        <h3 style="color: #dc2626;">Error</h3>
+                        <p>${this.cleanText(message)}</p>
+                        <button onclick="window.examCardModule?.loadExamCard()" style="
+                            margin-top: 16px;
+                            padding: 8px 24px;
+                            background: #1e3a5f;
+                            color: white;
+                            border: none;
+                            border-radius: 8px;
+                            cursor: pointer;
+                            font-weight: 500;
+                        ">Retry</button>
+                    </div>
+                `;
+            }
+        }
+        
+        // ============================================
+        // SETUP ACTION BUTTONS
+        // ============================================
+        
+        setupActionButtons() {
+            const downloadBtn = document.getElementById('downloadExamCardBtn');
+            const printBtn = document.getElementById('printExamCardBtn');
+            const previewBtn = document.getElementById('previewExamCardBtn');
+            
+            if (downloadBtn) {
+                downloadBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.downloadExamCardDirect();
+                });
+            }
+            
+            if (printBtn) {
+                printBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.printExamCard();
+                });
+            }
+            
+            if (previewBtn) {
+                previewBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.previewA4();
+                });
+            }
+        }
+        
+        // ============================================
+        // STYLES
+        // ============================================
+        
+        addCompactStyles() {
+            const existingStyle = document.getElementById('exam-card-compact-styles');
+            if (existingStyle) existingStyle.remove();
+            
+            const style = document.createElement('style');
+            style.id = 'exam-card-compact-styles';
+            style.textContent = `
+                /* Base Styles */
+                .exam-card-wrapper { 
+                    max-width: 850px; 
+                    margin: 0 auto; 
+                    font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif; 
+                }
+                .exam-card-compact { 
+                    background: white; 
+                    border: 1px solid #e2e8f0; 
+                    border-radius: 12px; 
+                    overflow: hidden; 
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.08); 
+                }
+                
+                /* Header */
+                .card-header { 
+                    background: linear-gradient(135deg, #1e3a5f, #2c5a8c); 
+                    color: white; 
+                    padding: 15px 20px; 
+                    display: flex; 
+                    align-items: center; 
+                    gap: 15px; 
+                }
+                .card-logo { 
+                    height: 55px; 
+                    width: auto; 
+                    background: white; 
+                    padding: 5px; 
+                    border-radius: 8px; 
+                    object-fit: contain; 
+                }
+                .header-text { flex: 1; }
+                .institution { 
+                    font-size: 12px; 
+                    opacity: 0.9; 
+                    letter-spacing: 0.5px; 
+                }
+                .card-title { 
+                    font-size: 22px; 
+                    font-weight: 800; 
+                    letter-spacing: 1px; 
+                    margin-top: 2px; 
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    flex-wrap: wrap;
+                }
+                .card-subtitle { 
+                    font-size: 10px; 
+                    opacity: 0.8; 
+                    margin-top: 2px; 
+                }
+                .status-badge { 
+                    padding: 5px 15px; 
+                    border-radius: 20px; 
+                    font-size: 12px; 
+                    font-weight: 700; 
+                    white-space: nowrap; 
+                }
+                .status-badge.eligible { background: #10b981; }
+                .status-badge.ineligible { background: #dc2626; }
+                .status-badge.completed { background: #059669; }
+                
+                /* Info Grid */
+                .info-grid { 
+                    display: grid; 
+                    grid-template-columns: repeat(3, 1fr); 
+                    gap: 10px 20px; 
+                    padding: 15px 20px; 
+                    background: #f8fafc; 
+                    border-bottom: 1px solid #e2e8f0; 
+                    font-size: 12px; 
+                }
+                .info-item { color: #334155; }
+                .info-label { 
+                    font-weight: 600; 
+                    color: #64748b; 
+                    margin-right: 8px; 
+                }
+                
+                /* Units Table */
+                .units-table { 
+                    width: 100%; 
+                    border-collapse: collapse; 
+                    font-size: 11px; 
+                }
+                .units-table th { 
+                    background: #f1f5f9; 
+                    padding: 10px 8px; 
+                    text-align: left; 
+                    font-weight: 700; 
+                    border-bottom: 2px solid #cbd5e1; 
+                }
+                .units-table td { 
+                    padding: 10px 8px; 
+                    border-bottom: 1px solid #e2e8f0; 
+                    vertical-align: top; 
+                }
+                .text-center { text-align: center; }
+                
+                .signature-cell { 
+                    padding: 5px 0; 
+                    text-align: center;
+                    vertical-align: middle;
+                }
+                .signature-line { 
+                    width: 90%; 
+                    margin: 8px auto; 
+                    border-top: 2px solid #000; 
+                    height: 2px;
+                }
+                .signature-cell span {
+                    display: block;
+                    margin-top: 2px;
+                }
+                
+                .total-row { 
+                    background: #f8fafc; 
+                    font-weight: 600; 
+                    border-top: 2px solid #cbd5e1; 
+                }
+                .compressed-row td {
+                    font-style: italic;
+                    color: #64748b;
+                    background: #f8fafc;
+                }
+                .no-units { 
+                    padding: 30px; 
+                    text-align: center; 
+                    color: #ef4444; 
+                    font-size: 14px; 
+                }
+                
+                /* Signatures */
+                .signatures-row { 
+                    display: flex; 
+                    justify-content: space-between; 
+                    padding: 15px 20px; 
+                    gap: 20px; 
+                    border-top: 1px solid #e2e8f0; 
+                    background: white; 
+                }
+                .signature { 
+                    flex: 1; 
+                    text-align: center; 
+                    font-size: 11px; 
+                    color: #475569; 
+                }
+                .sign-line { 
+                    width: 80%; 
+                    margin: 8px auto; 
+                    border-top: 2px solid #000; 
+                    height: 2px;
+                    padding-top: 12px; 
+                }
+                
+                /* Footer */
+                .card-footer { 
+                    padding: 15px 20px; 
+                    background: #fefce8; 
+                    border-top: 1px solid #e2e8f0; 
+                }
+                .rules-header { 
+                    font-weight: 700; 
+                    font-size: 12px; 
+                    color: #854d0e; 
+                    margin-bottom: 10px; 
+                }
+                .rules-list { margin-bottom: 15px; }
+                .rule-item { 
+                    font-size: 10px; 
+                    color: #713f12; 
+                    margin-bottom: 4px; 
+                }
+                
+                .student-section { 
+                    border-top: 1px dashed #e2e8f0; 
+                    padding-top: 12px; 
+                    margin-top: 5px; 
+                }
+                .student-declaration { 
+                    font-size: 10px; 
+                    color: #475569; 
+                    margin: 10px 0; 
+                    text-align: center; 
+                }
+                .student-sign-line { 
+                    display: flex; 
+                    align-items: center; 
+                    gap: 10px; 
+                    margin: 12px 0 8px 0; 
+                }
+                .student-label { 
+                    font-weight: 600; 
+                    font-size: 11px; 
+                    color: #334155; 
+                    min-width: 110px; 
+                }
+                .student-date {
+                    font-size: 11px;
+                    color: #64748b;
+                    margin-left: auto;
+                }
+                .signature-line-inline { 
+                    display: inline-block; 
+                    flex: 1; 
+                    border-top: 2px solid #000; 
+                    max-width: 60%; 
+                    height: 2px;
+                }
+                
+                /* Action Buttons */
+                .action-buttons { 
+                    display: flex; 
+                    gap: 15px; 
+                    justify-content: center; 
+                    margin-top: 20px; 
+                }
+                .download-btn, .print-btn, .preview-btn { 
+                    display: inline-flex; 
+                    align-items: center; 
+                    gap: 8px; 
+                    padding: 10px 24px; 
+                    border: none; 
+                    border-radius: 40px; 
+                    font-weight: 600; 
+                    font-size: 13px; 
+                    cursor: pointer; 
+                    transition: all 0.2s;
+                }
+                .download-btn { background: #059669; color: white; }
+                .download-btn:hover { background: #047857; transform: scale(1.02); }
+                .print-btn { background: #1e3a5f; color: white; }
+                .print-btn:hover { background: #2c5a8c; transform: scale(1.02); }
+                .preview-btn { background: #6b7280; color: white; }
+                .preview-btn:hover { background: #4b5563; transform: scale(1.02); }
+                
+                /* Print Styles */
+                @media print {
+                    body * { visibility: hidden; }
+                    .exam-card-wrapper, .exam-card-wrapper * { visibility: visible; }
+                    .exam-card-wrapper { 
+                        position: absolute; 
+                        top: 0; 
+                        left: 0; 
+                        width: 100%; 
+                        margin: 0; 
+                        padding: 10px; 
+                    }
+                    .action-buttons, button { display: none !important; }
+                    .card-header { 
+                        background: #1e3a5f !important; 
+                        -webkit-print-color-adjust: exact; 
+                        print-color-adjust: exact; 
+                    }
+                    .status-badge.eligible { 
+                        background: #10b981 !important; 
+                        -webkit-print-color-adjust: exact; 
+                        print-color-adjust: exact; 
+                    }
+                    .status-badge.completed { 
+                        background: #059669 !important; 
+                        -webkit-print-color-adjust: exact; 
+                        print-color-adjust: exact; 
+                    }
+                    .signature-line, .sign-line, .signature-line-inline { 
+                        width: 80% !important;
+                        margin: 8px auto !important;
+                        border-top: 2px solid #000 !important;
+                        -webkit-print-color-adjust: exact; 
+                        print-color-adjust: exact; 
+                    }
+                    .signature-cell .signature-line {
+                        width: 90% !important;
+                        margin: 8px auto !important;
+                    }
+                    .exam-card-compact {
+                        border: 1px solid #000 !important;
+                        border-radius: 0 !important;
+                    }
+                }
+                
+                /* Responsive */
+                @media (max-width: 600px) {
+                    .info-grid { 
+                        grid-template-columns: repeat(2, 1fr); 
+                        gap: 6px 10px; 
+                        padding: 10px 15px; 
+                    }
+                    .card-header { 
+                        padding: 10px 15px; 
+                        gap: 10px; 
+                    }
+                    .card-logo { height: 40px; }
+                    .card-title { font-size: 16px; }
+                    .signatures-row { 
+                        flex-direction: column; 
+                        gap: 15px; 
+                    }
+                    .action-buttons { 
+                        flex-direction: column; 
+                        gap: 10px; 
+                        padding: 0 10px; 
+                    }
+                    .download-btn, .print-btn, .preview-btn { 
+                        justify-content: center; 
+                        width: 100%; 
+                    }
+                    .student-sign-line {
+                        flex-wrap: wrap;
+                    }
+                    .student-date {
+                        margin-left: 0;
+                        width: 100%;
+                        text-align: center;
+                    }
+                }
+                
+                /* Preview Modal */
+                .preview-overlay {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0,0,0,0.7);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 9999;
+                    padding: 20px;
+                }
+                .preview-modal {
+                    background: white;
+                    border-radius: 12px;
+                    padding: 20px;
+                    max-width: 90vw;
+                    max-height: 90vh;
+                    overflow: auto;
+                    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+                }
+                .preview-modal .exam-card-compact {
+                    max-width: 794px;
+                    margin: 0 auto;
+                }
+                .preview-close {
+                    position: sticky;
+                    top: 0;
+                    float: right;
+                    background: none;
+                    border: none;
+                    font-size: 32px;
+                    cursor: pointer;
+                    color: #94a3b8;
+                    z-index: 10;
+                }
+                .preview-close:hover {
+                    color: #1e293b;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        // ============================================
+        // PDF GENERATION
+        // ============================================
+        
+        async downloadExamCardDirect() {
+            this.openExamCardPrintView();
+        }
+
+        // Use the same standalone A4 HTML/print workflow as Academic Reports.
+        // The existing exam-card data, eligibility and rendering logic remain unchanged.
+        openExamCardPrintView() {
+            const sourceCard = document.getElementById('exam-card-print-area');
+            if (!sourceCard) {
+                alert('Exam card not found. Please refresh and try again.');
+                return;
+            }
+
+            const existingOverlay = document.getElementById('exam-card-document-preview');
+            if (existingOverlay) existingOverlay.remove();
+
+            const styles = document.getElementById('exam-card-compact-styles')?.innerHTML || '';
+            const card = this.prepareCardForPrint(sourceCard);
+            const unitRows = card.querySelectorAll('.units-table tbody tr:not(.total-row):not(.compressed-row)').length;
+            const targetUnitTableHeightMm = 112;
+            const unitRowHeightMm = unitRows ? Math.max(6.8, Math.min(10.5, targetUnitTableHeightMm / unitRows)) : 8.5;
+            card.style.setProperty('--exam-unit-row-height', unitRowHeightMm.toFixed(2) + 'mm');
+            const overlay = document.createElement('div');
+            overlay.id = 'exam-card-document-preview';
+            overlay.setAttribute('role', 'dialog');
+            overlay.setAttribute('aria-label', 'Exam card print preview');
+            overlay.style.cssText = 'position:fixed;inset:0;z-index:100000;background:#eef2f7;display:flex;flex-direction:column;padding:0;';
+
+            const toolbar = document.createElement('div');
+            toolbar.style.cssText = 'flex:0 0 auto;display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;padding:12px;background:#1e3a5f;color:#fff;font:600 13px Arial,sans-serif;';
+            toolbar.innerHTML = '<span style="margin-right:8px">Exam Card Preview</span><button type="button" data-action="download" style="border:0;border-radius:7px;padding:10px 16px;background:#1f5796;color:#fff;font-weight:700">⬇ Download PDF</button><button type="button" data-action="print" style="border:0;border-radius:7px;padding:10px 16px;background:#fff;color:#1e293b;font-weight:700">Print</button><button type="button" data-action="close" style="border:0;border-radius:7px;padding:10px 16px;background:#e2e8f0;color:#1e293b;font-weight:700">Close</button>';
+
+            const frame = document.createElement('iframe');
+            frame.title = 'A4 Examination Card';
+            frame.style.cssText = 'display:block;flex:1 1 auto;width:100%;min-height:0;border:0;background:#eef2f7;';
+            overlay.append(toolbar, frame);
+            document.body.appendChild(overlay);
+
+            const frameDoc = frame.contentDocument;
+            frameDoc.open();
+            frameDoc.write(`<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Examination Card - ${this.cleanText(this.userProfile?.full_name || 'Student')}</title>
+<style>
+${styles}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:#eef2f7;color:#1e293b;font-family:Arial,sans-serif}
+body{padding:24px;overflow:auto}
+.exam-card-wrapper{width:100%;max-width:794px;margin:0 auto;padding:0!important}
+.exam-card-compact{width:100%;max-width:none;margin:0 auto;background:#fff;box-shadow:0 4px 24px rgba(15,23,42,.12)}
+.exam-card-compact table{width:100%;border-collapse:collapse;table-layout:fixed}
+.exam-card-compact img{max-width:100%}
+/* Fixed A4 canvas width: prevent mobile viewport from shrinking the document. */
+html,body{width:210mm!important;min-width:210mm!important;margin:0!important;padding:0!important;background:#fff!important}
+body{padding:5mm!important;overflow:visible!important}
+.exam-card-wrapper{display:block!important;width:190mm!important;min-width:190mm!important;max-width:190mm!important;margin:0 auto!important;padding:0!important;flex:none!important}
+.exam-card-compact{display:flex!important;flex-direction:column!important;width:190mm!important;min-width:190mm!important;max-width:190mm!important;height:286mm!important;min-height:286mm!important;max-height:286mm!important;margin:0!important;flex:none!important;overflow:hidden!important;box-sizing:border-box!important}
+.exam-card-compact .card-header{width:100%!important;min-width:0!important;flex:0 0 auto!important;display:flex!important;align-items:center!important;gap:4mm!important;flex-wrap:nowrap!important}
+.exam-card-compact .header-text{min-width:0!important;flex:1 1 auto!important}
+.exam-card-compact .institution{white-space:normal!important;overflow-wrap:normal!important;font-size:9pt!important}
+.exam-card-compact .card-title{white-space:nowrap!important;font-size:16pt!important}
+.exam-card-compact .info-grid{width:100%!important;display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:3mm 4mm!important}
+.exam-card-compact .units-table{width:100%!important;min-width:0!important;table-layout:fixed!important;flex:0 0 auto!important}
+.exam-card-compact .units-table th:nth-child(1),.exam-card-compact .units-table td:nth-child(1){width:7%!important;white-space:nowrap!important;text-align:center!important}
+.exam-card-compact .units-table th:nth-child(2),.exam-card-compact .units-table td:nth-child(2){width:17%!important}
+.exam-card-compact .units-table th:nth-child(3),.exam-card-compact .units-table td:nth-child(3){width:39%!important}
+.exam-card-compact .units-table th:nth-child(4),.exam-card-compact .units-table td:nth-child(4){width:7%!important}
+.exam-card-compact .units-table th:nth-child(5),.exam-card-compact .units-table td:nth-child(5){width:30%!important}
+.exam-card-compact .units-table td:first-child{white-space:nowrap!important;word-break:keep-all!important}
+.exam-card-compact .units-table td:nth-child(2){overflow-wrap:anywhere!important}
+.exam-card-compact .signatures-row{width:100%!important;display:flex!important;flex-direction:row!important;flex:0 0 auto!important}
+.exam-card-compact .card-footer{width:100%!important;flex:0 0 auto!important;margin-top:3mm!important}
+@media print{
+ @page{size:A4 portrait;margin:0}
+ html,body{width:210mm!important;height:297mm!important;min-width:210mm!important;margin:0!important;padding:0!important;overflow:hidden!important}
+ body{padding:5mm!important}
+ .exam-card-wrapper,.exam-card-compact{width:190mm!important;min-width:190mm!important;max-width:190mm!important}
+ .exam-card-compact{height:286mm!important;min-height:286mm!important;max-height:286mm!important;overflow:hidden!important;break-inside:avoid!important;page-break-inside:avoid!important}
+}
+/* Balanced A4 exam-card layout */
+.exam-card-wrapper{width:100%;max-width:794px;margin:0 auto;padding:0!important}
+.exam-card-compact{width:100%;max-width:none;height:286mm;min-height:286mm;margin:0 auto;background:#fff;color:#172033;font-family:Arial,sans-serif;font-size:10px;display:flex;flex-direction:column;overflow:visible;border:1px solid #cbd5e1;border-radius:0;box-shadow:none}
+.card-header{min-height:24mm;padding:7mm 7mm;gap:4mm}
+.card-logo{height:15mm;width:auto;padding:2mm;border-radius:2mm}
+.institution{font-size:9px;letter-spacing:.3px}
+.card-title{font-size:19px;letter-spacing:.5px;gap:7px}
+.card-subtitle{font-size:9px}
+.status-badge{font-size:10px;padding:5px 10px}
+.info-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:3mm 4mm;padding:5mm 7mm;font-size:10px}
+.info-item{min-width:0;overflow-wrap:anywhere;line-height:1.35}
+.info-label{margin-right:4px}
+.units-table{width:100%;font-size:9px;table-layout:fixed;border-collapse:collapse;flex:0 0 auto;min-height:0}
+.units-table th{padding:3mm 2mm;font-size:9px;line-height:1.2}
+.units-table td{padding:2mm;line-height:1.25;vertical-align:middle;overflow-wrap:anywhere}
+.units-table th:nth-child(1),.units-table td:nth-child(1){width:5%}
+.units-table th:nth-child(2),.units-table td:nth-child(2){width:18%}
+.units-table th:nth-child(3),.units-table td:nth-child(3){width:40%}
+.units-table th:nth-child(4),.units-table td:nth-child(4){width:7%}
+.units-table th:nth-child(5),.units-table td:nth-child(5){width:30%}
+.units-table tbody tr:not(.total-row):not(.compressed-row){height:var(--exam-unit-row-height,10mm)}
+.signature-cell{padding:1mm 2mm!important;text-align:center;vertical-align:middle}
+.signature-cell .signature-line{width:88%!important;margin:2mm auto 1mm!important;border-top:1px solid #111!important;height:1px!important}
+.signature-cell span{font-size:8px!important;line-height:1.1}
+.total-row{height:auto!important}.total-row td{height:auto!important;min-height:0!important;padding:2.5mm!important;vertical-align:middle!important}
+.signatures-row{padding:5mm 7mm 4mm;gap:8mm;min-height:24mm;margin-top:3mm}
+.signature{font-size:9px}
+.sign-line{width:82%;margin:5mm auto 2mm;padding-top:2mm;border-top:1px solid #111;height:1px}
+.signature div[style*="font-size: 12px"],.signature div[style*="font-size:12px"]{font-size:10px!important}
+.card-footer{padding:4mm 7mm;margin-top:3mm;background:#fffdf2;border-top:1px solid #e2e8f0}
+.rules-header{font-size:10px;margin-bottom:3mm}
+.rules-list{display:grid;grid-template-columns:1fr 1fr;column-gap:8mm;row-gap:1mm;margin-bottom:3mm}
+.rule-item{font-size:8.5px;line-height:1.3;margin:0}
+.student-section{padding-top:3mm;margin-top:2mm}
+.student-declaration{font-size:9px;line-height:1.3;margin:3mm 0;text-align:center}
+.student-sign-line{gap:3mm;margin:4mm 0 1mm}
+.student-label,.student-date{font-size:9px;min-width:auto}
+.signature-line-inline{border-top:1px solid #111;height:1px}
+.exam-card-compact .compressed-row td{padding:2mm!important}
+@media screen{
+ html,body{background:#e9eef5}
+ body{padding:24px}
+ .exam-card-wrapper{max-width:794px}
+ .exam-card-compact{min-height:1080px}
+}
+@media print{
+ @page{size:A4 portrait;margin:5mm}
+ html,body{width:100%!important;height:auto!important;margin:0!important;padding:0!important;background:#fff!important;overflow:visible!important}
+ body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+ .exam-card-wrapper{width:100%!important;max-width:none!important;min-width:0!important;margin:0!important;padding:0!important}
+ .exam-card-compact{width:100%!important;height:286mm!important;min-height:286mm!important;max-height:286mm!important;max-width:none!important;margin:0!important;border:1px solid #9ca3af!important;border-radius:0!important;box-shadow:none!important;break-inside:avoid!important;page-break-inside:avoid!important}
+ .card-header{background:#1e3a5f!important;color:#fff!important}
+ .info-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+ .signatures-row{display:flex!important;flex-direction:row!important}
+ .units-table{width:100%!important;border-collapse:collapse!important;table-layout:fixed!important;flex:0 0 auto!important}
+ .units-table tr,.units-table td,.units-table th{break-inside:avoid!important;page-break-inside:avoid!important}
+ .action-buttons,button{display:none!important}
+ .card-footer{margin-top:3mm!important;break-inside:avoid!important;page-break-inside:avoid!important}
+ .student-sign-line{flex-wrap:nowrap!important}
+ .student-date{width:auto!important;margin-left:auto!important;text-align:right!important}
+ .status-badge,.total-row,thead th{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+}
+ html,body{width:100%!important;height:auto!important;margin:0!important;padding:0!important;background:#fff!important;overflow:visible!important}
+ body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+ .exam-card-wrapper{width:100%!important;max-width:none!important;min-width:0!important;margin:0!important;padding:0!important}
+ .exam-card-compact{width:100%!important;max-width:none!important;margin:0!important;border:1px solid #111!important;border-radius:0!important;box-shadow:none!important;overflow:visible!important;break-inside:avoid!important;page-break-inside:avoid!important}
+ .card-header{background:#1e3a5f!important;color:#fff!important}
+ .info-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+ .signatures-row{display:flex!important;flex-direction:row!important}
+ .units-table{width:100%!important;border-collapse:collapse!important;table-layout:fixed!important}
+ .units-table tr,.units-table td,.units-table th{break-inside:avoid!important;page-break-inside:avoid!important}
+ .units-table td,.units-table th{height:auto!important}
+ .action-buttons,button{display:none!important}
+ .card-footer{break-inside:avoid!important;page-break-inside:avoid!important}
+ .student-sign-line{flex-wrap:nowrap!important}
+ .student-date{width:auto!important;margin-left:auto!important;text-align:right!important}
+ .status-badge,.total-row,thead th{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+}
+@page{size:A4 portrait;margin:5mm}
+@media print{
+ html,body{width:100%;height:auto;margin:0!important;padding:0!important;background:#fff!important;overflow:visible!important}
+ .exam-card-wrapper{width:100%!important;max-width:none!important;margin:0!important;padding:0!important}
+ .exam-card-compact{width:100%!important;max-width:none!important;border-radius:0!important;box-shadow:none!important;break-inside:avoid;page-break-inside:avoid}
+ .card-header,.status-badge,.total-row,thead th{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+ tr{break-inside:avoid;page-break-inside:avoid}
+}
+@media screen and (max-width:600px){body{padding:10px}.exam-card-wrapper{min-width:680px}}
+/* NCHSM transcript-matched visual theme: navy blue, pale blue, white and restrained red. */
+.exam-card-compact,.exam-card-compact *{font-family:Arial,sans-serif;color:#000;font-weight:700;text-shadow:none}
+.exam-card-compact{background:#fff!important;border:1.5px solid #1f5796!important;color:#000!important}
+.exam-card-compact .card-header{background:#fff!important;color:#000!important;border-bottom:3px solid #9dbbd4!important;position:relative}
+.exam-card-compact .card-header:after{content:"";position:absolute;left:0;bottom:-3px;width:22%;height:3px;background:#b83a42}
+.exam-card-compact .card-logo{background:#fff!important;border:1px solid #d5e2ed}
+.exam-card-compact .institution{color:#1f5796!important;font-weight:800!important}
+.exam-card-compact .card-title{display:inline-flex;align-items:center;background:#1f5796!important;color:#fff!important;padding:5px 12px;border-radius:4px;font-weight:800!important;letter-spacing:.6px}
+.exam-card-compact .card-title *{color:#fff!important}
+.exam-card-compact .card-subtitle{color:#000!important}
+.exam-card-compact .status-badge{background:#dceaf5!important;color:#000!important;border:1px solid #b8cde0;border-radius:4px}
+.exam-card-compact .info-grid{background:#edf4fa!important;border:1px solid #c7d9e8!important;border-left:4px solid #1f5796!important}
+.exam-card-compact .info-item,.exam-card-compact .info-label{color:#000!important}
+.exam-card-compact .units-table{background:#fff!important}
+.exam-card-compact .units-table th{background:#1f5796!important;color:#fff!important;border-color:#174675!important;font-weight:800!important}
+.exam-card-compact .units-table th *{color:#fff!important}
+.exam-card-compact .units-table td{background:#fff!important;color:#000!important;border-bottom:1px solid #cbd8e3!important}
+.exam-card-compact .units-table tbody tr:nth-child(even):not(.total-row):not(.compressed-row) td{background:#f6f9fc!important}
+.exam-card-compact .total-row td{background:#e5eff7!important;color:#000!important;border-top:2px solid #1f5796!important}
+.exam-card-compact .signatures-row{background:#fff!important;border-top:1px solid #b8cde0!important}
+.exam-card-compact .signature,.exam-card-compact .signature div{color:#000!important}
+.exam-card-compact .signature-line,.exam-card-compact .sign-line,.exam-card-compact .signature-line-inline{border-color:#000!important}
+.exam-card-compact .card-footer{background:#f5f9fc!important;border-top:2px solid #b8cde0!important}
+.exam-card-compact .rules-header{color:#1f5796!important;font-weight:800!important}
+.exam-card-compact .rule-item,.exam-card-compact .student-declaration,.exam-card-compact .student-label,.exam-card-compact .student-date,.exam-card-compact .signature-cell span{color:#000!important}
+.exam-card-compact .student-section{border-top:1px dashed #b8cde0!important}
+.exam-card-compact .student-sign-line{color:#000!important}
+.exam-card-compact .compressed-row td{background:#edf4fa!important;color:#000!important}
+.exam-card-compact [style*="background:#dc2626"],.exam-card-compact [style*="background: #dc2626"],.exam-card-compact [style*="background:linear-gradient(135deg,#dc2626"]{background:#dceaf5!important;color:#000!important}
+.exam-card-compact [style*="color:white"],.exam-card-compact [style*="color: white"]{color:#000!important}
+@media print{
+ .exam-card-compact{border-color:#1f5796!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+ .exam-card-compact .card-header{background:#fff!important}
+ .exam-card-compact .card-title,.exam-card-compact .units-table th{background:#1f5796!important;color:#fff!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+ .exam-card-compact .info-grid,.exam-card-compact .units-table tbody tr:nth-child(even):not(.total-row):not(.compressed-row) td,.exam-card-compact .total-row td,.exam-card-compact .card-footer{ -webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+}
+/* Final print corrections: prevent clipped header/footer and split numeric cells. */
+html,body{width:210mm!important;min-width:210mm!important;margin:0!important;padding:0!important;background:#fff!important}
+body{padding:5mm!important;overflow:visible!important}
+.exam-card-wrapper{width:190mm!important;min-width:190mm!important;max-width:190mm!important;margin:0 auto!important}
+.exam-card-compact{width:190mm!important;min-width:190mm!important;max-width:190mm!important;height:auto!important;min-height:286mm!important;max-height:none!important;overflow:visible!important}
+.exam-card-compact .card-header{min-height:29mm!important;height:auto!important;padding:4mm 6mm!important;align-items:center!important;overflow:visible!important}
+.exam-card-compact .header-text{overflow:visible!important}
+.exam-card-compact .institution{display:block!important;line-height:1.25!important;padding-top:1mm!important;margin-bottom:1mm!important;white-space:normal!important;overflow:visible!important;font-size:8.5pt!important}
+.exam-card-compact .card-title{line-height:1.15!important;font-size:15pt!important;white-space:normal!important}
+.exam-card-compact .units-table{width:100%!important;table-layout:fixed!important}
+.exam-card-compact .units-table th:nth-child(1),.exam-card-compact .units-table td:nth-child(1){width:6%!important;min-width:6%!important;white-space:nowrap!important;word-break:keep-all!important;overflow-wrap:normal!important;text-align:center!important}
+.exam-card-compact .units-table th:nth-child(2),.exam-card-compact .units-table td:nth-child(2){width:17%!important}
+.exam-card-compact .units-table th:nth-child(3),.exam-card-compact .units-table td:nth-child(3){width:39%!important}
+.exam-card-compact .units-table th:nth-child(4),.exam-card-compact .units-table td:nth-child(4){width:8%!important;min-width:8%!important;white-space:nowrap!important;word-break:keep-all!important;overflow-wrap:normal!important;text-align:center!important}
+.exam-card-compact .units-table th:nth-child(5),.exam-card-compact .units-table td:nth-child(5){width:30%!important}
+.exam-card-compact .total-row td:nth-child(4){white-space:nowrap!important;word-break:keep-all!important;overflow-wrap:normal!important}
+.exam-card-compact .card-footer{margin-top:2mm!important;padding:3mm 6mm!important;overflow:visible!important}
+.exam-card-compact .student-section{padding-top:2mm!important;margin-top:1mm!important}
+.exam-card-compact .student-declaration{margin:2mm 0!important;line-height:1.2!important}
+.exam-card-compact .student-sign-line{margin:2mm 0 1mm!important}
+@media print{
+ @page{size:A4 portrait;margin:0}
+ html,body{width:210mm!important;height:auto!important;min-width:210mm!important;overflow:visible!important}
+ body{padding:5mm!important}
+ .exam-card-wrapper,.exam-card-compact{width:190mm!important;min-width:190mm!important;max-width:190mm!important}
+ .exam-card-compact{height:auto!important;min-height:286mm!important;max-height:none!important;overflow:visible!important;break-inside:avoid!important;page-break-inside:avoid!important}
+}
+</style>
+</head>
+<body>${card.outerHTML}</body>
+</html>`);
+            frameDoc.close();
+
+            toolbar.querySelector('[data-action="close"]').addEventListener('click', () => overlay.remove());
+
+            toolbar.querySelector('[data-action="download"]').addEventListener('click', async () => {
+                const button = toolbar.querySelector('[data-action="download"]');
+                const printButton = toolbar.querySelector('[data-action="print"]');
+                button.disabled = true;
+                button.textContent = 'Generating PDF…';
+                try {
+                    await this.waitForLibraries();
+                    if (typeof html2canvas === 'undefined' || !window.jspdf?.jsPDF) {
+                        throw new Error('PDF generation libraries are unavailable');
+                    }
+                    const images = Array.from(frameDoc.images);
+                    await Promise.all(images.map(img => {
+                        if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+                        return new Promise(resolve => {
+                            img.addEventListener('load', resolve, { once: true });
+                            img.addEventListener('error', resolve, { once: true });
+                            setTimeout(resolve, 5000);
+                        });
+                    }));
+                    if (frameDoc.fonts?.ready) await frameDoc.fonts.ready;
+                    const target = frameDoc.querySelector('.exam-card-compact') || frameDoc.querySelector('.exam-card-wrapper');
+                    if (!target) throw new Error('Exam card content is missing');
+                    const canvas = await html2canvas(target, {
+                        scale: 2,
+                        backgroundColor: '#ffffff',
+                        useCORS: true,
+                        logging: false,
+                        windowWidth: target.scrollWidth,
+                        windowHeight: target.scrollHeight
+                    });
+                    const { jsPDF } = window.jspdf;
+                    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', compress: true });
+                    const margin = 5;
+                    const pageWidth = 210;
+                    const pageHeight = 297;
+                    const availableWidth = pageWidth - margin * 2;
+                    const availableHeight = pageHeight - margin * 2;
+                    const ratio = Math.min(availableWidth / canvas.width, availableHeight / canvas.height);
+                    const renderWidth = canvas.width * ratio;
+                    const renderHeight = canvas.height * ratio;
+                    const x = (pageWidth - renderWidth) / 2;
+                    const y = (pageHeight - renderHeight) / 2;
+                    pdf.addImage(canvas.toDataURL('image/jpeg', 0.96), 'JPEG', x, y, renderWidth, renderHeight, undefined, 'FAST');
+                    const studentName = String(this.userProfile?.full_name || 'Student').replace(/[^a-z0-9_-]+/gi, '_');
+                    const admission = String(this.userProfile?.admission_number || this.userProfile?.student_id || '').replace(/[^a-z0-9_-]+/gi, '_');
+                    pdf.save('NCHSM_Exam_Card_' + (admission ? admission + '_' : '') + studentName + '.pdf');
+                    button.textContent = 'Downloaded';
+                } catch (error) {
+                    console.error('[Exam Card] PDF download failed:', error);
+                    alert('Could not download the exam card PDF. Please try again or use Print.');
+                    button.textContent = '⬇ Download PDF';
+                } finally {
+                    button.disabled = false;
+                }
+            });
+
+            toolbar.querySelector('[data-action="print"]').addEventListener('click', async () => {
+                const button = toolbar.querySelector('[data-action="print"]');
+                button.disabled = true;
+                button.textContent = 'Preparing print…';
+                try {
+                    const images = Array.from(frameDoc.images);
+                    await Promise.all(images.map(img => {
+                        if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+                        return new Promise(resolve => {
+                            img.addEventListener('load', resolve, { once: true });
+                            img.addEventListener('error', resolve, { once: true });
+                            setTimeout(resolve, 5000);
+                        });
+                    }));
+                    if (frameDoc.fonts?.ready) await frameDoc.fonts.ready;
+                    frame.contentWindow.focus();
+                    frame.contentWindow.print();
+                } catch (error) {
+                    console.error('[Exam Card] Print preparation failed:', error);
+                    alert('Could not prepare the exam card for printing. Please try again.');
+                } finally {
+                    button.disabled = false;
+                    button.textContent = 'Print';
+                }
+            });
+
+            overlay.addEventListener('click', event => {
+                if (event.target === overlay) overlay.remove();
+            });
+        }
+
+        calculateOptimalScale(element) {
+            const contentHeight = element.scrollHeight;
+            const contentWidth = element.scrollWidth;
+            const maxHeight = CONFIG.A4.PIXEL_HEIGHT * 1.1;
+            const maxWidth = CONFIG.A4.PIXEL_WIDTH * 1.1;
+            
+            let scale = CONFIG.PDF_SCALE;
+            
+            if (contentHeight > maxHeight || contentWidth > maxWidth) {
+                const heightScale = maxHeight / contentHeight;
+                const widthScale = maxWidth / contentWidth;
+                scale = Math.min(heightScale, widthScale, 3);
+            }
+            
+            return Math.max(scale, 1.5);
+        }
+        
+        prepareCardForPrint(cardElement) {
+            const cloneCard = cardElement.cloneNode(true);
+            
+            const actionButtons = cloneCard.querySelectorAll('.action-buttons');
+            actionButtons.forEach(btn => btn.remove());
+            
+            const allButtons = cloneCard.querySelectorAll('button');
+            allButtons.forEach(btn => btn.style.display = 'none');
+            
+            const pastSection = cloneCard.querySelector('.past-exams-container, .past-exams-section');
+            if (pastSection) pastSection.remove();
+            
+            const signatureLines = cloneCard.querySelectorAll('.signature-line, .sign-line, .signature-line-inline');
+            signatureLines.forEach(line => {
+                line.style.width = '80%';
+                line.style.margin = '8px auto';
+                line.style.borderTop = '2px solid #000';
+                line.style.height = '2px';
+            });
+            
+            return cloneCard;
+        }
+        
+        createTempContainer(element) {
+            const container = document.createElement('div');
+            container.style.position = 'absolute';
+            container.style.left = '-9999px';
+            container.style.top = '-9999px';
+            container.style.width = `${CONFIG.A4.PIXEL_WIDTH}px`;
+            container.style.backgroundColor = 'white';
+            container.style.padding = '50px 40px';
+            container.style.boxSizing = 'border-box';
+            container.appendChild(element);
+            return container;
+        }
+        
+        // ============================================
+        // A4 PREVIEW
+        // ============================================
+        
+        previewA4() {
+            this.openExamCardPrintView();
+        }
+
+        // ============================================
+        // PRINT FUNCTIONALITY
+        // ============================================
+        
+        printExamCard() {
+            this.openExamCardPrintView();
+        }
+
+        // ============================================
+        // PAST EXAM PDF
+        // ============================================
+        
+        async downloadPastExamPDF(examId) {
+            const record = this.pastExamRecords.find(r => r.id == examId);
+            if (!record) {
+                alert('Record not found');
+                return;
+            }
+            
+            try {
+                await this.waitForLibraries();
+                
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                const margin = 20;
+                let y = margin;
+                
+                pdf.setFontSize(18);
+                pdf.setTextColor(30, 58, 95);
+                pdf.text('PAST EXAM RECORD', margin, y);
+                y += 12;
+                
+                pdf.setFontSize(12);
+                pdf.setTextColor(100, 116, 139);
+                pdf.text(`Period: ${record.period || record.exam_period || 'N/A'}`, margin, y);
+                y += 8;
+                pdf.text(`Date: ${this.formatDate(new Date(record.date || record.completed_date || Date.now()))}`, margin, y);
+                y += 8;
+                pdf.text(`Units: ${record.units || record.total_units || 0}`, margin, y);
+                y += 8;
+                pdf.text(`Credits: ${record.credits || record.total_credits || 0}`, margin, y);
+                y += 8;
+                pdf.text(`Status: ${record.status || 'Completed'}`, margin, y);
+                y += 15;
+                
+                const units = record.units_list || [];
+                if (units.length > 0) {
+                    pdf.setFontSize(14);
+                    pdf.setTextColor(30, 58, 95);
+                    pdf.text('Units Registered:', margin, y);
+                    y += 10;
+                    
+                    pdf.setFontSize(10);
+                    pdf.setTextColor(71, 85, 105);
+                    units.forEach((unit, i) => {
+                        const line = `${i + 1}. ${unit.unit_code || ''} - ${unit.unit_name || ''} (${unit.credits || 0} cr)`;
+                        const lines = pdf.splitTextToSize(line, 170);
+                        pdf.text(lines, margin, y);
+                        y += 6 * lines.length;
+                    });
+                }
+                
+                const pageHeight = pdf.internal.pageSize.height;
+                pdf.setFontSize(8);
+                pdf.setTextColor(148, 163, 184);
+                pdf.text('Generated from NCHSM Exam Card System', margin, pageHeight - 10);
+                
+                const studentName = this.userProfile?.full_name || 'Student';
+                const safeName = studentName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+                pdf.save(`Past_Exam_${safeName}_${record.period || 'record'}.pdf`);
+                
+            } catch (error) {
+                console.error('Failed to generate past exam PDF:', error);
+                alert('Failed to generate PDF. Please try again.');
+            }
+        }
+        
+        // ============================================
+        // REFRESH FUNCTION
+        // ============================================
+        
+        refresh() {
+            this.loaded = false;
+            this.loadExamCard();
+        }
+    }
+    
+    // ============================================
+    // EXPOSE GLOBALLY
+    // ============================================
+    
+    const examCardModule = new ExamCardModule();
+    window.examCardModule = examCardModule;
+    
+    window.loadExamCard = () => examCardModule?.loadExamCard();
+    window.printExamCard = () => examCardModule?.printExamCard();
+    window.downloadExamCard = () => examCardModule?.downloadExamCardDirect();
+    window.previewExamCard = () => examCardModule?.previewA4();
+    window.refreshExamCard = () => examCardModule?.refresh();
+    window.viewPastExam = (id) => examCardModule?.viewPastExam(id);
+    window.downloadPastExamPDF = (id) => examCardModule?.downloadPastExamPDF(id);
+    
+    console.log('✅ Exam Card module v11.3 ready - TVET/KRCHN Support - Dynamic HOD - Full A4 optimized - Fixed Retake & Past Records!');
+    
+    if (typeof module !== 'undefined' && module.exports) {
+        module.exports = { ExamCardModule };
+    }
+})();

@@ -1,0 +1,1679 @@
+// ============================================================
+// ENROLLMENT MODULE - Change of Program & Readmission & Session Reporting
+// STUDENT DASHBOARD VERSION - FULLY FIXED
+// ============================================================
+
+// ============================================================
+// STATE
+// ============================================================
+const ENR_STATE = {
+    requests: [],
+    history: [],
+    reports: [],
+    currentStudentId: null,
+    currentStudentProgram: null,
+    currentStudentName: null,
+    currentBlock: null,
+    currentYear: null,
+    currentTerm: null,
+    programType: null,
+    stats: {
+        total: 0,
+        pending: 0,
+        approved: 0,
+        rejected: 0,
+        pendingReports: 0
+    }
+};
+
+// ============================================================
+// CONSTANTS
+// ============================================================
+const NURSING_PROGRAMS = ['KRCHN', 'DCHN'];
+const BLOCK_OPTIONS = ['Block 1', 'Block 2', 'Block 3', 'Block 4', 'Block 5', 'Block 6', 'Block 7', 'Block 8'];
+const TVET_YEARS = ['Year 1', 'Year 2', 'Year 3'];
+const TVET_TERMS = ['Term 1', 'Term 2', 'Term 3'];
+
+// ============================================================
+// SAFE DOM HELPERS
+// ============================================================
+function safeGetElement(id) {
+    const el = document.getElementById(id);
+    if (!el) {
+        console.warn(`⚠️ Element not found: #${id}`);
+    }
+    return el;
+}
+
+function safeSetText(id, text) {
+    const el = safeGetElement(id);
+    if (el) {
+        el.textContent = text;
+        return true;
+    }
+    return false;
+}
+
+function safeSetHTML(id, html) {
+    const el = safeGetElement(id);
+    if (el) {
+        el.innerHTML = html;
+        return true;
+    }
+    return false;
+}
+
+// ============================================================
+// GET SUPABASE CLIENT
+// ============================================================
+function getSupabaseClient() {
+    if (typeof window.sb !== 'undefined' && window.sb) return window.sb;
+    if (typeof window.supabase !== 'undefined' && window.supabase) return window.supabase;
+    if (window.db && window.db.supabase) return window.db.supabase;
+    return null;
+}
+
+// ============================================================
+// INITIALIZATION
+// ============================================================
+function initEnrollment() {
+    console.log('📋 Enrollment Module initialized');
+    
+    const sb = getSupabaseClient();
+    if (!sb) {
+        console.error('❌ Supabase client not available');
+        if (typeof showNotification === 'function') {
+            showNotification('Supabase client not available', 'error');
+        }
+        return;
+    }
+    
+    loadStudentInfo();
+    loadEnrollmentRequests();
+    loadEnrollmentHistory();
+    setTimeout(() => {
+        loadSessionReports();
+    }, 500);
+    // Stats will be updated after both requests and reports load
+    // So call it after both are loaded
+    setTimeout(() => {
+        updateEnrollmentStats();
+        updateReportBadge();
+    }, 1000);
+    setupEnrollmentEventListeners();
+}
+// ============================================================
+// LOAD STUDENT INFO
+// ============================================================
+async function loadStudentInfo() {
+    try {
+        let user = null;
+        if (window.currentUserProfile) {
+            user = window.currentUserProfile;
+        } else if (window.db && window.db.currentUserProfile) {
+            user = window.db.currentUserProfile;
+        } else if (window.currentUser) {
+            user = window.currentUser;
+        }
+        
+        if (user) {
+            ENR_STATE.currentStudentId = user.student_id || user.id || user.user_id;
+            ENR_STATE.currentStudentProgram = user.program || 'N/A';
+            ENR_STATE.currentStudentName = user.full_name || user.name || 'Student';
+            ENR_STATE.currentBlock = user.current_block || user.block || null;
+            ENR_STATE.currentYear = user.current_year || user.year || null;
+            ENR_STATE.currentTerm = user.current_term || user.term || null;
+            ENR_STATE.programType = detectProgramType(ENR_STATE.currentStudentProgram);
+            
+            safeSetText('enrollmentStudentName', ENR_STATE.currentStudentName);
+            safeSetText('enrollmentStudentId', ENR_STATE.currentStudentId || 'N/A');
+            safeSetText('enrollmentProgram', ENR_STATE.currentStudentProgram);
+            
+            const currentDisplay = safeGetElement('enrCurrentProgramDisplay');
+            if (currentDisplay) currentDisplay.value = ENR_STATE.currentStudentProgram;
+            
+            const previousDisplay = safeGetElement('enrPreviousProgramDisplay');
+            if (previousDisplay) previousDisplay.value = ENR_STATE.currentStudentProgram;
+            
+            if (safeGetElement('enrSessionReportingTab')) {
+                initializeSessionReporting();
+            }
+            
+            console.log('✅ Student info loaded');
+        } else {
+            console.warn('⚠️ User not found');
+            safeSetText('enrollmentStudentName', 'Student');
+            safeSetText('enrollmentStudentId', 'N/A');
+            safeSetText('enrollmentProgram', 'N/A');
+        }
+    } catch (error) {
+        console.error('Error loading student info:', error);
+    }
+}
+
+// ============================================================
+// DETECT PROGRAM TYPE
+// ============================================================
+function detectProgramType(programCode) {
+    if (!programCode) return 'TVET';
+    if (NURSING_PROGRAMS.includes(programCode)) return 'Nursing';
+    return 'TVET';
+}
+
+// ============================================================
+// GET PROGRAM DISPLAY NAME
+// ============================================================
+function getProgramDisplayName(programCode) {
+    const map = {
+        'KRCHN': 'KRCHN - Kenya Registered Community Health Nursing',
+        'DCHN': 'DCHN - Diploma in Community Health Nursing',
+        'DPOTT': 'Diploma in Perioperative Theatre Technology',
+        'DCH': 'Diploma in Community Health',
+        'DHRIT': 'Diploma in Health Records and IT',
+        'DSL': 'Diploma in Science Lab',
+        'DSW': 'Diploma in Social Work & Community Development',
+        'DCJS': 'Diploma in Criminal Justice',
+        'DHSS': 'Diploma in Health Support Services',
+        'DICT': 'Diploma in ICT',
+        'DME': 'Diploma in Medical Engineering',
+        'CPOTT': 'Certificate in Perioperative Theatre Technology',
+        'CCH': 'Certificate in Community Health',
+        'CHRIT': 'Certificate in Health Records and IT',
+        'CPC': 'Certificate in Patient Care',
+        'CSL': 'Certificate in Science Lab',
+        'CSW': 'Certificate in Social Work & Community Development',
+        'CCJS': 'Certificate in Criminal Justice',
+        'CAG': 'Certificate in Agriculture',
+        'CHSS': 'Certificate in Health Support Services',
+        'CICT': 'Certificate in ICT',
+        'CCG': 'Certificate in Caregiver',
+        'COMT': 'Certificate in Orthopedic Trauma Medicine',
+        'ACH': 'Artisan in Community Health',
+        'AAG': 'Artisan in Agriculture',
+        'ASW': 'Artisan in Social Work & Community Development',
+        'CCA': 'Certificate in Computer Applications',
+        'PTE': 'TVET/CDACC (PTE)'
+    };
+    return map[programCode] || programCode;
+}
+
+// ============================================================
+// SESSION REPORTING - INITIALIZATION
+// ============================================================
+function initializeSessionReporting() {
+    const program = ENR_STATE.currentStudentProgram;
+    const programType = ENR_STATE.programType || detectProgramType(program);
+    const programDisplay = getProgramDisplayName(program);
+
+    console.log('🔄 Initializing Session Reporting');
+
+    const currentProgramEl = safeGetElement('enrReportCurrentProgram');
+    const programTypeEl = safeGetElement('enrReportProgramType');
+    const autoDetect = safeGetElement('enrReportAutoDetect');
+
+    if (currentProgramEl) currentProgramEl.textContent = programDisplay;
+    if (programTypeEl) {
+        programTypeEl.textContent = programType;
+        programTypeEl.style.background = programType === 'Nursing' ? '#dbeafe' : '#fef3c7';
+        programTypeEl.style.color = programType === 'Nursing' ? '#1e40af' : '#92400e';
+    }
+
+    const sessionSelect = safeGetElement('enrReportSession');
+    const sessionLabel = safeGetElement('enrReportSessionLabel');
+    const helpText = safeGetElement('enrReportSessionHelpText');
+    const instructions = safeGetElement('enrReportInstructions');
+
+    if (!sessionSelect) {
+        console.warn('⚠️ enrReportSession not found');
+        return;
+    }
+
+    sessionSelect.innerHTML = '<option value="">-- Select --</option>';
+
+    if (programType === 'Nursing') {
+        if (sessionLabel) sessionLabel.textContent = 'Current Block *';
+        if (helpText) helpText.textContent = 'Select your current block in the Nursing program';
+        if (instructions) instructions.textContent = 'Report your current block in the Nursing program.';
+
+        BLOCK_OPTIONS.forEach(block => {
+            const option = document.createElement('option');
+            option.value = block;
+            option.textContent = block;
+            if (block === ENR_STATE.currentBlock) {
+                option.selected = true;
+            }
+            sessionSelect.appendChild(option);
+        });
+
+        if (autoDetect) {
+            autoDetect.textContent = ENR_STATE.currentBlock ? 
+                `✅ Auto-detected: ${ENR_STATE.currentBlock}` : 
+                '⚠️ No block assigned yet';
+            autoDetect.style.color = ENR_STATE.currentBlock ? '#059669' : '#f59e0b';
+        }
+
+    } else {
+        if (sessionLabel) sessionLabel.textContent = 'Year & Term *';
+        if (helpText) helpText.textContent = 'Select your current year and term in the TVET program';
+        if (instructions) instructions.textContent = 'Report your current year and term in the TVET program.';
+
+        TVET_YEARS.forEach(year => {
+            TVET_TERMS.forEach(term => {
+                const value = `${year} - ${term}`;
+                const option = document.createElement('option');
+                option.value = value;
+                option.textContent = value;
+                const currentCombined = ENR_STATE.currentYear && ENR_STATE.currentTerm ? 
+                    `${ENR_STATE.currentYear} - ${ENR_STATE.currentTerm}` : '';
+                if (value === currentCombined) {
+                    option.selected = true;
+                }
+                sessionSelect.appendChild(option);
+            });
+        });
+
+        if (autoDetect) {
+            const currentCombined = ENR_STATE.currentYear && ENR_STATE.currentTerm ? 
+                `${ENR_STATE.currentYear} - ${ENR_STATE.currentTerm}` : '';
+            autoDetect.textContent = currentCombined ? 
+                `✅ Auto-detected: ${currentCombined}` : 
+                '⚠️ No year/term assigned yet';
+            autoDetect.style.color = currentCombined ? '#059669' : '#f59e0b';
+        }
+    }
+}
+
+// ============================================================
+// SUBMIT SESSION REPORT - WITH DUPLICATE CHECK
+// ============================================================
+async function submitSessionReport() {
+    const sb = getSupabaseClient();
+    if (!sb) {
+        if (typeof showNotification === 'function') {
+            showNotification('Supabase client not available', 'error');
+        }
+        return;
+    }
+
+    const year = safeGetElement('enrReportYear')?.value;
+    const session = safeGetElement('enrReportSession')?.value;
+    const status = safeGetElement('enrReportStatus')?.value;
+    const remarks = safeGetElement('enrReportRemarks')?.value;
+    const feedback = safeGetElement('enrReportFeedback');
+
+    if (!year || !session) {
+        if (feedback) {
+            feedback.style.display = 'block';
+            feedback.style.background = '#fee2e2';
+            feedback.style.color = '#dc2626';
+            feedback.style.border = '1px solid #fecaca';
+            feedback.innerHTML = '<i class="fas fa-exclamation-circle"></i> Please select both Year and Session.';
+        }
+        return;
+    }
+
+    let user = null;
+    if (window.currentUserProfile) {
+        user = window.currentUserProfile;
+    } else if (window.db && window.db.currentUserProfile) {
+        user = window.db.currentUserProfile;
+    } else if (window.currentUser) {
+        user = window.currentUser;
+    }
+
+    if (!user) {
+        if (feedback) {
+            feedback.style.display = 'block';
+            feedback.style.background = '#fee2e2';
+            feedback.style.color = '#dc2626';
+            feedback.innerHTML = '<i class="fas fa-exclamation-circle"></i> Please login first.';
+        }
+        return;
+    }
+
+    const studentId = ENR_STATE.currentStudentId || user.student_id || user.id || user.user_id;
+    const studentName = ENR_STATE.currentStudentName || user.full_name || user.name || 'Unknown';
+    const program = ENR_STATE.currentStudentProgram || user.program || 'N/A';
+    const programType = ENR_STATE.programType || detectProgramType(program);
+
+    console.log('📤 Submitting session report for:', studentName);
+
+    // 🔍 CHECK FOR EXISTING REPORT FIRST
+    try {
+        const { data: existing, error: checkError } = await sb
+            .from('session_reports')
+            .select('id, submitted_at, approval_status')
+            .eq('student_id', studentId)
+            .eq('academic_year', year)
+            .eq('session', session);
+
+        if (checkError) throw checkError;
+
+        if (existing && existing.length > 0) {
+            const existingReport = existing[0];
+            const dateStr = existingReport.submitted_at ? new Date(existingReport.submitted_at).toLocaleString() : 'unknown date';
+            const statusStr = existingReport.approval_status || 'pending';
+            
+            if (feedback) {
+                feedback.style.display = 'block';
+                feedback.style.background = '#fef3c7';
+                feedback.style.color = '#92400e';
+                feedback.style.border = '1px solid #fcd34d';
+                feedback.innerHTML = `
+                    <i class="fas fa-exclamation-triangle"></i> 
+                    <strong>⚠️ You have already submitted this report!</strong><br>
+                    <span style="font-size: 13px;">
+                        Submitted on: ${dateStr}<br>
+                        Status: <strong>${statusStr.toUpperCase()}</strong>
+                    </span>
+                `;
+            }
+            
+            if (typeof showNotification === 'function') {
+                showNotification('⚠️ You have already submitted a report for this academic year and session.', 'warning');
+            }
+            
+            // Re-enable submit button if it exists
+            const submitBtn = document.querySelector('#enrReportForm button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Submit Report';
+            }
+            
+            return; // 🛑 STOP - don't submit
+        }
+    } catch (error) {
+        console.error('Error checking for existing report:', error);
+        // Continue with submission if check fails (fail open)
+    }
+
+    // ✅ PROCEED WITH SUBMISSION
+    if (typeof showLoading === 'function') showLoading('Submitting session report...');
+
+    // Disable submit button to prevent double clicks
+    const submitBtn = document.querySelector('#enrReportForm button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Submitting...';
+    }
+
+    try {
+        const reportData = {
+            student_id: studentId,
+            student_name: studentName,
+            program: program,
+            program_type: programType,
+            academic_year: year,
+            session: session,
+            status: status || 'Continuing',
+            remarks: remarks || '',
+            approval_status: 'pending',
+            submitted_at: new Date().toISOString(),
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+        };
+
+        const { data, error } = await sb
+            .from('session_reports')
+            .insert(reportData)
+            .select();
+
+        if (error) {
+            // Handle unique constraint violation
+            if (error.code === '23505') {
+                if (feedback) {
+                    feedback.style.display = 'block';
+                    feedback.style.background = '#fef3c7';
+                    feedback.style.color = '#92400e';
+                    feedback.style.border = '1px solid #fcd34d';
+                    feedback.innerHTML = `
+                        <i class="fas fa-exclamation-triangle"></i> 
+                        <strong>⚠️ Duplicate Report!</strong><br>
+                        <span style="font-size: 13px;">You already have a report for ${year} - ${session}. Please check your reports list.</span>
+                    `;
+                }
+                if (typeof showNotification === 'function') {
+                    showNotification('⚠️ Duplicate report - you already submitted this', 'warning');
+                }
+                return;
+            }
+            throw error;
+        }
+
+        if (typeof hideLoading === 'function') hideLoading();
+
+        if (feedback) {
+            feedback.style.display = 'block';
+            feedback.style.background = '#d1fae5';
+            feedback.style.color = '#065f46';
+            feedback.style.border = '1px solid #86efac';
+            feedback.innerHTML = `
+                <i class="fas fa-check-circle"></i> 
+                <strong>✅ Report submitted successfully!</strong><br>
+                <span style="font-size: 13px;">Your session report has been submitted. Admin will review and update your profile.</span>
+            `;
+        }
+
+        if (typeof showNotification === 'function') {
+            showNotification('✅ Session report submitted successfully!', 'success');
+        }
+
+        // Clear form but keep the feedback
+        const form = safeGetElement('enrReportForm');
+        if (form) {
+            // Don't reset if we want to keep values
+            // form.reset();
+        }
+
+        setTimeout(() => {
+            if (feedback) feedback.style.display = 'none';
+        }, 8000);
+
+        await loadSessionReports();
+        updateReportBadge();
+        initializeSessionReporting();
+
+    } catch (error) {
+        if (typeof hideLoading === 'function') hideLoading();
+        console.error('❌ Error submitting session report:', error);
+
+        if (feedback) {
+            feedback.style.display = 'block';
+            feedback.style.background = '#fee2e2';
+            feedback.style.color = '#991b1b';
+            feedback.style.border = '1px solid #fecaca';
+            let errorMessage = error.message || 'Unknown error';
+            if (errorMessage.includes('row-level security')) {
+                errorMessage = 'Permission denied. Please contact admin to set up RLS policies.';
+            }
+            feedback.innerHTML = `
+                <i class="fas fa-exclamation-circle"></i> 
+                <strong>Error submitting report:</strong><br>
+                <span style="font-size: 13px;">${escapeHtml(errorMessage)}</span>
+            `;
+        }
+
+        if (typeof showNotification === 'function') {
+            showNotification('❌ Error submitting session report', 'error');
+        }
+    } finally {
+        // Re-enable submit button
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Submit Report';
+        }
+    }
+}
+
+// ============================================================
+// LOAD SESSION REPORTS
+// ============================================================
+async function loadSessionReports() {
+    const sb = getSupabaseClient();
+    if (!sb) {
+        console.error('❌ Supabase client not available');
+        return;
+    }
+
+    try {
+        const studentId = ENR_STATE.currentStudentId;
+        if (!studentId) {
+            console.warn('⚠️ No student ID found');
+            const tbody = safeGetElement('enrReportsBody');
+            if (tbody) {
+                tbody.innerHTML = `
+                    <tr><td colspan="5" style="padding: 40px; text-align: center; color: #94a3b8;">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 24px; display: block; margin-bottom: 10px;"></i>
+                        Please login to view your reports.
+                    </td></tr>
+                `;
+            }
+            return;
+        }
+
+        console.log('📊 Fetching session reports for student:', studentId);
+
+        const { data, error } = await sb
+            .from('session_reports')
+            .select('*')
+            .eq('student_id', studentId)
+            .order('submitted_at', { ascending: false });
+
+        if (error) throw error;
+
+        console.log(`✅ Found ${data?.length || 0} session reports`);
+
+        ENR_STATE.reports = data || [];
+        renderSessionReportsTable();
+        updateReportBadge();
+
+    } catch (error) {
+        console.error('Error loading session reports:', error);
+        const tbody = safeGetElement('enrReportsBody');
+        if (tbody) {
+            tbody.innerHTML = `
+                <tr><td colspan="5" style="padding: 30px; text-align: center; color: #dc2626;">
+                    <i class="fas fa-exclamation-circle" style="font-size: 20px; display: block; margin-bottom: 8px;"></i>
+                    Error loading reports: ${escapeHtml(error.message || 'Unknown error')}
+                    <br>
+                    <button onclick="loadSessionReports()" style="margin-top: 8px; padding: 6px 16px; background: #4C1D95; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                        <i class="fas fa-sync-alt"></i> Retry
+                    </button>
+                </td></tr>
+            `;
+        }
+        if (typeof showNotification === 'function') {
+            showNotification('Error loading session reports', 'error');
+        }
+    }
+}
+
+// ============================================================
+// RENDER SESSION REPORTS TABLE
+// ============================================================
+function renderSessionReportsTable() {
+    const tbody = safeGetElement('enrReportsBody');
+    if (!tbody) return;
+
+    const reports = ENR_STATE.reports || [];
+
+    if (!reports || reports.length === 0) {
+        tbody.innerHTML = `
+            <tr><td colspan="5" style="padding: 40px; text-align: center; color: #94a3b8;">
+                <i class="fas fa-inbox" style="font-size: 28px; display: block; margin-bottom: 10px; color: #d1d5db;"></i>
+                <p style="margin: 0;">No session reports found</p>
+                <p style="margin: 4px 0 0 0; font-size: 12px; color: #cbd5e1;">Submit a report using the form above</p>
+            </td></tr>
+        `;
+        return;
+    }
+
+    let html = '';
+    reports.forEach((r, index) => {
+        const statusClass = r.approval_status || 'pending';
+        const statusLabel = statusClass.charAt(0).toUpperCase() + statusClass.slice(1);
+        const statusColors = {
+            pending: { bg: '#fef3c7', color: '#92400e', emoji: '⏳' },
+            approved: { bg: '#d1fae5', color: '#065f46', emoji: '✅' },
+            rejected: { bg: '#fee2e2', color: '#991b1b', emoji: '❌' }
+        };
+        const statusStyle = statusColors[statusClass] || statusColors.pending;
+
+        const date = r.submitted_at ? new Date(r.submitted_at).toLocaleDateString() : 'N/A';
+        const time = r.submitted_at ? new Date(r.submitted_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+        const sessionDisplay = r.session || 'N/A';
+        const academicYear = r.academic_year || 'N/A';
+        const studentStatus = r.status || 'Continuing';
+        const programType = r.program_type || 'TVET';
+
+        html += `
+            <tr style="border-bottom: 1px solid #f1f5f9; ${index % 2 === 0 ? 'background: #fafafa;' : ''}">
+                <td style="padding: 10px 14px;">
+                    <strong style="color: #0A3D62;">${escapeHtml(academicYear)}</strong>
+                </td>
+                <td style="padding: 10px 14px;">
+                    <span style="background: #e0f2fe; padding: 4px 12px; border-radius: 12px; font-weight: 500; font-size: 12px; color: #1e40af;">
+                        ${escapeHtml(sessionDisplay)}
+                    </span>
+                    ${programType === 'Nursing' ? '<span style="font-size: 10px; color: #94a3b8; margin-left: 4px;">(Block)</span>' : '<span style="font-size: 10px; color: #94a3b8; margin-left: 4px;">(Year/Term)</span>'}
+                </td>
+                <td style="padding: 10px 14px;">
+                    <span style="background: #d1fae5; padding: 4px 12px; border-radius: 12px; font-size: 12px; color: #065f46;">
+                        ${escapeHtml(studentStatus)}
+                    </span>
+                </td>
+                <td style="padding: 10px 14px; text-align: center; font-size: 12px; color: #64748b;">
+                    ${date}<br><span style="font-size: 10px; color: #94a3b8;">${time}</span>
+                </td>
+                <td style="padding: 10px 14px; text-align: center;">
+                    <span style="background: ${statusStyle.bg}; color: ${statusStyle.color}; padding: 4px 14px; border-radius: 20px; font-size: 11px; font-weight: 600; display: inline-block;">
+                        ${statusStyle.emoji} ${statusLabel}
+                    </span>
+                    ${statusClass === 'approved' ? '<br><span style="font-size: 10px; color: #059669;">✅ Profile Updated</span>' : ''}
+                    ${statusClass === 'pending' ? '<br><span style="font-size: 10px; color: #f59e0b;">⏳ Awaiting Review</span>' : ''}
+                </td>
+            </tr>
+        `;
+    });
+
+    tbody.innerHTML = html;
+}
+
+// ============================================================
+// UPDATE REPORT BADGE
+// ============================================================
+function updateReportBadge() {
+    const reports = ENR_STATE.reports || [];
+    const pending = reports.filter(r => r.approval_status === 'pending').length;
+
+    const badge = safeGetElement('enrReportBadge');
+    if (badge) {
+        badge.textContent = pending;
+        badge.style.display = 'inline-block';
+        badge.style.background = pending > 0 ? '#f59e0b' : '#94a3b8';
+        badge.style.color = 'white';
+        badge.style.padding = '0 10px';
+        badge.style.borderRadius = '20px';
+        badge.style.fontSize = '11px';
+    }
+
+    const statsCard = safeGetElement('enrPendingReports');
+    if (statsCard) {
+        statsCard.textContent = pending;
+    }
+
+    ENR_STATE.stats.pendingReports = pending;
+}
+
+// ============================================================
+// ADMIN: APPROVE SESSION REPORT
+// ============================================================
+async function approveSessionReport(reportId) {
+    const sb = getSupabaseClient();
+    if (!sb) {
+        if (typeof showNotification === 'function') {
+            showNotification('Supabase client not available', 'error');
+        }
+        return;
+    }
+
+    try {
+        const { data: report, error: fetchError } = await sb
+            .from('session_reports')
+            .select('*')
+            .eq('id', reportId)
+            .single();
+
+        if (fetchError) throw fetchError;
+        if (!report) throw new Error('Report not found');
+
+        const { error: updateError } = await sb
+            .from('session_reports')
+            .update({
+                approval_status: 'approved',
+                approved_at: new Date().toISOString(),
+                approved_by: 'admin'
+            })
+            .eq('id', reportId);
+
+        if (updateError) throw updateError;
+
+        const studentId = report.student_id;
+        const programType = report.program_type || detectProgramType(report.program);
+        const session = report.session;
+
+        let updateData = {};
+
+        if (programType === 'Nursing') {
+            updateData = { current_block: session, updated_at: new Date().toISOString() };
+        } else {
+            const parts = session.split(' - ');
+            if (parts.length === 2) {
+                updateData = {
+                    current_year: parts[0].trim(),
+                    current_term: parts[1].trim(),
+                    updated_at: new Date().toISOString()
+                };
+            } else {
+                const yearMatch = session.match(/Year\s*(\d+)/i);
+                const termMatch = session.match(/Term\s*(\d+)/i);
+                if (yearMatch) updateData.current_year = `Year ${yearMatch[1]}`;
+                if (termMatch) updateData.current_term = `Term ${termMatch[1]}`;
+                updateData.updated_at = new Date().toISOString();
+            }
+        }
+
+        const { error: profileError } = await sb
+            .from('consolidated_user_profiles_table')
+            .update(updateData)
+            .eq('student_id', studentId);
+
+        if (profileError) {
+            const { error: altError } = await sb
+                .from('students')
+                .update(updateData)
+                .eq('student_id', studentId);
+            if (altError) throw altError;
+        }
+
+        if (programType === 'Nursing') {
+            ENR_STATE.currentBlock = session;
+        } else {
+            const parts = session.split(' - ');
+            if (parts.length === 2) {
+                ENR_STATE.currentYear = parts[0].trim();
+                ENR_STATE.currentTerm = parts[1].trim();
+            }
+        }
+
+        if (typeof showNotification === 'function') {
+            showNotification('✅ Session report approved and student profile updated!', 'success');
+        }
+
+        await loadSessionReports();
+        await loadStudentInfo();
+        initializeSessionReporting();
+        updateReportBadge();
+
+    } catch (error) {
+        console.error('Error approving session report:', error);
+        if (typeof showNotification === 'function') {
+            showNotification('❌ Error approving report: ' + error.message, 'error');
+        }
+    }
+}
+
+// ============================================================
+// ADMIN: REJECT SESSION REPORT
+// ============================================================
+async function rejectSessionReport(reportId) {
+    const sb = getSupabaseClient();
+    if (!sb) {
+        if (typeof showNotification === 'function') {
+            showNotification('Supabase client not available', 'error');
+        }
+        return;
+    }
+
+    try {
+        const { error } = await sb
+            .from('session_reports')
+            .update({
+                approval_status: 'rejected',
+                approved_at: new Date().toISOString(),
+                approved_by: 'admin'
+            })
+            .eq('id', reportId);
+
+        if (error) throw error;
+
+        if (typeof showNotification === 'function') {
+            showNotification('❌ Session report rejected', 'warning');
+        }
+
+        await loadSessionReports();
+        updateReportBadge();
+
+    } catch (error) {
+        console.error('Error rejecting session report:', error);
+        if (typeof showNotification === 'function') {
+            showNotification('❌ Error rejecting report', 'error');
+        }
+    }
+}
+
+// ============================================================
+// LOAD ENROLLMENT REQUESTS
+// ============================================================
+async function loadEnrollmentRequests() {
+    const sb = getSupabaseClient();
+    if (!sb) {
+        console.error('❌ Supabase client not available');
+        return;
+    }
+
+    try {
+        const studentId = ENR_STATE.currentStudentId;
+        if (!studentId) {
+            console.warn('⚠️ No student ID found');
+            return;
+        }
+
+        const search = safeGetElement('enrSearch')?.value?.toLowerCase() || '';
+        const status = safeGetElement('enrStatusFilter')?.value || 'all';
+        const type = safeGetElement('enrTypeFilter')?.value || 'all';
+
+        let query = sb
+            .from('student_requests')
+            .select('*')
+            .eq('student_id', studentId)
+            .order('created_at', { ascending: false });
+
+        if (status !== 'all') {
+            query = query.eq('status', status);
+        }
+        if (type !== 'all') {
+            query = query.eq('request_type', type);
+        }
+
+        const { data, error } = await query;
+
+        if (error) throw error;
+
+        let filtered = data || [];
+        if (search) {
+            filtered = filtered.filter(r => 
+                (r.requested_program || '').toLowerCase().includes(search) ||
+                (r.current_program || '').toLowerCase().includes(search) ||
+                (r.previous_program || '').toLowerCase().includes(search)
+            );
+        }
+
+        ENR_STATE.requests = filtered;
+        renderEnrollmentRequestsTable();
+        updateEnrollmentStats();
+        updateEnrollmentBadges();
+
+    } catch (error) {
+        console.error('Error loading enrollment requests:', error);
+        const tbody = safeGetElement('enrRequestsBody');
+        if (tbody) {
+            tbody.innerHTML = `
+                <tr><td colspan="5" style="padding: 30px; text-align: center; color: #dc2626;">
+                    <i class="fas fa-exclamation-circle" style="font-size: 20px; display: block; margin-bottom: 8px;"></i>
+                    Error loading requests: ${escapeHtml(error.message)}
+                </td></tr>
+            `;
+        }
+        if (typeof showNotification === 'function') {
+            showNotification('Error loading enrollment requests', 'error');
+        }
+    }
+}
+
+// ============================================================
+// RENDER ENROLLMENT REQUESTS TABLE
+// ============================================================
+function renderEnrollmentRequestsTable() {
+    const tbody = safeGetElement('enrRequestsBody');
+    if (!tbody) return;
+
+    const requests = ENR_STATE.requests;
+
+    if (!requests || requests.length === 0) {
+        tbody.innerHTML = `
+            <tr><td colspan="5" style="padding: 40px; text-align: center; color: #94a3b8;">
+                <i class="fas fa-inbox" style="font-size: 28px; display: block; margin-bottom: 10px; color: #d1d5db;"></i>
+                <p style="margin: 0;">No enrollment requests found</p>
+                <p style="margin: 4px 0 0 0; font-size: 12px; color: #cbd5e1;">Submit a new request using the "New Request" tab</p>
+            </td></tr>
+        `;
+        return;
+    }
+
+    let html = '';
+    requests.forEach((r, index) => {
+        const requestType = r.request_type === 'change_program' ? 'Change of Program' : 'Readmission';
+        const typeIcon = r.request_type === 'change_program' ? 'fa-exchange-alt' : 'fa-undo-alt';
+        const typeColor = r.request_type === 'change_program' ? '#4C1D95' : '#059669';
+
+        const statusClass = r.status || 'pending';
+        const statusLabel = statusClass.charAt(0).toUpperCase() + statusClass.slice(1);
+        const statusColors = {
+            pending: { bg: '#fef3c7', color: '#92400e' },
+            approved: { bg: '#d1fae5', color: '#065f46' },
+            rejected: { bg: '#fee2e2', color: '#991b1b' },
+            processing: { bg: '#dbeafe', color: '#1e40af' }
+        };
+        const statusStyle = statusColors[statusClass] || statusColors.pending;
+
+        const date = r.created_at ? new Date(r.created_at).toLocaleDateString() : 'N/A';
+        const time = r.created_at ? new Date(r.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+
+        const fromProgram = r.current_program || r.previous_program || 'N/A';
+        const toProgram = r.requested_program || 'N/A';
+
+        html += `
+            <tr style="border-bottom: 1px solid #f1f5f9; ${index % 2 === 0 ? 'background: #fafafa;' : ''}">
+                <td style="padding: 10px 14px;">
+                    <span style="display: flex; align-items: center; gap: 6px;">
+                        <i class="fas ${typeIcon}" style="color: ${typeColor}; font-size: 14px;"></i>
+                        <span style="font-weight: 500; font-size: 13px;">${escapeHtml(requestType)}</span>
+                    </span>
+                </td>
+                <td style="padding: 10px 14px; font-size: 13px;">
+                    <span style="color: #6b7280;">${escapeHtml(fromProgram)}</span>
+                    <i class="fas fa-arrow-right" style="color: #94a3b8; margin: 0 6px; font-size: 11px;"></i>
+                    <span style="font-weight: 500; color: #0A3D62;">${escapeHtml(toProgram)}</span>
+                </td>
+                <td style="padding: 10px 14px; text-align: center; font-size: 12px; color: #64748b;">
+                    ${date}<br><span style="font-size: 10px; color: #94a3b8;">${time}</span>
+                </td>
+                <td style="padding: 10px 14px; text-align: center;">
+                    <span style="background: ${statusStyle.bg}; color: ${statusStyle.color}; padding: 4px 14px; border-radius: 20px; font-size: 11px; font-weight: 600; display: inline-block;">
+                        ${statusLabel}
+                    </span>
+                </td>
+                <td style="padding: 10px 14px; text-align: center;">
+                    <button onclick="viewEnrollmentRequest('${r.id}')" 
+                            style="padding: 4px 14px; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">
+                        <i class="fas fa-eye"></i> View
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+
+    tbody.innerHTML = html;
+}
+
+// ============================================================
+// VIEW ENROLLMENT REQUEST DETAILS
+// ============================================================
+async function viewEnrollmentRequest(requestId) {
+    const sb = getSupabaseClient();
+    if (!sb) {
+        if (typeof showNotification === 'function') {
+            showNotification('Supabase client not available', 'error');
+        }
+        return;
+    }
+
+    try {
+        const { data, error } = await sb
+            .from('student_requests')
+            .select('*')
+            .eq('id', requestId)
+            .single();
+
+        if (error) throw error;
+
+        if (!data) {
+            if (typeof showNotification === 'function') {
+                showNotification('Request not found', 'error');
+            }
+            return;
+        }
+
+        const requestType = data.request_type === 'change_program' ? 'Change of Program' : 'Readmission';
+        const fromProgram = data.current_program || data.previous_program || 'N/A';
+        const toProgram = data.requested_program || 'N/A';
+        const status = data.status || 'pending';
+        const statusLabel = status.charAt(0).toUpperCase() + status.slice(1);
+        const statusColors = { pending: '#f59e0b', approved: '#10b981', rejected: '#dc2626', processing: '#3b82f6' };
+        const statusColor = statusColors[status] || '#f59e0b';
+        const date = data.created_at ? new Date(data.created_at).toLocaleString() : 'N/A';
+        const updated = data.updated_at ? new Date(data.updated_at).toLocaleString() : 'N/A';
+
+        const modalContent = `
+            <div style="max-width: 550px; width: 95%; background: white; border-radius: 16px; padding: 28px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3); position: relative;">
+                <button onclick="closeEnrollmentModal()" style="position: absolute; top: 12px; right: 16px; background: none; border: none; font-size: 24px; color: #94a3b8; cursor: pointer;">
+                    <i class="fas fa-times"></i>
+                </button>
+                <h3 style="color: #0A3D62; margin: 0 0 4px 0; font-size: 18px; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-file-alt" style="color: #4C1D95;"></i> ${escapeHtml(requestType)} Request
+                </h3>
+                <p style="color: #94a3b8; font-size: 13px; margin: 0 0 20px 0;">Request ID: ${escapeHtml(data.id.substring(0, 8))}...</p>
+                <div style="display: flex; justify-content: center; margin-bottom: 20px;">
+                    <span style="background: ${statusColor}20; color: ${statusColor}; padding: 6px 24px; border-radius: 20px; font-size: 14px; font-weight: 700; border: 1px solid ${statusColor}40;">
+                        ${statusLabel}
+                    </span>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; padding: 16px; background: #f8fafc; border-radius: 10px;">
+                    <div>
+                        <div style="font-size: 10px; color: #94a3b8; text-transform: uppercase;">From Program</div>
+                        <div style="font-size: 15px; font-weight: 600; color: #1e293b; margin-top: 2px;">${escapeHtml(fromProgram)}</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 10px; color: #94a3b8; text-transform: uppercase;">Requested Program</div>
+                        <div style="font-size: 15px; font-weight: 600; color: #4C1D95; margin-top: 2px;">${escapeHtml(toProgram)}</div>
+                    </div>
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase; font-weight: 600;">Reason / Justification</div>
+                    <div style="background: #f1f5f9; padding: 12px 16px; border-radius: 8px; font-size: 14px; color: #334155; line-height: 1.6; margin-top: 4px; border-left: 3px solid #4C1D95;">
+                        ${escapeHtml(data.reason || 'No reason provided')}
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 12px; color: #94a3b8; border-top: 1px solid #e5e7eb; padding-top: 14px;">
+                    <div><i class="fas fa-clock"></i> Submitted: ${date}</div>
+                    <div><i class="fas fa-edit"></i> Updated: ${updated}</div>
+                </div>
+                <div style="margin-top: 18px; text-align: center;">
+                    <button onclick="closeEnrollmentModal()" style="padding: 10px 40px; background: #4C1D95; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px;">
+                        <i class="fas fa-times"></i> Close
+                    </button>
+                </div>
+            </div>
+        `;
+
+        showEnrollmentModal(modalContent);
+
+    } catch (error) {
+        console.error('Error loading request details:', error);
+        if (typeof showNotification === 'function') {
+            showNotification('Error loading request details', 'error');
+        }
+    }
+}
+
+// ============================================================
+// ENROLLMENT MODAL HELPER
+// ============================================================
+function showEnrollmentModal(content) {
+    closeEnrollmentModal();
+    const modal = document.createElement('div');
+    modal.id = 'enrollmentModal';
+    modal.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
+        display: flex; align-items: center; justify-content: center;
+        z-index: 100000; padding: 20px;
+    `;
+    modal.innerHTML = content;
+    document.body.appendChild(modal);
+    modal.addEventListener('click', function(e) {
+        if (e.target === this) closeEnrollmentModal();
+    });
+    document.addEventListener('keydown', function handler(e) {
+        if (e.key === 'Escape') {
+            closeEnrollmentModal();
+            document.removeEventListener('keydown', handler);
+        }
+    });
+}
+
+function closeEnrollmentModal() {
+    const modal = document.getElementById('enrollmentModal');
+    if (modal) modal.remove();
+}
+
+// ============================================================
+// LOAD ENROLLMENT HISTORY
+// ============================================================
+async function loadEnrollmentHistory() {
+    const sb = getSupabaseClient();
+    if (!sb) {
+        console.error('❌ Supabase client not available');
+        return;
+    }
+
+    try {
+        const studentId = ENR_STATE.currentStudentId;
+        if (!studentId) {
+            console.warn('⚠️ No student ID found');
+            return;
+        }
+
+        const type = safeGetElement('enrHistoryType')?.value || 'all';
+        const status = safeGetElement('enrHistoryStatus')?.value || 'all';
+
+        let query = sb
+            .from('student_requests')
+            .select('*')
+            .eq('student_id', studentId)
+            .in('status', ['approved', 'rejected'])
+            .order('updated_at', { ascending: false });
+
+        if (type !== 'all') {
+            query = query.eq('request_type', type);
+        }
+        if (status !== 'all') {
+            query = query.eq('status', status);
+        }
+
+        const { data, error } = await query;
+
+        if (error) throw error;
+
+        ENR_STATE.history = data || [];
+        renderEnrollmentHistoryTable();
+
+    } catch (error) {
+        console.error('Error loading enrollment history:', error);
+        const tbody = safeGetElement('enrHistoryBody');
+        if (tbody) {
+            tbody.innerHTML = `
+                <tr><td colspan="5" style="padding: 30px; text-align: center; color: #dc2626;">
+                    <i class="fas fa-exclamation-circle" style="font-size: 20px; display: block; margin-bottom: 8px;"></i>
+                    Error loading history: ${escapeHtml(error.message)}
+                </td></tr>
+            `;
+        }
+        if (typeof showNotification === 'function') {
+            showNotification('Error loading enrollment history', 'error');
+        }
+    }
+}
+
+// ============================================================
+// RENDER ENROLLMENT HISTORY TABLE
+// ============================================================
+function renderEnrollmentHistoryTable() {
+    const tbody = safeGetElement('enrHistoryBody');
+    if (!tbody) return;
+
+    const history = ENR_STATE.history;
+
+    if (!history || history.length === 0) {
+        tbody.innerHTML = `
+            <tr><td colspan="5" style="padding: 40px; text-align: center; color: #94a3b8;">
+                <i class="fas fa-history" style="font-size: 28px; display: block; margin-bottom: 10px; color: #d1d5db;"></i>
+                <p style="margin: 0;">No enrollment history found</p>
+            </td></tr>
+        `;
+        return;
+    }
+
+    let html = '';
+    history.forEach((r, index) => {
+        const requestType = r.request_type === 'change_program' ? 'Change of Program' : 'Readmission';
+        const typeIcon = r.request_type === 'change_program' ? 'fa-exchange-alt' : 'fa-undo-alt';
+        const typeColor = r.request_type === 'change_program' ? '#4C1D95' : '#059669';
+
+        const statusClass = r.status || 'approved';
+        const statusLabel = statusClass.charAt(0).toUpperCase() + statusClass.slice(1);
+        const statusColors = {
+            approved: { bg: '#d1fae5', color: '#065f46' },
+            rejected: { bg: '#fee2e2', color: '#991b1b' }
+        };
+        const statusStyle = statusColors[statusClass] || statusColors.approved;
+
+        const date = r.updated_at ? new Date(r.updated_at).toLocaleDateString() : 'N/A';
+        const fromProgram = r.current_program || r.previous_program || 'N/A';
+        const toProgram = r.requested_program || 'N/A';
+        const approvedBy = r.approved_by || r.updated_by || 'System';
+
+        html += `
+            <tr style="border-bottom: 1px solid #f1f5f9; ${index % 2 === 0 ? 'background: #fafafa;' : ''}">
+                <td style="padding: 10px 14px;">
+                    <span style="display: flex; align-items: center; gap: 6px;">
+                        <i class="fas ${typeIcon}" style="color: ${typeColor}; font-size: 14px;"></i>
+                        <span style="font-size: 13px;">${escapeHtml(requestType)}</span>
+                    </span>
+                </td>
+                <td style="padding: 10px 14px; font-size: 13px;">
+                    <span style="color: #6b7280;">${escapeHtml(fromProgram)}</span>
+                    <i class="fas fa-arrow-right" style="color: #94a3b8; margin: 0 6px; font-size: 11px;"></i>
+                    <span style="font-weight: 500; color: #0A3D62;">${escapeHtml(toProgram)}</span>
+                </td>
+                <td style="padding: 10px 14px; text-align: center; font-size: 12px; color: #64748b;">${date}</td>
+                <td style="padding: 10px 14px; text-align: center;">
+                    <span style="background: ${statusStyle.bg}; color: ${statusStyle.color}; padding: 4px 14px; border-radius: 20px; font-size: 11px; font-weight: 600; display: inline-block;">
+                        ${statusLabel}
+                    </span>
+                </td>
+                <td style="padding: 10px 14px; text-align: center; font-size: 12px; color: #64748b;">${escapeHtml(approvedBy)}</td>
+            </tr>
+        `;
+    });
+
+    tbody.innerHTML = html;
+}
+
+// ============================================================
+// UPDATE ENROLLMENT STATS (INCLUDES SESSION REPORTS)
+// ============================================================
+function updateEnrollmentStats() {
+    const requests = ENR_STATE.requests || [];
+    const reports = ENR_STATE.reports || [];
+
+    // Enrollment requests stats
+    const total = requests.length;
+    const pending = requests.filter(r => r.status === 'pending').length;
+    const approved = requests.filter(r => r.status === 'approved').length;
+    const rejected = requests.filter(r => r.status === 'rejected').length;
+
+    // Session reports stats
+    const totalReports = reports.length;
+    const pendingReports = reports.filter(r => r.approval_status === 'pending').length;
+    const approvedReports = reports.filter(r => r.approval_status === 'approved').length;
+    const rejectedReports = reports.filter(r => r.approval_status === 'rejected').length;
+
+    // Combined stats for "My Requests" section
+    const combinedTotal = total + totalReports;
+    const combinedPending = pending + pendingReports;
+    const combinedApproved = approved + approvedReports;
+    const combinedRejected = rejected + rejectedReports;
+
+    let lastRequest = '--';
+    const allItems = [...requests, ...reports];
+    if (allItems.length > 0) {
+        const latest = allItems.reduce((a, b) => {
+            const dateA = a.submitted_at || a.created_at || a.updated_at;
+            const dateB = b.submitted_at || b.created_at || b.updated_at;
+            return new Date(dateA) > new Date(dateB) ? a : b;
+        });
+        const lastDate = latest.submitted_at || latest.created_at || latest.updated_at;
+        if (lastDate) {
+            lastRequest = new Date(lastDate).toLocaleDateString();
+        }
+    }
+
+    // Update DOM elements
+    safeSetText('enrTotalRequests', combinedTotal);
+    safeSetText('enrPendingCount', combinedPending);
+    safeSetText('enrApprovedCount', combinedApproved);
+    safeSetText('enrRejectedCount', combinedRejected);
+    safeSetText('enrLastRequest', lastRequest);
+    safeSetText('enrPendingReports', pendingReports);
+
+    // Store in state
+    ENR_STATE.stats = { 
+        total, pending, approved, rejected,
+        totalReports, pendingReports, approvedReports, rejectedReports,
+        combinedTotal, combinedPending, combinedApproved, combinedRejected
+    };
+
+    // Update badges
+    updateEnrollmentBadges();
+    updateReportBadge();
+
+    console.log('📊 Stats updated:', {
+        'Requests': { total, pending, approved, rejected },
+        'Reports': { totalReports, pendingReports, approvedReports, rejectedReports },
+        'Combined': { combinedTotal, combinedPending, combinedApproved, combinedRejected }
+    });
+}
+// ============================================================
+// UPDATE ENROLLMENT BADGES (INCLUDES SESSION REPORTS)
+// ============================================================
+function updateEnrollmentBadges() {
+    const requests = ENR_STATE.requests || [];
+    const reports = ENR_STATE.reports || [];
+    
+    const pendingRequests = requests.filter(r => r.status === 'pending').length;
+    const pendingReports = reports.filter(r => r.approval_status === 'pending').length;
+    const totalPending = pendingRequests + pendingReports;
+    
+    const badge = safeGetElement('enrPendingBadge');
+    if (badge) {
+        badge.textContent = totalPending;
+        badge.style.display = 'inline-block';
+        badge.style.background = totalPending > 0 ? '#f59e0b' : 'rgba(255,255,255,0.2)';
+    }
+
+    // Also update individual report badge
+    const reportBadge = safeGetElement('enrReportBadge');
+    if (reportBadge) {
+        reportBadge.textContent = pendingReports;
+        reportBadge.style.display = 'inline-block';
+        reportBadge.style.background = pendingReports > 0 ? '#f59e0b' : '#94a3b8';
+        reportBadge.style.color = 'white';
+        reportBadge.style.padding = '0 10px';
+        reportBadge.style.borderRadius = '20px';
+        reportBadge.style.fontSize = '11px';
+    }
+}
+
+// ============================================================
+// FILTER ENROLLMENT REQUESTS
+// ============================================================
+function filterEnrRequests() {
+    loadEnrollmentRequests();
+}
+
+// ============================================================
+// SHOW ENROLLMENT SUB TAB
+// ============================================================
+function showEnrSubTab(tab) {
+    document.querySelectorAll('.enr-tab-content').forEach(el => el.style.display = 'none');
+
+    const tabMap = {
+        'my-requests': 'enrMyRequestsTab',
+        'new-request': 'enrNewRequestTab',
+        'session-reporting': 'enrSessionReportingTab',
+        'history': 'enrHistoryTab'
+    };
+
+    const tabId = tabMap[tab];
+    if (tabId) {
+        const el = safeGetElement(tabId);
+        if (el) el.style.display = 'block';
+    }
+
+    document.querySelectorAll('.enr-tab-btn').forEach(btn => {
+        btn.style.background = 'transparent';
+        btn.style.color = '#334155';
+        btn.style.boxShadow = 'none';
+    });
+
+    const btnMap = {
+        'my-requests': 'enrTabMyRequests',
+        'new-request': 'enrTabNewRequest',
+        'session-reporting': 'enrTabSessionReporting',
+        'history': 'enrTabHistory'
+    };
+
+    const btnId = btnMap[tab];
+    if (btnId) {
+        const btn = safeGetElement(btnId);
+        if (btn) {
+            btn.style.background = 'linear-gradient(135deg, #4C1D95, #6d28d9)';
+            btn.style.color = 'white';
+            btn.style.boxShadow = '0 4px 16px rgba(76,29,149,0.25)';
+        }
+    }
+
+    if (tab === 'my-requests') {
+        loadEnrollmentRequests();
+    } else if (tab === 'session-reporting') {
+        initializeSessionReporting();
+        setTimeout(() => loadSessionReports(), 200);
+    } else if (tab === 'history') {
+        loadEnrollmentHistory();
+    } else if (tab === 'new-request') {
+        const form = safeGetElement('enrRequestForm');
+        if (form) form.reset();
+        const feedback = safeGetElement('enrFormFeedback');
+        if (feedback) feedback.style.display = 'none';
+        const error = safeGetElement('enrTypeError');
+        if (error) error.style.display = 'none';
+        document.querySelectorAll('#enrTypeChangeProgram, #enrTypeReadmission').forEach(btn => {
+            btn.style.borderColor = '#e5e7eb';
+            btn.style.background = 'white';
+        });
+        const typeInput = safeGetElement('enrRequestType');
+        if (typeInput) typeInput.value = '';
+        const currentSection = safeGetElement('enrCurrentProgramSection');
+        const previousSection = safeGetElement('enrPreviousProgramSection');
+        if (currentSection) currentSection.style.display = 'none';
+        if (previousSection) previousSection.style.display = 'none';
+    }
+}
+
+// ============================================================
+// SELECT ENROLLMENT TYPE
+// ============================================================
+function selectEnrType(type) {
+    const typeInput = safeGetElement('enrRequestType');
+    if (typeInput) typeInput.value = type;
+    
+    const error = safeGetElement('enrTypeError');
+    if (error) error.style.display = 'none';
+
+    document.querySelectorAll('#enrTypeChangeProgram, #enrTypeReadmission').forEach(btn => {
+        btn.style.borderColor = '#e5e7eb';
+        btn.style.background = 'white';
+    });
+
+    const btn = safeGetElement(type === 'change-program' ? 'enrTypeChangeProgram' : 'enrTypeReadmission');
+    if (btn) {
+        btn.style.borderColor = '#4C1D95';
+        btn.style.background = '#f3e8ff';
+    }
+
+    const currentSection = safeGetElement('enrCurrentProgramSection');
+    const previousSection = safeGetElement('enrPreviousProgramSection');
+    const currentDisplay = safeGetElement('enrCurrentProgramDisplay');
+    const previousDisplay = safeGetElement('enrPreviousProgramDisplay');
+
+    if (type === 'change-program') {
+        if (currentSection) currentSection.style.display = 'block';
+        if (previousSection) previousSection.style.display = 'none';
+        if (currentDisplay) currentDisplay.value = ENR_STATE.currentStudentProgram || 'N/A';
+    } else {
+        if (currentSection) currentSection.style.display = 'none';
+        if (previousSection) previousSection.style.display = 'block';
+        if (previousDisplay) previousDisplay.value = ENR_STATE.currentStudentProgram || 'N/A';
+    }
+}
+
+// ============================================================
+// SUBMIT ENROLLMENT REQUEST
+// ============================================================
+async function submitEnrollmentRequest() {
+    const sb = getSupabaseClient();
+    if (!sb) {
+        if (typeof showNotification === 'function') {
+            showNotification('Supabase client not available', 'error');
+        }
+        return;
+    }
+
+    const requestType = safeGetElement('enrRequestType')?.value;
+    const requestedProgram = safeGetElement('enrRequestedProgram')?.value;
+    const reason = safeGetElement('enrReason')?.value?.trim();
+    const docsInput = safeGetElement('enrSupportingDocs');
+
+    if (!requestType) {
+        const error = safeGetElement('enrTypeError');
+        if (error) error.style.display = 'block';
+        if (typeof showNotification === 'function') {
+            showNotification('Please select a request type', 'warning');
+        }
+        return;
+    }
+
+    if (!requestedProgram) {
+        if (typeof showNotification === 'function') {
+            showNotification('Please select a requested program', 'warning');
+        }
+        return;
+    }
+
+    if (!reason || reason.length < 10) {
+        if (typeof showNotification === 'function') {
+            showNotification('Please provide a detailed reason (minimum 10 characters)', 'warning');
+        }
+        return;
+    }
+
+    const studentId = ENR_STATE.currentStudentId;
+    const studentName = ENR_STATE.currentStudentName || 'Unknown';
+    const currentProgram = ENR_STATE.currentStudentProgram || 'N/A';
+
+    const existingPending = (ENR_STATE.requests || []).filter(r => r.status === 'pending');
+    if (existingPending.length > 0) {
+        if (typeof showNotification === 'function') {
+            showNotification('You already have a pending request. Please wait for it to be processed.', 'warning');
+        }
+        return;
+    }
+
+    if (typeof showLoading === 'function') showLoading('Submitting request...');
+
+    try {
+        let documents = [];
+        if (docsInput && docsInput.files && docsInput.files.length > 0) {
+            for (const file of docsInput.files) {
+                documents.push({ name: file.name, size: file.size, type: file.type });
+            }
+        }
+
+        const requestData = {
+            student_id: studentId,
+            student_name: studentName,
+            request_type: requestType,
+            current_program: requestType === 'change-program' ? currentProgram : null,
+            previous_program: requestType === 'readmission' ? currentProgram : null,
+            requested_program: requestedProgram,
+            reason: reason,
+            status: 'pending',
+            documents: documents,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+        };
+
+        const { data, error } = await sb
+            .from('student_requests')
+            .insert(requestData)
+            .select();
+
+        if (error) throw error;
+
+        if (typeof hideLoading === 'function') hideLoading();
+
+        const feedback = safeGetElement('enrFormFeedback');
+        if (feedback) {
+            feedback.style.display = 'block';
+            feedback.style.background = '#d1fae5';
+            feedback.style.color = '#065f46';
+            feedback.style.border = '1px solid #86efac';
+            feedback.innerHTML = `
+                <i class="fas fa-check-circle"></i> 
+                <strong>Request submitted successfully!</strong><br>
+                <span style="font-size: 13px;">Your enrollment request has been submitted. You will be notified once it's reviewed.</span>
+            `;
+        }
+
+        if (typeof showNotification === 'function') {
+            showNotification('✅ Enrollment request submitted successfully!', 'success');
+        }
+
+        const form = safeGetElement('enrRequestForm');
+        if (form) form.reset();
+        if (docsInput) docsInput.value = '';
+
+        document.querySelectorAll('#enrTypeChangeProgram, #enrTypeReadmission').forEach(btn => {
+            btn.style.borderColor = '#e5e7eb';
+            btn.style.background = 'white';
+        });
+        const typeInput = safeGetElement('enrRequestType');
+        if (typeInput) typeInput.value = '';
+        const currentSection = safeGetElement('enrCurrentProgramSection');
+        const previousSection = safeGetElement('enrPreviousProgramSection');
+        if (currentSection) currentSection.style.display = 'none';
+        if (previousSection) previousSection.style.display = 'none';
+
+        setTimeout(() => {
+            loadEnrollmentRequests();
+            loadEnrollmentHistory();
+            updateEnrollmentStats();
+            updateEnrollmentBadges();
+            showEnrSubTab('my-requests');
+        }, 1000);
+
+    } catch (error) {
+        if (typeof hideLoading === 'function') hideLoading();
+        console.error('Error submitting request:', error);
+
+        const feedback = safeGetElement('enrFormFeedback');
+        if (feedback) {
+            feedback.style.display = 'block';
+            feedback.style.background = '#fee2e2';
+            feedback.style.color = '#991b1b';
+            feedback.style.border = '1px solid #fecaca';
+            feedback.innerHTML = `
+                <i class="fas fa-exclamation-circle"></i> 
+                <strong>Error submitting request:</strong><br>
+                <span style="font-size: 13px;">${escapeHtml(error.message)}</span>
+            `;
+        }
+
+        if (typeof showNotification === 'function') {
+            showNotification('❌ Error submitting request: ' + error.message, 'error');
+        }
+    }
+}
+
+// ============================================================
+// REFRESH ENROLLMENT
+// ============================================================
+function refreshEnrollment() {
+    console.log('🔄 Refreshing all enrollment data...');
+    loadStudentInfo();
+    loadEnrollmentRequests();
+    loadEnrollmentHistory();
+    loadSessionReports();
+    updateEnrollmentStats();
+    updateEnrollmentBadges();
+    updateReportBadge();
+    if (typeof showNotification === 'function') {
+        showNotification('🔄 Data refreshed!', 'success');
+    }
+}
+
+// ============================================================
+// EXPORT ENROLLMENT REQUESTS TO CSV
+// ============================================================
+function exportEnrollmentRequests() {
+    const requests = ENR_STATE.requests || [];
+
+    if (!requests || requests.length === 0) {
+        if (typeof showNotification === 'function') {
+            showNotification('No data to export', 'warning');
+        }
+        return;
+    }
+
+    const headers = ['Request Type', 'From Program', 'To Program', 'Status', 'Date', 'Reason'];
+    const rows = requests.map(r => {
+        const type = r.request_type === 'change_program' ? 'Change of Program' : 'Readmission';
+        const fromProgram = r.current_program || r.previous_program || 'N/A';
+        const toProgram = r.requested_program || 'N/A';
+        const status = r.status || 'pending';
+        const date = r.created_at ? new Date(r.created_at).toLocaleDateString() : 'N/A';
+        return [type, fromProgram, toProgram, status, date, r.reason || ''];
+    });
+
+    let csv = headers.join(',') + '\n';
+    rows.forEach(row => {
+        csv += row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',') + '\n';
+    });
+
+    downloadCSV(csv, `enrollment_requests_${new Date().toISOString().split('T')[0]}.csv`);
+    if (typeof showNotification === 'function') {
+        showNotification('✅ Data exported!', 'success');
+    }
+}
+
+// ============================================================
+// DOWNLOAD CSV HELPER
+// ============================================================
+function downloadCSV(csv, filename) {
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+}
+
+// ============================================================
+// ESCAPE HTML HELPER
+// ============================================================
+function escapeHtml(str) {
+    if (!str) return '';
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
+// ============================================================
+// SETUP EVENT LISTENERS
+// ============================================================
+function setupEnrollmentEventListeners() {
+    document.querySelectorAll('#enrTypeChangeProgram, #enrTypeReadmission').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const type = this.id === 'enrTypeChangeProgram' ? 'change-program' : 'readmission';
+            selectEnrType(type);
+        });
+    });
+
+    const form = safeGetElement('enrRequestForm');
+    if (form) {
+        form.addEventListener('change', function() {
+            const feedback = safeGetElement('enrFormFeedback');
+            if (feedback) feedback.style.display = 'none';
+        });
+    }
+
+    const reportForm = safeGetElement('enrReportForm');
+    if (reportForm) {
+        reportForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            submitSessionReport();
+        });
+    }
+}
+
+// ============================================================
+// EXPOSE FUNCTIONS
+// ============================================================
+window.initEnrollment = initEnrollment;
+window.loadEnrollmentRequests = loadEnrollmentRequests;
+window.loadEnrollmentHistory = loadEnrollmentHistory;
+window.loadSessionReports = loadSessionReports;
+window.viewEnrollmentRequest = viewEnrollmentRequest;
+window.showEnrSubTab = showEnrSubTab;
+window.selectEnrType = selectEnrType;
+window.submitEnrollmentRequest = submitEnrollmentRequest;
+window.submitSessionReport = submitSessionReport;
+window.filterEnrRequests = filterEnrRequests;
+window.refreshEnrollment = refreshEnrollment;
+window.exportEnrollmentRequests = exportEnrollmentRequests;
+window.closeEnrollmentModal = closeEnrollmentModal;
+window.escapeHtml = escapeHtml;
+window.downloadCSV = downloadCSV;
+window.initializeSessionReporting = initializeSessionReporting;
+window.updateReportBadge = updateReportBadge;
+window.approveSessionReport = approveSessionReport;
+window.rejectSessionReport = rejectSessionReport;
+
+console.log('✅ Enrollment Module Loaded!');
+console.log('📋 Features: Session Reporting with Auto-Detection');
