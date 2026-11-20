@@ -833,7 +833,8 @@ async function handleAddExam(e) {
         fields.title = document.getElementById('exam_title')?.value.trim() || '';
     }
 
-    const commonMissing = !fields.title || !fields.program || !fields.date || !fields.intake || !fields.block || !fields.type || isNaN(fields.duration);
+    fields.institutionId = document.getElementById('exam_institution_id')?.value || '';
+    const commonMissing = !fields.title || !fields.program || !fields.date || !fields.intake || !fields.block || !fields.type || !fields.institutionId || isNaN(fields.duration);
     const courseRequired = mainExamTypes.has(typeUpper);
 
     if (commonMissing || (courseRequired && !fields.unitId)) {
@@ -880,10 +881,14 @@ async function handleAddExam(e) {
         }
 
         const examData = {
+            institution_id: fields.institutionId,
             title: fields.title,
             exam_name: fields.title,
             exam_type: fields.type,
-            status: String(fields.status || 'published').toLowerCase(),
+            status: 'draft',
+            approval_status: 'pending',
+            is_published: false,
+            is_active: true,
             exam_basis: fields.basis,
             exam_date: fields.date,
             exam_start_time: fields.startTime,
@@ -1914,3 +1919,17 @@ console.log('✅ CATS/Exams loaded — 13-column table, tolerant filters, correc
         setTimeout(boot, 700);
     }
 })();
+
+// Tenant-safe institution selector for Super Admin examination creation.
+async function loadSuperadminExamInstitutions(){
+ const select=document.getElementById('exam_institution_id');if(!select)return;
+ const db=window.sb||window.supabase;if(!db?.from){select.innerHTML='<option value="">Database unavailable</option>';return;}
+ try{
+  const {data:{user},error:authError}=await db.auth.getUser();if(authError||!user)throw authError||new Error('Sign in required');
+  const {data:isSuper,error:roleError}=await db.rpc('is_current_user_superadmin');if(roleError||isSuper!==true)throw roleError||new Error('Platform superadmin access is required');
+  const {data,error}=await db.from('institutions').select('id,name,school_code').order('name');if(error)throw error;
+  const rows=data||[];select.innerHTML='<option value="">Choose institution</option>'+rows.map(x=>'<option value="'+escapeHtml(x.id)+'">'+escapeHtml(x.name)+(x.school_code?' · '+escapeHtml(x.school_code):'')+'</option>').join('');
+  if(rows.length===1)select.value=rows[0].id;
+ }catch(e){console.error('Could not load exam institution list:',e);select.innerHTML='<option value="">Institution list unavailable</option>';showFeedback('Unable to load institutions for exam creation: '+(e.message||'Access denied'),'error');}
+}
+document.addEventListener('DOMContentLoaded',loadSuperadminExamInstitutions);
