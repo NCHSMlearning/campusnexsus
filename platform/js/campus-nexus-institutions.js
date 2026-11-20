@@ -128,7 +128,7 @@
       updateCount();
     };
     $("cnProductExam").addEventListener("change", event => {
-      ["examinations","admin_exams","proctoring"].forEach(key => {
+      ["academic_management","examinations","admin_exams","proctoring"].forEach(key => {
         const input = host.querySelector('input[name="cnModule"][value="' + key + '"]');
         if (input) input.checked = event.target.checked;
       });
@@ -309,7 +309,7 @@
     document.querySelectorAll('input[name="cnInstitutionPortalModeChoice"]').forEach(input => { input.checked = input.value === "campus_nexus"; });
     if ($("cnInstitutionCustomLogin")) $("cnInstitutionCustomLogin").value = "";
     if ($("cnInstitutionAdminPortal")) $("cnInstitutionAdminPortal").value = "";
-    renderModuleOptions(MODULES.map(([key]) => key).filter(key => !["examinations","admin_exams","proctoring","learning_management"].includes(key)));
+    renderModuleOptions(["student_management","lecturer_portal","administrator_portal"]);
     syncLogoPreview();
     $("cnInstitutionSave").textContent = "Add institution";
     $("cnInstitutionFormTitle").textContent = "Register a new institution";
