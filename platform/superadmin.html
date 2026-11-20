@@ -1092,7 +1092,7 @@ body{background:var(--admin-canvas)!important;color:var(--admin-ink)!important}
   box-shadow:inset 0 1px 0 rgba(255,255,255,.8)!important;
 }
 #dashboard .dashboard-card>div:first-child>div:last-child i{color:var(--stat)!important;font-size:18px!important}
-#dashboard .dashboard-card>div:last-child{background:linear-gradient(90deg,var(--stat),color-mix(in srgb,var(--stat) 20%,transparent))!important;height:3px!important;opacity:.9!important}
+#dashboard .dashboard-card>div[style*="position: absolute"][style*="bottom: 0"]{background:linear-gradient(90deg,var(--stat),color-mix(in srgb,var(--stat) 20%,transparent))!important;height:3px!important;opacity:.9!important;pointer-events:none!important}
 #dashboard .dashboard-card [id$="Growth"]{font-weight:800!important}
 #dashboard .dashboard-card[onclick*="showTab('users')"]{--stat:#2563eb;--stat-soft:#dbeafe;--stat-wash:#f1f6ff}
 #dashboard .dashboard-card[onclick*="showTab('pending')"]{--stat:#d97706;--stat-soft:#fef3c7;--stat-wash:#fffbeb}
@@ -1153,6 +1153,46 @@ body{background:var(--admin-canvas)!important;color:var(--admin-ink)!important}
  }
 }
 </style>
+
+<style id="cn-superadmin-metric-overflow-fix">
+/* Prevent metric content wrappers from being mistaken for decorative footer strips. */
+#dashboard .cn-dashboard-metrics-grid{
+ display:grid!important;grid-auto-flow:row!important;
+ grid-auto-rows:minmax(132px,auto)!important;
+ align-items:stretch!important;align-content:start!important;
+ width:100%!important;max-width:100%!important;min-width:0!important;
+}
+#dashboard .cn-dashboard-metrics-grid>.dashboard-card{
+ box-sizing:border-box!important;min-width:0!important;min-height:132px!important;
+ height:auto!important;max-height:none!important;overflow:visible!important;
+ display:flex!important;flex-direction:column!important;justify-content:space-between!important;
+}
+#dashboard .cn-dashboard-metrics-grid>.dashboard-card>div:not([style*="position: absolute"][style*="bottom: 0"]){
+ min-width:0!important;max-width:100%!important;height:auto!important;max-height:none!important;
+ flex:0 0 auto!important;overflow:visible!important;
+}
+#dashboard .cn-dashboard-metrics-grid>.dashboard-card h3,
+#dashboard .cn-dashboard-metrics-grid>.dashboard-card p,
+#dashboard .cn-dashboard-metrics-grid>.dashboard-card small{
+ max-width:100%!important;white-space:normal!important;overflow-wrap:anywhere!important;
+}
+#dashboard .cn-dashboard-metrics-grid>.dashboard-card .minor-data{line-height:1.45!important}
+#dashboard .cn-dashboard-metrics-grid>.dashboard-card canvas{display:block!important;width:100%!important;max-width:100%!important}
+@media(max-width:1100px){
+ #dashboard .cn-dashboard-metrics-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:12px!important}
+}
+@media(max-width:520px){
+ #dashboard .cn-dashboard-metrics-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;grid-auto-rows:minmax(128px,auto)!important;gap:10px!important}
+ #dashboard .cn-dashboard-metrics-grid>.dashboard-card{min-height:128px!important;padding:14px!important}
+ #dashboard .cn-dashboard-metrics-grid>.dashboard-card>div:first-child{gap:7px!important}
+ #dashboard .cn-dashboard-metrics-grid>.dashboard-card>div:first-child>div:first-child{min-width:0!important}
+ #dashboard .cn-dashboard-metrics-grid>.dashboard-card>div:first-child>div:last-child{flex:0 0 34px!important;width:34px!important;height:34px!important}
+}
+@media(max-width:360px){
+ #dashboard .cn-dashboard-metrics-grid{grid-template-columns:minmax(0,1fr)!important}
+}
+</style>
+
 </head>
 <body>
     <div class="container">
