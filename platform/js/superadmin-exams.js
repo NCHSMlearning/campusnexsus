@@ -1152,7 +1152,10 @@ async function removeClass(examId, className) {
     if (!confirm(`Remove "${className}"?`)) return;
     try {
         const supabase = window.sb || window.supabase;
-        const { data: exam } = await supabase.from('exams').select('assigned_classes').eq('id', examId).single();
+        const institutionId = document.getElementById('exam_institution_id')?.value || '';
+        if (!institutionId) throw new Error('Select an institution first.');
+        const { data: exam, error: examError } = await supabase.from('exams').select('assigned_classes').eq('id', examId).eq('institution_id', institutionId).single();
+        if (examError) throw examError;
         const current = (exam?.assigned_classes || []).filter(c => c !== className);
         const { error } = await supabase.from('exams').update({ assigned_classes: current }).eq('id', examId).eq('institution_id', institutionId);
         if (error) throw error;
@@ -1621,8 +1624,10 @@ async function openGradeModal(examId, examName = '') {
         const currentUser = await getCurrentUser();
         if (!currentUser?.user_id) { showFeedback('❌ You must be logged in to grade exams.', 'error'); return; }
 
-        const { data: exam, error: examError } = await supabase.from('exams').select('*').eq('id', examId).single();
-        if (examError || !exam) { showFeedback('❌ Error loading exam details.', 'error'); return; }
+        const institutionId = document.getElementById('exam_institution_id')?.value || '';
+        if (!institutionId) { showFeedback('Select an institution before grading.', 'warning'); return; }
+        const { data: exam, error: examError } = await supabase.from('exams').select('*').eq('id', examId).eq('institution_id', institutionId).single();
+        if (examError || !exam) { showFeedback('❌ The examination was not found in the selected institution.', 'error'); return; }
 
         const programField = exam.target_program || exam.program_type;
         const blockField = exam.block || exam.block_term;
@@ -1630,7 +1635,8 @@ async function openGradeModal(examId, examName = '') {
 
         let query = supabase
             .from('consolidated_user_profiles_table')
-            .select('user_id, full_name, email, program, intake_year, block, current_block, status')
+            .select('user_id, full_name, email, program, intake_year, block, current_block, status, institution_id')
+            .eq('institution_id', institutionId)
             .eq('role', 'student')
             .eq('status', 'approved');
 
