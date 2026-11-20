@@ -5,7 +5,7 @@
 <title>My Examinations | Campus Nexus</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
-<link rel="stylesheet" href="/css/student-exams.css?v=20261120-6">
+<link rel="stylesheet" href="/css/student-exams.css?v=20261120-7">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="/js/exam-supabase.js?v=20261120-1"></script>
 </head>
 <body>
@@ -13,7 +13,7 @@
 <aside class="exam-sidebar" id="exam-sidebar">
 <a class="exam-brand" href="/student"><span class="brand-symbol" id="institution-logo-wrap"><i class="fa-solid fa-graduation-cap" id="institution-logo-fallback"></i><img id="institution-logo" alt="Institution logo" hidden></span><span><b id="institution-name">Campus Nexus</b><small id="institution-portal-label">STUDENT PORTAL</small></span></a>
 <div class="side-label">YOUR WORKSPACE</div>
-<nav class="exam-nav"><a class="active" href="/studentexam.html" aria-current="page"><i class="fa-solid fa-file-circle-check"></i><span>Examinations</span><i class="fa-solid fa-chevron-right nav-current"></i></a></nav>
+<nav class="exam-nav"><a class="active" href="#examinations" aria-current="page"><i class="fa-solid fa-file-circle-check"></i><span>Examinations</span></a><a href="#timetable"><i class="fa-solid fa-calendar-days"></i><span>Timetable</span></a><a href="#announcements"><i class="fa-solid fa-bullhorn"></i><span>Announcements</span></a><a href="#exam-history"><i class="fa-solid fa-clock-rotate-left"></i><span>Exam History</span></a><a href="#exam-support"><i class="fa-solid fa-headset"></i><span>Support</span></a></nav>
 <div class="sidebar-help"><span class="help-icon"><i class="fa-solid fa-headset"></i></span><b>Need assistance?</b><p>Contact your institution administrator if an assigned examination is missing.</p></div>
 <div class="sidebar-account"><div class="account-avatar" id="avatar">ST</div><div class="account-copy"><b id="side-name">Student</b><small id="side-admission">Loading profile…</small></div><button id="logout-btn" title="Sign out" aria-label="Sign out"><i class="fa-solid fa-arrow-right-from-bracket"></i></button></div>
 </aside>
@@ -30,14 +30,19 @@
 <article class="stat-card stat-upcoming"><div class="stat-icon"><i class="fa-regular fa-calendar-check"></i></div><div><small>Coming up</small><strong id="stat-upcoming">—</strong><span>Scheduled assessments</span></div><i class="fa-regular fa-calendar stat-watermark"></i></article>
 <article class="stat-card stat-open"><div class="stat-icon"><i class="fa-solid fa-circle-play"></i></div><div><small>Ready to start</small><strong id="stat-open">—</strong><span>Online links available</span></div><i class="fa-solid fa-bolt stat-watermark"></i></article>
 </section>
-<section class="content-card">
+<section class="content-card" id="examinations">
 <div class="section-head"><div class="section-title-wrap"><span class="section-icon"><i class="fa-solid fa-clipboard-list"></i></span><div><h2>Your examinations</h2><p>Review your assigned assessments and launch an online examination when it opens.</p></div></div><button class="refresh-btn" id="refresh-btn"><i class="fa-solid fa-rotate"></i><span>Refresh</span></button></div>
 <div class="toolbar"><label class="search-box"><i class="fa-solid fa-magnifying-glass"></i><input id="search-input" type="search" placeholder="Search by examination or unit…"></label><label class="filter-wrap"><i class="fa-solid fa-filter"></i><select id="status-filter" aria-label="Filter examinations"><option value="all">All examinations</option><option value="open">Available now</option><option value="upcoming">Upcoming</option><option value="closed">Closed</option></select></label></div>
 <div id="exam-panel" aria-live="polite"><div class="loading-state"><span class="spinner"></span><p>Preparing your examination list…</p></div></div>
 </section>
+
+<section class="content-card portal-section" id="timetable"><div class="section-head"><div class="section-title-wrap"><span class="section-icon"><i class="fa-solid fa-calendar-days"></i></span><div><h2>Examination timetable</h2><p>Your upcoming approved assessments and scheduled times.</p></div></div></div><div id="timetable-panel"><div class="loading-state"><span class="spinner"></span><p>Loading your timetable…</p></div></div></section>
+<section class="content-card portal-section" id="announcements"><div class="section-head"><div class="section-title-wrap"><span class="section-icon"><i class="fa-solid fa-bullhorn"></i></span><div><h2>Announcements</h2><p>Official notices from your institution.</p></div></div><button class="refresh-btn" id="refresh-announcements"><i class="fa-solid fa-rotate"></i><span>Refresh</span></button></div><div id="announcements-panel"><div class="loading-state"><span class="spinner"></span><p>Loading announcements…</p></div></div></section>
+<section class="content-card portal-section" id="exam-history"><div class="section-head"><div class="section-title-wrap"><span class="section-icon"><i class="fa-solid fa-clock-rotate-left"></i></span><div><h2>Examination history</h2><p>Track examinations you have started and submitted. Results appear only after official release.</p></div></div><button class="refresh-btn" id="refresh-history"><i class="fa-solid fa-rotate"></i><span>Refresh</span></button></div><div id="history-panel"><div class="loading-state"><span class="spinner"></span><p>Loading your examination history…</p></div></div></section>
+<section class="content-card portal-section" id="exam-support"><div class="section-head"><div class="section-title-wrap"><span class="section-icon"><i class="fa-solid fa-headset"></i></span><div><h2>Examination support</h2><p>Report a missing examination, login issue or technical problem.</p></div></div></div><form id="exam-support-form" class="support-form"><label>Issue category<select id="support-category"><option>Missing examination</option><option>Login or access problem</option><option>Technical difficulty</option><option>Timetable clarification</option><option>Other</option></select></label><label>Subject<input id="support-subject" required minlength="5" maxlength="150" placeholder="Briefly describe the issue"></label><label>Details<textarea id="support-description" required minlength="10" maxlength="5000" rows="4" placeholder="Explain what happened and include the examination name if applicable"></textarea></label><button class="primary-btn" type="submit" id="support-submit"><i class="fa-solid fa-paper-plane"></i> Submit support request</button><p id="support-feedback" role="status"></p></form></section>
 <footer class="exam-footer"><span>© 2026 Campus Nexus</span><span><i class="fa-solid fa-lock"></i> Secure examination access</span><span>Learn <b>•</b> Prepare <b>•</b> Excel</span></footer>
 </main></div></div><div class="mobile-scrim" id="mobile-scrim"></div><div id="toast" class="toast" role="status"></div>
-<script src="/js/student-exams.js?v=20261120-12"></script>
+<script src="/js/student-exams.js?v=20261120-13"></script>
 <script>
 (()=>{const side=document.getElementById('exam-sidebar'),scrim=document.getElementById('mobile-scrim');const close=()=>{side.classList.remove('show');scrim.classList.remove('show')};document.getElementById('mobile-toggle')?.addEventListener('click',()=>{side.classList.toggle('show');scrim.classList.toggle('show')});scrim?.addEventListener('click',close);side?.querySelectorAll('nav a').forEach(a=>a.addEventListener('click',close));})();
 </script>
