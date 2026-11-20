@@ -44,6 +44,7 @@ function examState(exam){
  if(['published','active','open','available'].includes(status))return 'open';
  return 'open';
 }
+function onlineHref(exam){const raw=val(exam.exam_link,exam.online_link,'');if(!raw)return '';try{const url=new URL(raw,location.origin);return ['http:','https:'].includes(url.protocol)?url.href:''}catch(_){return ''}}
 function dateLabel(exam){const d=startsAt(exam);return d?d.toLocaleString('en-KE',{timeZone:'Africa/Nairobi',dateStyle:'medium',timeStyle:'short'})+' EAT':'Schedule to be confirmed'}
 function render(){
  const q=norm($('search-input').value),filter=$('status-filter').value;
@@ -55,7 +56,7 @@ function render(){
  $('exam-panel').innerHTML='<div class="exam-grid">'+rows.map(({exam,status})=>{
   const title=val(exam.title,exam.exam_name,exam.name,'Examination');
   const unit=val(exam.course_name,exam.unit_name,exam.subject_name,exam.course?.course_name,'General assessment');
-  const link=val(exam.exam_link,exam.online_link,'');
+  const link=onlineHref(exam);
   const badge=status==='open'?'open':status==='upcoming'?'upcoming':'completed';
   const label=status==='open'?'Available now':status==='upcoming'?'Upcoming':'Closed';
   const action=status==='open'&&link?'<a class="primary-btn" href="'+esc(link)+'" target="_blank" rel="noopener noreferrer">Start Online Examination <i class="fa-solid fa-arrow-up-right-from-square"></i></a>':status==='open'?'<button class="secondary-btn" disabled>Online link not yet added</button>':status==='upcoming'?'<button class="secondary-btn" disabled>Opens at scheduled time</button>':'<button class="secondary-btn" disabled>Examination closed</button>';
