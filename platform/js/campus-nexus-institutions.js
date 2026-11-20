@@ -101,21 +101,46 @@
   function renderModuleOptions(selected = []) {
     const host = $("cnModuleOptions");
     if (!host) return;
-    host.innerHTML = MODULE_GROUPS.map(([group, items]) =>
-      '<section class="cn-module-group"><div class="cn-module-group-title">' + esc(group) +
-      '<small>' + items.length + ' options</small></div><div class="cn-module-grid">' +
-      items.map(([key,label,description]) =>
-        '<label class="cn-module-option"><input type="checkbox" name="cnModule" value="' + esc(key) + '"' +
-        (selected.includes(key) ? " checked" : "") + '><span class="cn-module-copy"><strong>' + esc(label) +
-        '</strong><small>' + esc(description) + '</small></span><span class="cn-module-check"><i class="fas fa-check"></i></span></label>'
-      ).join("") + '</div></section>'
-    ).join("");
-    const count = host.querySelectorAll('input[name="cnModule"]:checked').length;
-    if ($("cnModuleCount")) $("cnModuleCount").textContent = count + " selected";
-    host.querySelectorAll('input[name="cnModule"]').forEach(input => input.addEventListener("change", () => {
+    const examEnabled = ["examinations","admin_exams","proctoring"].some(key => selected.includes(key));
+    const lmsEnabled = selected.includes("learning_management");
+    host.innerHTML =
+      '<section class="cn-product-access"><div class="cn-product-access-heading"><strong>Choose the institution products</strong><small>These choices control which main workspace the institution can use. You can enable either product or both.</small></div><div class="cn-product-access-grid">' +
+      '<label class="cn-product-choice"><input id="cnProductExam" type="checkbox" ' + (examEnabled ? "checked" : "") + '><span class="cn-product-choice-icon"><i class="fas fa-file-signature"></i></span><span><strong>Examination Dashboard</strong><small>Exam setup, student examination access, proctoring and exam administration</small></span></label>' +
+      '<label class="cn-product-choice"><input id="cnProductLms" type="checkbox" ' + (lmsEnabled ? "checked" : "") + '><span class="cn-product-choice-icon"><i class="fas fa-book-open"></i></span><span><strong>Learning Management System (LMS)</strong><small>Courses, learning resources, lessons, assignments and classroom tools</small></span></label>' +
+      '</div><p class="cn-product-access-note">Select Examination Dashboard for exam-only institutions. Select LMS for learning institutions. Both can be enabled when required.</p></section>' +
+      MODULE_GROUPS.map(([group, items]) =>
+        '<section class="cn-module-group"><div class="cn-module-group-title">' + esc(group) +
+        '<small>' + items.length + ' options</small></div><div class="cn-module-grid">' +
+        items.map(([key,label,description]) =>
+          '<label class="cn-module-option"><input type="checkbox" name="cnModule" value="' + esc(key) + '"' +
+          (selected.includes(key) ? " checked" : "") + '><span class="cn-module-copy"><strong>' + esc(label) +
+          '</strong><small>' + esc(description) + '</small></span><span class="cn-module-check"><i class="fas fa-check"></i></span></label>'
+        ).join("") + '</div></section>'
+      ).join("");
+    const updateCount = () => {
       const n = host.querySelectorAll('input[name="cnModule"]:checked').length;
       if ($("cnModuleCount")) $("cnModuleCount").textContent = n + " selected";
-    }));
+    };
+    const syncProductChoices = () => {
+      const keys = [...host.querySelectorAll('input[name="cnModule"]:checked')].map(input => input.value);
+      $("cnProductExam").checked = ["examinations","admin_exams","proctoring"].some(key => keys.includes(key));
+      $("cnProductLms").checked = keys.includes("learning_management");
+      updateCount();
+    };
+    $("cnProductExam").addEventListener("change", event => {
+      ["examinations","admin_exams","proctoring"].forEach(key => {
+        const input = host.querySelector('input[name="cnModule"][value="' + key + '"]');
+        if (input) input.checked = event.target.checked;
+      });
+      updateCount();
+    });
+    $("cnProductLms").addEventListener("change", event => {
+      const input = host.querySelector('input[name="cnModule"][value="learning_management"]');
+      if (input) input.checked = event.target.checked;
+      updateCount();
+    });
+    host.querySelectorAll('input[name="cnModule"]').forEach(input => input.addEventListener("change", syncProductChoices));
+    updateCount();
   }
   function readBrandColors() {
     return ["cnInstitutionColor","cnInstitutionAccent","cnInstitutionColor3","cnInstitutionColor4","cnInstitutionColor5","cnInstitutionColor6"]
@@ -140,6 +165,25 @@
     institutionModal.setAttribute("aria-hidden","true");
     institutionModal.innerHTML = `
       <style>
+        .cn-product-access{grid-column:1/-1;margin:0 0 18px;padding:17px;border:1px solid #cbdde8;border-radius:15px;background:linear-gradient(135deg,#f4fbff,#f2fbf8)}
+        .cn-product-access-heading{display:flex;flex-direction:column;gap:5px;margin-bottom:13px}
+        .cn-product-access-heading strong{font-size:14px;color:#0f2f49}
+        .cn-product-access-heading small,.cn-product-access-note{font-size:11px;color:#64748b;line-height:1.5}
+        .cn-product-access-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+        .cn-product-choice{display:flex;align-items:flex-start;gap:11px;padding:14px;border:1px solid #d5e2ea;border-radius:12px;background:#fff;cursor:pointer}
+        .cn-product-choice:has(input:checked){border-color:#0f8b8d;box-shadow:0 0 0 2px #0f8b8d18;background:#f8ffff}
+        .cn-product-choice input{width:18px;height:18px;accent-color:#0f766e;flex:0 0 auto;margin-top:2px}
+        .cn-product-choice-icon{width:34px;height:34px;display:grid;place-items:center;border-radius:10px;background:#e7f4f4;color:#0f766e;flex:0 0 auto}
+        .cn-product-choice>span:last-child{display:flex;flex-direction:column;gap:5px}
+        .cn-product-choice strong{font-size:12px;color:#0f172a}
+        .cn-product-choice small{font-size:11px;color:#64748b;line-height:1.45}
+        .cn-product-access-note{margin:11px 0 0}
+        .cn-product-badges{display:flex;flex-wrap:wrap;gap:5px;min-width:120px}
+        .cn-product-badge{display:inline-flex;align-items:center;padding:5px 8px;border-radius:999px;font-size:10px;font-weight:800;white-space:nowrap}
+        .cn-product-exam{background:#eaf2ff;color:#1d4ed8}
+        .cn-product-lms{background:#e7f7ef;color:#047857}
+        .cn-product-none{background:#f1f5f9;color:#64748b}
+        @media(max-width:760px){.cn-product-access-grid{grid-template-columns:1fr}}
         .cn-institution-modal{position:fixed;inset:0;z-index:10050;display:none;align-items:center;justify-content:center;padding:clamp(10px,3vw,28px);background:rgba(8,20,38,.68);backdrop-filter:blur(5px)}
         .cn-institution-modal.is-open{display:flex}
         .cn-institution-dialog{width:min(1120px,100%);max-height:94vh;display:flex;flex-direction:column;background:#fff;border-radius:20px;box-shadow:0 24px 80px rgba(0,0,0,.3);overflow:hidden}
@@ -265,7 +309,7 @@
     document.querySelectorAll('input[name="cnInstitutionPortalModeChoice"]').forEach(input => { input.checked = input.value === "campus_nexus"; });
     if ($("cnInstitutionCustomLogin")) $("cnInstitutionCustomLogin").value = "";
     if ($("cnInstitutionAdminPortal")) $("cnInstitutionAdminPortal").value = "";
-    renderModuleOptions(MODULES.map(([key]) => key));
+    renderModuleOptions(MODULES.map(([key]) => key).filter(key => !["examinations","admin_exams","proctoring","learning_management"].includes(key)));
     syncLogoPreview();
     $("cnInstitutionSave").textContent = "Add institution";
     $("cnInstitutionFormTitle").textContent = "Register a new institution";
@@ -320,7 +364,7 @@
     $("cnInstitutionActive").textContent = String(institutions.filter(i => i.status === "active").length);
     $("cnInstitutionSuspended").textContent = String(institutions.filter(i => i.status === "suspended").length);
     if (!filtered.length) {
-      host.innerHTML = '<tr><td colspan="6" class="cn-empty">No institutions match this search. Add an institution using the form.</td></tr>';
+      host.innerHTML = '<tr><td colspan="7" class="cn-empty">No institutions match this search. Add an institution using the form.</td></tr>';
       return;
     }
     host.innerHTML = filtered.map(i => {
@@ -329,7 +373,6 @@
       const portalUrl = safeWebUrl(i._portalUrl);
       const setupState = i.onboarding_status || "configuring";
       const adminState = i._adminUserId ? "Admin assigned" : "Admin pending";
-      const moduleState = (i._modules || []).length + " modules enabled";
       return '<tr><td><div class="cn-school"><span class="cn-school-mark" style="background:' + esc(i.primary_color || "#082f49") + '">' +
         (safeWebUrl(i.logo_url,true) ? '<img src="' + esc(safeWebUrl(i.logo_url,true)) + '" alt="" onerror="this.style.display=\'none\'">' : '<i class="fas fa-school"></i>') +
         '</span><span><strong>' + esc(i.name) + '</strong><small>' + esc(i.short_code) + ' · ' + esc(i.country || "") + ' · 3-digit school code: ' + esc(i.school_code || "Not assigned") + '</small>' +
@@ -338,6 +381,11 @@
         '<td><span class="cn-status cn-status-' + esc(i.status) + '">' + status + '</span></td>' +
         '<td>' + esc(i._subscription?.plan_name || "—") + '<small class="cn-subline">' +
         (i._subscription ? esc(i._subscription.currency) + " " + Number(i._subscription.amount).toLocaleString() + " / " + esc(i._subscription.billing_cycle) : "Not configured") + '</small></td>' +
+        '<td><div class="cn-product-badges">' +
+        ((i._modules || []).some(key => ["examinations","admin_exams","proctoring"].includes(key)) ? '<span class="cn-product-badge cn-product-exam">Exam Dashboard</span>' : '') +
+        ((i._modules || []).includes("learning_management") ? '<span class="cn-product-badge cn-product-lms">LMS</span>' : '') +
+        (!((i._modules || []).some(key => ["examinations","admin_exams","proctoring"].includes(key)) || (i._modules || []).includes("learning_management")) ? '<span class="cn-product-badge cn-product-none">No product selected</span>' : '') +
+        '</div></td>' +
         '<td>' + esc(i.contact_email || "—") + '</td><td>' + (portalUrl ? '<a href="' + esc(portalUrl) + '" target="_blank" rel="noopener">' + (i.portal_mode === "custom_website" ? "Open institution portal" : "Campus Nexus login") + '</a>' : 'Login portal not configured') +
         (registrationUrl ? '<br><a href="' + esc(registrationUrl) + '" target="_blank" rel="noopener">Registration</a><button class="cn-row-action" type="button" data-copy-registration="' + esc(i.id) + '">Copy</button>' : '') + '</td>' +
         '<td><div class="cn-row-actions"><button class="cn-row-action" type="button" data-edit="' + esc(i.id) + '">Manage</button>' +
