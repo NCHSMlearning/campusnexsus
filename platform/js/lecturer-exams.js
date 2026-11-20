@@ -252,6 +252,47 @@ const FROM_ADDRESS =
             return institutionId;
         },
 
+        normalizeIntakeYear(value) {
+            const raw = String(value || '').trim();
+            const fullYear = raw.match(/20\\d{2}/);
+            if (fullYear) return fullYear[0];
+            const shortYear = raw.match(/\\b(\\d{2})\\b/);
+            if (shortYear) return '20' + shortYear[1];
+            return raw.toLowerCase().replace(/[^a-z0-9]/g, '');
+        },
+
+        normalizeIntakeMonth(value) {
+            const raw = String(value || '').trim().toLowerCase();
+            if (!raw) return '';
+            const months = {
+                '1':'january','01':'january','jan':'january','january':'january',
+                '2':'february','02':'february','feb':'february','february':'february',
+                '3':'march','03':'march','mar':'march','march':'march',
+                '4':'april','04':'april','apr':'april','april':'april',
+                '5':'may','05':'may','may':'may',
+                '6':'june','06':'june','jun':'june','june':'june',
+                '7':'july','07':'july','jul':'july','july':'july',
+                '8':'august','08':'august','aug':'august','august':'august',
+                '9':'september','09':'september','sep':'september','sept':'september','september':'september',
+                '10':'october','oct':'october','october':'october',
+                '11':'november','nov':'november','november':'november',
+                '12':'december','dec':'december','december':'december'
+            };
+            return months[raw] || raw;
+        },
+
+        normalizeStudentBlock(value) {
+            const raw = String(value || '').trim().toLowerCase();
+            if (!raw) return '';
+            const yearTerm = raw.match(/(?:y|year)\\s*0*(\\d+)\\D+(?:t|term)\\s*0*(\\d+)/);
+            if (yearTerm) return 'term ' + Number(yearTerm[2]);
+            const term = raw.match(/\\bterm\\s*0*(\\d+)/) || raw.match(/^t(?:erm)?0*(\\d+)$/);
+            if (term) return 'term ' + Number(term[1]);
+            const block = raw.match(/\\bblock\\s*0*(\\d+)/) || raw.match(/^b(?:lock)?0*(\\d+)$/);
+            if (block) return 'block ' + Number(block[1]);
+            return raw.replace(/[_-]+/g, ' ').replace(/\\s+/g, ' ').trim();
+        },
+
         async getNotificationStudents(target, exam = null) {
             const client = this.sb();
             const institutionId = this.institutionId || this.profile()?.institution_id;
@@ -262,48 +303,58 @@ const FROM_ADDRESS =
             const intake = exam?.intake_year ?? this.value(['exam_intake', 'examIntake']);
             const month = exam?.intake_month || this.value(['exam_intake_month']) || '';
             const block = exam?.block_term || exam?.block || this.value(['exam_block_term', 'examBlockTerm']);
-            let query = client.from('consolidated_user_profiles_table')
-                .select('user_id,full_name,email,admission_number,student_id,program,block,current_block,intake_year,intake_month,institution_id')
-                .eq('institution_id', institutionId)
-                .eq('role', 'student')
-                .eq('status', 'approved');
+            if (!program) throw new Error('Select a programme before choosing a student group.');
 
-            if (target === 'specific') {
-                const ids = this.selectedStudents.map(student => student.user_id).filter(Boolean);
-                if (!ids.length) return [];
-                query = query.in('user_id', ids);
-                if (program) query = query.eq('program', program);
-                if (intake) query = query.eq('intake_year', String(intake));
-                if (month) query = query.eq('intake_month', month);
-            } else if (target === 'program') {
-                if (!program) throw new Error('Select a programme before choosing programme-wide notifications.');
-                query = query.eq('program', program);
-            } else {
-                if (!program) throw new Error('Select a programme before choosing a student group.');
-                query = query.eq('program', program);
-                if (target === 'all' || target === 'intake') {
-                    if (!intake) throw new Error('Select an intake year before choosing this student group.');
-                    query = query.eq('intake_year', String(intake));
-                    if (month) query = query.eq('intake_month', month);
-                } else if (intake) {
-                    query = query.eq('intake_year', String(intake));
-                    if (month) query = query.eq('intake_month', month);
-                }
-                if (target === 'all' || target === 'block') {
-                    if (!block) throw new Error('Select a block/term before choosing this student group.');
-                }
+            const ids = target === 'specific'
+                ? this.selectedStudents.map(student => student.user_id).filter(Boolean)
+                : [];
+            if (target === 'specific' && !ids.length) return [];
+            if ((target === 'all' || target === 'intake') && !intake) {
+                throw new Error('Select an intake year before choosing this student group.');
+            }
+            if ((target === 'all' || target === 'block') && !block) {
+                throw new Error('Select a block/term before choosing this student group.');
             }
 
-            const { data, error } = await query.order('full_name').limit(2000);
-            if (error) throw error;
+            const buildQuery = () => {
+                let query = client.from('consolidated_user_profiles_table')
+                    .select('user_id,full_name,email,admission_number,student_id,program,block,current_block,intake_year,intake_month,institution_id')
+                    .eq('institution_id', institutionId)
+                    .eq('role', 'student')
+                    .eq('status', 'approved')
+                    .eq('program', program);
+                if (ids.length) query = query.in('user_id', ids);
+                return query;
+            };
 
-            let students = data || [];
+            let students = [];
+            for (let offset = 0; offset < 10000; offset += 1000) {
+                const { data, error } = await buildQuery()
+                    .order('full_name', { ascending: true })
+                    .range(offset, offset + 999);
+                if (error) throw error;
+                const page = data || [];
+                students = students.concat(page);
+                if (page.length < 1000) break;
+            }
+
+            if (target !== 'program' && intake) {
+                const wantedYear = this.normalizeIntakeYear(intake);
+                students = students.filter(student =>
+                    this.normalizeIntakeYear(student.intake_year) === wantedYear
+                );
+            }
+            if (target !== 'program' && month) {
+                const wantedMonth = this.normalizeIntakeMonth(month);
+                students = students.filter(student =>
+                    this.normalizeIntakeMonth(student.intake_month) === wantedMonth
+                );
+            }
             if (target === 'all' || target === 'block' || (target === 'specific' && block)) {
-                const wantedBlock = String(block || '').trim().toLowerCase().replace(/[_-]+/g, ' ').replace(/\\s+/g, ' ');
-                students = students.filter(student => {
-                    const effectiveBlock = String(student.current_block || student.block || '').trim().toLowerCase().replace(/[_-]+/g, ' ').replace(/\\s+/g, ' ');
-                    return effectiveBlock === wantedBlock;
-                });
+                const wantedBlock = this.normalizeStudentBlock(block);
+                students = students.filter(student =>
+                    this.normalizeStudentBlock(student.current_block || student.block) === wantedBlock
+                );
             }
             return students;
         },
@@ -808,113 +859,51 @@ const FROM_ADDRESS =
         async searchStudentsForNotification() {
             const input = this.$('exam_student_search');
             const results = this.$('student_search_results');
-
             if (!input || !results) return;
 
-            const term = input.value.trim();
-
+            const term = input.value.trim().toLowerCase();
             if (term.length < 2) {
                 results.style.display = 'none';
                 return;
             }
-
-            const sb = this.sb();
-
-            if (!sb) {
-                this.notify('Database connection unavailable.', 'error');
-                return;
-            }
-
             results.style.display = 'block';
-            results.innerHTML =
-                '<div style="padding:10px;text-align:center;color:#94a3b8;">' +
-                '<i class="fas fa-spinner fa-spin"></i> Searching...</div>';
+            results.innerHTML = '<div style="padding:10px;text-align:center;color:#94a3b8;"><i class="fas fa-spinner fa-spin"></i> Searching within the selected student group…</div>';
 
             try {
-                const safe = term.replace(/[%_,]/g, ' ');
-
-                let query = sb
-                    .from('consolidated_user_profiles_table')
-                    .select('user_id,full_name,email,admission_number,student_id,program,block,current_block,intake_year,intake_month,status,institution_id')
-                    .eq('institution_id', this.institutionId)
-                    .eq('role', 'student')
-                    .eq('status', 'approved')
-                    .eq('program', this.value(['exam_program', 'examProgram']))
-                    .eq('intake_year', String(this.value(['exam_intake', 'examIntake']) || ''));
-                const selectedMonthForSearch = this.value(['exam_intake_month']);
-                if (selectedMonthForSearch) query = query.eq('intake_month', selectedMonthForSearch);
-                const { data, error } = await query
-                    .or(
-                        'full_name.ilike.%' + safe + '%,' +
-                        'email.ilike.%' + safe + '%,' +
-                        'admission_number.ilike.%' + safe + '%,' +
-                        'student_id.ilike.%' + safe + '%'
-                    )
-                    .limit(500);
-
-                if (error) throw error;
-
-                const selectedMonth = String(this.value(['exam_intake_month']) || '').trim();
-                const selectedBlock = String(this.value(['exam_block_term', 'examBlockTerm']) || '').trim().toLowerCase().replace(/[_-]+/g, ' ').replace(/\\s+/g, ' ');
-                const scopedData = (data || []).filter(student => {
-                    if (selectedMonth && String(student.intake_month || '').trim().toLowerCase() !== selectedMonth.toLowerCase()) return false;
-                    if (!selectedBlock) return true;
-                    const effectiveBlock = String(student.current_block || student.block || '').trim().toLowerCase().replace(/[_-]+/g, ' ').replace(/\\s+/g, ' ');
-                    return effectiveBlock === selectedBlock;
-                });
-
+                const data = await this.getNotificationStudents('all');
+                const scopedData = data.filter(student =>
+                    [student.full_name, student.email, student.admission_number, student.student_id]
+                        .some(value => String(value || '').toLowerCase().includes(term))
+                );
                 if (!scopedData.length) {
-                    results.innerHTML =
-                        '<div style="padding:10px;text-align:center;color:#94a3b8;">No students found.</div>';
+                    results.innerHTML = '<div style="padding:10px;text-align:center;color:#94a3b8;">No students found in the selected institution, programme, intake and block.</div>';
                     return;
                 }
 
-                results.innerHTML = scopedData.map(s => {
-                    const id = s.user_id || s.id || '';
-                    const already = this.selectedStudents.some(x =>
-                        String(x.user_id) === String(id)
-                    );
-
-                    return (
-                        '<div data-student-id="' + this.esc(id) + '"' +
-                        ' style="padding:8px 10px;border-bottom:1px solid #f1f5f9;cursor:pointer;' +
+                results.innerHTML = scopedData.slice(0, 100).map(student => {
+                    const id = student.user_id || student.id || '';
+                    const already = this.selectedStudents.some(item => String(item.user_id) === String(id));
+                    return '<div data-student-id="' + this.esc(id) + '" style="padding:8px 10px;border-bottom:1px solid #f1f5f9;cursor:pointer;' +
                         (already ? 'background:#ecfdf5;' : '') + '">' +
-
-                        '<strong>' + this.esc(s.full_name || 'Student') + '</strong>' +
-
+                        '<strong>' + this.esc(student.full_name || 'Student') + '</strong>' +
                         '<span style="font-size:11px;color:#94a3b8;margin-left:8px;">' +
-                        this.esc(
-                            s.admission_number ||
-                            s.student_id ||
-                            s.email ||
-                            ''
-                        ) +
-                        '</span>' +
+                        this.esc(student.admission_number || student.student_id || student.email || '') +
+                        '</span>' + (already ? '<span style="float:right;color:#059669;">✓ Selected</span>' : '') +
+                        '</div>';
+                }).join('') + (scopedData.length > 100 ? '<div style="padding:8px;text-align:center;color:#64748b;">Showing first 100 of ' + scopedData.length + ' matches.</div>' : '');
 
-                        (already
-                            ? '<span style="float:right;color:#059669;">✓ Selected</span>'
-                            : '') +
-
-                        '</div>'
-                    );
-                }).join('');
-
-                results.querySelectorAll('[data-student-id]').forEach(el => {
-                    el.addEventListener('click', () => {
-                        const student = scopedData.find(s =>
-                            String(s.user_id || s.id) ===
-                            String(el.dataset.studentId)
+                results.querySelectorAll('[data-student-id]').forEach(element => {
+                    element.addEventListener('click', () => {
+                        const student = scopedData.find(item =>
+                            String(item.user_id || item.id) === String(element.dataset.studentId)
                         );
-
                         if (student) this.toggleStudent(student);
                     });
                 });
-
-            } catch (err) {
-                console.error('Student search:', err);
-                results.innerHTML =
-                    '<div style="padding:10px;color:#dc2626;">Search failed.</div>';
-                this.notify('Student search failed: ' + (err.message || err), 'error');
+            } catch (error) {
+                console.error('Student search:', error);
+                results.innerHTML = '<div style="padding:10px;color:#dc2626;">' + this.esc(error.message || 'Search failed.') + '</div>';
+                this.notify('Student search failed: ' + (error.message || error), 'error');
             }
         },
 
