@@ -12,6 +12,34 @@
 <script src="/platform/js/institution-admin-programs.js?v=20261121-shared-superadmin-source1" defer></script>
 <script src="/platform/js/institution-admin-modules.js?v=20261121-14" defer></script>
 <script src="/code-protection.js?v=20261121-global-v4" defer></script>
+<style id="ia-canonical-program-styles">
+#view-academic #programs{max-width:100%;overflow:hidden}
+#view-academic #programs h2,#view-academic #programs h3{color:#102a43}
+#view-academic #programs .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:16px;margin:20px 0}
+#view-academic #programs .card{background:#fff;border:1px solid #e5eaf0;border-radius:14px;padding:18px;box-shadow:0 4px 16px rgba(15,23,42,.05)}
+#view-academic #programs .card h3{font-size:14px;margin:0 0 8px}
+#view-academic #programs .data{font-size:30px;font-weight:800;margin:8px 0}
+#view-academic #programs .minor-data{font-size:12px;color:#64748b;margin:0}
+#view-academic #programs .filter-bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:20px 0}
+#view-academic #programs .filter-bar input{flex:1;min-width:180px}
+#view-academic #programs input,#view-academic #programs select,#view-academic #programs textarea{max-width:100%;box-sizing:border-box}
+#view-academic #programs .table-responsive{width:100%;overflow-x:auto;border:1px solid #e5eaf0;border-radius:12px}
+#view-academic #programs table{min-width:850px;width:100%;border-collapse:collapse;background:#fff}
+#view-academic #programs th,#view-academic #programs td{padding:11px 12px;border-bottom:1px solid #edf1f5;text-align:left;white-space:nowrap}
+#view-academic #programs th{background:#f4f7fb;color:#334155;font-size:12px}
+#view-academic #programs .program-badge,#view-academic #programs .badge{display:inline-flex;align-items:center;padding:4px 9px;border-radius:999px;font-size:11px;font-weight:700}
+#view-academic #programs .program-badge-active,#view-academic #programs .badge-success{background:#dcfce7;color:#166534}
+#view-academic #programs .program-badge-inactive,#view-academic #programs .badge-warning{background:#fef3c7;color:#92400e}
+#view-academic #programs .program-badge-archived{background:#e2e8f0;color:#475569}
+#view-academic #programs .program-badge-krchn{background:#dbeafe;color:#1d4ed8}
+#view-academic #programs .program-badge-tvet{background:#ede9fe;color:#6d28d9}
+#view-academic #programs .badge-info{background:#e0f2fe;color:#075985}
+#view-academic #programs .btn-sm{border:0;border-radius:7px;padding:7px 10px;cursor:pointer}
+#view-academic #programs .btn-edit{background:#dbeafe;color:#1d4ed8}
+#view-academic #programs .btn-delete{background:#fee2e2;color:#b91c1c}
+#view-academic #programs .btn-action{border-radius:8px}
+@media(max-width:640px){#view-academic #programs .cards{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}#view-academic #programs .card{padding:12px}#view-academic #programs .data{font-size:24px}#view-academic #programs form>div{grid-template-columns:1fr!important}}
+</style>
 </head>
 <body>
 <div id="iaBoot" class="ia-boot"><div class="ia-boot-card"><div class="ia-brand-mark">CN</div><h1>Campus Nexus</h1><p id="iaBootMessage">Verifying your institution administrator access…</p>
