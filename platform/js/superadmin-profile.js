@@ -1464,7 +1464,7 @@ if (document.readyState === 'complete' || document.readyState === 'interactive')
 /* Primary-owner academic access control loader.
    This profile module is already part of the Super Admin portal bundle. */
 (function loadPrimaryOwnerAcademicAccess(){
-    const src='js/superadmin-academic-access.js?v=20261118f';
+    const src='js/superadmin-academic-access.js?v=20261121a';
     const inject=()=>{
         if(document.querySelector('script[data-nchsm-owner-academic-access]'))return;
         const script=document.createElement('script');
