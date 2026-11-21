@@ -8587,8 +8587,65 @@ window.publishApprovedAssessment = async function(examId) {
 // ============================================
 // 🚀 DOM READY - FIXED WITH STATS LOADING
 // ============================================
-document.addEventListener('DOMContentLoaded', function() {
-    // ✅ Check authentication FIRST
+document.addEventListener('DOMContentLoaded', async function() {
+    // Verify the real Supabase session created by /examlogin.html before
+    // allowing the legacy examination dashboard to initialize.
+    try {
+        const { data: authData, error: authError } = await sb.auth.getSession();
+        const authUser = authData?.session?.user;
+        if (authError || !authUser?.id) {
+            window.location.replace('/examlogin.html');
+            return;
+        }
+
+        const [{ data: profile, error: profileError }, { data: memberships, error: membershipError }, { data: isSuperadmin, error: superadminError }] = await Promise.all([
+            sb.from('consolidated_user_profiles_table')
+                .select('user_id,email,full_name,role,status,login_enabled,institution_id')
+                .eq('user_id', authUser.id)
+                .maybeSingle(),
+            sb.from('institution_users')
+                .select('institution_id,role,status')
+                .eq('user_id', authUser.id)
+                .eq('role', 'institution_admin')
+                .eq('status', 'active'),
+            sb.rpc('is_current_user_superadmin')
+        ]);
+
+        if (profileError || membershipError) {
+            console.error('Examination dashboard session verification failed:', profileError || membershipError);
+            window.location.replace('/examlogin.html');
+            return;
+        }
+        if (!profile || !['approved', 'active'].includes(String(profile.status || '').toLowerCase()) || profile.login_enabled === false) {
+            await sb.auth.signOut();
+            window.location.replace('/examlogin.html');
+            return;
+        }
+
+        const institutionAdmin = (memberships || []).length > 0;
+        const platformSuperadmin = !superadminError && isSuperadmin === true;
+        if (!institutionAdmin && !platformSuperadmin) {
+            window.location.replace('/examlogin.html');
+            return;
+        }
+
+        const dashboardSession = {
+            user_id: authUser.id,
+            email: profile.email || authUser.email || '',
+            name: profile.full_name || profile.email || authUser.email || 'Administrator',
+            full_name: profile.full_name || profile.email || authUser.email || 'Administrator',
+            role: platformSuperadmin ? 'superadmin' : 'institution_admin',
+            institution_id: institutionAdmin ? memberships[0].institution_id : (profile.institution_id || null)
+        };
+        localStorage.setItem('userProfile', JSON.stringify(dashboardSession));
+        localStorage.setItem('currentUserId', authUser.id);
+    } catch (authBootstrapError) {
+        console.error('Could not restore examination administrator session:', authBootstrapError);
+        window.location.replace('/examlogin.html');
+        return;
+    }
+
+    // Continue through the existing dashboard authentication and original UI.
     if (!checkAdminAuth()) return;
 
     // ✅ Get session data
