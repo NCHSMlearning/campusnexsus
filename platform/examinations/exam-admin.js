@@ -8,31 +8,46 @@ const escapeHTML=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<
 function notice(message,error=false){const el=$("notice");el.textContent=message;el.className="notice"+(error?" error":"");el.hidden=false;window.setTimeout(()=>{el.hidden=true},6000)}
 function fail(message){$("bootMessage").textContent=message;$("bootMessage").style.color="#b42318";document.querySelector(".loader").style.display="none"}
 function showApp(){ $("bootScreen").hidden=true;$("app").hidden=false }
+function withTimeout(promise,label,ms=15000){
+  let timer;
+  return Promise.race([Promise.resolve(promise),new Promise((_,reject)=>{timer=window.setTimeout(()=>reject(new Error(label+" timed out. Check your connection and reload the page.")),ms)})]).finally(()=>window.clearTimeout(timer));
+}
 async function boot(){
   if(!window.supabase?.createClient) throw new Error("Authentication service is unavailable. Refresh and try again.");
+  $("bootMessage").textContent="Checking your secure sign-in…";
   sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
-  const {data:{session},error:sessionError}=await sb.auth.getSession();
+  const sessionResult=await withTimeout(sb.auth.getSession(),"Secure sign-in check");
+  const session=sessionResult?.data?.session,sessionError=sessionResult?.error;
   if(sessionError) throw sessionError;
-  if(!session?.user){window.location.replace("/login?redirect=%2Fexams");return}
+  if(!session?.user){window.location.replace("/login?redirect=%2Fadminexams%2F");return}
   authUser=session.user;
-  const [{data:memberships,error:memberError},{data:isSuper,error:superError},{data:prof}] = await Promise.all([
+  $("bootMessage").textContent="Checking your institution access…";
+  const [memberResult,superResult,profileResult]=await withTimeout(Promise.all([
     sb.from("institution_users").select("institution_id,role,status").eq("user_id",authUser.id).eq("role","institution_admin").eq("status","active"),
     sb.rpc("is_current_user_superadmin"),
-    sb.from("consolidated_user_profiles_table").select("full_name,email,role,status,program").eq("user_id",authUser.id).maybeSingle()
-  ]);
-  if(memberError) throw memberError;
-  const platformSuperadmin=!superError && isSuper===true;
+    sb.from("consolidated_user_profiles_table").select("user_id,full_name,email,role,status,program,institution_id").eq("user_id",authUser.id).maybeSingle()
+  ]),"Institution access check");
+  const memberships=memberResult.data||[];
+  const prof=profileResult.data||{};
+  const profileRole=String(prof.role||"").toLowerCase().replace(/[\\s-]+/g,"_");
+  const profileStatus=String(prof.status||"").toLowerCase();
+  const platformSuperadmin=(!superResult.error && superResult.data===true) || ["superadmin","super_admin","platform_superadmin"].includes(profileRole);
   let institutionOptions=[];
   if(platformSuperadmin){
-    const {data,error}=await sb.from("institutions").select("id,name,logo_url,primary_color,school_code,physical_address,postal_address").order("name");
-    if(error) throw error;institutionOptions=data||[];
+    const result=await withTimeout(sb.from("institutions").select("id,name,logo_url,primary_color,school_code,physical_address,postal_address").order("name"),"Institution list");
+    if(result.error) throw result.error;
+    institutionOptions=result.data||[];
   }else{
-    if(!memberships?.length) throw new Error("This account does not have an active institution administrator assignment. Ask the Campus Nexus platform administrator to assign your institution.");
-    const ids=[...new Set(memberships.map(m=>m.institution_id))];
-    const {data,error}=await sb.from("institutions").select("id,name,logo_url,primary_color,school_code,physical_address,postal_address").in("id",ids).order("name");
-    if(error) throw error;institutionOptions=data||[];
+    // Membership rows are authoritative. Legacy institution-admin profiles are accepted only
+    // when the profile itself is active/approved and contains a concrete institution_id.
+    let ids=[...new Set(memberships.map(m=>m.institution_id).filter(Boolean))];
+    if(!ids.length && profileRole==="institution_admin" && ["active","approved"].includes(profileStatus) && prof.institution_id){ids=[prof.institution_id];}
+    if(!ids.length){if(memberResult.error) throw memberResult.error;throw new Error("This account does not have an active institution administrator assignment. Ask the Campus Nexus platform administrator to assign your institution.");}
+    const result=await withTimeout(sb.from("institutions").select("id,name,logo_url,primary_color,school_code,physical_address,postal_address").in("id",ids).order("name"),"Institution details");
+    if(result.error) throw result.error;
+    institutionOptions=result.data||[];
   }
-  if(!institutionOptions.length) throw new Error("No institutions are available to this account.");
+  if(!institutionOptions.length) throw new Error("No institutions are available to this account. Verify the institution assignment and access permissions.");
   const params=new URLSearchParams(window.location.search);
   const requestedId=params.get("institution_id");
   institution=institutionOptions.find(i=>i.id===requestedId)||institutionOptions[0];
@@ -42,13 +57,14 @@ async function boot(){
     $("institutionSwitcher").value=institution.id;
     $("institutionSwitcher").addEventListener("change",()=>{const url=new URL(window.location.href);url.searchParams.set("institution_id",$("institutionSwitcher").value);window.location.href=url.toString()});
   }
-  await applyInstitutionBranding();
-  profile=prof||{};
+  $("bootMessage").textContent="Loading your institution workspace…";
+  await withTimeout(applyInstitutionBranding(),"Institution module verification");
+  profile=prof;
   $("userName").textContent=profile.full_name||authUser.email||"Administrator";
   showApp();
-  await refreshAll();
   $("markProgram").value=profile.program||"";$("markYear").value=new Date().getFullYear();
-  await Promise.all([loadMarkStudents(),loadMarkUnits()]);
+  refreshAll().catch(error=>notice("Some examination data could not be loaded: "+(error.message||"Unknown error"),true));
+  Promise.all([withTimeout(loadMarkStudents(),"Student list"),withTimeout(loadMarkUnits(),"Unit list")]).catch(error=>notice("Marks-entry lists could not be loaded: "+(error.message||"Unknown error"),true));
 }
 async function applyInstitutionBranding(){
   const inst=institution;
