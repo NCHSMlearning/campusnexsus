@@ -331,11 +331,14 @@
         .cn-admin-provisioning label{font-size:12px;font-weight:800;color:#12334a}
         .cn-admin-provisioning input{width:100%;min-height:42px;padding:10px 12px;border:1px solid #cbd5e1;border-radius:9px;background:#fff;color:#0f172a}
         .cn-admin-provisioning small{grid-column:1/-1;color:#64748b;font-size:11px;line-height:1.5}
+        .cn-admin-password-wrap{display:flex;gap:7px}.cn-admin-password-wrap input{flex:1;min-width:0}.cn-admin-password-wrap button{border:1px solid #cbd5e1;border-radius:9px;background:#fff;color:#12334a;padding:0 12px;font-weight:700;cursor:pointer}
         @media(max-width:600px){.cn-admin-provisioning{grid-template-columns:1fr}.cn-admin-provisioning .cn-admin-field:first-child{grid-column:auto}}
       </style>
       <div class="cn-admin-field"><label for="cnInstitutionAdminName">Institution administrator full name *</label><input id="cnInstitutionAdminName" type="text" maxlength="120" autocomplete="name" placeholder="Enter administrator's full name"></div>
       <div class="cn-admin-field"><label for="cnInstitutionAdminPhone">Administrator phone number</label><input id="cnInstitutionAdminPhone" type="tel" maxlength="30" autocomplete="tel" placeholder="+254 7XX XXX XXX"></div>
-      <small>A secure institution administrator account will be created and an invitation to set a password will be emailed to the administrator.</small>`;
+      <div class="cn-admin-field"><label for="cnInstitutionAdminPassword">Initial password *</label><div class="cn-admin-password-wrap"><input id="cnInstitutionAdminPassword" type="password" minlength="10" maxlength="72" autocomplete="new-password" placeholder="At least 10 characters"><button type="button" data-toggle-password="cnInstitutionAdminPassword">Show</button></div></div>
+      <div class="cn-admin-field"><label for="cnInstitutionAdminPasswordConfirm">Confirm password *</label><div class="cn-admin-password-wrap"><input id="cnInstitutionAdminPasswordConfirm" type="password" minlength="10" maxlength="72" autocomplete="new-password" placeholder="Re-enter password"><button type="button" data-toggle-password="cnInstitutionAdminPasswordConfirm">Show</button></div></div>
+      <small>Set the first password for the institution administrator. The account is created securely in Supabase Auth and linked to this institution. Keep the password private and share it directly with the administrator.</small>`;
     const field = email.closest(".form-group,.form-field,.field,.mb-3") || email.parentElement;
     field.insertAdjacentElement("afterend", host);
     const label = field.querySelector("label");
@@ -343,6 +346,12 @@
     email.required = true;
     email.type = "email";
     email.autocomplete = "email";
+    host.querySelectorAll("[data-toggle-password]").forEach(button => button.addEventListener("click", () => {
+      const input = $(button.dataset.togglePassword);
+      if (!input) return;
+      input.type = input.type === "password" ? "text" : "password";
+      button.textContent = input.type === "password" ? "Show" : "Hide";
+    }));
   }
 
   function resetForm() {
@@ -350,6 +359,8 @@
     selectedLogoFile = null;
     if ($("cnInstitutionLogoFile")) $("cnInstitutionLogoFile").value = "";
     $("cnInstitutionForm")?.reset();
+    if ($("cnInstitutionAdminPassword")) $("cnInstitutionAdminPassword").value = "";
+    if ($("cnInstitutionAdminPasswordConfirm")) $("cnInstitutionAdminPasswordConfirm").value = "";
     if ($("cnInstitutionStatus")) $("cnInstitutionStatus").value = "pending";
     if ($("cnInstitutionType")) $("cnInstitutionType").value = "college";
     if ($("cnInstitutionAmount")) $("cnInstitutionAmount").value = "5000";
@@ -530,7 +541,13 @@
     const adminEmail = $("cnInstitutionAdmin").value.trim().toLowerCase();
     const adminName = $("cnInstitutionAdminName")?.value.trim() || "";
     const adminPhone = $("cnInstitutionAdminPhone")?.value.trim() || "";
+    const adminPassword = $("cnInstitutionAdminPassword")?.value || "";
+    const adminPasswordConfirm = $("cnInstitutionAdminPasswordConfirm")?.value || "";
     if (!adminEmail || (!editingId && !adminName)) return notify("Enter the institution administrator name and email address.", "error");
+    if (!editingId && adminPassword.length < 10) return notify("Set an initial administrator password with at least 10 characters.", "error");
+    if (!editingId && adminPassword !== adminPasswordConfirm) return notify("The administrator passwords do not match.", "error");
+    if (adminPassword && adminPassword.length < 10) return notify("The administrator password must contain at least 10 characters.", "error");
+    if (adminPassword && adminPassword !== adminPasswordConfirm) return notify("The administrator passwords do not match.", "error");
     const amount = Number($("cnInstitutionAmount").value);
     if (!Number.isFinite(amount) || amount < 0) return notify("Enter a valid subscription amount.", "error");
     const portalMode = document.querySelector('input[name="cnInstitutionPortalModeChoice"]:checked')?.value || "campus_nexus";
@@ -591,9 +608,9 @@
       if (!saved?.id || !result?.registration_code) {
         throw new Error("The server did not confirm the complete institution setup.");
       }
-      if (adminEmail && adminName) {
+      if (adminEmail && adminName && adminPassword) {
         const {data:provisioned,error:provisionError} = await sb.functions.invoke("provision-institution-admin",{
-          body:{institution_id:saved.id,email:adminEmail,full_name:adminName,phone:adminPhone}
+          body:{institution_id:saved.id,email:adminEmail,full_name:adminName,phone:adminPhone,password:adminPassword}
         });
         if (provisionError || !provisioned?.success) {
           editingId = saved.id;
@@ -605,7 +622,7 @@
         }
       }
       notify((editingId ? "Institution updated successfully." : "Institution created successfully.") +
-        (adminEmail && adminName ? " Administrator invitation sent to " + adminEmail + "." : ""),"success");
+        (adminEmail && adminName && adminPassword ? " Administrator account created with the supplied initial password for " + adminEmail + "." : ""),"success");
       resetForm();
       await loadInstitutions();
     } catch (error) {
