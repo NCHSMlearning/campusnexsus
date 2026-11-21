@@ -43,17 +43,17 @@ async function loadAssessmentRows(){
  if(error)throw error;assessmentState.rows=data||[];
  const rows=assessmentState.rows,pending=rows.filter(x=>!x.published&&String(x.approval_status||"pending").toLowerCase()!=="approved"),approved=rows.filter(x=>String(x.approval_status||"").toLowerCase()==="approved"),published=rows.filter(x=>x.published===true);
  [["iaMECount",rows.length],["iaMEPending",pending.length],["iaMEApproved",approved.length],["iaMEPublished",published.length],["iaMAPending",pending.length],["iaMAApproved",approved.length],["iaMARejected",rows.filter(x=>String(x.approval_status||"").toLowerCase()==="rejected").length],["iaMAUnits",new Set(pending.map(x=>x.subject_name).filter(Boolean)).size],["iaPMCount",published.length],["iaPMStudents",new Set(published.map(x=>x.admission_number).filter(Boolean)).size],["iaPMUnits",new Set(published.map(x=>x.subject_name).filter(Boolean)).size]].forEach(([id,n])=>{const el=$(id);if(el)el.textContent=Number(n).toLocaleString("en-KE");});
- renderAssessmentRows("entry");renderAssessmentRows("approval");renderAssessmentRows("published");
+ renderAssessmentRows("entry");renderAssessmentRows("approval");renderAssessmentRows("ready");renderAssessmentRows("published");
 }
 function renderAssessmentRows(type){
- const body=$(type==="entry"?"iaMarksEntryRows":type==="approval"?"iaMarksApprovalRows":"iaPublishedMarksRows");if(!body)return;
+ const body=$(type==="entry"?"iaMarksEntryRows":type==="approval"?"iaMarksApprovalRows":type==="ready"?"iaReadyToPublishRows":"iaPublishedMarksRows");if(!body)return;
  let data=assessmentSearch(type);
  if(type==="approval")data=data.filter(x=>!x.published&&!["approved","rejected"].includes(String(x.approval_status||"pending").toLowerCase()));
  if(type==="published")data=data.filter(x=>x.published===true);
- const cols=type==="entry"?12:type==="approval"?8:9;if(!data.length){assessmentEmpty(body,cols,"No matching "+(type==="approval"?"marks awaiting approval":type==="published"?"published results":"marks records")+" found.");return;}
+ if(type==="ready")data=data.filter(x=>!x.published&&String(x.approval_status||"").toLowerCase()==="approved");const cols=type==="entry"?12:type==="approval"?8:9;if(!data.length){assessmentEmpty(body,cols,"No matching "+(type==="approval"?"marks awaiting approval":type==="ready"?"approved marks are ready to publish":type==="published"?"published results":"marks records")+" found.");return;}
  body.replaceChildren();data.forEach(x=>{const tr=document.createElement("tr");if(type==="entry"){[x.student_name,x.admission_number,x.program,x.block,x.subject_name,x.academic_year,x.cat1_score,x.cat2_score,x.exam_score,x.final_score,x.grade,x.published?"Published":x.approval_status||"Pending"].forEach(v=>assessmentCell(tr,v));}
  else if(type==="approval"){[x.student_name,x.admission_number,x.program,x.block,x.subject_name,x.final_score,x.submitted_at||x.created_at].forEach(v=>assessmentCell(tr,v));const td=document.createElement("td");if(!x.id){td.textContent="Unavailable";}else{const approve=document.createElement("button");approve.className="ia-primary-btn";approve.type="button";approve.textContent="Approve";approve.dataset.markAction="approve";approve.dataset.id=x.id;const reject=document.createElement("button");reject.className="ia-secondary-btn";reject.type="button";reject.textContent="Reject";reject.dataset.markAction="reject";reject.dataset.id=x.id;td.append(approve,reject);}tr.append(td);}
- else{[x.student_name,x.admission_number,x.program,x.block,x.subject_name,x.academic_year,x.final_score,x.grade,x.published_at].forEach(v=>assessmentCell(tr,v));}body.append(tr);});
+ else if(type==="ready"){[x.student_name,x.admission_number,x.program,x.block,x.subject_name,x.academic_year,x.final_score,x.grade].forEach(v=>assessmentCell(tr,v));const td=document.createElement("td"),publish=document.createElement("button");publish.type="button";publish.className="ia-primary-btn";publish.textContent="Publish result";publish.dataset.markAction="publish";publish.dataset.id=x.id;td.append(publish);tr.append(td);}else{[x.student_name,x.admission_number,x.program,x.block,x.subject_name,x.academic_year,x.final_score,x.grade,x.published_at].forEach(v=>assessmentCell(tr,v));}body.append(tr);});
 }
 async function loadEntryControl(){
  const host=$("iaEntryControlContent");if(!host)return;
