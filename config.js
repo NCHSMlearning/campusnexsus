@@ -71,6 +71,7 @@ window.APP_CONFIG = {
 if (typeof supabase !== 'undefined') {
     try {
         // Create the Supabase client
+        const isExamAdminDashboard = /^\/adminexams(?:\/|$)/i.test(window.location.pathname || '');
         const supabaseClient = supabase.createClient(
             window.APP_CONFIG.SUPABASE_URL,
             window.APP_CONFIG.SUPABASE_ANON_KEY,
@@ -78,7 +79,10 @@ if (typeof supabase !== 'undefined') {
                 auth: {
                     persistSession: true,
                     autoRefreshToken: true,
-                    detectSessionInUrl: true
+                    detectSessionInUrl: true,
+                    // Exam Login uses this exact key. Reuse it on the admin
+                    // dashboard so the authenticated session survives the handoff.
+                    ...(isExamAdminDashboard ? { storageKey: 'campus-nexus-exam-auth' } : {})
                 }
             }
         );
@@ -108,9 +112,11 @@ if (typeof window.sb === 'undefined') {
     try {
         // Try to create the client again
         if (typeof supabase !== 'undefined') {
+            const isExamAdminDashboard = /^\/adminexams(?:\/|$)/i.test(window.location.pathname || '');
             window.sb = supabase.createClient(
                 window.APP_CONFIG.SUPABASE_URL,
-                window.APP_CONFIG.SUPABASE_ANON_KEY
+                window.APP_CONFIG.SUPABASE_ANON_KEY,
+                isExamAdminDashboard ? { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, storageKey: 'campus-nexus-exam-auth' } } : undefined
             );
             console.log('✅ Fallback Supabase client created');
         } else {
