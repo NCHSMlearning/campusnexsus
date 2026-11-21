@@ -91,16 +91,31 @@ async function loadExamFormOptions(){
  programSelect.addEventListener("change",()=>loadInstitutionBlocks(programSelect.value));
 }
 async function loadInstitutionBlocks(programCode){
- const select=$("examBlock");select.innerHTML='<option value="">Loading blocks…</option>';
- if(!programCode){select.innerHTML='<option value="">Select programme first</option>';return;}
+ const select=$("examBlock");
+ select.disabled=true;
+ select.innerHTML='<option value="">Loading programme blocks…</option>';
+ if(!programCode){select.innerHTML='<option value="">Select programme first</option>';select.disabled=false;return;}
  try{
-  let query=sb.from("units_catalog").select("block").eq("institution_id",institution.id).eq("status","active").eq("program",programCode);
-  const {data,error}=await query;
+  // Keep the query institution-scoped, then match the catalogue's possible programme
+  // identifiers client-side. Older DCHN catalogue rows may store the programme name
+  // rather than its code, and some legacy rows do not use status="active".
+  const {data,error}=await sb.from("units_catalog").select("*").eq("institution_id",institution.id).limit(5000);
   if(error)throw error;
-  const blocks=[...new Set((data||[]).map(x=>String(x.block||"").trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+  const norm=v=>String(v??"").trim().toLowerCase().replace(/[\s_-]+/g,"");
+  const selected=(Array.from($("examProgram").selectedOptions||[])[0]?.textContent||"").split(" · ")[0].trim();
+  const rows=(data||[]).filter(row=>{
+   const candidates=[row.program,row.program_code,row.program_name,row.target_program,row.course_program,row.programme,row.programme_code,row.programme_name].filter(Boolean).map(norm);
+   const matches=candidates.includes(norm(programCode))||(selected&&candidates.includes(norm(selected)));
+   const status=norm(row.status);
+   return matches&&(!status||["active","approved","published"].includes(status));
+  });
+  const blocks=[...new Set(rows.map(row=>row.block??row.block_name??row.block_number??row.block_term??row.term??row.semester).map(v=>String(v??"").trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
   select.innerHTML='<option value="">Select block</option>'+blocks.map(b=>'<option value="'+escapeHTML(b)+'">'+escapeHTML(b)+'</option>').join("");
-  if(!blocks.length)select.innerHTML='<option value="">No blocks configured for this programme</option>';
- }catch(error){select.innerHTML='<option value="">Unable to load blocks</option>';notice("Could not load programme blocks: "+error.message,true);}
+  if(!blocks.length)select.innerHTML='<option value="">No blocks found — check the programme unit catalogue</option>';
+ }catch(error){
+  select.innerHTML='<option value="">Blocks could not be loaded</option>';
+  notice("Could not load blocks for this programme: "+(error.message||"Unknown error"),true);
+ }finally{select.disabled=false;}
 }
 async function applyInstitutionBranding(){
   const inst=institution;
