@@ -175,6 +175,10 @@ if (typeof module !== 'undefined' && module.exports) {
 // ============================================================
 (function () {
     'use strict';
+    // The examination administrator dashboard has its own dedicated role/session
+    // verification. Do not run the legacy global session-shutdown probe here:
+    // it can invalidate a valid exam login during the dashboard handoff.
+    if (/^\/adminexams(?:\/|$)/i.test(window.location.pathname || '')) return;
     const client = window.sb || window.supabaseClient;
     if (!client || !client.auth || window.__NCHSM_SESSION_SHUTDOWN_CHECK__) return;
     window.__NCHSM_SESSION_SHUTDOWN_CHECK__ = true;
