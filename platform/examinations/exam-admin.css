@@ -5,3 +5,41 @@
 @media(max-width:600px){.institution-switcher{min-width:0;max-width:135px}.institution-switcher select{max-width:135px;font-size:10px;padding:7px 6px}}
 
 .marks-entry-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px;margin:16px 0}.marks-entry-grid .field{display:grid;gap:7px;font-size:12px;color:#536a7f;font-weight:650}.marks-entry-grid input,.marks-entry-grid select{width:100%;min-width:0;border:1px solid var(--line);border-radius:9px;padding:10px;background:#fff;color:#17384e}.marks-entry-grid input:focus,.marks-entry-grid select:focus{outline:2px solid #159b8630;border-color:#159b86}.form-actions{display:flex;justify-content:flex-end;margin:12px 0}.form-actions button{border:0;border-radius:9px;padding:11px 15px;background:var(--navy);color:#fff;font-weight:700}@media(max-width:850px){.marks-entry-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:520px){.marks-entry-grid{grid-template-columns:1fr}}
+
+
+/* Secure boot overlay: remain above the application until verification completes. */
+.boot-screen{
+  position:fixed!important;inset:0!important;z-index:100000!important;
+  width:100%!important;height:100vh!important;height:100dvh!important;min-height:100vh!important;
+  display:grid;place-items:center;padding:24px;
+  background:radial-gradient(ellipse at 18% 12%,rgba(31,151,158,.28),transparent 38%),
+             radial-gradient(ellipse at 85% 88%,rgba(20,118,147,.25),transparent 42%),
+             linear-gradient(135deg,#071f38 0%,#0b3b59 52%,#0c5968 100%);
+  overflow:auto;
+}
+.boot-screen[hidden]{display:none!important}
+.app-shell[hidden]{display:none!important}
+.boot-card{
+  width:min(440px,100%);padding:42px 34px 36px;border:1px solid rgba(255,255,255,.72);
+  border-radius:26px;background:rgba(255,255,255,.98);
+  box-shadow:0 28px 90px rgba(1,17,32,.32);text-align:center;
+  animation:bootCardIn .35s ease-out both;
+}
+.boot-card .brand-mark{
+  width:66px;height:66px;margin:0 auto 19px;border-radius:20px;
+  background:linear-gradient(145deg,#082f4d,#168c9b);
+  box-shadow:0 9px 22px rgba(9,75,99,.2);font-size:22px;letter-spacing:-.5px;
+}
+.boot-card h1{font-size:23px;letter-spacing:-.55px;color:#103651;margin:0 0 10px}
+.boot-card p{max-width:310px;margin:0 auto;color:#718398;font-size:13px;line-height:1.65}
+.boot-card .loader{width:34px;height:34px;border-width:3px;margin:22px auto 0}
+.boot-card .boot-retry{
+  display:inline-flex;align-items:center;justify-content:center;margin-top:20px;
+  min-height:42px;padding:0 20px;border:0;border-radius:11px;
+  background:linear-gradient(120deg,#0b3553,#168b91);color:#fff;
+  font-size:12px;font-weight:800;box-shadow:0 7px 18px rgba(12,70,96,.18)
+}
+.boot-card .boot-retry:hover{filter:brightness(1.06)}
+@keyframes bootCardIn{from{opacity:0;transform:translateY(9px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
+@media(max-width:520px){.boot-screen{padding:18px}.boot-card{padding:34px 22px 30px;border-radius:22px}.boot-card h1{font-size:21px}}
+@media(prefers-reduced-motion:reduce){.boot-card{animation:none}.loader{animation-duration:1.8s}}
