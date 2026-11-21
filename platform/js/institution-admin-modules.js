@@ -35,7 +35,13 @@ document.querySelectorAll("[data-view='academic']").forEach(b=>b.addEventListene
 document.querySelectorAll("[data-view='exams']").forEach(b=>b.addEventListener("click",()=>{setTimeout(()=>load("exams"),100);}));
 document.querySelectorAll("[data-view='students']").forEach(b=>b.addEventListener("click",()=>setTimeout(()=>load("students"),100)));
 document.querySelectorAll("[data-view='staff']").forEach(b=>b.addEventListener("click",()=>setTimeout(()=>load("staff"),100)));
-document.querySelectorAll("[data-view='attendance']").forEach(b=>b.addEventListener("click",()=>setTimeout(()=>load("attendance"),100)));\ndocument.querySelectorAll("[data-view='admissions']").forEach(b=>b.addEventListener("click",()=>setTimeout(()=>load("admissions"),100)));\ndocument.querySelectorAll("[data-view='hr']").forEach(b=>b.addEventListener("click",()=>setTimeout(()=>load("hr"),100)));\ndocument.querySelectorAll("[data-view='timetable']").forEach(b=>b.addEventListener("click",()=>setTimeout(()=>load("timetable"),100)));\ndocument.querySelectorAll("[data-view='placements']").forEach(b=>b.addEventListener("click",()=>setTimeout(()=>load("placements"),100)));\ndocument.querySelectorAll("[data-view='research']").forEach(b=>b.addEventListener("click",()=>setTimeout(()=>load("research"),100)));\ndocument.querySelectorAll("[data-view='welfare']").forEach(b=>b.addEventListener("click",()=>setTimeout(()=>load("welfare"),100)));
+document.querySelectorAll("[data-view='attendance']").forEach(b=>b.addEventListener("click",()=>setTimeout(()=>load("attendance"),100)));
+document.querySelectorAll("[data-view='admissions']").forEach(b=>b.addEventListener("click",()=>setTimeout(()=>load("admissions"),100)));
+document.querySelectorAll("[data-view='hr']").forEach(b=>b.addEventListener("click",()=>setTimeout(()=>load("hr"),100)));
+document.querySelectorAll("[data-view='timetable']").forEach(b=>b.addEventListener("click",()=>setTimeout(()=>load("timetable"),100)));
+document.querySelectorAll("[data-view='placements']").forEach(b=>b.addEventListener("click",()=>setTimeout(()=>load("placements"),100)));
+document.querySelectorAll("[data-view='research']").forEach(b=>b.addEventListener("click",()=>setTimeout(()=>load("research"),100)));
+document.querySelectorAll("[data-view='welfare']").forEach(b=>b.addEventListener("click",()=>setTimeout(()=>load("welfare"),100)));
 document.querySelectorAll("[data-view='learning']").forEach(b=>b.addEventListener("click",()=>setTimeout(()=>load("resources"),100)));
 }
 function wait(){api=window.CampusInstitutionAdmin;if(!api?.db||!api?.institutionId){setTimeout(wait,150);return;}setup();const original=api.refresh;api.refresh=async()=>{await original();for(const k of Object.keys(config))if(cache[k]){await fetchRows(k);draw(k);}};}
