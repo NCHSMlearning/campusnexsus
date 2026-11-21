@@ -16,8 +16,17 @@ Deno.serve(async(req:Request)=>{
   if(authError||!authData.user)return json({success:false,error:"Your session could not be verified"},401);
   const {data:allowed,error:roleError}=await caller.rpc("is_current_user_superadmin");
   if(roleError||allowed!==true)return json({success:false,error:"Only the Platform Super Admin can provision institution administrators"},403);
-  const body=await req.json(),institutionId=String(body?.institution_id||"").trim(),email=String(body?.email||"").trim().toLowerCase(),fullName=String(body?.full_name||"").trim().replace(/\\s+/g," ").slice(0,120),phone=String(body?.phone||"").trim().slice(0,30);
-  if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(institutionId)||!/^[^\\s@<>]+@[^\\s@<>]+\\.[^\\s@<>]+$/.test(email)||fullName.length<2)return json({success:false,error:"A valid institution, administrator name and email are required"},400);
+  const body=await req.json();
+  const institutionId=String(body?.institution_id||"").trim();
+  const email=String(body?.email||"").trim().toLowerCase();
+  const fullName=String(body?.full_name||"").trim().replace(/\s+/g," ").slice(0,120);
+  const phone=String(body?.phone||"").trim().slice(0,30);
+  const password=String(body?.password||"");
+  if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(institutionId)||
+     !/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(email)||fullName.length<2||
+     password.length<10||password.length>72){
+    return json({success:false,error:"Enter a valid administrator name and email, and a password between 10 and 72 characters."},400);
+  }
   const admin=createClient(URL,SERVICE,{auth:{persistSession:false,autoRefreshToken:false}});
   const {data:institution,error:institutionError}=await admin.from("institutions").select("id,name,admin_email,school_code").eq("id",institutionId).single();
   if(institutionError||!institution)return json({success:false,error:"Institution not found"},404);
@@ -29,15 +38,18 @@ Deno.serve(async(req:Request)=>{
   }
   const {data:activeAdmins}=await admin.from("institution_users").select("user_id").eq("institution_id",institutionId).eq("role","institution_admin").eq("status","active").limit(1);
   if(activeAdmins?.length) return json({success:false,error:"This institution already has an active administrator account. Use the existing administrator reassignment workflow instead of creating a second primary account."},409);
-  const {data:invite,error:inviteError}=await admin.auth.admin.inviteUserByEmail(email,{data:{full_name:fullName,phone,role:"institution_admin",institution_id:institutionId,institution_name:institution.name},redirectTo:"https://campusnexus.co.ke/platform/set-password.html?school_code="+encodeURIComponent(institution.school_code||"")});
-  if(inviteError||!invite?.user)return json({success:false,error:inviteError?.message||"Supabase could not create the invitation"},400);
-  const userId=invite.user.id;
+  const {data:created,error:createError}=await admin.auth.admin.createUser({
+   email,password,email_confirm:true,
+   user_metadata:{full_name:fullName,phone,role:"institution_admin",institution_id:institutionId,institution_name:institution.name}
+  });
+  if(createError||!created?.user)return json({success:false,error:createError?.message||"Supabase could not create the administrator account"},400);
+  const userId=created.user.id;
   const {error:profileError}=await admin.from("consolidated_user_profiles_table").upsert({user_id:userId,email,full_name:fullName,phone:phone||null,role:"institution_admin",status:"active",login_enabled:true,institution_id:institutionId,updated_at:new Date().toISOString()},{onConflict:"user_id"});
   if(profileError){await admin.auth.admin.deleteUser(userId);return json({success:false,error:"Auth account was rolled back because the administrator profile could not be saved: "+profileError.message},500);}
   const {error:membershipError}=await admin.from("institution_users").upsert({institution_id:institutionId,user_id:userId,role:"institution_admin",status:"active"},{onConflict:"institution_id,user_id"});
   if(membershipError){await admin.from("consolidated_user_profiles_table").delete().eq("user_id",userId);await admin.auth.admin.deleteUser(userId);return json({success:false,error:"Auth account was rolled back because institution membership could not be saved: "+membershipError.message},500);}
   const {error:linkError}=await admin.from("institutions").update({first_admin_user_id:userId,first_admin_claimed_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq("id",institutionId);
   if(linkError){await admin.from("institution_users").delete().eq("institution_id",institutionId).eq("user_id",userId);await admin.from("consolidated_user_profiles_table").delete().eq("user_id",userId);await admin.auth.admin.deleteUser(userId);return json({success:false,error:"Account setup was rolled back because the institution could not be linked: "+linkError.message},500);}
-  return json({success:true,user_id:userId,email,role:"institution_admin",invitation_sent:true});
+  return json({success:true,user_id:userId,email,role:"institution_admin",account_created:true});
  }catch(error){console.error("Institution administrator provisioning failed:",error instanceof Error?error.message:"Unknown error");return json({success:false,error:error instanceof Error?error.message:"Unable to provision administrator"},500);}
 });
