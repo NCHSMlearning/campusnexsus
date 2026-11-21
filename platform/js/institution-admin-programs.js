@@ -187,7 +187,6 @@ async function deleteMapping(id){
 function showProgramIntakes(){$("intake_program_select")?.scrollIntoView({behavior:"smooth"});}
 function showProgramBlocks(){$("block_program_select")?.scrollIntoView({behavior:"smooth"});}
 function bind(){
- $("add-program-form")?.addEventListener("submit",e=>{e.preventDefault();createProgram();});
  ["program_search","program_category_filter","program_type_filter","program_status_filter"].forEach(id=>$(id)?.addEventListener(id==="program_search"?"input":"change",filterProgramsTable));
  $("intake_program_select")?.addEventListener("change",()=>loadProgramIntakes().catch(e=>notify(e.message,"error")));
  $("block_program_select")?.addEventListener("change",()=>loadProgramBlocks().catch(e=>notify(e.message,"error")));
