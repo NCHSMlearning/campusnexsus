@@ -81,9 +81,9 @@ jobs:
           clean_urls = """<script>
           (function(){
             var p=window.location.pathname;
-            if(/\\.html$/i.test(p)){
+            if(/\.html$/i.test(p)){
               var u=new URL(window.location.href);
-              u.pathname=p.replace(/\\.html$/i,'')+'/';
+              u.pathname=p.replace(/\.html$/i,'')+'/';
               window.location.replace(u.toString());
             }
           })();
@@ -95,7 +95,7 @@ jobs:
               html = page.read_text(encoding="utf-8")
               if 'src="/code-protection.js"' not in html:
                   if re.search(r"</head>", html, re.I):
-                      html = re.sub(r"</head>", protection + clean_urls + "\\n</head>", html, count=1, flags=re.I)
+                      html = re.sub(r"</head>", protection + clean_urls + "\n</head>", html, count=1, flags=re.I)
                   else:
                       html = protection + clean_urls + html
                   page.write_text(html, encoding="utf-8")
