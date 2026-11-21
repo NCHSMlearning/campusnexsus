@@ -134,7 +134,7 @@ function scopeInstitution(query,column="institution_id"){return allInstitutionsV
 function requireInstitution(){if(!institution){notice("Choose a specific institution in the institution filter before creating or editing records.",true);return false;}return true;}
 async function refreshAll(){
   await loadExams();
-  await Promise.all([loadAttempts(),loadProctoring(),loadAttendance()]);
+  await Promise.all([loadAttempts(),loadProctoring(),loadAttendance(),loadStudentDirectory(),loadRetakes(),loadLiveStudents(),loadLiveFeed(),loadLecturerQuestions()]);
 }
 async function loadExams(){
   const {data,error}=await scopeInstitution(sb.from("exams").select("id,institution_id,title,exam_name,exam_type,program_type,target_program,block,block_term,intake_year,intake_month,course_id,course_code,exam_date,start_time,exam_start_time,duration_minutes,total_marks,marks_out_of,pass_mark,status,approval_status,is_published,is_active,created_at,created_by,approved_by,approved_at,rejection_reason")).order("created_at",{ascending:false}).limit(1000);
@@ -146,7 +146,7 @@ async function loadExams(){
 
   const pending=exams.filter(e=>String(e.approval_status||"").toLowerCase()==="pending").length;
   $("statTotal").textContent=exams.length;$("statPublished").textContent=published;$("statPending").textContent=pending;
-  renderExamRows();renderRecent();populateExamSelect();
+  renderExamRows();renderRecent();populateExamSelect();loadApprovalQueue();loadAdminProfile();
 }
 function approvalBadge(e){const v=String(e.approval_status||"draft").toLowerCase();return '<span class="badge '+(v==="approved"?"green":v==="pending"?"amber":v==="rejected"?"red":"")+'">'+escapeHTML(v)+'</span>'}
 function publicationBadge(e){return e.is_published?'<span class="badge green">Published</span>':'<span class="badge">Not published</span>'}
@@ -197,6 +197,54 @@ async function loadAttendance(){
  if(!data?.length){$("attendanceTable").innerHTML='<tr><td colspan="6" class="empty-state">No examination attendance records.</td></tr>';return}
  $("attendanceTable").innerHTML=data.map(x=>'<tr><td>'+escapeHTML(x.date||"—")+'</td><td>'+escapeHTML(x.student_name||"Student")+'</td><td>'+escapeHTML(x.student_reg_number||"—")+'</td><td>'+escapeHTML(examMap.get(String(x.exam_id))||x.exam_name||"Examination")+'</td><td><span class="badge">'+escapeHTML(x.status||"—")+'</span></td><td>'+escapeHTML(x.sign_in_time||"—")+'</td></tr>').join("");
 }
+
+async function loadStudentDirectory(){
+ const {data,error}=await scopeInstitution(sb.from("consolidated_user_profiles_table").select("*").eq("role","student")).order("full_name").limit(5000);
+ const body=$("studentsTable"),enrol=$("enrolmentsTable");
+ if(error){body.innerHTML=enrol.innerHTML='<tr><td colspan="6" class="empty-state">'+escapeHTML(error.message)+'</td></tr>';return}
+ const rows=data||[];window.__examStudentRows=rows;
+ const render=items=>items.map(s=>'<tr><td><b>'+escapeHTML(s.full_name||"Student")+'</b><div class="muted-cell">'+escapeHTML(s.email||"")+'</div></td><td>'+escapeHTML(s.admission_number||s.student_id||"—")+'</td><td>'+escapeHTML(s.program||"—")+'</td><td>'+escapeHTML(s.block||"—")+'</td><td>'+escapeHTML(s.intake_year||"—")+'</td><td>'+escapeHTML(s.status||"—")+'</td></tr>').join("");
+ body.innerHTML=rows.length?render(rows):'<tr><td colspan="6" class="empty-state">No students found.</td></tr>';
+ enrol.innerHTML=body.innerHTML;$("enrolmentCount").textContent=rows.length+" student records";
+}
+function loadApprovalQueue(){
+ const rows=exams.filter(e=>String(e.approval_status||"").toLowerCase()==="pending");
+ $("approvalQueueCount").textContent=rows.length+" pending";
+ $("approvalQueueTable").innerHTML=rows.length?rows.map(e=>'<tr><td>'+escapeHTML(institutionNameMap.get(String(e.institution_id))||institution?.name||"Institution")+'</td><td>'+escapeHTML(e.title||e.exam_name||"Assessment")+'</td><td>'+escapeHTML(e.program_type||e.target_program||"—")+'</td><td>'+escapeHTML(e.block_term||e.block||"—")+'</td><td>'+escapeHTML(e.created_at||"—")+'</td><td><button class="secondary-button small" data-exam-action="approve" data-id="'+escapeHTML(e.id)+'">Approve</button> <button class="secondary-button small" data-exam-action="reject" data-id="'+escapeHTML(e.id)+'">Reject</button></td></tr>').join(""):'<tr><td colspan="6" class="empty-state">No assessments pending approval.</td></tr>';
+}
+async function loadRetakes(){
+ const {data,error}=await scopeInstitution(sb.from("exam_attempts").select("*")).order("started_at",{ascending:false}).limit(1500),body=$("retakesTable");
+ if(error){body.innerHTML='<tr><td colspan="7" class="empty-state">'+escapeHTML(error.message)+'</td></tr>';return}
+ const em=new Map(exams.map(e=>[String(e.id),e]));
+ const rows=(data||[]).filter(a=>Number(a.attempt_number||1)>1||["retake","resit","supplementary","failed"].includes(String(a.status||"").toLowerCase())||((a.percentage!=null)&&Number(a.percentage)<(Number(em.get(String(a.exam_id))?.pass_mark)||60)));
+ body.innerHTML=rows.length?rows.map(a=>'<tr><td>'+escapeHTML(a.student_name||a.student_id||"Student")+'</td><td>'+escapeHTML(institutionNameMap.get(String(a.institution_id))||institution?.name||"Institution")+'</td><td>'+escapeHTML(em.get(String(a.exam_id))?.title||em.get(String(a.exam_id))?.exam_name||"Examination")+'</td><td>'+escapeHTML(a.attempt_number||1)+'</td><td>'+escapeHTML(a.status||"—")+'</td><td>'+escapeHTML(a.score??"—")+'</td><td>'+escapeHTML(a.submitted_at||"—")+'</td></tr>').join(""):'<tr><td colspan="7" class="empty-state">No retake candidates found.</td></tr>';
+}
+async function loadLiveStudents(){
+ const ids=exams.map(e=>e.id),body=$("liveStudentsTable");if(!ids.length){body.innerHTML='<tr><td colspan="5">No examinations in scope.</td></tr>';return}
+ const {data,error}=await sb.from("exam_heartbeats").select("*").in("exam_id",ids).order("updated_at",{ascending:false}).limit(500);
+ if(error){body.innerHTML='<tr><td colspan="5">'+escapeHTML(error.message)+'</td></tr>';return}
+ const em=new Map(exams.map(e=>[String(e.id),e.title||e.exam_name||"Examination"]));
+ body.innerHTML=data?.length?data.map(x=>'<tr><td>'+escapeHTML(x.student_name||x.student_id||x.user_id||"Student")+'</td><td>'+escapeHTML(em.get(String(x.exam_id))||"Examination")+'</td><td>'+escapeHTML(x.updated_at||x.last_heartbeat||x.created_at||"—")+'</td><td><span class="badge green">Heartbeat received</span></td><td>'+escapeHTML(x.attempt_id||x.attempt_number||"—")+'</td></tr>').join(""):'<tr><td colspan="5" class="empty-state">No student heartbeats found.</td></tr>';
+}
+async function loadLiveFeed(){
+ const {data,error}=await scopeInstitution(sb.from("exam_proctoring_logs").select("*")).order("timestamp",{ascending:false}).limit(500),body=$("liveFeedTable");
+ if(error){body.innerHTML='<tr><td colspan="6">'+escapeHTML(error.message)+'</td></tr>';return}
+ const em=new Map(exams.map(e=>[String(e.id),e.title||e.exam_name||"Examination"]));
+ body.innerHTML=data?.length?data.map(x=>'<tr><td>'+escapeHTML(x.timestamp||"—")+'</td><td>'+escapeHTML(x.student_name||x.student_reg_number||"Student")+'</td><td>'+escapeHTML(em.get(String(x.exam_id))||"Examination")+'</td><td>'+escapeHTML(x.event_type||"Event")+'</td><td>'+escapeHTML(x.severity||"info")+'</td><td>'+escapeHTML(x.details||x.snapshot_url||x.recording_url||"—")+'</td></tr>').join(""):'<tr><td colspan="6" class="empty-state">No monitoring events recorded.</td></tr>';
+}
+async function loadLecturerQuestions(){
+ const ids=exams.map(e=>e.id),body=$("lecturerQuestionsTable");if(!ids.length){body.innerHTML='<tr><td colspan="6">No examinations in scope.</td></tr>';return}
+ const {data,error}=await sb.from("exam_questions").select("*").in("exam_id",ids).order("created_at",{ascending:false}).limit(1000);
+ if(error){body.innerHTML='<tr><td colspan="6">'+escapeHTML(error.message)+'</td></tr>';return}
+ const em=new Map(exams.map(e=>[String(e.id),e.title||e.exam_name||"Examination"]));$("lecturerQuestionCount").textContent=(data||[]).length+" submissions";
+ body.innerHTML=data?.length?data.map(q=>'<tr><td>'+escapeHTML(em.get(String(q.exam_id))||"Examination")+'</td><td>'+escapeHTML(q.question_text||"Question")+'</td><td>'+escapeHTML(q.question_type||"—")+'</td><td>'+escapeHTML(q.marks??"—")+'</td><td>'+escapeHTML(q.status||"—")+'</td><td>'+(String(q.status||"").toLowerCase()==="pending"?'<button class="secondary-button small" data-question-action="approve" data-id="'+escapeHTML(q.id)+'">Approve</button> <button class="secondary-button small" data-question-action="reject" data-id="'+escapeHTML(q.id)+'">Reject</button>':'Reviewed')+'</td></tr>').join(""):'<tr><td colspan="6" class="empty-state">No lecturer questions found.</td></tr>';
+}
+function loadAdminProfile(){
+ $("adminProfileDetails").innerHTML='<p><b>Name</b><br>'+escapeHTML(profile?.full_name||authUser.email)+'</p><p><b>Email</b><br>'+escapeHTML(authUser.email)+'</p><p><b>Institution</b><br>'+escapeHTML(allInstitutionsView?"Platform-wide":institution?.name||"—")+'</p>';
+ $("adminRoleLabel").textContent=platformSuperadmin?"Platform superadmin":"Institution administrator";
+}
+async function changePassword(){const password=window.prompt("Enter a new password (minimum 8 characters):");if(password===null)return;if(password.length<8){notice("Password must contain at least 8 characters.",true);return}const {error}=await sb.auth.updateUser({password});if(error)notice(error.message,true);else notice("Password updated.");}
+
 function openExamModal(){ $("examModal").hidden=false;document.body.classList.add("modal-open")}
 function closeExamModal(){ $("examModal").hidden=true;document.body.classList.remove("modal-open")}
 async function saveExam(event){
@@ -283,6 +331,11 @@ function bind(){
  $("questionExam").addEventListener("change",loadQuestions);$("addQuestionBtn").addEventListener("click",()=>{$("questionComposer").hidden=false});
  $("cancelQuestion").addEventListener("click",()=>{$("questionComposer").hidden=true});$("saveQuestion").addEventListener("click",saveQuestion);
  $("refreshProctoring").addEventListener("click",loadProctoring);
+
+ $("refreshRetakes").addEventListener("click",loadRetakes);$("refreshLiveStudents").addEventListener("click",loadLiveStudents);$("refreshLiveFeed").addEventListener("click",loadLiveFeed);
+ $("studentSearch").addEventListener("input",()=>{const q=$("studentSearch").value.toLowerCase(),rows=(window.__examStudentRows||[]).filter(s=>[s.full_name,s.email,s.admission_number,s.student_id,s.program].some(v=>String(v||"").toLowerCase().includes(q)));$("studentsTable").innerHTML=rows.map(s=>'<tr><td>'+escapeHTML(s.full_name||"Student")+'</td><td>'+escapeHTML(s.admission_number||s.student_id||"—")+'</td><td>'+escapeHTML(s.program||"—")+'</td><td>'+escapeHTML(s.block||"—")+'</td><td>'+escapeHTML(s.intake_year||"—")+'</td><td>'+escapeHTML(s.status||"—")+'</td></tr>').join("")||'<tr><td colspan="6">No matching students.</td></tr>'});
+ $("changePasswordBtn").addEventListener("click",changePassword);$("signOutOtherBtn").addEventListener("click",async()=>{await sb.auth.signOut();window.location.replace("/login")});
+
  $("markStudent").addEventListener("change",renderStudentMarks);$("saveMarkBtn").addEventListener("click",saveManualMark);
  $("logoutBtn").addEventListener("click",async()=>{await sb.auth.signOut();window.location.replace("/login")});
 }
