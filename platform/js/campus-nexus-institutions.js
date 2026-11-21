@@ -626,12 +626,23 @@
         const {data:provisioned,error:provisionError} = await sb.functions.invoke("provision-institution-admin",{
           body:{institution_id:saved.id,email:adminEmail,full_name:adminName,phone:adminPhone,password:adminPassword}
         });
+        let provisioningErrorMessage = provisioned?.error || "";
+        if (provisionError) {
+          provisioningErrorMessage = provisionError.message || "The administrator provisioning request failed.";
+          try {
+            const response = provisionError.context;
+            if (response && typeof response.clone === "function") {
+              const detail = await response.clone().json();
+              provisioningErrorMessage = detail?.error || provisioningErrorMessage;
+            }
+          } catch (_) {}
+        }
         if (provisionError || !provisioned?.success) {
           editingId = saved.id;
           $("cnInstitutionSave").textContent = "Retry administrator setup";
           await loadInstitutions();
           notify("Institution saved, but administrator account setup did not complete: " +
-            (provisionError?.message || provisioned?.error || "Please check the details and save again."),"error");
+            (provisioningErrorMessage || "Please check the details and save again."),"error");
           return;
         }
       }
