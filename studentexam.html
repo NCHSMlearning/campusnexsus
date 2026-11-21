@@ -9,7 +9,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="/js/exam-supabase.js?v=20261120-1"></script>
 <script src="/platform/js/campus-nexus-module-access.js?v=20261120-entitlements-v3" defer></script>
 <script src="/code-protection.js?v=20261121-global-v4" defer></script>
-</head>
+<style id="student-exam-profile-actions">.header-avatar.profile-link{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;color:inherit;cursor:pointer}.account-profile-link{display:flex;align-items:center;gap:10px;min-width:0;flex:1;color:inherit;text-decoration:none;border-radius:10px;padding:4px;transition:background .18s ease}.account-profile-link:hover,.account-profile-link:focus-visible{background:rgba(255,255,255,.09);outline:none}.profile-link-hint{display:block!important;font-size:10px!important;color:#9fc8e8!important;margin-top:3px}.account-profile-link .account-copy{min-width:0}</style></head>
 <body>
 <div class="exam-app">
 <aside class="exam-sidebar" id="exam-sidebar">
@@ -17,10 +17,10 @@
 <div class="side-label">YOUR WORKSPACE</div>
 <nav class="exam-nav"><a class="active" href="#dashboard" aria-current="page" data-module="dashboard"><i class="fa-solid fa-chart-pie"></i><span>Dashboard</span></a><a href="#examinations" aria-current="page" data-module="examinations"><i class="fa-solid fa-file-circle-check"></i><span>Examinations</span></a><a href="#timetable" data-module="timetable"><i class="fa-solid fa-calendar-days"></i><span>Timetable</span></a><a href="#announcements" data-module="announcements"><i class="fa-solid fa-bullhorn"></i><span>Announcements</span></a><a href="#exam-history" data-module="exam-history"><i class="fa-solid fa-clock-rotate-left"></i><span>Exam History</span></a><a href="#exam-support" data-module="exam-support"><i class="fa-solid fa-headset"></i><span>Support</span></a></nav>
 <div class="sidebar-help"><span class="help-icon"><i class="fa-solid fa-headset"></i></span><b>Need assistance?</b><p>Contact your institution administrator if an assigned examination is missing.</p></div>
-<div class="sidebar-account"><div class="account-avatar" id="avatar">ST</div><div class="account-copy"><b id="side-name">Student</b><small id="side-admission">Loading profile…</small></div><button id="logout-btn" title="Sign out" aria-label="Sign out"><i class="fa-solid fa-arrow-right-from-bracket"></i></button></div>
+<div class="sidebar-account"><a class="account-profile-link" href="/student#profile" aria-label="Open your student profile" title="View your profile"><div class="account-avatar" id="avatar">ST</div><div class="account-copy"><b id="side-name">Student</b><small id="side-admission">Loading profile…</small><small class="profile-link-hint">View profile <i class="fa-solid fa-arrow-up-right-from-square"></i></small></div></a><button id="logout-btn" title="Sign out" aria-label="Sign out"><i class="fa-solid fa-arrow-right-from-bracket"></i></button></div>
 </aside>
 <div class="exam-main-wrap">
-<header class="exam-header"><div class="header-left"><button class="mobile-toggle" id="mobile-toggle" aria-label="Open navigation"><i class="fa-solid fa-bars"></i></button><div><span class="header-kicker" id="institution-header-name">CAMPUS NEXUS <i class="fa-solid fa-chevron-right"></i> STUDENT SPACE</span><b>Examination Centre</b></div></div><div class="header-right"><span class="secure-top"><i class="fa-solid fa-shield-halved"></i> Secure student access</span><span class="header-avatar"><i class="fa-regular fa-user"></i></span></div></header>
+<header class="exam-header"><div class="header-left"><button class="mobile-toggle" id="mobile-toggle" aria-label="Open navigation"><i class="fa-solid fa-bars"></i></button><div><span class="header-kicker" id="institution-header-name">CAMPUS NEXUS <i class="fa-solid fa-chevron-right"></i> STUDENT SPACE</span><b>Examination Centre</b></div></div><div class="header-right"><span class="secure-top"><i class="fa-solid fa-shield-halved"></i> Secure student access</span><a class="header-avatar profile-link" href="/student#profile" aria-label="Open student profile" title="My profile"><i class="fa-regular fa-user"></i></a></div></header>
 <main class="exam-main">
 
 
