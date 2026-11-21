@@ -3,7 +3,7 @@
 const SUPABASE_URL="https://lwhtjozfsmbyihenfunw.supabase.co";
 const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx3aHRqb3pmc21ieWloZW5mdW53Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk2NTgxMjcsImV4cCI6MjA3NTIzNDEyN30.7Z8AYvPQwTAEEEhODlW6Xk-IR1FK3Uj5ivZS7P17Wpk";
 const $=id=>document.getElementById(id);
-let sb,authUser,institution,profile,exams=[],selectedExamId=null,markStudents=[],markUnits=[];
+let sb,authUser,institution=null,profile,exams=[],selectedExamId=null,markStudents=[],markUnits=[],institutionOptions=[],platformSuperadmin=false,allInstitutionsView=false;
 const escapeHTML=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 function notice(message,error=false){const el=$("notice");el.textContent=message;el.className="notice"+(error?" error":"");el.hidden=false;window.setTimeout(()=>{el.hidden=true},6000)}
 function fail(message){$("bootMessage").textContent=message;$("bootMessage").style.color="#b42318";document.querySelector(".loader").style.display="none"}
@@ -31,8 +31,7 @@ async function boot(){
   const prof=profileResult.data||{};
   const profileRole=String(prof.role||"").toLowerCase().trim().replace(/-/g,"_");
   const profileStatus=String(prof.status||"").toLowerCase();
-  const platformSuperadmin=!superResult.error && superResult.data===true;
-  let institutionOptions=[];
+  platformSuperadmin=!superResult.error && superResult.data===true;
   if(platformSuperadmin){
     const result=await withTimeout(sb.from("institutions").select("id,name,logo_url,primary_color,school_code,physical_address,postal_address").order("name"),"Institution list");
     if(result.error) throw result.error;
@@ -50,20 +49,22 @@ async function boot(){
   if(!institutionOptions.length) throw new Error("No institutions are available to this account. Verify the institution assignment and access permissions.");
   const params=new URLSearchParams(window.location.search);
   const requestedId=params.get("institution_id");
-  institution=institutionOptions.find(i=>i.id===requestedId)||institutionOptions[0];
-  if(institutionOptions.length>1){
+  allInstitutionsView=platformSuperadmin && (!requestedId || requestedId==="all");
+  institution=allInstitutionsView?null:(institutionOptions.find(i=>i.id===requestedId)||institutionOptions[0]);
+  if(platformSuperadmin || institutionOptions.length>1){
     $("institutionSwitcherWrap").hidden=false;
-    $("institutionSwitcher").innerHTML=institutionOptions.map(i=>'<option value="'+escapeHTML(i.id)+'">'+escapeHTML(i.name)+'</option>').join("");
-    $("institutionSwitcher").value=institution.id;
-    $("institutionSwitcher").addEventListener("change",()=>{const url=new URL(window.location.href);url.searchParams.set("institution_id",$("institutionSwitcher").value);window.location.href=url.toString()});
+    $("institutionSwitcher").innerHTML=(platformSuperadmin?'<option value="all">All institutions — system-wide</option>':"")+institutionOptions.map(i=>'<option value="'+escapeHTML(i.id)+'">'+escapeHTML(i.name)+'</option>').join("");
+    $("institutionSwitcher").value=allInstitutionsView?"all":institution.id;
+    $("institutionSwitcher").addEventListener("change",()=>{const url=new URL(window.location.href);const value=$("institutionSwitcher").value;if(value==="all")url.searchParams.set("institution_id","all");else url.searchParams.set("institution_id",value);window.location.href=url.toString()});
   }
-  $("bootMessage").textContent="Loading your institution workspace…";
+  $("bootMessage").textContent=allInstitutionsView?"Loading system-wide examination workspace…":"Loading your institution workspace…";
   await withTimeout(applyInstitutionBranding(),"Institution module verification");
   profile=prof;
-  $("userName").textContent=profile.full_name||authUser.email||"Administrator";
-  showApp();
-  $("markProgram").value=profile.program||"";$("markYear").value=new Date().getFullYear();
-  await loadExamFormOptions();
+  $("userName").textContent=(profile.full_name||authUser.email||"Administrator")+(platformSuperadmin?" · Superadmin":"");
+  if(allInstitutionsView){$("institutionName").textContent="All institutions";$("markProgram").value="Select an institution";$("markBlock").placeholder="Choose an institution first";}
+  else $("markProgram").value=profile.program||"";
+  showApp();$("markYear").value=new Date().getFullYear();
+  if(institution) await loadExamFormOptions(); else { $("examProgram").innerHTML='<option value="">Select an institution from the filter first</option>'; $("examProgram").disabled=true; $("examBlock").innerHTML='<option value="">Select an institution first</option>'; $("newExamBtn").title="Choose a specific institution before creating an examination"; }
   refreshAll().catch(error=>notice("Some examination data could not be loaded: "+(error.message||"Unknown error"),true));
   Promise.all([withTimeout(loadMarkStudents(),"Student list"),withTimeout(loadMarkUnits(),"Unit list")]).catch(error=>notice("Marks-entry lists could not be loaded: "+(error.message||"Unknown error"),true));
 }
@@ -118,7 +119,8 @@ async function loadInstitutionBlocks(programCode){
  }finally{select.disabled=false;}
 }
 async function applyInstitutionBranding(){
-  const inst=institution;
+  if(allInstitutionsView){$("institutionName").textContent="All institutions";$("institutionLogo").textContent="CN";document.documentElement.style.setProperty("--navy","#0b3553");return;}
+  const inst=institution;if(!inst)throw new Error("Select an institution to continue.");
   const {data:mods,error:modError}=await sb.from("institution_modules").select("module_key,enabled").eq("institution_id",inst.id).in("module_key",["admin_exams","examinations","proctoring"]).eq("enabled",true);
   if(modError) throw modError;
   if(!mods?.some(m=>["admin_exams","examinations"].includes(m.module_key))) throw new Error("The Examinations module is not enabled for this institution. Contact the Campus Nexus platform administrator.");
@@ -127,14 +129,18 @@ async function applyInstitutionBranding(){
   else $("institutionLogo").textContent=(inst.name||"CN").split(/\s+/).slice(0,2).map(x=>x[0]).join("").toUpperCase();
   if(/^#[0-9a-f]{6}$/i.test(inst.primary_color||"")) document.documentElement.style.setProperty("--navy",inst.primary_color);
 }
+function scopeInstitution(query,column="institution_id"){return allInstitutionsView?query:query.eq(column,institution.id);}
+function requireInstitution(){if(!institution){notice("Choose a specific institution in the institution filter before creating or editing records.",true);return false;}return true;}
 async function refreshAll(){
   await loadExams();
   await Promise.all([loadAttempts(),loadProctoring(),loadAttendance()]);
 }
 async function loadExams(){
-  const {data,error}=await sb.from("exams").select("id,title,exam_name,exam_type,program_type,target_program,block,block_term,intake_year,intake_month,course_id,course_code,exam_date,start_time,exam_start_time,duration_minutes,total_marks,marks_out_of,pass_mark,status,approval_status,is_published,is_active,created_at,created_by,approved_by,approved_at,rejection_reason").eq("institution_id",institution.id).order("created_at",{ascending:false}).limit(250);
+  const {data,error}=await scopeInstitution(sb.from("exams").select("id,institution_id,title,exam_name,exam_type,program_type,target_program,block,block_term,intake_year,intake_month,course_id,course_code,exam_date,start_time,exam_start_time,duration_minutes,total_marks,marks_out_of,pass_mark,status,approval_status,is_published,is_active,created_at,created_by,approved_by,approved_at,rejection_reason")).order("created_at",{ascending:false}).limit(1000);
   if(error) throw error;exams=data||[];
   const published=exams.filter(e=>e.is_published||String(e.status||"").toLowerCase()==="published").length;
+  document.querySelectorAll(".stat-foot").forEach(el=>{if(allInstitutionsView)el.textContent="Across all institutions";});
+  const welcome=document.querySelector(".welcome-row .eyebrow");if(welcome)welcome.textContent=allInstitutionsView?"CAMPUS NEXUS PLATFORM CONTROL CENTRE":"INSTITUTION CONTROL CENTRE";
   const pending=exams.filter(e=>String(e.approval_status||"").toLowerCase()==="pending").length;
   $("statTotal").textContent=exams.length;$("statPublished").textContent=published;$("statPending").textContent=pending;
   renderExamRows();renderRecent();populateExamSelect();
@@ -163,7 +169,7 @@ async function loadQuestions(){
  body.innerHTML=data.map(q=>{const pending=String(q.status||"").toLowerCase()==="pending";const actions=pending?'<button class="secondary-button small" data-question-action="approve" data-id="'+escapeHTML(q.id)+'">Approve</button> <button class="secondary-button small" data-question-action="reject" data-id="'+escapeHTML(q.id)+'">Reject</button>':'<span class="muted-cell">Reviewed</span>';return '<tr><td>'+escapeHTML(q.question_number||"—")+'</td><td><strong>'+escapeHTML(q.question_text)+'</strong></td><td>'+escapeHTML(q.question_type||"mcq")+'</td><td>'+escapeHTML(q.marks||0)+'</td><td>'+escapeHTML(q.correct_answer||"—") +'</td><td><span class="badge">'+escapeHTML(q.status||"active")+'</span></td><td>'+actions+'</td></tr>'}).join("");
 }
 async function loadAttempts(){
- const {data,error}=await sb.from("exam_attempts").select("id,exam_id,student_id,attempt_number,status,score,percentage,grade,total_marks,started_at,submitted_at").eq("institution_id",institution.id).order("started_at",{ascending:false}).limit(100);
+ const {data,error}=await scopeInstitution(sb.from("exam_attempts").select("id,institution_id,exam_id,student_id,attempt_number,status,score,percentage,grade,total_marks,started_at,submitted_at")).order("started_at",{ascending:false}).limit(1000);
  if(error){$("resultsTable").innerHTML='<tr><td colspan="7" class="empty-state">Attempts are not available to this account: '+escapeHTML(error.message)+'</td></tr>';return}
  const rows=data||[];$("statAttempts").textContent=rows.length;
  const examMap=new Map(exams.map(e=>[String(e.id),e.title||e.exam_name||"Examination"]));
@@ -171,7 +177,7 @@ async function loadAttempts(){
  $("resultsTable").innerHTML=rows.map(a=>'<tr><td>'+escapeHTML(String(a.student_id).slice(0,8))+'…</td><td>'+escapeHTML(examMap.get(String(a.exam_id))||"Examination")+'</td><td>'+escapeHTML(a.attempt_number||1)+'</td><td><span class="badge">'+escapeHTML(a.status||"—")+'</span></td><td>'+escapeHTML(a.score??"—")+' / '+escapeHTML(a.total_marks??"—")+'</td><td>'+escapeHTML(a.percentage==null?"—":Number(a.percentage).toFixed(1)+"%")+'</td><td>'+escapeHTML(a.submitted_at||"Not submitted")+'</td></tr>').join("");
 }
 async function loadProctoring(){
- const {data,error}=await sb.from("exam_proctoring_logs").select("id,exam_id,event_type,details,severity,timestamp,student_name,student_reg_number").eq("institution_id",institution.id).order("timestamp",{ascending:false}).limit(50);
+ const {data,error}=await scopeInstitution(sb.from("exam_proctoring_logs").select("id,institution_id,exam_id,event_type,details,severity,timestamp,student_name,student_reg_number")).order("timestamp",{ascending:false}).limit(500);
  if(error){$("proctoringTable").innerHTML='<tr><td colspan="6" class="empty-state">Proctoring events are not available: '+escapeHTML(error.message)+'</td></tr>';return}
  const examMap=new Map(exams.map(e=>[String(e.id),e.title||e.exam_name||"Examination"]));
  if(!data?.length){$("proctoringTable").innerHTML='<tr><td colspan="6" class="empty-state">No proctoring events have been recorded.</td></tr>';return}
@@ -188,7 +194,7 @@ async function loadAttendance(){
 function openExamModal(){ $("examModal").hidden=false;document.body.classList.add("modal-open")}
 function closeExamModal(){ $("examModal").hidden=true;document.body.classList.remove("modal-open")}
 async function saveExam(event){
- event.preventDefault();const total=Number($("totalMarks").value),pass=Number($("passMark").value),duration=Number($("examDuration").value);
+ event.preventDefault();if(!requireInstitution())return;const total=Number($("totalMarks").value),pass=Number($("passMark").value),duration=Number($("examDuration").value);
  if(pass>total){notice("Pass mark cannot exceed total marks.",true);return}
  const date=$("examDate").value,time=$("examTime").value;if(!date||!time){notice("Select the examination date and start time.",true);return}
  const start=date+"T"+time+":00";const endDate=new Date(start);endDate.setMinutes(endDate.getMinutes()+duration);
@@ -206,7 +212,7 @@ async function updateExamDecision(id,action){
  if(action==="approve"){if(current!=="pending"){notice("Only pending assessments can be approved.",true);return}patch={approval_status:"approved",approved_by:authUser.id,approved_at:new Date().toISOString(),rejection_reason:null};}
  else if(action==="reject"){if(current!=="pending"){notice("Only pending assessments can be rejected.",true);return}const reason=window.prompt("Reason for rejecting this assessment:");if(reason===null)return;if(!reason.trim()){notice("A rejection reason is required.",true);return}patch={approval_status:"rejected",rejection_reason:reason.trim(),is_published:false};}
  else if(action==="publish"){if(current!=="approved"){notice("Approve the assessment before publishing it.",true);return}patch={is_published:true,is_active:true,status:"published"};}else return;
- const {error}=await sb.from("exams").update(patch).eq("id",id).eq("institution_id",institution.id);if(error){notice(error.message,true);return}notice(action==="approve"?"Assessment approved.":action==="reject"?"Assessment rejected.":"Assessment published to its assigned students.");await loadExams();
+ const {error}=await scopeInstitution(sb.from("exams").update(patch).eq("id",id));if(error){notice(error.message,true);return}notice(action==="approve"?"Assessment approved.":action==="reject"?"Assessment rejected.":"Assessment published to its assigned students.");await loadExams();
 }
 async function updateQuestionDecision(id,action){
  if(!selectedExamId||!exams.some(e=>String(e.id)===String(selectedExamId))){notice("Select an examination belonging to this institution.",true);return}
@@ -229,26 +235,27 @@ async function saveQuestion(){
 }
 async function loadMarkStudents(){
  const select=$("markStudent");select.innerHTML='<option value="">Loading students…</option>';
- const {data,error}=await sb.from("consolidated_user_profiles_table").select("user_id,full_name,student_id,admission_number,program,block,intake_year,institution_id").eq("institution_id",institution.id).eq("role","student").in("status",["approved","active"]).order("full_name").limit(3000);
+ const {data,error}=await scopeInstitution(sb.from("consolidated_user_profiles_table").select("user_id,full_name,student_id,admission_number,program,block,intake_year,institution_id")).eq("role","student").in("status",["approved","active"]).order("full_name").limit(5000);
  if(error)throw error;markStudents=data||[];
  select.innerHTML='<option value="">Choose a student</option>'+markStudents.map(s=>'<option value="'+escapeHTML(s.user_id)+'">'+escapeHTML(s.full_name)+' · '+escapeHTML(s.admission_number||s.student_id||"No admission number")+'</option>').join("");
 }
 async function loadMarkUnits(){
- const {data,error}=await sb.from("units_catalog").select("id,unit_code,unit_name,program,block,institution_id").eq("institution_id",institution.id).eq("status","active").order("unit_code").limit(1500);
+ const {data,error}=await scopeInstitution(sb.from("units_catalog").select("id,unit_code,unit_name,program,block,institution_id")).eq("status","active").order("unit_code").limit(5000);
  if(error)throw error;markUnits=data||[];
  $("markUnit").innerHTML='<option value="">Choose a unit</option>'+markUnits.map(u=>'<option value="'+u.id+'">'+escapeHTML(u.unit_code+" · "+u.unit_name)+'</option>').join("");
 }
 async function renderStudentMarks(){
  const student=markStudents.find(s=>s.user_id===$("markStudent").value),body=$("marksTable");
  if(!student){body.innerHTML='<tr><td colspan="6" class="empty-state">Select a student to view recorded marks.</td></tr>';return}
- const {data,error}=await sb.from("student_marks").select("id,subject_name,block,final_score,max_score,approval_status,published").eq("institution_id",institution.id).eq("student_id",student.user_id).order("created_at",{ascending:false}).limit(100);
+ const {data,error}=await scopeInstitution(sb.from("student_marks").select("id,institution_id,subject_name,block,final_score,max_score,approval_status,published")).eq("student_id",student.user_id).order("created_at",{ascending:false}).limit(500);
  if(error){body.innerHTML='<tr><td colspan="6" class="empty-state">Marks are not available to this account: '+escapeHTML(error.message)+'</td></tr>';return}
  body.innerHTML=data?.length?data.map(m=>'<tr><td>'+escapeHTML(student.full_name)+'</td><td>'+escapeHTML(m.subject_name)+'</td><td>'+escapeHTML(m.block)+'</td><td>'+escapeHTML(m.final_score??"—")+" / "+escapeHTML(m.max_score??"—")+'</td><td>'+escapeHTML(m.approval_status||"draft")+'</td><td>'+(m.published?'Published':'Not published')+'</td></tr>').join(""):'<tr><td colspan="6" class="empty-state">No marks recorded for this student.</td></tr>';
 }
 async function saveManualMark(){
+ if(!requireInstitution())return;
  const student=markStudents.find(s=>s.user_id===$("markStudent").value),unit=markUnits.find(u=>String(u.id)===$("markUnit").value),score=Number($("markScore").value),maximum=Number($("markMaximum").value),block=$("markBlock").value.trim(),year=String($("markYear").value);
  if(!student||!unit||!block||!year||!Number.isFinite(score)||!Number.isFinite(maximum)||maximum<=0||score<0||score>maximum){$("markFeedback").textContent="Choose a student and unit, then enter a valid block, academic year and score within the maximum marks.";return}
- if(student.institution_id!==institution.id||unit.institution_id!==institution.id){notice("Student and unit must belong to the selected institution.",true);return}
+ if(!institution||student.institution_id!==institution.id||unit.institution_id!==institution.id){notice("Student and unit must belong to the selected institution.",true);return}
  const button=$("saveMarkBtn");button.disabled=true;button.textContent="Saving draft…";
  const payload={institution_id:institution.id,student_id:student.user_id,admission_number:student.admission_number||student.student_id||student.user_id,student_name:student.full_name,program:student.program||unit.program||"Unassigned",block,subject_name:unit.unit_name,assessment_type:$("markAssessment").value,cat1_score:$("markAssessment").value==="cat"?score:null,exam_score:$("markAssessment").value==="exam"||$("markAssessment").value==="practical"?score:null,final_score:score,max_score:maximum,approval_status:"draft",published:false,academic_year:year,graded_by:authUser.id,submitted_by:authUser.id,submitted_by_name:profile.full_name||authUser.email,points:0};
  try{const {error}=await sb.from("student_marks").upsert(payload,{onConflict:"admission_number,subject_name,block,academic_year"});if(error)throw error;$("markFeedback").textContent="Marks saved as a draft. They are not approved or visible to students.";notice("Draft marks saved.");await renderStudentMarks();}
