@@ -2619,6 +2619,11 @@ executeLogin: async function(identifier, password) {
                         path === '/adminexams' ||
                         path === '/adminexams/' ||
                         path === '/adminexams/index.html'
+                    )) ||
+                    (['admin', 'superadmin'].includes(role) && (
+                        path === '/adminexams' ||
+                        path === '/adminexams/' ||
+                        path === '/adminexams/index.html'
                     ))
                 );
                 if (isRoleDashboard || isStudentRoute) redirectFile = target.pathname + target.search + target.hash;
