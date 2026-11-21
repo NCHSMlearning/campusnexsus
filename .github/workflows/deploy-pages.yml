@@ -47,6 +47,66 @@ jobs:
           test -f js/examlogin.js
           test -f css/student-exams.css
           echo "Student examination portal files are present in the Pages artifact."
+      - name: Generate clean URLs and inject global code protection
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          root = Path(".")
+          pages = [p for p in root.rglob("*.html") if ".git" not in p.parts and "node_modules" not in p.parts]
+          created = 0
+          for page in pages:
+              if page.name.lower() in ("index.html", "404.html"):
+                  continue
+              route_dir = page.parent / page.stem
+              route_index = route_dir / "index.html"
+              if route_index.exists():
+                  continue
+              route_dir.mkdir(parents=True, exist_ok=True)
+              html = page.read_text(encoding="utf-8")
+              # Rebase relative HTML resource/navigation attributes for the one-level-deeper clean route.
+              def rebase(match):
+                  attr, quote, value = match.group(1), match.group(2), match.group(3)
+                  v = value.strip()
+                  if (not v or v.startswith(("/", "#", "?", "//")) or
+                      re.match(r"^(?:[a-z][a-z0-9+.-]*:)", v, re.I)):
+                      return match.group(0)
+                  return f'{attr}={quote}../{v}{quote}'
+              html = re.sub(r'\b(src|href|action|poster)=(["\'])(.*?)\2', rebase, html, flags=re.I)
+              route_index.write_text(html, encoding="utf-8")
+              created += 1
+
+          protection = '<script src="/code-protection.js" defer></script>'
+          clean_urls = """<script>
+          (function(){
+            var p=window.location.pathname;
+            if(/\\.html$/i.test(p)){
+              var u=new URL(window.location.href);
+              u.pathname=p.replace(/\\.html$/i,'')+'/';
+              window.location.replace(u.toString());
+            }
+          })();
+          </script>"""
+          injected = 0
+          for page in root.rglob("*.html"):
+              if ".git" in page.parts or "node_modules" in page.parts:
+                  continue
+              html = page.read_text(encoding="utf-8")
+              if 'src="/code-protection.js"' not in html:
+                  if re.search(r"</head>", html, re.I):
+                      html = re.sub(r"</head>", protection + clean_urls + "\\n</head>", html, count=1, flags=re.I)
+                  else:
+                      html = protection + clean_urls + html
+                  page.write_text(html, encoding="utf-8")
+                  injected += 1
+          print(f"Generated {created} clean route folders; injected global protection/clean-URL handling into {injected} HTML pages.")
+          PY
+          test -f code-protection.js
+          test -f platform/institution-admin/index.html
+          test -f exams/index.html
+          grep -q 'src="/code-protection.js"' platform/institution-admin/index.html
+          echo "Clean URLs and global right-click protection are included in the Pages artifact."
       - name: Upload complete static website
         uses: actions/upload-pages-artifact@v3
         with:
