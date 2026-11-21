@@ -87,21 +87,26 @@ async function loadWorkspaceDashboardStats(){
  const visible=keys.filter(k=>state.modules.has(k));
  if(!visible.length){if(stamp)stamp.textContent="No additional modules enabled";return;}
  try{
-  const result=await state.db.from("institution_workspace_records").select("module_key,status").eq("institution_id",state.institutionId).in("module_key",visible).limit(10000);
-  if(result.error)throw result.error;
-  const grouped=new Map(visible.map(k=>[k,{total:0,active:0,done:0,attention:0}]));
-  (result.data||[]).forEach(row=>{
+  const [rowsResult,totalResults]=await Promise.all([
+   state.db.from("institution_workspace_records").select("module_key,status").eq("institution_id",state.institutionId).in("module_key",visible).limit(10000),
+   Promise.all(visible.map(async key=>{
+    const r=await state.db.from("institution_workspace_records").select("id",{count:"exact",head:true}).eq("institution_id",state.institutionId).eq("module_key",key);
+    return {key,count:r.count,error:r.error};
+   }))
+  ]);
+  if(rowsResult.error)throw rowsResult.error;
+  const grouped=new Map(visible.map(k=>[k,{active:0,done:0,attention:0}]));
+  (rowsResult.data||[]).forEach(row=>{
    const item=grouped.get(String(row.module_key||"").toLowerCase());if(!item)return;
-   item.total++;
    const status=String(row.status||"").toLowerCase().replace(/[ -]+/g,"_");
    if(["completed","resolved","closed","approved","issued","delivered"].includes(status))item.done++;
    else if(["rejected","overdue","urgent","high_priority","revision_required","needs_attention","escalated"].includes(status))item.attention++;
    else if(["active","open","in_progress","pending","planned","allocated","under_review","submitted","referred"].includes(status))item.active++;
   });
-  grouped.forEach((v,k)=>{
-   const total=$("wsDash-"+k),detail=$("wsDash-"+k+"-detail");
-   if(total)total.textContent=v.total.toLocaleString("en-KE");
-   if(detail)detail.textContent=v.active+" active · "+v.done+" completed · "+v.attention+" attention";
+  totalResults.forEach(({key,count,error})=>{
+   const total=$("wsDash-"+key),detail=$("wsDash-"+key+"-detail"),status=grouped.get(key);
+   if(total)total.textContent=error?"—":Number(count||0).toLocaleString("en-KE");
+   if(detail)detail.textContent=error?"Statistics unavailable":status.active+" active · "+status.done+" completed · "+status.attention+" attention";
   });
   if(stamp)stamp.textContent="Updated just now · "+visible.length+" enabled modules";
  }catch(error){
