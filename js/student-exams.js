@@ -1,4 +1,4 @@
-(function(){
+ (function(){
 'use strict';
 const state={client:null,user:null,profile:null,exams:[],announcements:[],history:[],dashboardStats:null,marks:[],supportTickets:[],academicSummary:null};
 const $=id=>document.getElementById(id);
