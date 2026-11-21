@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<link rel="stylesheet" href="exam-admin.css?v=20261121-4">
+<link rel="stylesheet" href="exam-admin.css?v=20261121-sidebar-v1">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="exam-admin.js?v=20261121-8" defer></script>
 <script src="/code-protection.js?v=20261121-global-v4" defer></script>
@@ -27,7 +27,7 @@
 </header>
 <div class="page-wrap">
   <section class="welcome-row"><div><div class="eyebrow">INSTITUTION CONTROL CENTRE</div><h1>Examinations</h1><p>Schedule assessments, manage question banks, monitor examination activity and review attempts.</p></div><button class="primary-button" id="newExamBtn"><i class="fa-solid fa-plus"></i> Create examination</button></section>
-  <nav class="module-tabs" aria-label="Examination sections">
+  <nav class="module-tabs" id="examSidebar" aria-label="Examination sections">
     <button class="tab active" data-view="overview"><i class="fa-solid fa-chart-pie"></i> Overview</button>
     <button class="tab" data-view="exams"><i class="fa-regular fa-calendar-check"></i> Examinations</button>
     <button class="tab" data-view="questions"><i class="fa-regular fa-rectangle-list"></i> Question bank</button>
