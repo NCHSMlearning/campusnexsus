@@ -8,6 +8,12 @@
       ["lecturer_portal","Lecturer portal","Staff teaching workspace, classes and assigned units"],
       ["administrator_portal","Institution administrator","Institution academic administration and oversight"]
     ]],
+    ["Assessment management", [
+      ["marks_entry","Marks entry","Institution-level marks register and academic score management"],
+      ["marks_approval","Marks approval","Review and approve marks submitted by lecturers"],
+      ["mark_entry_control","Mark entry control","Institution-level mark-entry windows and controls"],
+      ["published_marks","Published marks","Review results released to institution students"]
+    ]],
     ["Academic management", [
       ["academic_management","Academic management","Programmes, units, blocks, intakes and curriculum"],
       ["admissions","Admissions","Applications, selection, offers and student onboarding"],
