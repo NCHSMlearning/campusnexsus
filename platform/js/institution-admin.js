@@ -62,12 +62,31 @@ function applyIdentity(){
  document.querySelectorAll("[data-module]").forEach(el=>{const key=el.dataset.module;const allowed=key==="administrator_portal"||state.modules.has(key)||(key==="admin_exams"&&state.modules.has("examinations"));el.hidden=!allowed;});
 }
 function activate(view){if(!$( "view-"+view))return;document.querySelectorAll(".ia-view").forEach(x=>x.classList.toggle("active",x.id==="view-"+view));document.querySelectorAll(".ia-nav-item").forEach(x=>x.classList.toggle("active",x.dataset.view===view));$("iaSidebar").classList.remove("open");$("iaScrim").classList.remove("show");}
+const studentCharts={};
+function chartEmpty(id,text){const canvas=$(id);if(!canvas)return;const wrap=canvas.parentElement;wrap.innerHTML='<div class="ia-chart-empty">'+text+'</div>';}
+function drawStudentChart(id,type,labels,data,label){const canvas=$(id);if(!canvas||!window.Chart)return;if(studentCharts[id])studentCharts[id].destroy();const colors=['#2563eb','#0d9488','#f59e0b','#8b5cf6','#ec4899','#0891b2','#65a30d','#ea580c','#64748b','#be123c'];studentCharts[id]=new Chart(canvas,{type,data:{labels,datasets:[{label,data,backgroundColor:type==='line'?'rgba(13,148,136,.14)':colors,borderColor:type==='line'?'#0d9488':colors,borderWidth:type==='line'?3:1,fill:type==='line',tension:.35,pointRadius:type==='line'?3:0,pointHoverRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:type==='doughnut',position:'bottom',labels:{usePointStyle:true,boxWidth:8,padding:14}},tooltip:{enabled:true}},scales:type==='doughnut'?{}:{y:{beginAtZero:true,ticks:{precision:0},grid:{color:'rgba(148,163,184,.16)'}},x:{grid:{display:false}}}}});}
+async function loadStudentAnalytics(){
+ const stamp=$("iaAnalyticsUpdated");
+ try{
+  const result=await state.db.from("students").select("id,course,status,intake_year,created_at").eq("institution_id",state.institutionId).limit(10000);
+  if(result.error)throw result.error;
+  const students=result.data||[];
+  if(!students.length){["iaStudentsByProgramme","iaStudentTrend","iaStudentStatus","iaStudentIntake"].forEach(id=>chartEmpty(id,"No student records are available yet."));if(stamp)stamp.textContent="No student data";return;}
+  const aggregate=(key,fallback)=>{const counts=new Map();students.forEach(s=>{const v=String(s[key]??"").trim()||fallback;counts.set(v,(counts.get(v)||0)+1);});return [...counts.entries()].sort((a,b)=>b[1]-a[1]);};
+  const programmes=aggregate("course","Unassigned programme").slice(0,10);drawStudentChart("iaStudentsByProgramme","doughnut",programmes.map(x=>x[0]),programmes.map(x=>x[1]),"Students");
+  const statuses=aggregate("status","Unspecified status");drawStudentChart("iaStudentStatus","bar",statuses.map(x=>x[0].replace(/_/g," ")),statuses.map(x=>x[1]),"Students");
+  const intakes=aggregate("intake_year","Not recorded").sort((a,b)=>String(a[0]).localeCompare(String(b[0])));drawStudentChart("iaStudentIntake","bar",intakes.map(x=>x[0]),intakes.map(x=>x[1]),"Students");
+  const monthCounts=new Map();const now=new Date();for(let i=11;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth()-i,1);monthCounts.set(d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"),0);}students.forEach(s=>{if(!s.created_at)return;const d=new Date(s.created_at);if(Number.isNaN(d.getTime()))return;const key=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");if(monthCounts.has(key))monthCounts.set(key,monthCounts.get(key)+1);});const trend=[...monthCounts.entries()];drawStudentChart("iaStudentTrend","line",trend.map(x=>new Date(x[0]+"-01T00:00:00").toLocaleDateString("en-KE",{month:"short",year:"2-digit"})),trend.map(x=>x[1]),"New registrations");
+  if(stamp)stamp.textContent=students.length.toLocaleString("en-KE")+" student records · refreshed just now";
+ }catch(error){console.warn("Student analytics unavailable",error);["iaStudentsByProgramme","iaStudentTrend","iaStudentStatus","iaStudentIntake"].forEach(id=>chartEmpty(id,"Student analytics could not be loaded: "+error.message));if(stamp)stamp.textContent="Analytics unavailable";}
+}
 async function loadDashboard(){
  const tasks=[
  ["students",()=>count("students")],["staff",()=>count("lecturers")],["programs",()=>count("programs")],["exams",()=>count("exams")],["attendance",()=>count("attendance")],["results",()=>count("student_marks",{published:true})],
  ["admissions",()=>count("institution_admissions")],["hr",()=>count("institution_hr_records")],["timetable",()=>count("institution_timetable_entries")],["placements",()=>count("institution_clinical_placements")],["research",()=>count("institution_research_projects")],["welfare",()=>count("institution_welfare_cases")]
  ];
  const values=await Promise.all(tasks.map(async([k,fn])=>{try{return [k,await fn()]}catch(e){console.warn("Institution metric unavailable",k,e.message);return [k,null]}}));
+ await loadStudentAnalytics();
  values.forEach(([k,v])=>{const ids={students:"statStudents",staff:"statStaff",programs:"statPrograms",exams:"statExams",attendance:"statAttendance",results:"statResults",admissions:"statAdmissions",hr:"statHR",timetable:"statTimetable",placements:"statPlacements",research:"statResearch",welfare:"statWelfare"};const id=ids[k];if($(id))$(id).textContent=v===null?"—":v.toLocaleString("en-KE");const reportIds={students:"repStudents",staff:"repStaff",programs:"repPrograms",exams:"repExams",attendance:"repAttendance",results:"repResults",admissions:"repAdmissions",hr:"repHR",timetable:"repTimetable",placements:"repPlacements",research:"repResearch",welfare:"repWelfare"};const reportId=reportIds[k];if($(reportId))$(reportId).textContent=v===null?"—":v.toLocaleString("en-KE");});
  $("iaStudentNavCount").textContent=$("statStudents").textContent;
  let exams=[];try{exams=await loadRows("exams","id,title,exam_name,course_name,target_program,program_type,block,exam_date,approval_status,is_published,status,created_at",6);}catch(e){console.warn("Recent examinations unavailable:",e.message);}
