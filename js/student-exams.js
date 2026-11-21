@@ -275,6 +275,6 @@ $('refresh-history').addEventListener('click',()=>loadHistory().catch(e=>notify(
  $('refresh-tickets')?.addEventListener('click',()=>loadSupportTickets().catch(e=>notify(e.message||'Could not load support tickets.')));
 $('exam-support-form').addEventListener('submit',submitSupport);
 $('search-input').addEventListener('input',render);$('status-filter').addEventListener('change',render);
-$('logout-btn').addEventListener('click',async()=>{try{if(state.client)await state.client.auth.signOut({scope:'local'})}finally{location.replace('/examlogin.html')}});
+$('logout-btn').addEventListener('click',async()=>{const btn=$('logout-btn');if(btn)btn.disabled=true;try{if(state.client){const {error}=await state.client.auth.signOut({scope:'local'});if(error)console.warn('Exam portal sign-out warning:',error.message)}}finally{try{localStorage.removeItem('currentUserId');localStorage.removeItem('studentEmail')}catch(_){}location.replace('/examlogin.html')}});
 document.addEventListener('DOMContentLoaded',()=>init().catch(e=>{$('exam-panel').innerHTML='<div class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><p>'+esc(e.message||'Unable to load your examinations.')+'</p><button class="secondary-btn" onclick="location.reload()">Try again</button></div>'}));
 })();
