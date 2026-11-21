@@ -3,7 +3,7 @@
 const SUPABASE_URL="https://lwhtjozfsmbyihenfunw.supabase.co";
 const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx3aHRqb3pmc21ieWloZW5mdW53Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk2NTgxMjcsImV4cCI6MjA3NTIzNDEyN30.7Z8AYvPQwTAEEEhODlW6Xk-IR1FK3Uj5ivZS7P17Wpk";
 const $=id=>document.getElementById(id);
-let sb,authUser,institution=null,profile,exams=[],selectedExamId=null,markStudents=[],markUnits=[],institutionOptions=[],platformSuperadmin=false,allInstitutionsView=false;
+let sb,authUser,institution=null,profile,exams=[],selectedExamId=null,markStudents=[],markUnits=[],institutionOptions=[],institutionNameMap=new Map(),platformSuperadmin=false,allInstitutionsView=false;
 const escapeHTML=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 function notice(message,error=false){const el=$("notice");el.textContent=message;el.className="notice"+(error?" error":"");el.hidden=false;window.setTimeout(()=>{el.hidden=true},6000)}
 function fail(message){$("bootMessage").textContent=message;$("bootMessage").style.color="#b42318";document.querySelector(".loader").style.display="none"}
@@ -47,6 +47,7 @@ async function boot(){
     institutionOptions=result.data||[];
   }
   if(!institutionOptions.length) throw new Error("No institutions are available to this account. Verify the institution assignment and access permissions.");
+  institutionNameMap=new Map(institutionOptions.map(x=>[String(x.id),x.name||"Institution"]));
   const params=new URLSearchParams(window.location.search);
   const requestedId=params.get("institution_id");
   allInstitutionsView=platformSuperadmin && (!requestedId || requestedId==="all");
@@ -119,7 +120,7 @@ async function loadInstitutionBlocks(programCode){
  }finally{select.disabled=false;}
 }
 async function applyInstitutionBranding(){
-  if(allInstitutionsView){$("institutionName").textContent="All institutions";$("institutionLogo").textContent="CN";document.documentElement.style.setProperty("--navy","#0b3553");return;}
+  if(allInstitutionsView){$("institutionName").textContent="All institutions";$("institutionLogo").textContent="CN";document.documentElement.style.setProperty("--navy","#0b3553");$("newExamBtn").disabled=true;$("listCreateBtn").disabled=true;$("quickCreate").disabled=true;$("saveMarkBtn").disabled=true;return;}
   const inst=institution;if(!inst)throw new Error("Select an institution to continue.");
   const {data:mods,error:modError}=await sb.from("institution_modules").select("module_key,enabled").eq("institution_id",inst.id).in("module_key",["admin_exams","examinations","proctoring"]).eq("enabled",true);
   if(modError) throw modError;
@@ -140,7 +141,9 @@ async function loadExams(){
   if(error) throw error;exams=data||[];
   const published=exams.filter(e=>e.is_published||String(e.status||"").toLowerCase()==="published").length;
   document.querySelectorAll(".stat-foot").forEach(el=>{if(allInstitutionsView)el.textContent="Across all institutions";});
-  const welcome=document.querySelector(".welcome-row .eyebrow");if(welcome)welcome.textContent=allInstitutionsView?"CAMPUS NEXUS PLATFORM CONTROL CENTRE":"INSTITUTION CONTROL CENTRE";
+  const welcome=document.querySelector(".welcome-row .eyebrow");if(welcome)welcome.textContent=allInstitutionsView?"CAMPUS NEXUS PLATFORM CONTROL CENTRE":"INSTITUTION CONTROL CENTRE";const desc=$("workspaceDescription");if(desc)desc.textContent=allInstitutionsView?"System-wide examination oversight across every institution on Campus Nexus.":"Manage assessments, question banks, monitoring, attendance and results for "+(institution?.name||"your institution")+".";
+ const examScope=$("examScopeDescription");if(examScope)examScope.textContent=allInstitutionsView?"System-wide examination register across all institutions.":"All examinations belonging to "+(institution?.name||"the signed-in institution")+".";
+
   const pending=exams.filter(e=>String(e.approval_status||"").toLowerCase()==="pending").length;
   $("statTotal").textContent=exams.length;$("statPublished").textContent=published;$("statPending").textContent=pending;
   renderExamRows();renderRecent();populateExamSelect();
