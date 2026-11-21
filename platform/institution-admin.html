@@ -169,7 +169,43 @@
 </section>
 <section class="ia-view" id="view-students"><div class="ia-page-heading"><div><span class="ia-eyebrow">ACADEMIC RECORDS</span><h1>Students</h1><p>Student profiles registered under this institution.</p></div></div><div class="ia-toolbar"><input id="iaStudentSearch" type="search" placeholder="Search name, email or admission number"><span id="iaStudentCount" class="ia-count"></span></div><div class="ia-panel ia-table-panel"><div class="ia-table-scroll"><table><thead><tr><th>Student</th><th>Admission number</th><th>Programme</th><th>Block</th><th>Status</th></tr></thead><tbody id="iaStudents"><tr><td colspan="5" class="ia-empty">Loading…</td></tr></tbody></table></div></div></section>
 <section class="ia-view" id="view-staff"><div class="ia-page-heading"><div><span class="ia-eyebrow">PEOPLE & RESOURCES</span><h1>Staff & lecturers</h1><p>Teaching and institutional staff linked to your institution.</p></div></div><div class="ia-toolbar"><input id="iaStaffSearch" type="search" placeholder="Search staff name, email or department"><span id="iaStaffCount" class="ia-count"></span></div><div class="ia-panel ia-table-panel"><div class="ia-table-scroll"><table><thead><tr><th>Name</th><th>Email</th><th>Department</th><th>Staff ID</th><th>Status</th></tr></thead><tbody id="iaStaff"><tr><td colspan="5" class="ia-empty">Loading…</td></tr></tbody></table></div></div></section>
-<section class="ia-view" id="view-academic"><div class="ia-page-heading"><div><span class="ia-eyebrow">ACADEMIC MANAGEMENT</span><h1>Academic programmes</h1><p>Programmes and units configured for your institution.</p></div></div><div class="ia-panel ia-table-panel"><div class="ia-table-scroll"><table><thead><tr><th>Programme</th><th>Code</th><th>Category</th><th>Duration</th><th>Status</th></tr></thead><tbody id="iaPrograms"><tr><td colspan="5" class="ia-empty">Loading…</td></tr></tbody></table></div></div><div class="ia-panel ia-table-panel ia-spaced"><div class="ia-panel-head"><div><h2>Course and unit catalogue</h2><p>Courses currently associated with your institution</p></div></div><div class="ia-table-scroll"><table><thead><tr><th>Unit / course</th><th>Code</th><th>Programme</th><th>Block</th><th>Status</th></tr></thead><tbody id="iaCourses"><tr><td colspan="5" class="ia-empty">Loading…</td></tr></tbody></table></div></div></section>
+<section class="ia-view" id="view-academic"><div class="ia-page-heading"><div><span class="ia-eyebrow">ACADEMIC MANAGEMENT</span><h1>Academic programmes</h1><p>Programmes and units configured for your institution.</p></div></div><div class="ia-panel ia-table-panel"><div class="ia-table-scroll"><table><thead><tr><th>Programme</th><th>Code</th><th>Category</th><th>Duration</th><th>Status</th></tr></thead><tbody id="iaPrograms"><tr><td colspan="5" class="ia-empty">Loading…</td></tr></tbody></table></div></div><div class="ia-panel ia-table-panel ia-spaced"><div class="ia-panel-head"><div><h2>Course and unit catalogue</h2><p>Courses currently associated with your institution</p></div></div><div class="ia-table-scroll"><table><thead><tr><th>Unit / course</th><th>Code</th><th>Programme</th><th>Block</th><th>Status</th></tr></thead><tbody id="iaCourses"><tr><td colspan="5" class="ia-empty">Loading…</td></tr></tbody></table></div></div><div class="ia-panel ia-spaced" id="iaProgramStructure">
+ <div class="ia-panel-head"><div><h2>Programme structure</h2><p>Configure blocks or terms belonging to each programme. Existing structures are preserved when you add more.</p></div><select id="iaStructureProgram" class="ia-module-search" aria-label="Select programme"><option value="">Select programme</option></select></div>
+ <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;padding:16px">
+  <label>Structure type<select id="iaStructureType"><option value="Block">Blocks</option><option value="Term">Terms</option></select></label>
+  <label>Structure name<input id="iaStructureName" placeholder="e.g. Block 1 / Term 1"></label>
+  <label>Sequence number<input id="iaStructureSequence" type="number" min="1" step="1" placeholder="1"></label>
+  <label>Credit hours<input id="iaStructureCredits" type="number" min="0" step="1" placeholder="Optional"></label>
+  <label>Status<select id="iaStructureStatus"><option value="active">Active</option><option value="inactive">Inactive</option></select></label>
+  <div style="display:flex;align-items:end"><button type="button" class="ia-primary-btn" id="iaAddStructure">Add block / term</button></div>
+ </div>
+ <div class="ia-table-scroll"><table><thead><tr><th>Sequence</th><th>Block / term</th><th>Credits</th><th>Status</th><th>Action</th></tr></thead><tbody id="iaStructureRows"><tr><td colspan="5" class="ia-empty">Select a programme to view its structure.</td></tr></tbody></table></div>
+</div>
+<div class="ia-panel ia-spaced" id="iaProgramIntakes">
+ <div class="ia-panel-head"><div><h2>Programme intakes</h2><p>Create and track admission intakes separately for each programme.</p></div></div>
+ <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;padding:16px">
+  <label>Programme<select id="iaIntakeProgram"><option value="">Select programme</option></select></label>
+  <label>Intake name<input id="iaIntakeName" placeholder="e.g. March Intake" required></label>
+  <label>Year<input id="iaIntakeYear" type="number" min="2000" max="2100" required></label>
+  <label>Month<select id="iaIntakeMonth"><option value="">Select month</option><option>January</option><option>February</option><option>March</option><option>April</option><option>May</option><option>June</option><option>July</option><option>August</option><option>September</option><option>October</option><option>November</option><option>December</option></select></label>
+  <label>Start date<input id="iaIntakeStart" type="date"></label>
+  <label>End date<input id="iaIntakeEnd" type="date"></label>
+  <label>Status<select id="iaIntakeStatus"><option value="upcoming">Upcoming</option><option value="active">Active</option><option value="completed">Completed</option></select></label>
+  <div style="display:flex;align-items:end"><button type="button" class="ia-primary-btn" id="iaSaveIntake">Save intake</button></div>
+ </div>
+ <div class="ia-table-scroll"><table><thead><tr><th>Programme</th><th>Intake</th><th>Year</th><th>Month</th><th>Start</th><th>End</th><th>Status</th><th>Action</th></tr></thead><tbody id="iaIntakeRows"><tr><td colspan="8" class="ia-empty">Select a programme to view its intakes.</td></tr></tbody></table></div>
+</div>
+<div class="ia-panel ia-spaced" id="iaProgrammeUnitMapping">
+ <div class="ia-panel-head"><div><h2>Programme unit mapping</h2><p>Assign institution courses to a programme and its block or term.</p></div></div>
+ <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;padding:16px">
+  <label>Programme<select id="iaMappingProgram"><option value="">Select programme</option></select></label>
+  <label>Course / unit<select id="iaMappingCourse"><option value="">Select course</option></select></label>
+  <label>Block / term<select id="iaMappingBlock"><option value="">Select block / term</option></select></label>
+  <label>Unit type<select id="iaMappingCore"><option value="true">Core</option><option value="false">Elective</option></select></label>
+  <div style="display:flex;align-items:end"><button type="button" class="ia-primary-btn" id="iaSaveMapping">Map unit</button></div>
+ </div>
+ <div class="ia-table-scroll"><table><thead><tr><th>Unit / course</th><th>Code</th><th>Block / term</th><th>Type</th><th>Action</th></tr></thead><tbody id="iaMappingRows"><tr><td colspan="5" class="ia-empty">Select a programme to view mapped units.</td></tr></tbody></table></div>
+</div></section>
 <section class="ia-view" id="view-exams"><div class="ia-page-heading"><div><span class="ia-eyebrow">ASSESSMENT MANAGEMENT</span><h1>Examinations</h1><p>Examination schedule and approval status for your institution.</p></div><a class="ia-primary-btn" href="/exams"><i class="fa-solid fa-arrow-up-right-from-square"></i> Open examination centre</a></div><div class="ia-panel ia-table-panel"><div class="ia-table-scroll"><table><thead><tr><th>Examination</th><th>Programme</th><th>Block</th><th>Date</th><th>Approval</th><th>Publication</th></tr></thead><tbody id="iaExams"><tr><td colspan="6" class="ia-empty">Loading…</td></tr></tbody></table></div></div></section>
 <section class="ia-view" id="view-marks-entry">
  <div class="ia-page-heading"><div><span class="ia-eyebrow">ASSESSMENT MANAGEMENT</span><h1>Marks entry</h1><p>Review and maintain assessment records belonging to this institution.</p></div><button class="ia-secondary-btn" data-marks-refresh="entry"><i class="fa-solid fa-rotate"></i> Refresh</button></div>
