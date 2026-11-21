@@ -8638,6 +8638,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             institution_id: institutionAdmin ? memberships[0].institution_id : (profile.institution_id || null)
         };
         localStorage.setItem('userProfile', JSON.stringify(dashboardSession));
+        localStorage.setItem('adminSession', JSON.stringify(dashboardSession));
         localStorage.setItem('currentUserId', authUser.id);
     } catch (authBootstrapError) {
         console.error('Could not restore examination administrator session:', authBootstrapError);
