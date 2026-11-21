@@ -326,8 +326,8 @@ function bind(){
  $("newExamBtn").addEventListener("click",openExamModal);$("quickCreate").addEventListener("click",openExamModal);$("listCreateBtn").addEventListener("click",openExamModal);
  document.querySelectorAll("[data-close-modal]").forEach(b=>b.addEventListener("click",closeExamModal));
  $("examForm").addEventListener("submit",saveExam);$("refreshBtn").addEventListener("click",()=>refreshAll().catch(e=>notice(e.message,true)));
- $("examsTable").addEventListener("click",e=>{const b=e.target.closest("[data-exam-action]");if(b)updateExamDecision(b.dataset.id,b.dataset.examAction).catch(err=>notice(err.message,true))});
- $("questionsTable").addEventListener("click",e=>{const b=e.target.closest("[data-question-action]");if(b)updateQuestionDecision(b.dataset.id,b.dataset.questionAction).catch(err=>notice(err.message,true))});
+ ["examsTable","approvalQueueTable"].forEach(id=>$(id).addEventListener("click",e=>{const b=e.target.closest("[data-exam-action]");if(b)updateExamDecision(b.dataset.id,b.dataset.examAction).catch(err=>notice(err.message,true))}));
+ ["questionsTable","lecturerQuestionsTable"].forEach(id=>$(id).addEventListener("click",e=>{const b=e.target.closest("[data-question-action]");if(b)updateQuestionDecision(b.dataset.id,b.dataset.questionAction).catch(err=>notice(err.message,true))}));
  $("questionExam").addEventListener("change",loadQuestions);$("addQuestionBtn").addEventListener("click",()=>{$("questionComposer").hidden=false});
  $("cancelQuestion").addEventListener("click",()=>{$("questionComposer").hidden=true});$("saveQuestion").addEventListener("click",saveQuestion);
  $("refreshProctoring").addEventListener("click",loadProctoring);
