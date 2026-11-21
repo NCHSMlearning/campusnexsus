@@ -102,10 +102,50 @@ async function loadLearning(){const data=await loadRows("resources","id,title,fi
 async function loadAttendance(){const d=await loadRows("attendance","id,student_id,date,timestamp,course_or_rotation,status,marked_by",200);const ids=[...new Set(d.map(x=>x.student_id).filter(Boolean))];let names={};if(ids.length){const s=await state.db.from("students").select("id,full_name,admission_number").eq("institution_id",state.institutionId).in("id",ids);if(!s.error)(s.data||[]).forEach(x=>names[x.id]=x.full_name||x.admission_number||x.id);}rows("iaAttendance",d,5,(tr,x)=>{cell(tr,x.date||x.timestamp);cell(tr,names[x.student_id]||x.student_id);cell(tr,x.course_or_rotation);cell(tr,statusLabel(x.status));cell(tr,x.marked_by);});}
 async function loadView(view){try{if(view==="students"&&!state.rows.students)await loadStudents();if(view==="staff"&&!state.rows.staff)await loadStaff();if(view==="academic")await loadAcademic();if(view==="exams")await loadExams();if(view==="attendance")await loadAttendance();if(view==="learning")await loadLearning();}catch(e){message("Unable to load "+view+": "+e.message,true);}}
 function bind(){
- const menuSearch=$("iaSidebarSearch"),sidebar=$("iaSidebar"),scrim=$("iaScrim"),menuToggle=$("iaMenuToggle");
+ const menuSearch=$("iaSidebarSearch"),sidebar=$("iaSidebar"),scrim=$("iaScrim"),menuToggle=$("iaMenuToggle"),nav=$("iaNav");
  const closeMenu=()=>{sidebar?.classList.remove("open");scrim?.classList.remove("show");menuToggle?.setAttribute("aria-expanded","false");};
- const restoreMenu=()=>{if(menuSearch)menuSearch.value="";document.querySelectorAll("#iaNav [data-view],#iaNav .ia-nav-label").forEach(item=>item.hidden=false);};
- if(menuSearch)menuSearch.addEventListener("input",()=>{const q=menuSearch.value.trim().toLowerCase();document.querySelectorAll("#iaNav [data-view]").forEach(item=>{item.hidden=!!q&&!item.textContent.toLowerCase().includes(q);});document.querySelectorAll("#iaNav .ia-nav-label").forEach(label=>{let next=label.nextElementSibling,visible=false;while(next&&!next.classList.contains("ia-nav-label")){if(next.matches("[data-view]")&&!next.hidden)visible=true;next=next.nextElementSibling;}label.hidden=!!q&&!visible;});});
+ let empty=$("iaSearchEmpty");
+ if(!empty&&nav){empty=document.createElement("div");empty.id="iaSearchEmpty";empty.className="ia-search-empty";empty.setAttribute("role","status");empty.setAttribute("aria-live","polite");empty.textContent="No matching menu items. Try another keyword.";nav.append(empty);}
+ const searchable=[...document.querySelectorAll("#iaNav [data-view]")];
+ const aliases={
+  overview:"home dashboard summary",students:"learners enrolment admissions register",
+  staff:"lecturers teachers employees personnel",academic:"program courses curriculum units",
+  exams:"exam examination assessment test paper","marks-entry":"marks grades scores results capture",
+  "marks-approval":"approve marks verify grades","entry-control":"lock unlock marks entry",
+  "published-marks":"released marks results grades",attendance:"register presence absent sessions",
+  learning:"lms e-learning lessons resources",reports:"analytics statistics performance",
+  admissions:"applicants applications intake",hr:"human resources payroll staff",
+  timetable:"schedule calendar classes",placements:"clinical hospital attachment rotation",
+  research:"projects proposals studies",welfare:"student support counselling discipline",
+  settings:"configuration institution profile",proctoring:"exam monitoring invigilation integrity",
+  "transcripts-certificates":"transcript certificate graduation","quality-assurance":"qa compliance audit standards",
+  library:"books borrowing catalogue","hostel-management":"hostel accommodation residence",
+  "transport-management":"bus transport","career-services":"careers alumni jobs",
+  events:"calendar activities",inventory:"procurement stock supplies",
+  "asset-management":"equipment assets","document-management":"records files documents",
+  communication:"announcements messages notifications",helpdesk:"support tickets assistance"
+ };
+ const entitlementHidden=new WeakMap();
+ searchable.forEach(item=>entitlementHidden.set(item,!!item.hidden));
+ const runMenuSearch=()=>{
+  const q=(menuSearch?.value||"").trim().toLocaleLowerCase(),terms=q.split(/\s+/).filter(Boolean);
+  let count=0;
+  searchable.forEach(item=>{
+   const key=item.dataset.view||"",module=item.dataset.module||"";
+   const haystack=(item.textContent+" "+key.replace(/-/g," ")+" "+module.replace(/_/g," ")+" "+(aliases[key]||"")).toLocaleLowerCase();
+   const match=!terms.length||terms.every(term=>haystack.includes(term));
+   item.hidden=!!entitlementHidden.get(item)||!match;
+   if(!item.hidden)count++;
+  });
+  document.querySelectorAll("#iaNav .ia-nav-label").forEach(label=>{
+   let next=label.nextElementSibling,visible=false;
+   while(next&&!next.classList.contains("ia-nav-label")){if(next.matches("[data-view]")&&!next.hidden){visible=true;break;}next=next.nextElementSibling;}
+   label.hidden=!!q&&!visible;
+  });
+  if(empty){empty.classList.toggle("show",!!q&&count===0);empty.hidden=!(!!q&&count===0);}
+  if(menuSearch)menuSearch.setAttribute("aria-label",count+" menu items match");
+ };
+ menuSearch?.addEventListener("input",runMenuSearch);
  document.querySelectorAll("[data-view]").forEach(el=>el.addEventListener("click",()=>{activate(el.dataset.view);closeMenu();loadView(el.dataset.view);}));
  document.querySelectorAll("[data-open-view]").forEach(el=>el.addEventListener("click",()=>{const v=el.dataset.openView;activate(v);closeMenu();loadView(v);}));
  $("iaStudentSearch")?.addEventListener("input",renderStudents);$("iaStaffSearch")?.addEventListener("input",renderStaff);
@@ -114,7 +154,7 @@ function bind(){
  document.addEventListener("keydown",event=>{
   if((event.key==="k"||event.key==="K")&&(event.metaKey||event.ctrlKey)){event.preventDefault();menuSearch?.focus();return;}
   if(event.key==="Escape"){
-   if(document.activeElement===menuSearch&&menuSearch.value){restoreMenu();return;}
+   if(document.activeElement===menuSearch&&menuSearch.value){menuSearch.value="";runMenuSearch();menuSearch.blur();return;}
    closeMenu();
   }
  });
