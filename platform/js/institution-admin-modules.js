@@ -41,7 +41,7 @@ function assessmentEmpty(body,cols,label){body.replaceChildren();const tr=docume
 async function loadAssessmentRows(){
  const {data,error}=await api.db.from("student_marks").select(assessmentSelect).eq("institution_id",api.institutionId).order("created_at",{ascending:false}).limit(2000);
  if(error)throw error;assessmentState.rows=data||[];
- const rows=assessmentState.rows,pending=rows.filter(x=>!x.published&&String(x.approval_status||"pending").toLowerCase()!=="approved"),approved=rows.filter(x=>String(x.approval_status||"").toLowerCase()==="approved"),published=rows.filter(x=>x.published===true);
+ const rows=assessmentState.rows,pending=rows.filter(x=>!x.published&&!["approved","rejected"].includes(String(x.approval_status||"pending").toLowerCase())),approved=rows.filter(x=>String(x.approval_status||"").toLowerCase()==="approved"),published=rows.filter(x=>x.published===true);
  [["iaMECount",rows.length],["iaMEPending",pending.length],["iaMEApproved",approved.length],["iaMEPublished",published.length],["iaMAPending",pending.length],["iaMAApproved",approved.length],["iaMARejected",rows.filter(x=>String(x.approval_status||"").toLowerCase()==="rejected").length],["iaMAUnits",new Set(pending.map(x=>x.subject_name).filter(Boolean)).size],["iaPMCount",published.length],["iaPMStudents",new Set(published.map(x=>x.admission_number).filter(Boolean)).size],["iaPMUnits",new Set(published.map(x=>x.subject_name).filter(Boolean)).size]].forEach(([id,n])=>{const el=$(id);if(el)el.textContent=Number(n).toLocaleString("en-KE");});
  renderAssessmentRows("entry");renderAssessmentRows("approval");renderAssessmentRows("ready");renderAssessmentRows("published");
 }
