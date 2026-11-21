@@ -4,6 +4,10 @@
   "trailingSlash": false,
   "rewrites": [
     {
+      "source": "/institution-admin",
+      "destination": "/platform/institution-admin"
+    },
+    {
       "source": "/student",
       "destination": "/platform/student"
     },
