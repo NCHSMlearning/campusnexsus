@@ -81,7 +81,7 @@ async function refreshAll(){
   await Promise.all([loadAttempts(),loadProctoring(),loadAttendance()]);
 }
 async function loadExams(){
-  const {data,error}=await sb.from("exams").select("id,title,exam_name,exam_type,program_type,target_program,block,block_term,exam_date,start_time,duration_minutes,total_marks,pass_mark,status,approval_status,is_published,created_at").eq("institution_id",institution.id).order("created_at",{ascending:false}).limit(250);
+  const {data,error}=await sb.from("exams").select("id,title,exam_name,exam_type,program_type,target_program,block,block_term,intake_year,intake_month,course_id,course_code,exam_date,start_time,exam_start_time,duration_minutes,total_marks,marks_out_of,pass_mark,status,approval_status,is_published,is_active,created_at,created_by,approved_by,approved_at,rejection_reason").eq("institution_id",institution.id).order("created_at",{ascending:false}).limit(250);
   if(error) throw error;exams=data||[];
   const published=exams.filter(e=>e.is_published||String(e.status||"").toLowerCase()==="published").length;
   const pending=exams.filter(e=>String(e.approval_status||"").toLowerCase()==="pending").length;
@@ -92,7 +92,7 @@ function approvalBadge(e){const v=String(e.approval_status||"draft").toLowerCase
 function publicationBadge(e){return e.is_published?'<span class="badge green">Published</span>':'<span class="badge">Not published</span>'}
 function renderExamRows(){
  const body=$("examsTable");if(!exams.length){body.innerHTML='<tr><td colspan="7" class="empty-state">No examinations have been created for this institution yet.</td></tr>';return}
- body.innerHTML=exams.map(e=>'<tr><td><strong>'+escapeHTML(e.title||e.exam_name||"Untitled examination")+'</strong><div class="muted-cell">'+escapeHTML(e.exam_type||"Assessment")+'</div></td><td>'+escapeHTML(e.program_type||e.target_program||"—")+'</td><td>'+escapeHTML(e.block_term||e.block||"—")+'</td><td>'+escapeHTML(e.exam_date||"Not scheduled")+'</td><td>'+escapeHTML(e.duration_minutes||"—")+' min</td><td>'+approvalBadge(e)+'</td><td>'+publicationBadge(e)+'</td></tr>').join("");
+ body.innerHTML=exams.map(e=>{const id=escapeHTML(e.id),approval=String(e.approval_status||"draft").toLowerCase();let actions="";if(approval==="pending")actions='<button class="secondary-button small" data-exam-action="approve" data-id="'+id+'">Approve</button> <button class="secondary-button small" data-exam-action="reject" data-id="'+id+'">Reject</button>';else if(approval==="approved"&&!e.is_published)actions='<button class="primary-button small" data-exam-action="publish" data-id="'+id+'">Publish</button>';else if(e.is_published)actions='<span class="muted-cell">Live</span>';return '<tr><td><strong>'+escapeHTML(e.title||e.exam_name||"Untitled examination")+'</strong><div class="muted-cell">'+escapeHTML(e.exam_type||"Assessment")+' · '+escapeHTML(e.course_code||"No unit linked")+'</div></td><td>'+escapeHTML(e.program_type||e.target_program||"—")+'</td><td>'+escapeHTML(e.block_term||e.block||"—")+'</td><td>'+escapeHTML(e.exam_date||"Not scheduled")+'</td><td>'+escapeHTML(e.duration_minutes||"—")+' min</td><td>'+approvalBadge(e)+(e.rejection_reason?'<div class="muted-cell">'+escapeHTML(e.rejection_reason)+'</div>':"")+'</td><td>'+publicationBadge(e)+'</td><td>'+actions+'</td></tr>'}).join("");
 }
 function renderRecent(){
  const target=$("recentExams");if(!exams.length){target.innerHTML='<div class="empty-state">No examinations yet. Create the first examination to get started.</div>';return}
@@ -106,10 +106,10 @@ function populateExamSelect(){
 async function loadQuestions(){
  selectedExamId=$("questionExam").value||null;$("addQuestionBtn").disabled=!selectedExamId;
  const body=$("questionsTable");if(!selectedExamId){body.innerHTML='<tr><td colspan="6" class="empty-state">Choose an examination to view its questions.</td></tr>';return}
- const {data,error}=await sb.from("exam_questions").select("id,question_number,question_text,question_type,marks,correct_answer,status").eq("exam_id",Number(selectedExamId)).order("question_number");
- if(error){body.innerHTML='<tr><td colspan="6" class="empty-state">Unable to load questions: '+escapeHTML(error.message)+'</td></tr>';return}
- if(!data?.length){body.innerHTML='<tr><td colspan="6" class="empty-state">No questions have been added to this examination.</td></tr>';return}
- body.innerHTML=data.map(q=>'<tr><td>'+escapeHTML(q.question_number||"—")+'</td><td><strong>'+escapeHTML(q.question_text)+'</strong></td><td>'+escapeHTML(q.question_type||"mcq")+'</td><td>'+escapeHTML(q.marks||0)+'</td><td>'+escapeHTML(q.correct_answer||"—")+'</td><td><span class="badge">'+escapeHTML(q.status||"active")+'</span></td></tr>').join("");
+ if(!exams.some(e=>String(e.id)===String(selectedExamId))){body.innerHTML='<tr><td colspan="7" class="empty-state">This examination is outside your institution scope.</td></tr>';return}const {data,error}=await sb.from("exam_questions").select("id,question_number,question_text,question_type,marks,correct_answer,status").eq("exam_id",Number(selectedExamId)).order("question_number");
+ if(error){body.innerHTML='<tr><td colspan="7" class="empty-state">Unable to load questions: '+escapeHTML(error.message)+'</td></tr>';return}
+ if(!data?.length){body.innerHTML='<tr><td colspan="7" class="empty-state">No questions have been added to this examination.</td></tr>';return}
+ body.innerHTML=data.map(q=>{const pending=String(q.status||"").toLowerCase()==="pending";const actions=pending?'<button class="secondary-button small" data-question-action="approve" data-id="'+escapeHTML(q.id)+'">Approve</button> <button class="secondary-button small" data-question-action="reject" data-id="'+escapeHTML(q.id)+'">Reject</button>':'<span class="muted-cell">Reviewed</span>';return '<tr><td>'+escapeHTML(q.question_number||"—")+'</td><td><strong>'+escapeHTML(q.question_text)+'</strong></td><td>'+escapeHTML(q.question_type||"mcq")+'</td><td>'+escapeHTML(q.marks||0)+'</td><td>'+escapeHTML(q.correct_answer||"—") +'</td><td><span class="badge">'+escapeHTML(q.status||"active")+'</span></td><td>'+actions+'</td></tr>'}).join("");
 }
 async function loadAttempts(){
  const {data,error}=await sb.from("exam_attempts").select("id,exam_id,student_id,attempt_number,status,score,percentage,grade,total_marks,started_at,submitted_at").eq("institution_id",institution.id).order("started_at",{ascending:false}).limit(100);
@@ -143,11 +143,25 @@ async function saveExam(event){
  const start=date+"T"+time+":00";const endDate=new Date(start);endDate.setMinutes(endDate.getMinutes()+duration);
  const pad=n=>String(n).padStart(2,"0");const end=endDate.getFullYear()+"-"+pad(endDate.getMonth()+1)+"-"+pad(endDate.getDate())+"T"+pad(endDate.getHours())+":"+pad(endDate.getMinutes())+":00";
  const title=$("examTitle").value.trim();
- const payload={institution_id:institution.id,title,exam_name:title,exam_type:$("examType").value,program_type:$("examProgram").value.trim(),target_program:$("examProgram").value.trim(),block:$("examBlock").value.trim()||null,block_term:$("examBlock").value.trim()||null,course_code:$("courseCode").value.trim()||null,exam_date:date,exam_start_time:time,start_time:start,end_time:end,duration_minutes:duration,total_marks:total,marks_out_of:total,pass_mark:pass,instructions:$("examInstructions").value.trim()||null,status:"draft",approval_status:"pending",is_published:false,is_active:true,created_by:authUser.id,created_by_actor:authUser.id};
+ const payload={institution_id:institution.id,title,exam_name:title,exam_type:$("examType").value,exam_basis:"ordinary",program_type:$("examProgram").value.trim(),target_program:$("examProgram").value.trim(),intake_year:Number($("examIntake").value)||null,intake_month:$("examIntakeMonth").value||null,block:$("examBlock").value.trim()||null,block_term:$("examBlock").value.trim()||null,course_code:$("courseCode").value.trim()||null,exam_date:date,exam_start_time:time,start_time:start,end_time:end,duration_minutes:duration,total_marks:total,marks_out_of:total,pass_mark:pass,instructions:$("examInstructions").value.trim()||null,status:"draft",approval_status:"pending",is_published:false,is_active:true,created_by:authUser.id,created_by_actor:authUser.id};
  const button=$("saveExamBtn");button.disabled=true;button.textContent="Saving…";
  try{const {data,error}=await sb.from("exams").insert(payload).select("id").single();if(error)throw error;closeExamModal();$("examForm").reset();$("examDuration").value=60;$("totalMarks").value=100;$("passMark").value=60;notice("Examination saved as a draft and submitted for approval. Reference #"+data.id);await loadExams();switchView("exams")}
  catch(error){notice(error.message||"Unable to save examination.",true)}
  finally{button.disabled=false;button.textContent="Save draft for approval"}
+}
+async function updateExamDecision(id,action){
+ const exam=exams.find(e=>String(e.id)===String(id));if(!exam){notice("Examination not found in this institution.",true);return}
+ const current=String(exam.approval_status||"").toLowerCase();let patch={};
+ if(action==="approve"){if(current!=="pending"){notice("Only pending assessments can be approved.",true);return}patch={approval_status:"approved",approved_by:authUser.id,approved_at:new Date().toISOString(),rejection_reason:null};}
+ else if(action==="reject"){if(current!=="pending"){notice("Only pending assessments can be rejected.",true);return}const reason=window.prompt("Reason for rejecting this assessment:");if(reason===null)return;if(!reason.trim()){notice("A rejection reason is required.",true);return}patch={approval_status:"rejected",rejection_reason:reason.trim(),is_published:false};}
+ else if(action==="publish"){if(current!=="approved"){notice("Approve the assessment before publishing it.",true);return}patch={is_published:true,is_active:true,status:"published"};}else return;
+ const {error}=await sb.from("exams").update(patch).eq("id",id).eq("institution_id",institution.id);if(error){notice(error.message,true);return}notice(action==="approve"?"Assessment approved.":action==="reject"?"Assessment rejected.":"Assessment published to its assigned students.");await loadExams();
+}
+async function updateQuestionDecision(id,action){
+ if(!selectedExamId||!exams.some(e=>String(e.id)===String(selectedExamId))){notice("Select an examination belonging to this institution.",true);return}
+ const status=action==="approve"?"approved":action==="reject"?"rejected":null;if(!status)return;
+ const patch={status,updated_at:new Date().toISOString()};if(action==="reject"){const reason=window.prompt("Reason for rejecting this question:");if(reason===null)return;if(!reason.trim()){notice("A rejection reason is required.",true);return}patch.rejection_reason=reason.trim();}
+ const {error}=await sb.from("exam_questions").update(patch).eq("id",id).eq("exam_id",Number(selectedExamId));if(error){notice(error.message,true);return}notice("Question "+status+".");await loadQuestions();
 }
 async function saveQuestion(){
  const question=$("questionText").value.trim(),examId=Number(selectedExamId);
@@ -200,6 +214,8 @@ function bind(){
  $("newExamBtn").addEventListener("click",openExamModal);$("quickCreate").addEventListener("click",openExamModal);$("listCreateBtn").addEventListener("click",openExamModal);
  document.querySelectorAll("[data-close-modal]").forEach(b=>b.addEventListener("click",closeExamModal));
  $("examForm").addEventListener("submit",saveExam);$("refreshBtn").addEventListener("click",()=>refreshAll().catch(e=>notice(e.message,true)));
+ $("examsTable").addEventListener("click",e=>{const b=e.target.closest("[data-exam-action]");if(b)updateExamDecision(b.dataset.id,b.dataset.examAction).catch(err=>notice(err.message,true))});
+ $("questionsTable").addEventListener("click",e=>{const b=e.target.closest("[data-question-action]");if(b)updateQuestionDecision(b.dataset.id,b.dataset.questionAction).catch(err=>notice(err.message,true))});
  $("questionExam").addEventListener("change",loadQuestions);$("addQuestionBtn").addEventListener("click",()=>{$("questionComposer").hidden=false});
  $("cancelQuestion").addEventListener("click",()=>{$("questionComposer").hidden=true});$("saveQuestion").addEventListener("click",saveQuestion);
  $("refreshProctoring").addEventListener("click",loadProctoring);
