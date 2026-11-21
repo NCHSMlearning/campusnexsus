@@ -91,7 +91,7 @@ async function loadExams(){
 function approvalBadge(e){const v=String(e.approval_status||"draft").toLowerCase();return '<span class="badge '+(v==="approved"?"green":v==="pending"?"amber":v==="rejected"?"red":"")+'">'+escapeHTML(v)+'</span>'}
 function publicationBadge(e){return e.is_published?'<span class="badge green">Published</span>':'<span class="badge">Not published</span>'}
 function renderExamRows(){
- const body=$("examsTable");if(!exams.length){body.innerHTML='<tr><td colspan="7" class="empty-state">No examinations have been created for this institution yet.</td></tr>';return}
+ const body=$("examsTable");if(!exams.length){body.innerHTML='<tr><td colspan="8" class="empty-state">No examinations have been created for this institution yet.</td></tr>';return}
  body.innerHTML=exams.map(e=>{const id=escapeHTML(e.id),approval=String(e.approval_status||"draft").toLowerCase();let actions="";if(approval==="pending")actions='<button class="secondary-button small" data-exam-action="approve" data-id="'+id+'">Approve</button> <button class="secondary-button small" data-exam-action="reject" data-id="'+id+'">Reject</button>';else if(approval==="approved"&&!e.is_published)actions='<button class="primary-button small" data-exam-action="publish" data-id="'+id+'">Publish</button>';else if(e.is_published)actions='<span class="muted-cell">Live</span>';return '<tr><td><strong>'+escapeHTML(e.title||e.exam_name||"Untitled examination")+'</strong><div class="muted-cell">'+escapeHTML(e.exam_type||"Assessment")+' · '+escapeHTML(e.course_code||"No unit linked")+'</div></td><td>'+escapeHTML(e.program_type||e.target_program||"—")+'</td><td>'+escapeHTML(e.block_term||e.block||"—")+'</td><td>'+escapeHTML(e.exam_date||"Not scheduled")+'</td><td>'+escapeHTML(e.duration_minutes||"—")+' min</td><td>'+approvalBadge(e)+(e.rejection_reason?'<div class="muted-cell">'+escapeHTML(e.rejection_reason)+'</div>':"")+'</td><td>'+publicationBadge(e)+'</td><td>'+actions+'</td></tr>'}).join("");
 }
 function renderRecent(){
@@ -105,7 +105,7 @@ function populateExamSelect(){
 }
 async function loadQuestions(){
  selectedExamId=$("questionExam").value||null;$("addQuestionBtn").disabled=!selectedExamId;
- const body=$("questionsTable");if(!selectedExamId){body.innerHTML='<tr><td colspan="6" class="empty-state">Choose an examination to view its questions.</td></tr>';return}
+ const body=$("questionsTable");if(!selectedExamId){body.innerHTML='<tr><td colspan="7" class="empty-state">Choose an examination to view its questions.</td></tr>';return}
  if(!exams.some(e=>String(e.id)===String(selectedExamId))){body.innerHTML='<tr><td colspan="7" class="empty-state">This examination is outside your institution scope.</td></tr>';return}const {data,error}=await sb.from("exam_questions").select("id,question_number,question_text,question_type,marks,correct_answer,status").eq("exam_id",Number(selectedExamId)).order("question_number");
  if(error){body.innerHTML='<tr><td colspan="7" class="empty-state">Unable to load questions: '+escapeHTML(error.message)+'</td></tr>';return}
  if(!data?.length){body.innerHTML='<tr><td colspan="7" class="empty-state">No questions have been added to this examination.</td></tr>';return}
