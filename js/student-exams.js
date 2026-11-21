@@ -95,10 +95,12 @@ async function loadAcademicSummary(){
  const unitsResult=await state.client.from('units_catalog').select('unit_name,unit_code,credits,program,institution_id')
   .eq('institution_id',state.profile.institution_id);
  const units=unitsResult.error?[]:(unitsResult.data||[]);
+ let catalogCreditMatches=0;
  const creditFor=m=>{
   const key=norm(m.subject_name);
   const match=units.find(u=>norm(u.unit_name)===key||norm(u.unit_code)===key);
-  return Math.max(1,Number(match?.credits)||1);
+  if(match&&Number(match.credits)>0){catalogCreditMatches++;return Number(match.credits);}
+  return 1;
  };
  const rows=state.marks.filter(m=>m.points!==null&&m.points!==undefined&&m.final_score!==null&&m.final_score!==undefined&&Number.isFinite(Number(m.points))&&Number.isFinite(Number(m.final_score)));
  const enriched=rows.map(m=>({mark:m,credits:creditFor(m),score:Number(m.final_score),points:Number(m.points)}));
@@ -110,7 +112,7 @@ async function loadAcademicSummary(){
  set('gpa-units',String(enriched.length));
  set('gpa-average',enriched.length?(scoreTotal/enriched.length).toFixed(1)+'%':'—');
  set('gpa-points',credits?weighted.toFixed(2):'—');
- set('gpa-credit-note',enriched.length?credits+' credit units counted':'No published results available yet');
+ set('gpa-credit-note',enriched.length?(catalogCreditMatches===enriched.length?credits+' catalog credit units counted':'Unit-weighted · '+catalogCreditMatches+' of '+enriched.length+' units matched to credit values'):'No published results available yet');
  if(!enriched.length){if(panel)panel.innerHTML='<p class="chart-empty">Your cumulative GPA will appear here when your results are published and approved.</p>';return;}
  const groups=new Map();
  enriched.forEach(x=>{const label=String(val(x.mark.block,x.mark.academic_year,'Unspecified block'));const g=groups.get(label)||{weighted:0,credits:0};g.weighted+=x.points*x.credits;g.credits+=x.credits;groups.set(label,g);});
