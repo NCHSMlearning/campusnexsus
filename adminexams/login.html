@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta http-equiv="refresh" content="0;url=/platform/login.html?redirect=%2Fadminexams%2F">
+  <title>Campus Nexus Examination Login</title>
+  <script>
+    (function () {
+      var target = new URL('/platform/login.html', window.location.origin);
+      target.searchParams.set('redirect', '/adminexams/');
+      window.location.replace(target.toString());
+    })();
+  </script>
+</head>
+<body>
+  <p>Redirecting to the secure Campus Nexus login…</p>
+  <p><a href="/platform/login.html?redirect=%2Fadminexams%2F">Continue to login</a></p>
+</body>
+</html>
