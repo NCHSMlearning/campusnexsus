@@ -319,7 +319,21 @@
 
   function setupInstitutionAdminFields() {
     const email = $("cnInstitutionAdmin");
-    if (!email || $("cnInstitutionAdminName")) return;
+    if (!email) return;
+    if ($("cnInstitutionAdminName")) {
+      email.required = true;
+      document.querySelectorAll("[data-toggle-password]").forEach(button => {
+        if (button.dataset.bound) return;
+        button.dataset.bound = "1";
+        button.addEventListener("click", () => {
+          const input = $(button.dataset.togglePassword);
+          if (!input) return;
+          input.type = input.type === "password" ? "text" : "password";
+          button.textContent = input.type === "password" ? "Show" : "Hide";
+        });
+      });
+      return;
+    }
     const host = document.createElement("div");
     host.id = "cnInstitutionAdminProvisioning";
     host.className = "cn-admin-provisioning";
