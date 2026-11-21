@@ -2586,7 +2586,7 @@ executeLogin: async function(identifier, password) {
         const roleRedirects = {
             admin: 'admin.html',
             superadmin: 'superadmin.html',
-            institution_admin: '/platform/institution-admin.html',
+            institution_admin: '/platform/institution-admin',
             student: '/platform/student.html#dashboard',
             lecturer: 'lecturer.html',
             hod: 'admin.html',
