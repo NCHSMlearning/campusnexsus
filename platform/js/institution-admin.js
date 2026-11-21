@@ -5,7 +5,9 @@ const KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6
 const $=id=>document.getElementById(id), state={db:null,user:null,profile:null,institution:null,institutionId:null,modules:new Set(),rows:{}};
 const MODULES={student_management:"Student management",lecturer_portal:"Staff & lecturers",academic_management:"Academic management",admin_exams:"Examinations",examinations:"Examinations",attendance:"Attendance",learning_management:"Learning management",analytics_reports:"Analytics & reports",administrator_portal:"Institution settings",proctoring:"Exam proctoring",transcripts_certificates:"Transcripts & certificates",admissions:"Admissions",};
 function message(text,error=false){const el=$("iaNotice");el.hidden=!text;el.textContent=text||"";el.style.background=error?"#fff0ef":"#eaf8f2";el.style.color=error?"#a12b2b":"#16634a";}
-function bootStage(text){$("iaBootMessage").textContent=text;}\nfunction withTimeout(promise,label,ms=12000){return Promise.race([promise,new Promise((_,reject)=>setTimeout(()=>reject(new Error(label+" timed out. Check your internet connection and sign in again.")),ms))]);}\nfunction fail(text){$("iaBootMessage").textContent=text;const spinner=$("iaBoot").querySelector(".ia-spinner");if(spinner)spinner.hidden=true;const p=document.createElement("p");p.className="ia-error";p.textContent=text;$("iaBoot").querySelector(".ia-boot-card").append(p);}
+function bootStage(text){$("iaBootMessage").textContent=text;}
+function withTimeout(promise,label,ms=12000){let timer;return Promise.race([promise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error(label+" timed out. Check your internet connection and sign in again.")),ms);})]).finally(()=>clearTimeout(timer));}
+function fail(text){$("iaBootMessage").textContent=text;const spinner=$("iaBoot").querySelector(".ia-spinner");if(spinner)spinner.hidden=true;const p=document.createElement("p");p.className="ia-error";p.textContent=text;$("iaBoot").querySelector(".ia-boot-card").append(p);}
 function initials(v){return String(v||"IA").trim().split(/\s+/).slice(0,2).map(x=>x[0]||"").join("").toUpperCase()||"IA";}
 function cell(tr,value,bold=false){const td=document.createElement("td");if(bold){const b=document.createElement("strong");b.textContent=value??"—";td.append(b);}else td.textContent=value??"—";tr.append(td);}
 function empty(id,cols,text){const body=$(id);if(body)body.innerHTML='<tr><td class="ia-empty" colspan="'+cols+'">'+text+'</td></tr>';}
@@ -14,26 +16,33 @@ function statusLabel(v){return String(v||"pending").replace(/_/g," ").replace(/\
 async function count(table,filters={}){let q=state.db.from(table).select("id",{count:"exact",head:true}).eq("institution_id",state.institutionId);Object.entries(filters).forEach(([k,v])=>q=q.eq(k,v));const r=await q;if(r.error)throw r.error;return r.count||0;}
 async function loadRows(table,select,limit=100,order="created_at"){let q=state.db.from(table).select(select).eq("institution_id",state.institutionId);if(order)q=q.order(order,{ascending:false}).limit(limit);else q=q.limit(limit);const r=await q;if(r.error)throw r.error;return r.data||[];}
 async function verifyAccess(){
- const auth=await state.db.auth.getUser();if(auth.error||!auth.data?.user)throw new Error("Your session has expired. Please sign in again.");
+ bootStage("Checking your sign-in session…");
+ const auth=await withTimeout(state.db.auth.getUser(),"Session verification");
+ if(auth.error||!auth.data?.user)throw new Error("Your session has expired. Please sign in again.");
  state.user=auth.data.user;
- bootStage("Loading your administrator profile…");const p=await withTimeout(state.db.from("consolidated_user_profiles_table").select("user_id,email,full_name,role,status,login_enabled,institution_id").eq("user_id",state.user.id).maybeSingle();
- if(p.error)throw p.error;if(!p.data)throw new Error("Your administrator profile could not be found.");
+ bootStage("Loading your administrator profile…");
+ const p=await withTimeout(state.db.from("consolidated_user_profiles_table").select("user_id,email,full_name,role,status,login_enabled,institution_id").eq("user_id",state.user.id).maybeSingle(),"Administrator profile lookup");
+ if(p.error)throw p.error;if(!p.data)throw new Error("Your administrator profile could not be be found.");
  state.profile=p.data;
  const role=String(p.data.role||"").toLowerCase();
  if(!["institution_admin","admin"].includes(role))throw new Error("This dashboard is only for institutional administrators.");
  if(!["active","approved"].includes(String(p.data.status||"").toLowerCase())||p.data.login_enabled===false)throw new Error("Your administrator account is not active. Contact the Platform Superadmin.");
- bootStage("Checking your institution assignment…");const m=await withTimeout(state.db.from("institution_users").select("institution_id,role,status").eq("user_id",state.user.id).eq("status","active");
+ bootStage("Checking your institution assignment…");
+ const m=await withTimeout(state.db.from("institution_users").select("institution_id,role,status").eq("user_id",state.user.id).eq("status","active"),"Institution membership lookup");
  if(m.error)throw m.error;
  const memberships=(m.data||[]).filter(x=>x.role==="institution_admin"&&(!p.data.institution_id||x.institution_id===p.data.institution_id));
  if(memberships.length!==1)throw new Error("This account must have exactly one active institution administrator assignment.");
  state.institutionId=memberships[0].institution_id;
  if(p.data.institution_id&&p.data.institution_id!==state.institutionId)throw new Error("Your profile and institution membership do not match. Contact platform support.");
- bootStage("Loading your institution code…");const i=await withTimeout(state.db.from("institutions").select("id,name,school_code,short_code,institution_type,logo_url,primary_color,secondary_color,brand_colors,status,admin_email,contact_email,contact_phone,website_url").eq("id",state.institutionId).single();
+ bootStage("Loading your institution code…");
+ const i=await withTimeout(state.db.from("institutions").select("id,name,school_code,short_code,institution_type,logo_url,primary_color,secondary_color,brand_colors,status,admin_email,contact_email,contact_phone,website_url").eq("id",state.institutionId).single(),"Institution details lookup");
  if(i.error)throw i.error;state.institution=i.data;
- const institutionCode=i.data.school_code||i.data.short_code||"";if(institutionCode){const codeEl=$("iaBootInstitutionCode");codeEl.textContent="Institution code: "+institutionCode;codeEl.hidden=false;}
- bootStage("Loading your enabled academic modules…");const ent=await withTimeout(state.db.rpc("current_user_module_entitlements"),"Module permissions lookup");
+ const institutionCode=i.data.school_code||i.data.short_code||"";
+ if(institutionCode){const codeEl=$("iaBootInstitutionCode");codeEl.textContent="Institution code: "+institutionCode;codeEl.hidden=false;}
+ bootStage("Loading your enabled academic modules…");
+ const ent=await withTimeout(state.db.rpc("current_user_module_entitlements"),"Module permissions lookup");
  if(!ent.error&&Array.isArray(ent.data))state.modules=new Set(ent.data.map(x=>String(x).toLowerCase()));
- else {const mods=await state.db.from("institution_modules").select("module_key").eq("institution_id",state.institutionId).eq("enabled",true);if(mods.error)throw mods.error;state.modules=new Set((mods.data||[]).map(x=>String(x.module_key).toLowerCase()));}
+ else {const mods=await withTimeout(state.db.from("institution_modules").select("module_key").eq("institution_id",state.institutionId).eq("enabled",true),"Institution modules lookup");if(mods.error)throw mods.error;state.modules=new Set((mods.data||[]).map(x=>String(x.module_key).toLowerCase()));}
 }
 function applyIdentity(){
  const i=state.institution,p=state.profile,name=i.name||"Your Institution",code=i.school_code||i.short_code||"";
