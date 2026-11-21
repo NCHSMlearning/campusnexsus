@@ -63,8 +63,44 @@ async function boot(){
   $("userName").textContent=profile.full_name||authUser.email||"Administrator";
   showApp();
   $("markProgram").value=profile.program||"";$("markYear").value=new Date().getFullYear();
+  await loadExamFormOptions();
   refreshAll().catch(error=>notice("Some examination data could not be loaded: "+(error.message||"Unknown error"),true));
   Promise.all([withTimeout(loadMarkStudents(),"Student list"),withTimeout(loadMarkUnits(),"Unit list")]).catch(error=>notice("Marks-entry lists could not be loaded: "+(error.message||"Unknown error"),true));
+}
+async function loadExamFormOptions(){
+ const programSelect=$("examProgram"),yearSelect=$("examIntake"),blockSelect=$("examBlock");
+ programSelect.innerHTML='<option value="">Loading institution programmes…</option>';
+ try{
+  const {data,error}=await sb.rpc("get_public_institution_programs",{p_institution_id:institution.id});
+  if(error)throw error;
+  const programs=(data||[]).filter(p=>p.program_code&&p.program_name);
+  programSelect.innerHTML='<option value="">Select programme</option>'+programs.map(p=>'<option value="'+escapeHTML(p.program_code)+'">'+escapeHTML(p.program_name)+' · '+escapeHTML(p.program_code)+'</option>').join("");
+  if(!programs.length)programSelect.innerHTML='<option value="">No programmes configured</option>';
+ }catch(error){programSelect.innerHTML='<option value="">Unable to load programmes</option>';notice("Could not load institution programmes: "+error.message,true);}
+ const currentYear=new Date().getFullYear();
+ let years=[];
+ try{
+  const {data,error}=await sb.from("consolidated_user_profiles_table").select("intake_year").eq("institution_id",institution.id).not("intake_year","is",null).limit(3000);
+  if(error)throw error;
+  years=[...new Set((data||[]).map(x=>Number(x.intake_year)).filter(y=>Number.isInteger(y)&&y>=2000&&y<=2100))].sort((a,b)=>b-a);
+ }catch(error){console.warn("Could not load intake years",error);}
+ if(!years.length)years=[currentYear+2,currentYear+1,currentYear,currentYear-1,currentYear-2];
+ yearSelect.innerHTML='<option value="">Select intake year</option>'+years.map(y=>'<option value="'+y+'">'+y+'</option>').join("");
+ yearSelect.value=String(years.includes(currentYear)?currentYear:years[0]);
+ blockSelect.innerHTML='<option value="">Select programme first</option>';
+ programSelect.addEventListener("change",()=>loadInstitutionBlocks(programSelect.value));
+}
+async function loadInstitutionBlocks(programCode){
+ const select=$("examBlock");select.innerHTML='<option value="">Loading blocks…</option>';
+ if(!programCode){select.innerHTML='<option value="">Select programme first</option>';return;}
+ try{
+  let query=sb.from("units_catalog").select("block").eq("institution_id",institution.id).eq("status","active").eq("program",programCode);
+  const {data,error}=await query;
+  if(error)throw error;
+  const blocks=[...new Set((data||[]).map(x=>String(x.block||"").trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+  select.innerHTML='<option value="">Select block</option>'+blocks.map(b=>'<option value="'+escapeHTML(b)+'">'+escapeHTML(b)+'</option>').join("");
+  if(!blocks.length)select.innerHTML='<option value="">No blocks configured for this programme</option>';
+ }catch(error){select.innerHTML='<option value="">Unable to load blocks</option>';notice("Could not load programme blocks: "+error.message,true);}
 }
 async function applyInstitutionBranding(){
   const inst=institution;
@@ -143,11 +179,11 @@ async function saveExam(event){
  const start=date+"T"+time+":00";const endDate=new Date(start);endDate.setMinutes(endDate.getMinutes()+duration);
  const pad=n=>String(n).padStart(2,"0");const end=endDate.getFullYear()+"-"+pad(endDate.getMonth()+1)+"-"+pad(endDate.getDate())+"T"+pad(endDate.getHours())+":"+pad(endDate.getMinutes())+":00";
  const title=$("examTitle").value.trim();
- const payload={institution_id:institution.id,title,exam_name:title,exam_type:$("examType").value,exam_basis:"ordinary",program_type:$("examProgram").value.trim(),target_program:$("examProgram").value.trim(),intake_year:Number($("examIntake").value)||null,intake_month:$("examIntakeMonth").value||null,block:$("examBlock").value.trim()||null,block_term:$("examBlock").value.trim()||null,course_code:$("courseCode").value.trim()||null,exam_date:date,exam_start_time:time,start_time:start,end_time:end,duration_minutes:duration,total_marks:total,marks_out_of:total,pass_mark:pass,instructions:$("examInstructions").value.trim()||null,status:"draft",approval_status:"pending",is_published:false,is_active:true,created_by:authUser.id,created_by_actor:authUser.id};
+ const payload={institution_id:institution.id,title,exam_name:title,exam_type:$("examType").value,exam_basis:"ordinary",program_type:$("examProgram").value.trim(),target_program:$("examProgram").value.trim(),intake_year:Number($("examIntake").value)||null,intake_month:$("examIntakeMonth").value||null,block:$("examBlock").value.trim()||null,block_term:$("examBlock").value.trim()||null,course_code:$("courseCode").value.trim()||null,exam_date:date,exam_start_time:time,start_time:start,end_time:end,duration_minutes:duration,total_marks:total,marks_out_of:total,pass_mark:pass,instructions:$("examInstructions").value.trim()||null,status:"draft",approval_status:"approved",approved_by:authUser.id,approved_at:new Date().toISOString(),is_published:false,is_active:true,created_by:authUser.id,created_by_actor:authUser.id};
  const button=$("saveExamBtn");button.disabled=true;button.textContent="Saving…";
- try{const {data,error}=await sb.from("exams").insert(payload).select("id").single();if(error)throw error;closeExamModal();$("examForm").reset();$("examDuration").value=60;$("totalMarks").value=100;$("passMark").value=60;notice("Examination saved as a draft and submitted for approval. Reference #"+data.id);await loadExams();switchView("exams")}
+ try{const {data,error}=await sb.from("exams").insert(payload).select("id").single();if(error)throw error;closeExamModal();$("examForm").reset();$("examDuration").value=60;$("totalMarks").value=100;$("passMark").value=60;notice("Examination created and automatically approved. It remains unpublished until you publish it. Reference #"+data.id);await loadExams();switchView("exams")}
  catch(error){notice(error.message||"Unable to save examination.",true)}
- finally{button.disabled=false;button.textContent="Save draft for approval"}
+ finally{button.disabled=false;button.textContent="Create approved examination"}
 }
 async function updateExamDecision(id,action){
  const exam=exams.find(e=>String(e.id)===String(id));if(!exam){notice("Examination not found in this institution.",true);return}
