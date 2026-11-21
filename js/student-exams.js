@@ -80,7 +80,7 @@ function renderDailyWelcome(){
  if(greetingNode)greetingNode.textContent=greeting;
  if(quoteNode)quoteNode.textContent='“'+quotes[day]+'”';
  if(dateNode)dateNode.textContent=now.toLocaleDateString('en-KE',{timeZone:'Africa/Nairobi',weekday:'long',day:'numeric',month:'long',year:'numeric'});
- const icon=document.querySelector('.welcome-note-icon i');
+ const icon=document.querySelector('.dashboard-welcome-icon i');
  if(icon)icon.className=hour>=5&&hour<17?'fa-solid fa-sun':hour<19?'fa-solid fa-cloud-sun':'fa-solid fa-moon';
 }
 async function loadAcademicSummary(){
@@ -134,7 +134,7 @@ function renderDashboard(){
  const serverActivity=Array.isArray(stats.activity)?stats.activity:null;
  const days=[];for(let i=6;i>=0;i--){const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()-i);const key=d.toLocaleDateString('en-CA');const serverDay=serverActivity?.find(x=>String(x.day).slice(0,10)===key);const count=serverDay?Number(serverDay.count):state.history.filter(a=>{const raw=a.submitted_at||a.started_at;return raw&&new Date(raw).toLocaleDateString('en-CA')===key;}).length;days.push({label:d.toLocaleDateString('en',{weekday:'short'}),count});}
  const max=Math.max(...days.map(x=>x.count),1);
- $('activity-chart').innerHTML='<div class="activity-bars">'+days.map(d=>'<div class="activity-column"><b>'+d.count+'</b><i style="height:'+Math.max(5,d.count/max*100)+'%"></i><small>'+d.label+'</small></div>').join('')+'</div><div class="chart-footnote">Last 7 days · '+completed+' submitted in total</div>';
+ $('activity-chart').innerHTML=days.some(d=>d.count>0)?'<div class="activity-bars">'+days.map(d=>'<div class="activity-column"><b>'+d.count+'</b><i style="height:'+Math.max(5,d.count/max*100)+'%"></i><small>'+d.label+'</small></div>').join('')+'</div><div class="chart-footnote">Last 7 days · '+completed+' submitted in total</div>':'<div class="activity-empty"><i class="fa-regular fa-chart-bar"></i><b>No recent activity yet</b><span>Your submitted examination attempts will appear here.</span></div>';
 }
 function render(){
  const q=norm($('search-input').value),filter=$('status-filter').value;
