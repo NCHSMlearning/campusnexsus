@@ -180,9 +180,13 @@ async function init(){
   $('institution-portal-label').textContent='STUDENT PORTAL';
  }
  const name=val(p.full_name,p.name,p.student_name,session.user.user_metadata?.full_name,session.user.email,'Student');
- $('welcome-name').textContent=name;$('side-name').textContent=name;$('avatar').textContent=name.split(/\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase();
- $('side-admission').textContent=val(p.admission_number,p.student_id,'Student account');
- $('student-meta').textContent=[val(p.program,p.program_name,'Programme not assigned'),studentBlock(p)!=='General'?studentBlock(p):'',val(p.intake_year,p.intake,'')].filter(Boolean).join(' • ');
+ // Keep the dashboard resilient when optional profile labels are not present in this page layout.
+ const setText=(id,value)=>{const node=$(id);if(node)node.textContent=String(value??'');};
+ setText('welcome-name',name);
+ setText('side-name',name);
+ setText('avatar',name.split(/\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase());
+ setText('side-admission',val(p.admission_number,p.student_id,'Student account'));
+ setText('student-meta',[val(p.program,p.program_name,'Programme not assigned'),studentBlock(p)!=='General'?studentBlock(p):'',val(p.intake_year,p.intake,'')].filter(Boolean).join(' • '));
  await loadDashboardStats().catch(e=>{console.warn('Dashboard statistics RPC unavailable; using student-visible records.',e);});
  await loadExams().catch(e=>{console.error('Student examination list failed:',e);$('exam-panel').innerHTML='<div class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><p>Examination list could not be loaded. Your dashboard statistics are shown where available.</p></div>';});
  renderTimetable();renderDashboard();
