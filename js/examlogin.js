@@ -11,7 +11,7 @@ document.body.appendChild(schoolModal);
 document.getElementById('schoolPromptField').appendChild(schoolField);
 form.style.display='none';
 const show=(text,type='error')=>{message.textContent=text;message.className='message '+type};
-const nextPath=()=>{const p=new URLSearchParams(location.search).get('redirect');return p&&p.startsWith('/')&&!p.startsWith('//')?p:'/studentexam.html'};
+const nextPath=(role)=>{const p=new URLSearchParams(location.search).get('redirect');if(role==='student')return p&&p.startsWith('/')&&!p.startsWith('//')?p:'/studentexam.html';return '/adminexams/';};
 function clientReady(){const c=window.examSupabase;if(c&&typeof c.auth?.signInWithPassword==='function')return c;throw new Error(window.__EXAM_CONFIG_ERROR__||'The examination sign-in service is unavailable. Refresh and try again.')}
 function initials(name){return String(name||'School').trim().split(/\s+/).slice(0,2).map(x=>x[0]||'').join('').toUpperCase()||'SC'}
 function paintInstitution(institution){
@@ -29,8 +29,8 @@ function paintInstitution(institution){
  }else{logo.textContent=initials(name)}
  if(/^#[0-9a-f]{3,8}$/i.test(institution.primary_color||''))document.documentElement.style.setProperty('--navy',institution.primary_color);
  if(/^#[0-9a-f]{3,8}$/i.test(institution.secondary_color||''))document.documentElement.style.setProperty('--teal',institution.secondary_color);
- document.title=name+' Student Examination Login';
- schoolStatus.textContent='Institution loaded. Sign in with your registered student account.';
+ document.title=name+' Examination Login';
+ schoolStatus.textContent='Institution loaded. Students and authorised examination administrators can sign in.';
  schoolStatus.style.color='#176c68';
  form.style.display='block';schoolModal.classList.add('is-hidden');
 }
@@ -69,14 +69,31 @@ form.addEventListener('submit',async e=>{
   if(!data?.user)throw new Error('Sign-in could not be completed. Please try again.');
   localStorage.setItem('currentUserId',data.user.id);
   localStorage.setItem('studentEmail',email.value.trim());
-  const {data:profile,error:profileError}=await client.from('consolidated_user_profiles_table').select('role,status,login_enabled,institution_id').eq('user_id',data.user.id).maybeSingle();
+  const [{data:profile,error:profileError},{data:memberships,error:membershipError},{data:isSuper,error:superError}]=await Promise.all([
+   client.from('consolidated_user_profiles_table').select('role,status,login_enabled,institution_id').eq('user_id',data.user.id).maybeSingle(),
+   client.from('institution_users').select('institution_id,role,status').eq('user_id',data.user.id).eq('role','institution_admin').eq('status','active'),
+   client.rpc('is_current_user_superadmin')
+  ]);
   if(profileError)throw profileError;
-  if(!profile)throw new Error('No student profile is linked to this account. Contact your institution administrator.');
-  if(String(profile.role||'').trim().toLowerCase()!=='student')throw new Error('This login is for student examination accounts only.');
-  if(!['approved','active'].includes(String(profile.status||'').trim().toLowerCase())||profile.login_enabled===false)throw new Error('Your student account is awaiting approval or has been disabled.');
-  if(String(profile.institution_id)!==String(selectedInstitution.id))throw new Error('This student account does not belong to '+selectedInstitution.name+'. Check the school code.');
-  show('Sign-in successful. Opening your examinations…','info');
-  location.replace(nextPath()+'?v=20261120-standalone');
+  if(membershipError)throw membershipError;
+  if(!profile)throw new Error('No account profile is linked to this login. Contact your institution administrator.');
+  const accountRole=String(profile.role||'').trim().toLowerCase();
+  const accountStatus=String(profile.status||'').trim().toLowerCase();
+  if(!['approved','active'].includes(accountStatus)||profile.login_enabled===false)throw new Error('Your account is awaiting approval or has been disabled.');
+  const isInstitutionAdmin=(memberships||[]).some(m=>String(m.institution_id)===String(selectedInstitution.id));
+  const isPlatformAdmin=!superError&&isSuper===true;
+  if(accountRole==='student'){
+   if(String(profile.institution_id)!==String(selectedInstitution.id))throw new Error('This student account does not belong to '+selectedInstitution.name+'. Check the school code.');
+   show('Sign-in successful. Opening your examinations…','info');
+   location.replace('/studentexam.html?v=20261121-standalone');
+   return;
+  }
+  if(isInstitutionAdmin||isPlatformAdmin){
+   show('Administrator verified. Opening the examination dashboard…','info');
+   location.replace('/adminexams/');
+   return;
+  }
+  throw new Error('This account is not authorised for the examination portal. Use your institution administrator or student login.');
  }catch(error){show(error?.message||'Unable to sign in. Check your details and try again.');button.disabled=false;button.textContent='Sign in to examinations'}
 });
 })();
