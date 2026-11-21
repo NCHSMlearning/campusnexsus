@@ -5,10 +5,10 @@
 <meta name="theme-color" content="#082f49"><title>Institution Admin | Campus Nexus</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<link rel="stylesheet" href="/platform/css/institution-admin.css?v=20261121-13">
+<link rel="stylesheet" href="/platform/css/institution-admin.css?v=20261121-sidebar-fix1">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
-<script src="/platform/js/institution-admin.js?v=20261121-16" defer></script>
+<script src="/platform/js/institution-admin.js?v=20261121-sidebar-fix1" defer></script>
 <script src="/platform/js/institution-admin-modules.js?v=20261121-14" defer></script>
 </head>
 <body>
@@ -64,7 +64,7 @@
  <div class="ia-sidebar-bottom"><div class="ia-support"><i class="fa-solid fa-headset"></i><b>Need assistance?</b><small>Contact Campus Nexus support.</small></div><button id="iaLogout" class="ia-logout"><i class="fa-solid fa-arrow-right-from-bracket"></i> Sign out</button></div>
 </aside>
 <div class="ia-main-wrap">
-<header class="ia-topbar"><button class="ia-menu-toggle" id="iaMenuToggle" aria-label="Open navigation"><i class="fa-solid fa-bars"></i></button><div class="ia-top-title"><span id="iaTopInstitution">Institution workspace</span><small id="iaTopCode"></small></div><div class="ia-top-actions"><button class="ia-icon-btn" id="iaRefresh" title="Refresh data" aria-label="Refresh"><i class="fa-solid fa-rotate"></i></button><div class="ia-user"><span class="ia-avatar" id="iaAvatar">IA</span><span><b id="iaUserName">Administrator</b><small>Institution administrator</small></span></div></div></header>
+<header class="ia-topbar"><button class="ia-menu-toggle" id="iaMenuToggle" aria-controls="iaSidebar" aria-expanded="false" aria-label="Open navigation"><i class="fa-solid fa-bars"></i></button><div class="ia-top-title"><span id="iaTopInstitution">Institution workspace</span><small id="iaTopCode"></small></div><div class="ia-top-actions"><button class="ia-icon-btn" id="iaRefresh" title="Refresh data" aria-label="Refresh"><i class="fa-solid fa-rotate"></i></button><div class="ia-user"><span class="ia-avatar" id="iaAvatar">IA</span><span><b id="iaUserName">Administrator</b><small>Institution administrator</small></span></div></div></header>
 <main class="ia-content">
 <div id="iaNotice" class="ia-notice" role="status" hidden></div>
 <section class="ia-view active" id="view-overview"><div class="ia-welcome"><div><span class="ia-eyebrow">INSTITUTION CONTROL CENTRE</span><h1>Good day, <span id="iaWelcomeName">Administrator</span></h1><p>Here is an overview of your institution's activity and academic operations.</p></div><div class="ia-date-chip"><i class="fa-regular fa-calendar"></i><span id="iaToday"></span></div></div>
