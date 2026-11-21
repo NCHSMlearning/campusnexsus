@@ -398,7 +398,7 @@ function checkAdminAuth() {
     
     if (!session) { 
         console.log('❌ No session found, redirecting to login...');
-        window.location.href = 'login.html'; 
+        window.location.replace('/platform/login.html?redirect=%2Fadminexams%2F'); 
         return false; 
     }
     
@@ -407,7 +407,7 @@ function checkAdminAuth() {
         
         // ✅ Check if user has admin or lecturer role
         const role = (sessionData.role || sessionData.user_role || '').toLowerCase();
-        const allowedRoles = ['admin', 'superadmin', 'administrator', 'lecturer', 'instructor', 'teacher', 'super_admin'];
+        const allowedRoles = ['admin', 'superadmin', 'administrator', 'institution_admin', 'institution admin', 'lecturer', 'instructor', 'teacher', 'super_admin'];
         
         if (!allowedRoles.includes(role) && !sessionData.is_staff) {
             console.log('❌ Unauthorized role:', role);
@@ -468,7 +468,7 @@ window.logout = function() {
     localStorage.removeItem('user');
     
     // Redirect to admin login
-    window.location.href = 'https://nchsm.co.ke/adminlogin'; 
+    window.location.replace('/platform/login.html?redirect=%2Fadminexams%2F'); 
 };
 
     // ============================================
