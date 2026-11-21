@@ -273,7 +273,7 @@
         students: () => countMetric("consolidated_user_profiles_table", [["role","eq","student"]]),
         activeStudents: () => countMetric("consolidated_user_profiles_table", [["role","eq","student"],["status","in",["active","approved"]]]),
         pendingStudents: () => countMetric("consolidated_user_profiles_table", [["role","eq","student"],["status","eq","pending"]]),
-        staff: () => countMetric("consolidated_user_profiles_table", [["role","in",["lecturer","admin","superadmin","super_admin"]]]),
+        staff: () => countMetric("consolidated_user_profiles_table", [["role","in",["lecturer","admin","superadmin","super_admin","institution_admin","director","finance_officer","nursing_hod"]]]),
         exams: () => countMetric("exams"),
         examAttempts: () => countMetric("exam_attempts"),
         questionBank: () => countMetric("exam_questions"),
