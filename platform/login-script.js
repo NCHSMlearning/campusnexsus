@@ -2613,7 +2613,13 @@ executeLogin: async function(identifier, password) {
                     ((role === 'admin' || hodRoles.includes(role)) && (path === '/admin.html' || path === '/admin')) ||
                     (role === 'lecturer' && (path === '/lecturer.html' || path === '/lecturer')) ||
                     (role === 'superadmin' && (path === '/superadmin.html' || path === '/superadmin')) ||
-                    (role === 'institution_admin' && (path === '/platform/institution-admin.html' || path === '/platform/institution-admin'))
+                    (role === 'institution_admin' && (
+                        path === '/platform/institution-admin.html' ||
+                        path === '/platform/institution-admin' ||
+                        path === '/adminexams' ||
+                        path === '/adminexams/' ||
+                        path === '/adminexams/index.html'
+                    ))
                 );
                 if (isRoleDashboard || isStudentRoute) redirectFile = target.pathname + target.search + target.hash;
             }
