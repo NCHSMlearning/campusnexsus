@@ -43,3 +43,17 @@
 @keyframes bootCardIn{from{opacity:0;transform:translateY(9px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
 @media(max-width:520px){.boot-screen{padding:18px}.boot-card{padding:34px 22px 30px;border-radius:22px}.boot-card h1{font-size:21px}}
 @media(prefers-reduced-motion:reduce){.boot-card{animation:none}.loader{animation-duration:1.8s}}
+
+
+/* Examination workspace: persistent vertical navigation sidebar */
+.page-wrap{max-width:1500px;display:grid;grid-template-columns:248px minmax(0,1fr);grid-template-rows:auto auto 1fr auto;column-gap:24px;align-items:start}
+.welcome-row{grid-column:2;grid-row:1;min-width:0}
+.module-tabs{grid-column:1;grid-row:1 / span 4;position:sticky;top:18px;display:flex;flex-direction:column;align-items:stretch;gap:6px;overflow:visible;padding:12px;margin:0;background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);min-width:0}
+.module-tabs::before{content:"EXAMINATION MENU";display:block;padding:8px 11px 12px;color:#8a9baa;font-size:9px;font-weight:800;letter-spacing:1.3px}
+.module-tabs .tab{display:flex;align-items:center;gap:11px;width:100%;min-height:43px;padding:11px 13px;text-align:left;white-space:normal;border-radius:10px;font-size:12px}
+.module-tabs .tab i{width:17px;margin:0;text-align:center;font-size:13px}
+.module-tabs .tab.active{background:#eaf3f7;color:var(--navy);box-shadow:inset 3px 0 0 var(--teal)}
+#notice,.view,.page-footer{grid-column:2;min-width:0}
+#notice{grid-row:2}.view{grid-row:3}.page-footer{grid-row:4}
+@media(max-width:900px){.page-wrap{grid-template-columns:205px minmax(0,1fr);column-gap:15px}.module-tabs{position:sticky;top:10px}.content-grid{grid-template-columns:1fr}}
+@media(max-width:650px){.page-wrap{display:flex;flex-direction:column;padding:18px 12px 34px;gap:14px}.welcome-row,.module-tabs,#notice,.view,.page-footer{width:100%;grid-column:auto;grid-row:auto}.module-tabs{position:static;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;padding:9px}.module-tabs::before{grid-column:1/-1;padding:5px 8px 8px}.module-tabs .tab{justify-content:flex-start;min-height:40px;padding:9px 8px;font-size:10px}.module-tabs .tab i{width:15px;font-size:11px}}
