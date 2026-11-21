@@ -24,7 +24,7 @@
   let accessState = null;
   let loading = false;
 
-  const getClient = () => window.sb || window.supabaseClient || window.supabase || window.NCHSMLogin?.supabase || null;
+  const getClient = () => window.sb || window.supabaseClient || window.NCHSMLogin?.supabase || null;
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const setStatus = (message, error) => {
     const el = document.getElementById('oaStatus');
