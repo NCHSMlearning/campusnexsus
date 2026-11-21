@@ -3,28 +3,44 @@
  */
 (() => {
   const MODULE_GROUPS = [
-    ["User portals", [
-      ["student_management", "Student portal", "Student accounts, profiles and academic records"],
-      ["lecturer_portal", "Lecturer portal", "Lecturer workspace, classes and teaching tools"],
-      ["administrator_portal", "Institution administrator portal", "Institution-level administration and oversight"]
+    ["Core portals", [
+      ["student_management","Student portal","Student profiles, admissions records and academic history"],
+      ["lecturer_portal","Lecturer portal","Staff teaching workspace, classes and assigned units"],
+      ["administrator_portal","Institution administrator","Institution academic administration and oversight"]
     ]],
-    ["Academics & assessment", [
-      ["academic_management", "Academic management", "Programmes, units, intakes and academic structure"],
-      ["examinations", "Examinations", "Exam scheduling, attempts and assessment workflows"],
-      ["admin_exams", "Admin Exams", "Administrator exam creation, management and oversight"],
-      ["proctoring", "Online proctoring", "Exam monitoring and proctoring tools"],
-      ["transcripts_certificates", "Transcripts & certificates", "Results, transcripts and certificate workflows"]
+    ["Academic management", [
+      ["academic_management","Academic management","Programmes, units, blocks, intakes and curriculum"],
+      ["admissions","Admissions","Applications, selection, offers and student onboarding"],
+      ["examinations","Examinations","Exam schedules, attempts, assessment and examination administration"],
+      ["admin_exams","Exam administration","Exam creation, question banks, marking and results workflows"],
+      ["proctoring","Online proctoring","Exam monitoring, integrity and proctoring logs"],
+      ["transcripts_certificates","Transcripts & certificates","Academic results, transcripts and certificate issuance"],
+      ["timetable","Timetabling & sessions","Class timetables, teaching schedules and room allocation"],
+      ["clinical_placements","Clinical placements","Clinical sites, rotations, supervision and hours"],
+      ["research_management","Research management","Research proposals, projects, reviews and submissions"],
+      ["quality_assurance","Quality assurance","Audits, compliance, accreditation and action tracking"]
+    ]],
+    ["Student and campus services", [
+      ["attendance","Attendance management","Student and staff attendance, sessions and reports"],
+      ["student_welfare","Student welfare & discipline","Student support, counselling referrals and discipline records"],
+      ["library","Library management","Library catalogue, circulation and digital resources"],
+      ["hostel_management","Accommodation & hostels","Room allocation, occupancy and hostel services"],
+      ["transport_management","Transport management","Vehicles, routes, schedules and transport requests"],
+      ["career_services","Career services & alumni","Career support, placements and alumni engagement"],
+      ["events","Events & calendar","Institution events, academic calendar and activities"]
     ]],
     ["Institution operations", [
-      ["admissions", "Admissions", "Applicant intake and admission processing"],
-      ["attendance", "Attendance management", "Student and staff attendance workflows"],
-      ["learning_management", "Learning management system", "Learning resources, lessons and assignments"],
-      ["finance", "Finance & payments", "Student accounts, invoices and payments"],
-      ["human_resources", "HR & staff management", "Staff records and HR workflows"],
-      ["library", "Library", "Library resources and circulation"]
+      ["learning_management","Learning management system","Courses, lessons, learning resources and assignments"],
+      ["human_resources","Human resources","Staff records, leave, contracts and workforce management"],
+      ["finance","Finance & payments","Fees, invoices, payments, budgets and payroll entitlement"],
+      ["inventory","Inventory & procurement","Stock, supplies, requisitions and procurement"],
+      ["asset_management","Asset management","Institution equipment, maintenance and asset registers"],
+      ["document_management","Records & document management","Institution records, approvals and document workflows"],
+      ["communication","Communication & notifications","Announcements, messaging, email and notifications"],
+      ["helpdesk","Helpdesk & support","Support requests, incidents and service tracking"]
     ]],
-    ["Insights & communication", [
-      ["analytics_reports", "Analytics & reports", "Institution dashboards and reporting"]
+    ["Insights and reporting", [
+      ["analytics_reports","Analytics & reports","Institution dashboards, performance indicators and reports"]
     ]]
   ];
   const MODULES = MODULE_GROUPS.flatMap(([, items]) => items);
@@ -131,9 +147,9 @@
         '<section class="cn-module-group"><div class="cn-module-group-title">' + esc(group) +
         '<small>' + items.length + ' options</small></div><div class="cn-module-grid">' +
         items.map(([key,label,description]) =>
-          '<label class="cn-module-option' + (key === "library" ? ' cn-module-coming-soon' : '') + '"><input type="checkbox" name="cnModule" value="' + esc(key) + '"' +
-          (key === "library" ? " disabled" : (selected.includes(key) ? " checked" : "")) + '><span class="cn-module-copy"><strong>' + esc(key === "library" ? label + " · Coming soon" : label) +
-          '</strong><small>' + esc(key === "library" ? "Not selectable until the library service and tenant data controls are implemented." : description) + '</small></span><span class="cn-module-check"><i class="fas fa-check"></i></span></label>'
+          '<label class="cn-module-option"><input type="checkbox" name="cnModule" value="' + esc(key) + '"' +
+          (selected.includes(key) ? " checked" : "") + '><span class="cn-module-copy"><strong>' + esc(label) +
+          '</strong><small>' + esc(description) + '</small></span><span class="cn-module-check"><i class="fas fa-check"></i></span></label>'
         ).join("") + '</div></section>'
       ).join("");
     const updateCount = () => {
@@ -458,6 +474,7 @@
         '<td><div class="cn-product-badges">' +
         ((i._modules || []).some(key => ["examinations","admin_exams","proctoring"].includes(key)) ? '<span class="cn-product-badge cn-product-exam">Exam Dashboard</span>' : '') +
         ((i._modules || []).includes("learning_management") ? '<span class="cn-product-badge cn-product-lms">LMS</span>' : '') +
+        '<span class="cn-product-badge cn-product-none">' + (i._modules || []).length + ' modules enabled</span>' +
         (!((i._modules || []).some(key => ["examinations","admin_exams","proctoring"].includes(key)) || (i._modules || []).includes("learning_management")) ? '<span class="cn-product-badge cn-product-none">No product selected</span>' : '') +
         '</div></td>' +
         '<td>' + esc(i.contact_email || "—") + '</td><td>' + (portalUrl ? '<a href="' + esc(portalUrl) + '" target="_blank" rel="noopener">' + (i.portal_mode === "custom_website" ? "Open institution portal" : "Campus Nexus login") + '</a>' : 'Login portal not configured') +
@@ -664,7 +681,7 @@
     const form = $("cnInstitutionForm");
     if (!form) return;
     bindReliableLogout();
-    renderModuleOptions(MODULES.map(([key]) => key));
+    renderModuleOptions(["student_management","lecturer_portal","administrator_portal"]);
     setupLogoUploader();
     setupInstitutionAdminFields();
     ensureInstitutionModal();
