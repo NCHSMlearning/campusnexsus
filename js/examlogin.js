@@ -18,7 +18,7 @@ function paintInstitution(institution){
  selectedInstitution=institution;
  const name=String(institution.name||'Your Institution');
  $('schoolName').textContent=name;
- $('schoolPortalLabel').textContent='Student Examination Portal';
+ $('schoolPortalLabel').textContent='Examination Portal';
  $('schoolCodeBadge').textContent='SCHOOL CODE: '+(institution.school_code||institution.short_code||schoolCode.value.trim().toUpperCase());
  $('schoolCodeBadge').hidden=false;
  const logo=$('schoolLogo');
@@ -30,7 +30,7 @@ function paintInstitution(institution){
  if(/^#[0-9a-f]{3,8}$/i.test(institution.primary_color||''))document.documentElement.style.setProperty('--navy',institution.primary_color);
  if(/^#[0-9a-f]{3,8}$/i.test(institution.secondary_color||''))document.documentElement.style.setProperty('--teal',institution.secondary_color);
  document.title=name+' Examination Login';
- schoolStatus.textContent='Institution loaded. Students and authorised examination administrators can sign in.';
+ schoolStatus.textContent='Institution loaded. Sign in with your Campus Nexus account.';
  schoolStatus.style.color='#176c68';
  form.style.display='block';schoolModal.classList.add('is-hidden');
 }
