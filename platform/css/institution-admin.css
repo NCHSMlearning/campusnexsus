@@ -208,3 +208,9 @@ html,body{width:100%;max-width:100%;min-height:100%;margin:0}body{overflow-x:hid
   .ia-main-wrap{overflow-x:hidden!important}
   .ia-content{overflow-x:hidden!important}
 }
+
+
+/* Search must respect the HTML hidden state even when nav items use flex. */
+#iaNav [hidden]{display:none!important}
+.ia-search-empty{display:none;margin:10px 8px;padding:12px;border:1px dashed rgba(203,213,225,.28);border-radius:10px;color:#c5d7e2;font-size:12px;line-height:1.5}
+.ia-search-empty.show{display:block}
