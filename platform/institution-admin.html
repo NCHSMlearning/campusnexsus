@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <link rel="stylesheet" href="/platform/css/institution-admin.css?v=20261121-11">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <script src="/platform/js/institution-admin.js?v=20261121-15" defer></script>
 <script src="/platform/js/institution-admin-modules.js?v=20261121-8" defer></script>
 </head>
@@ -60,6 +61,14 @@
 <article class="ia-stat-card" data-module="research_management"><span class="ia-stat-icon green"><i class="fa-solid fa-flask"></i></span><small>Research projects</small><strong id="statResearch">—</strong><em>Tracked projects</em></article>
 <article class="ia-stat-card" data-module="student_welfare"><span class="ia-stat-icon rose"><i class="fa-solid fa-hand-holding-heart"></i></span><small>Welfare cases</small><strong id="statWelfare">—</strong><em>Student support cases</em></article>
 </div>
+<section class="ia-student-analytics" aria-label="Student analytics">
+<div class="ia-panel-head"><div><h2>Student analytics</h2><p>Live distribution and enrolment trends for this institution</p></div><span id="iaAnalyticsUpdated" class="ia-count">Loading student analytics…</span></div>
+<div class="ia-chart-grid">
+<article class="ia-panel ia-chart-card"><div class="ia-panel-head"><div><h3>Students by programme</h3><p>Distribution across programmes</p></div></div><div class="ia-chart-wrap"><canvas id="iaStudentsByProgramme" role="img" aria-label="Doughnut chart of students by programme"></canvas></div></article>
+<article class="ia-panel ia-chart-card"><div class="ia-panel-head"><div><h3>Enrolment trend</h3><p>New student registrations by month</p></div></div><div class="ia-chart-wrap ia-chart-wide"><canvas id="iaStudentTrend" role="img" aria-label="Line graph of student registrations by month"></canvas></div></article>
+<article class="ia-panel ia-chart-card"><div class="ia-panel-head"><div><h3>Student status distribution</h3><p>Current status of student records</p></div></div><div class="ia-chart-wrap"><canvas id="iaStudentStatus" role="img" aria-label="Bar chart of student statuses"></canvas></div></article>
+<article class="ia-panel ia-chart-card"><div class="ia-panel-head"><div><h3>Students by intake year</h3><p>Distribution by recorded intake year</p></div></div><div class="ia-chart-wrap"><canvas id="iaStudentIntake" role="img" aria-label="Bar chart of students by intake year"></canvas></div></article>
+</div></section>
 <div class="ia-overview-grid"><article class="ia-panel"><div class="ia-panel-head"><div><h2>Recent examinations</h2><p>Latest assessments in your institution</p></div><button class="ia-text-btn" data-open-view="exams">View all <i class="fa-solid fa-arrow-right"></i></button></div><div id="iaRecentExams" class="ia-list"><div class="ia-empty">Loading records…</div></div></article>
 <article class="ia-panel"><div class="ia-panel-head"><div><h2>Institution profile</h2><p>Your tenant identity</p></div></div><div class="ia-profile-summary"><div class="ia-profile-logo" id="iaProfileLogo">CN</div><div><b id="iaProfileName">—</b><small id="iaProfileType">Institution</small><small id="iaProfileEmail">—</small></div></div><div class="ia-profile-lines"><div><span>School code</span><b id="iaProfileCode">—</b></div><div><span>Account status</span><b id="iaProfileStatus">—</b></div><div><span>Enabled modules</span><b id="iaProfileModules">—</b></div></div><button class="ia-secondary-btn" data-open-view="settings">View institution details</button></article></div>
 </section>
