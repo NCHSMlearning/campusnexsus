@@ -100,7 +100,7 @@ async function loadAcademicSummary(){
   const match=units.find(u=>norm(u.unit_name)===key||norm(u.unit_code)===key);
   return Math.max(1,Number(match?.credits)||1);
  };
- const rows=state.marks.filter(m=>Number.isFinite(Number(m.points))&&m.points!==null&&Number(m.final_score)!==null);
+ const rows=state.marks.filter(m=>m.points!==null&&m.points!==undefined&&m.final_score!==null&&m.final_score!==undefined&&Number.isFinite(Number(m.points))&&Number.isFinite(Number(m.final_score)));
  const enriched=rows.map(m=>({mark:m,credits:creditFor(m),score:Number(m.final_score),points:Number(m.points)}));
  const credits=enriched.reduce((s,x)=>s+x.credits,0),weighted=enriched.reduce((s,x)=>s+x.points*x.credits,0),scoreTotal=enriched.reduce((s,x)=>s+x.score,0);
  const gpa=credits?weighted/credits:null;
