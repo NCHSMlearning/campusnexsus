@@ -1,0 +1,77 @@
+(() => {
+"use strict";
+const URL="https://lwhtjozfsmbyihenfunw.supabase.co";
+const KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx3aHRqb3pmc21ieWloZW5mdW53Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk2NTgxMjcsImV4cCI6MjA3NTIzNDEyN30.7Z8AYvPQwTAEEEhODlW6Xk-IR1FK3Uj5ivZS7P17Wpk";
+const $=id=>document.getElementById(id), state={db:null,user:null,profile:null,institution:null,institutionId:null,modules:new Set(),rows:{}};
+const MODULES={student_management:"Student management",lecturer_portal:"Staff & lecturers",academic_management:"Academic management",admin_exams:"Examinations",examinations:"Examinations",attendance:"Attendance",finance:"Finance",learning_management:"Learning management",analytics_reports:"Analytics & reports",administrator_portal:"Institution settings",proctoring:"Exam proctoring",transcripts_certificates:"Transcripts & certificates",admissions:"Admissions",human_resources:"Human resources"};
+function message(text,error=false){const el=$("iaNotice");el.hidden=!text;el.textContent=text||"";el.style.background=error?"#fff0ef":"#eaf8f2";el.style.color=error?"#a12b2b":"#16634a";}
+function fail(text){$("iaBootMessage").textContent=text;const p=document.createElement("p");p.className="ia-error";p.textContent=text;$("iaBoot").querySelector(".ia-boot-card").append(p);}
+function initials(v){return String(v||"IA").trim().split(/\s+/).slice(0,2).map(x=>x[0]||"").join("").toUpperCase()||"IA";}
+function cell(tr,value,bold=false){const td=document.createElement("td");if(bold){const b=document.createElement("strong");b.textContent=value??"—";td.append(b);}else td.textContent=value??"—";tr.append(td);}
+function empty(id,cols,text){const body=$(id);if(body)body.innerHTML='<tr><td class="ia-empty" colspan="'+cols+'">'+text+'</td></tr>';}
+function rows(id,data,cols,mapper,emptyText="No records found."){const body=$(id);if(!body)return;body.replaceChildren();if(!data?.length){empty(id,cols,emptyText);return;}data.forEach(item=>{const tr=document.createElement("tr");mapper(tr,item);body.append(tr);});}
+function statusLabel(v){return String(v||"pending").replace(/_/g," ").replace(/\b\w/g,x=>x.toUpperCase());}
+async function count(table,filters={}){let q=state.db.from(table).select("id",{count:"exact",head:true}).eq("institution_id",state.institutionId);Object.entries(filters).forEach(([k,v])=>q=q.eq(k,v));const r=await q;if(r.error)throw r.error;return r.count||0;}
+async function loadRows(table,select,limit=100,order="created_at"){let q=state.db.from(table).select(select).eq("institution_id",state.institutionId);if(order)q=q.order(order,{ascending:false}).limit(limit);else q=q.limit(limit);const r=await q;if(r.error)throw r.error;return r.data||[];}
+async function verifyAccess(){
+ const auth=await state.db.auth.getUser();if(auth.error||!auth.data?.user)throw new Error("Your session has expired. Please sign in again.");
+ state.user=auth.data.user;
+ const p=await state.db.from("consolidated_user_profiles_table").select("user_id,email,full_name,role,status,login_enabled,institution_id").eq("user_id",state.user.id).maybeSingle();
+ if(p.error)throw p.error;if(!p.data)throw new Error("Your administrator profile could not be found.");
+ state.profile=p.data;
+ const role=String(p.data.role||"").toLowerCase();
+ if(!["institution_admin","admin"].includes(role))throw new Error("This dashboard is only for institutional administrators.");
+ if(!["active","approved"].includes(String(p.data.status||"").toLowerCase())||p.data.login_enabled===false)throw new Error("Your administrator account is not active. Contact the Platform Superadmin.");
+ const m=await state.db.from("institution_users").select("institution_id,role,status").eq("user_id",state.user.id).eq("status","active");
+ if(m.error)throw m.error;
+ const memberships=(m.data||[]).filter(x=>x.role==="institution_admin"&&(!p.data.institution_id||x.institution_id===p.data.institution_id));
+ if(memberships.length!==1)throw new Error("This account must have exactly one active institution administrator assignment.");
+ state.institutionId=memberships[0].institution_id;
+ if(p.data.institution_id&&p.data.institution_id!==state.institutionId)throw new Error("Your profile and institution membership do not match. Contact platform support.");
+ const i=await state.db.from("institutions").select("id,name,school_code,short_code,institution_type,logo_url,primary_color,secondary_color,brand_colors,status,admin_email,contact_email,contact_phone,website_url").eq("id",state.institutionId).single();
+ if(i.error)throw i.error;state.institution=i.data;
+ const ent=await state.db.rpc("current_user_module_entitlements");
+ if(!ent.error&&Array.isArray(ent.data))state.modules=new Set(ent.data.map(x=>String(x).toLowerCase()));
+ else {const mods=await state.db.from("institution_modules").select("module_key").eq("institution_id",state.institutionId).eq("enabled",true);if(mods.error)throw mods.error;state.modules=new Set((mods.data||[]).map(x=>String(x.module_key).toLowerCase()));}
+}
+function applyIdentity(){
+ const i=state.institution,p=state.profile,name=i.name||"Your Institution",code=i.school_code||i.short_code||"";
+ document.title=name+" | Institution Admin";
+ $("iaTenantName").textContent=name;$("iaSchoolCode").textContent=code?"School code "+code:"Institution workspace";
+ $("iaTopInstitution").textContent=name;$("iaTopCode").textContent=code?"School code "+code:"";
+ $("iaBrandName").textContent="Campus Nexus";$("iaUserName").textContent=p.full_name||p.email||"Administrator";
+ $("iaWelcomeName").textContent=(p.full_name||"Administrator").split(/\s+/)[0];$("iaAvatar").textContent=initials(p.full_name||p.email);
+ $("iaToday").textContent=new Intl.DateTimeFormat("en-KE",{weekday:"short",day:"numeric",month:"short",year:"numeric"}).format(new Date());
+ $("iaProfileName").textContent=name;$("iaProfileType").textContent=i.institution_type||"Institution";$("iaProfileEmail").textContent=i.contact_email||i.admin_email||"";
+ $("iaProfileCode").textContent=code||"—";$("iaProfileStatus").textContent=statusLabel(i.status);$("iaProfileModules").textContent=state.modules.size+" enabled";
+ $("iaSettingsName").textContent=name;$("iaSettingsType").textContent=i.institution_type||"Institution";
+ $("setCode").textContent=code||"—";$("setAdminEmail").textContent=i.admin_email||"—";$("setContactEmail").textContent=i.contact_email||"—";$("setPhone").textContent=i.contact_phone||"—";$("setWebsite").textContent=i.website_url||"—";$("setStatus").textContent=statusLabel(i.status);
+ const logo=i.logo_url&&/^https:\/\//i.test(i.logo_url)?i.logo_url:"";
+ ["iaLogo","iaProfileLogo","iaSettingsLogo"].forEach(id=>{const el=$(id);if(logo){const img=document.createElement("img");img.src=logo;img.alt=name+" logo";el.replaceChildren(img);}else el.textContent=initials(name);});
+ const list=$("iaModuleList");list.replaceChildren();const keys=[...state.modules].filter(k=>MODULES[k]);if(!keys.length){const s=document.createElement("p");s.className="ia-empty";s.textContent="No module entitlements were returned.";list.append(s);}keys.forEach(k=>{const row=document.createElement("div");row.className="ia-module-row";const ic=document.createElement("i");ic.className="fa-solid fa-circle-check";const label=document.createElement("b");label.textContent=MODULES[k];const stateEl=document.createElement("span");stateEl.className="ia-module-state";stateEl.textContent="Enabled";row.append(ic,label,stateEl);list.append(row);});
+ document.querySelectorAll("[data-module]").forEach(el=>{const key=el.dataset.module;const allowed=state.modules.has(key)||(key==="admin_exams"&&state.modules.has("examinations"));el.hidden=!allowed;});
+}
+function activate(view){if(!$( "view-"+view))return;document.querySelectorAll(".ia-view").forEach(x=>x.classList.toggle("active",x.id==="view-"+view));document.querySelectorAll(".ia-nav-item").forEach(x=>x.classList.toggle("active",x.dataset.view===view));$("iaSidebar").classList.remove("open");$("iaScrim").classList.remove("show");}
+async function loadDashboard(){
+ const tasks=[
+ ["students",()=>count("students")],["staff",()=>count("lecturers")],["programs",()=>count("programs")],["exams",()=>count("exams")],["attendance",()=>count("attendance")],["results",()=>count("student_marks",{published:true})]
+ ];
+ const values=await Promise.all(tasks.map(async([k,fn])=>{try{return [k,await fn()]}catch(e){console.warn("Institution metric unavailable",k,e.message);return [k,null]}}));
+ values.forEach(([k,v])=>{const id={students:"statStudents",staff:"statStaff",programs:"statPrograms",exams:"statExams",attendance:"statAttendance",results:"statResults"}[k];$(id).textContent=v===null?"—":v.toLocaleString("en-KE");$("rep"+k[0].toUpperCase()+k.slice(1)).textContent=v===null?"—":v.toLocaleString("en-KE");});
+ $("iaStudentNavCount").textContent=$("statStudents").textContent;
+ const exams=await loadRows("exams","id,title,exam_name,course_name,target_program,program_type,block,exam_date,approval_status,is_published,status,created_at",6);
+ rows("iaRecentExams",exams,1,(tr,x)=>{const box=document.createElement("div");box.className="ia-list-row";const left=document.createElement("div");const b=document.createElement("b");b.textContent=x.title||x.exam_name||x.course_name||"Examination";const sm=document.createElement("small");sm.textContent=[x.target_program||x.program_type,x.exam_date].filter(Boolean).join(" · ");left.append(b,sm);const tag=document.createElement("span");tag.className="ia-status";tag.textContent=x.is_published?"Published":statusLabel(x.approval_status||x.status);box.append(left,tag);tr.append(box);});
+}
+async function loadStudents(){const data=await loadRows("students","id,full_name,email,admission_number,course,block,current_block,status",500);state.rows.students=data;renderStudents();}
+function renderStudents(){const q=($("iaStudentSearch").value||"").toLowerCase();const data=state.rows.students.filter(x=>[x.full_name,x.email,x.admission_number,x.course].some(v=>String(v||"").toLowerCase().includes(q)));$("iaStudentCount").textContent=data.length+" students";rows("iaStudents",data,5,(tr,x)=>{cell(tr,x.full_name,true);cell(tr,x.admission_number);cell(tr,x.course);cell(tr,x.current_block||x.block);cell(tr,statusLabel(x.status));});}
+async function loadStaff(){const data=await loadRows("lecturers","id,full_name,email,department,staff_id,status,approved",500);state.rows.staff=data;renderStaff();}
+function renderStaff(){const q=($("iaStaffSearch").value||"").toLowerCase();const data=state.rows.staff.filter(x=>[x.full_name,x.email,x.department,x.staff_id].some(v=>String(v||"").toLowerCase().includes(q)));$("iaStaffCount").textContent=data.length+" staff records";rows("iaStaff",data,5,(tr,x)=>{cell(tr,x.full_name,true);cell(tr,x.email);cell(tr,x.department);cell(tr,x.staff_id);cell(tr,statusLabel(x.status));});}
+async function loadAcademic(){const [p,c]=await Promise.all([loadRows("programs","id,program_name,program_code,category,duration_months,status",500),loadRows("courses","id,course_name,name,code,unit_code,target_program,block,status",500)]);rows("iaPrograms",p,5,(tr,x)=>{cell(tr,x.program_name,true);cell(tr,x.program_code);cell(tr,x.category||"—");cell(tr,x.duration_months?x.duration_months+" months":"—");cell(tr,statusLabel(x.status));});rows("iaCourses",c,5,(tr,x)=>{cell(tr,x.course_name||x.name,true);cell(tr,x.unit_code||x.code);cell(tr,x.target_program);cell(tr,x.block);cell(tr,statusLabel(x.status));});}
+async function loadExams(){const d=await loadRows("exams","id,title,exam_name,course_name,target_program,program_type,block,exam_date,approval_status,is_published,status",500);rows("iaExams",d,6,(tr,x)=>{cell(tr,x.title||x.exam_name||x.course_name,true);cell(tr,x.target_program||x.program_type);cell(tr,x.block);cell(tr,x.exam_date);cell(tr,statusLabel(x.approval_status||x.status));cell(tr,x.is_published?"Published":"Not published");});}
+async function loadAttendance(){const d=await loadRows("attendance","id,student_id,date,timestamp,course_or_rotation,status,marked_by",200);const ids=[...new Set(d.map(x=>x.student_id).filter(Boolean))];let names={};if(ids.length){const s=await state.db.from("students").select("id,full_name,admission_number").eq("institution_id",state.institutionId).in("id",ids);if(!s.error)(s.data||[]).forEach(x=>names[x.id]=x.full_name||x.admission_number||x.id);}rows("iaAttendance",d,5,(tr,x)=>{cell(tr,x.date||x.timestamp);cell(tr,names[x.student_id]||x.student_id);cell(tr,x.course_or_rotation);cell(tr,statusLabel(x.status));cell(tr,x.marked_by);});}
+async function loadView(view){try{if(view==="students"&&!state.rows.students)await loadStudents();if(view==="staff"&&!state.rows.staff)await loadStaff();if(view==="academic")await loadAcademic();if(view==="exams")await loadExams();if(view==="attendance")await loadAttendance();}catch(e){message("Unable to load "+view+": "+e.message,true);}}
+function bind(){document.querySelectorAll("[data-view]").forEach(el=>el.addEventListener("click",()=>{activate(el.dataset.view);loadView(el.dataset.view);}));document.querySelectorAll("[data-open-view]").forEach(el=>el.addEventListener("click",()=>{const v=el.dataset.openView;activate(v);loadView(v);}));$("iaStudentSearch").addEventListener("input",renderStudents);$("iaStaffSearch").addEventListener("input",renderStaff);$("iaMenuToggle").addEventListener("click",()=>{$("iaSidebar").classList.toggle("open");$("iaScrim").classList.toggle("show");});$("iaScrim").addEventListener("click",()=>{$("iaSidebar").classList.remove("open");$("iaScrim").classList.remove("show");});$("iaRefresh").addEventListener("click",()=>refresh());$("iaLogout").addEventListener("click",async()=>{await state.db.auth.signOut();localStorage.removeItem("userProfile");location.replace("/login/");});}
+async function refresh(){message("");try{state.rows={};await loadDashboard();const active=document.querySelector(".ia-view.active")?.id?.replace("view-","");if(active&&active!=="overview")await loadView(active);message("Institution data refreshed.");}catch(e){message(e.message,true);}}
+async function start(){try{if(!window.supabase?.createClient)throw new Error("Secure database client could not load. Refresh the page.");state.db=window.supabase.createClient(URL,KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});await verifyAccess();applyIdentity();bind();await loadDashboard();$("iaBoot").hidden=true;$("iaApp").hidden=false;}catch(e){console.error("[Institution Admin]",e);fail(e.message);if(/session|sign in|administrator profile/i.test(e.message))setTimeout(()=>location.replace("/login/"),2800);}}
+if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",start,{once:true});else start();
+})();
