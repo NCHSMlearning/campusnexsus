@@ -29,7 +29,7 @@ async function boot(){
   ]),"Institution access check");
   const memberships=memberResult.data||[];
   const prof=profileResult.data||{};
-  const profileRole=String(prof.role||"").toLowerCase().replace(/[\\s-]+/g,"_");
+  const profileRole=String(prof.role||"").toLowerCase().trim().replace(/-/g,"_");
   const profileStatus=String(prof.status||"").toLowerCase();
   const platformSuperadmin=!superResult.error && superResult.data===true;
   let institutionOptions=[];
