@@ -89,6 +89,9 @@ form.addEventListener('submit',async e=>{
    return;
   }
   if(isInstitutionAdmin||isPlatformAdmin){
+   // Carry the role verification into this tab so the dashboard does not
+   // repeat profile/membership reads that may be blocked by dashboard RLS.
+   sessionStorage.setItem('campusNexusExamAdminAuth',JSON.stringify({user_id:data.user.id,role:isPlatformAdmin?'superadmin':'institution_admin',institution_id:isInstitutionAdmin?memberships.find(m=>String(m.institution_id)===String(selectedInstitution.id)).institution_id:(profile.institution_id||null),verified_at:Date.now()}));
    show('Administrator verified. Opening the examination dashboard…','info');
    location.replace('/adminexams/');
    return;
