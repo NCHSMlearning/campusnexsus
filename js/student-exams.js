@@ -1,6 +1,6 @@
 (function(){
 'use strict';
-const state={client:null,user:null,profile:null,exams:[],announcements:[],history:[],dashboardStats:null};
+const state={client:null,user:null,profile:null,exams:[],announcements:[],history:[],dashboardStats:null,marks:[],supportTickets:[],academicSummary:null};
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const val=(...xs)=>xs.find(x=>x!==undefined&&x!==null&&String(x).trim()!=='');
@@ -63,6 +63,62 @@ function examState(exam){
 }
 function onlineHref(exam){const raw=val(exam.exam_link,exam.online_link,'');if(!raw)return '';try{const url=new URL(raw,location.origin);return ['http:','https:'].includes(url.protocol)?url.href:''}catch(_){return ''}}
 function dateLabel(exam){const d=startsAt(exam);return d?d.toLocaleString('en-KE',{timeZone:'Africa/Nairobi',dateStyle:'medium',timeStyle:'short'})+' EAT':'Schedule to be confirmed'}
+function renderDailyWelcome(){
+ const now=new Date(),hour=Number(new Intl.DateTimeFormat('en-KE',{timeZone:'Africa/Nairobi',hour:'2-digit',hourCycle:'h23'}).format(now));
+ const greeting=hour>=5&&hour<12?'Good morning':hour>=12&&hour<17?'Good afternoon':hour>=17&&hour<21?'Good evening':'Good night';
+ const day=new Intl.DateTimeFormat('en-KE',{timeZone:'Africa/Nairobi',weekday:'long'}).format(now);
+ const quotes={
+  Monday:'Start where you are. Use what you have. Do what you can.',
+  Tuesday:'Progress is built one focused step at a time.',
+  Wednesday:'Stay curious, keep practising, and trust your preparation.',
+  Thursday:'Consistency turns effort into achievement.',
+  Friday:'Finish the week proud of the work you have put in.',
+  Saturday:'Make time to learn something that moves you forward.',
+  Sunday:'Rest, reflect, and prepare for a stronger week ahead.'
+ };
+ const greetingNode=$('greeting-label'),quoteNode=$('daily-quote'),dateNode=$('today-date');
+ if(greetingNode)greetingNode.textContent=greeting;
+ if(quoteNode)quoteNode.textContent='“'+quotes[day]+'”';
+ if(dateNode)dateNode.textContent=now.toLocaleDateString('en-KE',{timeZone:'Africa/Nairobi',weekday:'long',day:'numeric',month:'long',year:'numeric'});
+ const icon=document.querySelector('.welcome-note-icon i');
+ if(icon)icon.className=hour>=5&&hour<17?'fa-solid fa-sun':hour<19?'fa-solid fa-cloud-sun':'fa-solid fa-moon';
+}
+async function loadAcademicSummary(){
+ const panel=$('gpa-trend');
+ if(panel)panel.innerHTML='<div class="loading-state"><span class="spinner"></span><p>Loading published academic results…</p></div>';
+ const {data,error}=await state.client.from('student_marks')
+  .select('id,subject_name,block,final_score,grade,points,program,academic_year,retake_score,retake_status,published,approval_status')
+  .eq('student_id',state.user.id).eq('published',true).eq('approval_status','approved')
+  .order('academic_year',{ascending:true});
+ if(error)throw error;
+ state.marks=data||[];
+ const unitsResult=await state.client.from('units_catalog').select('unit_name,unit_code,credits,program,institution_id')
+  .eq('institution_id',state.profile.institution_id);
+ const units=unitsResult.error?[]:(unitsResult.data||[]);
+ const creditFor=m=>{
+  const key=norm(m.subject_name);
+  const match=units.find(u=>norm(u.unit_name)===key||norm(u.unit_code)===key);
+  return Math.max(1,Number(match?.credits)||1);
+ };
+ const rows=state.marks.filter(m=>Number.isFinite(Number(m.points))&&m.points!==null&&Number(m.final_score)!==null);
+ const enriched=rows.map(m=>({mark:m,credits:creditFor(m),score:Number(m.final_score),points:Number(m.points)}));
+ const credits=enriched.reduce((s,x)=>s+x.credits,0),weighted=enriched.reduce((s,x)=>s+x.points*x.credits,0),scoreTotal=enriched.reduce((s,x)=>s+x.score,0);
+ const gpa=credits?weighted/credits:null;
+ state.academicSummary={credits,weighted,gpa,average:enriched.length?scoreTotal/enriched.length:null,units:enriched.length};
+ const set=(id,v)=>{const n=$(id);if(n)n.textContent=v;};
+ set('cumulative-gpa',gpa===null?'—':gpa.toFixed(2)+' / 4.00');
+ set('gpa-units',String(enriched.length));
+ set('gpa-average',enriched.length?(scoreTotal/enriched.length).toFixed(1)+'%':'—');
+ set('gpa-points',credits?weighted.toFixed(2):'—');
+ set('gpa-credit-note',enriched.length?credits+' credit units counted':'No published results available yet');
+ if(!enriched.length){if(panel)panel.innerHTML='<p class="chart-empty">Your cumulative GPA will appear here when your results are published and approved.</p>';return;}
+ const groups=new Map();
+ enriched.forEach(x=>{const label=String(val(x.mark.block,x.mark.academic_year,'Unspecified block'));const g=groups.get(label)||{weighted:0,credits:0};g.weighted+=x.points*x.credits;g.credits+=x.credits;groups.set(label,g);});
+ const entries=[...groups.entries()];
+ const max=4;
+ if(panel)panel.innerHTML='<div class="gpa-bars">'+entries.map(([label,g])=>{const value=g.weighted/g.credits;return '<div class="gpa-bar-item"><div class="gpa-bar-value">'+value.toFixed(2)+'</div><div class="gpa-bar-track"><i style="height:'+Math.max(3,value/max*100)+'%"></i></div><small>'+esc(label)+'</small></div>';}).join('')+'</div><div class="chart-footnote">Weighted GPA · '+credits+' credits across '+enriched.length+' published units</div>';
+}
+
 function renderDashboard(){
  const counts={upcoming:0,open:0,closed:0};
  state.exams.forEach(e=>{const s=examState(e);if(counts[s]!==undefined)counts[s]++;});
@@ -127,10 +183,22 @@ async function loadHistory(){
  if(error)throw error;state.history=data||[];renderDashboard();
  panel.innerHTML=state.history.length?'<div class="portal-list">'+state.history.map(a=>{const e=state.exams.find(x=>String(x.id)===String(a.exam_id));return '<article class="portal-list-item"><div class="portal-list-icon"><i class="fa-solid fa-file-circle-check"></i></div><div class="portal-list-copy"><b>'+esc(val(e?.title,e?.exam_name,'Examination'))+'</b><small>Attempt '+esc(a.attempt_number)+' · '+esc(a.submitted_at?'Submitted':'In progress')+'</small></div><div class="portal-list-date">'+esc(a.submitted_at?new Date(a.submitted_at).toLocaleString('en-KE',{dateStyle:'medium',timeStyle:'short'}):a.started_at?new Date(a.started_at).toLocaleString('en-KE',{dateStyle:'medium',timeStyle:'short'}):'')+'</div></article>'}).join('')+'</div>':'<div class="empty-state"><i class="fa-regular fa-folder-open"></i><p>You have no examination attempts yet.</p></div>';
 }
+
+async function loadSupportTickets(){
+ const panel=$('support-ticket-list');if(!panel)return;
+ panel.innerHTML='<div class="loading-state"><span class="spinner"></span><p>Loading your support requests…</p></div>';
+ const {data,error}=await state.client.from('support_tickets')
+  .select('id,ticket_number,subject,category,status,priority,created_at,updated_at,resolution_notes')
+  .eq('student_id',state.user.id).order('created_at',{ascending:false}).limit(30);
+ if(error)throw error;
+ state.supportTickets=data||[];
+ if(!state.supportTickets.length){panel.innerHTML='<div class="empty-state"><i class="fa-regular fa-life-ring"></i><p>You have not submitted any support tickets yet.</p></div>';return;}
+ panel.innerHTML='<div class="ticket-table-wrap"><table class="ticket-table"><thead><tr><th>Ticket</th><th>Issue</th><th>Date submitted</th><th>Status</th></tr></thead><tbody>'+state.supportTickets.map(t=>'<tr><td><b>'+esc(t.ticket_number||'—')+'</b></td><td><strong>'+esc(t.subject)+'</strong><small>'+esc(t.category||'General support')+(t.resolution_notes?' · '+esc(t.resolution_notes):'')+'</small></td><td>'+esc(t.created_at?new Date(t.created_at).toLocaleDateString('en-KE',{timeZone:'Africa/Nairobi'}):'—')+'</td><td><span class="ticket-status '+esc(norm(t.status).replace(/[^a-z0-9_-]/g,''))+'">'+esc(t.status||'Open')+'</span></td></tr>').join('')+'</tbody></table></div>';
+}
 async function submitSupport(event){
  event.preventDefault();const btn=$('support-submit'),feedback=$('support-feedback');btn.disabled=true;feedback.textContent='Submitting your request…';
  try{const {data,error}=await state.client.rpc('submit_student_exam_support_ticket',{p_subject:$('support-subject').value.trim(),p_description:$('support-description').value.trim(),p_category:$('support-category').value});
- if(error)throw error;const ticket=Array.isArray(data)?data[0]?.ticket_number:data?.ticket_number;feedback.textContent='Your request was submitted. Ticket reference: '+(ticket||'created');$('exam-support-form').reset();notify('Support request submitted successfully.');}
+ if(error)throw error;const ticket=Array.isArray(data)?data[0]?.ticket_number:data?.ticket_number;feedback.textContent='Your request was submitted. Ticket reference: '+(ticket||'created');$('exam-support-form').reset();await loadSupportTickets();notify('Support request submitted successfully.');}
  catch(e){feedback.textContent=e.message||'Could not submit your request. Please try again.';}
  finally{btn.disabled=false;}
 }
@@ -187,11 +255,14 @@ async function init(){
  setText('avatar',name.split(/\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase());
  setText('side-admission',val(p.admission_number,p.student_id,'Student account'));
  setText('student-meta',[val(p.program,p.program_name,'Programme not assigned'),studentBlock(p)!=='General'?studentBlock(p):'',val(p.intake_year,p.intake,'')].filter(Boolean).join(' • '));
+ renderDailyWelcome();
  await loadDashboardStats().catch(e=>{console.warn('Dashboard statistics RPC unavailable; using student-visible records.',e);});
+ await loadAcademicSummary().catch(e=>{console.warn('Published academic summary unavailable:',e);const n=$('gpa-trend');if(n)n.innerHTML='<p class="chart-empty">Academic summary is temporarily unavailable.</p>';});
  await loadExams().catch(e=>{console.error('Student examination list failed:',e);$('exam-panel').innerHTML='<div class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><p>Examination list could not be loaded. Your dashboard statistics are shown where available.</p></div>';});
  renderTimetable();renderDashboard();
  loadAnnouncements().catch(e=>{$('announcements-panel').innerHTML='<div class="empty-state"><p>Announcements are temporarily unavailable.</p></div>';console.warn(e)});
  loadHistory().catch(e=>{$('history-panel').innerHTML='<div class="empty-state"><p>Examination history is temporarily unavailable.</p></div>';console.warn(e)});
+ loadSupportTickets().catch(e=>{const n=$('support-ticket-list');if(n)n.innerHTML='<div class="empty-state"><p>Your support tickets are temporarily unavailable.</p></div>';console.warn(e)});
 }
 document.querySelectorAll('.exam-nav a[data-module]').forEach(link=>link.addEventListener('click',event=>{event.preventDefault();activateModule(link.dataset.module);document.getElementById('exam-sidebar').classList.remove('show');document.getElementById('mobile-scrim').classList.remove('show');}));
 window.addEventListener('hashchange',()=>activateModule(location.hash.slice(1),false));
@@ -199,6 +270,7 @@ activateModule(location.hash.slice(1)||'dashboard',false);
 $('refresh-btn').addEventListener('click',()=>loadExams().then(renderTimetable).catch(e=>notify(e.message||'Could not refresh examinations.')));
 $('refresh-announcements').addEventListener('click',()=>loadAnnouncements().catch(e=>notify(e.message||'Could not load announcements.')));
 $('refresh-history').addEventListener('click',()=>loadHistory().catch(e=>notify(e.message||'Could not load examination history.')));
+ $('refresh-tickets')?.addEventListener('click',()=>loadSupportTickets().catch(e=>notify(e.message||'Could not load support tickets.')));
 $('exam-support-form').addEventListener('submit',submitSupport);
 $('search-input').addEventListener('input',render);$('status-filter').addEventListener('change',render);
 $('logout-btn').addEventListener('click',async()=>{try{if(state.client)await state.client.auth.signOut({scope:'local'})}finally{location.replace('/examlogin.html')}});
