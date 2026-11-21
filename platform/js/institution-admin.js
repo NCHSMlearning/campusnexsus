@@ -30,6 +30,7 @@ async function verifyAccess(){
  if(p.data.institution_id&&p.data.institution_id!==state.institutionId)throw new Error("Your profile and institution membership do not match. Contact platform support.");
  const i=await state.db.from("institutions").select("id,name,school_code,short_code,institution_type,logo_url,primary_color,secondary_color,brand_colors,status,admin_email,contact_email,contact_phone,website_url").eq("id",state.institutionId).single();
  if(i.error)throw i.error;state.institution=i.data;
+ const institutionCode=i.data.school_code||i.data.short_code||"";if(institutionCode){const codeEl=$("iaBootInstitutionCode");codeEl.textContent="Institution code: "+institutionCode;codeEl.hidden=false;}
  const ent=await state.db.rpc("current_user_module_entitlements");
  if(!ent.error&&Array.isArray(ent.data))state.modules=new Set(ent.data.map(x=>String(x).toLowerCase()));
  else {const mods=await state.db.from("institution_modules").select("module_key").eq("institution_id",state.institutionId).eq("enabled",true);if(mods.error)throw mods.error;state.modules=new Set((mods.data||[]).map(x=>String(x.module_key).toLowerCase()));}
