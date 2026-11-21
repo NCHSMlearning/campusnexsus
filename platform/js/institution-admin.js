@@ -80,6 +80,36 @@ async function loadStudentAnalytics(){
   if(stamp)stamp.textContent=students.length.toLocaleString("en-KE")+" student records · refreshed just now";
  }catch(error){console.warn("Student analytics unavailable",error);["iaStudentsByProgramme","iaStudentTrend","iaStudentStatus","iaStudentIntake"].forEach(id=>chartEmpty(id,"Student analytics could not be loaded: "+error.message));if(stamp)stamp.textContent="Analytics unavailable";}
 }
+async function loadWorkspaceDashboardStats(){
+ const stamp=$("iaWorkspaceStatsUpdated");
+ const keys=["proctoring","transcripts_certificates","quality_assurance","library","hostel_management","transport_management","career_services","events","inventory","asset_management","document_management","communication","helpdesk"];
+ document.querySelectorAll("[data-workspace-stat]").forEach(card=>{card.hidden=!state.modules.has(card.dataset.workspaceStat);});
+ const visible=keys.filter(k=>state.modules.has(k));
+ if(!visible.length){if(stamp)stamp.textContent="No additional modules enabled";return;}
+ try{
+  const result=await state.db.from("institution_workspace_records").select("module_key,status").eq("institution_id",state.institutionId).in("module_key",visible).limit(10000);
+  if(result.error)throw result.error;
+  const grouped=new Map(visible.map(k=>[k,{total:0,active:0,done:0,attention:0}]));
+  (result.data||[]).forEach(row=>{
+   const item=grouped.get(String(row.module_key||"").toLowerCase());if(!item)return;
+   item.total++;
+   const status=String(row.status||"").toLowerCase().replace(/[ -]+/g,"_");
+   if(["completed","resolved","closed","approved","issued","delivered"].includes(status))item.done++;
+   else if(["rejected","overdue","urgent","high_priority","revision_required","needs_attention","escalated"].includes(status))item.attention++;
+   else if(["active","open","in_progress","pending","planned","allocated","under_review","submitted","referred"].includes(status))item.active++;
+  });
+  grouped.forEach((v,k)=>{
+   const total=$("wsDash-"+k),detail=$("wsDash-"+k+"-detail");
+   if(total)total.textContent=v.total.toLocaleString("en-KE");
+   if(detail)detail.textContent=v.active+" active · "+v.done+" completed · "+v.attention+" attention";
+  });
+  if(stamp)stamp.textContent="Updated just now · "+visible.length+" enabled modules";
+ }catch(error){
+  console.warn("Additional module statistics unavailable",error);
+  visible.forEach(k=>{const total=$("wsDash-"+k),detail=$("wsDash-"+k+"-detail");if(total)total.textContent="—";if(detail)detail.textContent="Statistics unavailable";});
+  if(stamp)stamp.textContent="Module statistics unavailable";
+ }
+}
 async function loadDashboard(){
  const tasks=[
  ["students",()=>count("students")],["staff",()=>count("lecturers")],["programs",()=>count("programs")],["exams",()=>count("exams")],["attendance",()=>count("attendance")],["results",()=>count("student_marks",{published:true})],
@@ -87,6 +117,7 @@ async function loadDashboard(){
  ];
  const values=await Promise.all(tasks.map(async([k,fn])=>{try{return [k,await fn()]}catch(e){console.warn("Institution metric unavailable",k,e.message);return [k,null]}}));
  await loadStudentAnalytics();
+ await loadWorkspaceDashboardStats();
  values.forEach(([k,v])=>{const ids={students:"statStudents",staff:"statStaff",programs:"statPrograms",exams:"statExams",attendance:"statAttendance",results:"statResults",admissions:"statAdmissions",hr:"statHR",timetable:"statTimetable",placements:"statPlacements",research:"statResearch",welfare:"statWelfare"};const id=ids[k];if($(id))$(id).textContent=v===null?"—":v.toLocaleString("en-KE");const reportIds={students:"repStudents",staff:"repStaff",programs:"repPrograms",exams:"repExams",attendance:"repAttendance",results:"repResults",admissions:"repAdmissions",hr:"repHR",timetable:"repTimetable",placements:"repPlacements",research:"repResearch",welfare:"repWelfare"};const reportId=reportIds[k];if($(reportId))$(reportId).textContent=v===null?"—":v.toLocaleString("en-KE");});
  $("iaStudentNavCount").textContent=$("statStudents").textContent;
  let exams=[];try{exams=await loadRows("exams","id,title,exam_name,course_name,target_program,program_type,block,exam_date,approval_status,is_published,status,created_at",6);}catch(e){console.warn("Recent examinations unavailable:",e.message);}
