@@ -87,3 +87,64 @@
  #dashboard .dashboard-charts{grid-template-columns:1fr}
 }
 @media(max-width:380px){#dashboard .gpa-heading{display:block!important}#dashboard .gpa-scale{margin-top:9px}}
+
+/* Final dashboard hierarchy: one welcome panel, exams first, GPA second */
+#dashboard .dashboard-welcome{box-sizing:border-box;position:relative;display:flex!important;align-items:center;justify-content:space-between;gap:20px;margin:0 0 20px;padding:22px 24px;border:1px solid #dce9ef;border-radius:17px;background:linear-gradient(112deg,#eaf7f5 0%,#f3f8fc 65%,#fff9ed 100%);box-shadow:0 6px 20px rgba(17,55,82,.045);overflow:hidden}
+#dashboard .dashboard-welcome-main{min-width:0;max-width:850px}
+#dashboard .dashboard-welcome .dashboard-eyebrow{display:block;margin:0 0 7px;font-size:9px;font-weight:850;letter-spacing:1.6px;color:#0b8990}
+#dashboard .dashboard-welcome h1{margin:0;font-size:clamp(23px,2.4vw,31px);line-height:1.16;letter-spacing:-.8px;font-weight:850;color:#153d5c}
+#dashboard .dashboard-welcome h1 #greeting-label{color:#153d5c}
+#dashboard .dashboard-welcome h1 #welcome-name{color:#087e85}
+#dashboard .dashboard-welcome-main>p{margin:7px 0 13px;font-size:11px;line-height:1.5;color:#6e8396}
+#dashboard .dashboard-quote{display:flex;flex-wrap:wrap;align-items:center;gap:7px 15px;padding-top:10px;border-top:1px solid rgba(21,75,99,.10)}
+#dashboard .dashboard-quote span{font-size:11px;line-height:1.5;font-weight:600;color:#426176}
+#dashboard .dashboard-quote small{font-size:9px;color:#8596a5}
+#dashboard .dashboard-welcome .dashboard-live{align-self:flex-start;flex:0 0 auto;white-space:nowrap}
+#dashboard .dashboard-welcome-icon{display:grid;place-items:center;flex:0 0 46px;width:46px;height:46px;border-radius:15px;background:#fff;color:#d49b32;font-size:19px;box-shadow:0 5px 16px rgba(21,59,87,.08)}
+#dashboard .stats-grid{margin:0 0 16px;gap:12px}
+#dashboard .stat-card{min-height:112px;padding:17px 16px}
+#dashboard .dashboard-charts{margin-bottom:18px;gap:14px}
+#dashboard .dashboard-charts .chart-card{min-height:190px;padding:18px 19px}
+#dashboard .dashboard-charts .chart-heading h2{font-size:14px}
+#dashboard .dashboard-charts .chart-heading p{font-size:10px}
+#dashboard .status-chart{padding-top:7px}
+#dashboard .activity-chart{min-height:110px;display:flex;align-items:center;justify-content:center}
+#dashboard .activity-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;padding:16px;text-align:center;color:#8496a6}
+#dashboard .activity-empty i{font-size:22px;color:#9bb5c5}
+#dashboard .activity-empty b{font-size:11px;color:#45647b}
+#dashboard .activity-empty span{font-size:9px;line-height:1.45}
+#dashboard .gpa-overview{margin:0 0 22px;padding-top:3px}
+#dashboard .gpa-heading{margin-bottom:12px}
+#dashboard .gpa-heading h2{font-size:18px}
+#dashboard .gpa-stats{gap:11px;margin-bottom:12px}
+#dashboard .gpa-stat{min-height:96px;padding:14px 16px}
+#dashboard .gpa-stat strong{font-size:23px}
+#dashboard .gpa-trend-card{padding:16px 18px}
+#dashboard .gpa-trend-card .chart-heading{margin-bottom:10px}
+#dashboard .gpa-trend{min-height:0}
+#dashboard .gpa-trend .chart-empty{min-height:0;margin:0;padding:16px 12px;border-radius:10px;background:#f7fafc;font-size:10px}
+#dashboard .gpa-bars{height:145px}
+#dashboard .gpa-bar-track{height:95px}
+#dashboard .gpa-trend-card .chart-footnote{margin-top:9px}
+@media(max-width:950px){
+ #dashboard .dashboard-welcome{padding:18px}
+ #dashboard .dashboard-charts{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:680px){
+ #dashboard .dashboard-welcome{align-items:flex-start;gap:10px;padding:16px;margin-bottom:15px}
+ #dashboard .dashboard-welcome h1{font-size:23px;overflow-wrap:anywhere}
+ #dashboard .dashboard-welcome-main>p{font-size:10px;margin:6px 0 10px}
+ #dashboard .dashboard-quote{gap:5px;align-items:flex-start;flex-direction:column}
+ #dashboard .dashboard-quote span{font-size:10px}
+ #dashboard .dashboard-welcome-icon{width:36px;height:36px;flex-basis:36px;font-size:15px}
+ #dashboard .dashboard-welcome .dashboard-live{font-size:8px;padding:6px 8px}
+ #dashboard .stats-grid{gap:9px;margin-bottom:13px}
+ #dashboard .stat-card{min-height:100px;padding:12px}
+ #dashboard .dashboard-charts{grid-template-columns:1fr;gap:10px;margin-bottom:16px}
+ #dashboard .dashboard-charts .chart-card{min-height:155px;padding:15px}
+ #dashboard .gpa-overview{margin-top:4px}
+ #dashboard .gpa-heading h2{font-size:17px}
+ #dashboard .gpa-stat{min-height:88px}
+ #dashboard .gpa-trend-card{padding:14px 12px}
+ #dashboard .gpa-trend .chart-empty{padding:13px 9px}
+}
