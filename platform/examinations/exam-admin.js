@@ -31,7 +31,7 @@ async function boot(){
   const prof=profileResult.data||{};
   const profileRole=String(prof.role||"").toLowerCase().replace(/[\\s-]+/g,"_");
   const profileStatus=String(prof.status||"").toLowerCase();
-  const platformSuperadmin=(!superResult.error && superResult.data===true) || ["superadmin","super_admin","platform_superadmin"].includes(profileRole);
+  const platformSuperadmin=!superResult.error && superResult.data===true;
   let institutionOptions=[];
   if(platformSuperadmin){
     const result=await withTimeout(sb.from("institutions").select("id,name,logo_url,primary_color,school_code,physical_address,postal_address").order("name"),"Institution list");
