@@ -15,7 +15,7 @@ function withTimeout(promise,label,ms=15000){
 async function boot(){
   if(!window.supabase?.createClient) throw new Error("Authentication service is unavailable. Refresh and try again.");
   $("bootMessage").textContent="Checking your secure sign-in…";
-  sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
+  sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,storageKey:"campus-nexus-exam-auth"}});
   const sessionResult=await withTimeout(sb.auth.getSession(),"Secure sign-in check");
   const session=sessionResult?.data?.session,sessionError=sessionResult?.error;
   if(sessionError) throw sessionError;
