@@ -174,10 +174,10 @@
  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;padding:16px">
   <label>Structure type<select id="iaStructureType"><option value="Block">Blocks</option><option value="Term">Terms</option></select></label>
   <label>Structure name<input id="iaStructureName" placeholder="e.g. Block 1 / Term 1"></label>
-  <label>Sequence number<input id="iaStructureSequence" type="number" min="1" step="1" placeholder="1"></label>
+  <label>Sequence number<input id="iaStructureSequence" type="number" min="1" step="1" placeholder="1"></label><label>Number of blocks / terms to create<input id="iaStructureCount" type="number" min="1" max="30" step="1" value="1"></label>
   <label>Credit hours<input id="iaStructureCredits" type="number" min="0" step="1" placeholder="Optional"></label>
   <label>Status<select id="iaStructureStatus"><option value="active">Active</option><option value="inactive">Inactive</option></select></label>
-  <div style="display:flex;align-items:end"><button type="button" class="ia-primary-btn" id="iaAddStructure">Add block / term</button></div>
+  <div style="display:flex;align-items:end;gap:8px;flex-wrap:wrap"><button type="button" class="ia-primary-btn" id="iaAddStructure">Add one</button><button type="button" class="ia-secondary-btn" id="iaGenerateStructure">Generate missing sequence</button></div>
  </div>
  <div class="ia-table-scroll"><table><thead><tr><th>Sequence</th><th>Block / term</th><th>Credits</th><th>Status</th><th>Action</th></tr></thead><tbody id="iaStructureRows"><tr><td colspan="5" class="ia-empty">Select a programme to view its structure.</td></tr></tbody></table></div>
 </div>
