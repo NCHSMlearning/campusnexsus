@@ -1299,3 +1299,29 @@ body>#iaApp .ia-user{min-width:170px!important;justify-content:flex-start!import
   #iaApp aside#iaSidebar{left:0!important;transform:none!important;visibility:visible!important;pointer-events:auto!important}
   #iaApp .ia-mobile-scrim{display:none!important}
 }
+
+/* Sidebar final cascade guard: remove any inherited black child surface in desktop/mobile layouts */
+#iaApp #iaSidebar{
+  background-color:#062b5b!important;
+  background-image:linear-gradient(180deg,#062b5b 0%,#073d70 58%,#05264f 100%)!important;
+}
+#iaApp #iaSidebar > *{
+  background-color:transparent!important;
+  background-image:none!important;
+}
+#iaApp #iaSidebar > .ia-tenant{
+  background:linear-gradient(135deg,rgba(255,255,255,.10),rgba(255,255,255,.045))!important;
+}
+#iaApp #iaSidebar > .ia-sidebar-search{
+  background:rgba(255,255,255,.075)!important;
+}
+#iaApp #iaSidebar > .ia-nav > .ia-nav-item.active,
+#iaApp #iaSidebar > .ia-nav > .ia-nav-item:hover{
+  background:linear-gradient(100deg,#087bd1,#087f9f)!important;
+}
+#iaApp #iaSidebar > .ia-sidebar-bottom > .ia-support{
+  background:rgba(255,255,255,.07)!important;
+}
+#iaApp #iaSidebar > .ia-sidebar-bottom > .ia-logout{
+  background:rgba(248,113,113,.08)!important;
+}
