@@ -9,6 +9,6 @@
   "theme_color": "#062b57",
   "background_color": "#f5f9fd",
   "icons": [
-    {"src": "/images/logo-icon.png", "sizes": "any", "type": "image/png", "purpose": "any maskable"}
+    {"src": "/images/campus-nexus-original-logo.webp", "sizes": "300x300", "type": "image/webp", "purpose": "any maskable"}
   ]
 }
