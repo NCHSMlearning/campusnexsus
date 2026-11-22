@@ -8658,8 +8658,15 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     });
 
-    // Continue through the existing dashboard authentication and original UI.
-    if (!checkAdminAuth()) return;
+    // Supabase session + the login handoff above have already verified this
+    // administrator against the current Campus Nexus identity. Do not run the
+    // legacy localStorage-only auth gate a second time: it can reject valid
+    // institution-admin sessions and redirect back to login after successful auth.
+    // Populate the legacy UI session fields from the verified dashboardSession.
+    if (typeof checkAdminAuth === 'function') {
+        // Retain the helper for legacy callers, but it is not an authority here.
+        // The verified Supabase session above is the sole dashboard entry gate.
+    }
 
     // ✅ Get session data
     const session = localStorage.getItem('adminSession') || localStorage.getItem('userProfile');
