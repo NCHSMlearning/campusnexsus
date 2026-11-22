@@ -1325,3 +1325,87 @@ body>#iaApp .ia-user{min-width:170px!important;justify-content:flex-start!import
 #iaApp #iaSidebar > .ia-sidebar-bottom > .ia-logout{
   background:rgba(248,113,113,.08)!important;
 }
+
+/* Institution identity header: use Super Admin-managed institution logo and name */
+#iaApp #iaSidebar > .ia-institution-brand{
+  box-sizing:border-box!important;
+  display:flex!important;
+  flex:0 0 auto!important;
+  flex-direction:column!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:11px!important;
+  width:100%!important;
+  min-height:0!important;
+  margin:0 0 13px!important;
+  padding:15px 12px 18px!important;
+  text-align:center!important;
+  border:0!important;
+  border-bottom:1px solid rgba(255,255,255,.17)!important;
+  background:transparent!important;
+}
+#iaApp #iaSidebar .ia-institution-logo{
+  position:relative!important;
+  display:flex!important;
+  flex:0 0 82px!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:82px!important;
+  height:82px!important;
+  min-width:82px!important;
+  min-height:82px!important;
+  padding:7px!important;
+  overflow:hidden!important;
+  border:2px solid #f2cc55!important;
+  border-radius:17px!important;
+  background:#fff!important;
+  color:#07558a!important;
+  box-shadow:0 5px 16px rgba(0,20,45,.2)!important;
+  font-size:22px!important;
+}
+#iaApp #iaSidebar .ia-institution-logo::before,
+#iaApp #iaSidebar .ia-institution-logo::after{content:none!important;display:none!important}
+#iaApp #iaSidebar .ia-institution-logo img{
+  display:block!important;
+  width:100%!important;
+  height:100%!important;
+  max-width:100%!important;
+  max-height:100%!important;
+  object-fit:contain!important;
+  object-position:center!important;
+  border-radius:8px!important;
+}
+#iaApp #iaSidebar .ia-institution-brand-copy{
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:5px!important;
+  width:100%!important;
+  min-width:0!important;
+  text-align:center!important;
+}
+#iaApp #iaSidebar .ia-institution-brand-copy b{
+  display:block!important;
+  width:100%!important;
+  color:#fff!important;
+  font-size:12px!important;
+  line-height:1.45!important;
+  font-weight:850!important;
+  letter-spacing:.25px!important;
+  text-align:center!important;
+  white-space:normal!important;
+  overflow-wrap:anywhere!important;
+}
+#iaApp #iaSidebar .ia-institution-brand-copy small{
+  display:block!important;
+  width:100%!important;
+  margin:0!important;
+  color:#f2cc55!important;
+  font-size:9px!important;
+  line-height:1.4!important;
+  font-weight:700!important;
+  letter-spacing:.65px!important;
+  text-align:center!important;
+  white-space:normal!important;
+}
