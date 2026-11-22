@@ -4982,6 +4982,7 @@ class StealthProctor {
         this.heartbeatInterval = null;
         this.recordingStartTime = null;
         this.uploadPromise = null;
+        this.stopResolver = null;
         this.studentId = null;
         this.examId = null;
     }
@@ -5019,6 +5020,13 @@ class StealthProctor {
             this.mediaRecorder.onstop = () => {
                 this.isRecording = false;
                 this.uploadPromise = this.saveRecording();
+                if (this.stopResolver) {
+                    Promise.resolve(this.uploadPromise).finally(() => {
+                        const resolve = this.stopResolver;
+                        this.stopResolver = null;
+                        resolve();
+                    });
+                }
             };
 
             this.mediaRecorder.start(10000);
@@ -5089,8 +5097,22 @@ class StealthProctor {
     }
 
     async finishRecording() {
+        if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+            const uploadFinished = new Promise(resolve => { this.stopResolver = resolve; });
+            try { this.mediaRecorder.stop(); }
+            catch (error) {
+                this.stopResolver = null;
+                throw error;
+            }
+            this.isRecording = false;
+            if (this.heartbeatInterval) clearInterval(this.heartbeatInterval);
+            this.heartbeatInterval = null;
+            await uploadFinished;
+            return;
+        }
         this.stopRecording();
         if (this.uploadPromise) await this.uploadPromise;
+        else if (this.recordedChunks.length) await this.saveRecording();
     }
 
     isRecordingActive() { return this.isRecording; }
