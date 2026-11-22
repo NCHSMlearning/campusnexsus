@@ -1861,3 +1861,274 @@ body>#iaApp .ia-user{min-width:170px!important;justify-content:flex-start!import
  #iaApp .ia-view:not(#view-user-management) .ia-stat-card strong{font-size:21px}
  #iaApp .ia-view:not(#view-user-management) #programs>.cards{gap:8px}
 }
+
+
+/* ==========================================================================
+   Exact User Management visual benchmark — all institution sections
+   The User Management page is the visual source of truth. These rules carry
+   its blue/teal/gold palette, card treatments, workspace surfaces, tables,
+   controls and responsive behaviour to every other institution section.
+   User Management itself is deliberately excluded and remains unchanged.
+   ========================================================================== */
+#iaApp .ia-view:not(#view-user-management){
+  --ia-benchmark-blue:#07366e;
+  --ia-benchmark-blue-2:#075ca5;
+  --ia-benchmark-teal:#087b78;
+  --ia-benchmark-ink:#173b60;
+  --ia-benchmark-muted:#71849a;
+  --ia-benchmark-line:#dce6f2;
+  color:var(--ia-benchmark-ink);
+}
+#iaApp .ia-view:not(#view-user-management)>.ia-page-heading{
+  align-items:flex-end;gap:18px;margin:0 0 20px;padding:0 0 17px;
+  border-bottom:1px solid #dfe8f2;
+}
+#iaApp .ia-view:not(#view-user-management) .ia-page-heading h1{
+  margin:7px 0 5px;color:#0a2f64;font-size:clamp(22px,2.1vw,28px);
+  font-weight:900;letter-spacing:-.045em;
+}
+#iaApp .ia-view:not(#view-user-management) .ia-page-heading p{
+  color:#71849a;font-size:11px;line-height:1.65;
+}
+#iaApp .ia-view:not(#view-user-management) .ia-eyebrow{
+  color:#087b78;font-size:9px;font-weight:900;letter-spacing:.14em;
+}
+#iaApp .ia-view:not(#view-user-management) .ia-stat-grid{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:0 0 20px;
+}
+#iaApp .ia-view:not(#view-user-management) .ia-stat-card{
+  position:relative;isolation:isolate;display:flex;flex-direction:column;align-items:flex-start;
+  justify-content:center;gap:0;min-width:0;min-height:112px;padding:18px 20px;
+  overflow:hidden;border:1px solid #e1e9f4;border-radius:18px;background:#fff;
+  box-shadow:0 8px 24px rgba(20,54,95,.065);
+  transition:transform .2s,box-shadow .2s;
+}
+#iaApp .ia-view:not(#view-user-management) .ia-stat-card:hover{
+  transform:translateY(-2px);box-shadow:0 13px 30px rgba(20,54,95,.12);
+}
+#iaApp .ia-view:not(#view-user-management) .ia-stat-card:after{
+  content:"";position:absolute;z-index:-1;width:190px;height:140px;right:-54px;bottom:-84px;
+  border-radius:50%;background:linear-gradient(135deg,#fff0,#fff9);transform:rotate(-18deg);
+}
+#iaApp .ia-view:not(#view-user-management) .ia-stat-card:nth-child(4n+1){
+  background:linear-gradient(118deg,#07366e 0%,#075ca5 66%,#0c8ca0 100%);
+  border-color:#0b68a8;color:#fff;
+}
+#iaApp .ia-view:not(#view-user-management) .ia-stat-card:nth-child(4n+1):after{background:linear-gradient(130deg,#22d3ee18,#fff4)}
+#iaApp .ia-view:not(#view-user-management) .ia-stat-card:nth-child(4n+2){
+  background:linear-gradient(118deg,#f3fff9 0%,#dcf8e9 70%,#a7edc7 100%);border-color:#c9efdc;
+}
+#iaApp .ia-view:not(#view-user-management) .ia-stat-card:nth-child(4n+2):after{background:linear-gradient(130deg,#16a34a10,#fff9)}
+#iaApp .ia-view:not(#view-user-management) .ia-stat-card:nth-child(4n+3){
+  background:linear-gradient(118deg,#fffaf0 0%,#fff0d5 70%,#ffda8b 100%);border-color:#f4e2bd;
+}
+#iaApp .ia-view:not(#view-user-management) .ia-stat-card:nth-child(4n+3):after{background:linear-gradient(130deg,#f59e0b12,#fff9)}
+#iaApp .ia-view:not(#view-user-management) .ia-stat-card:nth-child(4n){
+  background:linear-gradient(118deg,#fff8ff 0%,#f0e8ff 70%,#e2c9ff 100%);border-color:#e7d9fb;
+}
+#iaApp .ia-view:not(#view-user-management) .ia-stat-card:nth-child(4n):after{background:linear-gradient(130deg,#a855f710,#fff9)}
+#iaApp .ia-view:not(#view-user-management) .ia-stat-card>small{
+  position:relative;z-index:1;color:#52708f;font-size:11px;font-weight:700;
+}
+#iaApp .ia-view:not(#view-user-management) .ia-stat-card>strong{
+  position:relative;z-index:1;display:block;margin:4px 0;font-size:29px;line-height:1.05;
+  font-weight:900;letter-spacing:-.04em;color:#102f53;font-variant-numeric:tabular-nums;
+}
+#iaApp .ia-view:not(#view-user-management) .ia-stat-card>em{
+  position:relative;z-index:1;color:#69809a;font-size:10px;font-style:normal;
+}
+#iaApp .ia-view:not(#view-user-management) .ia-stat-card:nth-child(4n+1)>small,
+#iaApp .ia-view:not(#view-user-management) .ia-stat-card:nth-child(4n+1)>strong,
+#iaApp .ia-view:not(#view-user-management) .ia-stat-card:nth-child(4n+1)>em{color:#fff}
+#iaApp .ia-view:not(#view-user-management) .ia-stat-card:has(.ia-stat-icon){
+  display:grid;grid-template-columns:48px minmax(0,1fr);grid-template-rows:auto auto auto;
+  align-content:center;align-items:center;column-gap:13px;
+}
+#iaApp .ia-view:not(#view-user-management) .ia-stat-card .ia-stat-icon{
+  grid-column:1;grid-row:1 / span 3;align-self:center;width:48px;height:48px;margin:0;
+  border-radius:15px;box-shadow:0 7px 16px rgba(20,54,95,.08);
+}
+#iaApp .ia-view:not(#view-user-management) .ia-stat-card:nth-child(4n+1) .ia-stat-icon{background:linear-gradient(145deg,#25a5ff,#0756cb);color:#fff}
+#iaApp .ia-view:not(#view-user-management) .ia-stat-card:nth-child(4n+2) .ia-stat-icon{background:linear-gradient(145deg,#22c55e,#087b4c);color:#fff}
+#iaApp .ia-view:not(#view-user-management) .ia-stat-card:nth-child(4n+3) .ia-stat-icon{background:linear-gradient(145deg,#ffc247,#c46a00);color:#fff}
+#iaApp .ia-view:not(#view-user-management) .ia-stat-card:nth-child(4n) .ia-stat-icon{background:linear-gradient(145deg,#c084fc,#6d28d9);color:#fff}
+#iaApp .ia-view:not(#view-user-management) .ia-panel,
+#iaApp .ia-view:not(#view-user-management) .ia-table-panel,
+#iaApp .ia-view:not(#view-user-management) .ia-settings-card,
+#iaApp .ia-view:not(#view-user-management) .ia-empty-panel{
+  min-width:0;border:1px solid #dce6f2;border-radius:19px;background:rgba(255,255,255,.96);
+  box-shadow:0 12px 34px rgba(24,58,100,.065);
+}
+#iaApp .ia-view:not(#view-user-management) .ia-panel{padding:20px}
+#iaApp .ia-view:not(#view-user-management) .ia-table-panel{padding:0;overflow:hidden}
+#iaApp .ia-view:not(#view-user-management) .ia-panel-head{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:15px;
+}
+#iaApp .ia-view:not(#view-user-management) .ia-panel-head h2,
+#iaApp .ia-view:not(#view-user-management) .ia-panel>h2{
+  margin:0;color:#0a2f64;font-size:15px;font-weight:850;letter-spacing:-.02em;
+}
+#iaApp .ia-view:not(#view-user-management) .ia-panel-head p{
+  margin:5px 0 0;color:#75869a;font-size:10px;line-height:1.6;
+}
+#iaApp .ia-view:not(#view-user-management) .ia-toolbar,
+#iaApp .ia-view:not(#view-user-management) .filter-bar{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 14px;padding:14px 16px;
+  border:1px solid #dce6f2;border-radius:14px;background:#fbfdff;
+  box-shadow:0 5px 16px rgba(20,54,95,.035);
+}
+#iaApp .ia-view:not(#view-user-management) .ia-toolbar input,
+#iaApp .ia-view:not(#view-user-management) .ia-module-search,
+#iaApp .ia-view:not(#view-user-management) .filter-bar input,
+#iaApp .ia-view:not(#view-user-management) .filter-bar select,
+#iaApp .ia-view:not(#view-user-management) input:not([type=checkbox]):not([type=radio]):not([type=file]),
+#iaApp .ia-view:not(#view-user-management) select,
+#iaApp .ia-view:not(#view-user-management) textarea{
+  min-width:0;max-width:100%;min-height:42px;padding:10px 12px;border:1px solid #d5e0ec;
+  border-radius:10px;background:#fff;color:#243f5b;font:550 11px Inter,system-ui,sans-serif;
+  transition:border-color .18s,box-shadow .18s;
+}
+#iaApp .ia-view:not(#view-user-management) input:focus,
+#iaApp .ia-view:not(#view-user-management) select:focus,
+#iaApp .ia-view:not(#view-user-management) textarea:focus{
+  outline:0;border-color:#2377bb;box-shadow:0 0 0 3px #2377bb1c;
+}
+#iaApp .ia-view:not(#view-user-management) label{color:#294966;font-size:10px;font-weight:800}
+#iaApp .ia-view:not(#view-user-management) .ia-table-scroll,
+#iaApp .ia-view:not(#view-user-management) .table-responsive,
+#iaApp .ia-view:not(#view-user-management) .ia-users-table-wrap{
+  width:100%;max-width:100%;overflow-x:auto;border:1px solid #e0e8f2;border-radius:14px;background:#fff;
+}
+#iaApp .ia-view:not(#view-user-management) table{
+  width:100%;min-width:850px;border-collapse:separate;border-spacing:0;background:#fff;
+}
+#iaApp .ia-view:not(#view-user-management) table thead th{
+  position:sticky;top:0;z-index:1;padding:12px 13px;border-top:0;border-bottom:1px solid #e3ebf5;
+  background:linear-gradient(180deg,#f4f8fd,#eaf1fa);color:#34526f;text-align:left;
+  font-size:10px;font-weight:900;letter-spacing:.07em;text-transform:uppercase;white-space:nowrap;
+}
+#iaApp .ia-view:not(#view-user-management) table tbody td{
+  padding:12px 13px;border-bottom:1px solid #e9eff6;color:#405a73;font-size:11px;
+  vertical-align:middle;white-space:nowrap;
+}
+#iaApp .ia-view:not(#view-user-management) table tbody tr{transition:background .16s}
+#iaApp .ia-view:not(#view-user-management) table tbody tr:hover{background:#f3f8ff}
+#iaApp .ia-view:not(#view-user-management) table tbody tr:last-child td{border-bottom:0}
+#iaApp .ia-view:not(#view-user-management) table tbody td strong{color:#173b60;font-weight:850}
+#iaApp .ia-view:not(#view-user-management) .ia-empty{
+  padding:34px 15px!important;color:#8294a8!important;text-align:center!important;font-size:11px!important;
+}
+#iaApp .ia-view:not(#view-user-management) .ia-count{
+  display:inline-flex;align-items:center;min-height:28px;padding:6px 10px;border:1px solid #d8e7fb;
+  border-radius:999px;background:linear-gradient(120deg,#eff6ff,#dcecff);color:#1555a2;
+  font-size:10px;font-weight:850;white-space:nowrap;
+}
+#iaApp .ia-view:not(#view-user-management) .ia-primary-btn,
+#iaApp .ia-view:not(#view-user-management) .btn-action,
+#iaApp .ia-view:not(#view-user-management) button[type=submit]{
+  min-height:38px;padding:9px 14px;border:1px solid #0756b7;border-radius:10px;
+  background:linear-gradient(120deg,#0756b7,#087caa);color:#fff;
+  box-shadow:0 4px 11px #0756b72b;font:800 10px Inter,system-ui,sans-serif;
+}
+#iaApp .ia-view:not(#view-user-management) .ia-secondary-btn{
+  min-height:37px;padding:8px 13px;border:1px solid #cfe0f2;border-radius:10px;
+  background:#f5f9ff;color:#15558f;font:800 10px Inter,system-ui,sans-serif;
+}
+#iaApp .ia-view:not(#view-user-management) .ia-secondary-btn:hover{background:#e8f2ff;border-color:#a9c9e8}
+#iaApp .ia-view:not(#view-user-management) .ia-text-btn{color:#087b78;font-weight:850}
+#iaApp .ia-view:not(#view-user-management) .ia-status,
+#iaApp .ia-view:not(#view-user-management) .status-badge,
+#iaApp .ia-view:not(#view-user-management) .badge{border-radius:999px;font-weight:850}
+#iaApp .ia-view:not(#view-user-management) .ia-overview-grid{gap:16px}
+#iaApp .ia-view:not(#view-user-management) .ia-settings-tabs{
+  display:flex;gap:5px;overflow-x:auto;margin:0 0 17px;padding:10px 12px 0;
+  border:1px solid #e3ebf5;border-radius:15px 15px 0 0;background:linear-gradient(180deg,#fff,#f7faff);
+}
+#iaApp .ia-view:not(#view-user-management) .ia-settings-tab{
+  display:inline-flex;align-items:center;gap:8px;flex:0 0 auto;padding:12px 14px;
+  border:0;border-bottom:3px solid transparent;background:transparent;color:#526b86;
+  font:800 11px Inter,system-ui,sans-serif;white-space:nowrap;
+}
+#iaApp .ia-view:not(#view-user-management) .ia-settings-tab.active{
+  color:#087b78;border-bottom-color:#078b86;background:linear-gradient(180deg,#fff,#effcfb);
+}
+#iaApp .ia-view:not(#view-user-management) .ia-settings-section[hidden]{display:none!important}
+#iaApp .ia-view:not(#view-user-management) .ia-settings-data-grid{gap:10px}
+#iaApp .ia-view:not(#view-user-management) .ia-settings-data{
+  padding:13px 14px;border:1px solid #e2eaf3;border-radius:12px;background:#f9fbfe;
+}
+#iaApp .ia-view:not(#view-user-management) .ia-settings-data small{
+  display:block;margin-bottom:6px;color:#71849a;font-size:9px;font-weight:850;
+  letter-spacing:.05em;text-transform:uppercase;
+}
+#iaApp .ia-view:not(#view-user-management) .ia-settings-data b{color:#173b60;font-size:12px;overflow-wrap:anywhere}
+#iaApp .ia-view:not(#view-user-management) .ia-module-row{
+  padding:12px 13px;border:1px solid #e2eaf3;border-radius:11px;background:#f9fbfe;
+}
+#iaApp .ia-view:not(#view-user-management) #programs>h2{
+  margin:0 0 8px;color:#0a2f64;font-size:21px;font-weight:900;
+}
+#iaApp .ia-view:not(#view-user-management) #programs>.cards{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:18px 0 22px;
+}
+#iaApp .ia-view:not(#view-user-management) #programs>.cards>.card{
+  min-width:0;padding:19px!important;border:1px solid #e1e9f4!important;border-top:0!important;
+  border-radius:18px!important;background:#fff!important;box-shadow:0 8px 24px rgba(20,54,95,.065)!important;
+}
+#iaApp .ia-view:not(#view-user-management) #programs>.cards>.card:nth-child(4n+1){background:linear-gradient(118deg,#07366e,#075ca5 66%,#0c8ca0)!important;color:#fff}
+#iaApp .ia-view:not(#view-user-management) #programs>.cards>.card:nth-child(4n+2){background:linear-gradient(118deg,#f3fff9,#dcf8e9 70%,#a7edc7)!important}
+#iaApp .ia-view:not(#view-user-management) #programs>.cards>.card:nth-child(4n+3){background:linear-gradient(118deg,#fffaf0,#fff0d5 70%,#ffda8b)!important}
+#iaApp .ia-view:not(#view-user-management) #programs>.cards>.card:nth-child(4n){background:linear-gradient(118deg,#fff8ff,#f0e8ff 70%,#e2c9ff)!important}
+#iaApp .ia-view:not(#view-user-management) #programs>.cards>.card:first-child h3,
+#iaApp .ia-view:not(#view-user-management) #programs>.cards>.card:first-child p{color:#fff!important}
+#iaApp .ia-view:not(#view-user-management) #programs>div[style*="background"],
+#iaApp .ia-view:not(#view-user-management) #programs form{
+  border:1px solid #dce6f2!important;border-radius:16px!important;
+  box-shadow:0 8px 24px rgba(20,54,95,.045)!important;
+}
+#iaApp .ia-view:not(#view-user-management) #programs .filter-bar{background:#fbfdff!important}
+#iaApp .ia-view:not(#view-user-management) #programs .table-responsive{border:1px solid #e0e8f2;border-radius:14px}
+#iaApp .ia-view:not(#view-user-management) #programs table{min-width:950px}
+#iaApp .ia-view:not(#view-user-management) .ia-empty-panel{
+  padding:45px 22px;text-align:center;background:linear-gradient(135deg,#fff,#f7faff);
+}
+#iaApp .ia-view:not(#view-user-management) .ia-empty-panel>i{color:#087b78}
+#iaApp .ia-view:not(#view-user-management) dialog{
+  max-width:calc(100vw - 24px);max-height:90dvh;border:1px solid #dce6f2;
+  border-radius:18px;box-shadow:0 30px 90px rgba(2,20,35,.3);
+}
+#iaApp .ia-view:not(#view-user-management) dialog::backdrop{background:rgba(2,15,27,.58);backdrop-filter:blur(4px)}
+@media(max-width:900px){
+ #iaApp .ia-view:not(#view-user-management) .ia-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #iaApp .ia-view:not(#view-user-management) #programs>.cards{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:760px){
+ #iaApp .ia-view:not(#view-user-management)>.ia-page-heading{align-items:flex-start;flex-direction:column}
+ #iaApp .ia-view:not(#view-user-management) .ia-page-heading>.ia-primary-btn,
+ #iaApp .ia-view:not(#view-user-management) .ia-page-heading>.ia-secondary-btn{width:100%;justify-content:center}
+ #iaApp .ia-view:not(#view-user-management) .ia-stat-card{min-height:96px;padding:14px}
+ #iaApp .ia-view:not(#view-user-management) .ia-stat-card>strong{font-size:23px}
+ #iaApp .ia-view:not(#view-user-management) .ia-stat-card:has(.ia-stat-icon){grid-template-columns:38px minmax(0,1fr);column-gap:9px}
+ #iaApp .ia-view:not(#view-user-management) .ia-stat-card .ia-stat-icon{width:38px;height:38px}
+ #iaApp .ia-view:not(#view-user-management) .ia-panel{padding:15px}
+ #iaApp .ia-view:not(#view-user-management) .ia-toolbar,
+ #iaApp .ia-view:not(#view-user-management) .filter-bar{align-items:stretch;padding:12px;gap:8px}
+ #iaApp .ia-view:not(#view-user-management) .ia-toolbar input,
+ #iaApp .ia-view:not(#view-user-management) .ia-toolbar select,
+ #iaApp .ia-view:not(#view-user-management) .filter-bar input,
+ #iaApp .ia-view:not(#view-user-management) .filter-bar select{width:100%;flex:1 1 100%}
+ #iaApp .ia-view:not(#view-user-management) .ia-overview-grid,
+ #iaApp .ia-view:not(#view-user-management) .ia-settings-grid{grid-template-columns:minmax(0,1fr)}
+ #iaApp .ia-view:not(#view-user-management) .ia-panel-head{align-items:flex-start;flex-direction:column}
+ #iaApp .ia-view:not(#view-user-management) .ia-settings-tabs{display:flex;overflow-x:auto}
+ #iaApp .ia-view:not(#view-user-management) #programs>.cards{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+ #iaApp .ia-view:not(#view-user-management) #programs form>div,
+ #iaApp .ia-view:not(#view-user-management) #programs>div[style*="display: grid"]{grid-template-columns:minmax(0,1fr)!important}
+}
+@media(max-width:380px){
+ #iaApp .ia-view:not(#view-user-management) .ia-stat-card{padding:11px}
+ #iaApp .ia-view:not(#view-user-management) .ia-stat-card>strong{font-size:21px}
+ #iaApp .ia-view:not(#view-user-management) .ia-stat-card:has(.ia-stat-icon){grid-template-columns:32px minmax(0,1fr);column-gap:7px}
+ #iaApp .ia-view:not(#view-user-management) .ia-stat-card .ia-stat-icon{width:32px;height:32px}
+ #iaApp .ia-view:not(#view-user-management) #programs>.cards{gap:8px}
+}
