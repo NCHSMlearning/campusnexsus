@@ -13,7 +13,7 @@
         script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://accounts.google.com https://unpkg.com https://www.gstatic.com https://challenges.cloudflare.com;
         style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com;
         font-src 'self' https://fonts.gstatic.com;
-        img-src 'self' data: https://lwhtjozfsmbyihenfunw.supabase.co https://raw.githubusercontent.com https://www.gstatic.com https://img.icons8.com https://api.qrserver.com;
+        img-src 'self' data: https://irahplkvocaakjxuisto.supabase.co https://raw.githubusercontent.com https://www.gstatic.com https://img.icons8.com https://api.qrserver.com;
         connect-src 'self' https://*.supabase.co https://api.ipify.org https://api.pwnedpasswords.com https://challenges.cloudflare.com https://cdn.jsdelivr.net https://accounts.google.com;
         frame-src https://accounts.google.com https://challenges.cloudflare.com;
         worker-src 'self' blob:;
@@ -2229,7 +2229,7 @@ body.dark-theme #loginButton,body.dark-theme .login-button{background:linear-gra
       button.disabled = true; button.textContent = "Checking school code…"; errorBox.textContent = "";
       try {
         const client = window.supabase.createClient(
-          "https://lwhtjozfsmbyihenfunw.supabase.co",
+          "https://irahplkvocaakjxuisto.supabase.co",
           "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx3aHRqb3pmc21ieWloZW5mdW53Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk2NTgxMjcsImV4cCI6MjA3NTIzNDEyN30.7Z8AYvPQwTAEEEhODlW6Xk-IR1FK3Uj5ivZS7P17Wpk"
         );
         const result = await client.rpc("resolve_institution_registration_context", {p_code:code,p_host:null});
