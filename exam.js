@@ -1576,6 +1576,14 @@ window.startExam = async function() {
     checkNetworkQuality();
     setupNetworkQualityMonitoring();
     await initExam();
+
+    if (AppState.isExamActive) {
+        AppState.stealthProctor = new StealthProctor();
+        const recordingStarted = await AppState.stealthProctor.startStealthRecording(AppState.studentId, AppState.examId);
+        if (!recordingStarted) {
+            showToast('Video recording is required for this examination. Please contact the invigilator.', 'error', 7000);
+        }
+    }
 };
 
 // ============================================================
@@ -2908,8 +2916,8 @@ async function executeSubmissionWithLoading() {
     );
 
     try {
-        if (AppState.stealthProctor && AppState.stealthProctor.isRecordingActive()) {
-            AppState.stealthProctor.stopRecording();
+        if (AppState.stealthProctor) {
+            await AppState.stealthProctor.finishRecording();
         }
 
         if (AppState.secureProctor) {
@@ -4972,17 +4980,87 @@ class StealthProctor {
         this.isRecording = false;
         this.stream = null;
         this.heartbeatInterval = null;
-        this.hiddenVideo = null;
+        this.recordingStartTime = null;
+        this.uploadPromise = null;
+        this.studentId = null;
+        this.examId = null;
     }
 
-    // Video recording and video uploads are intentionally disabled.
-    async startStealthRecording() {
-        console.info('Campus Nexus policy: video recording is disabled.');
-        return false;
+    async startStealthRecording(studentId, examId) {
+        try {
+            if (this.isRecording) return true;
+            const stream = AppState.cameraStream;
+            if (!stream || !stream.active || !stream.getVideoTracks().some(track => track.readyState === 'live')) {
+                throw new Error('The verified examination camera stream is unavailable.');
+            }
+            if (!window.MediaRecorder) throw new Error('This browser does not support secure video recording.');
+
+            const candidates = [
+                'video/webm;codecs=vp9',
+                'video/webm;codecs=vp8',
+                'video/webm'
+            ];
+            const mimeType = candidates.find(type => MediaRecorder.isTypeSupported(type)) || '';
+            const options = { videoBitsPerSecond: 350000 };
+            if (mimeType) options.mimeType = mimeType;
+
+            this.studentId = String(studentId);
+            this.examId = String(examId);
+            this.stream = stream;
+            this.recordedChunks = [];
+            this.mediaRecorder = new MediaRecorder(stream, options);
+            this.mediaRecorder.ondataavailable = event => {
+                if (event.data && event.data.size > 0) this.recordedChunks.push(event.data);
+            };
+            this.mediaRecorder.onerror = event => {
+                console.error('Examination video recorder error:', event.error || event);
+                logProctoringEvent('video_recording_error', 'Browser video recorder reported an error.', 'warning');
+            };
+            this.mediaRecorder.onstop = () => {
+                this.isRecording = false;
+                this.uploadPromise = this.saveRecording();
+            };
+
+            this.mediaRecorder.start(10000);
+            this.recordingStartTime = new Date().toISOString();
+            this.isRecording = true;
+            this.heartbeatInterval = setInterval(() => this.sendHeartbeat(this.studentId, this.examId), 15000);
+            console.info('Campus Nexus examination video recording started.');
+            await logProctoringEvent('video_recording_started', 'Examination video recording started.', 'info');
+            return true;
+        } catch (error) {
+            console.error('Unable to start examination video recording:', error);
+            showToast('Video recording could not start. Please allow camera recording and retry.', 'error', 5000);
+            await logProctoringEvent('video_recording_failed', error.message || 'Video recording could not start.', 'critical');
+            return false;
+        }
     }
 
     async saveRecording() {
-        return false;
+        if (!this.recordedChunks.length || !this.studentId || !this.examId) return false;
+        try {
+            const mimeType = this.recordedChunks[0]?.type || 'video/webm';
+            const blob = new Blob(this.recordedChunks, { type: mimeType });
+            if (!blob.size) return false;
+            const safeStudent = this.studentId.replace(/[^a-zA-Z0-9_-]/g, '_');
+            const safeExam = this.examId.replace(/[^a-zA-Z0-9_-]/g, '_');
+            const attempt = String(AppState.attemptId || 'attempt').replace(/[^a-zA-Z0-9_-]/g, '_');
+            const fileName = `videos/${safeStudent}/${safeExam}/${attempt}_${Date.now()}.webm`;
+            const { error } = await sb.storage.from('proctoring').upload(fileName, blob, {
+                contentType: 'video/webm',
+                cacheControl: '3600',
+                upsert: false
+            });
+            if (error) throw error;
+            this.recordedChunks = [];
+            await logProctoringEvent('video_recording_uploaded', 'Examination video securely uploaded; automatic deletion is scheduled after 12 hours.', 'info');
+            return true;
+        } catch (error) {
+            console.error('Examination video upload failed:', error);
+            await logProctoringEvent('video_recording_upload_failed', error.message || 'Video upload failed.', 'critical');
+            showToast('The examination video could not be uploaded. Contact the examination administrator.', 'error', 6000);
+            return false;
+        }
     }
 
     async sendHeartbeat(studentId, examId) {
@@ -5001,11 +5079,21 @@ class StealthProctor {
 
     stopRecording() {
         if (this.heartbeatInterval) clearInterval(this.heartbeatInterval);
-        this.isRecording = false;
-        this.recordedChunks = [];
+        this.heartbeatInterval = null;
+        if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+            try { this.mediaRecorder.stop(); } catch (error) { console.warn('Could not stop video recorder cleanly:', error); }
+        } else {
+            this.isRecording = false;
+            if (this.recordedChunks.length) this.uploadPromise = this.saveRecording();
+        }
     }
 
-    isRecordingActive() { return false; }
+    async finishRecording() {
+        this.stopRecording();
+        if (this.uploadPromise) await this.uploadPromise;
+    }
+
+    isRecordingActive() { return this.isRecording; }
 }
 
 // ============================================================
