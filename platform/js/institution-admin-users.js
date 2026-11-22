@@ -13,7 +13,7 @@
   const date = v => { if(!v)return '—'; const d=new Date(v); return Number.isNaN(d.getTime())?'—':d.toLocaleString(); };
   const roleOf = u => norm(u.role || u.role_id);
   const statusOf = u => norm(u.status || (u.approved === true ? 'approved' : 'pending'));
-  const blockOf = u => [u.current_block || u.block, u.current_year || u.block_program_year, u.current_term].filter(Boolean).join(' / ') || '';
+  const blockOf = u => [u.current_block || u.block, u.current_year || u.year_of_study, u.current_term].filter(Boolean).join(' / ') || '';
   const identityOf = u => u.admission_number || u.student_id || u.staff_id || u.id || '—';
   const message = (v,bad=false) => { const n=$('iaUsersMessage'); if(n){n.textContent=v||'';n.classList.toggle('error',!!bad);} };
   function filtered(){
@@ -158,7 +158,7 @@
     const sections=[
       ['Personal information',[['Full name',u.full_name],['Email address',u.email],['Phone',u.phone],['Alternative phone',u.alt_phone],['Gender',u.gender],['Date of birth',u.date_of_birth],['National ID',u.national_id],['Address',u.address],['Profile photo',u.profile_photo_url?'Uploaded':'Not uploaded']]],
       ['Guardian / parent information',[['Guardian name',u.guardian_name],['Guardian phone',u.guardian_phone],['Parent email',u.parent_email],['Parent address',u.parent_address]]],
-      ['Academic & employment information',[['Role',u.role],['Role ID',u.role_id],['Student ID',u.student_id],['Admission number',u.admission_number],['Staff ID',u.staff_id],['Programme',u.program],['Programme type',u.program_type],['Department',u.department],['Intake month',u.intake_month],['Intake year',u.intake_year],['Admission year',u.admission_year],['Admission date',u.admission_date],['Current block',u.current_block||u.block],['Block / programme year',u.block_program_year],['Block progress',u.block_progress],['Employment date',u.employment_date],['Qualifications',u.qualifications],['Specialization',u.specialization],['Professional bio',u.professional_bio]]],
+      ['Academic & employment information',[['Role',u.role],['Role ID',u.role_id],['Student ID',u.student_id],['Admission number',u.admission_number],['Staff ID',u.staff_id],['Programme',u.program],['Programme type',u.program_type],['Department',u.department],['Intake month',u.intake_month],['Intake year',u.intake_year],['Admission year',u.admission_year],['Admission date',u.admission_date],['Current block',u.current_block||u.block],['Year of study',u.year_of_study],['Block progress',u.block_progress],['Employment date',u.employment_date],['Qualifications',u.qualifications],['Specialization',u.specialization],['Professional bio',u.professional_bio]]],
       ['Documents',[['KCSE document status',u.doc_kcse],['ID document status',u.doc_id],['Passport / ID document URL',u.passport_url]]],
       ['Account status & access',[['Account status',u.status],['Login access',u.login_enabled===false?'Disabled':'Enabled'],['Username',u.username],['Last login',date(u.last_login)],['Last activity',date(u.last_activity)],['Login count',u.login_count],['Two-factor authentication',u.two_factor_enabled?'Enabled':'Disabled'],['Registered',date(u.created_at)],['Last updated',date(u.updated_at)],['User ID',u.user_id],['Profile ID',u.id],['Institution ID',u.institution_id]]]
     ];
@@ -235,7 +235,7 @@
       ['program','Programme','select',[['DCHN','DCHN'],['KCHN','KCHN'],['TVET','TVET course'],['KRCHN','KRCHN (legacy)']]],
       ['program_type','Programme type','select',[['Nursing','Nursing'],['TVET','TVET'],['Other','Other']]],
       ['department','Department','text'],['intake_year','Intake year','select',[]],['intake_month','Intake month','select',[['','Select intake month'],...['January','February','March','April','May','June','July','August','September','October','November','December'].map(x=>[x,x])]],
-      ['block','Block / Term','select',[]],['current_block','Current Block / Term','select',[]],['block_program_year','Year of study','select',[]],['admission_date','Admission date','date'],['admission_year','Admission year','select',[]],['employment_date','Employment date','date'],
+      ['block','Block / Term','select',[]],['current_block','Current Block / Term','select',[]],['year_of_study','Year of study','select',[['','Select year of study'],['Year 1','Year 1'],['Year 2','Year 2'],['Year 3','Year 3'],['Year 4','Year 4']]],['admission_date','Admission date','date'],['admission_year','Admission year','select',[]],['employment_date','Employment date','date'],
       ['doc_kcse','KCSE document status','select',[['pending','Pending'],['uploaded','Uploaded'],['verified','Verified'],['rejected','Rejected']]],
       ['doc_id','ID / passport document status','select',[['pending','Pending'],['uploaded','Uploaded'],['verified','Verified'],['rejected','Rejected']]],
       ['profile_photo_url','Profile photo URL','url'],['passport_url','Passport / ID document URL','url'],
@@ -500,7 +500,7 @@
   }
   async function saveUserEdit(event,user){
     event.preventDefault();
-    const form=event.currentTarget,button=form.querySelector('[type="submit"]'),feedback=$('iaUsersEditFeedback');
+    const form=event.currentTarget,button=form.querySelector('.ia-users-edit-save')||form.querySelector('.ia-users-save-btn')||form.querySelector('[type="submit"]'),feedback=$('iaUsersEditFeedback');
     button.disabled=true;button.textContent='Saving…';feedback.textContent='';
     try{
       const api=state.api||window.CampusInstitutionAdmin;
@@ -512,7 +512,7 @@
         parent_email:get('parent_email'),parent_address:get('parent_address'),student_id:get('student_id'),admission_number:get('admission_number'),
         staff_id:get('staff_id'),program:get('program'),program_type:get('program_type'),department:get('department'),
         intake_year:get('intake_year'),intake_month:get('intake_month'),block:get('block'),current_block:get('current_block')||get('block'),
-        block_program_year:get('block_program_year'),admission_date:get('admission_date')||null,admission_year:get('admission_year'),
+        year_of_study:get('year_of_study'),admission_date:get('admission_date')||null,admission_year:get('admission_year'),
         employment_date:get('employment_date')||null,doc_kcse:get('doc_kcse'),doc_id:get('doc_id'),
         profile_photo_url:user.profile_photo_url||get('profile_photo_url'),passport_url:user.passport_url||get('passport_url'),qualifications:get('qualifications'),
         specialization:get('specialization'),professional_bio:get('professional_bio'),role:get('role'),status:get('status'),
@@ -534,10 +534,20 @@
       if(approving){delete profileUpdate.status;delete profileUpdate.login_enabled;}
       const {data,error}=await api.db.from('consolidated_user_profiles_table').update(profileUpdate)
         .eq('user_id',user.user_id).eq('institution_id',api.institutionId).select('id,user_id');
-      if(error)throw error;
-      if(!data?.length)throw new Error('No matching user was updated. Check your institution permissions and enabled modules.');
+      if(error)throw new Error([error.message,error.details,error.hint,error.code?'Code: '+error.code:null].filter(Boolean).join(' · '));
+      if(!data?.length)throw new Error('The database did not confirm an updated row. Your institution session or update permission may have expired. No changes were confirmed.');
       Object.assign(user,payload);
+      const editedEmail=String(get('email')||'').trim().toLowerCase();
       let emailNotice='';
+      if(editedEmail&&editedEmail!==String(user.email||'').trim().toLowerCase()){
+        try{
+          const {data:sessionData,error:sessionError}=await api.db.auth.getSession();
+          if(sessionError||!sessionData?.session)throw new Error('Session expired before login email could be updated.');
+          const response=await fetch('https://irahplkvocaakjxuisto.supabase.co/functions/v1/admin-update-institution-user-email',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+sessionData.session.access_token},body:JSON.stringify({userId:user.user_id,newEmail:editedEmail})});
+          const result=await response.json();if(!response.ok)throw new Error(result.error||'Login email update failed.');
+          user.email=editedEmail;const row=state.rows.find(x=>x.user_id===user.user_id);if(row)row.email=editedEmail;
+        }catch(emailError){emailNotice=' Profile details were saved, but the login email was not changed: '+(emailError.message||'email update failed')+'.';}
+      }
       if(approving){
         const {data:emailData,error:emailError}=await api.db.functions.invoke('registration-approved-email',{body:{user_id:user.user_id}});
         if(emailError)emailNotice=' Account approved, but the approval email could not be sent: '+(emailError.message||'email service error')+'.';
@@ -546,7 +556,7 @@
       }
       await load();
       showDetails(state.rows.find(x=>x.user_id===user.user_id)||user);
-      message('User profile updated successfully.'+emailNotice,!!emailNotice&&!emailNotice.includes('accepted for delivery'));
+      message('User profile updated successfully.'+emailNotice,!!emailNotice);
     }catch(error){
       console.error('[Institution user edit]',error);
       feedback.textContent=error.message||'Unable to save user details.';
@@ -559,7 +569,7 @@
     if(!api?.db||!api?.institutionId){message('Institution administrator session is not ready. Refresh the page.',true);return;}
     state.api=api;state.loading=true;message('Loading your institution user directory…');render();
     try{
-      const columns='id,user_id,email,full_name,phone,alt_phone,date_of_birth,gender,national_id,address,profile_photo_url,role,role_id,student_id,admission_number,staff_id,program,program_type,department,status,created_at,updated_at,current_block,block,block_program_year,block_progress,intake_year,intake_month,admission_year,admission_date,employment_date,login_enabled,username,last_login,last_activity,login_count,two_factor_enabled,guardian_name,guardian_phone,parent_email,parent_address,qualifications,specialization,professional_bio,doc_kcse,doc_id,passport_url,institution_id';
+      const columns='id,user_id,email,full_name,phone,alt_phone,date_of_birth,gender,national_id,address,profile_photo_url,role,role_id,student_id,admission_number,staff_id,program,program_type,department,status,created_at,updated_at,current_block,block,block_program_year,block_progress,intake_year,intake_month,admission_year,admission_date,employment_date,year_of_study,login_enabled,username,last_login,last_activity,login_count,two_factor_enabled,guardian_name,guardian_phone,parent_email,parent_address,qualifications,specialization,professional_bio,doc_kcse,doc_id,passport_url,institution_id';
       const {data,error}=await api.db.from('consolidated_user_profiles_table').select(columns)
         .eq('institution_id',api.institutionId).order('created_at',{ascending:false}).limit(2000);
       if(error)throw error;
