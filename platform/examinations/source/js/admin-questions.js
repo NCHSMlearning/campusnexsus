@@ -11,10 +11,10 @@
 let currentQuestions = [];
 let currentQuestionExamId = null;
 
-// The Supabase CDN namespace is adminQuestionsClient(); the authenticated project
-// client created by /config.js is window.sb / adminQuestionsClient()Client.
+// The Supabase CDN namespace is window.supabase; the authenticated project
+// client created by /config.js is window.sb / window.supabaseClient.
 function adminQuestionsClient() {
-    const client = window.sb || adminQuestionsClient()Client;
+    const client = window.sb || window.supabaseClient;
     if (!client || typeof client.from !== 'function' || typeof client.rpc !== 'function') {
         throw new Error('Campus Nexus Supabase client is not ready. Reload the dashboard.');
     }
