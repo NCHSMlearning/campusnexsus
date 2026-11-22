@@ -2112,11 +2112,10 @@ executeLogin: async function(identifier, password) {
 
         if (!authData.user) throw new Error('No user found');
 
+        // Read the signed-in user's own profile through a narrowly scoped RPC.
+        // This avoids institution/module RLS filters hiding the user's own login record.
         const { data: profile, error: profileError } = await this.supabase
-            .from('consolidated_user_profiles_table')
-            .select('user_id, email, full_name, role, program, department, staff_id, status, login_enabled, two_factor_enabled, two_factor_secret, two_factor_verified, institution_id')
-            .eq('user_id', authData.user.id)
-            .maybeSingle();
+            .rpc('get_my_login_profile');
 
         if (profileError) {
             await this.supabase.auth.signOut();
