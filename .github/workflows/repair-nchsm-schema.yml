@@ -61,7 +61,10 @@ jobs:
           until pg_isready -h 127.0.0.1 -p 5432 -U postgres; do sleep 2; done
           pg_dump "$SRC" --format=custom --schema=public --exclude-table=public.spatial_ref_sys --no-owner --no-acl --file=/tmp/nchsm-public.dump
           createdb -h 127.0.0.1 -U postgres schema_stage
-          pg_restore --host=127.0.0.1 --username=postgres --dbname=schema_stage --no-owner --no-acl --exit-on-error /tmp/nchsm-public.dump
+          pg_restore --list /tmp/nchsm-public.dump > /tmp/nchsm-public.list
+          # Keep the pre-created staging public namespace; restore all objects into it.
+          sed -i '/ SCHEMA - public /d' /tmp/nchsm-public.list
+          pg_restore --host=127.0.0.1 --username=postgres --dbname=schema_stage --no-owner --no-acl --exit-on-error --use-list=/tmp/nchsm-public.list /tmp/nchsm-public.dump
           psql -h 127.0.0.1 -U postgres -d schema_stage -v ON_ERROR_STOP=1 -c 'ALTER SCHEMA public RENAME TO nchsm;'
           pg_dump --host=127.0.0.1 --username=postgres --dbname=schema_stage --format=custom --schema=nchsm --no-owner --no-acl --file=/tmp/nchsm-schema.dump
           echo "Staged schema dump created."
@@ -92,15 +95,8 @@ jobs:
           fi
           psql "$DST" -X -v ON_ERROR_STOP=1 -c 'CREATE SCHEMA nchsm;'
           pg_restore --dbname="$DST" --no-owner --no-acl --exit-on-error --schema=nchsm /tmp/nchsm-schema.dump
-          psql "$DST" -X -v ON_ERROR_STOP=1 <<'SQL'
-          GRANT USAGE ON SCHEMA nchsm TO anon, authenticated, service_role;
-          GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA nchsm TO authenticated, service_role;
-          GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA nchsm TO authenticated, service_role;
-          GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA nchsm TO authenticated, service_role;
-          ALTER DEFAULT PRIVILEGES IN SCHEMA nchsm GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO authenticated, service_role;
-          ALTER DEFAULT PRIVILEGES IN SCHEMA nchsm GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO authenticated, service_role;
-          ALTER DEFAULT PRIVILEGES IN SCHEMA nchsm GRANT EXECUTE ON FUNCTIONS TO authenticated, service_role;
-          SQL
+          # Do not grant blanket table access: source RLS policies and grants must be reviewed together.
+          psql "$DST" -X -v ON_ERROR_STOP=1 -c 'GRANT USAGE ON SCHEMA nchsm TO anon, authenticated, service_role;'
 
       - name: Verify repaired schema inventory
         env:
