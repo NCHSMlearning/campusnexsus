@@ -1,0 +1,2620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#071d33">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+<link href="images/Logo_NCHSM.png" rel="icon" sizes="192x192" type="image/png"/>
+<link href="images/Logo_NCHSM.png" rel="icon" sizes="512x512" type="image/png"/>
+<link href="images/Logo_NCHSM.png" rel="apple-touch-icon"/>
+
+<title>NCHSM | Secure Online Examination</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+
+<style>
+:root{
+  --navy:#062b48;
+  --navy2:#0a4169;
+  --blue:#0879d1;
+  --blue2:#0b8fe9;
+  --cyan:#18b8d9;
+  --green:#16a66a;
+  --red:#e5484d;
+  --orange:#f59e0b;
+  --bg:#f4f8fb;
+  --card:#fff;
+  --text:#102b44;
+  --muted:#6d8195;
+  --line:#d9e6ee;
+  --soft:#edf6fb;
+  --shadow:0 10px 30px rgba(6,43,72,.07);
+  --shadow-lg:0 18px 48px rgba(6,43,72,.10);
+}
+*{box-sizing:border-box}
+html,body{
+  margin:0;min-height:100%;
+  font-family:Inter,Arial,sans-serif;
+  color:var(--text);background:var(--bg)
+}
+body{overflow-x:hidden}
+button,input,textarea,select{font:inherit}
+button{cursor:pointer}
+.hidden{display:none!important}
+
+/* ================= HEADER ================= */
+.site-header{
+  height:72px;
+  padding:0 34px;
+  background:linear-gradient(110deg,var(--navy),var(--navy2));
+  color:#fff;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:100;
+  border-bottom:1px solid rgba(255,255,255,.08);
+  box-shadow:0 4px 20px rgba(6,43,72,.12)
+}
+.brand{display:flex;align-items:center;gap:11px;min-width:0}
+.brand-mark{
+  width:45px;height:45px;border-radius:12px;background:#fff;
+  display:grid;place-items:center;overflow:hidden;flex:none;
+  box-shadow:0 5px 18px rgba(0,0,0,.15)
+}
+.brand-mark img{width:100%;height:100%;object-fit:contain;padding:3px}
+.brand-copy strong{display:block;font-size:17px}
+.brand-copy small{display:block;color:#bcd0df;font-size:9px;margin-top:3px}
+.secure-badge{
+  display:flex;align-items:center;gap:8px;
+  font-size:11px;font-weight:800;color:#e9fff5;
+  padding:9px 13px;border-radius:999px;
+  border:1px solid rgba(255,255,255,.14);
+  background:rgba(255,255,255,.055)
+}
+.secure-badge i{color:#55dfa0}
+
+/* ================= LOBBY ================= */
+#lobbyContainer{
+  min-height:calc(100dvh - 72px);
+  background:
+    radial-gradient(circle at 80% 0%,rgba(24,184,217,.10),transparent 24%),
+    radial-gradient(circle at 8% 18%,rgba(8,121,209,.055),transparent 24%),
+    var(--bg)
+}
+.lobby-wrap{
+  width:min(1250px,calc(100% - 48px));
+  margin:0 auto;
+  padding:30px 0 45px;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 300px;
+  gap:16px;
+  align-items:start
+}
+.lobby-main{min-width:0}
+.lobby-intro{margin:0 0 17px}
+.eyebrow{
+  display:inline-flex;align-items:center;gap:7px;
+  color:var(--blue);background:#eaf5fc;
+  border:1px solid #d0e9f7;
+  padding:7px 11px;border-radius:999px;
+  font-size:9px;font-weight:800;
+  letter-spacing:1.15px;text-transform:uppercase;
+  margin-bottom:10px
+}
+.lobby-intro h1{
+  font-size:clamp(31px,3.8vw,45px);
+  line-height:1.06;margin:0 0 7px;
+  letter-spacing:-1.8px;color:#082d4d
+}
+.lobby-intro p{
+  font-size:13px;line-height:1.6;
+  color:var(--muted);margin:0
+}
+
+/* Exam summary */
+.exam-hero-card{
+  position:relative;overflow:hidden;
+  background:rgba(255,255,255,.97);
+  border:1px solid var(--line);
+  border-radius:20px;
+  padding:21px 22px;
+  box-shadow:var(--shadow-lg);
+  margin-bottom:11px
+}
+.exam-hero-card:after{
+  content:"";position:absolute;
+  width:170px;height:170px;
+  right:-70px;top:-100px;
+  border-radius:50%;background:#eaf7fc;
+  pointer-events:none
+}
+.exam-hero-top{
+  position:relative;z-index:1;
+  display:flex;align-items:center;
+  justify-content:space-between;gap:15px
+}
+.exam-hero-top h2{
+  font-size:22px;margin:0 0 3px;
+  letter-spacing:-.45px;color:#092e4e
+}
+.exam-hero-top p{margin:0;color:var(--muted);font-size:11px}
+.proctored-pill{
+  background:#eafaf2;color:#14764f;
+  border:1px solid #bdebd5;
+  padding:8px 12px;border-radius:999px;
+  font-weight:800;font-size:9px;white-space:nowrap
+}
+.exam-metrics{
+  position:relative;z-index:1;
+  display:grid;grid-template-columns:repeat(3,1fr);
+  gap:9px;margin-top:16px
+}
+.metric{
+  min-height:78px;
+  background:#fbfdff;border:1px solid var(--line);
+  border-radius:13px;padding:12px 14px
+}
+.metric>span{
+  display:block;color:#72879a;
+  font-size:8px;text-transform:uppercase;
+  letter-spacing:1.1px;font-weight:700
+}
+.metric strong{
+  display:block;font-size:21px;line-height:1.1;
+  margin-top:6px;color:#082d4d
+}
+.metric strong span{
+  display:inline!important;
+  font-size:inherit!important;
+  letter-spacing:0!important;
+  text-transform:none!important;
+  color:inherit!important;
+  font-weight:inherit!important
+}
+#continuationBadge{position:relative;z-index:1}
+
+/* Student */
+.student-card{
+  display:grid;grid-template-columns:auto 1fr auto;
+  align-items:center;gap:12px;
+  background:#fff;border:1px solid var(--line);
+  border-radius:16px;padding:12px 15px;
+  margin-bottom:11px;box-shadow:0 6px 20px rgba(6,43,72,.04)
+}
+.student-avatar{
+  width:48px;height:48px;border-radius:14px;
+  background:#eaf5fc;color:var(--blue);
+  display:grid;place-items:center;font-size:17px;
+  overflow:hidden;position:relative;flex:none;
+  border:1px solid #d7e9f4
+}
+.student-avatar .profile-photo{
+  width:100%;height:100%;object-fit:cover;display:none
+}
+.student-avatar .fa-user{display:block}
+.student-info strong{display:block;font-size:13px}
+.student-info span{display:block;color:var(--muted);font-size:9px;margin-top:3px}
+.student-program{text-align:right}
+.student-program small{
+  color:var(--muted);display:block;
+  font-size:8px;text-transform:uppercase;letter-spacing:1px
+}
+.student-program strong{font-size:10px}
+
+/* Steps */
+.steps{
+  display:grid;grid-template-columns:repeat(3,1fr);
+  gap:8px;margin-bottom:11px
+}
+.step{
+  background:#fff;border:1px solid var(--line);
+  border-radius:13px;padding:10px 12px;
+  min-height:56px;display:flex;
+  align-items:center;gap:9px;transition:.18s ease
+}
+.step.active{
+  border-color:#7fc3e8;background:#fbfeff;
+  box-shadow:0 6px 20px rgba(8,121,209,.07)
+}
+.step-number{
+  width:31px;height:31px;border-radius:50%;
+  background:#edf3f7;color:#64798c;
+  display:grid;place-items:center;
+  font-size:10px;font-weight:800;flex:none
+}
+.step.active .step-number{
+  background:var(--blue);color:#fff;
+  box-shadow:0 0 0 4px #e4f3fb
+}
+.step.completed .step-number{background:#dff7eb;color:#168154}
+.step-copy strong{display:block;font-size:10px}
+.step-copy span{display:block;color:var(--muted);font-size:8px;margin-top:2px}
+
+/* Content */
+.step-content{
+  background:#fff;border:1px solid var(--line);
+  border-radius:17px;padding:20px;
+  box-shadow:var(--shadow)
+}
+.step-content h3{
+  margin:0 0 4px;font-size:17px;
+  color:#092e4e;letter-spacing:-.25px
+}
+.step-content>p{
+  margin:0 0 13px;color:var(--muted);
+  font-size:10px;line-height:1.55
+}
+.instructions{
+  display:grid;grid-template-columns:repeat(2,1fr);
+  gap:7px;margin-bottom:12px
+}
+.instruction{
+  display:flex;gap:8px;align-items:flex-start;
+  min-height:55px;padding:10px;
+  border:1px solid var(--line);
+  border-radius:11px;background:#fbfdff
+}
+.instruction i{
+  width:25px;height:25px;border-radius:8px;
+  background:#eaf5fc;color:var(--blue);
+  display:grid;place-items:center;flex:none;font-size:10px
+}
+.instruction span{font-size:9px;line-height:1.5;color:#334e68}
+.terms-box{
+  background:#f7fafc;border:1px solid var(--line);
+  border-radius:11px;padding:10px;margin:11px 0
+}
+.terms-label{
+  display:flex;gap:8px;align-items:flex-start;
+  font-size:9px;line-height:1.5
+}
+.terms-label input{
+  width:16px;height:16px;accent-color:var(--blue);
+  flex:none;margin-top:0
+}
+.action-row{display:flex;justify-content:flex-end;gap:8px}
+.btn{
+  border:0;border-radius:10px;padding:10px 14px;
+  min-height:39px;font-weight:800;font-size:9px;
+  display:inline-flex;align-items:center;
+  justify-content:center;gap:7px;transition:.18s ease
+}
+.btn:disabled{opacity:.48;cursor:not-allowed}
+.btn-primary{
+  background:linear-gradient(135deg,#0879d1,#0b8fe9);
+  color:#fff;box-shadow:0 7px 18px rgba(8,121,209,.17)
+}
+.btn-success{
+  background:linear-gradient(135deg,#119961,#18b775);
+  color:#fff;box-shadow:0 7px 18px rgba(19,165,104,.15)
+}
+.btn-secondary{background:#edf3f7;color:#18344d}
+.btn-primary:hover:not(:disabled),
+.btn-success:hover:not(:disabled){transform:translateY(-1px)}
+
+/* ================= RIGHT CAMPUS PANEL ================= */
+.lobby-aside{
+  position:sticky;top:88px;
+  display:flex;flex-direction:column;gap:11px
+}
+.campus-visual{
+  position:relative;overflow:hidden;
+  min-height:260px;border-radius:20px;
+  border:1px solid #d5e5ed;
+  box-shadow:var(--shadow-lg);
+  background:#dcebf2
+}
+.campus-visual img{
+  width:100%;height:100%;
+  min-height:260px;display:block;
+  object-fit:cover
+}
+.campus-visual:after{
+  content:"";position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(6,43,72,.04) 30%,rgba(6,43,72,.58) 100%)
+}
+.campus-caption{
+  position:absolute;left:17px;right:17px;bottom:15px;
+  z-index:2;color:#fff
+}
+.campus-caption strong{
+  display:block;font-size:18px;
+  letter-spacing:-.3px
+}
+.campus-caption span{
+  display:block;font-size:9px;
+  margin-top:3px;color:#e4f3fb
+}
+.values-strip{
+  display:grid;grid-template-columns:repeat(3,1fr);
+  gap:6px;background:#0764a4;
+  padding:9px;border-radius:12px;
+  color:#fff;box-shadow:0 7px 20px rgba(8,121,209,.14)
+}
+.value-item{
+  text-align:center;font-size:8px;font-weight:700;
+  padding:4px 2px
+}
+.value-item i{
+  display:block;font-size:14px;
+  margin-bottom:4px;color:#dff5ff
+}
+.assurance-card,.connection-card{
+  background:rgba(255,255,255,.94);
+  border:1px solid var(--line);
+  border-radius:16px;padding:16px;
+  box-shadow:var(--shadow)
+}
+.assurance-head{
+  display:flex;align-items:center;gap:9px;
+  margin-bottom:8px
+}
+.assurance-icon{
+  width:34px;height:34px;border-radius:10px;
+  display:grid;place-items:center;
+  background:#eaf5fc;color:var(--blue);font-size:15px
+}
+.assurance-card h3{
+  margin:0;font-size:13px;color:#092e4e
+}
+.assurance-card p,.connection-card p{
+  margin:0;color:var(--muted);
+  font-size:9px;line-height:1.6
+}
+.assurance-quote{
+  border-top:1px solid var(--line);
+  margin-top:11px;padding-top:10px;
+  color:#1772ad!important;
+  font-style:italic
+}
+.connection-card{
+  background:#edf7fd;
+  border-color:#cce6f5;
+  display:flex;gap:9px
+}
+.connection-card .connection-icon{
+  width:31px;height:31px;flex:none;
+  border-radius:50%;background:#0879d1;color:#fff;
+  display:grid;place-items:center;font-size:12px
+}
+.connection-card strong{
+  display:block;font-size:10px;color:#0a4269;
+  margin-bottom:3px
+}
+.lobby-footer{
+  font-size:8px;color:#8092a2;
+  display:flex;justify-content:space-between;
+  gap:8px;padding:2px 3px
+}
+
+/* ================= CAMERA ================= */
+.camera-layout{
+  display:grid;grid-template-columns:1.1fr .9fr;
+  gap:14px;align-items:start
+}
+.camera-preview{
+  background:#071d33;border-radius:14px;
+  overflow:hidden;position:relative;
+  aspect-ratio:16/9;border:3px solid #dbe8ef;
+  box-shadow:0 10px 28px rgba(6,43,72,.10)
+}
+.camera-preview video{
+  width:100%;height:100%;object-fit:cover;
+  display:block;transform:scaleX(-1)
+}
+.camera-overlay{
+  position:absolute;left:10px;right:10px;top:10px;
+  display:flex;justify-content:space-between;gap:8px
+}
+.camera-chip{
+  background:rgba(7,29,51,.82);color:#fff;
+  border-radius:999px;padding:6px 9px;
+  font-size:8px;font-weight:700
+}
+.camera-chip i{color:#55e0a5}
+.camera-info{
+  border:1px solid var(--line);border-radius:14px;
+  padding:13px;background:#fbfdff
+}
+.status-line{
+  display:flex;align-items:center;gap:8px;
+  padding:9px 0;border-bottom:1px solid var(--line);
+  font-size:9px
+}
+.status-line:last-child{border-bottom:0}
+.status-dot{
+  width:8px;height:8px;border-radius:50%;
+  background:#cbd5df;flex:none
+}
+.status-dot.good{background:#16a66a;box-shadow:0 0 0 3px #dff7eb}
+.status-dot.warning{background:#f59e0b}
+.status-dot.danger{background:#e5484d}
+.camera-status-text{
+  margin-top:10px;padding:9px;border-radius:9px;
+  background:#f3f7fb;color:var(--muted);
+  font-size:9px;line-height:1.5
+}
+.camera-status-text.success{background:#e9f8f0;color:#14754d}
+.camera-status-text.warning{background:#fff6df;color:#8a6100}
+.camera-status-text.error{background:#fff0f0;color:#a52d32}
+.camera-actions{display:flex;gap:7px;margin-top:10px}
+.camera-actions .btn{flex:1}
+
+/* ================= READY ================= */
+.ready-card{text-align:center;max-width:680px;margin:auto;padding:9px}
+.ready-icon{
+  width:61px;height:61px;border-radius:17px;
+  background:#dff7eb;color:#16a66a;
+  display:grid;place-items:center;font-size:25px;
+  margin:0 auto 11px;box-shadow:0 0 0 7px #effaf5
+}
+.ready-card h3{font-size:24px;margin:0 0 6px}
+.ready-card>p{color:var(--muted);font-size:10px;line-height:1.55}
+.ready-list{
+  display:grid;grid-template-columns:repeat(2,1fr);
+  gap:7px;text-align:left;margin:15px 0
+}
+.ready-item{
+  padding:10px;border:1px solid var(--line);
+  border-radius:10px;display:flex;gap:7px;
+  font-size:9px;background:#fbfdff
+}
+.ready-item i{color:var(--green)}
+.quote{
+  padding:10px;border-radius:10px;
+  background:#f3f8fc;color:#486073;
+  font-size:9px;font-style:italic;margin-bottom:13px
+}
+
+/* ================= ACTIVE EXAM ================= */
+#examInterface{
+  display:none;background:#edf4f8;
+  height:calc(100dvh - 72px);
+  min-height:0;overflow:hidden
+}
+.exam-shell{height:100%;min-height:0;display:flex;flex-direction:column}
+.exam-topbar{
+  flex:none;background:#fff;border-bottom:1px solid var(--line);
+  height:62px;display:flex;align-items:center;
+  justify-content:space-between;padding:0 16px;gap:12px;
+  box-shadow:0 3px 16px rgba(6,43,72,.06)
+}
+.exam-brand{display:flex;align-items:center;gap:9px;min-width:0}
+.exam-brand .brand-mark{width:37px;height:37px;border-radius:10px}
+.exam-brand strong{font-size:13px;display:block;color:#092e4e}
+.exam-brand small{display:block;color:var(--muted);font-size:9px;margin-top:2px}
+.exam-top-center{display:flex;align-items:center;gap:9px;min-width:0}
+.exam-title-wrap{min-width:0}
+.exam-title-wrap strong{
+  display:block;max-width:300px;
+  overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap;font-size:12px;color:#092e4e
+}
+.exam-title-wrap span{display:block;color:var(--muted);font-size:9px}
+.timer-box{
+  border:1px solid #ffd1d4;background:#fff7f7;
+  color:#c73d45;border-radius:11px;padding:7px 10px;
+  text-align:center;min-width:96px
+}
+.timer-box small{display:block;font-size:7px;text-transform:uppercase;letter-spacing:1px}
+.timer-box strong{font-size:15px}
+.exam-body{flex:1;min-height:0;padding:10px;overflow:hidden}
+.exam-grid{
+  height:100%;min-height:0;
+  display:grid;grid-template-columns:220px minmax(0,1fr) 225px;
+  gap:10px
+}
+.panel{
+  background:#fff;border:1px solid var(--line);
+  border-radius:15px;min-height:0;overflow:hidden;
+  box-shadow:0 6px 22px rgba(6,43,72,.05)
+}
+.left-panel,.right-panel{padding:13px;overflow-y:auto}
+.panel-title{
+  font-size:9px;font-weight:800;text-transform:uppercase;
+  letter-spacing:1px;color:#708599;margin:0 0 9px
+}
+.profile-mini{
+  display:flex;gap:8px;align-items:center;
+  padding-bottom:11px;border-bottom:1px solid var(--line);
+  margin-bottom:11px
+}
+.profile-mini .avatar{
+  width:38px;height:38px;border-radius:11px;
+  background:#e8f3fb;color:var(--blue);display:grid;place-items:center;
+  overflow:hidden;position:relative;flex:none;border:1px solid #d7e9f4
+}
+.profile-mini .avatar .profile-photo{
+  width:100%;height:100%;object-fit:cover;display:none
+}
+.profile-mini .avatar .fa-user{display:block}
+.profile-mini strong{display:block;font-size:10px}
+.profile-mini span{display:block;font-size:8px;color:var(--muted);margin-top:2px}
+.camera-mini{
+  background:#071d33;border-radius:11px;overflow:hidden;
+  aspect-ratio:4/3;margin-bottom:8px;position:relative;
+  border:2px solid #dce7ed
+}
+.camera-mini video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
+.camera-mini canvas{position:absolute;inset:0;width:100%;height:100%}
+.live-pill{
+  position:absolute;left:6px;top:6px;background:#e5484d;color:#fff;
+  border-radius:999px;padding:4px 6px;font-size:7px;font-weight:800
+}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:9px 0}
+.stat{background:#f7fafc;border:1px solid var(--line);border-radius:9px;padding:8px}
+.stat span{display:block;font-size:7px;color:var(--muted)}
+.stat strong{font-size:12px;display:block;margin-top:3px}
+.progress-track{height:6px;background:#e6eef4;border-radius:99px;overflow:hidden}
+.progress-fill{height:100%;width:0;background:linear-gradient(90deg,var(--blue),var(--cyan));border-radius:99px}
+.status-good{color:#148053}.status-good i{font-size:7px}
+.question-panel{display:flex;flex-direction:column;min-width:0}
+.question-head{
+  flex:none;padding:11px 14px;border-bottom:1px solid var(--line);
+  display:flex;align-items:center;justify-content:space-between;gap:9px
+}
+.question-head-left{min-width:0}
+.question-head-left strong{display:block;font-size:13px;color:#092e4e}
+.question-head-left span{display:block;font-size:9px;color:var(--muted);margin-top:2px}
+.question-actions{display:flex;align-items:center;gap:6px}
+.icon-btn{
+  height:35px;padding:0 10px;border:1px solid var(--line);
+  background:#fff;border-radius:10px;color:var(--text);
+  font-weight:800;font-size:9px;display:flex;
+  align-items:center;gap:6px
+}
+.icon-btn:hover{background:#f5f9fc;border-color:#b8d7e8}
+#exam-container{
+  flex:1;min-height:0;max-height:none!important;
+  overflow:hidden!important;padding:0!important;
+  position:relative;display:flex;flex-direction:column
+}
+#exam-container>div{
+  flex:1 1 auto!important;min-height:0!important;
+  height:100%!important;max-height:none!important;
+  overflow-y:auto!important;overflow-x:hidden!important;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior:contain;touch-action:pan-y;
+  padding:18px 20px 26px!important;scroll-behavior:smooth
+}
+#exam-container li{max-width:100%;overflow-wrap:anywhere}
+#exam-container label{max-width:100%;overflow-wrap:anywhere;white-space:normal}
+#exam-container label{transition:.15s ease}
+#exam-container label:hover{border-color:#a5d2eb!important}
+#exam-container label:has(input:checked){
+  border-color:#0b82d9!important;background:#f0f9ff!important;
+  box-shadow:0 0 0 2px rgba(8,121,209,.09)!important
+}
+.exam-navigation{
+  flex:none;display:flex;justify-content:space-between;
+  align-items:center;gap:8px;padding:9px 12px;
+  border-top:1px solid var(--line);background:#fff
+}
+.nav-btn{min-width:105px}
+.nav-progress{font-size:9px;color:var(--muted);font-weight:700;text-align:center}
+.right-section{padding:11px 0;border-bottom:1px solid var(--line)}
+.right-section:last-child{border-bottom:0}
+.right-section h4{
+  margin:0 0 8px;font-size:9px;
+  text-transform:uppercase;letter-spacing:1px;color:#708599
+}
+#question-status-table{
+  display:grid;grid-template-columns:repeat(5,1fr);
+  gap:5px;max-height:185px;overflow:auto;padding-right:2px
+}
+.status-item{padding:6px 2px!important;font-size:8px!important;border-radius:8px!important}
+.proctor-status{
+  display:flex;align-items:center;gap:7px;padding:8px;
+  border-radius:9px;background:#eaf8f1;color:#16764f;
+  font-size:9px;font-weight:700
+}
+.save-status{font-size:9px;color:var(--green);margin-top:7px}
+.small-action{width:100%;margin-top:7px;min-height:41px}
+
+/* ================= MODALS ================= */
+.overlay{
+  position:fixed;inset:0;background:rgba(4,17,29,.78);
+  backdrop-filter:blur(6px);z-index:900;display:grid;
+  place-items:center;padding:18px
+}
+.overlay-card{
+  width:min(430px,100%);background:#fff;border-radius:20px;
+  padding:24px;box-shadow:0 30px 90px rgba(0,0,0,.35);
+  text-align:center;border:1px solid rgba(255,255,255,.8)
+}
+.overlay-card h3{margin:10px 0 7px;color:#092e4e}
+.overlay-card p{color:var(--muted);font-size:11px;line-height:1.6;margin:0}
+.overlay-icon{
+  width:56px;height:56px;border-radius:16px;
+  background:#edf6fc;color:var(--blue);
+  display:grid;place-items:center;margin:auto;font-size:22px
+}
+.modal{
+  position:fixed;inset:0;background:rgba(4,17,29,.72);
+  backdrop-filter:blur(6px);z-index:950;display:grid;
+  place-items:center;padding:18px
+}
+.modal-card{
+  width:min(470px,100%);background:#fff;border-radius:20px;
+  padding:24px;box-shadow:0 30px 80px rgba(0,0,0,.3);
+  border:1px solid rgba(255,255,255,.8)
+}
+.modal-card h3{margin:0 0 7px;color:#092e4e}
+.modal-card p{color:var(--muted);font-size:11px;line-height:1.6}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:17px}
+.progress-large{height:8px;background:#e7eef3;border-radius:99px;overflow:hidden;margin:15px 0}
+.progress-large>div{height:100%;width:0;background:linear-gradient(90deg,var(--blue),var(--cyan))}
+#custom-confirm-modal .modal-card,#attendance-required-modal .modal-card{text-align:center}
+
+/* ================= RESPONSIVE ================= */
+@media(max-width:1050px){
+  .lobby-wrap{grid-template-columns:minmax(0,1fr) 260px}
+}
+@media(max-width:900px){
+  .lobby-wrap{grid-template-columns:1fr}
+  .lobby-aside{
+    position:static;
+    display:grid;
+    grid-template-columns:1.2fr .8fr;
+    align-items:start
+  }
+  .campus-visual{grid-row:span 2}
+  .exam-grid{grid-template-columns:minmax(0,1fr)}
+  .left-panel,.right-panel{display:none}
+  .exam-top-center{margin-left:auto}
+}
+@media(max-width:768px){
+  .site-header{height:62px;padding:0 11px;position:relative}
+  .brand-mark{width:39px;height:39px;border-radius:11px}
+  .brand-copy strong{font-size:14px}.brand-copy small{font-size:8px}
+  .secure-badge{font-size:8px;max-width:118px;white-space:normal;text-align:right;line-height:1.25;padding:6px 8px}
+  #lobbyContainer{min-height:calc(100dvh - 62px)}
+  .lobby-wrap{width:calc(100% - 20px);padding:22px 0 32px;display:block}
+  .lobby-intro{margin-bottom:15px}
+  .eyebrow{font-size:8px;padding:6px 9px}
+  .lobby-intro h1{font-size:31px;letter-spacing:-1.45px}
+  .lobby-intro p{font-size:11px}
+  .exam-hero-card{padding:16px;border-radius:17px}
+  .exam-hero-top h2{font-size:19px}
+  .proctored-pill{padding:7px 9px;font-size:8px}
+  .exam-metrics{gap:6px;margin-top:13px}
+  .metric{min-height:70px;padding:9px;border-radius:10px}
+  .metric>span{font-size:7px}.metric strong{font-size:17px}
+  .student-card{grid-template-columns:auto 1fr;gap:10px;padding:11px}
+  .student-program{grid-column:2;text-align:left}
+  .student-avatar{width:44px;height:44px}
+  .steps{grid-template-columns:1fr;gap:6px}
+  .step{min-height:48px;padding:9px}
+  .step-number{width:29px;height:29px}
+  .step-content{padding:14px;border-radius:15px}
+  .instructions{grid-template-columns:1fr}
+  .action-row{justify-content:stretch}.action-row .btn{flex:1}
+  .lobby-aside{display:flex;flex-direction:column;margin-top:11px}
+  .campus-visual{min-height:200px}
+  .campus-visual img{min-height:200px}
+  .values-strip{order:2}
+  .assurance-card{order:3}
+  .connection-card{order:4}
+  .lobby-footer{order:5;flex-direction:column}
+  .camera-layout{grid-template-columns:1fr}
+  .camera-preview{aspect-ratio:4/3}
+  .ready-list{grid-template-columns:1fr}
+  .ready-card h3{font-size:23px}
+
+  #examInterface{height:100dvh;min-height:100dvh;overflow:hidden}
+  .exam-shell{height:100dvh;min-height:0}
+  .exam-topbar{height:57px;padding:0 7px;gap:6px}
+  .exam-brand .brand-mark{width:32px;height:32px}
+  .exam-brand strong{font-size:10px}.exam-brand small{display:none}
+  .exam-title-wrap{display:none}
+  .timer-box{min-width:77px;padding:6px 8px}
+  .timer-box small{font-size:7px}.timer-box strong{font-size:13px}
+  .exam-body{padding:4px;height:calc(100dvh - 57px);min-height:0;overflow:hidden}
+  .exam-grid{height:100%;min-height:0;display:block!important;overflow:hidden}
+  .question-panel{
+    height:100%;min-height:0;display:grid!important;
+    grid-template-rows:auto minmax(0,1fr) auto!important;gap:0
+  }
+  .question-head{padding:8px;min-height:51px}
+  .question-head-left strong{font-size:11px}.question-head-left span{font-size:8px}
+  .question-actions{gap:4px}.icon-btn{height:35px;padding:0 8px;font-size:9px}
+  #exam-container{min-height:0;height:100%;overflow:hidden!important}
+  #exam-container>div{
+    height:100%!important;min-height:0!important;max-height:none!important;
+    overflow-y:scroll!important;overflow-x:hidden!important;
+    -webkit-overflow-scrolling:touch;touch-action:pan-y;
+    overscroll-behavior:contain;padding:13px 8px 28px!important
+  }
+  #exam-container li{width:100%!important;max-width:100%!important}
+  #exam-container label{
+    width:100%!important;max-width:100%!important;
+    white-space:normal!important;overflow:visible!important;
+    text-overflow:clip!important;overflow-wrap:anywhere!important
+  }
+  #exam-container textarea{max-width:100%!important}
+  .exam-navigation{
+    position:relative;z-index:10;min-height:58px;
+    padding:7px 4px max(7px,env(safe-area-inset-bottom));
+    gap:5px;box-shadow:0 -6px 18px rgba(6,43,72,.08)
+  }
+  .nav-btn{min-width:0;flex:1;height:43px;padding:9px 6px;font-size:10px}
+  .nav-progress{min-width:42px;font-size:8px}
+  .mobile-submit-btn{
+    display:flex!important;
+    background:#16835a!important;
+    border-color:#16835a!important;
+    min-width:72px!important;
+  }
+  .mobile-submit-btn:disabled{opacity:.45;cursor:not-allowed}
+}
+@media(max-width:380px){
+  .brand-copy small{display:none}.secure-badge{max-width:95px}
+  .lobby-intro h1{font-size:28px}
+  .exam-metrics{grid-template-columns:1fr 1fr}
+  .exam-metrics .metric:last-child{grid-column:1/-1}
+  .question-head{padding:7px}
+  .question-actions .icon-btn{font-size:0;width:37px;justify-content:center}
+  .question-actions .icon-btn i{font-size:13px}
+}
+.mobile-submit-btn{display:none}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{
+  outline:3px solid rgba(8,121,209,.22);outline-offset:2px
+}
+@media(prefers-reduced-motion:reduce){
+  *{scroll-behavior:auto!important;transition:none!important}
+}
+
+/* ================= PREMIUM WELCOME HERO ================= */
+.welcome-hero{
+  position:relative;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 285px;
+  grid-template-rows:auto auto;
+  gap:0 16px;
+  margin-bottom:12px;
+  padding:27px 27px 18px;
+  overflow:hidden;
+  border-radius:26px;
+  border:1px solid rgba(157,205,227,.55);
+  background:
+    radial-gradient(circle at 92% 5%,rgba(28,181,218,.18),transparent 27%),
+    radial-gradient(circle at 8% 80%,rgba(8,121,209,.08),transparent 30%),
+    linear-gradient(135deg,#f8fcff 0%,#edf8fc 58%,#e4f3f8 100%);
+  box-shadow:0 18px 45px rgba(8,57,87,.10);
+}
+.welcome-hero:before{
+  content:"";
+  position:absolute;
+  width:300px;height:300px;
+  right:-170px;top:-170px;
+  border-radius:50%;
+  border:1px solid rgba(8,121,209,.10);
+  box-shadow:0 0 0 35px rgba(8,121,209,.025),0 0 0 70px rgba(8,121,209,.018);
+  pointer-events:none;
+}
+.welcome-main{
+  position:relative;
+  z-index:2;
+  min-width:0;
+  padding:2px 0 17px;
+}
+.welcome-kicker{
+  display:flex;align-items:center;gap:7px;
+  color:#6b8396;
+  font-size:8px;font-weight:900;
+  letter-spacing:1.8px;
+  margin:0 0 8px;
+}
+.welcome-kicker span{
+  width:20px;height:2px;border-radius:2px;
+  background:linear-gradient(90deg,#0879d1,#19b7b8);
+}
+.welcome-main .eyebrow{
+  margin-bottom:11px;
+  box-shadow:0 4px 12px rgba(8,121,209,.06);
+}
+.welcome-main h1{
+  font-size:clamp(34px,4.1vw,50px);
+  line-height:.98;
+  margin:0 0 11px;
+  letter-spacing:-2.4px;
+  color:#062f52;
+}
+.welcome-main h1 em{
+  font-style:normal;
+  background:linear-gradient(100deg,#0879d1,#0c9dc2 65%,#078a7c);
+  -webkit-background-clip:text;
+  background-clip:text;
+  color:transparent;
+}
+.welcome-description{
+  max-width:600px;
+  margin:0;
+  color:#5f7890;
+  font-size:12px;
+  line-height:1.65;
+}
+.welcome-trust{
+  display:flex;flex-wrap:wrap;
+  gap:7px;
+  margin-top:16px;
+}
+.welcome-trust>div{
+  display:flex;align-items:center;gap:7px;
+  min-height:32px;
+  padding:6px 9px;
+  border:1px solid rgba(175,211,226,.72);
+  border-radius:10px;
+  background:rgba(255,255,255,.62);
+  color:#648097;
+  font-size:8px;
+}
+.welcome-trust i{
+  width:22px;height:22px;
+  display:grid;place-items:center;
+  border-radius:7px;
+  background:#e5f4fb;color:#0879d1;
+  font-size:10px;
+}
+.welcome-trust strong{
+  display:block;color:#173e5c;
+  font-size:8px;margin-bottom:1px;
+}
+.welcome-campus{
+  position:relative;
+  z-index:2;
+  min-height:205px;
+  overflow:hidden;
+  border-radius:19px;
+  border:1px solid rgba(255,255,255,.8);
+  box-shadow:0 12px 30px rgba(5,51,79,.18);
+  background:#cfe5ee;
+}
+.welcome-campus img{
+  width:100%;height:100%;
+  min-height:205px;
+  display:block;
+  object-fit:cover;
+}
+.welcome-campus-overlay{
+  position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(4,40,65,.03) 20%,rgba(3,35,59,.74) 100%);
+}
+.welcome-campus-content{
+  position:absolute;left:14px;right:14px;bottom:13px;
+  color:#fff;
+}
+.campus-chip{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:5px 8px;
+  border-radius:999px;
+  background:rgba(255,255,255,.14);
+  border:1px solid rgba(255,255,255,.23);
+  backdrop-filter:blur(7px);
+  font-size:7px;font-weight:900;
+  letter-spacing:.8px;
+  text-transform:uppercase;
+}
+.welcome-campus-content strong{
+  display:block;
+  margin-top:8px;
+  font-size:17px;
+  letter-spacing:-.4px;
+}
+.welcome-campus-content small{
+  display:block;
+  margin-top:2px;
+  color:#d8edf7;
+  font-size:8px;
+  line-height:1.4;
+}
+.welcome-hero .exam-hero-card{
+  grid-column:1 / -1;
+  margin:13px 0 0;
+  padding:15px 16px;
+  border-radius:17px;
+  border:1px solid rgba(176,211,225,.72);
+  background:rgba(255,255,255,.82);
+  box-shadow:0 8px 24px rgba(9,65,93,.07);
+  backdrop-filter:blur(8px);
+}
+.welcome-hero .exam-hero-card:after{
+  width:150px;height:150px;
+  right:-70px;top:-110px;
+  background:rgba(226,246,251,.8);
+}
+.welcome-hero .exam-hero-top{
+  align-items:flex-start;
+}
+.exam-label{
+  display:inline-flex;align-items:center;gap:5px;
+  color:#0879d1;
+  font-size:7px;font-weight:900;
+  letter-spacing:1.15px;
+}
+.welcome-hero .exam-hero-top h2{
+  font-size:18px;
+  margin:4px 0 2px;
+}
+.welcome-hero .exam-hero-top p{
+  font-size:9px;
+}
+.dot{
+  display:inline-block;
+  width:3px;height:3px;
+  margin:0 4px 2px;
+  border-radius:50%;
+  background:#9ab2c2;
+}
+.welcome-hero .proctored-pill{
+  padding:7px 10px;
+  font-size:8px;
+}
+.welcome-hero .exam-metrics{
+  gap:7px;
+  margin-top:11px;
+}
+.welcome-hero .metric{
+  min-height:58px;
+  position:relative;
+  padding:9px 10px 9px 38px;
+  border-radius:11px;
+  background:#fbfdff;
+}
+.welcome-hero .metric-icon{
+  position:absolute;
+  left:10px;top:10px;
+  width:21px;height:21px;
+  display:grid;place-items:center;
+  border-radius:7px;
+  background:#e9f5fb;
+  color:#0879d1;
+  font-size:9px;
+}
+.welcome-hero .metric>span{
+  font-size:7px;
+  letter-spacing:1px;
+}
+.welcome-hero .metric strong{
+  font-size:17px;
+  margin-top:4px;
+}
+.welcome-hero .metric strong small{
+  font-size:9px;
+  font-weight:800;
+  color:#5d7890;
+}
+@media (max-width:900px){
+  .welcome-hero{
+    grid-template-columns:minmax(0,1fr) 235px;
+    padding:23px 21px 16px;
+  }
+  .welcome-main h1{font-size:38px}
+  .welcome-campus,.welcome-campus img{min-height:185px}
+}
+@media (max-width:768px){
+  .welcome-hero{
+    display:block;
+    padding:21px 15px 14px;
+    border-radius:21px;
+    margin-bottom:11px;
+  }
+  .welcome-main{padding-bottom:14px}
+  .welcome-main .eyebrow{font-size:8px;padding:6px 9px}
+  .welcome-kicker{font-size:7px;letter-spacing:1.5px}
+  .welcome-main h1{
+    font-size:clamp(32px,9vw,39px);
+    letter-spacing:-1.8px;
+    line-height:1;
+    margin-bottom:9px;
+  }
+  .welcome-description{font-size:11px;line-height:1.55}
+  .welcome-trust{gap:5px;margin-top:12px}
+  .welcome-trust>div{
+    flex:1 1 calc(50% - 5px);
+    min-height:30px;
+    font-size:7px;
+    padding:5px 7px;
+  }
+  .welcome-trust>div:last-child{flex-basis:100%}
+  .welcome-campus{
+    min-height:145px;
+    border-radius:15px;
+    margin-top:1px;
+  }
+  .welcome-campus img{min-height:145px}
+  .welcome-campus-content{bottom:11px}
+  .welcome-campus-content strong{font-size:15px}
+  .welcome-campus-content small{font-size:7px}
+  .welcome-hero .exam-hero-card{
+    margin-top:10px;
+    padding:13px 11px;
+    border-radius:14px;
+  }
+  .welcome-hero .exam-hero-top h2{font-size:16px}
+  .welcome-hero .exam-hero-top p{font-size:8px}
+  .welcome-hero .proctored-pill{
+    padding:6px 8px;
+    font-size:7px;
+  }
+  .welcome-hero .exam-metrics{
+    gap:5px;
+    margin-top:9px;
+  }
+  .welcome-hero .metric{
+    min-height:55px;
+    padding:8px 7px 7px 31px;
+  }
+  .welcome-hero .metric-icon{
+    left:7px;top:9px;
+    width:19px;height:19px;
+    font-size:8px;
+  }
+  .welcome-hero .metric>span{font-size:6px}
+  .welcome-hero .metric strong{font-size:15px}
+  .welcome-hero .metric strong small{font-size:8px}
+}
+
+/* =========================================================
+   FINAL NCHSM WELCOME DESIGN — FADED CAMPUS HERO
+   Keeps all existing exam IDs/JavaScript intact.
+   ========================================================= */
+
+/* Use the full page width for the premium lobby composition. */
+@media (min-width:901px){
+  .lobby-wrap{
+    width:min(1430px,calc(100% - 64px));
+    grid-template-columns:1fr;
+    gap:14px;
+    padding-top:25px;
+  }
+  .lobby-aside{
+    position:static;
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:11px;
+  }
+  .lobby-aside .campus-visual{display:none}
+  .lobby-aside .values-strip{grid-column:1 / -1}
+  .lobby-aside .lobby-footer{grid-column:1 / -1}
+}
+
+/* Main welcome section: campus photo becomes a soft background. */
+.welcome-hero{
+  isolation:isolate;
+  min-height:0;
+  display:block;
+  padding:31px 34px 19px;
+  border-radius:25px;
+  border:1px solid #cfe5ef;
+  background:
+    linear-gradient(90deg,
+      rgba(248,253,255,.985) 0%,
+      rgba(248,253,255,.965) 38%,
+      rgba(248,253,255,.78) 63%,
+      rgba(248,253,255,.38) 100%),
+    url("https://raw.githubusercontent.com/NCHSMlearning/NCHSM-Digital-campus-/main/images/campus-header.jpg") center right / cover no-repeat;
+  box-shadow:0 20px 50px rgba(5,58,88,.12);
+}
+
+.welcome-hero:after{
+  content:"";
+  position:absolute;
+  z-index:-1;
+  width:46%;
+  height:100%;
+  right:0;
+  top:0;
+  background:linear-gradient(90deg,rgba(237,249,253,0),rgba(221,243,250,.18));
+  pointer-events:none;
+}
+
+.welcome-main{
+  max-width:760px;
+  padding:0 0 16px;
+}
+
+.welcome-main .eyebrow{
+  background:rgba(239,249,254,.88);
+  backdrop-filter:blur(8px);
+}
+
+.welcome-kicker{
+  margin-top:1px;
+  color:#5d7990;
+}
+
+.welcome-main h1{
+  font-size:clamp(38px,4.5vw,61px);
+  line-height:.96;
+  letter-spacing:-3px;
+  margin-bottom:14px;
+  text-shadow:0 2px 1px rgba(255,255,255,.45);
+}
+
+.welcome-description{
+  max-width:690px;
+  font-size:13px;
+  color:#4f6d85;
+  line-height:1.65;
+}
+
+.welcome-trust{
+  gap:0;
+  margin-top:20px;
+  max-width:740px;
+}
+
+.welcome-trust>div{
+  flex:0 1 auto;
+  min-height:48px;
+  padding:6px 21px 6px 0;
+  margin-right:21px;
+  border:0;
+  border-right:1px solid rgba(111,154,178,.24);
+  border-radius:0;
+  background:transparent;
+}
+
+.welcome-trust>div:last-child{
+  border-right:0;
+  margin-right:0;
+}
+
+.welcome-trust i{
+  width:34px;height:34px;
+  border-radius:50%;
+  background:#0879d1;
+  color:#fff;
+  box-shadow:0 5px 13px rgba(8,121,209,.20);
+}
+
+.welcome-trust strong{font-size:10px}
+.welcome-trust span{font-size:8px}
+
+/* Hide the duplicate side campus image; the hero now owns the campus visual. */
+.welcome-campus{display:none!important}
+
+/* Make the exam summary feel integrated with the hero. */
+.welcome-hero .exam-hero-card{
+  position:relative;
+  margin:0;
+  padding:17px 19px 15px;
+  border-radius:17px;
+  background:rgba(255,255,255,.90);
+  border:1px solid rgba(191,222,235,.88);
+  box-shadow:0 10px 28px rgba(7,64,92,.09);
+  backdrop-filter:blur(10px);
+}
+
+.welcome-hero .exam-hero-card:before{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius:inherit;
+  pointer-events:none;
+  background:linear-gradient(90deg,rgba(255,255,255,.48),rgba(255,255,255,.08));
+}
+
+.welcome-hero .exam-hero-top,
+.welcome-hero .exam-metrics,
+.welcome-hero #continuationBadge{
+  position:relative;
+  z-index:2;
+}
+
+.welcome-hero .exam-hero-top h2{
+  font-size:22px;
+}
+
+.welcome-hero .exam-metrics{
+  grid-template-columns:repeat(3,1fr);
+}
+
+.welcome-hero .metric{
+  min-height:66px;
+  padding:10px 12px 10px 47px;
+  border:1px solid rgba(197,224,235,.80);
+  background:rgba(246,251,253,.78);
+}
+
+.welcome-hero .metric-icon{
+  left:11px;top:12px;
+  width:29px;height:29px;
+  border-radius:50%;
+  background:#1688df;
+  color:#fff;
+  font-size:11px;
+}
+
+.welcome-hero .metric:nth-child(2) .metric-icon{
+  background:#079653;
+}
+
+.welcome-hero .metric:nth-child(3) .metric-icon{
+  background:#ed8a18;
+}
+
+.welcome-hero .metric strong{
+  font-size:21px;
+}
+
+/* Add a subtle campus caption over the faded image without changing HTML. */
+.welcome-hero:before{
+  content:"NCHSM  •  Nakuru College of Health Science & Management";
+  position:absolute;
+  z-index:1;
+  right:28px;
+  top:45%;
+  transform:translateY(-50%);
+  width:270px;
+  padding:8px 12px;
+  text-align:right;
+  color:rgba(7,61,93,.72);
+  font-size:8px;
+  font-weight:800;
+  letter-spacing:.45px;
+  line-height:1.45;
+  border-right:2px solid rgba(8,121,209,.45);
+  text-shadow:0 1px 10px rgba(255,255,255,.9);
+  pointer-events:none;
+}
+
+/* Desktop values/assurance cards now support the full-width layout. */
+@media (min-width:901px){
+  .lobby-aside .values-strip{
+    border-radius:14px;
+  }
+  .lobby-aside .assurance-card,
+  .lobby-aside .connection-card{
+    min-height:112px;
+  }
+}
+
+/* Tablet/mobile: keep the campus image faded behind the welcome content. */
+@media (max-width:900px){
+  .lobby-wrap{
+    width:calc(100% - 28px);
+    grid-template-columns:1fr;
+  }
+  .welcome-hero{
+    display:block;
+    padding:24px 20px 16px;
+    background:
+      linear-gradient(90deg,
+        rgba(248,253,255,.975) 0%,
+        rgba(248,253,255,.88) 55%,
+        rgba(248,253,255,.57) 100%),
+      url("https://raw.githubusercontent.com/NCHSMlearning/NCHSM-Digital-campus-/main/images/campus-header.jpg") center / cover no-repeat;
+  }
+  .welcome-campus{display:none!important}
+  .welcome-hero:before{
+    right:18px;
+    top:32%;
+    width:200px;
+    font-size:7px;
+  }
+}
+
+@media (max-width:768px){
+  .lobby-wrap{
+    width:calc(100% - 14px);
+    padding-top:12px;
+  }
+  .welcome-hero{
+    padding:19px 13px 13px;
+    border-radius:19px;
+    background:
+      linear-gradient(180deg,
+        rgba(248,253,255,.975) 0%,
+        rgba(248,253,255,.92) 55%,
+        rgba(248,253,255,.68) 100%),
+      url("https://raw.githubusercontent.com/NCHSMlearning/NCHSM-Digital-campus-/main/images/campus-header.jpg") center / cover no-repeat;
+  }
+  .welcome-hero:before{
+    top:38%;
+    right:10px;
+    width:155px;
+    font-size:6px;
+    opacity:.55;
+  }
+  .welcome-main{
+    padding-bottom:12px;
+  }
+  .welcome-main h1{
+    font-size:clamp(32px,10vw,42px);
+    line-height:.98;
+    letter-spacing:-2px;
+    margin-bottom:9px;
+  }
+  .welcome-description{
+    font-size:10px;
+    line-height:1.55;
+  }
+  .welcome-trust{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:4px;
+    margin-top:13px;
+  }
+  .welcome-trust>div{
+    min-height:42px;
+    margin:0;
+    padding:4px 4px 4px 0;
+    border-right:1px solid rgba(111,154,178,.20);
+  }
+  .welcome-trust>div:last-child{
+    border-right:0;
+  }
+  .welcome-trust i{
+    width:27px;height:27px;
+    font-size:8px;
+  }
+  .welcome-trust strong{font-size:7px}
+  .welcome-trust span{font-size:6px}
+  .welcome-hero .exam-hero-card{
+    padding:12px 9px;
+    border-radius:13px;
+  }
+  .welcome-hero .exam-hero-top h2{font-size:16px}
+  .welcome-hero .exam-hero-top p{font-size:7px}
+  .welcome-hero .exam-metrics{
+    gap:4px;
+  }
+  .welcome-hero .metric{
+    min-height:53px;
+    padding:8px 4px 7px 29px;
+  }
+  .welcome-hero .metric-icon{
+    left:6px;top:10px;
+    width:19px;height:19px;
+    font-size:7px;
+  }
+  .welcome-hero .metric>span{
+    font-size:5.5px;
+    letter-spacing:.6px;
+  }
+  .welcome-hero .metric strong{
+    font-size:14px;
+    margin-top:3px;
+  }
+  .welcome-hero .metric strong small{font-size:7px}
+  .lobby-aside{
+    margin-top:10px;
+  }
+}
+
+/* Very small phones: prevent any horizontal overflow. */
+@media (max-width:420px){
+  .welcome-trust>div{
+    min-width:0;
+  }
+  .welcome-trust strong,
+  .welcome-trust span{
+    white-space:normal;
+  }
+}
+
+/* =========================================================
+   NCHSM COMPLETE PAGE POLISH
+   Refines the sections below the welcome hero without
+   changing existing functionality or IDs.
+   ========================================================= */
+
+/* Student information card */
+.student-card{
+  position:relative;
+  overflow:hidden;
+  border:1px solid #d5e7ef!important;
+  border-radius:18px!important;
+  background:rgba(255,255,255,.94)!important;
+  box-shadow:0 10px 28px rgba(6,58,86,.07)!important;
+}
+.student-card:before{
+  content:"";
+  position:absolute;
+  left:0;top:0;bottom:0;
+  width:4px;
+  background:linear-gradient(180deg,#0879d1,#0ba18d);
+}
+.student-card .student-avatar{
+  border:2px solid #e5f2f7!important;
+  box-shadow:0 5px 15px rgba(7,72,103,.10);
+}
+.student-card .student-name{
+  color:#07385e!important;
+}
+.student-card .student-status{
+  color:#148553!important;
+}
+
+/* Readiness / progress steps */
+.steps{
+  position:relative;
+  border:1px solid #d5e7ef!important;
+  border-radius:16px!important;
+  background:rgba(255,255,255,.94)!important;
+  box-shadow:0 8px 22px rgba(6,58,86,.06)!important;
+}
+.step{
+  transition:background .2s ease,transform .2s ease;
+}
+.step.active{
+  background:linear-gradient(135deg,#f0f9fe,#e7f6fb)!important;
+  box-shadow:inset 0 -2px 0 #0879d1;
+}
+.step-number{
+  box-shadow:0 4px 12px rgba(8,121,209,.15);
+}
+.step.active .step-number{
+  background:#0879d1!important;
+  color:#fff!important;
+}
+
+/* Main lower content grid */
+.lobby-content-grid{
+  gap:14px!important;
+}
+.lobby-content-grid > section,
+.lobby-content-grid > div{
+  border:1px solid #d7e8ef!important;
+  border-radius:18px!important;
+  background:rgba(255,255,255,.96)!important;
+  box-shadow:0 9px 26px rgba(6,58,86,.055)!important;
+}
+
+/* Terms & Instructions */
+.instructions-card,
+.instructions,
+.terms-card{
+  border-radius:15px!important;
+}
+.instructions{
+  background:#f7fbfd!important;
+  border:1px solid #e0edf2!important;
+}
+.instructions li::marker{
+  color:#0879d1;
+}
+.instructions strong{
+  color:#123f60;
+}
+.terms-check{
+  border:1px solid #d7e8ef!important;
+  background:#f9fcfd!important;
+  border-radius:12px!important;
+  transition:border-color .2s ease,background .2s ease;
+}
+.terms-check:hover{
+  border-color:#9bcfe4!important;
+  background:#f3faff!important;
+}
+
+/* Action buttons */
+.action-row{
+  gap:9px!important;
+}
+.btn-primary,
+.start-exam-btn{
+  box-shadow:0 7px 16px rgba(8,121,209,.16)!important;
+}
+.btn-primary:hover,
+.start-exam-btn:hover{
+  transform:translateY(-1px);
+}
+
+/* Assurance / safety cards */
+.assurance-card,
+.connection-card{
+  border:1px solid #d7e8ef!important;
+  border-radius:16px!important;
+  background:linear-gradient(145deg,#ffffff,#f6fbfd)!important;
+  box-shadow:0 8px 22px rgba(6,58,86,.05)!important;
+}
+.assurance-card i,
+.connection-card i{
+  filter:drop-shadow(0 4px 7px rgba(8,121,209,.12));
+}
+.connection-card .connection-status{
+  border-radius:999px;
+}
+
+/* Values strip */
+.values-strip{
+  border:1px solid #d4e7ef!important;
+  border-radius:15px!important;
+  background:linear-gradient(90deg,#f9fcfe,#f2f9fc)!important;
+  box-shadow:0 7px 20px rgba(6,58,86,.045)!important;
+}
+.values-strip strong{
+  color:#07385e!important;
+}
+
+/* Footer */
+.lobby-footer{
+  border-top:1px solid #d8e8ef!important;
+  color:#6b8395!important;
+  padding-top:13px!important;
+}
+
+/* Camera/device check */
+#cameraCheckContainer,
+.camera-check-card,
+.device-check-card{
+  border-radius:20px!important;
+}
+.camera-check-card,
+.device-check-card{
+  border:1px solid #d4e7ef!important;
+  box-shadow:0 12px 30px rgba(6,58,86,.08)!important;
+}
+
+/* Ready screen */
+#readyContainer,
+.ready-card{
+  border-radius:20px!important;
+}
+.ready-card{
+  border:1px solid #d4e7ef!important;
+  box-shadow:0 12px 32px rgba(6,58,86,.08)!important;
+}
+
+/* Active exam: cleaner hierarchy */
+.exam-shell,
+.exam-container,
+.exam-layout{
+  background:#f3f8fa!important;
+}
+.question-panel,
+.question-card,
+.navigator-panel,
+.exam-sidebar,
+.exam-right-panel{
+  border-color:#d5e6ed!important;
+}
+.question-card{
+  box-shadow:0 10px 28px rgba(5,54,80,.07)!important;
+}
+.question-number,
+.question-index{
+  color:#0879d1!important;
+}
+
+/* Better form controls */
+input,select,textarea{
+  border-color:#d2e4ec!important;
+}
+input:focus,select:focus,textarea:focus{
+  border-color:#0879d1!important;
+  box-shadow:0 0 0 3px rgba(8,121,209,.09)!important;
+}
+
+/* Consistent small-screen spacing */
+@media(max-width:768px){
+  .student-card{
+    border-radius:15px!important;
+  }
+  .steps{
+    border-radius:14px!important;
+  }
+  .lobby-content-grid{
+    gap:10px!important;
+  }
+  .lobby-content-grid > section,
+  .lobby-content-grid > div{
+    border-radius:15px!important;
+  }
+  .assurance-card,
+  .connection-card{
+    border-radius:14px!important;
+  }
+}
+
+/* Respect reduced-motion preference */
+@media(prefers-reduced-motion:reduce){
+  .step,.btn-primary,.start-exam-btn{
+    transition:none!important;
+  }
+}
+
+/* =========================================================
+   MOBILE EXAM LOBBY + EXAM CONTROLS — FINAL FIX
+   Ensures the complete lobby is scrollable and the exam
+   navigation is always visible on phones.
+   ========================================================= */
+
+html,body{
+  min-height:100%;
+}
+
+body{
+  overflow-x:hidden!important;
+}
+
+/* Lobby must be a normal scrolling document on phones. */
+@media(max-width:768px){
+  #lobbyContainer,
+  .lobby-container{
+    height:auto!important;
+    min-height:100dvh!important;
+    max-height:none!important;
+    overflow:visible!important;
+  }
+
+  .lobby-wrap{
+    height:auto!important;
+    min-height:0!important;
+    max-height:none!important;
+    overflow:visible!important;
+    padding-bottom:28px!important;
+  }
+
+  .lobby-main,
+  .lobby-content,
+  .lobby-content-grid{
+    height:auto!important;
+    min-height:0!important;
+    max-height:none!important;
+    overflow:visible!important;
+  }
+
+  /* Never clip the lower lobby sections. */
+  .welcome-hero,
+  .student-card,
+  .steps,
+  .instructions-card,
+  .instructions,
+  .terms-card,
+  .action-row,
+  .lobby-aside,
+  .assurance-card,
+  .connection-card{
+    overflow:visible;
+  }
+
+  /* Keep action buttons reachable after scrolling. */
+  .action-row{
+    position:relative!important;
+    z-index:20!important;
+    padding-bottom:8px!important;
+  }
+
+  /* Make the lobby start/continue button comfortably tappable. */
+  .action-row .btn,
+  .action-row button{
+    min-height:46px!important;
+    touch-action:manipulation;
+  }
+
+  /* ===== ACTIVE EXAM ON PHONES ===== */
+  #examContainer,
+  #examInterface,
+  .exam-container,
+  .exam-shell{
+    height:100dvh!important;
+    min-height:100dvh!important;
+    max-height:100dvh!important;
+    overflow:hidden!important;
+  }
+
+  .exam-layout,
+  .exam-content,
+  .exam-main,
+  .question-area{
+    min-height:0!important;
+  }
+
+  /* The question area scrolls independently, while controls stay fixed. */
+  .question-panel,
+  .question-card,
+  .questions-container,
+  .question-container{
+    min-height:0!important;
+  }
+
+  /* Ensure the bottom navigation is actually visible above the phone safe area. */
+  .exam-navigation{
+    position:fixed!important;
+    left:0!important;
+    right:0!important;
+    bottom:0!important;
+    z-index:9999!important;
+    display:flex!important;
+    align-items:center!important;
+    width:100%!important;
+    min-height:62px!important;
+    padding:7px 6px max(8px,env(safe-area-inset-bottom))!important;
+    background:rgba(255,255,255,.98)!important;
+    border-top:1px solid #d4e5ec!important;
+    box-shadow:0 -8px 25px rgba(4,49,75,.13)!important;
+  }
+
+  .exam-navigation .nav-btn{
+    display:flex!important;
+    visibility:visible!important;
+    opacity:1!important;
+    align-items:center!important;
+    justify-content:center!important;
+    min-width:0!important;
+    flex:1 1 0!important;
+    height:44px!important;
+    min-height:44px!important;
+    margin:0!important;
+    padding:7px 5px!important;
+    font-size:10px!important;
+    touch-action:manipulation;
+  }
+
+  .exam-navigation .mobile-submit-btn{
+    display:flex!important;
+    flex:1.15 1 0!important;
+    min-width:66px!important;
+    background:#16835a!important;
+    color:#fff!important;
+    border-color:#16835a!important;
+  }
+
+  .exam-navigation .mobile-submit-btn:disabled{
+    opacity:.48!important;
+  }
+
+  /* The question content gets bottom breathing room so the last answer
+     cannot disappear underneath the fixed navigation bar. */
+  .question-panel,
+  .question-card,
+  .questions-container,
+  .question-container{
+    padding-bottom:82px!important;
+  }
+
+  /* If the actual scroll wrapper exists, keep its content above the nav. */
+  .exam-main,
+  .question-area{
+    padding-bottom:72px!important;
+  }
+}
+
+/* Smaller phones: compact navigation but still fully usable. */
+@media(max-width:420px){
+  .exam-navigation{
+    gap:3px!important;
+    padding-left:4px!important;
+    padding-right:4px!important;
+  }
+
+  .exam-navigation .nav-btn{
+    height:42px!important;
+    min-height:42px!important;
+    font-size:9px!important;
+    padding-left:3px!important;
+    padding-right:3px!important;
+  }
+
+  .exam-navigation .mobile-submit-btn{
+    min-width:60px!important;
+  }
+}
+
+/* HIGH VISIBILITY EXAM LOBBY TIMER */
+.high-visibility-timer,
+.remaining-time,
+.time-remaining,
+.exam-time-remaining,
+#remainingTime,
+#lobbyRemainingTime,
+#remaining-time{
+  color:#fff!important;
+  background:linear-gradient(135deg,#063b60,#075b83)!important;
+  border:1px solid rgba(255,255,255,.2)!important;
+  border-radius:14px!important;
+  padding:10px 14px!important;
+  box-shadow:0 8px 20px rgba(4,52,78,.18)!important;
+  text-shadow:0 1px 2px rgba(0,0,0,.25);
+}
+.high-visibility-timer.warning,
+.high-visibility-timer.danger,
+.remaining-time.warning,
+.remaining-time.danger,
+.time-remaining.warning,
+.time-remaining.danger,
+#remainingTime.warning,
+#remainingTime.danger,
+#lobbyRemainingTime.warning,
+#lobbyRemainingTime.danger{
+  color:#fff!important;
+  background:linear-gradient(135deg,#9f1730,#d12d42)!important;
+  border-color:rgba(255,255,255,.3)!important;
+}
+.high-visibility-timer strong,
+.high-visibility-timer .value,
+.remaining-time strong,
+.remaining-time .value,
+.time-remaining strong,
+.time-remaining .value,
+#remainingTime strong,
+#remainingTime .value,
+#lobbyRemainingTime strong,
+#lobbyRemainingTime .value{
+  color:#fff!important;
+  font-size:20px!important;
+  font-weight:900!important;
+}
+.high-visibility-timer .label,
+.remaining-time .label,
+.time-remaining .label,
+#remainingTime .label,
+#lobbyRemainingTime .label{
+  color:rgba(255,255,255,.8)!important;
+  font-size:8px!important;
+  font-weight:800!important;
+  text-transform:uppercase;
+  letter-spacing:1px;
+}
+.high-visibility-timer i,
+.remaining-time i,
+.time-remaining i,
+#remainingTime i,
+#lobbyRemainingTime i{
+  color:#fff!important;
+  background:rgba(255,255,255,.14)!important;
+  border-radius:50%;
+}
+@media(max-width:768px){
+  .high-visibility-timer,
+  .remaining-time,
+  .time-remaining,
+  #remainingTime,
+  #lobbyRemainingTime{
+    padding:8px 10px!important;
+    border-radius:12px!important;
+  }
+  .high-visibility-timer strong,
+  .high-visibility-timer .value,
+  .remaining-time strong,
+  .remaining-time .value,
+  #remainingTime strong,
+  #remainingTime .value,
+  #lobbyRemainingTime strong,
+  #lobbyRemainingTime .value{
+    font-size:17px!important;
+  }
+}
+</style>
+
+<style id="header-symbol-fix">
+/* NCHSM header hardening: prevent broken icon-font glyphs from appearing */
+.site-header .brand,
+.site-header .brand * {
+  font-family: Arial, Helvetica, sans-serif !important;
+  font-style: normal;
+  text-decoration: none;
+}
+
+/* Keep the brand clean and text-based if the icon font fails. */
+.site-header .brand-wordmark {
+  display: inline-flex;
+  align-items: center;
+  font-weight: 800;
+  letter-spacing: .02em;
+  line-height: 1;
+}
+
+/* Hide empty decorative pseudo-elements that can expose icon-font glyphs. */
+.site-header .brand::before,
+.site-header .brand::after {
+  content: none !important;
+}
+
+/* Do not allow icon font ligatures in the header branding. */
+.site-header .brand,
+.site-header .brand span,
+.site-header .brand strong {
+  font-variant-ligatures: none !important;
+  text-rendering: geometricPrecision;
+}
+</style>
+
+</head>
+
+<body>
+
+<header class="site-header">
+  <div class="brand">
+    <div class="brand-mark"><img src="images/Logo_NCHSM.png" alt="NCHSM Logo"></div>
+    <div class="brand-copy">
+      <strong>NCHSM</strong>
+      <small>Knowledge • Discipline • A Better Tomorrow</small>
+    </div>
+  </div>
+  <div class="secure-badge"><i class="fa-solid fa-shield-halved"></i> Secure • Proctored • Trusted</div>
+</header>
+
+<!-- ===================== EXAM LOBBY ===================== -->
+<main id="lobbyContainer">
+  <div class="lobby-wrap">
+    <div class="lobby-main">
+    <section class="welcome-hero">
+      <div class="welcome-main">
+        <div class="eyebrow"><i class="fa-solid fa-lock"></i> Secure Online Examination</div>
+        <div class="welcome-kicker"><span></span> NCHSM DIGITAL ASSESSMENT</div>
+        <h1>Welcome to Your<br><em>Examination</em></h1>
+        <p class="welcome-description">Your examination is ready. Review the details below, complete the readiness checks, and begin when you are fully prepared.</p>
+
+        <div class="welcome-trust">
+          <div><i class="fa-solid fa-shield-halved"></i><span><strong>Proctored</strong> Secure monitoring</span></div>
+          <div><i class="fa-solid fa-wifi"></i><span><strong>Connected</strong> Stable session</span></div>
+          <div><i class="fa-solid fa-user-check"></i><span><strong>Verified</strong> Student access</span></div>
+        </div>
+      </div>
+
+      <div class="welcome-campus">
+        <img src="https://raw.githubusercontent.com/NCHSMlearning/NCHSM-Digital-campus-/main/images/campus-header.jpg" alt="NCHSM Campus">
+        <div class="welcome-campus-overlay"></div>
+        <div class="welcome-campus-content">
+          <span class="campus-chip"><i class="fa-solid fa-location-dot"></i> NCHSM</span>
+          <strong>Learn. Serve. Lead.</strong>
+          <small>Excellence in Health Sciences Education</small>
+        </div>
+      </div>
+
+      <section class="exam-hero-card">
+        <div class="exam-hero-top">
+          <div class="exam-heading">
+            <span class="exam-label"><i class="fa-solid fa-file-circle-check"></i> CURRENT ASSESSMENT</span>
+            <h2 id="examTitle">Examination</h2>
+            <p>Online Assessment <span class="dot"></span> Ready for review</p>
+          </div>
+          <div class="proctored-pill"><i class="fa-solid fa-shield-halved"></i> Proctored</div>
+        </div>
+        <div class="exam-metrics">
+          <div class="metric"><div class="metric-icon"><i class="fa-regular fa-clock"></i></div><span>Duration</span><strong><span id="examDuration">--</span> <small>min</small></strong></div>
+          <div class="metric"><div class="metric-icon"><i class="fa-regular fa-circle-question"></i></div><span>Questions</span><strong id="examQuestions">--</strong></div>
+          <div class="metric"><div class="metric-icon"><i class="fa-solid fa-award"></i></div><span>Pass Mark</span><strong><span id="examPassMark">--</span><small>%</small></strong></div>
+        </div>
+        <div id="continuationBadge" class="hidden" style="margin-top:12px;padding:10px 12px;border-radius:11px;background:#eaf7ef;color:#17774f;font-size:10px;font-weight:800">
+          <i class="fa-solid fa-rotate-right"></i> Your previous examination progress is available. You can continue from where you stopped.
+        </div>
+      </section>
+    </section>
+
+    <section class="student-card">
+      <div class="student-avatar" id="studentAvatar">
+        <img id="studentProfilePhoto" class="profile-photo" alt="Student profile photo">
+        <i id="studentProfileIcon" class="fa-solid fa-user"></i>
+      </div>
+      <div class="student-info">
+        <strong id="studentName">Loading student...</strong>
+        <span id="studentReg">Student ID</span>
+      </div>
+      <div class="student-program">
+        <small>Programme</small>
+        <strong id="studentProgram">Loading...</strong>
+      </div>
+    </section>
+
+    <div class="steps">
+      <div class="step active" id="step1">
+        <div class="step-number">1</div>
+        <div class="step-copy"><strong>Terms & Instructions</strong><span>Read and accept</span></div>
+      </div>
+      <div class="step" id="step2">
+        <div class="step-number">2</div>
+        <div class="step-copy"><strong>Camera & Device Check</strong><span>Test your system</span></div>
+      </div>
+      <div class="step" id="step3">
+        <div class="step-number">3</div>
+        <div class="step-copy"><strong>Ready to Start</strong><span>Final confirmation</span></div>
+      </div>
+    </div>
+
+    <!-- STEP 1 -->
+    <section id="stepContent1" class="step-content">
+      <h3>Terms & Instructions</h3>
+      <p>Read the examination requirements carefully before proceeding.</p>
+      <div class="instructions">
+        <div class="instruction"><i class="fa-solid fa-camera"></i><span>Your camera must remain available throughout the examination for proctoring.</span></div>
+        <div class="instruction"><i class="fa-solid fa-expand"></i><span>The examination will use a secure full-screen presentation.</span></div>
+        <div class="instruction"><i class="fa-solid fa-wifi"></i><span>Maintain a stable internet connection and avoid refreshing the page.</span></div>
+        <div class="instruction"><i class="fa-solid fa-floppy-disk"></i><span>Your responses are saved progressively while you work.</span></div>
+        <div class="instruction"><i class="fa-solid fa-user-shield"></i><span>Only one face should be visible to the examination camera.</span></div>
+        <div class="instruction"><i class="fa-solid fa-mobile-screen-button"></i><span>Do not switch applications, tabs or windows during the examination.</span></div>
+      </div>
+      <div class="terms-box">
+        <label class="terms-label">
+          <input id="termsCheckbox" type="checkbox" onchange="toggleTermsAgreed()">
+          <span>I have read and understood the examination instructions and agree to follow the examination rules and proctoring requirements.</span>
+        </label>
+      </div>
+      <div class="action-row">
+        <button id="termsNextBtn" class="btn btn-primary" disabled onclick="goToStep(2)">
+          Continue to Camera Check <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </div>
+    </section>
+
+    <!-- STEP 2 -->
+    <section id="stepContent2" class="step-content" style="display:none">
+      <h3>Camera & Device Check</h3>
+      <p>Confirm that your camera is working and that your face can be detected clearly.</p>
+      <div class="camera-layout">
+        <div>
+          <div class="camera-preview">
+            <video id="cameraVideo" autoplay muted playsinline></video>
+            <div class="camera-overlay">
+              <span class="camera-chip"><i class="fa-solid fa-circle"></i> Camera Preview</span>
+              <span class="camera-chip" id="faceCountDisplay">0 faces</span>
+            </div>
+          </div>
+          <div id="cameraStatusMessage" class="camera-status-text">
+            Click <strong>Test Camera</strong> to begin the device check.
+          </div>
+        </div>
+        <div class="camera-info">
+          <div class="status-line"><span id="cameraStatusDot" class="status-dot"></span><strong>Camera</strong><span id="cameraStatusText" style="margin-left:auto;color:var(--muted)">Not tested</span></div>
+          <div class="status-line"><span class="status-dot good"></span><strong>Microphone</strong><span style="margin-left:auto;color:var(--muted)">Browser ready</span></div>
+          <div class="status-line"><span class="status-dot good"></span><strong>Internet</strong><span style="margin-left:auto;color:var(--muted)">Connected</span></div>
+          <div class="status-line"><span id="faceVerifiedCheck" style="margin-left:auto;color:var(--muted)">Face not verified</span></div>
+          <div class="camera-actions">
+            <button id="testCameraBtn" class="btn btn-primary" onclick="testCamera()"><i class="fa-solid fa-camera"></i> Test Camera</button>
+            <button id="retryCameraBtn" class="btn btn-secondary" style="display:none" onclick="testCamera()"><i class="fa-solid fa-rotate"></i> Retry</button>
+          </div>
+        </div>
+      </div>
+      <div class="action-row" style="margin-top:20px">
+        <button class="btn btn-secondary" onclick="goToStep(1)"><i class="fa-solid fa-arrow-left"></i> Back</button>
+        <button id="cameraNextBtn" class="btn btn-primary" disabled onclick="goToStep(3)">Continue <i class="fa-solid fa-arrow-right"></i></button>
+      </div>
+    </section>
+
+    <!-- STEP 3 -->
+    <section id="stepContent3" class="step-content" style="display:none">
+      <div class="ready-card">
+        <div class="ready-icon"><i class="fa-solid fa-check"></i></div>
+        <h3>You’re All Set!</h3>
+        <p id="funFact">Your examination environment is ready. Take a breath, stay focused and do your best.</p>
+        <div class="ready-list">
+          <div class="ready-item"><i class="fa-solid fa-circle-check"></i><span>Terms and examination instructions accepted</span></div>
+          <div class="ready-item"><i class="fa-solid fa-circle-check"></i><span>Camera and face verification completed</span></div>
+          <div class="ready-item"><i class="fa-solid fa-circle-check"></i><span>Proctoring checks are ready</span></div>
+          <div class="ready-item"><i class="fa-solid fa-circle-check"></i><span>Your examination responses will be saved progressively</span></div>
+        </div>
+        <div class="quote">“Focus on one question at a time. You are prepared for this.”</div>
+        <div class="action-row">
+          <button class="btn btn-secondary" onclick="goToStep(2)"><i class="fa-solid fa-arrow-left"></i> Back</button>
+          <button id="startExamBtn" class="btn btn-success" disabled onclick="startExam()"><i class="fa-solid fa-play"></i> <span id="startExamText">Waiting for verification...</span></button>
+        </div>
+        <div style="font-size:10px;color:var(--muted);margin-top:12px">
+          Student: <strong id="readyStudentName">Student</strong>
+        </div>
+      </div>
+    </section>
+    </div>
+
+    <aside class="lobby-aside" aria-label="NCHSM campus and examination information">
+      <div class="campus-visual">
+        <img
+          src="https://raw.githubusercontent.com/NCHSMlearning/NCHSM-Digital-campus-/main/images/campus-header.jpg"
+          alt="Nakuru College of Health Science & Management campus"
+          loading="eager"
+          referrerpolicy="no-referrer">
+        <div class="campus-caption">
+          <strong>NCHSM Campus</strong>
+          <span>Nakuru College of Health Science & Management</span>
+        </div>
+      </div>
+
+      <div class="values-strip" aria-label="NCHSM values">
+        <div class="value-item"><i class="fa-solid fa-book-open"></i>Knowledge</div>
+        <div class="value-item"><i class="fa-solid fa-users"></i>Discipline</div>
+        <div class="value-item"><i class="fa-solid fa-heart-pulse"></i>A Better Tomorrow</div>
+      </div>
+
+      <div class="assurance-card">
+        <div class="assurance-head">
+          <div class="assurance-icon"><i class="fa-solid fa-shield-halved"></i></div>
+          <h3>A Safe &amp; Fair Assessment Environment</h3>
+        </div>
+        <p>This examination is monitored using secure proctoring checks to support integrity, fairness and a credible assessment process for all students.</p>
+        <p class="assurance-quote">“Integrity today, a better healthcare tomorrow.” — NCHSM</p>
+      </div>
+
+      <div class="connection-card">
+        <div class="connection-icon"><i class="fa-solid fa-circle-info"></i></div>
+        <div>
+          <strong>Ensure a Stable Connection</strong>
+          <p>Use a quiet environment with a stable internet connection before proceeding.</p>
+        </div>
+      </div>
+
+      <div class="lobby-footer">
+        <span>© 2026 Nakuru College of Health Science &amp; Management</span>
+        <span>Secure Examination Environment</span>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<!-- ===================== EXAM INTERFACE ===================== -->
+<section id="examInterface" aria-label="Online examination">
+  <div class="exam-shell">
+    <header class="exam-topbar">
+      <div class="exam-brand">
+        <div class="brand-mark"><img src="images/Logo_NCHSM.png" alt="NCHSM Logo"></div>
+        <div><strong>NCHSM Examination</strong><small>Secure assessment environment</small></div>
+      </div>
+
+      <div class="exam-top-center">
+        <div class="exam-title-wrap">
+          <strong id="exam-title">Examination</strong>
+          <span>Online Assessment</span>
+        </div>
+        <div class="timer-box">
+          <small>Time Remaining</small>
+          <strong id="timerDisplayHeader">--:--</strong>
+          <span id="timer" class="hidden">--:--</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="exam-body">
+      <div class="exam-grid">
+
+        <!-- LEFT -->
+        <aside class="panel left-panel">
+          <div class="profile-mini">
+            <div class="avatar" id="examProfileAvatar">
+              <img id="examStudentProfilePhoto" class="profile-photo" alt="Student profile photo">
+              <i id="examStudentProfileIcon" class="fa-solid fa-user"></i>
+            </div>
+            <div><strong id="examStudentName">Student</strong><span id="examStudentReg">Student ID</span></div>
+          </div>
+
+          <div class="panel-title">Live Proctoring</div>
+          <div id="cameraContainer" class="camera-mini">
+            <video id="face-video" autoplay muted playsinline></video>
+            <canvas id="face-canvas"></canvas>
+            <span class="live-pill"><i class="fa-solid fa-circle"></i> LIVE</span>
+          </div>
+          <div id="proctoringStatusText" class="proctor-status"><i class="fa-solid fa-shield-halved"></i> Proctoring active</div>
+
+          <div class="stats">
+            <div class="stat"><span>Answered</span><strong id="statsAnswered">0</strong></div>
+            <div class="stat"><span>Flagged</span><strong id="statsFlagged">0</strong></div>
+            <div class="stat"><span>Unanswered</span><strong id="statsUnanswered">0</strong></div>
+            <div class="stat"><span>Face</span><strong id="statsFace">Ready</strong></div>
+          </div>
+
+          <div class="panel-title">Progress</div>
+          <div class="progress-track"><div id="progress-fill" class="progress-fill"></div></div>
+          <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:9px;color:var(--muted)">
+            <span id="statsProgress">0%</span><span id="progress-percentage">0%</span>
+          </div>
+          <div id="auto-save-status" class="save-status"><i class="fa-solid fa-cloud-arrow-up"></i> Auto-save ready</div>
+          <div id="networkIndicator" style="font-size:9px;color:var(--muted);margin-top:6px">Network: checking...</div>
+        </aside>
+
+        <!-- CENTER -->
+        <main class="panel question-panel" aria-label="Examination question workspace">
+          <div class="question-head">
+            <div class="question-head-left">
+              <strong>Question <span id="current">1</span> of <span id="total">--</span></strong>
+              <span id="answer-saved">Answer saved</span>
+            </div>
+            <div class="question-actions">
+              <button id="review-mode-toggle" class="icon-btn" type="button" onclick="toggleReviewMode()"><i class="fa-solid fa-list-check"></i> Review</button>
+              <button id="flag-question-btn" class="icon-btn" type="button" onclick="toggleFlagQuestion()"><i class="fa-regular fa-flag"></i> Flag</button>
+            </div>
+          </div>
+
+          <div id="exam-container">
+            <!-- exam.js renders the question here -->
+          </div>
+
+          <div class="exam-navigation">
+            <button id="mobile-submit-exam-btn" class="btn btn-success nav-btn mobile-submit-btn" type="button" onclick="document.getElementById('submit-exam-btn').click()" disabled aria-label="Submit Examination">
+              <i class="fa-solid fa-paper-plane"></i>
+              <span>Submit</span>
+            </button>
+            <button id="prev-btn" class="btn btn-secondary nav-btn" type="button" onclick="prevQuestion()">
+              <i class="fa-solid fa-arrow-left"></i> Previous
+            </button>
+            <div class="nav-progress"><span id="nav-current">Question</span></div>
+            <button id="next-btn" class="btn btn-primary nav-btn" type="button" onclick="nextQuestion()">
+              Next <i class="fa-solid fa-arrow-right"></i>
+            </button>
+          </div>
+        </main>
+
+        <!-- RIGHT -->
+        <aside class="panel right-panel">
+          <div class="right-section">
+            <h4>Question Status</h4>
+            <div id="question-status-table" aria-label="Question navigator"></div>
+          </div>
+
+          <div class="right-section">
+            <h4>Examination Status</h4>
+            <div id="examStatusText" class="proctor-status"><span id="examStatusDot" class="status-dot good"></span> Examination active</div>
+            <div style="margin-top:8px;font-size:10px;color:var(--muted)">Face status: <strong id="examFaceCount">1 face</strong></div>
+            <div style="margin-top:5px;font-size:10px;color:var(--muted)">Progress: <strong id="statsProgressRight">0%</strong></div>
+          </div>
+
+          <div class="right-section">
+            <h4>Instructions</h4>
+            <div style="font-size:10px;color:var(--muted);line-height:1.6">
+              <p style="margin:0 0 7px">• Answer each question carefully.</p>
+              <p style="margin:0 0 7px">• Use Flag to mark a question for review.</p>
+              <p style="margin:0 0 7px">• Do not leave the examination environment.</p>
+              <p style="margin:0">• Your responses are saved automatically.</p>
+            </div>
+          </div>
+
+          <div class="right-section">
+            <button id="submit-exam-btn" class="btn btn-success small-action" type="button" onclick="submitExam()" disabled>
+              <i class="fa-solid fa-paper-plane"></i>
+              <span id="submit-text">Submit Examination</span>
+              <i id="submit-spinner" class="fa-solid fa-spinner fa-spin hidden"></i>
+            </button>
+          </div>
+
+          <div id="review-container" style="display:none"></div>
+        </aside>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== PROCTORING OVERLAYS ===================== -->
+<div id="app-block-overlay" class="overlay hidden">
+  <div class="overlay-card">
+    <div class="overlay-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+    <h3>Examination Paused</h3>
+    <p id="app-block-reason">Please return to the examination environment.</p>
+    <div id="app-recovery-countdown" style="font-size:22px;font-weight:800;color:var(--blue);margin:12px 0">--</div>
+    <button class="btn btn-primary" onclick="returnToExam()">Return to Examination</button>
+  </div>
+</div>
+
+<div id="face-block-overlay" class="overlay hidden">
+  <div class="overlay-card">
+    <div class="overlay-icon"><i class="fa-solid fa-user-slash"></i></div>
+    <h3>Face Not Detected</h3>
+    <p id="face-block-reason">Please return to the camera and make sure your face is clearly visible. Move into good lighting and stay centered in the camera frame.</p>
+    <div id="face-recovery-countdown" style="font-size:22px;font-weight:800;color:var(--blue);margin:12px 0">20</div>
+    <button class="btn btn-primary" onclick="retryCameraDuringExam()">Retry Camera</button>
+  </div>
+</div>
+
+<div id="multiple-faces-warning" class="overlay hidden">
+  <div class="overlay-card">
+    <div class="overlay-icon"><i class="fa-solid fa-users"></i></div>
+    <h3>Multiple Faces Detected</h3>
+    <p>Please ensure only the registered student is visible to the camera.</p>
+    <div id="multiple-faces-progress" class="progress-large"><div></div></div>
+    <div id="multiple-faces-countdown">Please correct the camera view.</div>
+  </div>
+</div>
+
+<div id="fullscreen-exit-warning" class="overlay hidden">
+  <div class="overlay-card">
+    <div class="overlay-icon"><i class="fa-solid fa-expand"></i></div>
+    <h3>Return to Full Screen</h3>
+    <p>Full-screen mode is required while the examination is active. Please return to the examination window.</p>
+    <div id="exit-countdown" style="font-size:20px;font-weight:800;color:var(--red);margin:12px 0">--</div>
+    <button class="btn btn-primary" onclick="enterSecureFullscreen()">Return to Full Screen</button>
+  </div>
+</div>
+
+<!-- ===================== SUBMISSION ===================== -->
+<div id="submission-modal" class="modal hidden">
+  <div class="modal-card">
+    <h3>Examination Submission</h3>
+    <p id="modal-message">Please confirm that you want to submit your examination.</p>
+    <div class="modal-actions">
+      <button id="confirm-cancel-btn" class="btn btn-secondary" type="button">Cancel</button>
+      <button id="confirm-submit-btn" class="btn btn-success" type="button">Confirm Submission</button>
+    </div>
+  </div>
+</div>
+
+<div id="custom-confirm-modal" class="modal hidden">
+  <div class="modal-card">
+    <h3 id="custom-confirm-title">Confirm Submission</h3>
+    <p id="custom-confirm-message">Are you sure you want to submit?</p>
+    <div class="modal-actions">
+      <button id="custom-confirm-cancel" class="btn btn-secondary" type="button">Cancel</button>
+      <button id="custom-confirm-ok" class="btn btn-success" type="button">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<div id="submission-progress-overlay" class="modal hidden">
+  <div class="modal-card" style="text-align:center">
+    <h3>Submitting Examination</h3>
+    <p id="submission-message">Please wait while your examination is submitted securely.</p>
+    <div class="progress-large"><div id="submission-progress-fill"></div></div>
+    <strong id="submission-percentage">0%</strong>
+  </div>
+</div>
+
+<div id="attendance-required-modal" class="modal hidden">
+  <div class="modal-card">
+    <div class="overlay-icon"><i class="fa-solid fa-user-check"></i></div>
+    <h3>Attendance Verification Required</h3>
+    <p>Please complete the required examination attendance verification before continuing.</p>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="closeAttendanceModal()">Continue</button>
+    </div>
+  </div>
+</div>
+
+<!-- Hidden compatibility elements used by exam.js -->
+<div id="timerProgressBar" style="display:none"></div>
+<div id="countdown-number" style="display:none"></div>
+<div id="submitSummary" style="display:none"></div>
+
+
+<script>
+/* Mobile submit control: mirrors the real submit button controlled by exam.js. */
+(function(){
+  function syncMobileSubmit(){
+    const desktop = document.getElementById('submit-exam-btn');
+    const mobile = document.getElementById('mobile-submit-exam-btn');
+    if (!desktop || !mobile) return;
+
+    mobile.disabled = desktop.disabled;
+    mobile.setAttribute('aria-disabled', desktop.disabled ? 'true' : 'false');
+
+    const desktopText = document.getElementById('submit-text');
+    const mobileText = mobile.querySelector('span');
+    if (desktopText && mobileText) {
+      mobileText.textContent = desktopText.textContent.toLowerCase().includes('submitting')
+        ? 'Submitting…'
+        : 'Submit';
+    }
+
+    const spinner = document.getElementById('submit-spinner');
+    const icon = mobile.querySelector('i');
+    if (spinner && icon) {
+      const busy = !spinner.classList.contains('hidden');
+      icon.className = busy
+        ? 'fa-solid fa-spinner fa-spin'
+        : 'fa-solid fa-paper-plane';
+    }
+  }
+
+  function initMobileSubmitSync(){
+    syncMobileSubmit();
+
+    const desktop = document.getElementById('submit-exam-btn');
+    if (desktop && window.MutationObserver) {
+      const observer = new MutationObserver(syncMobileSubmit);
+      observer.observe(desktop, {
+        attributes:true,
+        attributeFilter:['disabled','class','aria-disabled']
+      });
+
+      const text = document.getElementById('submit-text');
+      const spinner = document.getElementById('submit-spinner');
+      if (text) observer.observe(text, {childList:true,characterData:true,subtree:true});
+      if (spinner) observer.observe(spinner, {attributes:true,attributeFilter:['class']});
+    }
+
+    [250,750,1500,3000].forEach(ms => setTimeout(syncMobileSubmit, ms));
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initMobileSubmitSync);
+  } else {
+    initMobileSubmitSync();
+  }
+})();
+</script>
+
+
+<script>
+(function(){
+  function enhanceLobbyTimer(){
+    document.querySelectorAll(
+      '#remainingTime,#lobbyRemainingTime,#remaining-time,.remaining-time,.time-remaining,.exam-time-remaining'
+    ).forEach(function(el){
+      el.classList.add('high-visibility-timer');
+      el.setAttribute('aria-label','Examination time remaining');
+    });
+  }
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',enhanceLobbyTimer);
+  }else{ enhanceLobbyTimer(); }
+  [300,800,1500,3000].forEach(function(ms){setTimeout(enhanceLobbyTimer,ms);});
+})();
+</script>
+<script src="exam.js"></script>
+
+<script>
+/* ============================================================
+   STUDENT PROFILE PHOTO SYNC
+   MATCHES THE STUDENT PROFILE MODULE PHOTO LOGIC EXACTLY
+   ============================================================ */
+(function () {
+  'use strict';
+
+  const SUPABASE_URL =
+    window.SUPABASE_URL ||
+    window.APP_CONFIG?.SUPABASE_URL ||
+    (typeof CONFIG !== 'undefined' && CONFIG.SUPABASE_URL) ||
+    'https://lwhtjozfsmbyihenfunw.supabase.co';
+
+  function getStudentId() {
+    try {
+      if (typeof AppState !== 'undefined' && AppState.studentId) {
+        return AppState.studentId;
+      }
+    } catch (_) {}
+
+    return new URLSearchParams(window.location.search).get('user_id')
+      || localStorage.getItem('currentUserId');
+  }
+
+  function buildProfilePhotoUrl(profile, userId) {
+    if (!profile) return null;
+
+    // EXACT SAME PRIORITY AS PROFILE MODULE
+    const photoPath =
+      profile.profile_photo_url ||
+      profile.passport_url ||
+      null;
+
+    if (!photoPath) return null;
+
+    // Profile module returns an existing absolute URL unchanged.
+    if (photoPath.startsWith('http')) {
+      return photoPath;
+    }
+
+    // Profile module stores relative photo paths under:
+    // user-documents/profiles/{userId}/photo.ext
+    let fullPath = photoPath;
+
+    if (!photoPath.startsWith('profiles/')) {
+      fullPath = `profiles/${userId}/${photoPath}`;
+    }
+
+    // EXACT SAME PUBLIC STORAGE URL PATTERN + CACHE BUSTER
+    return `${SUPABASE_URL}/storage/v1/object/public/user-documents/${fullPath}?t=${new Date().getTime()}`;
+  }
+
+  function fallbackPhoto(name) {
+    return 'https://ui-avatars.com/api/?name=' +
+      encodeURIComponent(name || 'Student') +
+      '&background=4C1D95&color=fff&size=120';
+  }
+
+  function applyPhoto(url, name) {
+    const targets = [
+      ['studentProfilePhoto', 'studentProfileIcon'],
+      ['examStudentProfilePhoto', 'examStudentProfileIcon']
+    ];
+
+    targets.forEach(([imgId, iconId]) => {
+      const img = document.getElementById(imgId);
+      const icon = document.getElementById(iconId);
+      if (!img || !icon) return;
+
+      img.onload = function () {
+        img.style.display = 'block';
+        icon.style.display = 'none';
+      };
+
+      img.onerror = function () {
+        img.onerror = null;
+        img.src = fallbackPhoto(name);
+        img.style.display = 'block';
+        icon.style.display = 'none';
+      };
+
+      img.src = url || fallbackPhoto(name);
+    });
+  }
+
+  async function loadProfilePhotoFromSameRecord() {
+    const userId = getStudentId();
+    if (!userId) return;
+
+    try {
+      // Prefer the profile object already loaded by exam.js.
+      let profile = null;
+
+      try {
+        if (typeof AppState !== 'undefined' && AppState.studentProfile) {
+          profile = AppState.studentProfile;
+        }
+      } catch (_) {}
+
+      // If exam.js has not loaded it yet, read the SAME table as the
+      // Student Profile module.
+      if (!profile && typeof sb !== 'undefined') {
+        const { data, error } = await sb
+          .from('consolidated_user_profiles_table')
+          .select('full_name, profile_photo_url, passport_url')
+          .eq('user_id', userId)
+          .maybeSingle();
+
+        if (error) {
+          console.warn('Could not load student profile photo record:', error);
+        } else {
+          profile = data;
+        }
+      }
+
+      if (!profile) return;
+
+      const photoUrl = buildProfilePhotoUrl(profile, userId);
+      const name = profile.full_name || 'Student';
+
+      applyPhoto(photoUrl, name);
+
+      console.log('📸 Profile photo loaded using Student Profile logic:', {
+        profile_photo_url: profile.profile_photo_url || null,
+        passport_url: profile.passport_url || null,
+        resolved: photoUrl
+      });
+    } catch (error) {
+      console.warn('Student profile photo loading error:', error);
+    }
+  }
+
+  function startProfilePhotoSync() {
+    // exam.js loads the profile asynchronously, so wait for it and retry.
+    let attempts = 0;
+    const timer = setInterval(async function () {
+      attempts++;
+
+      try {
+        if (
+          typeof AppState !== 'undefined' &&
+          AppState.studentProfile
+        ) {
+          await loadProfilePhotoFromSameRecord();
+          clearInterval(timer);
+          return;
+        }
+      } catch (_) {}
+
+      if (attempts >= 30) {
+        clearInterval(timer);
+        await loadProfilePhotoFromSameRecord();
+      }
+    }, 300);
+
+    // Additional refreshes handle slow Supabase/profile loading.
+    setTimeout(loadProfilePhotoFromSameRecord, 1500);
+    setTimeout(loadProfilePhotoFromSameRecord, 3000);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', startProfilePhotoSync);
+  } else {
+    startProfilePhotoSync();
+  }
+ 
+  // If the profile page/module broadcasts a photo update, refresh here too.
+  document.addEventListener('photoUpdated', function () {
+    setTimeout(loadProfilePhotoFromSameRecord, 300);
+  });
+
+  document.addEventListener('profileUpdated', function () {
+    setTimeout(loadProfilePhotoFromSameRecord, 300);
+  });
+})();
+</script>
+
+</body>
+</html>
