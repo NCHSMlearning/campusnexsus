@@ -540,9 +540,13 @@
       if (target < 0) target = 0;
       panels[target].querySelector(".cn-wizard-fields").appendChild(node);
     });
-    actions.forEach(node => node.remove());
+    const preservedActions = document.createElement("div");
+    preservedActions.hidden = true;
+    preservedActions.setAttribute("aria-hidden","true");
+    actions.forEach(node => preservedActions.appendChild(node));
     form.replaceChildren(shell);
     shell.append(side,main);
+    footer.appendChild(preservedActions);
     footer.querySelector("#cnWizardCancel").addEventListener("click",resetForm);
     let active = 0;
     const render = () => {
