@@ -424,7 +424,7 @@ function checkAdminAuth() {
         
         // ✅ Check if user has admin or lecturer role
         const role = (sessionData.role || sessionData.user_role || '').toLowerCase();
-        const allowedRoles = ['admin', 'superadmin', 'administrator', 'institution_admin', 'institution admin', 'lecturer', 'instructor', 'teacher', 'super_admin'];
+        const allowedRoles = ['admin', 'superadmin', 'administrator', 'institution_admin', 'institution admin', 'lecturer', 'instructor', 'teacher', 'super_admin', 'platform_admin'];
         
         if (!allowedRoles.includes(role) && !sessionData.is_staff) {
             console.log('❌ Unauthorized role:', role);
@@ -8658,15 +8658,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     });
 
-    // Supabase session + the login handoff above have already verified this
-    // administrator against the current Campus Nexus identity. Do not run the
-    // legacy localStorage-only auth gate a second time: it can reject valid
-    // institution-admin sessions and redirect back to login after successful auth.
-    // Populate the legacy UI session fields from the verified dashboardSession.
-    if (typeof checkAdminAuth === 'function') {
-        // Retain the helper for legacy callers, but it is not an authority here.
-        // The verified Supabase session above is the sole dashboard entry gate.
-    }
+        // Populate the legacy dashboard session model only after the Supabase
+    // session and the login handoff have both been verified above.
+    if (!checkAdminAuth()) return;
 
     // ✅ Get session data
     const session = localStorage.getItem('adminSession') || localStorage.getItem('userProfile');
