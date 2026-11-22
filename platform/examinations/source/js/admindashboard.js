@@ -8463,7 +8463,16 @@ window.publishApprovedAssessment = async function(examId) {
             };
             let result;
             if (examId) {
-                result = await sb.from('exams').update(row).eq('id', Number(examId)).eq('institution_id', institutionId);
+                // Editing changes assessment details only. Approval/publication
+                // decisions remain controlled by the dedicated review workflow.
+                delete row.institution_id;
+                result = await sb.from('exams').update(row)
+                    .eq('id', Number(examId))
+                    .eq('institution_id', institutionId)
+                    .select('id');
+                if (!result.error && (!result.data || result.data.length === 0)) {
+                    throw new Error('No assessment was updated. Check that it belongs to your institution and that your account has edit permission.');
+                }
             } else {
                 row.created_by = user.id;
                 row.approval_status = isInstitutionAdmin ? 'approved' : 'pending';
