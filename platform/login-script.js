@@ -2698,7 +2698,8 @@ executeLogin: async function(identifier, password) {
         const hodRoles = ['hod', 'nursing_hod', 'tvet_hod'];
         const roleRedirects = {
             admin: 'admin.html',
-            superadmin: 'superadmin.html',
+            // Clean, extensionless route. The route shell loads the canonical dashboard.
+            superadmin: '/platform/superadmin/',
             institution_admin: '/platform/institution-admin',
             student: '/platform/student.html#dashboard',
             lecturer: 'lecturer.html',
@@ -2725,7 +2726,10 @@ executeLogin: async function(identifier, password) {
                     (role === 'student' && (path === '/student.html' || path === '/student' || path === '/platform/student' || path === '/platform/student.html')) ||
                     ((role === 'admin' || hodRoles.includes(role)) && (path === '/admin.html' || path === '/admin')) ||
                     (role === 'lecturer' && (path === '/lecturer.html' || path === '/lecturer')) ||
-                    (role === 'superadmin' && (path === '/superadmin.html' || path === '/superadmin')) ||
+                    (role === 'superadmin' && (
+                        path === '/superadmin.html' || path === '/superadmin' ||
+                        path === '/platform/superadmin' || path === '/platform/superadmin/'
+                    )) ||
                     (role === 'institution_admin' && (
                         path === '/platform/institution-admin.html' ||
                         path === '/platform/institution-admin'
