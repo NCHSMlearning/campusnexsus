@@ -52,13 +52,13 @@
             // Important: do not overwrite window.supabase because the CDN exposes
             // createClient through that object.
             const SUPABASE_URL = 'https://irahplkvocaakjxuisto.supabase.co';
-            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlyYWhwbGt2b2Nhakp4dWlzdG8iLCJyb2xlIjoiYW5vbiIsImlhdCI6MTc4Nzg4Njk4NCwiZXhwIjoyMTAzNDYyOTg0fQ.BFOwdRVDz4r1oYgUjm8zQbthqblGRq4c3WQWQaOhu7g';
+            const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_5Cg5FFudf03UnmOXGNGMHQ_uK9S-uQX';
 
             if (window.supabase && typeof window.supabase.createClient === 'function') {
                 try {
                     const client = window.supabase.createClient(
                         SUPABASE_URL,
-                        SUPABASE_ANON_KEY
+                        SUPABASE_PUBLISHABLE_KEY
                     );
 
                     window.sb = client;
