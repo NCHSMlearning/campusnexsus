@@ -36,6 +36,17 @@ self.addEventListener('fetch', event => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin || request.method !== 'GET') return;
 
+  // Admin Exams must always receive the current HTML and scripts from the
+  // origin. Never serve a stale cached dashboard bundle or cached login route.
+  // This route is an authenticated, data-sensitive workspace rather than an
+  // offline app surface.
+  const isAdminExamsRequest =
+    url.pathname === '/adminexams' ||
+    url.pathname === '/adminexams/' ||
+    url.pathname.startsWith('/adminexams/') ||
+    url.pathname.startsWith('/platform/examinations/source/');
+  if (isAdminExamsRequest) return;
+
   if (request.mode === 'navigate') {
     event.respondWith(
       fetch(request)
