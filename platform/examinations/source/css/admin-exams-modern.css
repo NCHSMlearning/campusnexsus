@@ -533,3 +533,59 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{ou
 @media(max-width:360px) {
   #statsContainer {grid-template-columns:1fr!important;}
 }
+
+
+/* Campus Nexus Admin Exams — institution-safe sidebar and workspace alignment */
+.sidebar-header{
+  height:116px!important;min-height:116px!important;max-height:116px!important;
+  flex:0 0 116px!important;padding:10px 12px!important;overflow:hidden!important;
+  align-items:center!important;
+}
+.sidebar-header .sidebar-brand{align-items:center!important;gap:9px!important;min-width:0!important}
+.sidebar-header .brand-crest{width:58px!important;height:76px!important;flex:0 0 58px!important}
+.sidebar-header .brand-crest img{width:58px!important;height:76px!important;object-fit:contain!important}
+.sidebar-header .brand-text{min-width:0!important;flex:1 1 auto!important;overflow:hidden!important}
+.sidebar-header .brand-text h2{
+  display:block!important;max-width:100%!important;margin:0 0 3px!important;
+  color:#fff!important;font-family:Manrope,sans-serif!important;font-size:13px!important;
+  line-height:1.15!important;font-weight:800!important;letter-spacing:-.15px!important;
+  overflow-wrap:anywhere!important;word-break:normal!important;
+}
+.sidebar-header .brand-text h2 .cn-institution-brand-name{
+  display:-webkit-box!important;-webkit-box-orient:vertical!important;-webkit-line-clamp:3!important;
+  overflow:hidden!important;max-width:100%!important;color:#fff!important;font-size:13px!important;line-height:1.15!important;
+}
+.sidebar-header .brand-text h2 .cn-institution-school-code{
+  display:block!important;margin-top:3px!important;color:#d5e5f2!important;
+  font-size:9px!important;line-height:1.2!important;letter-spacing:0!important;
+}
+.sidebar-header .brand-text h2 .cn-institution-portal-role{
+  display:block!important;margin-top:2px!important;color:#fff!important;
+  font-size:10px!important;line-height:1.15!important;font-weight:650!important;
+}
+.sidebar-header>[data-cn-institution-label]{display:none!important}
+.sidebar-menu a{gap:9px!important;white-space:nowrap!important;overflow:hidden!important}
+.sidebar-menu a i{flex:0 0 19px!important}
+.sidebar-menu a.active{box-shadow:inset 3px 0 #f5bd3d!important}
+.sidebar-menu a .badge-sidebar{margin-left:auto!important;flex:0 0 auto!important}
+.command-topbar{
+  position:relative!important;top:auto!important;z-index:20!important;
+  margin-bottom:14px!important;
+}
+.main-content{padding-top:0!important}
+#students .student-results-table-scroll{position:relative!important}
+#studentsTable tbody td[colspan="8"]{
+  width:100%!important;min-width:100%!important;padding:42px 18px!important;
+  text-align:center!important;vertical-align:middle!important;color:#71849a!important;
+  background:#fff!important;
+}
+#studentsTable tbody td[colspan="8"] i{display:block!important;margin:0 auto 10px!important;font-size:30px!important;color:#9aafc2!important}
+#studentsTable tbody td[colspan="8"]{font-size:13px!important;font-weight:600!important}
+@media(max-width:1000px){
+  .sidebar-header{height:108px!important;min-height:108px!important;max-height:108px!important;flex-basis:108px!important}
+  .sidebar-header .brand-crest,.sidebar-header .brand-crest img{width:52px!important;height:68px!important;flex-basis:52px!important}
+}
+@media(max-width:560px){
+  .sidebar-header .brand-text h2 .cn-institution-brand-name{-webkit-line-clamp:2!important}
+  .sidebar-header .brand-text h2{font-size:12px!important}
+}
