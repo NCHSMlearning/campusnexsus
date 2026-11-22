@@ -61,7 +61,7 @@
     if(!body)return;
     body.replaceChildren();
     if(!page.length){
-      const tr=document.createElement('tr'),td=document.createElement('td');td.colSpan=10;td.className='ia-users-empty';td.textContent=state.loading?'Loading users…':'No users match this view or filter.';tr.append(td);body.append(tr);
+      const tr=document.createElement('tr'),td=document.createElement('td');td.colSpan=9;td.className='ia-users-empty';td.textContent=state.loading?'Loading users…':'No users match this view or filter.';tr.append(td);body.append(tr);
     } else page.forEach(u=>{
       const tr=document.createElement('tr'), checkCell=document.createElement('td'), check=document.createElement('input');
       check.type='checkbox';check.checked=state.selected.has(u.id);check.setAttribute('aria-label','Select '+(u.full_name||u.email||'user'));
@@ -409,7 +409,7 @@
     const programme=$('iaEdit_program');
     const block=$('iaEdit_block');
     const currentBlock=$('iaEdit_current_block');
-    const studyYear=$('iaEdit_block_program_year');
+    const studyYear=$('iaEdit_year_of_study');
     const intakeYear=$('iaEdit_intake_year');
     const admissionYear=$('iaEdit_admission_year');
     const programmeOptions=[['DCHN','DCHN'],['KCHN','KCHN'],['TVET','TVET course']];
@@ -417,7 +417,7 @@
     setOptions('iaEdit_program',programmeOptions.map(([value,label])=>({value,label})),u.program,'Select programme');
     setOptions('iaEdit_intake_year',yearOptions.map(value=>({value,label:value})),u.intake_year,'Select intake year');
     setOptions('iaEdit_admission_year',yearOptions.map(value=>({value,label:value})),u.admission_year,'Select admission year');
-    setOptions('iaEdit_block_program_year',['Year 1','Year 2','Year 3','Year 4'].map(value=>({value,label:value})),u.block_program_year,'Select year of study');
+    setOptions('iaEdit_year_of_study',['Year 1','Year 2','Year 3','Year 4'].map(value=>({value,label:value})),u.year_of_study,'Select year of study');
     const updateAcademicChoices=(preferred)=>{
       const code=String(programme?.value||'').trim().toUpperCase();
       const tvet=code==='TVET'||(!['DCHN','KCHN'].includes(code)&&String($('iaEdit_program_type')?.value||u.program_type||'').toUpperCase()==='TVET');
