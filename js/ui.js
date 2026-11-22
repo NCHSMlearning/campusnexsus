@@ -1393,6 +1393,8 @@ class UIModule {
                     objectPath = objectPath.slice('passports/'.length);
                 } else if (objectPath.startsWith('profiles/') || objectPath.startsWith('documents/')) {
                     bucket = 'user-documents';
+                } else if (profile?.profile_photo_url && window.currentUserId) {
+                    objectPath = `profiles/${window.currentUserId}/${objectPath}`;
                 }
                 if (!photoUrl && this.supabase?.storage?.from) {
                     const { data, error } = await this.supabase.storage.from(bucket).createSignedUrl(objectPath, 3600);
