@@ -11,7 +11,11 @@ function activateModule(id,updateHash=true){
  const allowed=['dashboard','examinations','timetable','announcements','exam-history','exam-support','profile'];
  const active=allowed.includes(id)?id:'examinations';
  document.querySelectorAll('.module-view').forEach(section=>{const on=section.id===active;section.classList.toggle('active',on);section.hidden=!on;});
- document.querySelectorAll('.exam-nav a[data-module]').forEach(link=>{const on=link.dataset.module===active;link.classList.toggle('active',on);if(on)link.setAttribute('aria-current','page');else link.removeAttribute('aria-current');});
+ document.querySelectorAll('[data-exam-filter]').forEach(button=>button.addEventListener('click',()=>{dashboardExamFilter=button.dataset.examFilter;renderDashboard();}));
+$('calendar-prev')?.addEventListener('click',()=>{dashboardCalendarOffset--;renderDashboardCalendar();});
+$('calendar-next')?.addEventListener('click',()=>{dashboardCalendarOffset++;renderDashboardCalendar();});
+document.querySelectorAll('[data-open-module]').forEach(button=>button.addEventListener('click',()=>activateModule(button.dataset.openModule)));
+document.querySelectorAll('.exam-nav a[data-module]').forEach(link=>{const on=link.dataset.module===active;link.classList.toggle('active',on);if(on)link.setAttribute('aria-current','page');else link.removeAttribute('aria-current');});
  const labels={dashboard:'Student Dashboard',examinations:'Examination Centre',timetable:'Examination Timetable',announcements:'Institution Announcements','exam-history':'Examination History','exam-support':'Examination Support',profile:'My Student Profile'};
  const heading=document.querySelector('.header-left>div>b');if(heading)heading.textContent=labels[active];
  const hero=document.querySelector('.hero');if(hero)hero.hidden=true;
@@ -149,20 +153,42 @@ async function loadAcademicSummary(){
  if(panel)panel.innerHTML='<div class="gpa-bars">'+entries.map(([label,g])=>{const value=g.weighted/g.credits;return '<div class="gpa-bar-item"><div class="gpa-bar-value">'+value.toFixed(2)+'</div><div class="gpa-bar-track"><i style="height:'+Math.max(3,value/max*100)+'%"></i></div><small>'+esc(label)+'</small></div>';}).join('')+'</div><div class="chart-footnote">Weighted GPA · '+credits+' credits across '+enriched.length+' published units</div>';
 }
 
+let dashboardExamFilter='upcoming',dashboardCalendarOffset=0;
+function dashboardExamCard(exam,status){
+ const title=val(exam.title,exam.exam_name,exam.name,'Examination'),unit=val(exam.course_name,exam.unit_name,exam.subject_name,exam.course?.course_name,'General assessment'),link=onlineHref(exam),start=startsAt(exam),isOnline=!!link;
+ const badge=status==='open'?'open':status==='upcoming'?'upcoming':'completed',label=status==='open'?'Available now':status==='upcoming'?'Upcoming':'Closed';
+ const action=isOnline&&status==='open'?'<a class="dashboard-exam-action online-action" href="'+esc(link)+'" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-circle-play"></i> Enter Online Exam</a>':isOnline&&status==='upcoming'?'<button class="dashboard-exam-action locked-action" disabled><i class="fa-solid fa-lock"></i> Opens at '+esc(start?start.toLocaleTimeString('en-KE',{hour:'2-digit',minute:'2-digit',timeZone:'Africa/Nairobi'}):'scheduled time')+'</button>':status==='closed'?'<div class="dashboard-exam-closed"><i class="fa-solid fa-circle-check"></i><span><b>Examination closed</b><small>This examination is no longer available.</small></span></div>':'';
+ const countdown=status==='upcoming'&&start?'<div class="dashboard-countdown"><span>Starts in:</span><div class="countdown-units"><b class="exam-countdown" data-start="'+start.getTime()+'">'+countdownText(start.getTime())+'</b></div></div>':'';
+ const mode=isOnline?'<span class="exam-type-chip chip-online"><i class="fa-solid fa-shield-halved"></i> Online Exam</span>':'<span class="exam-type-chip chip-physical"><i class="fa-solid fa-clipboard-check"></i> Physical Exam</span>';
+ return '<article class="dashboard-exam-card '+(isOnline?'online-card':'physical-card')+' '+(status==='upcoming'?'is-upcoming':'')+'"><div class="dashboard-exam-illustration"><i class="'+(isOnline?'fa-solid fa-laptop':'fa-solid fa-building-columns')+'"></i></div><div class="dashboard-exam-main"><div class="dashboard-exam-heading"><h3>'+esc(title)+'</h3>'+mode+'<span class="status '+badge+'">'+label+'</span></div><p class="dashboard-exam-unit">'+esc(unit)+'</p><div class="dashboard-exam-meta"><span><i class="fa-regular fa-calendar"></i>'+esc(dateLabel(exam))+'</span><span><i class="fa-regular fa-clock"></i>'+esc(start?start.toLocaleTimeString('en-KE',{hour:'2-digit',minute:'2-digit',timeZone:'Africa/Nairobi'}):'Time TBA')+' EAT</span><span><i class="fa-regular fa-hourglass-half"></i> '+esc((Number(exam.duration_minutes)||40)+' minutes')+'</span><span><i class="fa-solid fa-layer-group"></i> '+esc(val(exam.block_term,exam.block,exam.term,'All blocks'))+'</span></div>'+countdown+action+'</div></article>';
+}
+function renderDashboardCalendar(){
+ const host=$('dashboard-calendar');if(!host)return;
+ const base=new Date();base.setDate(1);base.setMonth(base.getMonth()+dashboardCalendarOffset);
+ const year=base.getFullYear(),month=base.getMonth(),today=new Date();
+ $('calendar-month-label').textContent=base.toLocaleDateString('en-KE',{month:'long',year:'numeric'});
+ const firstDay=new Date(year,month,1).getDay(),daysInMonth=new Date(year,month+1,0).getDate(),events={};
+ state.exams.forEach(exam=>{const start=startsAt(exam);if(!start)return;const key=start.getFullYear()+'-'+start.getMonth()+'-'+start.getDate(),status=examState(exam);events[key]=status==='closed'?'completed':status;});
+ let cells='<div class="calendar-weekdays">'+['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(x=>'<span>'+x+'</span>').join('')+'</div><div class="calendar-days">';
+ const offset=(firstDay+6)%7;for(let i=0;i<offset;i++)cells+='<span class="calendar-day empty"></span>';
+ for(let d=1;d<=daysInMonth;d++){const status=events[year+'-'+month+'-'+d]||'',isToday=d===today.getDate()&&month===today.getMonth()&&year===today.getFullYear();cells+='<span class="calendar-day '+(status?'has-'+status:'')+(isToday?' is-today':'')+'">'+d+'</span>';}
+ const total=offset+daysInMonth;for(let i=total;i%7!==0;i++)cells+='<span class="calendar-day empty"></span>';
+ host.innerHTML=cells+'</div>';
+}
 function renderDashboard(){
- const counts={upcoming:0,open:0,closed:0};
- state.exams.forEach(e=>{const s=examState(e);if(counts[s]!==undefined)counts[s]++;});
- const stats=state.dashboardStats||{};
- const completed=Number(stats.submitted??state.history.filter(a=>!!a.submitted_at).length);
- const totalCount=Number(stats.total??state.exams.length);
+ const counts={upcoming:0,open:0,closed:0};state.exams.forEach(e=>{const s=examState(e);if(counts[s]!==undefined)counts[s]++;});
+ const stats=state.dashboardStats||{},completed=Number(stats.submitted??state.history.filter(a=>!!a.submitted_at).length),totalCount=Number(stats.total??state.exams.length);
  const upcoming=Number(stats.upcoming??counts.upcoming),open=Number(stats.open??state.exams.filter(e=>examState(e)==='open'&&val(e.exam_link,e.online_link)).length),closed=Number(stats.closed??counts.closed);
  $('stat-total').textContent=totalCount;$('stat-upcoming').textContent=upcoming;$('stat-open').textContent=open;$('stat-completed').textContent=completed;
- const total=Math.max(totalCount,1);
- $('status-chart').innerHTML=[['Available now',open,'#16835b'],['Upcoming',upcoming,'#c58a25'],['Closed',closed,'#71849a']].map(([label,n,color])=>'<div class="chart-bar-row"><span>'+label+'</span><div class="chart-track"><i style="width:'+Math.min(100,Math.round(n/total*100))+'%;background:'+color+'"></i></div><b>'+n+'</b></div>').join('')+(totalCount?'':'<p class="chart-empty">No approved examinations are assigned to your programme yet.</p>');
- const serverActivity=Array.isArray(stats.activity)?stats.activity:null;
- const days=[];for(let i=6;i>=0;i--){const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()-i);const key=d.toLocaleDateString('en-CA');const serverDay=serverActivity?.find(x=>String(x.day).slice(0,10)===key);const count=serverDay?Number(serverDay.count):state.history.filter(a=>{const raw=a.submitted_at||a.started_at;return raw&&new Date(raw).toLocaleDateString('en-CA')===key;}).length;days.push({label:d.toLocaleDateString('en',{weekday:'short'}),count});}
- const max=Math.max(...days.map(x=>x.count),1);
- $('activity-chart').innerHTML=days.some(d=>d.count>0)?'<div class="activity-bars">'+days.map(d=>'<div class="activity-column"><b>'+d.count+'</b><i style="height:'+Math.max(5,d.count/max*100)+'%"></i><small>'+d.label+'</small></div>').join('')+'</div><div class="chart-footnote">Last 7 days · '+completed+' submitted in total</div>':'<div class="activity-empty"><i class="fa-regular fa-chart-bar"></i><b>No recent activity yet</b><span>Your submitted examination attempts will appear here.</span></div>';
+ $('tab-upcoming-count').textContent=counts.upcoming;$('tab-open-count').textContent=counts.open;$('tab-closed-count').textContent=counts.closed;$('tab-all-count').textContent=state.exams.length;
+ document.querySelectorAll('[data-exam-filter]').forEach(b=>b.classList.toggle('active',b.dataset.examFilter===dashboardExamFilter));
+ const filtered=state.exams.map(exam=>({exam,status:examState(exam)})).filter(x=>dashboardExamFilter==='all'||x.status===dashboardExamFilter).sort((a,b)=>(startsAt(a.exam)?.getTime()||0)-(startsAt(b.exam)?.getTime()||0));
+ $('dashboard-exams').innerHTML=filtered.length?filtered.map(x=>dashboardExamCard(x.exam,x.status)).join(''):'<div class="dashboard-empty"><i class="fa-regular fa-calendar-xmark"></i><b>No examinations in this category</b><span>Try another examination tab or check back later.</span></div>';
+ const total=Math.max(totalCount,1),done=closed,percent=Math.round(done/total*100);
+ $('status-chart').innerHTML='<div class="progress-donut" style="--progress:'+percent+'%"><div><b>'+percent+'%</b><small>Completed</small></div></div><div class="progress-legend"><span><i class="legend-dot done"></i>Completed <b>'+done+' ('+Math.round(done/total*100)+'%)</b></span><span><i class="legend-dot waiting"></i>Upcoming <b>'+upcoming+' ('+Math.round(upcoming/total*100)+'%)</b></span><span><i class="legend-dot ready"></i>Available Now <b>'+open+' ('+Math.round(open/total*100)+'%)</b></span></div>';
+ const activity=[...state.history].sort((a,b)=>new Date(b.submitted_at||b.started_at||0)-new Date(a.submitted_at||a.started_at||0)).slice(0,4);
+ $('activity-chart').innerHTML=activity.length?'<div class="dashboard-activity-list">'+activity.map(a=>{const submitted=!!a.submitted_at,title=val(a.exam_title,a.title,a.exam?.title,a.exam?.exam_name,'Examination'),when=a.submitted_at||a.started_at;return '<div class="dashboard-activity-row"><span class="activity-icon '+(submitted?'submitted':'scheduled')+'"><i class="'+(submitted?'fa-solid fa-check':'fa-regular fa-calendar-check')+'"></i></span><span class="activity-copy"><b>'+esc(title)+(submitted?' – Attempt submitted':' – Attempt started')+'</b><small>'+esc(when?new Date(when).toLocaleString('en-KE',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',timeZone:'Africa/Nairobi'}):'Recent activity')+' EAT</small></span></div>';}).join('')+'</div>':'<div class="dashboard-empty compact"><i class="fa-solid fa-clock-rotate-left"></i><b>No recent activity yet</b><span>Your submitted examination attempts will appear here.</span></div>';
+ renderDashboardCalendar();
 }
 function render(){
  const q=norm($('search-input').value),filter=$('status-filter').value;
