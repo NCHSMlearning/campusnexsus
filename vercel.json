@@ -31,5 +31,34 @@
       "source": "/admin-exams",
       "destination": "/platform/examinations"
     }
+  ],
+  "headers": [
+    {
+      "source": "/adminexams",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store, max-age=0, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/adminexams/index.html",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store, max-age=0, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/platform/examinations/source/adminexams.html",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store, max-age=0, must-revalidate"
+        }
+      ]
+    }
   ]
 }
