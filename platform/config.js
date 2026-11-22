@@ -50,7 +50,7 @@ window.APP_CONFIG = {
     SUPABASE_URL: 'https://irahplkvocaakjxuisto.supabase.co',
     SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_5Cg5FFudf03UnmOXGNGMHQ_uK9S-uQX',
     // Backward-compatible alias used by existing dashboard modules.
-    SUPABASE_ANON_KEY: 'sb_publishable_5Cg5FFudf03UnmOXGNGMHQ_uK9S-uQX',
+    SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlyYWhwbGt2b2NhYWtqeHVpc3RvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4ODY5ODQsImV4cCI6MjEwMzQ2Mjk4NH0.BFOwdRVDz4r1oYgUjm8zQbthqblGRq4c3WQWQaOhu7g',
     
     // Optional LocationIQ API key (get from https://locationiq.com/)
     LOCATIONIQ_API_KEY: '',
