@@ -15,6 +15,7 @@
 <script src="/platform/js/institution-admin-activity.js?v=20261122-activity-v1" defer></script>
 <script src="/platform/js/institution-admin-finance.js?v=20261122-finance-v2" defer></script>
 <script src="/platform/js/institution-admin-settings.js?v=20261122-settings-v2" defer></script>
+<script src="/platform/js/institution-admin-users.js?v=20261122-users-v1" defer></script>
 <script src="/code-protection.js?v=20261121-global-v4" defer></script>
 <style id="ia-canonical-program-styles">
 #view-academic #programs{max-width:100%;overflow:hidden}
@@ -55,6 +56,8 @@
  <div class="ia-sidebar-search"><i class="fa-solid fa-magnifying-glass"></i><input id="iaSidebarSearch" type="search" placeholder="Search menus…" aria-label="Search institution menu" autocomplete="off"><kbd>⌘K</kbd></div>
  <nav class="ia-nav" id="iaNav" aria-label="Institution navigation">
   <button class="ia-nav-item active" data-view="overview"><i class="fa-solid fa-chart-pie"></i><span>Dashboard</span></button>
+  <div class="ia-nav-label">PEOPLE & ACCESS</div>
+  <button class="ia-nav-item" data-view="user-management"><i class="fa-solid fa-users"></i><span>User management</span><em id="iaUsersNavCount">—</em></button>
   <div class="ia-nav-label">ACADEMICS</div>
   <button class="ia-nav-item" data-view="students" data-module="student_management"><i class="fa-solid fa-user-graduate"></i><span>Students</span><em id="iaStudentNavCount">—</em></button>
   <button class="ia-nav-item" data-view="staff" data-module="lecturer_portal"><i class="fa-solid fa-chalkboard-user"></i><span>Staff & lecturers</span></button>
@@ -200,6 +203,30 @@
 </div></section>
 <div class="ia-overview-grid"><article class="ia-panel"><div class="ia-panel-head"><div><h2>Recent examinations</h2><p>Latest assessments in your institution</p></div><button class="ia-text-btn" data-open-view="exams">View all <i class="fa-solid fa-arrow-right"></i></button></div><div id="iaRecentExams" class="ia-list"><div class="ia-empty">Loading records…</div></div></article>
 <article class="ia-panel"><div class="ia-panel-head"><div><h2>Institution profile</h2><p>Your tenant identity</p></div></div><div class="ia-profile-summary"><div class="ia-profile-logo" id="iaProfileLogo">CN</div><div><b id="iaProfileName">—</b><small id="iaProfileType">Institution</small><small id="iaProfileEmail">—</small></div></div><div class="ia-profile-lines"><div><span>School code</span><b id="iaProfileCode">—</b></div><div><span>Account status</span><b id="iaProfileStatus">—</b></div><div><span>Enabled modules</span><b id="iaProfileModules">—</b></div></div><button class="ia-secondary-btn" data-open-view="settings">View institution details</button></article></div>
+</section>
+<section class="ia-view" id="view-user-management">
+ <div class="ia-page-heading ia-users-heading"><div><span class="ia-eyebrow">PEOPLE & ACCESS</span><h1>User management</h1><p>Manage accounts registered under <strong id="iaUsersInstitutionName">your institution</strong>, review registration requests and monitor account access.</p></div><button class="ia-secondary-btn" id="iaUsersRefresh"><i class="fa-solid fa-rotate"></i> Refresh</button></div>
+ <div class="ia-users-stats" id="iaUsersStats">
+  <article class="ia-users-stat"><span class="ia-users-stat-icon blue"><i class="fa-solid fa-users"></i></span><div><small>Total users</small><strong id="iaUsersTotal">—</strong><em>Institution directory</em></div></article>
+  <article class="ia-users-stat"><span class="ia-users-stat-icon green"><i class="fa-solid fa-user-check"></i></span><div><small>Active users</small><strong id="iaUsersActive">—</strong><em>Approved accounts</em></div></article>
+  <article class="ia-users-stat"><span class="ia-users-stat-icon amber"><i class="fa-solid fa-user-clock"></i></span><div><small>Pending review</small><strong id="iaUsersPending">—</strong><em>Awaiting institution review</em></div></article>
+  <article class="ia-users-stat"><span class="ia-users-stat-icon violet"><i class="fa-solid fa-user-lock"></i></span><div><small>Login disabled</small><strong id="iaUsersDisabled">—</strong><em>Accounts without access</em></div></article>
+ </div>
+ <div class="ia-users-workspace">
+  <div class="ia-users-tabs" role="tablist" aria-label="User directory views">
+   <button class="ia-users-tab active" type="button" data-users-tab="all" role="tab" aria-selected="true"><i class="fa-solid fa-users"></i> All users <span id="iaUsersAllCount">0</span></button>
+   <button class="ia-users-tab" type="button" data-users-tab="pending" role="tab" aria-selected="false"><i class="fa-solid fa-hourglass-half"></i> Pending users <span id="iaUsersPendingCount">0</span></button>
+   <button class="ia-users-tab" type="button" data-users-tab="students" role="tab" aria-selected="false"><i class="fa-solid fa-user-graduate"></i> Students</button>
+   <button class="ia-users-tab" type="button" data-users-tab="lecturers" role="tab" aria-selected="false"><i class="fa-solid fa-chalkboard-user"></i> Lecturers</button>
+   <button class="ia-users-tab" type="button" data-users-tab="administrators" role="tab" aria-selected="false"><i class="fa-solid fa-user-shield"></i> Administrators</button>
+  </div>
+  <div class="ia-users-toolbar"><div class="ia-users-search"><i class="fa-solid fa-magnifying-glass"></i><input id="iaUsersSearch" type="search" placeholder="Search name, email, admission or staff ID…" autocomplete="off"></div><select id="iaUsersRoleFilter" aria-label="Filter by role"><option value="all">All roles</option><option value="student">Students</option><option value="lecturer">Lecturers</option><option value="institution_admin">Institution admins</option><option value="finance_officer">Finance officers</option><option value="director">Directors</option></select><select id="iaUsersStatusFilter" aria-label="Filter by status"><option value="all">All statuses</option><option value="active">Active</option><option value="approved">Approved</option><option value="pending">Pending</option><option value="suspended">Suspended</option><option value="rejected">Rejected</option></select></div>
+  <div class="ia-users-table-head"><div><h2 id="iaUsersTableTitle">All institution users</h2><p id="iaUsersTableDescription">A consolidated view of accounts linked to this institution.</p></div><span id="iaUsersResultCount">Loading users…</span></div>
+  <div class="ia-users-table-wrap"><table class="ia-users-table"><thead><tr><th>User</th><th>Role</th><th>Programme / department</th><th>Account status</th><th>Login access</th><th>Registered</th><th></th></tr></thead><tbody id="iaUsersRows"><tr><td colspan="7" class="ia-users-empty">Loading institution users…</td></tr></tbody></table></div>
+  <div class="ia-users-footer"><span id="iaUsersPageInfo">—</span><div><button type="button" id="iaUsersPrev" disabled>Previous</button><button type="button" id="iaUsersNext" disabled>Next</button></div></div>
+  <p class="ia-users-message" id="iaUsersMessage" role="status" aria-live="polite"></p>
+ </div>
+ <dialog class="ia-users-dialog" id="iaUsersDialog" aria-labelledby="iaUsersDialogTitle"><div class="ia-users-dialog-head"><div><span>ACCOUNT DETAILS</span><h2 id="iaUsersDialogTitle">User profile</h2></div><button type="button" data-users-close aria-label="Close dialog"><i class="fa-solid fa-xmark"></i></button></div><div class="ia-users-dialog-body" id="iaUsersDialogBody"></div></dialog>
 </section>
 <section class="ia-view" id="view-students"><div class="ia-page-heading"><div><span class="ia-eyebrow">ACADEMIC RECORDS</span><h1>Students</h1><p>Student profiles registered under this institution.</p></div></div><div class="ia-toolbar"><input id="iaStudentSearch" type="search" placeholder="Search name, email or admission number"><span id="iaStudentCount" class="ia-count"></span></div><div class="ia-panel ia-table-panel"><div class="ia-table-scroll"><table><thead><tr><th>Student</th><th>Admission number</th><th>Programme</th><th>Block</th><th>Status</th></tr></thead><tbody id="iaStudents"><tr><td colspan="5" class="ia-empty">Loading…</td></tr></tbody></table></div></div></section>
 <section class="ia-view" id="view-staff"><div class="ia-page-heading"><div><span class="ia-eyebrow">PEOPLE & RESOURCES</span><h1>Staff & lecturers</h1><p>Teaching and institutional staff linked to your institution.</p></div></div><div class="ia-toolbar"><input id="iaStaffSearch" type="search" placeholder="Search staff name, email or department"><span id="iaStaffCount" class="ia-count"></span></div><div class="ia-panel ia-table-panel"><div class="ia-table-scroll"><table><thead><tr><th>Name</th><th>Email</th><th>Department</th><th>Staff ID</th><th>Status</th></tr></thead><tbody id="iaStaff"><tr><td colspan="5" class="ia-empty">Loading…</td></tr></tbody></table></div></div></section>
