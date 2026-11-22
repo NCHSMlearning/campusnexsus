@@ -67,15 +67,14 @@
       check.type='checkbox';check.checked=state.selected.has(u.id);check.setAttribute('aria-label','Select '+(u.full_name||u.email||'user'));
       check.addEventListener('change',()=>{if(check.checked)state.selected.add(u.id);else state.selected.delete(u.id);updateSelectAll();});
       checkCell.append(check);tr.append(checkCell);
-      cell(tr,identityOf(u));
       const nameCell=document.createElement('td');nameCell.className='ia-users-person-cell';
       const person=document.createElement('div');person.className='ia-users-person';
       const avatar=document.createElement('span');avatar.className='ia-users-table-avatar';
       const initials=(u.full_name||u.email||'U').trim().split(/\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase();avatar.textContent=initials;
       const personMeta=document.createElement('span');personMeta.className='ia-users-person-meta';
       const personName=document.createElement('strong');personName.textContent=u.full_name||'Name unavailable';
-      const personEmail=document.createElement('small');personEmail.textContent=u.email||'No email address';
-      personMeta.append(personName,personEmail);person.append(avatar,personMeta);nameCell.append(person);tr.append(nameCell);
+      const personId=document.createElement('small');personId.textContent=identityOf(u);
+      personMeta.append(personName,personId);person.append(avatar,personMeta);nameCell.append(person);tr.append(nameCell);
       resolveUserPhoto(u.profile_photo_url||u.passport_url,u.user_id).then(url=>{
         if(!url||!avatar.isConnected)return;
         const img=document.createElement('img');img.src=url;img.alt='';img.referrerPolicy='no-referrer';
