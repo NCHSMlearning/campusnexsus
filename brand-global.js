@@ -21,7 +21,8 @@
       var alt = img.getAttribute("alt") || "";
       // Never replace externally hosted institution-specific logos.
       if (src.toLowerCase().startsWith("http") && !src.toLowerCase().startsWith(window.location.origin.toLowerCase())) return;
-      if (!LOCAL_BRAND_PATTERN.test(src + " " + alt)) return;
+      var knownBrandContainer = img.closest(".brand-image, .footer-brand-image, .logo-wrapper .logo, .logo-welcome, .nchsm-loading-logo, .navbar-brand, .site-logo, .header-logo");
+      if (!LOCAL_BRAND_PATTERN.test(src + " " + alt) && !knownBrandContainer) return;
       img.src = BRAND;
       img.alt = BRAND_ALT;
       img.decoding = "async";
