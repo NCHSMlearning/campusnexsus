@@ -52,7 +52,7 @@ function applyIdentity(){
  document.title=name+" | Institution Admin";
  $("iaTenantName").textContent=name;$("iaSchoolCode").textContent=code?"School code "+code:"Institution workspace";
  $("iaTopInstitution").textContent=name;$("iaTopCode").textContent=code?"School code "+code:"";
- $("iaBrandName").textContent="Campus Nexus";$("iaUserName").textContent=p.full_name||p.email||"Administrator";
+ $("iaUserName").textContent=p.full_name||p.email||"Administrator";
  $("iaWelcomeName").textContent=(p.full_name||"Administrator").split(/\s+/)[0];$("iaAvatar").textContent=initials(p.full_name||p.email);
  $("iaToday").textContent=new Intl.DateTimeFormat("en-KE",{weekday:"short",day:"numeric",month:"short",year:"numeric"}).format(new Date());
  $("iaProfileName").textContent=name;$("iaProfileType").textContent=i.institution_type||"Institution";$("iaProfileEmail").textContent=i.contact_email||i.admin_email||"";
