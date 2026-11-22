@@ -5225,12 +5225,10 @@ document.addEventListener('DOMContentLoaded', async function() {
     const { data: sessionData, error: sessionError } = await sb.auth.getSession();
     const authUser = sessionData && sessionData.session && sessionData.session.user;
     if (sessionError || !authUser || !authUser.id) {
-        console.warn('No verified Supabase session; returning to student sign-in.');
-        const requestedExamUrl = window.location.pathname + window.location.search + window.location.hash;
-        const loginUrl = new URL('https://nchsm.co.ke/login');
-        // Preserve the requested exam deep link through the canonical NCHSM login route.
-        loginUrl.searchParams.set('redirect', requestedExamUrl);
-        window.location.replace(loginUrl.toString());
+        console.warn('No verified Supabase session; returning to the Campus Nexus student examination centre.');
+        // Keep unauthenticated visitors inside Campus Nexus. The student examination
+        // centre will send them to the local exam login and preserve its own session flow.
+        window.location.replace('/studentexam.html');
         return;
     }
     const studentId = authUser.id;
