@@ -1195,6 +1195,16 @@ function applyExamInstitutionBranding(institution) {
 
 async function ensureStudentInstitutionContext(profile = AppState.studentProfile) {
     if (AppState.institutionReady && AppState.institutionId) return AppState.institution;
+    if (!profile && AppState.studentId) {
+        const { data, error } = await sb
+            .from('consolidated_user_profiles_table')
+            .select('user_id, institution_id, role, status, login_enabled')
+            .eq('user_id', AppState.studentId)
+            .maybeSingle();
+        if (error) throw error;
+        profile = data;
+        if (profile) AppState.studentProfile = profile;
+    }
     if (!profile || !profile.institution_id) {
         throw new Error('Your student account is not linked to an institution. Please contact your institution administrator.');
     }
@@ -1213,6 +1223,10 @@ async function ensureStudentInstitutionContext(profile = AppState.studentProfile
     const returnedInstitutionId = institution.institution_id || institution.id || null;
     if (returnedInstitutionId && String(returnedInstitutionId) !== String(profile.institution_id)) {
         throw new Error('Your institution record does not match your student account. Examination access has been blocked.');
+    }
+    const institutionStatus = String(institution.status || 'active').trim().toLowerCase();
+    if (['suspended', 'inactive', 'disabled', 'blocked', 'deactivated'].includes(institutionStatus)) {
+        throw new Error('Your institution examination access is currently disabled. Please contact the institution administrator.');
     }
 
     AppState.institutionId = String(profile.institution_id);
