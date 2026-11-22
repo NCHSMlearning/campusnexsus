@@ -416,6 +416,30 @@
     preview.innerHTML = url ? '<img alt="Institution logo preview" src="' + esc(url) + '">' : '<i class="fas fa-school"></i>';
   }
 
+  function setupSubscriptionFields() {
+    const cycle = $("cnInstitutionCycle");
+    if (!cycle || $("cnInstitutionSubscriptionDates")) return;
+    const anchor = cycle.closest(".form-group,.form-field,.field,.mb-3") || cycle.parentElement;
+    if (!anchor?.parentElement) return;
+    const section = document.createElement("section");
+    section.id = "cnInstitutionSubscriptionDates";
+    section.className = "cn-subscription-dates";
+    section.innerHTML = `
+      <style>
+        .cn-subscription-dates{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:14px;margin:10px 0;border:1px solid #dbe6ec;border-radius:13px;background:#f8fbfd}
+        .cn-subscription-dates .cn-sub-field{display:flex;flex-direction:column;gap:6px;min-width:0}
+        .cn-subscription-dates label{font-size:11px;font-weight:800;color:#29465b}
+        .cn-subscription-dates input,.cn-subscription-dates select{width:100%;min-width:0;box-sizing:border-box;min-height:42px;border:1px solid #d4e0e7;border-radius:9px;padding:10px 12px;background:#fff;color:#102f46;font:inherit}
+        .cn-subscription-dates small{grid-column:1/-1;color:#64748b;font-size:10px;line-height:1.5}
+        @media(max-width:640px){.cn-subscription-dates{grid-template-columns:1fr}}
+      </style>
+      <div class="cn-sub-field"><label for="cnInstitutionSubscriptionStart">Subscription start date</label><input id="cnInstitutionSubscriptionStart" type="date"></div>
+      <div class="cn-sub-field"><label for="cnInstitutionSubscriptionEnd">Subscription end date</label><input id="cnInstitutionSubscriptionEnd" type="date"></div>
+      <div class="cn-sub-field"><label for="cnInstitutionSubscriptionStatus">Subscription status</label><select id="cnInstitutionSubscriptionStatus"><option value="trial">Trial</option><option value="active">Active</option><option value="past_due">Past due</option><option value="cancelled">Cancelled</option><option value="expired">Expired</option></select></div>
+      <small>Optional start and end dates. Leave either date blank when the subscription has no fixed boundary.</small>`;
+    anchor.insertAdjacentElement("afterend",section);
+  }
+
   function setupInstitutionProfileFields() {
     const country = $("cnInstitutionCountry");
     if (!country || $("cnInstitutionOfficialDetails")) return;
@@ -505,6 +529,9 @@
     if ($("cnInstitutionType")) $("cnInstitutionType").value = "college";
     ["cnInstitutionCounty","cnInstitutionRegistrationNumber","cnInstitutionPhysicalAddress","cnInstitutionPostalAddress"].forEach(id => { if ($(id)) $(id).value = ""; });
     if ($("cnInstitutionAmount")) $("cnInstitutionAmount").value = "5000";
+    if ($("cnInstitutionSubscriptionStart")) $("cnInstitutionSubscriptionStart").value = "";
+    if ($("cnInstitutionSubscriptionEnd")) $("cnInstitutionSubscriptionEnd").value = "";
+    if ($("cnInstitutionSubscriptionStatus")) $("cnInstitutionSubscriptionStatus").value = "active";
     applyBrandColors();
     if ($("cnInstitutionPortalMode")) $("cnInstitutionPortalMode").value = "campus_nexus";
     document.querySelectorAll('input[name="cnInstitutionPortalModeChoice"]').forEach(input => { input.checked = input.value === "campus_nexus"; });
@@ -538,6 +565,9 @@
     $("cnInstitutionAmount").value = item._subscription?.amount ?? 5000;
     $("cnInstitutionPlan").value = item._subscription?.plan_name || "Starter";
     $("cnInstitutionCycle").value = item._subscription?.billing_cycle || "monthly";
+    $("cnInstitutionSubscriptionStart").value = item._subscription?.starts_at || "";
+    $("cnInstitutionSubscriptionEnd").value = item._subscription?.ends_at || "";
+    $("cnInstitutionSubscriptionStatus").value = item._subscription?.status || "active";
     $("cnInstitutionAdmin").value = item.admin_email || "";
     document.querySelectorAll('input[name="cnInstitutionPortalModeChoice"]').forEach(input => { input.checked = input.value === (item.portal_mode || "campus_nexus"); });
     $("cnInstitutionPortalMode")?.dispatchEvent(new Event("change"));
@@ -695,6 +725,9 @@
     if (creatingAdminAccount && adminPassword !== adminPasswordConfirm) return notify("The administrator passwords do not match.", "error");
     const amount = Number($("cnInstitutionAmount").value);
     if (!Number.isFinite(amount) || amount < 0) return notify("Enter a valid subscription amount.", "error");
+    const subscriptionStart = $("cnInstitutionSubscriptionStart")?.value || "";
+    const subscriptionEnd = $("cnInstitutionSubscriptionEnd")?.value || "";
+    if (subscriptionStart && subscriptionEnd && subscriptionEnd < subscriptionStart) return notify("The subscription end date cannot be earlier than its start date.", "error");
     const portalMode = document.querySelector('input[name="cnInstitutionPortalModeChoice"]:checked')?.value || "campus_nexus";
     $("cnInstitutionPortalMode").value = portalMode;
     const customLogin = $("cnInstitutionCustomLogin").value.trim();
@@ -725,7 +758,10 @@
       portal_mode:portalMode,
       custom_login_url:portalMode === "custom_website" ? customLogin : null,
       administrator_portal_url:$("cnInstitutionAdminPortal").value.trim() || null,
-      status:$("cnInstitutionStatus").value
+      status:$("cnInstitutionStatus").value,
+      subscription_starts_at:subscriptionStart || null,
+      subscription_ends_at:subscriptionEnd || null,
+      subscription_status:$("cnInstitutionSubscriptionStatus")?.value || "active"
     };
     const enabledModules = [...document.querySelectorAll('input[name="cnModule"]:checked')].map(x => x.value);
     const examSelected = $("cnProductExam")?.checked;
@@ -784,8 +820,15 @@
           return;
         }
       }
-      notify((editingId ? "Institution updated successfully." : "Institution created successfully.") +
-        (adminEmail && adminName && adminPassword ? " Administrator account created with the supplied initial password for " + adminEmail + "." : ""),"success");
+      const adminAssignment = result?.admin_assignment;
+      const adminNotice = adminEmail && adminName && adminPassword
+        ? " Administrator account created for " + adminEmail + "."
+        : adminAssignment?.assigned
+          ? " Existing administrator account assigned."
+          : adminAssignment?.message
+            ? " Administrator setup pending: " + adminAssignment.message
+            : "";
+      notify((editingId ? "Institution updated successfully." : "Institution created successfully.") + adminNotice,"success");
       resetForm();
       await loadInstitutions();
     } catch (error) {
@@ -806,6 +849,7 @@
     setupLogoUploader();
     setupInstitutionAdminFields();
     setupInstitutionProfileFields();
+    setupSubscriptionFields();
     ensureInstitutionModal();
     $("cnInstitutionCancel").addEventListener("click",resetForm);
     $("cnInstitutionSearch").addEventListener("input",renderRows);
