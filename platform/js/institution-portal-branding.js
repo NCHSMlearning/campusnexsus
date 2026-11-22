@@ -53,7 +53,12 @@
     return "Institution";
   }
   function setText(selector, value) {
-    document.querySelectorAll(selector).forEach(el => { el.textContent = value; });
+    document.querySelectorAll(selector).forEach(el => {
+      // Never replace the document root or body: tenant metadata selectors can
+      // match <html> after institution data attributes are applied.
+      if (el === document.documentElement || el === document.body) return;
+      el.textContent = value;
+    });
   }
 
   function applyBranding(institution) {
