@@ -8440,6 +8440,11 @@ window.publishApprovedAssessment = async function(examId) {
             if (!Number.isInteger(duration) || duration < 1 || duration > 600) throw new Error('Duration must be between 1 and 600 minutes.');
             if (!Number.isFinite(fee) || fee < 0 || fee > 100) throw new Error('Minimum fee balance must be between 0 and 100%.');
             if (onlineLink && !/^https:\/\//i.test(onlineLink)) throw new Error('Online link must start with https://.');
+            // Keep the date/time fields used by the exam dashboard and the full
+            // timestamp fields used by the student exam runtime in sync.
+            const examStartDateTime = new Date(`${examDate}T${startTime}:00`);
+            if (Number.isNaN(examStartDateTime.getTime())) throw new Error('The examination date or start time is invalid.');
+            const examEndDateTime = new Date(examStartDateTime.getTime() + duration * 60000);
             const sessionRaw = localStorage.getItem('adminSession') || localStorage.getItem('userProfile');
             let role = '';
             try { const saved = JSON.parse(sessionRaw || '{}'); role = String(saved.role || saved.user_role || '').toLowerCase(); } catch (_) {}
@@ -8456,6 +8461,8 @@ window.publishApprovedAssessment = async function(examId) {
                 block, block_term:block, intake_year:parseInt(intake,10),
                 intake_month:document.getElementById('examIntakeMonth').value || null,
                 exam_date:examDate, exam_start_time:startTime,
+                start_time:examStartDateTime.toISOString(),
+                end_time:examEndDateTime.toISOString(),
                 marks_entry_deadline:document.getElementById('examDeadline').value || null,
                 description:document.getElementById('examVenue').value.trim() ? 'Venue: ' + document.getElementById('examVenue').value.trim() : null,
                 status:examId ? document.getElementById('examStatus').value : 'draft',
