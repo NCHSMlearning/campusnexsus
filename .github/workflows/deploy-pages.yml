@@ -116,7 +116,7 @@ jobs:
           import re
 
           root = Path(".")
-          brand_script = '<script src="/brand-global.js?v=20261122-campus-nexus-logo-v1" defer></script>'
+          brand_script = '<script src="/brand-global.js?v=20261122-campus-nexus-logo-v2" defer></script>'
           updated = 0
           for page in root.rglob("*.html"):
               if ".git" in page.parts or "node_modules" in page.parts:
