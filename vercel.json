@@ -4,6 +4,14 @@
   "trailingSlash": false,
   "rewrites": [
     {
+      "source": "/adminexams",
+      "destination": "/adminexams/index.html"
+    },
+    {
+      "source": "/adminexams/",
+      "destination": "/adminexams/index.html"
+    },
+    {
       "source": "/institution-admin",
       "destination": "/platform/institution-admin"
     },
