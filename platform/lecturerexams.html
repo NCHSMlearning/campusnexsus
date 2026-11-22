@@ -1044,8 +1044,9 @@ if (window.location.pathname.endsWith('.html')) {
                 exam_type: document.getElementById('lecturerEditType').value,
                 status: document.getElementById('lecturerEditStatus').value,
                 target_program: document.getElementById('lecturerEditProgram').value.trim() || null,
+                program_type: document.getElementById('lecturerEditProgram').value.trim() || null,
                 course_code: document.getElementById('lecturerEditUnitCode').value.trim() || null,
-                intake_year: document.getElementById('lecturerEditIntake').value.trim() || null,
+                intake_year: Number(document.getElementById('lecturerEditIntake').value) || null,
                 block: document.getElementById('lecturerEditBlock').value.trim() || null,
                 block_term: document.getElementById('lecturerEditBlock').value.trim() || null,
                 exam_date: document.getElementById('lecturerEditDate').value,
@@ -1062,12 +1063,16 @@ if (window.location.pathname.endsWith('.html')) {
             };
             let query = sb.from('exams').update(changes).eq('id', exam.id);
             if (exam.created_by) query = query.eq('created_by', exam.created_by);
-            const { data, error } = await query.select('id').maybeSingle();
+            const { data, error } = await query.select('*').maybeSingle();
             if (error) throw error;
-            if (!data) throw new Error('No exam was updated. Check that you still own this exam and have permission to edit it.');
-            Object.assign(exam, changes);
+            if (!data) throw new Error('No exam was updated. The database did not return the saved record; check ownership and exam update permissions.');
+            if (String(data.exam_date || '') !== String(changes.exam_date || '') ||
+                String((data.exam_start_time || '').slice(0,5)) !== String((changes.exam_start_time || '').slice(0,5))) {
+                throw new Error('The database did not retain the new exam date and time. Please retry or contact the platform administrator.');
+            }
+            Object.assign(exam, data);
             displayExams();
-            showToast('Exam / CAT updated successfully.', 'success');
+            showToast('Exam / CAT changes saved permanently to the database.', 'success');
             closeLecturerExamEdit();
         } catch (error) {
             console.error('Lecturer exam edit failed:', error);
