@@ -52,7 +52,13 @@ function applyIdentity(){
  document.title=name+" | Institution Admin";
  $("iaTenantName").textContent=name;$("iaSchoolCode").textContent=code?"School code "+code:"Institution workspace";
  $("iaTopInstitution").textContent=name;$("iaTopCode").textContent=code?"School code "+code:"";
- $("iaUserName").textContent=p.full_name||p.email||"Administrator";
+ $("iaTopInstitutionName").textContent=name;$("iaDropdownInstitutionName").textContent=name;
+ $("iaDropdownAdminName").textContent=p.full_name||p.email||"Administrator";
+ $("iaTopInstitutionRole").textContent=p.full_name||p.email||"Institution administrator";
+ $("iaMyProfileName").textContent=p.full_name||"Administrator";$("iaMyProfileEmail").textContent=p.email||state.user.email||"—";
+ $("iaMyProfileRole").textContent=String(p.role||"institution_admin").replace(/_/g," ").replace(/\b\w/g,x=>x.toUpperCase());
+ $("iaMyProfileStatus").textContent=statusLabel(p.status);$("iaMyProfileInstitution").textContent=name;
+ $("iaMyProfileAvatar").textContent=initials(p.full_name||p.email);
  $("iaWelcomeName").textContent=(p.full_name||"Administrator").split(/\s+/)[0];$("iaAvatar").textContent=initials(p.full_name||p.email);
  $("iaToday").textContent=new Intl.DateTimeFormat("en-KE",{weekday:"short",day:"numeric",month:"short",year:"numeric"}).format(new Date());
  $("iaProfileName").textContent=name;$("iaProfileType").textContent=i.institution_type||"Institution";$("iaProfileEmail").textContent=i.contact_email||i.admin_email||"";
@@ -61,6 +67,7 @@ function applyIdentity(){
  $("setCode").textContent=code||"—";$("setAdminEmail").textContent=i.admin_email||"—";$("setContactEmail").textContent=i.contact_email||"—";$("setPhone").textContent=i.contact_phone||"—";$("setWebsite").textContent=i.website_url||"—";$("setStatus").textContent=statusLabel(i.status);
  const logo=i.logo_url&&/^https:\/\//i.test(i.logo_url)?i.logo_url:"";
  ["iaLogo","iaProfileLogo","iaSettingsLogo"].forEach(id=>{const el=$(id);if(logo){const img=document.createElement("img");img.src=logo;img.alt=name+" logo";el.replaceChildren(img);}else el.textContent=initials(name);});
+ const topLogo=$("iaTopInstitutionLogo");if(topLogo){if(logo){const img=document.createElement("img");img.src=logo;img.alt=name+" logo";topLogo.replaceChildren(img);}else topLogo.textContent=initials(name);}
  const list=$("iaModuleList");list.replaceChildren();const keys=[...state.modules].filter(k=>MODULES[k]);if(!keys.length){const s=document.createElement("p");s.className="ia-empty";s.textContent="No module entitlements were returned.";list.append(s);}keys.forEach(k=>{const row=document.createElement("div");row.className="ia-module-row";const ic=document.createElement("i");ic.className="fa-solid fa-circle-check";const label=document.createElement("b");label.textContent=MODULES[k];const stateEl=document.createElement("span");stateEl.className="ia-module-state";stateEl.textContent="Enabled";row.append(ic,label,stateEl);list.append(row);});
  document.querySelectorAll("[data-module]").forEach(el=>{const key=el.dataset.module;const allowed=key==="administrator_portal"||state.modules.has(key)||(key==="admin_exams"&&state.modules.has("examinations"));el.hidden=!allowed;});
 }
@@ -199,7 +206,18 @@ function bind(){
   }
  });
  $("iaRefresh")?.addEventListener("click",()=>refresh());
- $("iaLogout")?.addEventListener("click",async()=>{await state.db.auth.signOut();localStorage.removeItem("userProfile");location.replace("/login/");});
+ const accountTrigger=$("iaAccountTrigger"),accountDropdown=$("iaAccountDropdown"),profileDialog=$("iaMyProfileDialog");
+ const closeAccountMenu=()=>{if(accountDropdown)accountDropdown.hidden=true;accountTrigger?.setAttribute("aria-expanded","false");};
+ accountTrigger?.addEventListener("click",event=>{event.stopPropagation();const opening=accountDropdown.hidden;accountDropdown.hidden=!opening;accountTrigger.setAttribute("aria-expanded",String(opening));});
+ document.addEventListener("click",event=>{if(!event.target.closest("#iaAccountMenu"))closeAccountMenu();});
+ $("iaOpenMyProfile")?.addEventListener("click",()=>{closeAccountMenu();if(profileDialog?.showModal)profileDialog.showModal();});
+ $("iaCloseMyProfile")?.addEventListener("click",()=>profileDialog?.close());
+ profileDialog?.addEventListener("click",event=>{if(event.target===profileDialog)profileDialog.close();});
+ $("iaOpenInstitutionProfile")?.addEventListener("click",()=>{closeAccountMenu();activate("settings");loadView("settings");});
+ document.querySelectorAll('#iaAccountDropdown [data-open-view]').forEach(el=>el.addEventListener("click",()=>{closeAccountMenu();activate(el.dataset.openView);loadView(el.dataset.openView);}));
+ const signOut=async()=>{closeAccountMenu();await state.db.auth.signOut();localStorage.removeItem("userProfile");location.replace("/login/");};
+ $("iaLogout")?.addEventListener("click",signOut);$("iaTopLogout")?.addEventListener("click",signOut);
+ document.addEventListener("keydown",event=>{if(event.key==="Escape")closeAccountMenu();});
 }
 async function refresh(){message("");try{state.rows={};await loadDashboard();const active=document.querySelector(".ia-view.active")?.id?.replace("view-","");if(active&&active!=="overview")await loadView(active);message("Institution data refreshed.");}catch(e){message(e.message,true);}}
 async function start(){try{bootStage("Connecting securely to Campus Nexus…");if(!window.supabase?.createClient)throw new Error("Secure database client could not load. Refresh the page.");state.db=window.supabase.createClient(URL,KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});await verifyAccess();window.CampusInstitutionAdmin={db:state.db,user:state.user,profile:state.profile,institution:state.institution,institutionId:state.institutionId,modules:state.modules,refresh};bootStage("Opening your institution workspace…");applyIdentity();bind();await loadDashboard();$("iaBoot").hidden=true;$("iaApp").hidden=false;requestAnimationFrame(()=>loadStudentAnalytics());}catch(e){console.error("[Institution Admin]",e);fail(e.message);if(/session|sign in|administrator profile/i.test(e.message))setTimeout(()=>location.replace("/login/"),2800);}}
