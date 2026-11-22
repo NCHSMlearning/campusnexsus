@@ -702,6 +702,7 @@ window.NCHSMLogin = {
                 school: profileData.school || profileData.school_name || profileData.department || '',
                 school_name: profileData.school_name || profileData.school || '',
                 campus: profileData.campus || '',
+                institution_id: profileData.institution_id || null,
                 is_staff: !!isStaff,
                 two_factor_enabled: !!profileData.two_factor_enabled,
                 two_factor_verified: !!profileData.two_factor_verified
@@ -2003,6 +2004,7 @@ verifyStaffLogin: async function(identifier, password) {
             school: linkedProfile?.school || linkedProfile?.school_name || linkedProfile?.department || staff.department || '',
             school_name: linkedProfile?.school_name || linkedProfile?.school || '',
             campus: linkedProfile?.campus || '',
+            institution_id: linkedProfile?.institution_id || null,
             is_staff: true,
             login_enabled: staff.login_enabled,
             status: staff.status,
@@ -2100,7 +2102,7 @@ executeLogin: async function(identifier, password) {
 
         const { data: profile, error: profileError } = await this.supabase
             .from('consolidated_user_profiles_table')
-            .select('user_id, email, full_name, role, program, department, staff_id, status, login_enabled, two_factor_enabled, two_factor_secret, two_factor_verified')
+            .select('user_id, email, full_name, role, program, department, staff_id, status, login_enabled, two_factor_enabled, two_factor_secret, two_factor_verified, institution_id')
             .eq('user_id', authData.user.id)
             .maybeSingle();
 
@@ -2111,6 +2113,22 @@ executeLogin: async function(identifier, password) {
         if (!profile) {
             await this.supabase.auth.signOut();
             throw new Error('Account not found. Please contact support or register first.');
+        }
+
+        // Enforce the institution selected by the school-code gate. Platform superadmins
+        // remain cross-institution users; all other accounts must belong to this school.
+        const selectedSchoolCode = (new URLSearchParams(window.location.search).get('school_code') ||
+            sessionStorage.getItem('campus_nexus_school_code') || '').trim();
+        if (selectedSchoolCode && !['superadmin', 'super_admin'].includes(String(profile.role || '').toLowerCase())) {
+            const { data: institutionContext, error: institutionError } = await this.supabase.rpc(
+                'resolve_institution_registration_context',
+                { p_code: selectedSchoolCode, p_host: null }
+            );
+            if (institutionError || !institutionContext?.institution_id ||
+                !profile.institution_id || profile.institution_id !== institutionContext.institution_id) {
+                await this.supabase.auth.signOut();
+                throw new Error('This account does not belong to the selected institution. Check the school code or use your institution login link.');
+            }
         }
 
         const validStatuses = ['approved', 'active'];
@@ -2130,7 +2148,8 @@ executeLogin: async function(identifier, password) {
                 is_staff: false,
                 two_factor_enabled: !!profile.two_factor_enabled,
                 two_factor_secret: profile.two_factor_secret || null,
-                two_factor_verified: !!profile.two_factor_verified
+                two_factor_verified: !!profile.two_factor_verified,
+                institution_id: profile.institution_id || null
             },
             isStaff: false
         };
