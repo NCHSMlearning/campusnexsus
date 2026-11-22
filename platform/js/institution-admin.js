@@ -214,7 +214,7 @@ function bind(){
  $("iaCloseMyProfile")?.addEventListener("click",()=>profileDialog?.close());
  profileDialog?.addEventListener("click",event=>{if(event.target===profileDialog)profileDialog.close();});
  $("iaOpenInstitutionProfile")?.addEventListener("click",()=>{closeAccountMenu();activate("settings");loadView("settings");});
- document.querySelectorAll('#iaAccountDropdown [data-open-view]').forEach(el=>el.addEventListener("click",()=>{closeAccountMenu();activate(el.dataset.openView);loadView(el.dataset.openView);}));
+ accountDropdown?.addEventListener("click",event=>{if(event.target.closest("[data-open-view]"))closeAccountMenu();});
  const signOut=async()=>{closeAccountMenu();await state.db.auth.signOut();localStorage.removeItem("userProfile");location.replace("/login/");};
  $("iaLogout")?.addEventListener("click",signOut);$("iaTopLogout")?.addEventListener("click",signOut);
  document.addEventListener("keydown",event=>{if(event.key==="Escape")closeAccountMenu();});
