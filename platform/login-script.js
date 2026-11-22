@@ -2112,18 +2112,41 @@ executeLogin: async function(identifier, password) {
 
         if (!authData.user) throw new Error('No user found');
 
-        // Read the signed-in user's own profile through a narrowly scoped RPC.
-        // This avoids institution/module RLS filters hiding the user's own login record.
+        // Ensure the password-auth session is fully present before calling the
+        // authenticated self-profile RPC (important on slower mobile connections).
+        let { data: sessionState, error: sessionReadError } = await this.supabase.auth.getSession();
+        if (sessionReadError) throw new Error('Could not establish your login session: ' + sessionReadError.message);
+
+        if ((!sessionState?.session || sessionState.session.user?.id !== authData.user.id) && authData.session?.access_token && authData.session?.refresh_token) {
+            const restored = await this.supabase.auth.setSession({
+                access_token: authData.session.access_token,
+                refresh_token: authData.session.refresh_token
+            });
+            if (restored.error) throw new Error('Could not restore your login session: ' + restored.error.message);
+            sessionState = { session: restored.data?.session || null };
+        }
+
+        if (!sessionState?.session || sessionState.session.user?.id !== authData.user.id) {
+            throw new Error('Your login session was not established. Please try signing in again.');
+        }
+
+        // Read only this authenticated user's own profile through a secure RPC.
         const { data: profile, error: profileError } = await this.supabase
             .rpc('get_my_login_profile');
 
         if (profileError) {
+            console.error('Own-profile RPC failed:', profileError);
             await this.supabase.auth.signOut();
-            throw new Error('Error loading profile: ' + profileError.message);
+            throw new Error('Could not load your account profile: ' + profileError.message);
         }
-        if (!profile) {
+        if (!profile || profile.user_id !== authData.user.id) {
+            console.error('Own-profile RPC returned no matching profile', {
+                authUserId: authData.user.id,
+                returnedProfile: !!profile,
+                returnedUserId: profile?.user_id || null
+            });
             await this.supabase.auth.signOut();
-            throw new Error('Account not found. Please contact support or register first.');
+            throw new Error('Your sign-in succeeded, but your Campus Nexus profile could not be loaded. Please contact support.');
         }
 
         // Enforce the institution selected by the school-code gate. Platform superadmins
