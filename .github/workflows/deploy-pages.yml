@@ -47,6 +47,32 @@ jobs:
           test -f js/examlogin.js
           test -f css/student-exams.css
           echo "Student examination portal files are present in the Pages artifact."
+      - name: Generate canonical Super Admin clean route
+        run: |
+          test -s platform/superadmin.html
+          mkdir -p platform/superadmin
+          cat > platform/superadmin/index.html <<'HTML'
+          <!doctype html>
+          <html lang="en">
+          <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width,initial-scale=1">
+          <meta name="robots" content="noindex">
+          <title>Campus Nexus | Super Admin</title>
+          <script>
+          (function () {
+            var target = new URL("/platform/superadmin.html", window.location.origin);
+            target.search = window.location.search;
+            target.hash = window.location.hash;
+            window.location.replace(target.toString());
+          })();
+          </script>
+          </head>
+          <body><p>Opening <a href="/platform/superadmin.html">Campus Nexus Super Admin</a>…</p></body>
+          </html>
+          HTML
+          test -s platform/superadmin/index.html
+          echo "The clean Super Admin route now opens the canonical platform/superadmin.html dashboard."
       - name: Generate clean URLs and inject global code protection
         run: |
           python3 - <<'PY'
