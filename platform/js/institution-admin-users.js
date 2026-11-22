@@ -303,14 +303,33 @@
       };
       if(!payload.full_name?.trim())throw new Error('Full name is required.');
       if(['blocked','inactive'].includes(payload.status))payload.login_enabled=false;
-      const {data,error}=await api.db.from('consolidated_user_profiles_table').update(payload)
+      const approving = payload.status === 'approved' && !['approved','active'].includes(statusOf(user));
+      if(approving){
+        const {data:review,error:reviewError}=await api.db.rpc('review_institution_registration',{
+          p_user_id:user.user_id,p_decision:'approve',p_reason:null
+        });
+        if(reviewError)throw reviewError;
+        const result=Array.isArray(review)?review[0]:review;
+        if(!result || result.success!==true || result.status!=='approved' || result.login_enabled!==true)
+          throw new Error(result?.message||'The account approval could not be completed.');
+      }
+      const profileUpdate={...payload};
+      if(approving){delete profileUpdate.status;delete profileUpdate.login_enabled;}
+      const {data,error}=await api.db.from('consolidated_user_profiles_table').update(profileUpdate)
         .eq('user_id',user.user_id).eq('institution_id',api.institutionId).select('id,user_id');
       if(error)throw error;
       if(!data?.length)throw new Error('No matching user was updated. Check your institution permissions and enabled modules.');
       Object.assign(user,payload);
+      let emailNotice='';
+      if(approving){
+        const {data:emailData,error:emailError}=await api.db.functions.invoke('registration-approved-email',{body:{user_id:user.user_id}});
+        if(emailError)emailNotice=' Account approved, but the approval email could not be sent: '+(emailError.message||'email service error')+'.';
+        else if(emailData?.success===false)emailNotice=' Account approved, but the approval email was not sent: '+(emailData.message||'email service unavailable')+'.';
+        else emailNotice=' Approval email notification accepted for delivery.';
+      }
       await load();
       showDetails(state.rows.find(x=>x.user_id===user.user_id)||user);
-      message('User profile updated successfully.');
+      message('User profile updated successfully.'+emailNotice,!!emailNotice&&!emailNotice.includes('accepted for delivery'));
     }catch(error){
       console.error('[Institution user edit]',error);
       feedback.textContent=error.message||'Unable to save user details.';
