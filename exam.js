@@ -29,8 +29,8 @@ const CONFIG = {
     INACTIVITY_TIMEOUT: 30 * 60 * 1000,
     MULTIPLE_FACES_TIMEOUT: 45,
     FULLSCREEN_EXIT_TIMEOUT: 10,
-    STUDENT_DASHBOARD_URL: 'https://nchsm.co.ke/student/',
-    STUDENT_LOGIN_URL: 'https://nchsm.co.ke/login',
+    STUDENT_DASHBOARD_URL: '/student.html',
+    STUDENT_LOGIN_URL: '/examlogin.html',
     VIOLATION_COOLDOWN: 5000,
     EXAM_SESSION_KEY: 'exam_session',
     MAX_SESSION_AGE: 5 * 60 * 1000,
@@ -40,7 +40,8 @@ const CONFIG = {
 // ============================================================
 // SUPABASE CLIENT
 // ============================================================
-const sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+const sb = window.examSupabase || window.supabaseClient;
+if (!sb) { console.error('Campus Nexus examination client is not initialized.'); }
 
 // ============================================================
 // APPLICATION STATE
@@ -4972,115 +4973,16 @@ class StealthProctor {
         this.stream = null;
         this.heartbeatInterval = null;
         this.hiddenVideo = null;
-        this.recordingStartTime = null;
-        this.videoUploaded = false;
-        this.uploadRetryCount = 0;
     }
 
-    async startStealthRecording(studentId, examId) {
-        try {
-            console.log('🎥 Starting stealth proctoring...');
-
-            if (AppState.cameraStream && AppState.cameraStream.active) {
-                this.stream = AppState.cameraStream;
-            } else {
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: 'user', width: { ideal: 480 }, height: { ideal: 360 } },
-                    audio: false
-                });
-                this.stream = stream;
-            }
-
-            if (!this.stream || !this.stream.active) {
-                console.warn('⚠️ No active camera stream');
-                return false;
-            }
-
-            this.hiddenVideo = document.createElement('video');
-            this.hiddenVideo.srcObject = this.stream;
-            this.hiddenVideo.muted = true;
-            this.hiddenVideo.setAttribute('playsinline', '');
-            this.hiddenVideo.style.display = 'none';
-            document.body.appendChild(this.hiddenVideo);
-            await this.hiddenVideo.play();
-
-            const options = {
-                mimeType: 'video/webm;codecs=vp9',
-                videoBitsPerSecond: 300000
-            };
-
-            if (!MediaRecorder.isTypeSupported(options.mimeType)) {
-                options.mimeType = 'video/webm;codecs=vp8';
-            }
-            if (!MediaRecorder.isTypeSupported(options.mimeType)) {
-                options.mimeType = 'video/webm';
-            }
-
-            this.mediaRecorder = new MediaRecorder(this.stream, options);
-            this.mediaRecorder.ondataavailable = (event) => {
-                if (event.data.size > 0) {
-                    this.recordedChunks.push(event.data);
-                }
-            };
-            this.mediaRecorder.onstop = () => {
-                if (this.recordedChunks.length > 0 && !this.videoUploaded) {
-                    this.saveRecording(studentId, examId);
-                }
-            };
-
-            this.mediaRecorder.start(10000);
-            this.isRecording = true;
-            this.recordingStartTime = Date.now();
-            console.log('📹 Stealth recording started');
-
-            this.heartbeatInterval = setInterval(() => {
-                this.sendHeartbeat(studentId, examId);
-            }, 15000);
-
-            return true;
-
-        } catch (error) {
-            console.error('❌ Stealth recording error:', error);
-            return false;
-        }
+    // Video recording and video uploads are intentionally disabled.
+    async startStealthRecording() {
+        console.info('Campus Nexus policy: video recording is disabled.');
+        return false;
     }
 
-    async saveRecording(studentId, examId) {
-        if (this.recordedChunks.length === 0 || this.videoUploaded) return;
-
-        try {
-            const blob = new Blob(this.recordedChunks, { type: 'video/webm' });
-            const fileName = `videos/${studentId}/${examId}/${Date.now()}.webm`;
-
-            const { error } = await sb.storage
-                .from('proctoring')
-                .upload(fileName, blob, {
-                    contentType: 'video/webm',
-                    cacheControl: '3600',
-                    upsert: false
-                });
-
-            if (error) {
-                console.warn('Storage upload error:', error);
-                this.uploadRetryCount++;
-                if (this.uploadRetryCount < 3) {
-                    setTimeout(() => this.saveRecording(studentId, examId), 5000);
-                }
-                return;
-            }
-
-            this.videoUploaded = true;
-            this.uploadRetryCount = 0;
-            console.log('✅ Video saved');
-            this.recordedChunks = [];
-
-        } catch (error) {
-            console.error('❌ Error saving video:', error);
-            this.uploadRetryCount++;
-            if (this.uploadRetryCount < 3) {
-                setTimeout(() => this.saveRecording(studentId, examId), 5000);
-            }
-        }
+    async saveRecording() {
+        return false;
     }
 
     async sendHeartbeat(studentId, examId) {
@@ -5098,16 +5000,12 @@ class StealthProctor {
     }
 
     stopRecording() {
-        if (this.mediaRecorder && this.isRecording) {
-            try { this.mediaRecorder.stop(); } catch (e) {}
-            this.isRecording = false;
-        }
         if (this.heartbeatInterval) clearInterval(this.heartbeatInterval);
-        if (this.hiddenVideo) { this.hiddenVideo.remove(); this.hiddenVideo = null; }
-        console.log('📹 Stealth recording stopped');
+        this.isRecording = false;
+        this.recordedChunks = [];
     }
 
-    isRecordingActive() { return this.isRecording; }
+    isRecordingActive() { return false; }
 }
 
 // ============================================================
