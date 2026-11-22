@@ -107,6 +107,34 @@ jobs:
           test -f exams/index.html
           grep -q 'src="/code-protection.js"' platform/institution-admin/index.html
           echo "Clean URLs and global right-click protection are included in the Pages artifact."
+      - name: Apply official Campus Nexus logo throughout the website
+        run: |
+          test -s images/campus-nexus-original-logo.webp
+          test -s brand-global.js
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          root = Path(".")
+          brand_script = '<script src="/brand-global.js?v=20261122-campus-nexus-logo-v1" defer></script>'
+          updated = 0
+          for page in root.rglob("*.html"):
+              if ".git" in page.parts or "node_modules" in page.parts:
+                  continue
+              html = page.read_text(encoding="utf-8")
+              if brand_script in html:
+                  continue
+              if re.search(r"</head>", html, re.I):
+                  html = re.sub(r"</head>", brand_script + "\\n</head>", html, count=1, flags=re.I)
+              else:
+                  html = brand_script + html
+              page.write_text(html, encoding="utf-8")
+              updated += 1
+          print(f"Applied the official Campus Nexus logo script to {updated} HTML pages.")
+          PY
+          test -s images/campus-nexus-original-logo.webp
+          grep -q 'brand-global.js' index.html
+          echo "Official Campus Nexus logo branding is included in the Pages artifact."
       - name: Upload complete static website
         uses: actions/upload-pages-artifact@v3
         with:
