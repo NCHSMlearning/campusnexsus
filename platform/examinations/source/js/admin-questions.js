@@ -11,6 +11,16 @@
 let currentQuestions = [];
 let currentQuestionExamId = null;
 
+// The Supabase CDN namespace is adminQuestionsClient(); the authenticated project
+// client created by /config.js is window.sb / adminQuestionsClient()Client.
+function adminQuestionsClient() {
+    const client = window.sb || adminQuestionsClient()Client;
+    if (!client || typeof client.from !== 'function' || typeof client.rpc !== 'function') {
+        throw new Error('Campus Nexus Supabase client is not ready. Reload the dashboard.');
+    }
+    return client;
+}
+
 // Escape database/user-supplied text before inserting it into admin HTML.
 function escapeAdminQuestionHtml(value) {
     return String(value ?? '').replace(/[&<>"']/g, character => ({
@@ -24,7 +34,7 @@ function escapeAdminQuestionHtml(value) {
 async function loadExamsForQuestions() {
     console.log('📚 Loading exams for question bank...');
     try {
-        const { data, error } = await window.supabase
+        const { data, error } = await adminQuestionsClient()
             .from('exams')
             .select('id, title, exam_name')
             .order('title');
@@ -106,7 +116,7 @@ async function loadQuestionsForExam() {
 
         // Answer keys are intentionally unavailable through direct table SELECT.
         // Use the authenticated staff-only RPC to retrieve the full question bank.
-        const { data, error } = await window.supabase.rpc(
+        const { data, error } = await adminQuestionsClient().rpc(
             'get_exam_questions_for_staff',
             { p_exam_id: parseInt(examId, 10) }
         );
@@ -271,7 +281,7 @@ function openAddQuestion() {
 async function editQuestion(questionId) {
     console.log('📝 editQuestion called for:', questionId);
     try {
-        const { data: questionRows, error } = await window.supabase.rpc(
+        const { data: questionRows, error } = await adminQuestionsClient().rpc(
             'get_exam_questions_for_staff',
             { p_exam_id: parseInt(currentQuestionExamId || document.getElementById('questionExamId')?.value, 10) }
         );
@@ -283,7 +293,7 @@ async function editQuestion(questionId) {
         document.getElementById('questionModalTitle').textContent = 'Edit Question';
         document.getElementById('questionId').value = data.id;
         document.getElementById('questionExamId').value = data.exam_id;
-        document.getElementById('questionType').value = data.question_type || 'multiple_choice';
+        document.getElementById('questionType').value = (data.question_type === 'mcq' || data.question_type === 'multiple_choice') ? 'multiple_choice' : 'essay';
         document.getElementById('questionText').value = data.question_text || '';
         document.getElementById('optionA').value = data.option_a || '';
         document.getElementById('optionB').value = data.option_b || '';
@@ -384,7 +394,7 @@ async function saveQuestion(e) {
     // Build question data based on type
     const questionData = {
         exam_id: examId,
-        question_type: questionType,
+        question_type: (questionType === 'multiple_choice' || questionType === 'mcq') ? 'mcq' : 'essay',
         question_text: questionText,
         marks: marks,
         updated_at: new Date().toISOString()
@@ -413,14 +423,14 @@ async function saveQuestion(e) {
         let result;
         if (id) {
             console.log('📝 Updating question:', id);
-            result = await window.supabase
+            result = await adminQuestionsClient()
                 .from('exam_questions')
                 .update(questionData)
                 .eq('id', id);
         } else {
             console.log('📝 Creating new question');
             // Get next question number
-            const { data: existing } = await window.supabase
+            const { data: existing } = await adminQuestionsClient()
                 .from('exam_questions')
                 .select('question_number')
                 .eq('exam_id', examId)
@@ -431,7 +441,7 @@ async function saveQuestion(e) {
             questionData.question_number = nextNumber;
             questionData.created_at = new Date().toISOString();
             
-            result = await window.supabase
+            result = await adminQuestionsClient()
                 .from('exam_questions')
                 .insert([questionData]);
         }
@@ -469,7 +479,7 @@ async function deleteQuestion(questionId) {
     if (!confirm('Are you sure you want to delete this question?')) return;
 
     try {
-        const { error } = await window.supabase
+        const { error } = await adminQuestionsClient()
             .from('exam_questions')
             .delete()
             .eq('id', questionId);
@@ -528,7 +538,7 @@ async function loadPendingQuestions() {
         `;
 
         // Build query - get questions with status 'pending' from exam_questions
-        let query = window.supabase
+        let query = adminQuestionsClient()
             .from('exam_questions')
             .select('*, exams(title, exam_name)')
             .eq('status', 'pending')
@@ -567,7 +577,7 @@ async function loadPendingQuestions() {
 
         let lecturerMap = {};
         if (lecturerIds.length > 0) {
-            const { data: lecturers } = await window.supabase
+            const { data: lecturers } = await adminQuestionsClient()
                 .from('consolidated_user_profiles_table')
                 .select('user_id, full_name, email, program')
                 .in('user_id', lecturerIds);
@@ -822,7 +832,7 @@ async function approveLecturerQuestions(lecturerId) {
 
     try {
         const ids = lecturerQuestions.map(q => q.id);
-        const { error } = await window.supabase
+        const { error } = await adminQuestionsClient()
             .from('exam_questions')
             .update({
                 status: 'approved',
@@ -850,7 +860,7 @@ async function approveSingleQuestion(questionId) {
     if (!confirm('Approve this question?')) return;
 
     try {
-        const { error } = await window.supabase
+        const { error } = await adminQuestionsClient()
             .from('exam_questions')
             .update({
                 status: 'approved',
@@ -900,7 +910,7 @@ async function confirmReject() {
     }
 
     try {
-        const { error } = await window.supabase
+        const { error } = await adminQuestionsClient()
             .from('exam_questions')
             .update({
                 status: 'rejected',
@@ -950,14 +960,14 @@ function updatePendingStats(questions) {
 async function viewQuestionDetail(questionId) {
     try {
         const questionExamId = currentQuestionExamId || document.getElementById('questionExamId')?.value;
-        const { data: questionRows, error } = await window.supabase.rpc(
+        const { data: questionRows, error } = await adminQuestionsClient().rpc(
             'get_exam_questions_for_staff',
             { p_exam_id: parseInt(questionExamId, 10) }
         );
         if (error) throw error;
         const data = (questionRows || []).find(question => String(question.id) === String(questionId));
         if (!data) throw new Error('Question not found in the selected exam.');
-        const { data: examMeta } = await window.supabase
+        const { data: examMeta } = await adminQuestionsClient()
             .from('exams')
             .select('title, exam_name')
             .eq('id', questionExamId)
