@@ -351,20 +351,47 @@
       if (img) img.style.objectFit = fit.value;
     });
     background.addEventListener("input",() => { preview.style.background = background.value; });
-    $("cnInstitutionLogoFile").addEventListener("change",event => {
-      const file = event.target.files?.[0] || null;
-      if (!file) { selectedLogoFile = null; renderPreview(safeWebUrl(logoInput.value,true)); $("cnLogoFileStatus").textContent = "No new file selected"; return; }
-      if (!["image/png","image/jpeg","image/webp","image/svg+xml"].includes(file.type)) {
+    const logoFilePicker = $("cnInstitutionLogoFile");
+    logoFilePicker.addEventListener("change",event => {
+      const file = event.target.files && event.target.files[0] ? event.target.files[0] : null;
+      if (!file) {
+        selectedLogoFile = null;
+        renderPreview(safeWebUrl(logoInput.value,true));
+        $("cnLogoFileStatus").textContent = "No new file selected";
+        return;
+      }
+      const extension = (file.name.split(".").pop() || "").toLowerCase();
+      const detectedType = file.type || ({png:"image/png",jpg:"image/jpeg",jpeg:"image/jpeg",webp:"image/webp",svg:"image/svg+xml"}[extension] || "");
+      if (!["image/png","image/jpeg","image/webp","image/svg+xml"].includes(detectedType)) {
         event.target.value = ""; selectedLogoFile = null;
-        notify("Choose a PNG, JPG, WebP or SVG image.","error"); return;
+        renderPreview(safeWebUrl(logoInput.value,true));
+        notify("Choose a PNG, JPG, WebP or SVG image.","error");
+        return;
       }
       if (file.size > 2*1024*1024) {
         event.target.value = ""; selectedLogoFile = null;
-        notify("The logo must be 2 MB or smaller.","error"); return;
+        renderPreview(safeWebUrl(logoInput.value,true));
+        notify("The logo must be 2 MB or smaller.","error");
+        return;
       }
-      selectedLogoFile = file;
-      renderPreview(URL.createObjectURL(file));
-      $("cnLogoFileStatus").textContent = file.name + " · " + (file.size/1024).toFixed(0) + " KB";
+      selectedLogoFile = file.type === detectedType ? file : new File([file],file.name,{type:detectedType,lastModified:file.lastModified});
+      const reader = new FileReader();
+      reader.onload = () => {
+        const dataUrl = typeof reader.result === "string" ? reader.result : "";
+        if (!dataUrl) {
+          $("cnLogoFileStatus").textContent = "Could not read this image. Please choose it again.";
+          return;
+        }
+        renderPreview(dataUrl);
+        const img = preview.querySelector("img");
+        if (img) {
+          img.onload = () => { $("cnLogoFileStatus").textContent = file.name + " · " + (file.size/1024).toFixed(0) + " KB · Preview ready"; };
+          img.onerror = () => { $("cnLogoFileStatus").textContent = "Image preview failed. Try a PNG or JPG file."; };
+        }
+      };
+      reader.onerror = () => { $("cnLogoFileStatus").textContent = "Could not read this image. Please choose it again."; };
+      $("cnLogoFileStatus").textContent = "Loading preview…";
+      reader.readAsDataURL(selectedLogoFile);
     });
     $("cnInstitutionLogoClear").addEventListener("click",() => {
       selectedLogoFile = null;
