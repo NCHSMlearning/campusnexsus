@@ -176,6 +176,12 @@
     const profileMain=document.createElement('div');profileMain.className='ia-users-view-main';
     const profileIdentity=document.createElement('div');profileIdentity.className='ia-users-view-identity';
     const identityAvatar=avatar.cloneNode(true);profileIdentity.append(identityAvatar);
+    resolveUserPhoto(u.profile_photo_url||u.passport_url,u.user_id).then(url=>{
+      if(!url||!identityAvatar.isConnected)return;
+      const img=document.createElement('img');img.src=url;img.alt='Profile photo';img.referrerPolicy='no-referrer';
+      img.onerror=()=>{img.remove();identityAvatar.textContent=(u.full_name||u.email||'U').trim().split(/\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase();};
+      identityAvatar.replaceChildren(img);
+    }).catch(()=>{});
     const identityName=document.createElement('strong');identityName.textContent=u.full_name||'Name unavailable';
     const identityCode=document.createElement('small');identityCode.textContent=identityOf(u);
     profileIdentity.append(identityName,identityCode);
