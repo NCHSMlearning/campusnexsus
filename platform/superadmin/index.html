@@ -6,9 +6,18 @@
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#062b46">
 <title>Campus Nexus | Super Admin</title>
-<style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#062b46}#superadmin-dashboard{display:block;width:100%;height:100%;border:0;background:#fff}</style>
+<script>
+(function () {
+  // Serve the canonical dashboard document directly at this clean URL.
+  // Preserve query parameters and hash so authentication/session redirects survive.
+  var target = new URL("/platform/superadmin.html", window.location.origin);
+  target.search = window.location.search;
+  target.hash = window.location.hash;
+  window.location.replace(target.toString());
+})();
+</script>
 </head>
 <body>
-<iframe id="superadmin-dashboard" title="Campus Nexus Super Admin Dashboard" src="/platform/superadmin.html" allow="clipboard-read; clipboard-write; fullscreen" referrerpolicy="same-origin"></iframe>
+<p>Opening the <a href="/platform/superadmin.html">Campus Nexus Super Admin dashboard</a>…</p>
 </body>
 </html>
