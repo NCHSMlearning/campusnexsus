@@ -151,7 +151,9 @@
     if (!theme) {
       theme = document.createElement("style");
       theme.id = "cn-authenticated-institution-theme";
-      document.head.appendChild(theme);
+      const styleHost = document.head || document.documentElement;
+      if (!styleHost) return;
+      styleHost.appendChild(theme);
     }
     theme.textContent = [
       ":root{--cn-institution-primary:", primary, ";--cn-institution-secondary:", secondary, ";--cn-institution-gold:", gold, "}",
