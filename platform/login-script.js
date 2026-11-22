@@ -2004,7 +2004,7 @@ verifyStaffLogin: async function(identifier, password) {
             school: linkedProfile?.school || linkedProfile?.school_name || linkedProfile?.department || staff.department || '',
             school_name: linkedProfile?.school_name || linkedProfile?.school || '',
             campus: linkedProfile?.campus || '',
-            institution_id: linkedProfile?.institution_id || null,
+            institution_id: linkedProfile?.institution_id || staff.institution_id || null,
             is_staff: true,
             login_enabled: staff.login_enabled,
             status: staff.status,
@@ -2030,6 +2030,18 @@ executeLogin: async function(identifier, password) {
     // One targeted staff lookup instead of loading every staff record twice.
     const staffProfile = await this.verifyStaffLogin(identifier, password);
     if (staffProfile) {
+        const selectedSchoolCode = (new URLSearchParams(window.location.search).get('school_code') ||
+            sessionStorage.getItem('campus_nexus_school_code') || '').trim();
+        if (selectedSchoolCode && !['superadmin', 'super_admin'].includes(String(staffProfile.role || '').toLowerCase())) {
+            const { data: institutionContext, error: institutionError } = await this.supabase.rpc(
+                'resolve_institution_registration_context',
+                { p_code: selectedSchoolCode, p_host: null }
+            );
+            if (institutionError || !institutionContext?.institution_id ||
+                !staffProfile.institution_id || staffProfile.institution_id !== institutionContext.institution_id) {
+                throw new Error('This staff account does not belong to the selected institution. Check the school code or use your institution login link.');
+            }
+        }
         profileData = staffProfile;
         isStaff = true;
         trackGALogin('staff_login', {
