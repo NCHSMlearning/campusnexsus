@@ -135,6 +135,13 @@ Deno.serve(async (req: Request) => {
     const textContent=`Hello ${name}, your ${role} account at ${institution} has been approved. Your login access is enabled. Programme/Department: ${program}. Account number: ${identifier}. Access your portal: ${portalUrl}`;
     const messageId=await send(authUser.email,subject,html,textContent);
     const {error:markError}=await admin.auth.admin.updateUserById(userId,{app_metadata:{...metadata,registration_approval_email_sent_at:new Date().toISOString()}});
+    const {error:logError}=await admin.from("notification_delivery_logs").upsert({
+      institution_id:profile.institution_id,recipient_user_id:userId,recipient_email:authUser.email,
+      notification_type:"registration_approved",entity_type:"registration",entity_id:userId,
+      delivery_status:"accepted",provider:"brevo",provider_message_id:messageId,
+      accepted_at:new Date().toISOString(),attempted_at:new Date().toISOString(),error_message:null
+    },{onConflict:"notification_type,entity_type,entity_id,recipient_user_id"});
+    if(logError) console.error("Approval notification log could not be saved:",logError.message);
     if(markError) console.error("Could not save approval email idempotency marker:",markError.message);
     console.log("Approval email accepted by Brevo",{userId,messageId});
     return reply({success:true,recipient:authUser.email,messageId},200,origin);
