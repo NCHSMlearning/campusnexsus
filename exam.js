@@ -1180,10 +1180,16 @@ function applyExamInstitutionBranding(institution) {
     document.title = name + ' | Secure Online Examination';
     document.documentElement.style.setProperty('--institution-brand-label', JSON.stringify(name + ' • Secure Examination'));
     const theme = institution?.primary_color;
+    const secondary = institution?.secondary_color;
     if (typeof theme === 'string' && /^#[0-9a-f]{3,8}$/i.test(theme)) {
         document.documentElement.style.setProperty('--navy', theme);
+        document.documentElement.style.setProperty('--blue', theme);
         const meta = document.querySelector('meta[name="theme-color"]');
         if (meta) meta.content = theme;
+    }
+    if (typeof secondary === 'string' && /^#[0-9a-f]{3,8}$/i.test(secondary)) {
+        document.documentElement.style.setProperty('--navy2', secondary);
+        document.documentElement.style.setProperty('--blue2', secondary);
     }
 }
 
