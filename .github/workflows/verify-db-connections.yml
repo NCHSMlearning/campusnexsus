@@ -1,0 +1,70 @@
+name: Verify Supabase Migration Connections
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: supabase-migration-connection-check
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Verify source and destination connectivity
+        env:
+          NCHSM_DATABASE_URL: ${{ secrets.NCHSM_DATABASE_URL }}
+          CAMPUS_NEXUS_DATABASE_URL: ${{ secrets.CAMPUS_NEXUS_DATABASE_URL }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          if [[ -z "${NCHSM_DATABASE_URL:-}" || -z "${CAMPUS_NEXUS_DATABASE_URL:-}" ]]; then
+            echo "::error::One or both required GitHub Actions secrets are missing."
+            exit 1
+          fi
+          check_db() {
+            local label="$1"
+            local uri="$2"
+            echo "Checking ${label} database..."
+            psql "$uri" -X -v ON_ERROR_STOP=1 -Atc \
+              "select 'PostgreSQL ' || current_setting('server_version') || ' | database=' || current_database();"
+          }
+          check_db "NCHSM source" "$NCHSM_DATABASE_URL"
+          check_db "Campus Nexus destination" "$CAMPUS_NEXUS_DATABASE_URL"
+
+      - name: Report safe migration inventory
+        env:
+          NCHSM_DATABASE_URL: ${{ secrets.NCHSM_DATABASE_URL }}
+          CAMPUS_NEXUS_DATABASE_URL: ${{ secrets.CAMPUS_NEXUS_DATABASE_URL }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          echo "NCHSM source inventory:"
+          psql "$NCHSM_DATABASE_URL" -X -v ON_ERROR_STOP=1 -F ' | ' -Atc "
+            select
+              'public_tables=' || count(*) filter (where table_type='BASE TABLE'),
+              'auth_users=' || (select count(*) from auth.users)
+            from information_schema.tables
+            where table_schema='public';
+          "
+          echo "Campus Nexus destination inventory:"
+          psql "$CAMPUS_NEXUS_DATABASE_URL" -X -v ON_ERROR_STOP=1 -F ' | ' -Atc "
+            select
+              'public_tables=' || count(*) filter (where table_type='BASE TABLE'),
+              'nchsm_tables=' || (select count(*) from information_schema.tables where table_schema='nchsm' and table_type='BASE TABLE'),
+              'auth_users=' || (select count(*) from auth.users)
+            from information_schema.tables
+            where table_schema='public';
+          "
+
+      - name: Confirm no database changes were made
+        run: echo "Connection and inventory checks only. No database changes were made."
