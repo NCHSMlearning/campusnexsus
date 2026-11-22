@@ -1,6 +1,6 @@
 // ============================================
 // 📁 js/admindashboard.js
-// NCHSM Exam Dashboard - Complete JavaScript
+// NCHSM Exam Dashboard - Complete JavaScript 
 // ============================================
 // Hides the .html extension in the URL  
 if (window.location.pathname.endsWith('.html')) {
