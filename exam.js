@@ -1171,7 +1171,8 @@ function applyExamInstitutionBranding(institution) {
         institutionCampusChip: name,
         institutionCampusName: name,
         institutionCampusSubtitle: code ? 'School code ' + code + ' • Examination Centre' : 'Institutional Examination Centre',
-        institutionAssuranceQuote: 'Secure assessment • Academic integrity • ' + name
+        institutionAssuranceQuote: 'Secure assessment • Academic integrity • ' + name,
+        institutionFooter: '© ' + new Date().getFullYear() + ' ' + name
     };
     Object.entries(labels).forEach(([id, value]) => {
         const node = document.getElementById(id);
