@@ -105,11 +105,11 @@
     const meta=document.createElement('div'),nm=document.createElement('strong'),em=document.createElement('small');
     nm.textContent=u.full_name||'Name unavailable';em.textContent=label(u.role||u.role_id)+' · '+label(u.status);meta.append(nm,em);summary.append(avatar,meta);body.append(summary);
     const sections=[
-      ['Personal & contact',[['Full name',u.full_name],['Email address',u.email],['Phone number',u.phone],['Alternative phone',u.alt_phone],['Date of birth',u.date_of_birth],['Gender',u.gender],['National ID',u.national_id],['Postal / physical address',u.address],['Profile photo',u.profile_photo_url],['User ID',u.user_id],['Profile ID',u.id]]],
-      ['Account & access',[['Role',u.role],['Role ID',u.role_id],['Account status',u.status],['Login access',u.login_enabled===false?'Disabled':'Enabled'],['Username',u.username],['Last login',date(u.last_login)],['Last activity',date(u.last_activity)],['Login count',u.login_count],['Two-factor authentication',u.two_factor_enabled?'Enabled':'Disabled'],['Registered',date(u.created_at)],['Last updated',date(u.updated_at)]]],
-      ['Academic & employment',[['Student ID',u.student_id],['Admission number',u.admission_number],['Staff ID',u.staff_id],['Programme',u.program],['Programme type',u.program_type],['Department',u.department],['Intake month',u.intake_month],['Intake year',u.intake_year],['Admission year',u.admission_year],['Admission date',u.admission_date],['Current block',u.current_block||u.block],['Block / programme year',u.block_program_year],['Block progress',u.block_progress],['Employment date',u.employment_date],['Qualifications',u.qualifications],['Specialization',u.specialization],['Professional bio',u.professional_bio]]],
-      ['Additional contact',[['Guardian name',u.guardian_name],['Guardian phone',u.guardian_phone],['Parent email',u.parent_email],['Parent address',u.parent_address]]],
-      ['Institution',[['Institution ID',u.institution_id]]]
+      ['Personal information',[['Full name',u.full_name],['Email address',u.email],['Phone',u.phone],['Alternative phone',u.alt_phone],['Gender',u.gender],['Date of birth',u.date_of_birth],['National ID',u.national_id],['Address',u.address],['Profile photo URL',u.profile_photo_url]]],
+      ['Guardian / parent information',[['Guardian name',u.guardian_name],['Guardian phone',u.guardian_phone],['Parent email',u.parent_email],['Parent address',u.parent_address]]],
+      ['Academic & employment information',[['Role',u.role],['Role ID',u.role_id],['Student ID',u.student_id],['Admission number',u.admission_number],['Staff ID',u.staff_id],['Programme',u.program],['Programme type',u.program_type],['Department',u.department],['Intake month',u.intake_month],['Intake year',u.intake_year],['Admission year',u.admission_year],['Admission date',u.admission_date],['Current block',u.current_block||u.block],['Block / programme year',u.block_program_year],['Block progress',u.block_progress],['Employment date',u.employment_date],['Qualifications',u.qualifications],['Specialization',u.specialization],['Professional bio',u.professional_bio]]],
+      ['Documents',[['KCSE document status',u.doc_kcse],['ID document status',u.doc_id],['Passport / ID document URL',u.passport_url]]],
+      ['Account status & access',[['Account status',u.status],['Login access',u.login_enabled===false?'Disabled':'Enabled'],['Username',u.username],['Last login',date(u.last_login)],['Last activity',date(u.last_activity)],['Login count',u.login_count],['Two-factor authentication',u.two_factor_enabled?'Enabled':'Disabled'],['Registered',date(u.created_at)],['Last updated',date(u.updated_at)],['User ID',u.user_id],['Profile ID',u.id],['Institution ID',u.institution_id]]]
     ];
     sections.forEach(([heading,fields])=>{
       const section=document.createElement('section');section.className='ia-users-detail-section';
@@ -151,11 +151,11 @@
     const groups=[
       ['Personal information',profileFields.slice(0,8)],
       ['Guardian / parent information',profileFields.slice(8,12)],
-      ['Academic & employment information',profileFields.slice(12,27)],
-      ['Documents & professional profile',profileFields.slice(27)]
+      ['Academic & employment information',profileFields.slice(12,26)],
+      ['Documents & professional profile',profileFields.slice(26)]
     ];
     const currentStatus=statusOf(u);
-    const statusValue=statusOptions.some(x=>x[0]===currentStatus)?currentStatus:(currentStatus==='pending'?'inactive':currentStatus);
+    const statusValue=['approved','active'].includes(currentStatus)?'approved':(currentStatus==='blocked'?'blocked':'inactive');
     let html='<form id="iaUsersEditForm" class="ia-users-edit-form"><input type="hidden" name="user_id" value="'+safe(u.user_id||'')+'">';
     groups.forEach(([heading,fields])=>{
       html+='<section class="ia-users-edit-section"><h3>'+heading+'</h3><div class="ia-users-edit-grid">';
