@@ -534,12 +534,34 @@
     footer.innerHTML = '<button type="button" class="cn-wizard-previous" id="cnWizardPrevious"><i class="fas fa-arrow-left"></i> Previous</button><span class="cn-wizard-step-count" id="cnWizardStepCount">Step 1 of 6</span><div class="cn-wizard-footer-actions"><button type="button" class="cn-wizard-cancel" id="cnWizardCancel">Cancel</button><button type="button" class="cn-wizard-next" id="cnWizardNext">Save & Continue <i class="fas fa-arrow-right"></i></button></div>';
     main.appendChild(footer);
     const actions = all.filter(node => node.querySelector?.("#cnInstitutionSave,#cnInstitutionCancel") || ["cnInstitutionSave","cnInstitutionCancel"].includes(node.id));
-    all.filter(node => !actions.includes(node)).forEach(node => {
-      const ids = [node.id,...[...(node.querySelectorAll?.("[id]") || [])].map(el=>el.id)];
-      let target = steps.findIndex(step => step.ids.some(id => ids.includes(id)));
-      if (target < 0) target = 0;
-      panels[target].querySelector(".cn-wizard-fields").appendChild(node);
-    });
+    const fieldStepById = new Map();
+    steps.forEach((step,index) => step.ids.forEach(id => fieldStepById.set(id,index)));
+    const distribute = node => {
+      const descendants = [node,...(node.querySelectorAll ? [...node.querySelectorAll("[id]")] : [])];
+      const owners = new Set(descendants.map(el => fieldStepById.get(el.id)).filter(index => index !== undefined));
+      if (owners.size === 1) {
+        const target = owners.values().next().value;
+        panels[target].querySelector(".cn-wizard-fields").appendChild(node);
+        return;
+      }
+      if (owners.size > 1) {
+        [...node.children].forEach(distribute);
+        return;
+      }
+      // Preserve non-field controls only when they are clearly associated with a step.
+      const text = (node.textContent || "").trim().toLowerCase();
+      const hints = [
+        ["institution identity","core details","institution profile"],
+        ["contact details","communication","contact information"],
+        ["branding","portal setup","logo and colours"],
+        ["administrator setup","administrator account"],
+        ["products","permissions","module access"],
+        ["subscription","billing","activation"]
+      ];
+      const hinted = hints.findIndex(words => words.some(word => text.includes(word)));
+      if (hinted >= 0 && text.length < 180) panels[hinted].querySelector(".cn-wizard-fields").appendChild(node);
+    };
+    all.filter(node => !actions.includes(node)).forEach(distribute);
     const preservedActions = document.createElement("div");
     preservedActions.hidden = true;
     preservedActions.setAttribute("aria-hidden","true");
