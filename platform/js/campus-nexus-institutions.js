@@ -286,6 +286,50 @@
         .cn-institution-modal-body #cnInstitutionForm #cnInstitutionFormTitle{display:none}
         .cn-institution-modal-body #cnInstitutionForm .cn-product-access{border-color:#cbdde8;border-radius:15px;box-shadow:0 5px 18px rgba(8,47,73,.045)}
         .cn-institution-modal-body #cnInstitutionForm .cn-module-group{margin:0 0 12px;padding:15px}
+
+        /* Correct the form's real DOM structure: section headings and field wrappers
+           must span the form, while the inserted profile/admin/subscription panels
+           manage their own internal columns. */
+        .cn-institution-modal-body #cnInstitutionForm{
+          display:grid;
+          grid-template-columns:minmax(0,1fr);
+          align-content:start;
+          gap:12px;
+          padding:clamp(15px,2.4vw,26px);
+        }
+        .cn-institution-modal-body #cnInstitutionForm>*,
+        .cn-institution-modal-body #cnInstitutionForm>.form-group,
+        .cn-institution-modal-body #cnInstitutionForm>.form-field,
+        .cn-institution-modal-body #cnInstitutionForm>.field,
+        .cn-institution-modal-body #cnInstitutionForm>.mb-3{
+          grid-column:1/-1;
+          width:100%;
+          min-width:0;
+        }
+        .cn-institution-modal-body #cnInstitutionForm .form-group,
+        .cn-institution-modal-body #cnInstitutionForm .form-field,
+        .cn-institution-modal-body #cnInstitutionForm .field,
+        .cn-institution-modal-body #cnInstitutionForm .mb-3{
+          margin:0;
+        }
+        .cn-institution-modal-body #cnInstitutionForm .cn-institution-official-details,
+        .cn-institution-modal-body #cnInstitutionForm .cn-admin-provisioning,
+        .cn-institution-modal-body #cnInstitutionForm .cn-subscription-dates,
+        .cn-institution-modal-body #cnInstitutionForm .cn-logo-studio,
+        .cn-institution-modal-body #cnInstitutionForm #cnModuleOptions{
+          grid-column:1/-1;
+          width:100%;
+          box-sizing:border-box;
+        }
+        .cn-institution-modal-head>div{min-width:0;flex:1 1 auto}
+        .cn-institution-modal-head h2{max-width:100%;overflow-wrap:anywhere;line-height:1.25}
+        .cn-institution-modal-head p{line-height:1.45}
+        @media(max-width:760px){
+          .cn-institution-modal-head{align-items:flex-start}
+          .cn-institution-modal-head h2{font-size:17px}
+          .cn-institution-modal-body #cnInstitutionForm{grid-template-columns:minmax(0,1fr);gap:11px;padding:14px}
+          .cn-institution-modal-body #cnInstitutionForm>*{grid-column:1/-1!important}
+        }
         @media(max-width:760px){
           .cn-institution-modal{padding:0;align-items:flex-end}
           .cn-institution-dialog{width:100%;max-height:96vh;border-radius:19px 19px 0 0}
