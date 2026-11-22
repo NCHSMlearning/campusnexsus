@@ -8,17 +8,17 @@ const norm=v=>String(v??'').trim().toLowerCase();
 // Reuse the persistent Supabase client, never the CDN namespace.
 const client=()=>[window.examSupabase,window.sb,window.supabaseClient,window.db?.supabase].find(c=>c&&typeof c.from==='function'&&typeof c.auth?.getSession==='function')||null;
 function activateModule(id,updateHash=true){
- const allowed=['dashboard','examinations','timetable','announcements','exam-history','exam-support'];
+ const allowed=['dashboard','examinations','timetable','announcements','exam-history','exam-support','profile'];
  const active=allowed.includes(id)?id:'examinations';
  document.querySelectorAll('.module-view').forEach(section=>{const on=section.id===active;section.classList.toggle('active',on);section.hidden=!on;});
  document.querySelectorAll('.exam-nav a[data-module]').forEach(link=>{const on=link.dataset.module===active;link.classList.toggle('active',on);if(on)link.setAttribute('aria-current','page');else link.removeAttribute('aria-current');});
- const labels={dashboard:'Student Dashboard',examinations:'Examination Centre',timetable:'Examination Timetable',announcements:'Institution Announcements','exam-history':'Examination History','exam-support':'Examination Support'};
+ const labels={dashboard:'Student Dashboard',examinations:'Examination Centre',timetable:'Examination Timetable',announcements:'Institution Announcements','exam-history':'Examination History','exam-support':'Examination Support',profile:'My Student Profile'};
  const heading=document.querySelector('.header-left>div>b');if(heading)heading.textContent=labels[active];
  const hero=document.querySelector('.hero');if(hero)hero.hidden=true;
  if(updateHash&&location.hash!=='#'+active)history.replaceState(null,'','#'+active);
  window.scrollTo({top:0,behavior:'smooth'});
 }
-function notify(message){const el=$('toast');el.textContent=message;el.classList.add('show');clearTimeout(notify.timer);notify.timer=setTimeout(()=>el.classList.remove('show'),3200)}
+function renderStudentProfile(){\n const p=state.profile||{},user=state.user||{};\n const fullName=val(p.full_name,p.name,p.student_name,user.user_metadata?.full_name,user.email,'Student');\n const pairs=[['Full name',fullName],['Email address',user.email],['Admission number',val(p.admission_number,p.student_id)],['Student ID',p.student_id],['Programme',val(p.program,p.program_name,p.program_type)],['Programme type',p.program_type],['Intake year',val(p.intake_year,p.intake,p.admission_year)],['Intake month',p.intake_month],['Current block / term',val(p.current_block,p.block_term,p.block,p.term)],['Year of study',p.year_of_study],['Phone number',val(p.phone_number,p.phone,p.mobile_number)],['Date of birth',val(p.date_of_birth,p.dob)],['Gender',p.gender],['Account status',p.status],['Login enabled',p.login_enabled===true?'Enabled':p.login_enabled===false?'Disabled':null]].filter(x=>x[1]!==undefined&&x[1]!==null&&String(x[1]).trim()!=='');\n const initials=fullName.split(/\\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase();\n const set=(id,v)=>{const el=$(id);if(el)el.textContent=String(v??'');};\n set('profile-avatar',initials||'ST');set('profile-full-name',fullName);set('profile-subtitle',[val(p.admission_number,p.student_id,'Student account'),val(p.program,p.program_name,'Programme not assigned')].filter(Boolean).join(' · '));set('profile-status',val(p.status,'Account active'));\n const content=$('student-profile-content');if(content)content.innerHTML='<div class="student-profile-grid">'+pairs.map(([label,value])=>'<article class="student-profile-field"><small>'+esc(label)+'</small><strong>'+esc(value)+'</strong></article>').join('')+'</div>';\n}\nfunction notify(message){const el=$('toast');el.textContent=message;el.classList.add('show');clearTimeout(notify.timer);notify.timer=setTimeout(()=>el.classList.remove('show'),3200)}
 function isTvet(p){return /TVET|DIPLOMA|CERTIFICATE|ARTISAN/i.test(String(val(p.program_type,p.program,p.program_name,'')))}
 function studentBlock(p){return String(val(p.current_block,p.block_term,p.block,p.term,p.year_of_study,'General'))}
 function matchesBlock(exam,p){
@@ -256,7 +256,7 @@ async function init(){
  setText('side-name',name);
  setText('avatar',name.split(/\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase());
  setText('side-admission',val(p.admission_number,p.student_id,'Student account'));
- setText('student-meta',[val(p.program,p.program_name,'Programme not assigned'),studentBlock(p)!=='General'?studentBlock(p):'',val(p.intake_year,p.intake,'')].filter(Boolean).join(' • '));
+ setText('student-meta',[val(p.program,p.program_name,'Programme not assigned'),studentBlock(p)!=='General'?studentBlock(p):'',val(p.intake_year,p.intake,'')].filter(Boolean).join(' • '));\n renderStudentProfile();
  renderDailyWelcome();
  await loadDashboardStats().catch(e=>{console.warn('Dashboard statistics RPC unavailable; using student-visible records.',e);});
  await loadAcademicSummary().catch(e=>{console.warn('Published academic summary unavailable:',e);const n=$('gpa-trend');if(n)n.innerHTML='<p class="chart-empty">Academic summary is temporarily unavailable.</p>';});
@@ -272,7 +272,7 @@ activateModule(location.hash.slice(1)||'dashboard',false);
 $('refresh-btn').addEventListener('click',()=>loadExams().then(renderTimetable).catch(e=>notify(e.message||'Could not refresh examinations.')));
 $('refresh-announcements').addEventListener('click',()=>loadAnnouncements().catch(e=>notify(e.message||'Could not load announcements.')));
 $('refresh-history').addEventListener('click',()=>loadHistory().catch(e=>notify(e.message||'Could not load examination history.')));
- $('refresh-tickets')?.addEventListener('click',()=>loadSupportTickets().catch(e=>notify(e.message||'Could not load support tickets.')));
+ $('refresh-tickets')?.addEventListener('click',()=>loadSupportTickets().catch(e=>notify(e.message||'Could not load support tickets.')));\n $('profile-refresh')?.addEventListener('click',async()=>{try{const {data,error}=await state.client.from('consolidated_user_profiles_table').select('*').eq('user_id',state.user.id).maybeSingle();if(error)throw error;if(!data)throw new Error('Your student profile record was not found.');state.profile={...state.profile,...data};renderStudentProfile();notify('Profile refreshed.');}catch(e){notify(e.message||'Could not refresh your profile.');}});\n $('profile-back')?.addEventListener('click',()=>activateModule('dashboard'));
 $('exam-support-form').addEventListener('submit',submitSupport);
 $('search-input').addEventListener('input',render);$('status-filter').addEventListener('change',render);
 $('logout-btn').addEventListener('click',async()=>{const btn=$('logout-btn');if(btn)btn.disabled=true;try{if(state.client){const {error}=await state.client.auth.signOut({scope:'local'});if(error)console.warn('Exam portal sign-out warning:',error.message)}}finally{try{localStorage.removeItem('currentUserId');localStorage.removeItem('studentEmail')}catch(_){}location.replace('/examlogin')}});
