@@ -289,3 +289,31 @@ html,body{width:100%;max-width:100%;min-height:100%;margin:0}body{overflow-x:hid
 .ia-users-dialog-body{padding:22px}.ia-users-detail-summary{display:flex;align-items:center;gap:12px;padding:0 0 18px;border-bottom:1px solid #edf1f5}.ia-users-avatar.large{width:48px;height:48px;border-radius:14px;font-size:14px}.ia-users-detail-summary strong,.ia-users-detail-summary small{display:block}.ia-users-detail-summary strong{color:#0f172a;font-size:15px}.ia-users-detail-summary small{margin-top:5px;color:#64748b;font-size:11px}.ia-users-detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:18px}.ia-users-detail-grid>div{min-width:0;padding:12px;border:1px solid #e8eef3;border-radius:10px;background:#f8fafc}.ia-users-detail-grid small,.ia-users-detail-grid strong{display:block}.ia-users-detail-grid small{margin-bottom:6px;color:#64748b;font-size:9px;font-weight:750;text-transform:uppercase;letter-spacing:.04em}.ia-users-detail-grid strong{color:#0f172a;font-size:12px;overflow-wrap:anywhere}.ia-users-review-note{display:flex;gap:8px;margin:18px 0 0;padding:12px;border:1px solid #f5dfac;border-radius:10px;background:#fffbeb;color:#92400e;font-size:11px;line-height:1.6}
 @media(max-width:900px){.ia-users-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:600px){.ia-users-stats{gap:9px}.ia-users-stat{padding:12px;gap:9px}.ia-users-stat-icon{width:36px;height:36px;font-size:14px}.ia-users-stat strong{font-size:22px}.ia-users-stat em{font-size:9px}.ia-users-toolbar{padding:12px;gap:8px}.ia-users-toolbar select{flex:1;min-width:0}.ia-users-table-head{align-items:flex-start;flex-direction:column;padding:15px 13px 10px}.ia-users-footer{padding:12px}.ia-users-detail-grid{grid-template-columns:1fr}.ia-users-dialog-body{padding:16px}.ia-users-dialog-head{padding:17px}}
+
+
+/* Full-field user directory — improved desktop and mobile table behaviour */
+#view-user-management .ia-users-toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+#view-user-management .ia-users-toolbar select{min-width:145px;max-width:100%;padding:11px 12px;border:1px solid #dbe3ec;border-radius:10px;background:#fff;color:#243447;font:inherit}
+#view-user-management .ia-users-search{flex:1 1 260px;min-width:220px}
+#view-user-management .ia-users-table-wrap{width:100%;overflow-x:auto;border:1px solid #e6ebf1;border-radius:12px;background:#fff}
+#view-user-management .ia-users-table{width:100%;min-width:1160px;border-collapse:separate;border-spacing:0}
+#view-user-management .ia-users-table th,#view-user-management .ia-users-table td{padding:12px 13px;border-bottom:1px solid #edf1f5;text-align:left;white-space:nowrap;vertical-align:middle}
+#view-user-management .ia-users-table thead th{position:sticky;top:0;background:#f5f8fc;color:#526174;font-size:11px;font-weight:800;letter-spacing:.045em;text-transform:uppercase;z-index:1}
+#view-user-management .ia-users-table tbody tr:hover{background:#f8fbff}
+#view-user-management .ia-users-table td:first-child,#view-user-management .ia-users-table th:first-child{width:38px;text-align:center}
+#view-user-management .ia-users-table input[type=checkbox]{width:16px;height:16px;accent-color:#0f766e}
+#view-user-management .ia-users-detail-section{margin:18px 0 0}
+#view-user-management .ia-users-detail-section h3{margin:0 0 10px;color:#0f3550;font-size:13px;font-weight:800}
+#view-user-management .ia-users-detail-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}
+#view-user-management .ia-users-detail-grid>div{min-width:0;padding:11px 12px;border:1px solid #e8edf3;border-radius:10px;background:#f9fbfd}
+#view-user-management .ia-users-detail-grid small{display:block;margin-bottom:5px;color:#64748b;font-size:11px}
+#view-user-management .ia-users-detail-grid strong{display:block;overflow-wrap:anywhere;color:#1e293b;font-size:13px;font-weight:650}
+#view-user-management .ia-users-footer>div{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+#view-user-management .ia-users-footer select{padding:8px;border:1px solid #dbe3ec;border-radius:8px;background:#fff}
+@media(max-width:700px){
+ #view-user-management .ia-users-toolbar{align-items:stretch}
+ #view-user-management .ia-users-toolbar select{flex:1 1 135px}
+ #view-user-management .ia-users-table{min-width:1120px}
+ #view-user-management .ia-users-footer{gap:10px;align-items:flex-start;flex-wrap:wrap}
+ #view-user-management .ia-users-detail-grid{grid-template-columns:1fr}
+}
