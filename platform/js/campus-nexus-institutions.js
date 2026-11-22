@@ -273,62 +273,112 @@
   function setupLogoUploader() {
     const logoInput = $("cnInstitutionLogo");
     if (!logoInput || $("cnInstitutionLogoUpload")) return;
-    const wrap = document.createElement("div");
+    const wrap = document.createElement("section");
     wrap.id = "cnInstitutionLogoUpload";
-    wrap.className = "cn-logo-upload";
+    wrap.className = "cn-logo-studio";
     wrap.innerHTML = `
       <style>
-        .cn-logo-upload{margin-top:12px;padding:14px;border:1px dashed #94a3b8;border-radius:12px;background:#f8fafc}
-        .cn-logo-upload-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
-        .cn-logo-preview{width:76px;height:76px;display:grid;place-items:center;overflow:hidden;border:1px solid #cbd5e1;border-radius:12px;background:#fff;color:#64748b}
-        .cn-logo-preview img{width:100%;height:100%;object-fit:contain}
-        .cn-logo-upload-actions{display:flex;flex-direction:column;gap:7px;min-width:190px;flex:1}
-        .cn-logo-upload-actions input{max-width:100%}
-        .cn-logo-upload-note{font-size:12px;color:#64748b;margin:0}
-        .cn-logo-clear{align-self:flex-start;border:0;background:transparent;color:#b91c1c;font-size:12px;cursor:pointer;padding:2px 0}
+        .cn-logo-studio{margin:14px 0 20px;padding:18px;border:1px solid #d9e5ec;border-radius:16px;background:linear-gradient(145deg,#f8fbfd,#f3f8f8);display:grid;grid-template-columns:minmax(0,1.05fr) minmax(240px,.95fr);gap:20px;align-items:start}
+        .cn-logo-studio *{box-sizing:border-box}
+        .cn-logo-studio-head{grid-column:1/-1;display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+        .cn-logo-studio-head strong{display:block;color:#102f46;font-size:14px;font-weight:800}
+        .cn-logo-studio-head small{display:block;margin-top:4px;color:#64748b;font-size:11px;line-height:1.5}
+        .cn-logo-drop{min-width:0;padding:16px;border:1.5px dashed #9bb2c1;border-radius:14px;background:#fff}
+        .cn-logo-drop label{display:block;margin-bottom:8px;color:#173b52;font-size:12px;font-weight:800}
+        .cn-logo-drop input[type=file]{width:100%;max-width:100%;padding:10px;border:1px solid #dbe5eb;border-radius:9px;background:#f8fafc;font-size:12px}
+        .cn-logo-drop-note{margin:9px 0 0;color:#718096;font-size:11px;line-height:1.5}
+        .cn-logo-preview-panel{min-width:0;padding:14px;border:1px solid #dce6eb;border-radius:14px;background:#fff}
+        .cn-logo-preview-label{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;color:#173b52;font-size:11px;font-weight:800}
+        .cn-logo-preview{width:100%;height:150px;display:grid;place-items:center;overflow:hidden;border:1px solid #e2e8f0;border-radius:12px;background:#fff;transition:background .15s ease}
+        .cn-logo-preview img{display:block;max-width:100%;max-height:100%;width:100%;height:100%;object-fit:contain;padding:14px}
+        .cn-logo-empty{display:flex;flex-direction:column;align-items:center;gap:8px;color:#94a3b8;font-size:11px}
+        .cn-logo-empty i{font-size:28px}
+        .cn-logo-customize{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+        .cn-logo-control{display:flex;flex-direction:column;gap:6px;min-width:0}
+        .cn-logo-control label{font-size:10px;font-weight:800;color:#475569}
+        .cn-logo-control select,.cn-logo-control input[type=color]{width:100%;min-height:36px;border:1px solid #d6e0e7;border-radius:8px;background:#fff;padding:5px 8px;color:#1e293b}
+        .cn-logo-control input[type=color]{height:38px;padding:3px}
+        .cn-logo-actions{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:12px}
+        .cn-logo-clear{border:0;background:transparent;color:#b42318;font-size:11px;font-weight:700;cursor:pointer;padding:7px 0}
+        .cn-logo-reset{border:1px solid #dbe5eb;border-radius:8px;background:#fff;color:#334155;font-size:11px;font-weight:700;padding:7px 10px;cursor:pointer}
+        .cn-logo-status{color:#64748b;font-size:10px}
+        @media(max-width:720px){.cn-logo-studio{grid-template-columns:1fr;padding:13px;gap:12px}.cn-logo-studio-head{grid-column:auto}.cn-logo-preview{height:130px}}
+        /* Consistent, responsive alignment for every field in the institution editor */
+        #cnInstitutionForm{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:18px;row-gap:14px;align-content:start}
+        #cnInstitutionForm>*{min-width:0}
+        #cnInstitutionForm .form-group,#cnInstitutionForm .form-field,#cnInstitutionForm .field,#cnInstitutionForm .mb-3{min-width:0;width:100%;margin:0}
+        #cnInstitutionForm label{display:block;margin:0 0 6px;color:#29465b;font-size:11px;font-weight:800;line-height:1.4}
+        #cnInstitutionForm input:not([type=checkbox]):not([type=radio]),#cnInstitutionForm select,#cnInstitutionForm textarea{display:block;width:100%;max-width:100%;min-width:0;min-height:42px;box-sizing:border-box;border:1px solid #d4e0e7;border-radius:9px;padding:10px 12px;background:#fff;color:#102f46;font-size:13px;line-height:1.4;outline:none;transition:border-color .15s,box-shadow .15s}
+        #cnInstitutionForm input:focus,#cnInstitutionForm select:focus,#cnInstitutionForm textarea:focus{border-color:#0f8b8d;box-shadow:0 0 0 3px rgba(15,139,141,.12)}
+        #cnInstitutionForm textarea{min-height:88px;resize:vertical}
+        #cnInstitutionForm .cn-logo-studio,#cnInstitutionForm #cnModuleOptions,#cnInstitutionForm .cn-product-access,#cnInstitutionForm .cn-admin-provisioning{grid-column:1/-1}
+        #cnInstitutionForm button{max-width:100%}
+        @media(max-width:640px){#cnInstitutionForm{grid-template-columns:minmax(0,1fr);gap:12px}#cnInstitutionForm>*{grid-column:1/-1!important}}
       </style>
-      <div class="cn-logo-upload-row">
-        <div class="cn-logo-preview" id="cnInstitutionLogoPreview"><i class="fas fa-school"></i></div>
-        <div class="cn-logo-upload-actions">
-          <label for="cnInstitutionLogoFile"><strong>Upload institution logo</strong></label>
-          <input id="cnInstitutionLogoFile" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml">
-          <p class="cn-logo-upload-note">PNG, JPG, WebP or SVG · Maximum 2 MB. A preview appears before saving.</p>
-          <button type="button" class="cn-logo-clear" id="cnInstitutionLogoClear">Clear selected logo</button>
+      <div class="cn-logo-studio-head"><div><strong>Institution logo & identity</strong><small>Upload your logo, preview it instantly and adjust how it appears across Campus Nexus.</small></div><span class="cn-logo-status" id="cnLogoFileStatus">No new file selected</span></div>
+      <div class="cn-logo-drop">
+        <label for="cnInstitutionLogoFile">Choose logo file</label>
+        <input id="cnInstitutionLogoFile" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml">
+        <p class="cn-logo-drop-note">PNG, JPG, WebP or SVG · Maximum 2 MB. Your current logo stays in place until you save the form.</p>
+        <div class="cn-logo-actions"><button type="button" class="cn-logo-clear" id="cnInstitutionLogoClear">Remove logo</button><button type="button" class="cn-logo-reset" id="cnLogoStyleReset">Reset preview</button></div>
+      </div>
+      <div class="cn-logo-preview-panel">
+        <div class="cn-logo-preview-label"><span>Live logo preview</span><span class="cn-logo-status">Preview only</span></div>
+        <div class="cn-logo-preview" id="cnInstitutionLogoPreview"><div class="cn-logo-empty"><i class="fas fa-school"></i><span>Your logo will appear here</span></div></div>
+        <div class="cn-logo-customize">
+          <div class="cn-logo-control"><label for="cnLogoFit">Image fit</label><select id="cnLogoFit"><option value="contain">Show full logo</option><option value="cover">Fill preview</option></select></div>
+          <div class="cn-logo-control"><label for="cnLogoBackground">Preview background</label><input id="cnLogoBackground" type="color" value="#ffffff"></div>
         </div>
       </div>`;
-    const field = logoInput.closest(".form-group,.form-field,.field, .mb-3") || logoInput.parentElement;
+    const field = logoInput.closest(".form-group,.form-field,.field,.mb-3") || logoInput.parentElement;
     field.insertAdjacentElement("afterend", wrap);
     const preview = $("cnInstitutionLogoPreview");
-    const showPreview = src => {
-      preview.innerHTML = src ? '<img alt="Institution logo preview">' : '<i class="fas fa-school"></i>';
-      if (src) preview.querySelector("img").src = src;
-    };
-    const existing = safeWebUrl(logoInput.value, true);
-    if (existing) showPreview(existing);
-    $("cnInstitutionLogoFile").addEventListener("change", event => {
-      const file = event.target.files?.[0] || null;
-      if (!file) { selectedLogoFile = null; showPreview(safeWebUrl(logoInput.value, true)); return; }
-      const allowed = ["image/png","image/jpeg","image/webp","image/svg+xml"];
-      if (!allowed.includes(file.type)) {
-        event.target.value = "";
-        selectedLogoFile = null;
-        notify("Choose a PNG, JPG, WebP or SVG image.", "error");
-        return;
+    const fit = $("cnLogoFit");
+    const background = $("cnLogoBackground");
+    const renderPreview = src => {
+      preview.style.background = background.value;
+      preview.innerHTML = src ? '<img alt="Institution logo preview">' : '<div class="cn-logo-empty"><i class="fas fa-school"></i><span>Your logo will appear here</span></div>';
+      if (src) {
+        const img = preview.querySelector("img");
+        img.src = src;
+        img.style.objectFit = fit.value;
       }
-      if (file.size > 2 * 1024 * 1024) {
-        event.target.value = "";
-        selectedLogoFile = null;
-        notify("The logo must be 2 MB or smaller.", "error");
-        return;
+    };
+    const existing = safeWebUrl(logoInput.value,true);
+    renderPreview(existing);
+    fit.addEventListener("change",() => {
+      const img = preview.querySelector("img");
+      if (img) img.style.objectFit = fit.value;
+    });
+    background.addEventListener("input",() => { preview.style.background = background.value; });
+    $("cnInstitutionLogoFile").addEventListener("change",event => {
+      const file = event.target.files?.[0] || null;
+      if (!file) { selectedLogoFile = null; renderPreview(safeWebUrl(logoInput.value,true)); $("cnLogoFileStatus").textContent = "No new file selected"; return; }
+      if (!["image/png","image/jpeg","image/webp","image/svg+xml"].includes(file.type)) {
+        event.target.value = ""; selectedLogoFile = null;
+        notify("Choose a PNG, JPG, WebP or SVG image.","error"); return;
+      }
+      if (file.size > 2*1024*1024) {
+        event.target.value = ""; selectedLogoFile = null;
+        notify("The logo must be 2 MB or smaller.","error"); return;
       }
       selectedLogoFile = file;
-      showPreview(URL.createObjectURL(file));
+      renderPreview(URL.createObjectURL(file));
+      $("cnLogoFileStatus").textContent = file.name + " · " + (file.size/1024).toFixed(0) + " KB";
     });
-    $("cnInstitutionLogoClear").addEventListener("click", () => {
+    $("cnInstitutionLogoClear").addEventListener("click",() => {
       selectedLogoFile = null;
       $("cnInstitutionLogoFile").value = "";
       logoInput.value = "";
-      showPreview("");
+      $("cnLogoFileStatus").textContent = "Logo will be removed when saved";
+      renderPreview("");
+    });
+    $("cnLogoStyleReset").addEventListener("click",() => {
+      fit.value = "contain"; background.value = "#ffffff";
+      renderPreview(selectedLogoFile ? URL.createObjectURL(selectedLogoFile) : safeWebUrl(logoInput.value,true));
+    });
+    logoInput.addEventListener("input",() => {
+      if (!selectedLogoFile) renderPreview(safeWebUrl(logoInput.value,true));
     });
   }
 
