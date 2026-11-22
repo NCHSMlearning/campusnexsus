@@ -1264,3 +1264,38 @@ body>#iaApp .ia-user{min-width:170px!important;justify-content:flex-start!import
     pointer-events:auto!important;
   }
 }
+
+/* Desktop + mobile: explicitly paint the navigation rail (never leave it transparent/black) */
+#iaApp aside#iaSidebar{
+  background:#062f61!important;
+  background-image:linear-gradient(180deg,#062b5b 0%,#073d70 58%,#05264f 100%)!important;
+}
+#iaApp aside#iaSidebar nav#iaNav{
+  display:flex!important;
+  flex:1 1 auto!important;
+  flex-direction:column!important;
+  min-height:0!important;
+  background:#073765!important;
+  background-image:linear-gradient(180deg,#073765 0%,#062f61 100%)!important;
+  color:#e4f0ff!important;
+  opacity:1!important;
+  filter:none!important;
+  isolation:isolate!important;
+}
+#iaApp aside#iaSidebar nav#iaNav .ia-nav-label{
+  background:transparent!important;
+  color:#a9c8df!important;
+}
+#iaApp aside#iaSidebar nav#iaNav .ia-nav-item{
+  background:transparent!important;
+  color:#e4f0ff!important;
+}
+#iaApp aside#iaSidebar nav#iaNav .ia-nav-item.active,
+#iaApp aside#iaSidebar nav#iaNav .ia-nav-item:hover{
+  background:linear-gradient(100deg,#087bd1,#087f9f)!important;
+  color:#fff!important;
+}
+@media(min-width:769px){
+  #iaApp aside#iaSidebar{left:0!important;transform:none!important;visibility:visible!important;pointer-events:auto!important}
+  #iaApp .ia-mobile-scrim{display:none!important}
+}
