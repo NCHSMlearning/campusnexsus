@@ -468,7 +468,7 @@ function checkAdminAuth() {
         console.error('❌ Session parse error:', e);
         localStorage.removeItem('adminSession');
         localStorage.removeItem('userProfile');
-        window.location.href = 'login.html'; 
+        window.location.replace('/examlogin.html'); 
         return false; 
     }
 }
@@ -8614,8 +8614,14 @@ document.addEventListener('DOMContentLoaded', async function() {
         const authUser = authData?.session?.user;
         let verified = null;
         try { verified = JSON.parse(sessionStorage.getItem('campusNexusExamAdminAuth') || localStorage.getItem('campusNexusExamAdminAuth') || 'null'); } catch (_) {}
-        const allowed = ['institution_admin', 'superadmin'];
-        if (authError || !authUser?.id || !verified || verified.user_id !== authUser.id || !allowed.includes(verified.role)) {
+        // Normalize role values returned by different login/profile paths.
+        // Keep this allow-list limited to institution and platform exam administrators.
+        const verifiedRole = String(verified?.role || verified?.user_role || '')
+            .trim().toLowerCase().replace(/[\s-]+/g, '_');
+        const allowed = new Set(['institution_admin', 'superadmin', 'super_admin', 'platform_admin']);
+        if (authError || !authUser?.id || !verified ||
+            String(verified.user_id || verified.userId || '') !== String(authUser.id) ||
+            !allowed.has(verifiedRole)) {
             sessionStorage.removeItem('campusNexusExamAdminAuth');
             localStorage.removeItem('campusNexusExamAdminAuth');
             window.location.replace('/examlogin.html');
@@ -8626,7 +8632,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             email: authUser.email || '',
             name: verified.full_name || authUser.user_metadata?.full_name || authUser.email || 'Administrator',
             full_name: verified.full_name || authUser.user_metadata?.full_name || authUser.email || 'Administrator',
-            role: verified.role,
+            role: verifiedRole,
             institution_id: verified.institution_id || null
         };
         localStorage.setItem('userProfile', JSON.stringify(dashboardSession));
