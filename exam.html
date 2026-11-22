@@ -1928,10 +1928,10 @@ body{
 
 <header class="site-header">
   <div class="brand">
-    <div class="brand-mark"><img src="/images/campus-nexus-logo.png" alt="NCHSM Logo"></div>
+    <div class="brand-mark" id="institutionBrandMark"><img id="institutionBrandLogo" src="/images/campus-nexus-logo.png" alt="Campus Nexus"></div>
     <div class="brand-copy">
-      <strong>NCHSM</strong>
-      <small>Knowledge • Discipline • A Better Tomorrow</small>
+      <strong id="institutionBrandName">Campus Nexus</strong>
+      <small id="institutionBrandCode">Secure Institutional Examination</small>
     </div>
   </div>
   <div class="secure-badge"><i class="fa-solid fa-shield-halved"></i> Secure • Proctored • Trusted</div>
@@ -1944,7 +1944,7 @@ body{
     <section class="welcome-hero">
       <div class="welcome-main">
         <div class="eyebrow"><i class="fa-solid fa-lock"></i> Secure Online Examination</div>
-        <div class="welcome-kicker"><span></span> NCHSM DIGITAL ASSESSMENT</div>
+        <div class="welcome-kicker"><span></span> <span id="institutionAssessmentLabel">INSTITUTIONAL DIGITAL ASSESSMENT</span></div>
         <h1>Welcome to Your<br><em>Examination</em></h1>
         <p class="welcome-description">Your examination is ready. Review the details below, complete the readiness checks, and begin when you are fully prepared.</p>
 
@@ -1956,10 +1956,10 @@ body{
       </div>
 
       <div class="welcome-campus">
-        <img src="https://raw.githubusercontent.com/NCHSMlearning/NCHSM-Digital-campus-/main/images/campus-header.jpg" alt="NCHSM Campus">
+        <img id="institutionHeroImage" src="https://raw.githubusercontent.com/NCHSMlearning/NCHSM-Digital-campus-/main/images/campus-header.jpg" alt="Institution campus">
         <div class="welcome-campus-overlay"></div>
         <div class="welcome-campus-content">
-          <span class="campus-chip"><i class="fa-solid fa-location-dot"></i> NCHSM</span>
+          <span class="campus-chip"><i class="fa-solid fa-location-dot"></i> <span id="institutionCampusChip">Your Institution</span></span>
           <strong>Learn. Serve. Lead.</strong>
           <small>Excellence in Health Sciences Education</small>
         </div>
@@ -2099,7 +2099,7 @@ body{
     </section>
     </div>
 
-    <aside class="lobby-aside" aria-label="NCHSM campus and examination information">
+    <aside class="lobby-aside" aria-label="Institution campus and examination information">
       <div class="campus-visual">
         <img
           src="https://raw.githubusercontent.com/NCHSMlearning/NCHSM-Digital-campus-/main/images/campus-header.jpg"
@@ -2107,12 +2107,12 @@ body{
           loading="eager"
           referrerpolicy="no-referrer">
         <div class="campus-caption">
-          <strong>NCHSM Campus</strong>
-          <span>Nakuru College of Health Science & Management</span>
+          <strong id="institutionCampusName">Your Institution</strong>
+          <span id="institutionCampusSubtitle">Institutional Examination Centre</span>
         </div>
       </div>
 
-      <div class="values-strip" aria-label="NCHSM values">
+      <div class="values-strip" aria-label="Institution values">
         <div class="value-item"><i class="fa-solid fa-book-open"></i>Knowledge</div>
         <div class="value-item"><i class="fa-solid fa-users"></i>Discipline</div>
         <div class="value-item"><i class="fa-solid fa-heart-pulse"></i>A Better Tomorrow</div>
@@ -2124,7 +2124,7 @@ body{
           <h3>A Safe &amp; Fair Assessment Environment</h3>
         </div>
         <p>This examination is monitored using secure proctoring checks to support integrity, fairness and a credible assessment process for all students.</p>
-        <p class="assurance-quote">“Integrity today, a better healthcare tomorrow.” — NCHSM</p>
+        <p class="assurance-quote" id="institutionAssuranceQuote">Secure assessment • Academic integrity</p>
       </div>
 
       <div class="connection-card">
@@ -2148,8 +2148,8 @@ body{
   <div class="exam-shell">
     <header class="exam-topbar">
       <div class="exam-brand">
-        <div class="brand-mark"><img src="/images/campus-nexus-logo.png" alt="NCHSM Logo"></div>
-        <div><strong>NCHSM Examination</strong><small>Secure assessment environment</small></div>
+        <div class="brand-mark"><img id="examInstitutionLogo" src="/images/campus-nexus-logo.png" alt="Campus Nexus"></div>
+        <div><strong id="examInstitutionName">Institution Examination</strong><small id="examInstitutionCode">Secure assessment environment</small></div>
       </div>
 
       <div class="exam-top-center">
@@ -2438,7 +2438,7 @@ body{
 })();
 </script>
 <script src="/js/exam-supabase.js?v=20261122-shared-client"></script>
-<script src="exam.js?v=20261122-campusnexus"></script>
+<script src="exam.js?v=20261123-institution-aware-v1"></script>
 
 <script>
 /* ============================================================
