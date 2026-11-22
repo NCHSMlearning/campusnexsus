@@ -324,6 +324,114 @@
         .cn-institution-modal-head>div{min-width:0;flex:1 1 auto}
         .cn-institution-modal-head h2{max-width:100%;overflow-wrap:anywhere;line-height:1.25}
         .cn-institution-modal-head p{line-height:1.45}
+
+        /* Final layout pass: eliminate the split heading/field columns visible
+           in the institution editor and make each form section read top-to-bottom. */
+        .cn-institution-modal-body #cnInstitutionForm{
+          display:flex!important;
+          flex-direction:column!important;
+          align-items:stretch!important;
+          gap:18px!important;
+          padding:clamp(16px,2.8vw,32px)!important;
+          background:#fff;
+        }
+        .cn-institution-modal-body #cnInstitutionForm>*{
+          flex:0 0 auto;
+          width:100%!important;
+          max-width:100%!important;
+          min-width:0!important;
+          margin-left:0!important;
+          margin-right:0!important;
+        }
+        .cn-institution-modal-body #cnInstitutionForm .form-section,
+        .cn-institution-modal-body #cnInstitutionForm .form-grid,
+        .cn-institution-modal-body #cnInstitutionForm .form-row,
+        .cn-institution-modal-body #cnInstitutionForm .section-grid,
+        .cn-institution-modal-body #cnInstitutionForm .institution-form-section{
+          display:grid!important;
+          grid-template-columns:minmax(0,1fr)!important;
+          gap:12px!important;
+          align-items:stretch!important;
+        }
+        .cn-institution-modal-body #cnInstitutionForm h2,
+        .cn-institution-modal-body #cnInstitutionForm h3,
+        .cn-institution-modal-body #cnInstitutionForm h4,
+        .cn-institution-modal-body #cnInstitutionForm .section-heading{
+          display:flex;
+          align-items:center;
+          gap:10px;
+          width:100%;
+          margin:0 0 2px!important;
+          padding:0 0 11px!important;
+          border-bottom:1px solid #e8eef4;
+          color:#123b61!important;
+          font-size:15px!important;
+          font-weight:800!important;
+          line-height:1.4;
+        }
+        .cn-institution-modal-body #cnInstitutionForm .form-group,
+        .cn-institution-modal-body #cnInstitutionForm .form-field,
+        .cn-institution-modal-body #cnInstitutionForm .field,
+        .cn-institution-modal-body #cnInstitutionForm .mb-3{
+          display:flex;
+          flex-direction:column;
+          align-items:stretch;
+          gap:6px;
+          width:100%;
+          min-width:0;
+        }
+        .cn-institution-modal-body #cnInstitutionForm label{
+          display:block!important;
+          margin:0!important;
+          color:#24435f!important;
+          font-size:12px!important;
+          font-weight:750!important;
+        }
+        .cn-institution-modal-body #cnInstitutionForm input:not([type=checkbox]):not([type=radio]):not([type=color]):not([type=file]),
+        .cn-institution-modal-body #cnInstitutionForm select,
+        .cn-institution-modal-body #cnInstitutionForm textarea{
+          min-height:46px;
+          border-radius:11px;
+          background:#fbfdff;
+          font-size:13px;
+        }
+        .cn-institution-modal-body #cnInstitutionForm .cn-institution-official-details,
+        .cn-institution-modal-body #cnInstitutionForm .cn-admin-provisioning,
+        .cn-institution-modal-body #cnInstitutionForm .cn-subscription-dates{
+          display:grid!important;
+          grid-template-columns:repeat(2,minmax(0,1fr))!important;
+          gap:14px!important;
+          padding:18px!important;
+          margin:0!important;
+          border:1px solid #e1eaf1;
+          border-radius:15px;
+          background:#f7fafc;
+        }
+        .cn-institution-modal-body #cnInstitutionForm .cn-subscription-dates{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+        .cn-institution-modal-body #cnInstitutionForm .cn-institution-official-details .wide,
+        .cn-institution-modal-body #cnInstitutionForm .cn-admin-provisioning small{grid-column:1/-1}
+        .cn-institution-modal-body #cnInstitutionForm .cn-logo-studio{
+          margin:0!important;
+          padding:18px!important;
+          border-radius:15px;
+        }
+        .cn-institution-modal-body #cnInstitutionForm #cnModuleOptions{width:100%;min-width:0}
+        .cn-institution-modal-body #cnInstitutionForm .cn-module-group{margin:0 0 13px!important}
+        .cn-institution-modal-body #cnInstitutionSave{min-width:170px}
+        .cn-institution-modal-body #cnInstitutionCancel{min-width:110px}
+        .cn-institution-modal-head{padding:20px clamp(18px,3vw,32px)!important}
+        .cn-institution-modal-head h2{font-size:clamp(17px,2vw,22px)!important}
+        .cn-institution-modal-body{padding:clamp(12px,2.4vw,28px)!important}
+        @media(max-width:760px){
+          .cn-institution-modal-body #cnInstitutionForm{gap:14px!important;padding:14px!important}
+          .cn-institution-modal-body #cnInstitutionForm .cn-institution-official-details,
+          .cn-institution-modal-body #cnInstitutionForm .cn-admin-provisioning,
+          .cn-institution-modal-body #cnInstitutionForm .cn-subscription-dates{grid-template-columns:minmax(0,1fr)!important;padding:13px!important}
+          .cn-institution-modal-body #cnInstitutionForm .cn-institution-official-details .wide,
+          .cn-institution-modal-body #cnInstitutionForm .cn-admin-provisioning small{grid-column:auto}
+          .cn-institution-modal-body #cnInstitutionForm .cn-logo-studio{grid-template-columns:minmax(0,1fr)!important;padding:13px!important}
+        }
+
         @media(max-width:760px){
           .cn-institution-modal-head{align-items:flex-start}
           .cn-institution-modal-head h2{font-size:17px}
