@@ -789,3 +789,61 @@ html,body{width:100%;max-width:100%;min-height:100%;margin:0}body{overflow-x:hid
 #view-user-management .ia-users-photo-status.error{color:#b42318}
 #view-user-management .ia-users-view-identity .ia-users-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}
 @media(max-width:620px){#view-user-management .ia-users-photo-editor{padding:12px;gap:12px}#view-user-management .ia-users-photo-frame{width:62px;height:62px;flex-basis:62px}}
+
+/* ==========================================================
+   User management visual refresh — saturated gradient metrics,
+   subtle color fades, profile-led directory and role pills.
+   ========================================================== */
+#view-user-management .ia-users-stats{gap:14px}
+#view-user-management .ia-users-stat{
+ position:relative;isolation:isolate;overflow:hidden;min-height:112px;padding:19px 20px;
+ border:1px solid #e1e9f4;border-radius:18px;background:#fff;
+ box-shadow:0 8px 24px rgba(20,54,95,.065);transition:transform .2s,box-shadow .2s
+}
+#view-user-management .ia-users-stat:hover{transform:translateY(-2px);box-shadow:0 13px 30px rgba(20,54,95,.12)}
+#view-user-management .ia-users-stat:after{content:"";position:absolute;z-index:-1;width:190px;height:140px;right:-54px;bottom:-84px;border-radius:50%;background:linear-gradient(135deg,#fff0,#fff9);transform:rotate(-18deg)}
+#view-user-management .ia-users-stat:nth-child(1){background:linear-gradient(118deg,#07366e 0%,#075ca5 66%,#0c8ca0 100%);border-color:#0b68a8;color:#fff}
+#view-user-management .ia-users-stat:nth-child(1):after{background:linear-gradient(130deg,#22d3ee18,#fff4)}
+#view-user-management .ia-users-stat:nth-child(2){background:linear-gradient(118deg,#f3fff9 0%,#dcf8e9 70%,#a7edc7 100%);border-color:#c9efdc}
+#view-user-management .ia-users-stat:nth-child(2):after{background:linear-gradient(130deg,#16a34a10,#fff9)}
+#view-user-management .ia-users-stat:nth-child(3){background:linear-gradient(118deg,#fffaf0 0%,#fff0d5 70%,#ffda8b 100%);border-color:#f4e2bd}
+#view-user-management .ia-users-stat:nth-child(3):after{background:linear-gradient(130deg,#f59e0b12,#fff9)}
+#view-user-management .ia-users-stat:nth-child(4){background:linear-gradient(118deg,#fff8ff 0%,#f0e8ff 70%,#e2c9ff 100%);border-color:#e7d9fb}
+#view-user-management .ia-users-stat:nth-child(4):after{background:linear-gradient(130deg,#a855f710,#fff9)}
+#view-user-management .ia-users-stat>div{position:relative;z-index:1}
+#view-user-management .ia-users-stat small{font-size:11px;font-weight:650;color:#52708f}
+#view-user-management .ia-users-stat strong{display:block;margin:3px 0;font-size:29px;line-height:1.05;font-weight:900;letter-spacing:-.04em;color:#102f53}
+#view-user-management .ia-users-stat em{font-size:10px;color:#69809a;font-style:normal}
+#view-user-management .ia-users-stat:nth-child(1) small,
+#view-user-management .ia-users-stat:nth-child(1) strong,
+#view-user-management .ia-users-stat:nth-child(1) em{color:#fff}
+#view-user-management .ia-users-stat-icon{width:48px;height:48px;border-radius:15px;box-shadow:0 7px 16px rgba(20,54,95,.08)}
+#view-user-management .ia-users-stat:nth-child(1) .ia-users-stat-icon{background:linear-gradient(145deg,#25a5ff,#0756cb);color:#fff}
+#view-user-management .ia-users-stat:nth-child(2) .ia-users-stat-icon{background:linear-gradient(145deg,#22c55e,#087b4c);color:#fff}
+#view-user-management .ia-users-stat:nth-child(3) .ia-users-stat-icon{background:linear-gradient(145deg,#ffc247,#c46a00);color:#fff}
+#view-user-management .ia-users-stat:nth-child(4) .ia-users-stat-icon{background:linear-gradient(145deg,#c084fc,#6d28d9);color:#fff}
+#view-user-management .ia-users-workspace{border:1px solid #dce6f2;border-radius:19px;background:rgba(255,255,255,.94);box-shadow:0 12px 34px rgba(24,58,100,.065);overflow:hidden}
+#view-user-management .ia-users-tabs{background:linear-gradient(180deg,#fff,#f7faff);border-bottom:1px solid #e3ebf5}
+#view-user-management .ia-users-tab{font-weight:800;color:#526b86}
+#view-user-management .ia-users-tab.active{color:#087b78;border-bottom-color:#078b86;background:linear-gradient(180deg,#fff,#effcfb)}
+#view-user-management .ia-users-toolbar{background:#fbfdff;gap:10px}
+#view-user-management .ia-users-table-wrap{border:1px solid #e0e8f2;border-radius:14px;overflow:auto}
+#view-user-management .ia-users-table thead th{background:linear-gradient(180deg,#f4f8fd,#eaf1fa);color:#34526f;font-size:10px;font-weight:900;letter-spacing:.07em}
+#view-user-management .ia-users-table tbody tr{transition:background .16s}
+#view-user-management .ia-users-table tbody tr:hover{background:#f3f8ff}
+#view-user-management .ia-users-table td{padding-top:12px;padding-bottom:12px;border-bottom:1px solid #e9eff6;vertical-align:middle}
+#view-user-management .ia-users-person{display:flex;align-items:center;gap:11px;min-width:190px}
+#view-user-management .ia-users-table-avatar{width:42px;height:42px;flex:0 0 42px;display:grid;place-items:center;overflow:hidden;border:2px solid #fff;border-radius:50%;background:linear-gradient(135deg,#0b4c86,#0e8a83);color:#fff;font-size:12px;font-weight:900;box-shadow:0 3px 10px rgba(8,54,100,.2)}
+#view-user-management .ia-users-table-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+#view-user-management .ia-users-person-meta{display:grid;gap:3px;min-width:0}
+#view-user-management .ia-users-person-meta strong{color:#173b60;font-size:12px;font-weight:850;white-space:nowrap}
+#view-user-management .ia-users-person-meta small{color:#778aa0;font-size:10px;white-space:nowrap}
+#view-user-management .ia-users-role-badge{display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;padding:6px 10px;border:1px solid #d8e7fb;border-radius:999px;background:linear-gradient(120deg,#eff6ff,#dcecff);color:#1555a2;font-size:10px;font-weight:850}
+#view-user-management .ia-users-role-badge.role-lecturer{border-color:#e4d7ff;background:linear-gradient(120deg,#f5f0ff,#e9ddff);color:#6632b5}
+#view-user-management .ia-users-role-badge.role-institution_admin,#view-user-management .ia-users-role-badge.role-admin,#view-user-management .ia-users-role-badge.role-administrator{border-color:#f6dfac;background:linear-gradient(120deg,#fff8e6,#ffedbf);color:#995600}
+#view-user-management .ia-users-role-badge.role-finance_officer{border-color:#bcece7;background:linear-gradient(120deg,#eafffc,#c9f4ee);color:#08766e}
+#view-user-management .ia-users-role-badge.role-student{border-color:#cce0ff;background:linear-gradient(120deg,#eff6ff,#d8e9ff);color:#1555a2}
+#view-user-management .ia-users-review-btn{min-height:37px;padding:8px 13px;border-radius:10px;font-weight:850}
+#view-user-management .ia-users-edit-btn{background:linear-gradient(120deg,#0756b7,#087caa);box-shadow:0 4px 11px #0756b72b}
+#view-user-management .ia-users-status{box-shadow:inset 0 0 0 1px #ffffff80}
+@media(max-width:760px){#view-user-management .ia-users-stat{min-height:96px;padding:14px}#view-user-management .ia-users-table-avatar{width:36px;height:36px;flex-basis:36px}}
