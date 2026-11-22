@@ -1,0 +1,5558 @@
+// ============================================================
+// CONFIGURATION
+// ============================================================
+const CONFIG = {
+    SUPABASE_URL: 'https://lwhtjozfsmbyihenfunw.supabase.co',
+    SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx3aHRqb3pmc21ieWloZW5mdW53Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk2NTgxMjcsImV4cCI6MjA3NTIzNDEyN30.7Z8AYvPQwTAEEEhODlW6Xk-IR1FK3Uj5ivZS7P17Wpk',
+    FACE_MODEL_URL: 'https://justadudewhohacks.github.io/face-api.js/models',
+    FACE_DETECTION_INTERVAL: 650,
+    // Slightly more sensitive detection plus adaptive frame brightening improves
+    // reliability in dim rooms without relaxing the one-person requirement.
+    FACE_SCORE_THRESHOLD: 0.25,
+    FACE_INPUT_SIZE: 320,
+    // Approximate normalized head-pose thresholds; tune with real device testing.
+    FACE_YAW_THRESHOLD: 0.24,
+    FACE_PITCH_UPPER_THRESHOLD: 0.18,
+    FACE_PITCH_LOWER_THRESHOLD: 0.78,
+    FACE_CONFIRMATIONS_REQUIRED: 2,
+    MAX_BLUR_COUNT: 3,
+    MAX_TAB_SWITCHES: 2,
+    MAX_TIME_PER_QUESTION: 120,
+    CONSECUTIVE_FACE_LOST_LIMIT: 6, // Allow about 3 seconds of brief camera/face detection interruptions
+    TOTAL_VIOLATIONS_LIMIT: 6,
+    RECOVERY_TIMER_SECONDS: 10,
+    RETRY_COOLDOWN_SECONDS: 10,
+    STORAGE_PREFIX: 'exam_',
+    SNAPSHOT_INTERVAL: 30000,
+    HEARTBEAT_INTERVAL: 15000,
+    SAVE_INTERVAL: 10000,
+    INACTIVITY_TIMEOUT: 30 * 60 * 1000,
+    MULTIPLE_FACES_TIMEOUT: 45,
+    FULLSCREEN_EXIT_TIMEOUT: 10,
+    STUDENT_DASHBOARD_URL: 'https://nchsm.co.ke/student/',
+    STUDENT_LOGIN_URL: 'https://nchsm.co.ke/login',
+    VIOLATION_COOLDOWN: 5000,
+    EXAM_SESSION_KEY: 'exam_session',
+    MAX_SESSION_AGE: 5 * 60 * 1000,
+    CLEANUP_ON_COMPLETE: true,
+};
+
+// ============================================================
+// SUPABASE CLIENT
+// ============================================================
+const sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+
+// ============================================================
+// APPLICATION STATE
+// ============================================================
+let retakeRequestedByUrl = false;
+
+const AppState = {
+    listenersAttached: false,
+    isNavigating: false,
+    fullscreenMonitoringAttached: false,
+    fullscreenLockActive: false,
+    fullscreenOverlay: null,
+    fullscreenWarningInterval: null,
+    fullscreenExitDeadline: null,
+    fullscreenAutoSubmitTriggered: false,
+    studentId: null,
+    studentProfile: null,
+    examId: null,
+    examData: null,
+    questions: [],
+    currentIndex: 0,
+    duration: 0,
+    attemptStartedAt: null,
+    sessionRecovered: false,
+    remainingSeconds: 0,
+    answers: {},
+    flaggedQuestions: {},
+    hasAnsweredAtLeastOne: false,
+    examStarted: false,
+    isExamActive: false,
+    isExamPaused: false,
+    isSubmitting: false,
+    termsAgreed: false,
+    cameraWorking: false,
+    faceVerified: false,
+    currentStep: 1,
+    cameraStream: null,
+    isCameraTesting: false,
+    timerWarningShown: false,
+    fullscreenWarningActive: false,
+    attendanceRecorded: false,
+    blurCount: 0,
+    tabSwitchCount: 0,
+    visibilityLossActive: false,
+    pendingFocusReturnNotice: false,
+    pendingTabSwitchWarning: 0,
+    tabSwitchTimeout: null,
+    tabSwitchGraceExpired: false,
+    multipleFacesCount: 0,
+    timerInterval: null,
+    snapshotInterval: null,
+    heartbeatInterval: null,
+    saveProgressInterval: null,
+    questionTimerInterval: null,
+    inactivityTimer: null,
+    countdownInterval: null,
+    questionStartTime: Date.now(),
+    questionTimeElapsed: 0,
+    questionTimes: {},
+    secureProctor: null,
+    stealthProctor: null,
+    networkQuality: 'unknown',
+    isRetake: false,
+    isContinuation: false,
+    attemptPrepared: false,
+    retakeCount: 0,
+    attemptId: null,
+    attemptNumber: 0,
+    examAutoSubmitted: false,
+
+    // ============================================================
+    // SERVER-SIDE LIVE EXAM SESSION LOCK
+    // ============================================================
+    sessionToken: null,
+    sessionClaimed: false,
+    sessionHeartbeatFailures: 0,
+    sessionLost: false,
+
+    // ✅ NEW: built once after questions load, used by saveAnswerToDatabase()
+    // to score each answer as soon as the student picks it.
+    correctAnswerMap: {},       // { question_id: 'A' | 'B' | 'C' | 'D' | ... }
+    questionMarksMap: {},       // { question_id: 1 | 2 | 3 | ... }
+};
+
+// ============================================================
+// DOM REFS
+// ============================================================
+const DOM = {};
+
+function initDomRefs() {
+    // Lobby
+    DOM.lobbyContainer = document.getElementById('lobbyContainer');
+    DOM.examInterface = document.getElementById('examInterface');
+    DOM.examContainer = document.getElementById('exam-container');
+    DOM.examTimer = document.getElementById('timerDisplayHeader');
+    DOM.timerDisplay = document.getElementById('timer');
+    
+    // Lobby - Student Info
+    DOM.studentName = document.getElementById('studentName');
+    DOM.studentReg = document.getElementById('studentReg');
+    DOM.studentProgram = document.getElementById('studentProgram');
+    DOM.examStudentName = document.getElementById('examStudentName');
+    DOM.examStudentReg = document.getElementById('examStudentReg');
+    DOM.readyStudentName = document.getElementById('readyStudentName');
+    
+    // Lobby - Exam Info
+    DOM.examTitleLobby = document.getElementById('examTitle');
+    DOM.examDuration = document.getElementById('examDuration');
+    DOM.examQuestions = document.getElementById('examQuestions');
+    DOM.examPassMark = document.getElementById('examPassMark');
+    DOM.funFact = document.getElementById('funFact');
+    DOM.continuationBadge = document.getElementById('continuationBadge');
+    
+    // Lobby - Step elements
+    DOM.termsCheckbox = document.getElementById('termsCheckbox');
+    DOM.termsNextBtn = document.getElementById('termsNextBtn');
+    DOM.cameraNextBtn = document.getElementById('cameraNextBtn');
+    DOM.startExamBtn = document.getElementById('startExamBtn');
+    DOM.startExamText = document.getElementById('startExamText');
+    
+    // Lobby - Camera
+    DOM.cameraVideo = document.getElementById('cameraVideo');
+    DOM.cameraStatusText = document.getElementById('cameraStatusText');
+    DOM.cameraStatusMessage = document.getElementById('cameraStatusMessage');
+    DOM.faceCountDisplay = document.getElementById('faceCountDisplay');
+    DOM.testCameraBtn = document.getElementById('testCameraBtn');
+    DOM.retryCameraBtn = document.getElementById('retryCameraBtn');
+    DOM.faceVerifiedCheck = document.getElementById('faceVerifiedCheck');
+    
+    // Exam interface
+    DOM.faceVideo = document.getElementById('face-video');
+    DOM.faceCanvas = document.getElementById('face-canvas');
+    DOM.examTitle = document.getElementById('exam-title');
+    DOM.cameraContainer = document.getElementById('cameraContainer');
+    
+    // Stats
+    DOM.statsAnswered = document.getElementById('statsAnswered');
+    DOM.statsFlagged = document.getElementById('statsFlagged');
+    DOM.statsFace = document.getElementById('statsFace');
+    DOM.statsProgress = document.getElementById('statsProgress');
+    DOM.statsUnanswered = document.getElementById('statsUnanswered');
+    DOM.progressFill = document.getElementById('progress-fill');
+    DOM.currentSpan = document.getElementById('current');
+    DOM.totalSpan = document.getElementById('total');
+    DOM.progressPercentage = document.getElementById('progress-percentage');
+    
+    // Buttons
+    DOM.prevBtn = document.getElementById('prev-btn');
+    DOM.nextBtn = document.getElementById('next-btn');
+    DOM.submitBtn = document.getElementById('submit-exam-btn');
+    DOM.submitText = document.getElementById('submit-text');
+    DOM.submitSpinner = document.getElementById('submit-spinner');
+    DOM.flagQuestionBtn = document.getElementById('flag-question-btn');
+    
+    // Status
+    DOM.examStatusDot = document.getElementById('examStatusDot');
+    DOM.examStatusText = document.getElementById('examStatusText');
+    DOM.examFaceCount = document.getElementById('examFaceCount');
+    DOM.proctoringStatusText = document.getElementById('proctoringStatusText');
+    DOM.autoSaveStatus = document.getElementById('auto-save-status');
+    DOM.networkIndicator = document.getElementById('networkIndicator');
+    DOM.answerSaved = document.getElementById('answer-saved');
+    
+    // Overlays
+    DOM.appBlockOverlay = document.getElementById('app-block-overlay');
+    DOM.faceBlockOverlay = document.getElementById('face-block-overlay');
+    DOM.faceBlockReason = document.getElementById('face-block-reason');
+    DOM.faceRecoveryCountdown = document.getElementById('face-recovery-countdown');
+    DOM.multipleFacesWarning = document.getElementById('multiple-faces-warning');
+    DOM.submissionModal = document.getElementById('submission-modal');
+    DOM.modalMessage = document.getElementById('modal-message');
+    DOM.submissionProgress = document.getElementById('submission-progress-overlay');
+    DOM.submissionMessage = document.getElementById('submission-message');
+    DOM.submissionProgressFill = document.getElementById('submission-progress-fill');
+    DOM.submissionPercentage = document.getElementById('submission-percentage');
+    DOM.fullscreenExitWarning = document.getElementById('fullscreen-exit-warning');
+    DOM.exitCountdown = document.getElementById('exit-countdown');
+    
+    // Review
+    DOM.reviewContainer = document.getElementById('review-container');
+    DOM.reviewModeToggle = document.getElementById('review-mode-toggle');
+    DOM.questionStatusTable = document.getElementById('question-status-table');
+    
+    // Attendance
+    DOM.attendanceModal = document.getElementById('attendance-required-modal');
+    DOM.timerProgressBar = document.getElementById('timerProgressBar');
+}
+
+// ============================================================
+// UTILITY FUNCTIONS
+// ============================================================
+function shuffleArrayWithSeed(array, seed) {
+    const shuffled = [...array];
+    let s = seed.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    for (let i = shuffled.length - 1; i > 0; i--) {
+        s = (s * 9301 + 49297) % 233280;
+        const j = Math.floor((s / 233280) * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+}
+
+function getStorageKey(key) {
+    return `${CONFIG.STORAGE_PREFIX}${AppState.examId}_${key}_${AppState.studentId}${AppState.attemptId ? `_attempt_${AppState.attemptId}` : ''}`;
+}
+
+function saveToLocalStorage(key, data) {
+    try {
+        localStorage.setItem(getStorageKey(key), JSON.stringify(data));
+        return true;
+    } catch (e) { return false; }
+}
+
+function loadFromLocalStorage(key) {
+    try {
+        const data = localStorage.getItem(getStorageKey(key));
+        return data ? JSON.parse(data) : null;
+    } catch (e) { return null; }
+}
+
+function removeFromLocalStorage(key) {
+    try {
+        localStorage.removeItem(getStorageKey(key));
+        return true;
+    } catch (e) { return false; }
+}
+
+function showToast(message, type = 'info', duration = 3000) {
+    const existing = document.querySelector('.toast');
+    if (existing) existing.remove();
+
+    const icons = { success: '✅', error: '❌', warning: '⚠️', info: '💡' };
+    const colors = {
+        success: '#10b981',
+        error: '#ef4444',
+        warning: '#f59e0b',
+        info: '#0A3D62'
+    };
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.style.cssText = `
+        position: fixed;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: ${colors[type] || '#0A3D62'};
+        color: white;
+        padding: 12px 24px;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        z-index: 999999;
+        font-family: 'Inter', sans-serif;
+        font-size: 0.9rem;
+        font-weight: 500;
+        max-width: 90%;
+        text-align: center;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    `;
+    toast.innerHTML = `${icons[type] || 'ℹ️'} ${message}`;
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(-50%) translateY(20px)';
+        toast.style.transition = 'all 0.3s ease';
+        setTimeout(() => toast.remove(), 500);
+    }, duration);
+}
+
+function formatTime(seconds) {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = seconds % 60;
+    if (h > 0) {
+        return `${h < 10 ? '0' : ''}${h}:${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
+    }
+    return `${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
+}
+
+async function getIPAddress() {
+    try {
+        const response = await fetch('https://api.ipify.org?format=json');
+        const data = await response.json();
+        return data.ip;
+    } catch { return 'unknown'; }
+}
+
+// ============================================================
+// FACE DETECTION
+// ============================================================
+let faceModelsLoaded = false;
+let faceDetectionCanvas = null;
+let faceDetectionContext = null;
+
+function getEnhancedFaceDetectionFrame(videoElement) {
+    if (!videoElement || !videoElement.videoWidth || !videoElement.videoHeight) return videoElement;
+    try {
+        if (!faceDetectionCanvas) {
+            faceDetectionCanvas = document.createElement('canvas');
+            faceDetectionContext = faceDetectionCanvas.getContext('2d', { willReadFrequently: true });
+        }
+        const width = videoElement.videoWidth;
+        const height = videoElement.videoHeight;
+        if (faceDetectionCanvas.width !== width || faceDetectionCanvas.height !== height) {
+            faceDetectionCanvas.width = width;
+            faceDetectionCanvas.height = height;
+        }
+
+        // Brighten and gently increase contrast for face detection only.
+        // The original camera feed remains unchanged and is still displayed.
+        faceDetectionContext.save();
+        faceDetectionContext.clearRect(0, 0, width, height);
+        faceDetectionContext.filter = 'brightness(1.28) contrast(1.12)';
+        faceDetectionContext.drawImage(videoElement, 0, 0, width, height);
+        faceDetectionContext.restore();
+        return faceDetectionCanvas;
+    } catch (error) {
+        console.warn('Enhanced camera frame unavailable; using original frame:', error);
+        return videoElement;
+    }
+}
+
+async function loadFaceDetectionModels() {
+    if (faceModelsLoaded) return true;
+    try {
+        await Promise.all([
+            faceapi.nets.tinyFaceDetector.loadFromUri(CONFIG.FACE_MODEL_URL),
+            faceapi.nets.faceLandmark68Net.loadFromUri(CONFIG.FACE_MODEL_URL)
+        ]);
+        faceModelsLoaded = true;
+        console.log('✅ Face detection models loaded');
+        return true;
+    } catch (error) {
+        console.warn('Face detection not available:', error);
+        return false;
+    }
+}
+
+
+// Estimate relative head orientation from 68 facial landmarks.
+// This is a heuristic for proctoring assistance, not identity verification.
+function estimateHeadPose(landmarks) {
+    try {
+        const p = landmarks && typeof landmarks.positions !== 'undefined' ? landmarks.positions : null;
+        if (!p || p.length < 68) return { available: false, turned: false, reason: 'landmarks_unavailable' };
+        const avg = (indices) => {
+            const pts = indices.map(i => p[i]).filter(Boolean);
+            if (!pts.length) return null;
+            return pts.reduce((a, v) => ({ x: a.x + v.x / pts.length, y: a.y + v.y / pts.length }), { x: 0, y: 0 });
+        };
+        const leftEye = avg([36, 37, 38, 39, 40, 41]);
+        const rightEye = avg([42, 43, 44, 45, 46, 47]);
+        const noseBridge = avg([27, 28, 29, 30]);
+        const noseTip = avg([31, 32, 33, 34, 35]);
+        const mouth = avg([51, 52, 53, 54]);
+        if (!leftEye || !rightEye || !noseBridge || !noseTip || !mouth) {
+            return { available: false, turned: false, reason: 'incomplete_landmarks' };
+        }
+        const eyeDistance = Math.max(1, Math.abs(rightEye.x - leftEye.x));
+        const eyeMidX = (leftEye.x + rightEye.x) / 2;
+        const eyeMidY = (leftEye.y + rightEye.y) / 2;
+        const yaw = (noseBridge.x - eyeMidX) / eyeDistance;
+        const verticalSpan = Math.max(1, mouth.y - eyeMidY);
+        const pitch = (noseTip.y - eyeMidY) / verticalSpan;
+        const turned = Math.abs(yaw) > CONFIG.FACE_YAW_THRESHOLD
+            || pitch < CONFIG.FACE_PITCH_UPPER_THRESHOLD
+            || pitch > CONFIG.FACE_PITCH_LOWER_THRESHOLD;
+        let reason = 'facing_camera';
+        if (Math.abs(yaw) > CONFIG.FACE_YAW_THRESHOLD) reason = yaw < 0 ? 'head_turned_left' : 'head_turned_right';
+        else if (pitch < CONFIG.FACE_PITCH_UPPER_THRESHOLD) reason = 'head_tilted_up';
+        else if (pitch > CONFIG.FACE_PITCH_LOWER_THRESHOLD) reason = 'head_tilted_down';
+        return { available: true, turned, reason, yaw: Number(yaw.toFixed(3)), pitch: Number(pitch.toFixed(3)) };
+    } catch (error) {
+        return { available: false, turned: false, reason: 'pose_estimation_error' };
+    }
+}
+
+async function fastDetectFace(videoElement) {
+    if (!videoElement || !videoElement.srcObject) return null;
+    if (videoElement.readyState < HTMLMediaElement.HAVE_CURRENT_DATA ||
+        !videoElement.videoWidth || !videoElement.videoHeight) return null;
+    try {
+        if (!faceModelsLoaded) {
+            const loaded = await loadFaceDetectionModels();
+            if (!loaded) return null;
+        }
+        const options = new faceapi.TinyFaceDetectorOptions({
+            inputSize: CONFIG.FACE_INPUT_SIZE,
+            scoreThreshold: CONFIG.FACE_SCORE_THRESHOLD
+        });
+        // Run detection on a gently brightened copy to reduce false negatives in dim rooms.
+        // Keep the original video for the student's preview and proctoring snapshots.
+        const detectionFrame = getEnhancedFaceDetectionFrame(videoElement);
+        // Landmarks let us estimate head orientation; face presence alone is not enough.
+        const results = await faceapi.detectAllFaces(detectionFrame, options).withFaceLandmarks();
+        return results.map(result => ({
+            ...result.detection,
+            landmarks: result.landmarks,
+            headPose: estimateHeadPose(result.landmarks)
+        }));
+    } catch (error) {
+        console.warn('Face detection frame failed:', error);
+        return null;
+    }
+}
+
+// ============================================================
+// PHONE DETECTION + EXAM WATERMARK
+// Uses COCO-SSD in the existing webcam stream. Detection is advisory,
+// confidence-gated, and never treats one frame as proof of misconduct.
+let phoneModelPromise = null;
+function loadPhoneDetectionModel() {
+    if (phoneModelPromise) return phoneModelPromise;
+    phoneModelPromise = (async () => {
+        const loadScript = (src) => new Promise((resolve, reject) => {
+            const existing = Array.from(document.scripts).find(s => s.src === src);
+            if (existing) {
+                if (existing.dataset.loaded === 'true') return resolve();
+                existing.addEventListener('load', resolve, { once: true });
+                existing.addEventListener('error', reject, { once: true });
+                return;
+            }
+            const script = document.createElement('script');
+            script.src = src;
+            script.async = true;
+            script.onload = () => { script.dataset.loaded = 'true'; resolve(); };
+            script.onerror = () => reject(new Error('Unable to load proctoring model dependency'));
+            document.head.appendChild(script);
+        });
+        await loadScript('https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js');
+        await loadScript('https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js');
+        if (!window.cocoSsd || typeof window.cocoSsd.load !== 'function') throw new Error('Phone detection library unavailable');
+        return window.cocoSsd.load({ base: 'lite_mobilenet_v2' });
+    })().catch(error => {
+        phoneModelPromise = null;
+        throw error;
+    });
+    return phoneModelPromise;
+}
+
+function addExamScreenWatermark(examId, studentId) {
+    const id = 'nchsm-exam-screen-watermark';
+    let watermark = document.getElementById(id);
+    if (!watermark) {
+        watermark = document.createElement('div');
+        watermark.id = id;
+        Object.assign(watermark.style, {
+            position: 'fixed', inset: '0', zIndex: '9990', pointerEvents: 'none',
+            overflow: 'hidden', opacity: '0.12', display: 'grid',
+            gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+            gridTemplateRows: 'repeat(4, minmax(0, 1fr))',
+            color: '#334155', font: '700 13px/1.4 Arial, sans-serif',
+            userSelect: 'none', mixBlendMode: 'multiply'
+        });
+        document.body.appendChild(watermark);
+    }
+    const stamp = 'NCHSM • ' + String(studentId || 'STUDENT') + ' • EXAM ' + String(examId || '') + ' • ' + new Date().toLocaleString();
+    watermark.replaceChildren();
+    for (let i = 0; i < 8; i++) {
+        const mark = document.createElement('div');
+        mark.textContent = stamp;
+        Object.assign(mark.style, {
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            transform: 'rotate(-24deg)', whiteSpace: 'nowrap', padding: '8px',
+            textAlign: 'center'
+        });
+        watermark.appendChild(mark);
+    }
+    return watermark;
+}
+
+// ============================================================
+// SINGLE-TAB EXAM GUARD
+// Blocks a second tab for the same student + exam before the exam starts.
+// The existing server-side session RPC remains the authoritative cross-device lock.
+const EXAM_TAB_LOCK_PREFIX = 'nchsm_active_exam_tab_';
+let examTabLockKey = null;
+let examTabLockToken = null;
+let examTabPageInstance = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : 'page-' + Date.now() + '-' + Math.random().toString(36).slice(2);
+let examTabLockHeartbeat = null;
+let examTabChannel = null;
+let examTabBlocked = false;
+
+function getExamTabLockKey() {
+    return EXAM_TAB_LOCK_PREFIX + String(AppState.studentId || '') + '_' + String(AppState.examId || '');
+}
+
+function showDuplicateExamTabBlock() {
+    examTabBlocked = true;
+    const existing = document.getElementById('nchsm-duplicate-exam-tab-block');
+    if (existing) return;
+    const overlay = document.createElement('div');
+    overlay.id = 'nchsm-duplicate-exam-tab-block';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:2147483647;background:rgba(8,24,40,.96);display:flex;align-items:center;justify-content:center;padding:24px;font-family:Arial,sans-serif;';
+    overlay.innerHTML = '<div style="max-width:520px;background:#fff;border-radius:18px;padding:32px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.35)"><div style="font-size:48px">🔒</div><h2 style="color:#0A3D62;margin:12px 0">This exam is already open</h2><p style="color:#475569;line-height:1.6">Only one tab or window may be used for this exam. Return to the original exam window. Do not close it unless you intend to submit or leave the exam.</p><button id="nchsm-duplicate-exam-tab-close" style="background:#0A3D62;color:white;border:0;border-radius:10px;padding:12px 18px;font-weight:700;cursor:pointer">Close this tab</button></div>';
+    document.body.appendChild(overlay);
+    document.getElementById('nchsm-duplicate-exam-tab-close')?.addEventListener('click', () => {
+        try { window.close(); } catch (_) {}
+        overlay.querySelector('p').textContent = 'This tab is blocked. Please close it manually and return to the original exam window.';
+    });
+}
+
+function claimSingleExamTab() {
+    if (!AppState.studentId || !AppState.examId) return true;
+    examTabLockKey = getExamTabLockKey();
+    const sessionKey = 'nchsm_exam_tab_token_' + examTabLockKey;
+    try {
+        examTabLockToken = sessionStorage.getItem(sessionKey);
+        if (!examTabLockToken) {
+            examTabLockToken = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : 'tab-' + Date.now() + '-' + Math.random().toString(36).slice(2);
+            sessionStorage.setItem(sessionKey, examTabLockToken);
+        }
+        const now = Date.now();
+        let current = null;
+        try { current = JSON.parse(localStorage.getItem(examTabLockKey) || 'null'); } catch (_) {}
+        if (current && now - Number(current.lastSeen || 0) < 12000 &&
+            current.pageInstance && current.pageInstance !== examTabPageInstance &&
+            current.token !== examTabLockToken) {
+            showDuplicateExamTabBlock();
+            return false;
+        }
+        localStorage.setItem(examTabLockKey, JSON.stringify({ token: examTabLockToken, pageInstance: examTabPageInstance, lastSeen: now, studentId: String(AppState.studentId), examId: String(AppState.examId) }));
+        if ('BroadcastChannel' in window) {
+            examTabChannel = new BroadcastChannel('nchsm_exam_tab_guard');
+            examTabChannel.onmessage = (event) => {
+                const data = event.data || {};
+                if (data.key === examTabLockKey && data.pageInstance !== examTabPageInstance && data.type === 'claim') {
+                    // Duplicated browser tabs can clone sessionStorage. A deterministic tie-break
+                    // ensures exactly one tab remains active even when both copied the same token.
+                    if (String(examTabPageInstance) > String(data.pageInstance)) {
+                        showDuplicateExamTabBlock();
+                    } else {
+                        try { localStorage.setItem(examTabLockKey, JSON.stringify({ token: examTabLockToken, pageInstance: examTabPageInstance, lastSeen: Date.now(), studentId: String(AppState.studentId), examId: String(AppState.examId) })); } catch (_) {}
+                    }
+                }
+            };
+            examTabChannel.postMessage({ type: 'claim', key: examTabLockKey, token: examTabLockToken });
+        }
+        if (examTabLockHeartbeat) clearInterval(examTabLockHeartbeat);
+        examTabLockHeartbeat = setInterval(() => {
+            if (examTabBlocked) return;
+            try {
+                const lock = JSON.parse(localStorage.getItem(examTabLockKey) || 'null');
+                if (lock && lock.pageInstance && lock.pageInstance !== examTabPageInstance && Date.now() - Number(lock.lastSeen || 0) < 12000 &&
+                    String(examTabPageInstance) > String(lock.pageInstance)) {
+                    showDuplicateExamTabBlock();
+                    return;
+                }
+                localStorage.setItem(examTabLockKey, JSON.stringify({ token: examTabLockToken, pageInstance: examTabPageInstance, lastSeen: Date.now(), studentId: String(AppState.studentId), examId: String(AppState.examId) }));
+            } catch (_) {}
+        }, 3000);
+        return true;
+    } catch (error) {
+        console.warn('Single-tab guard could not access browser storage; server-side exam lock remains active.', error);
+        return true;
+    }
+}
+
+function releaseSingleExamTabLock() {
+    if (examTabLockHeartbeat) clearInterval(examTabLockHeartbeat);
+    examTabLockHeartbeat = null;
+    try {
+        if (examTabLockKey) {
+            const lock = JSON.parse(localStorage.getItem(examTabLockKey) || 'null');
+            if (lock && lock.token === examTabLockToken) localStorage.removeItem(examTabLockKey);
+        }
+        if (examTabChannel) examTabChannel.close();
+    } catch (_) {}
+    examTabChannel = null;
+}
+
+// ============================================================
+// SESSION MANAGEMENT
+// ============================================================
+function saveExamSession() {
+    try {
+        sessionStorage.setItem(CONFIG.EXAM_SESSION_KEY, JSON.stringify({
+            examId: AppState.examId,
+            studentId: AppState.studentId,
+            attemptId: AppState.attemptId,
+            attemptNumber: AppState.attemptNumber,
+            attemptStartedAt: AppState.attemptStartedAt,
+            examActive: AppState.isExamActive,
+            currentIndex: AppState.currentIndex,
+            remainingSeconds: AppState.remainingSeconds,
+            answers: AppState.answers,
+            flaggedQuestions: AppState.flaggedQuestions,
+            timestamp: Date.now(),
+            isRetake: AppState.isRetake
+        }));
+    } catch (e) {}
+}
+
+function recoverExamSession() {
+    // Admin-authorized reset is a continuation of the same attempt.
+    // Allow the saved session to restore answers, flags and position.
+    try {
+        const data = sessionStorage.getItem(CONFIG.EXAM_SESSION_KEY);
+        if (data) {
+            const session = JSON.parse(data);
+            if (Date.now() - session.timestamp < CONFIG.MAX_SESSION_AGE) {
+                if (session.examId === AppState.examId && session.studentId === AppState.studentId) {
+                    if (session.answers) {
+                        AppState.answers = session.answers;
+                        AppState.flaggedQuestions = session.flaggedQuestions || {};
+                        AppState.currentIndex = session.currentIndex || 0;
+                        AppState.hasAnsweredAtLeastOne = Object.keys(AppState.answers).length > 0;
+                        if (session.attemptId) AppState.attemptId = session.attemptId;
+                        if (session.attemptNumber) AppState.attemptNumber = session.attemptNumber;
+                        if (session.attemptStartedAt) AppState.attemptStartedAt = session.attemptStartedAt;
+                        if (Number.isFinite(Number(session.remainingSeconds))) {
+                            AppState.remainingSeconds = Number(session.remainingSeconds);
+                        }
+                        return true;
+                    }
+                }
+            }
+        }
+    } catch (e) {}
+    return false;
+}
+
+// ============================================================
+// ATTEMPT MANAGEMENT
+// ============================================================
+async function getAuthorizedRetake() {
+    try {
+        const { data, error } = await sb
+            .from('exam_grades')
+            .select('id, result_status, reset_count, retake_count, allow_retake, retake_unlocked, attempt_id')
+            .eq('student_id', AppState.studentId)
+            .eq('exam_id', parseInt(AppState.examId))
+            .eq('question_id', '00000000-0000-0000-0000-000000000000')
+            .order('updated_at', { ascending: false })
+            .limit(50);
+
+        if (error) throw error;
+        return (data || []).find(row =>
+            row.result_status === 'RESET_FOR_RETAKE' &&
+            row.allow_retake === true &&
+            row.retake_unlocked === true
+        ) || null;
+    } catch (e) {
+        console.warn('Could not check retake authorization:', e);
+        return null;
+    }
+}
+
+async function getOrCreateCurrentAttempt() {
+    // IMPORTANT: startExam() prepares the attempt before calling initExam().
+    // initExam() also needs the attempt, but must NOT call the one-time retake
+    // RPC a second time after the authorization has already been consumed.
+    // Once this page has successfully prepared the attempt, reuse that same
+    // attempt for the remainder of the current exam session. A page refresh
+    // resets this flag, so the server RPC is still called again when needed.
+    if (AppState.attemptPrepared && AppState.attemptId) return true;
+
+    const examId = parseInt(AppState.examId);
+    if (!AppState.studentId || !examId) {
+        throw new Error('Missing student or exam information.');
+    }
+
+    // Attempt creation is performed by a protected Supabase RPC.
+    // This is required because the exam page is not relying on auth.uid()
+    // and therefore should not insert directly into exam_attempts under RLS.
+    const { data: attemptData, error: attemptError } = await sb.rpc(
+        'prepare_exam_attempt',
+        {
+            p_student_id: AppState.studentId,
+            p_exam_id: examId,
+            p_is_retake: !!AppState.isRetake
+        }
+    );
+
+    if (attemptError) {
+        throw new Error(attemptError.message || 'Could not prepare exam attempt.');
+    }
+
+    const created = Array.isArray(attemptData) ? attemptData[0] : attemptData;
+    if (!created?.id) {
+        throw new Error('The exam server did not return a valid attempt.');
+    }
+
+    AppState.attemptId = created.id;
+    AppState.attemptNumber = Number(created.attempt_number || 1);
+    AppState.attemptStartedAt = created.started_at || AppState.attemptStartedAt || null;
+    AppState.attemptPrepared = true;
+
+    // Admin reset is a continuation of the same attempt.
+    // Never wipe existing answers, flags or question position.
+    AppState.isContinuation = created.continuation === true || retakeRequestedByUrl === true;
+    AppState.isRetake = !!created.is_retake || AppState.isContinuation;
+
+    if (retakeRequestedByUrl) {
+        console.log(
+            `🔄 Admin reset continuation: Attempt #${AppState.attemptNumber}. ` +
+            `Existing answers/progress will be restored.`
+        );
+    } else {
+        console.log(`✅ Exam attempt ready: #${AppState.attemptNumber}`);
+    }
+
+    return true;
+}
+
+// ============================================================
+// SERVER-SIDE LIVE EXAM SESSION LOCK
+// ============================================================
+// One student + one exam = one live session.
+// The database RPC is authoritative; the old exam_heartbeats SELECT
+// was only a soft client-side check and could allow two tabs to start.
+
+function getOrCreateSessionToken() {
+    const examId = String(AppState.examId || 'unknown');
+    const studentId = String(AppState.studentId || 'unknown');
+    const key = `nchsm_live_exam_session_token_${studentId}_${examId}`;
+
+    try {
+        let token = sessionStorage.getItem(key);
+
+        if (!token) {
+            token = (window.crypto && typeof window.crypto.randomUUID === 'function')
+                ? window.crypto.randomUUID()
+                : `tok-${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
+
+            sessionStorage.setItem(key, token);
+        }
+
+        AppState.sessionToken = token;
+        return token;
+    } catch (error) {
+        // sessionStorage can be blocked in privacy/restricted browser modes.
+        // A per-page token still prevents duplicate claims from this page.
+        if (!AppState.sessionToken) {
+            AppState.sessionToken =
+                (window.crypto && typeof window.crypto.randomUUID === 'function')
+                    ? window.crypto.randomUUID()
+                    : `tok-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        }
+
+        return AppState.sessionToken;
+    }
+}
+
+function getDeviceFingerprint() {
+    try {
+        const raw = [
+            navigator.userAgent || '',
+            `${screen.width || 0}x${screen.height || 0}`,
+            `${screen.colorDepth || 0}`,
+            Intl.DateTimeFormat().resolvedOptions().timeZone || '',
+            navigator.language || '',
+            navigator.hardwareConcurrency || 0,
+            navigator.platform || ''
+        ].join('|');
+
+        // Keep this lightweight and compatible with browsers without SubtleCrypto.
+        return btoa(unescape(encodeURIComponent(raw))).slice(0, 64);
+    } catch (error) {
+        return 'unknown';
+    }
+}
+
+function showExamSessionLockOverlay(title, message) {
+    // Reuse the fatal overlay if the application already has one.
+    if (typeof showFatalOverlay === 'function') {
+        showFatalOverlay(title, message, '#dc2626');
+        return;
+    }
+
+    document.getElementById('nchsm-session-lock-overlay')?.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'nchsm-session-lock-overlay';
+    overlay.style.cssText = `
+        position:fixed;
+        inset:0;
+        z-index:2147483647;
+        background:rgba(0,0,0,.94);
+        color:#fff;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        padding:24px;
+        font-family:Inter,Arial,sans-serif;
+        text-align:center;
+    `;
+
+    overlay.innerHTML = `
+        <div style="max-width:520px;width:100%;">
+            <div style="font-size:4rem;margin-bottom:16px;">🔒</div>
+            <h1 style="margin:0 0 12px;color:#f87171;font-size:1.65rem;">
+                ${title}
+            </h1>
+            <p style="color:#cbd5e1;line-height:1.7;margin:0 0 24px;">
+                ${message}
+            </p>
+            <button type="button" id="nchsm-session-lock-reload" style="
+                padding:13px 28px;
+                border:0;
+                border-radius:12px;
+                background:#0A3D62;
+                color:#fff;
+                font-weight:700;
+                font-size:1rem;
+                cursor:pointer;
+            ">Reload Page</button>
+        </div>
+    `;
+
+    document.body.appendChild(overlay);
+    document.body.style.overflow = 'hidden';
+
+    document.getElementById('nchsm-session-lock-reload')?.addEventListener('click', () => {
+        window.location.reload();
+    });
+}
+
+async function claimExamSessionLock() {
+    if (AppState.sessionClaimed && AppState.sessionToken) {
+        return true;
+    }
+
+    if (!AppState.studentId || !AppState.examId) {
+        showToast('❌ Missing student or exam information.', 'error', 5000);
+        return false;
+    }
+
+    const token = getOrCreateSessionToken();
+    const deviceFingerprint = getDeviceFingerprint();
+
+    try {
+        console.log('🔐 Claiming live exam session...');
+
+        const { data, error } = await sb.rpc('claim_exam_session', {
+            p_student_id: AppState.studentId,
+            p_exam_id: parseInt(AppState.examId, 10),
+            p_session_token: token,
+            p_device_fingerprint: deviceFingerprint,
+            p_user_agent: (navigator.userAgent || '').slice(0, 500)
+        });
+
+        if (error) {
+            console.error('❌ Session claim RPC failed:', error);
+            showToast(
+                '⚠️ Could not verify the exam session. Please check your connection and try again.',
+                'error',
+                7000
+            );
+            return false;
+        }
+
+        const result = Array.isArray(data) ? data[0] : data;
+
+        if (!result || result.ok !== true) {
+            AppState.sessionClaimed = false;
+            AppState.sessionLost = true;
+
+            console.warn('🚫 Exam session rejected:', result);
+
+            showExamSessionLockOverlay(
+                'Exam Already Open',
+                result?.reason ||
+                'This exam is already active in another tab, browser, or device. Close the other session before continuing.'
+            );
+
+            return false;
+        }
+
+        AppState.sessionToken = token;
+        AppState.sessionClaimed = true;
+        AppState.sessionLost = false;
+        AppState.sessionHeartbeatFailures = 0;
+
+        console.log(
+            '✅ Live exam session claimed:',
+            token.slice(0, 8),
+            result.reason || 'Claimed'
+        );
+
+        return true;
+    } catch (error) {
+        console.error('❌ Unexpected session claim error:', error);
+        showToast(
+            '⚠️ Could not verify the exam session. Please try again.',
+            'error',
+            7000
+        );
+        return false;
+    }
+}
+
+async function releaseExamSessionLock() {
+    if (!AppState.sessionToken || !AppState.studentId || !AppState.examId) {
+        return false;
+    }
+
+    const token = AppState.sessionToken;
+
+    try {
+        const { data, error } = await sb.rpc('release_exam_session', {
+            p_student_id: AppState.studentId,
+            p_exam_id: parseInt(AppState.examId, 10),
+            p_session_token: token
+        });
+
+        if (error) {
+            console.warn('⚠️ Could not release live exam session:', error);
+            return false;
+        }
+
+        AppState.sessionClaimed = false;
+        AppState.sessionLost = false;
+        AppState.sessionHeartbeatFailures = 0;
+
+        console.log('✅ Live exam session released:', data);
+        return data !== false;
+    } catch (error) {
+        console.warn('⚠️ Session release failed:', error);
+        return false;
+    }
+}
+
+async function sendLiveExamSessionHeartbeat() {
+    if (
+        !AppState.isExamActive ||
+        !AppState.sessionClaimed ||
+        !AppState.sessionToken ||
+        !AppState.studentId ||
+        !AppState.examId ||
+        AppState.sessionLost
+    ) {
+        return true;
+    }
+
+    try {
+        const { data, error } = await sb.rpc('heartbeat_exam_session', {
+            p_student_id: AppState.studentId,
+            p_exam_id: parseInt(AppState.examId, 10),
+            p_session_token: AppState.sessionToken
+        });
+
+        if (error) {
+            AppState.sessionHeartbeatFailures++;
+            console.warn(
+                `⚠️ Live session heartbeat failed (${AppState.sessionHeartbeatFailures}):`,
+                error.message || error
+            );
+
+            // Do not immediately terminate the exam on a temporary network error.
+            return false;
+        }
+
+        AppState.sessionHeartbeatFailures = 0;
+
+        // FALSE is authoritative: the server no longer recognizes this tab's lock.
+        if (data === false) {
+            AppState.sessionClaimed = false;
+            AppState.sessionLost = true;
+
+            console.error('🚫 Live exam session was lost/taken over.');
+
+            if (AppState.heartbeatInterval) {
+                clearInterval(AppState.heartbeatInterval);
+                AppState.heartbeatInterval = null;
+            }
+
+            showExamSessionLockOverlay(
+                'Exam Session Lost',
+                'This exam session is no longer active on this tab. Another tab or device may have taken over the session, or the session expired.'
+            );
+
+            // Stop the active exam safely.
+            AppState.isExamActive = false;
+            AppState.isExamPaused = true;
+
+            return false;
+        }
+
+        return true;
+    } catch (error) {
+        AppState.sessionHeartbeatFailures++;
+        console.warn(
+            `⚠️ Live session heartbeat exception (${AppState.sessionHeartbeatFailures}):`,
+            error
+        );
+        return false;
+    }
+}
+
+// Legacy name retained so any other code that calls checkActiveSession()
+// continues to work, but it now uses the authoritative RPC.
+async function checkActiveSession() {
+    return claimExamSessionLock();
+}
+
+// ============================================================
+// CHECK RETAKE STATUS
+// ============================================================
+async function checkRetakeStatus() {
+    AppState.retakeCount = 0;
+    if (DOM.continuationBadge) DOM.continuationBadge.style.display = 'none';
+
+    // IMPORTANT: When the Student Portal sends ?retake=true, the URL itself
+    // is the user's request to enter the continuation flow. Do not gate the
+    // lobby on a direct exam_grades SELECT because that SELECT may be blocked
+    // by RLS for the anonymous exam-link session. The protected
+    // prepare_exam_attempt RPC is the authoritative server-side check.
+    if (retakeRequestedByUrl) {
+        AppState.isRetake = true;
+        AppState.isContinuation = true;
+        AppState.retakeCount = 1;
+
+        if (DOM.continuationBadge) {
+            DOM.continuationBadge.style.display = 'block';
+        }
+        if (DOM.startExamText) {
+            DOM.startExamText.textContent = '🔄 Continue My Exam';
+        }
+
+        console.log('🔄 Retake URL detected. Authorization will be verified by prepare_exam_attempt RPC when the student starts.');
+        showToast('🔄 Retake selected. Complete the checks and continue your saved exam. Your full timer starts when you enter.', 'info', 5000);
+        return true;
+    }
+
+    // Normal lobby: a direct authorization lookup can improve the UI, but it
+    // must never be required for normal exam loading.
+    AppState.isRetake = false;
+
+    try {
+        const data = await getAuthorizedRetake();
+
+        if (data) {
+            AppState.isRetake = true;
+            AppState.isContinuation = true;
+            AppState.retakeCount = data.reset_count || data.retake_count || 1;
+
+            if (DOM.continuationBadge) {
+                DOM.continuationBadge.style.display = 'block';
+            }
+
+            if (DOM.startExamText) {
+                DOM.startExamText.textContent = '🔄 Continue My Exam';
+            }
+
+            console.log('🔄 Admin reset continuation detected. Retake count:', AppState.retakeCount);
+            showToast('🔄 Exam reset authorized. Continue from your saved progress with a full fresh timer.', 'info', 5000);
+        }
+    } catch (e) {
+        // Do not turn a lobby-load RLS/read issue into a fake "no reset" state.
+        console.warn('Retake pre-check unavailable; server RPC remains authoritative:', e);
+    }
+
+    return AppState.isRetake;
+}
+
+// ============================================================
+// NETWORK QUALITY MONITORING
+// ============================================================
+function checkNetworkQuality() {
+    if ('connection' in navigator) {
+        const conn = navigator.connection;
+        if (conn) {
+            AppState.networkQuality = conn.effectiveType || 'unknown';
+            if (conn.effectiveType === 'slow-2g' || conn.effectiveType === '2g') {
+                showToast('📶 Slow network detected. Answers saved locally.', 'warning', 4000);
+                return 'slow';
+            } else if (conn.effectiveType === '3g') {
+                showToast('📶 Medium network speed. Auto-save may be delayed.', 'info', 3000);
+                return 'medium';
+            }
+            return 'fast';
+        }
+    }
+    return 'unknown';
+}
+
+function setupNetworkQualityMonitoring() {
+    if ('connection' in navigator) {
+        const conn = navigator.connection;
+        if (conn) {
+            conn.addEventListener('change', () => {
+                checkNetworkQuality();
+            });
+        }
+    }
+}
+
+// ============================================================
+// KEYBOARD SHORTCUT HELP
+// ============================================================
+function showKeyboardShortcuts() {
+    showToast('⌨️ ← → Navigate | F Flag | Ctrl+S Save | Enter Submit', 'info', 5000);
+}
+
+// ============================================================
+// LOBBY DATA LOADING
+// ============================================================
+async function loadLobbyData() {
+    console.log('📝 Loading lobby data...');
+    
+    try {
+        const { data: profile } = await sb
+            .from('consolidated_user_profiles_table')
+            .select('*')
+            .eq('user_id', AppState.studentId)
+            .single();
+
+        if (profile) {
+            AppState.studentProfile = profile;
+            console.log('✅ Profile loaded:', profile.full_name);
+            
+            if (DOM.studentName) DOM.studentName.textContent = profile.full_name || 'Unknown';
+            if (DOM.studentReg) DOM.studentReg.textContent = profile.student_id || 'N/A';
+            if (DOM.studentProgram) DOM.studentProgram.textContent = profile.program || 'N/A';
+            if (DOM.examStudentName) DOM.examStudentName.textContent = profile.full_name || 'Unknown';
+            if (DOM.examStudentReg) DOM.examStudentReg.textContent = profile.student_id || 'N/A';
+            if (DOM.readyStudentName) DOM.readyStudentName.textContent = profile.full_name || 'Student';
+            
+            if (DOM.funFact && profile.full_name) {
+                const facts = [
+                    `💡 ${profile.full_name}, a positive mindset can improve performance by up to 15%!`,
+                    `🌟 ${profile.full_name}, you've got this! Preparation is the key to success.`,
+                    `📚 ${profile.full_name}, every great journey begins with a single step.`,
+                    `💪 ${profile.full_name}, believe in yourself! You are capable of amazing things.`,
+                    `🎯 ${profile.full_name}, focus on the goal, the path will become clear.`
+                ];
+                DOM.funFact.textContent = facts[Math.floor(Math.random() * facts.length)];
+            }
+        }
+
+        const { data: exam } = await sb
+            .from('exams')
+            .select('*')
+            .eq('id', parseInt(AppState.examId))
+            .single();
+
+        if (exam) {
+            AppState.examData = exam;
+            console.log('✅ Exam loaded:', exam.title);
+            
+            if (DOM.examTitleLobby) DOM.examTitleLobby.textContent = exam.title || exam.exam_name || 'Exam';
+            if (DOM.examDuration) DOM.examDuration.textContent = exam.duration_minutes || 30;
+            if (DOM.examPassMark) DOM.examPassMark.textContent = exam.pass_mark || 60;
+
+            const { data: qData } = await sb
+                .from('exam_questions')
+                .select('id', { count: 'exact' })
+                .eq('exam_id', parseInt(AppState.examId));
+
+            const count = qData ? qData.length : 0;
+            if (DOM.examQuestions) DOM.examQuestions.textContent = count;
+            if (DOM.totalSpan) DOM.totalSpan.textContent = count;
+        }
+
+        await checkRetakeStatus();
+        console.log('✅ Lobby data loaded successfully!');
+
+    } catch (error) {
+        console.error('Error loading data:', error);
+        showToast('Error loading exam data', 'error');
+    }
+}
+
+// ============================================================
+// toggleTermsAgreed
+// ============================================================
+window.toggleTermsAgreed = function() {
+    console.log('📋 toggleTermsAgreed called');
+    
+    const checkbox = document.getElementById('termsCheckbox');
+    const nextBtn = document.getElementById('termsNextBtn');
+    
+    if (checkbox) {
+        const isChecked = checkbox.checked;
+        console.log('📋 Checkbox state:', isChecked);
+        
+        AppState.termsAgreed = isChecked;
+        
+        if (nextBtn) {
+            nextBtn.disabled = !isChecked;
+            nextBtn.style.opacity = isChecked ? '1' : '0.5';
+            nextBtn.style.cursor = isChecked ? 'pointer' : 'not-allowed';
+        }
+        
+        updateStartButton();
+        
+        if (isChecked && AppState.currentStep === 1) {
+            console.log('📋 Terms agreed, advancing to step 2');
+            goToStep(2);
+        }
+        
+        return isChecked;
+    }
+    return false;
+};
+
+// ============================================================
+// goToStep
+// ============================================================
+function goToStep(step) {
+    console.log('📋 goToStep called with step:', step);
+    
+    AppState.currentStep = step;
+    
+    for (let i = 1; i <= 3; i++) {
+        const stepEl = document.getElementById(`step${i}`);
+        const contentEl = document.getElementById(`stepContent${i}`);
+        
+        if (stepEl) {
+            stepEl.classList.remove('active', 'completed');
+            if (i < step) {
+                stepEl.classList.add('completed');
+            } else if (i === step) {
+                stepEl.classList.add('active');
+            }
+        }
+        
+        if (contentEl) {
+            contentEl.style.display = i === step ? 'block' : 'none';
+            if (i === step) {
+                contentEl.classList.add('active');
+            } else {
+                contentEl.classList.remove('active');
+            }
+        }
+    }
+
+    if (step === 2 && AppState.cameraWorking && AppState.faceVerified) {
+        if (DOM.cameraNextBtn) {
+            DOM.cameraNextBtn.disabled = false;
+            DOM.cameraNextBtn.style.opacity = '1';
+            DOM.cameraNextBtn.style.cursor = 'pointer';
+        }
+    }
+    if (step === 3) {
+        updateStartButton();
+    }
+}
+
+// ============================================================
+// updateStartButton
+// ============================================================
+function updateStartButton() {
+    const ready = AppState.termsAgreed && AppState.cameraWorking && AppState.faceVerified;
+    
+    if (DOM.startExamBtn) {
+        DOM.startExamBtn.disabled = !ready;
+        DOM.startExamBtn.style.opacity = ready ? '1' : '0.5';
+        DOM.startExamBtn.style.cursor = ready ? 'pointer' : 'not-allowed';
+    }
+    
+    if (DOM.startExamText) {
+        if (AppState.isRetake) {
+            DOM.startExamText.textContent = ready ? 'Continue My Exam' : '⏳ Waiting for verification...';
+        } else {
+            DOM.startExamText.textContent = ready ? 'I\'m Ready! Start My Exam' : 'Waiting for verification...';
+        }
+    }
+}
+
+// ============================================================
+// testCamera - NO RECURSION
+// ============================================================
+window.testCamera = async function() {
+    console.log('📷 testCamera called');
+    
+    if (AppState.isCameraTesting) return;
+    AppState.isCameraTesting = true;
+    
+    const testBtn = document.getElementById('testCameraBtn');
+    const retryBtn = document.getElementById('retryCameraBtn');
+    
+    if (testBtn) {
+        testBtn.disabled = true;
+        testBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Starting...';
+    }
+
+    try {
+        const constraints = {
+            video: {
+                facingMode: 'user',
+                width: { ideal: 480 },
+                height: { ideal: 360 },
+                frameRate: { ideal: 20 }
+            },
+            audio: false
+        };
+
+        console.log('📷 Requesting camera...');
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        console.log('📷 Camera stream obtained');
+        
+        AppState.cameraStream = stream;
+
+        const cameraVideo = document.getElementById('cameraVideo');
+        const cameraStatusText = document.getElementById('cameraStatusText');
+        const cameraStatusMessage = document.getElementById('cameraStatusMessage');
+        const faceCountDisplay = document.getElementById('faceCountDisplay');
+        const cameraPreview = document.querySelector('.camera-preview');
+        const cameraStatusDot = document.getElementById('cameraStatusDot');
+        
+        if (cameraVideo) {
+            cameraVideo.srcObject = stream;
+            await cameraVideo.play();
+            console.log('📷 Camera video playing');
+        }
+        
+        if (cameraPreview) cameraPreview.className = 'camera-preview';
+        if (cameraStatusDot) cameraStatusDot.className = 'status-dot good';
+        if (cameraStatusText) cameraStatusText.textContent = 'Camera active - Verifying...';
+        if (cameraStatusMessage) {
+            cameraStatusMessage.className = 'camera-status-text info';
+            cameraStatusMessage.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying face...';
+        }
+        if (retryBtn) retryBtn.style.display = 'none';
+        if (testBtn) testBtn.style.display = 'none';
+        
+        AppState.cameraWorking = true;
+
+        await loadFaceDetectionModels();
+        console.log('📷 Face detection models loaded');
+
+        let faceDetected = false;
+        let attempts = 0;
+        const maxAttempts = 5;
+        
+        while (attempts < maxAttempts && !faceDetected) {
+            await new Promise(r => setTimeout(r, 200));
+            attempts++;
+            
+            try {
+                const detections = await fastDetectFace(cameraVideo);
+                if (detections && detections.length === 1) {
+                    faceDetected = true;
+                    console.log('“· Face detected!');
+                    break;
+                } else if (detections && detections.length > 1) {
+                    if (faceCountDisplay) faceCountDisplay.textContent = `👤 ${detections.length} faces ⚠️`;
+                    if (cameraStatusMessage) {
+                        cameraStatusMessage.className = 'camera-status-text warning';
+                        cameraStatusMessage.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${detections.length} faces detected - only 1 allowed`;
+                    }
+                    await new Promise(r => setTimeout(r, 500));
+                } else {
+                    if (faceCountDisplay) faceCountDisplay.textContent = '👤 0 faces';
+                }
+            } catch (e) {
+                console.warn('Face detection attempt', attempts, 'failed:', e);
+            }
+        }
+
+        if (faceDetected) {
+            AppState.faceVerified = true;
+            
+            if (faceCountDisplay) faceCountDisplay.textContent = '👤 1 face ✅';
+            if (cameraPreview) cameraPreview.className = 'camera-preview camera-status-good';
+            if (cameraStatusDot) cameraStatusDot.className = 'status-dot good';
+            if (cameraStatusText) cameraStatusText.textContent = '✅ Face verified!';
+            if (cameraStatusMessage) {
+                cameraStatusMessage.className = 'camera-status-text success';
+                cameraStatusMessage.innerHTML = '<i class="fas fa-check-circle"></i> ✅ Camera ready!';
+            }
+            
+            const cameraNextBtn = document.getElementById('cameraNextBtn');
+            if (cameraNextBtn) {
+                cameraNextBtn.disabled = false;
+                cameraNextBtn.style.opacity = '1';
+                cameraNextBtn.style.cursor = 'pointer';
+            }
+            
+            const faceVerifiedCheck = document.getElementById('faceVerifiedCheck');
+            if (faceVerifiedCheck) {
+                faceVerifiedCheck.innerHTML = `
+                    <span style="color:#10b981;font-size:1.1rem;"><i class="fas fa-check-circle"></i></span>
+                    <span>✅ Face verified! You're all set 😊</span>
+                `;
+            }
+            
+            updateStartButton();
+            showToast('✅ Camera ready!', 'success');
+            
+        } else {
+            AppState.faceVerified = false;
+            
+            if (cameraPreview) cameraPreview.className = 'camera-preview camera-status-warning';
+            if (cameraStatusDot) cameraStatusDot.className = 'status-dot warning';
+            if (cameraStatusText) cameraStatusText.textContent = '⚠️ No face detected';
+            if (cameraStatusMessage) {
+                cameraStatusMessage.className = 'camera-status-text warning';
+                cameraStatusMessage.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Please look at the camera';
+            }
+            
+            const cameraNextBtn = document.getElementById('cameraNextBtn');
+            if (cameraNextBtn) {
+                cameraNextBtn.disabled = true;
+                cameraNextBtn.style.opacity = '0.5';
+                cameraNextBtn.style.cursor = 'not-allowed';
+            }
+            
+            const faceVerifiedCheck = document.getElementById('faceVerifiedCheck');
+            if (faceVerifiedCheck) {
+                faceVerifiedCheck.innerHTML = `
+                    <span style="color:#f59e0b;font-size:1.1rem;"><i class="fas fa-circle"></i></span>
+                    <span>🔍 Please look at the camera...</span>
+                `;
+            }
+            
+            showToast('❌ No face detected. Please look at the camera and try again.', 'warning');
+            if (retryBtn) retryBtn.style.display = 'flex';
+        }
+
+    } catch (error) {
+        console.error('Camera error:', error);
+        
+        const cameraPreview = document.querySelector('.camera-preview');
+        const cameraStatusDot = document.getElementById('cameraStatusDot');
+        const cameraStatusText = document.getElementById('cameraStatusText');
+        const cameraStatusMessage = document.getElementById('cameraStatusMessage');
+        const retryBtn = document.getElementById('retryCameraBtn');
+        const testBtn = document.getElementById('testCameraBtn');
+        
+        if (cameraPreview) cameraPreview.className = 'camera-preview camera-status-danger';
+        if (cameraStatusDot) cameraStatusDot.className = 'status-dot danger';
+        if (cameraStatusText) cameraStatusText.textContent = 'Camera failed';
+        if (cameraStatusMessage) {
+            cameraStatusMessage.className = 'camera-status-text error';
+            cameraStatusMessage.innerHTML = '<i class="fas fa-exclamation-circle"></i> Camera access denied. Please allow camera access.';
+        }
+        if (retryBtn) retryBtn.style.display = 'flex';
+        if (testBtn) testBtn.style.display = 'none';
+        
+        AppState.cameraWorking = false;
+        AppState.faceVerified = false;
+        
+        const cameraNextBtn = document.getElementById('cameraNextBtn');
+        if (cameraNextBtn) {
+            cameraNextBtn.disabled = true;
+            cameraNextBtn.style.opacity = '0.5';
+            cameraNextBtn.style.cursor = 'not-allowed';
+        }
+        
+        updateStartButton();
+        showToast('❌ Camera access denied', 'error');
+    }
+
+    AppState.isCameraTesting = false;
+    const testBtn2 = document.getElementById('testCameraBtn');
+    if (testBtn2) testBtn2.disabled = false;
+};
+
+// ============================================================
+// START EXAM
+// ============================================================
+window.startExam = async function() {
+    if (!AppState.cameraWorking || !AppState.termsAgreed || !AppState.faceVerified) {
+        showToast('Please complete all steps first', 'warning');
+        return;
+    }
+
+    // ========================================================
+    // SERVER-SIDE SINGLE-SESSION LOCK
+    // Claim this exam before any exam DB write.
+    // This applies to BOTH normal attempts and admin-authorized
+    // continuation/retake attempts.
+    // ========================================================
+    const sessionOk = await claimExamSessionLock();
+    if (!sessionOk) {
+        return;
+    }
+
+    const cameraVideo = document.getElementById('cameraVideo');
+    const detections = await fastDetectFace(cameraVideo);
+    if (!detections || detections.length !== 1) {
+        showToast('❌ Face verification failed. Please try again.', 'error');
+        return;
+    }
+
+    try {
+        await markExamAttendance('in_progress');
+        AppState.attendanceRecorded = true;
+    } catch (e) {
+        console.warn('Could not mark attendance:', e);
+    }
+
+    try {
+        await getOrCreateCurrentAttempt();
+    } catch (attemptError) {
+        console.error('❌ Could not prepare exam attempt:', attemptError);
+        const msg = attemptError.message || 'Could not start this exam attempt.';
+        if (AppState.isRetake && /No active Admin reset authorization/i.test(msg)) {
+            showToast('❌ This retake is not currently authorized on the server. Please return to the portal and have Admin/Lecturer reset the exam again, then open the Retake Exam link.', 'error', 9000);
+        } else {
+            showToast(msg, 'error', 6000);
+        }
+
+        // The claim was made before attempt preparation. Do not leave
+        // a healthy session lock behind when the attempt cannot start.
+        await releaseExamSessionLock();
+        return;
+    }
+
+    if (AppState.isRetake) {
+        console.log(`🔄 STARTING ADMIN-AUTHORIZED CONTINUATION OF ATTEMPT #${AppState.attemptNumber}`);
+        showToast(`🔄 Exam reset authorized. Same Attempt #${AppState.attemptNumber} resumed with a full ${AppState.duration || 30}-minute timer.`, 'info', 5000);
+        await logProctoringEvent('exam_continuation_started', `Admin-authorized continuation of existing attempt #${AppState.attemptNumber} started with a fresh timer`, 'info');
+    }
+
+    // Show exam interface
+    if (DOM.lobbyContainer) {
+        DOM.lobbyContainer.style.display = 'none';
+        DOM.lobbyContainer.classList.add('hidden');
+    }
+    if (DOM.examInterface) {
+        DOM.examInterface.style.display = 'block';
+        DOM.examInterface.classList.add('active');
+    }
+    
+    // Connect camera to face video
+    if (AppState.cameraStream) {
+        const faceVideo = document.getElementById('face-video');
+        if (faceVideo) {
+            faceVideo.srcObject = AppState.cameraStream;
+            await faceVideo.play();
+            console.log('📷 Face video connected for exam proctoring');
+        }
+    }
+    
+    await enterSecureFullscreen();
+    checkNetworkQuality();
+    setupNetworkQualityMonitoring();
+    await initExam();
+};
+
+// ============================================================
+// 🔄 RESUME POSITION FROM SERVER HEARTBEAT
+// ============================================================
+async function loadResumePositionFromHeartbeat() {
+    try {
+        if (!AppState.studentId || !AppState.examId || AppState.sessionRecovered) return false;
+
+        const { data, error } = await sb
+            .from('exam_heartbeats')
+            .select('current_question, timestamp')
+            .eq('student_id', AppState.studentId)
+            .eq('exam_id', parseInt(AppState.examId))
+            .order('timestamp', { ascending: false })
+            .limit(1);
+
+        if (error || !data || data.length === 0) return false;
+
+        const currentQuestion = Number(data[0].current_question || 0);
+        if (currentQuestion < 1) return false;
+
+        AppState.currentIndex = Math.min(
+            Math.max(currentQuestion - 1, 0),
+            Math.max(AppState.questions.length - 1, 0)
+        );
+
+        console.log(`🔄 Server resume position: question ${AppState.currentIndex + 1}`);
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
+
+// ============================================================
+// ⏱️ RESUME-AWARE EXAM TIMER
+// ============================================================
+function getRemainingExamSeconds() {
+    const totalSeconds = Math.max(1, Number(AppState.duration || 0) * 60);
+
+    // Admin-authorized continuation: the server resets attempt.started_at to
+    // the reset time. This gives the student a complete fresh duration even
+    // when the original exam window has already expired.
+    if (AppState.isContinuation && AppState.attemptStartedAt) {
+        const resetStarted = new Date(AppState.attemptStartedAt).getTime();
+        if (Number.isFinite(resetStarted)) {
+            const elapsed = Math.max(0, Math.floor((Date.now() - resetStarted) / 1000));
+            return Math.max(0, totalSeconds - elapsed);
+        }
+    }
+
+    if (!AppState.attemptStartedAt) return totalSeconds;
+
+    const started = new Date(AppState.attemptStartedAt).getTime();
+    if (!Number.isFinite(started)) return totalSeconds;
+
+    const elapsedSeconds = Math.max(0, Math.floor((Date.now() - started) / 1000));
+    return Math.max(0, totalSeconds - elapsedSeconds);
+}
+
+function startResumeAwareTimer() {
+    const remaining = getRemainingExamSeconds();
+    AppState.remainingSeconds = remaining;
+
+    console.log(
+        `⏱️ Resume-aware timer: ${formatTime(remaining)} remaining ` +
+        `(Attempt #${AppState.attemptNumber || 1})` +
+        (AppState.isContinuation ? ' — FULL TIMER RESTARTED BY ADMIN RESET' : '')
+    );
+
+    startTimer(remaining);
+}
+
+// ============================================================
+// EXAM INITIALIZATION
+// ============================================================
+async function initExam() {
+    console.log('📝 Initializing exam...');
+
+    try {
+        const recovered = recoverExamSession();
+        AppState.sessionRecovered = recovered === true;
+        if (recovered) {
+            showToast(`📂 Session restored for Attempt ${AppState.attemptNumber || 1}. Continuing where you left off.`, 'success');
+        }
+
+        await getOrCreateCurrentAttempt();
+
+        const examResult = await sb
+            .from('exams')
+            .select('exam_name, duration_minutes, pass_mark, total_marks')
+            .eq('id', parseInt(AppState.examId))
+            .single();
+
+        if (examResult.data) {
+            const exam = examResult.data;
+            if (DOM.examTitle) DOM.examTitle.textContent = exam.exam_name || 'Examination';
+            AppState.duration = exam.duration_minutes || 30;
+        }
+
+        const qResult = await sb
+            .from('exam_questions')
+            .select('id, exam_id, question_number, question_text, option_a, option_b, option_c, option_d, option_e, question_type, marks, max_chars, image_url')
+            .eq('exam_id', parseInt(AppState.examId))
+            .order('question_number');
+
+        if (qResult.data && qResult.data.length > 0) {
+            AppState.questions = qResult.data;
+
+            // Correct answers are deliberately never loaded into the student browser.
+            // The database grades the submitted answers in submit_exam_attempt_secure().
+            AppState.correctAnswerMap = {};
+            AppState.questionMarksMap = {};
+            AppState.questions.forEach(q => {
+                AppState.questionMarksMap[q.id] = Number(q.marks) || 1;
+            });
+
+            const studentSeed = AppState.studentId + '_' + AppState.examId;
+            AppState.questions = shuffleArrayWithSeed([...AppState.questions], studentSeed);
+            
+            if (DOM.totalSpan) DOM.totalSpan.textContent = AppState.questions.length;
+
+            renderQuestionStatusTable();
+            await loadSavedAnswers();
+            checkSavedProgress();
+            loadFlaggedQuestions();
+
+            // Prefer exact browser session position. If unavailable, use the
+            // latest server heartbeat, then fall back to the last answered question.
+            if (!AppState.sessionRecovered) {
+                const positionedByHeartbeat = await loadResumePositionFromHeartbeat();
+
+                if (!positionedByHeartbeat) {
+                    const answeredKeys = Object.keys(AppState.answers);
+                    if (answeredKeys.length > 0) {
+                        let lastAnsweredIndex = 0;
+                        AppState.questions.forEach((q, index) => {
+                            if (AppState.answers[q.id]) lastAnsweredIndex = index;
+                        });
+                        AppState.currentIndex = lastAnsweredIndex;
+                    }
+                }
+
+                if (Object.keys(AppState.answers).length > 0) {
+                    showToast(`📚 Continuing from question ${AppState.currentIndex + 1}`, 'info');
+                }
+            }
+
+            renderQuestion(AppState.currentIndex);
+            startResumeAwareTimer();
+            startExamFaceDetection();
+            setupFullscreenMonitoring();
+            setupNetworkMonitoring();
+            setupBeforeUnloadHandler();
+            setupInactivityTimer();
+
+            AppState.saveProgressInterval = setInterval(saveProgressLocally, CONFIG.SAVE_INTERVAL);
+            AppState.heartbeatInterval = setInterval(sendHeartbeat, CONFIG.HEARTBEAT_INTERVAL);
+            startSnapshotCapture();
+
+            setupExamEventListeners();
+            updateExamStats();
+
+            AppState.isExamActive = true;
+            AppState.examStarted = true;
+
+            console.log(`📝 Active Attempt: #${AppState.attemptNumber} (${AppState.attemptId})`);
+            console.log(`📝 Scoring maps ready:`, {
+                correctAnswers: Object.keys(AppState.correctAnswerMap).length,
+                marks: Object.keys(AppState.questionMarksMap).length
+            });
+
+            const answerCount = Object.keys(AppState.answers).length;
+            if (DOM.submitBtn && (answerCount > 0 || AppState.hasAnsweredAtLeastOne)) {
+                DOM.submitBtn.disabled = false;
+                DOM.submitBtn.style.opacity = '1';
+                DOM.submitBtn.style.cursor = 'pointer';
+            }
+
+            saveExamSession();
+            sessionStorage.setItem('examInProgress', 'true');
+            sessionStorage.setItem('examId', AppState.examId);
+            sessionStorage.setItem('studentId', AppState.studentId);
+
+            if (AppState.isRetake) {
+                showToast(`🔄 Continuation resumed. Saved answers restored and the full exam timer restarted.`, 'success');
+            } else {
+                showToast('📝 Exam started! Good luck!', 'success');
+            }
+            
+            await logProctoringEvent('exam_started', 'Exam started with proctoring', 'info');
+
+        } else {
+            if (DOM.examContainer) {
+                DOM.examContainer.innerHTML = '<div class="error-message">❌ No questions found for this exam.</div>';
+            }
+        }
+
+    } catch (error) {
+        console.error('Error initializing exam:', error);
+        if (DOM.examContainer) {
+            DOM.examContainer.innerHTML = '<div class="error-message">❌ Error loading exam: ' + error.message + '</div>';
+        }
+    }
+}
+
+function renderQuestion(index) {
+    if (AppState.fullscreenLockActive || AppState.isExamPaused || AppState.isSubmitting || AppState.sessionLost) {
+        if (AppState.isExamPaused) showToast('⛔ Exam is paused. Complete proctoring recovery before continuing.', 'warning');
+        return;
+    }
+    if (AppState.questions.length === 0) return;
+    index = Math.max(0, Math.min(Number(index) || 0, AppState.questions.length - 1));
+
+    if (AppState.currentIndex !== index && AppState.questions[AppState.currentIndex]) {
+        updateQuestionTimer();
+    }
+
+    AppState.currentIndex = index;
+    const q = AppState.questions[AppState.currentIndex];
+
+    if (AppState.questionTimerInterval) clearInterval(AppState.questionTimerInterval);
+    AppState.questionTimeElapsed = 0;
+
+    const isFlagged = AppState.flaggedQuestions[q.id] || false;
+    const savedAnswer = AppState.answers[q.id] || '';
+
+    // ============================================================
+    // DETECT QUESTION TYPE
+    // ============================================================
+    const questionType = q.question_type || 'multiple_choice';
+    const hasOptions = q.option_a || q.option_b || q.option_c || q.option_d;
+    const isTextQuestion = questionType === 'text' || questionType === 'essay' || !hasOptions;
+
+    let questionHtml = '';
+
+    // ============================================================
+    // MULTIPLE CHOICE
+    // ============================================================
+    if (!isTextQuestion) {
+        let optionsHtml = '';
+        const optionLabels = ['A', 'B', 'C', 'D'];
+        const optionValues = [q.option_a, q.option_b, q.option_c, q.option_d];
+        
+        optionValues.forEach((option, i) => {
+            if (option) {
+                const label = optionLabels[i];
+                const checked = AppState.answers[q.id] === label ? 'checked' : '';
+                optionsHtml += `
+                    <li style="padding:10px 16px; border-radius:10px; border:2px solid ${AppState.answers[q.id] === label ? '#10b981' : '#e2e8f0'}; cursor:pointer; transition:all 0.2s; font-size:0.95rem; background:${AppState.answers[q.id] === label ? '#f0fdf4' : 'transparent'};">
+                        <label style="cursor:pointer; display:flex; align-items:center; gap:10px; width:100%;">
+                            <input type="radio" name="q${q.id}" value="${label}" ${checked} style="accent-color:#10b981; width:16px; height:16px; cursor:pointer;">
+                            <strong>${label}.</strong> ${option}
+                        </label>
+                    </li>
+                `;
+            }
+        });
+
+        questionHtml = `
+            <div style="font-size:1.05rem; font-weight:500; color:#1e293b; line-height:1.7; padding-bottom:10px;">
+                <strong>Q${AppState.currentIndex + 1}:</strong> ${q.question_text}
+                <span style="font-size:0.7rem; color:#94a3b8; font-weight:400; margin-left:8px;">(Multiple Choice)</span>
+            </div>
+            <div style="font-size:0.8rem; color:#94a3b8; margin:10px 0 14px; display:flex; align-items:center; gap:6px;">
+                ⏱️ Time on this question: <span id="q-timer" style="font-weight:600; color:#64748b;">0:00</span>
+            </div>
+            <ul style="list-style:none; padding:0; display:flex; flex-direction:column; gap:8px;">${optionsHtml}</ul>
+            ${isFlagged ? '<div style="color:#f59e0b; font-size:0.85rem; margin-top:10px;">🚩 Flagged for review</div>' : ''}
+        `;
+    }
+
+    // ============================================================
+    // TEXT / ESSAY INPUT
+    // ============================================================
+    else {
+        const maxChars = q.max_characters || 5000;
+        const currentChars = savedAnswer ? savedAnswer.length : 0;
+        const wordCount = savedAnswer ? savedAnswer.trim().split(/\s+/).length : 0;
+
+        questionHtml = `
+            <div style="font-size:1.05rem; font-weight:500; color:#1e293b; line-height:1.7; padding-bottom:10px;">
+                <strong>Q${AppState.currentIndex + 1}:</strong> ${q.question_text}
+                <span style="font-size:0.7rem; color:#94a3b8; font-weight:400; margin-left:8px;">(Written Answer)</span>
+            </div>
+            <div style="font-size:0.8rem; color:#94a3b8; margin:10px 0 14px; display:flex; align-items:center; gap:6px;">
+                ⏱️ Time on this question: <span id="q-timer" style="font-weight:600; color:#64748b;">0:00</span>
+            </div>
+            
+            <!-- Text Area -->
+            <div style="margin:8px 0 12px;">
+                <textarea 
+                    id="text-answer-${q.id}" 
+                    placeholder="Type your answer here..." 
+                    style="width:100%; min-height:180px; padding:14px 16px; border:2px solid #e2e8f0; border-radius:12px; font-size:0.95rem; font-family:'Inter', sans-serif; line-height:1.7; resize:vertical; transition:border-color 0.3s; background:#fafbfc;"
+                    onfocus="this.style.borderColor='#0A3D62'; this.style.background='white';"
+                    onblur="this.style.borderColor='#e2e8f0'; this.style.background='#fafbfc';"
+                >${savedAnswer || ''}</textarea>
+                
+                <!-- Character Counter -->
+                <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.75rem; color:#94a3b8; margin-top:6px; flex-wrap:wrap; gap:4px;">
+                    <div>
+                        <span id="char-count-${q.id}">${currentChars}</span> characters 
+                        <span style="color:#64748b;">|</span> 
+                        <span id="word-count-${q.id}">${wordCount}</span> words
+                    </div>
+                    <div>
+                        <span id="char-limit-${q.id}" style="color:${currentChars > maxChars * 0.9 ? '#dc2626' : '#94a3b8'};">${currentChars}/${maxChars}</span>
+                        <span style="color:#64748b;">max</span>
+                    </div>
+                </div>
+            </div>
+            
+            ${isFlagged ? '<div style="color:#f59e0b; font-size:0.85rem; margin-top:10px;">🚩 Flagged for review</div>' : ''}
+        `;
+    }
+
+    // ============================================================
+    // ✅ RENDER THE QUESTION WITH SCROLLABLE CONTAINER
+    // ============================================================
+    if (DOM.examContainer) {
+        DOM.examContainer.innerHTML = `
+            <div style="height:100%; overflow-y:auto; padding:10px 15px 20px 15px; scroll-behavior:smooth;">
+                ${questionHtml}
+            </div>
+        `;
+        
+        // Apply scroll styles to the container itself
+        DOM.examContainer.style.maxHeight = 'calc(100vh - 280px)';
+        DOM.examContainer.style.overflow = 'hidden';
+        DOM.examContainer.style.padding = '0';
+        DOM.examContainer.style.position = 'relative';
+    }
+
+    // ============================================================
+    // UPDATE FLAG BUTTON
+    // ============================================================
+    if (DOM.flagQuestionBtn) {
+        if (isFlagged) {
+            DOM.flagQuestionBtn.innerHTML = '<i class="fas fa-flag"></i> Flagged';
+            DOM.flagQuestionBtn.style.background = '#f59e0b';
+            DOM.flagQuestionBtn.style.color = 'white';
+        } else {
+            DOM.flagQuestionBtn.innerHTML = '<i class="far fa-flag"></i> Flag';
+            DOM.flagQuestionBtn.style.background = '#fef3c7';
+            DOM.flagQuestionBtn.style.color = '#92400e';
+        }
+    }
+
+    // ============================================================
+    // SETUP EVENT LISTENERS
+    // ============================================================
+    
+    // Multiple Choice: Radio buttons
+    if (!isTextQuestion) {
+        // Restore saved answer
+        if (AppState.answers[q.id]) {
+            const radio = document.querySelector(`input[name="q${q.id}"][value="${AppState.answers[q.id]}"]`);
+            if (radio) radio.checked = true;
+        }
+
+        document.querySelectorAll(`input[name="q${q.id}"]`).forEach((radio) => {
+            radio.addEventListener('change', function(e) {
+                const answer = e.target.value;
+                saveAnswer(answer);
+                saveAnswerToDatabase(q.id, answer);
+                saveProgressLocally();
+            });
+        });
+    }
+    
+    // Text Input: Textarea with auto-save
+    else {
+        const textarea = document.getElementById(`text-answer-${q.id}`);
+        if (textarea) {
+            let saveTimeout = null;
+            
+            textarea.addEventListener('input', function(e) {
+                const value = this.value;
+                const charCount = value.length;
+                const wordCount = value.trim() ? value.trim().split(/\s+/).length : 0;
+                
+                // Update character counter
+                const charCountEl = document.getElementById(`char-count-${q.id}`);
+                const wordCountEl = document.getElementById(`word-count-${q.id}`);
+                const charLimitEl = document.getElementById(`char-limit-${q.id}`);
+                
+                if (charCountEl) charCountEl.textContent = charCount;
+                if (wordCountEl) wordCountEl.textContent = wordCount;
+                if (charLimitEl) {
+                    charLimitEl.textContent = `${charCount}/${maxChars}`;
+                    charLimitEl.style.color = charCount > maxChars * 0.9 ? '#dc2626' : '#94a3b8';
+                }
+                
+                // Auto-save with debounce (500ms)
+                if (saveTimeout) clearTimeout(saveTimeout);
+                saveTimeout = setTimeout(() => {
+                    AppState.answers[q.id] = value;
+                    saveAnswerToDatabase(q.id, value);
+                    saveProgressLocally();
+                    // Show saved indicator
+                    if (DOM.answerSaved) {
+                        DOM.answerSaved.style.display = 'block';
+                        DOM.answerSaved.textContent = '✅ Answer saved!';
+                        setTimeout(() => { if (DOM.answerSaved) DOM.answerSaved.style.display = 'none'; }, 800);
+                    }
+                }, 500);
+            });
+            
+            // Save on blur (when user leaves the textarea)
+            textarea.addEventListener('blur', function() {
+                const value = this.value;
+                if (value !== AppState.answers[q.id]) {
+                    AppState.answers[q.id] = value;
+                    saveAnswerToDatabase(q.id, value);
+                    saveProgressLocally();
+                }
+            });
+        }
+    }
+
+    // ============================================================
+    // UPDATE UI
+    // ============================================================
+    updateProgress();
+    updateStatusTable();
+    updateExamStats();
+
+    // Start question timer
+    AppState.questionStartTime = Date.now();
+
+    AppState.questionTimerInterval = setInterval(() => {
+        AppState.questionTimeElapsed++;
+        const remaining = CONFIG.MAX_TIME_PER_QUESTION - AppState.questionTimeElapsed;
+        const mins = Math.floor(remaining / 60);
+        const secs = remaining % 60;
+        const timerEl = document.getElementById('q-timer');
+        if (timerEl) {
+            timerEl.textContent = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+            if (remaining <= 30) {
+                timerEl.style.color = '#dc2626';
+                timerEl.style.fontWeight = 'bold';
+            } else if (remaining <= 60) {
+                timerEl.style.color = '#f59e0b';
+            } else {
+                timerEl.style.color = '#64748b';
+            }
+        }
+
+        if (AppState.questionTimeElapsed >= CONFIG.MAX_TIME_PER_QUESTION) {
+            clearInterval(AppState.questionTimerInterval);
+            showToast('⏰ Time for this question has expired. Moving to next question.', 'warning');
+            if (AppState.currentIndex < AppState.questions.length - 1 && !AppState.isExamPaused) {
+                nextQuestion();
+            }
+        }
+    }, 1000);
+}
+// ============================================================
+// QUESTION NAVIGATION
+// ============================================================
+function prevQuestion() {
+    if (AppState.fullscreenLockActive || AppState.isNavigating || AppState.isExamPaused) return;
+    if (AppState.currentIndex <= 0) return;
+
+    AppState.isNavigating = true;
+    try {
+        saveCurrentAnswer();
+        renderQuestion(AppState.currentIndex - 1);
+    } finally {
+        setTimeout(() => { AppState.isNavigating = false; }, 150);
+    }
+}
+
+function nextQuestion() {
+    if (AppState.fullscreenLockActive || AppState.isNavigating || AppState.isExamPaused) {
+        if (AppState.isExamPaused) showToast('⛔ Exam is paused. Face not detected.', 'warning');
+        return;
+    }
+    if (AppState.currentIndex >= AppState.questions.length - 1) return;
+
+    AppState.isNavigating = true;
+    try {
+        saveCurrentAnswer();
+        renderQuestion(AppState.currentIndex + 1);
+    } finally {
+        setTimeout(() => { AppState.isNavigating = false; }, 150);
+    }
+}
+
+// ============================================================
+// ANSWER SAVING
+// ============================================================
+function saveAnswer(answer) {
+    if (AppState.fullscreenLockActive || AppState.isExamPaused || AppState.isSubmitting || AppState.sessionLost || !AppState.isExamActive) {
+        showToast('⛔ Answering is locked until the exam can safely continue.', 'warning');
+        return;
+    }
+    const q = AppState.questions[AppState.currentIndex];
+    if (!q) return;
+    AppState.answers[q.id] = answer;
+    AppState.hasAnsweredAtLeastOne = true;
+    
+    if (DOM.submitBtn) {
+        DOM.submitBtn.disabled = false;
+        DOM.submitBtn.style.opacity = '1';
+        DOM.submitBtn.style.cursor = 'pointer';
+    }
+
+    if (DOM.answerSaved) {
+        DOM.answerSaved.style.display = 'block';
+        DOM.answerSaved.textContent = '✅ Saved!';
+        setTimeout(() => { if (DOM.answerSaved) DOM.answerSaved.style.display = 'none'; }, 800);
+    }
+
+    saveAnswerToDatabase(q.id, answer);
+    updateStatusTable();
+    updateExamStats();
+    saveProgressLocally();
+}
+
+function saveCurrentAnswer() {
+    if (AppState.fullscreenLockActive || AppState.isExamPaused || AppState.isSubmitting || AppState.sessionLost || !AppState.isExamActive) return;
+    const q = AppState.questions[AppState.currentIndex];
+    if (!q) return;
+    
+    const radio = document.querySelector(`input[name="q${q.id}"]:checked`);
+    if (radio) {
+        const answer = radio.value;
+        if (AppState.answers[q.id] !== answer) {
+            AppState.answers[q.id] = answer;
+            saveAnswerToDatabase(q.id, answer);
+            saveProgressLocally();
+            updateStatusTable();
+            updateExamStats();
+        }
+    }
+}
+
+
+// ============================================================
+// ATTEMPT-AWARE GRADE WRITE HELPER
+// Handles the new (attempt_id, question_id) key and gives a
+// controlled fallback while the database unique constraint is
+// being migrated.
+// ============================================================
+async function upsertAttemptGrade(payload) {
+    if (!AppState.attemptId) throw new Error('No active exam attempt');
+
+    const row = {
+        ...payload,
+        student_id: AppState.studentId,
+        exam_id: parseInt(AppState.examId),
+        attempt_id: AppState.attemptId
+    };
+
+    let result = await sb
+        .from('exam_grades')
+        .upsert(row, { onConflict: 'attempt_id,question_id' })
+        .select('id')
+        .maybeSingle();
+
+    if (!result.error) return result.data || null;
+
+    // 42P10 means the database does not yet have the matching
+    // unique/exclusion constraint. Fall back to explicit update/insert
+    // so the submission can still complete after the schema transition.
+    if (result.error.code !== '42P10') throw result.error;
+
+    console.warn('⚠️ exam_grades unique constraint for (attempt_id, question_id) is missing; using safe update/insert fallback.');
+
+    const { data: existingRows, error: lookupError } = await sb
+        .from('exam_grades')
+        .select('id')
+        .eq('attempt_id', AppState.attemptId)
+        .eq('question_id', row.question_id)
+        .order('updated_at', { ascending: false })
+        .limit(1);
+
+    if (lookupError) throw lookupError;
+
+    const existing = existingRows?.[0] || null;
+
+    if (existing?.id) {
+        const { data: updated, error: updateError } = await sb
+            .from('exam_grades')
+            .update(row)
+            .eq('id', existing.id)
+            .select('id')
+            .maybeSingle();
+
+        if (updateError) throw updateError;
+        return updated || existing;
+    }
+
+    const { data: inserted, error: insertError } = await sb
+        .from('exam_grades')
+        .insert(row)
+        .select('id')
+        .maybeSingle();
+
+    if (insertError) throw insertError;
+    return inserted || null;
+}
+
+async function saveAnswerToDatabase(questionId, answer) {
+    // Answers are held locally while the exam is in progress. Direct browser
+    // writes to exam_grades are intentionally disabled; the authenticated,
+    // server-side submit_exam_attempt_secure RPC persists and grades them.
+    if (!AppState.attemptId) throw new Error('No active exam attempt');
+    const saved = saveToLocalStorage(`draft_${questionId}`, {
+        answer: answer == null ? '' : String(answer),
+        timestamp: Date.now(),
+        attemptId: AppState.attemptId
+    });
+    if (!saved) throw new Error('Could not save answer locally. Check browser storage.');
+    return true;
+}
+async function loadSavedAnswers() {
+    // Individual answer rows are no longer readable by students. Recover only
+    // this attempt's locally saved drafts; final answers go to the secure RPC.
+    if (!AppState.attemptId) return;
+    let loaded = 0;
+    (AppState.questions || []).forEach((question) => {
+        const draft = loadFromLocalStorage(`draft_${question.id}`);
+        if (draft && draft.attemptId === AppState.attemptId && draft.answer != null) {
+            AppState.answers[question.id] = String(draft.answer);
+            loaded++;
+        }
+    });
+    if (loaded > 0) {
+        AppState.hasAnsweredAtLeastOne = true;
+        if (DOM.submitBtn) {
+            DOM.submitBtn.disabled = false;
+            DOM.submitBtn.style.opacity = '1';
+            DOM.submitBtn.style.cursor = 'pointer';
+        }
+    }
+    console.log(`Recovered ${loaded} locally saved answers for Attempt ${AppState.attemptNumber}`);
+}
+
+function saveProgressLocally() {
+    if (!AppState.isExamActive) return;
+    try {
+        saveToLocalStorage('progress', {
+            answers: AppState.answers,
+            currentIndex: AppState.currentIndex,
+            flaggedQuestions: AppState.flaggedQuestions,
+            attemptId: AppState.attemptId,
+            examId: String(AppState.examId),
+            studentId: String(AppState.studentId),
+            timestamp: Date.now()
+        });
+        saveExamSession();
+    } catch (e) {}
+}
+
+function checkSavedProgress() {
+    try {
+        const data = loadFromLocalStorage('progress');
+        const belongsToCurrentAttempt = data
+            && String(data.examId) === String(AppState.examId)
+            && String(data.studentId) === String(AppState.studentId)
+            && String(data.attemptId) === String(AppState.attemptId);
+        if (belongsToCurrentAttempt && Date.now() - data.timestamp < 30 * 60 * 1000) {
+            if (data.answers && Object.keys(data.answers).length > 0) {
+                AppState.answers = data.answers;
+                AppState.currentIndex = data.currentIndex || 0;
+                if (data.flaggedQuestions) {
+                    AppState.flaggedQuestions = data.flaggedQuestions;
+                }
+                AppState.hasAnsweredAtLeastOne = Object.keys(AppState.answers).length > 0;
+                if (DOM.submitBtn && AppState.hasAnsweredAtLeastOne) {
+                    DOM.submitBtn.disabled = false;
+                    DOM.submitBtn.style.opacity = '1';
+                    DOM.submitBtn.style.cursor = 'pointer';
+                }
+                renderQuestion(AppState.currentIndex);
+                updateStatusTable();
+                updateExamStats();
+                showToast('✅ Previous progress restored', 'success');
+                return true;
+            }
+        }
+    } catch (e) {}
+    return false;
+}
+
+// ============================================================
+// FLAGGING
+// ============================================================
+window.toggleFlagQuestion = function() {
+    const q = AppState.questions[AppState.currentIndex];
+    if (!q) return;
+
+    if (AppState.flaggedQuestions[q.id]) {
+        delete AppState.flaggedQuestions[q.id];
+        if (DOM.flagQuestionBtn) {
+            DOM.flagQuestionBtn.innerHTML = '<i class="far fa-flag"></i> Flag';
+            DOM.flagQuestionBtn.style.background = '#fef3c7';
+            DOM.flagQuestionBtn.style.color = '#92400e';
+        }
+        showToast('Question unmarked', 'info');
+    } else {
+        AppState.flaggedQuestions[q.id] = true;
+        if (DOM.flagQuestionBtn) {
+            DOM.flagQuestionBtn.innerHTML = '<i class="fas fa-flag"></i> Flagged';
+            DOM.flagQuestionBtn.style.background = '#f59e0b';
+            DOM.flagQuestionBtn.style.color = 'white';
+        }
+        showToast('Question flagged for review', 'success');
+        updateStatusTable();
+    }
+    saveFlaggedQuestions();
+    updateExamStats();
+};
+
+function saveFlaggedQuestions() {
+    saveToLocalStorage('flagged', AppState.flaggedQuestions);
+}
+
+function loadFlaggedQuestions() {
+    const saved = loadFromLocalStorage('flagged');
+    if (saved) {
+        AppState.flaggedQuestions = saved;
+        updateStatusTable();
+    }
+}
+
+// ============================================================
+// QUESTION STATUS TABLE
+// ============================================================
+function renderQuestionStatusTable() {
+    if (!DOM.questionStatusTable) return;
+    
+    DOM.questionStatusTable.innerHTML = '';
+    AppState.questions.forEach((_, index) => {
+        const item = document.createElement('div');
+        item.className = 'status-item';
+        item.id = `q-status-${index}`;
+        item.textContent = index + 1;
+        item.style.cssText = `
+            padding: 8px 4px;
+            text-align: center;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: #e2e8f0;
+            color: #64748b;
+            border: 2px solid transparent;
+        `;
+        
+        const q = AppState.questions[index];
+        if (AppState.answers[q.id]) {
+            item.style.background = '#10b981';
+            item.style.color = 'white';
+            item.title = `Answer: ${AppState.answers[q.id]}`;
+        }
+        
+        item.onclick = function() {
+            if (!AppState.isExamPaused) renderQuestion(index);
+            else showToast('⛔ Exam is paused. Face not detected.', 'warning');
+        };
+        DOM.questionStatusTable.appendChild(item);
+    });
+    updateStatusTable();
+}
+
+function updateStatusTable() {
+    AppState.questions.forEach((q, index) => {
+        const item = document.getElementById(`q-status-${index}`);
+        if (item) {
+            item.style.border = '2px solid transparent';
+            if (index === AppState.currentIndex) {
+                item.style.border = '2px solid #3b82f6';
+            }
+            if (AppState.answers[q.id]) {
+                item.style.background = '#10b981';
+                item.style.color = 'white';
+            } else {
+                item.style.background = '#e2e8f0';
+                item.style.color = '#64748b';
+            }
+            if (AppState.flaggedQuestions[q.id]) {
+                item.style.background = '#f59e0b';
+                item.style.color = 'white';
+            }
+            if (AppState.answers[q.id] && AppState.flaggedQuestions[q.id]) {
+                item.style.background = 'linear-gradient(135deg, #10b981, #f59e0b)';
+            }
+            item.textContent = index + 1;
+        }
+    });
+}
+
+// ============================================================
+// UPDATE EXAM STATS
+// ============================================================
+function updateExamStats() {
+    const total = AppState.questions.length;
+    const answered = Object.keys(AppState.answers).length;
+    const flagged = Object.keys(AppState.flaggedQuestions).length;
+    const progress = total > 0 ? Math.round((answered / total) * 100) : 0;
+    const unanswered = total - answered;
+
+    if (DOM.statsAnswered) {
+        DOM.statsAnswered.textContent = answered + '/' + total;
+        DOM.statsAnswered.style.color = answered === total ? '#059669' : answered > total * 0.5 ? '#d97706' : '#dc2626';
+    }
+    if (DOM.statsFlagged) {
+        DOM.statsFlagged.textContent = flagged;
+        DOM.statsFlagged.style.color = flagged > 0 ? '#d97706' : '#94a3b8';
+    }
+    if (DOM.statsFace) {
+        DOM.statsFace.textContent = AppState.isExamPaused ? '⛔ Paused' : '✅ OK';
+        DOM.statsFace.style.color = AppState.isExamPaused ? '#DC2626' : '#38A169';
+    }
+    if (DOM.statsProgress) {
+        DOM.statsProgress.textContent = progress + '%';
+        DOM.statsProgress.style.color = progress === 100 ? '#059669' : progress >= 50 ? '#d97706' : '#dc2626';
+    }
+    if (DOM.statsUnanswered) {
+        DOM.statsUnanswered.textContent = unanswered;
+        DOM.statsUnanswered.style.color = unanswered > 0 ? '#dc2626' : '#059669';
+    }
+    if (DOM.progressFill) {
+        DOM.progressFill.style.width = progress + '%';
+    }
+    if (DOM.progressPercentage) {
+        DOM.progressPercentage.textContent = progress + '%';
+    }
+}
+
+// ============================================================
+// UPDATE PROGRESS
+// ============================================================
+function updateProgress() {
+    if (DOM.currentSpan) DOM.currentSpan.textContent = AppState.currentIndex + 1;
+    const percent = ((AppState.currentIndex + 1) / AppState.questions.length) * 100;
+    if (DOM.progressFill) DOM.progressFill.style.width = percent + '%';
+    
+    if (DOM.prevBtn) {
+        DOM.prevBtn.disabled = AppState.currentIndex === 0 || AppState.isExamPaused;
+        DOM.prevBtn.style.opacity = DOM.prevBtn.disabled ? '0.4' : '1';
+        DOM.prevBtn.style.cursor = DOM.prevBtn.disabled ? 'not-allowed' : 'pointer';
+    }
+    if (DOM.nextBtn) {
+        DOM.nextBtn.disabled = AppState.currentIndex === AppState.questions.length - 1 || AppState.isExamPaused;
+        DOM.nextBtn.style.opacity = DOM.nextBtn.disabled ? '0.4' : '1';
+        DOM.nextBtn.style.cursor = DOM.nextBtn.disabled ? 'not-allowed' : 'pointer';
+    }
+    
+    updateExamStats();
+}
+
+function updateQuestionTimer() {
+    const elapsed = (Date.now() - AppState.questionStartTime) / 1000;
+    const currentQ = AppState.questions[AppState.currentIndex];
+    if (currentQ) {
+        AppState.questionTimes[currentQ.id] = elapsed;
+    }
+}
+
+// ============================================================
+// TIMER
+// ============================================================
+function startTimer(seconds) {
+    // Prevent duplicate countdowns when a recovered exam re-enters the timer setup.
+    if (AppState.timerInterval) {
+        clearInterval(AppState.timerInterval);
+        AppState.timerInterval = null;
+    }
+    const timerEl = document.getElementById('timer');
+    const timerDisplayHeader = document.getElementById('timerDisplayHeader');
+    const timerProgressBar = document.getElementById('timerProgressBar');
+    
+    if (!timerEl) return;
+
+    const totalSeconds = Math.max(1, Number(seconds || 0));
+    let remaining = Math.max(0, Number(seconds || 0));
+    AppState.remainingSeconds = remaining;
+
+    AppState.timerInterval = setInterval(() => {
+        seconds = remaining;
+        AppState.remainingSeconds = remaining;
+        const timeString = formatTime(remaining);
+        if (timerEl) timerEl.textContent = timeString;
+        if (timerDisplayHeader) {
+            timerDisplayHeader.textContent = timeString;
+            timerDisplayHeader.style.setProperty('color', '#0A3D62', 'important');
+            timerDisplayHeader.style.setProperty('background', '#EAF4FF', 'important');
+            timerDisplayHeader.style.setProperty('border', '2px solid #0A3D62', 'important');
+            timerDisplayHeader.style.setProperty('font-weight', '800', 'important');
+            timerDisplayHeader.style.setProperty('text-shadow', 'none', 'important');
+        }
+        
+        if (timerProgressBar) {
+            const progress = (remaining / totalSeconds) * 100;
+            timerProgressBar.style.width = progress + '%';
+            
+            if (remaining <= 60) {
+                timerProgressBar.style.background = 'linear-gradient(90deg, #ef4444, #dc2626)';
+                if (timerEl) timerEl.style.color = '#ef4444';
+                if (timerDisplayHeader) {
+                    timerDisplayHeader.style.setProperty('color', '#991B1B', 'important');
+                    timerDisplayHeader.style.setProperty('background', '#FEE2E2', 'important');
+                    timerDisplayHeader.style.setProperty('border-color', '#DC2626', 'important');
+                }
+            } else if (seconds <= 300) {
+                timerProgressBar.style.background = 'linear-gradient(90deg, #f59e0b, #d97706)';
+                if (timerEl) timerEl.style.color = '#f59e0b';
+                if (timerDisplayHeader) {
+                    timerDisplayHeader.style.setProperty('color', '#92400E', 'important');
+                    timerDisplayHeader.style.setProperty('background', '#FEF3C7', 'important');
+                    timerDisplayHeader.style.setProperty('border-color', '#D97706', 'important');
+                }
+            } else {
+                timerProgressBar.style.background = 'linear-gradient(90deg, #10b981, #059669)';
+                if (timerEl) timerEl.style.color = 'white';
+                if (timerDisplayHeader) {
+                    timerDisplayHeader.style.setProperty('color', '#0A3D62', 'important');
+                    timerDisplayHeader.style.setProperty('background', '#EAF4FF', 'important');
+                    timerDisplayHeader.style.setProperty('border-color', '#0A3D62', 'important');
+                }
+            }
+        }
+
+        if (remaining <= 60 && seconds > 0 && !AppState.timerWarningShown) {
+            AppState.timerWarningShown = true;
+            showToast('⚠️ 1 minute remaining! Your exam will auto-submit.', 'warning');
+        }
+
+        if (remaining <= 0) {
+            clearInterval(AppState.timerInterval);
+            if (timerEl) timerEl.textContent = '00:00';
+            if (timerDisplayHeader) timerDisplayHeader.textContent = '00:00';
+            if (timerProgressBar) timerProgressBar.style.width = '0%';
+            
+            logProctoringEvent('exam_auto_submitted', 'Exam was automatically submitted when timer reached 0', 'info');
+            
+            if (DOM.examContainer) {
+                DOM.examContainer.innerHTML = `
+                    <div style="text-align:center; padding:40px;">
+                        <div style="font-size:4rem;">⏰</div>
+                        <h2 style="color:#0A3D62;">Time's Up!</h2>
+                        <p style="color:#64748b;">Your exam time has ended. Your answers are being submitted automatically.</p>
+                        <div style="margin-top:12px; color:#0A3D62;">⏳ Submitting...</div>
+                    </div>
+                `;
+            }
+            if (DOM.prevBtn) DOM.prevBtn.disabled = true;
+            if (DOM.nextBtn) DOM.nextBtn.disabled = true;
+            if (DOM.submitBtn) DOM.submitBtn.disabled = true;
+            
+            captureSnapshot();
+            setTimeout(() => executeSubmissionWithLoading(), 2000);
+        }
+
+        remaining--;
+    }, 1000);
+}
+
+// ============================================================
+// REVIEW MODE
+// ============================================================
+window.toggleReviewMode = function() {
+    const isReview = DOM.reviewModeToggle ? DOM.reviewModeToggle.checked : false;
+    const container = DOM.reviewContainer;
+
+    if (isReview && container) {
+        let html = '';
+        AppState.questions.forEach((q, index) => {
+            const answer = AppState.answers[q.id] || 'Not answered';
+            const isAnswered = !!AppState.answers[q.id];
+            const isFlagged = AppState.flaggedQuestions[q.id] || false;
+            const answeredColor = isAnswered ? '#10b981' : '#dc2626';
+            const answeredText = isAnswered ? `✅ ${answer}` : '⚠️ Not answered';
+            const flaggedText = isFlagged ? ' 🚩' : '';
+            html += `
+                <div style="padding:8px 12px; border-radius:8px; margin-bottom:4px; background:${isAnswered ? '#f0fdf4' : '#fef2f2'}; border-left:3px solid ${isAnswered ? '#10b981' : '#dc2626'}; cursor:pointer; display:flex; justify-content:space-between; align-items:center; font-size:0.85rem;" 
+                     onclick="window.renderQuestion(${index})">
+                    <span>Q${index + 1}: ${q.question_text.substring(0, 40)}${q.question_text.length > 40 ? '...' : ''}</span>
+                    <span style="font-weight:600; color:${answeredColor}">${answeredText}${flaggedText}</span>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+    } else if (container) {
+        container.innerHTML = '';
+    }
+};
+
+// ============================================================
+// ✅ FIXED: submitExam - with confirmation and no auto-submit on minimize
+// ============================================================
+function submitExam(forceAutoSubmit = false) {
+    if (AppState.isSubmitting) {
+        showToast('⏳ Submission already in progress...', 'warning');
+        return;
+    }
+
+    // Automatic policy-triggered submissions (exam timer/fullscreen timeout) must not
+    // wait for a student confirmation dialog that may no longer be accessible.
+    if (forceAutoSubmit === true) {
+        executeSubmissionWithLoading();
+        return;
+    }
+
+    // Get counts
+    const total = AppState.questions.length;
+    const answered = Object.keys(AppState.answers).length;
+    const skipped = total - answered;
+    const flagged = Object.keys(AppState.flaggedQuestions).length;
+
+    // Build confirmation message
+    let message = '';
+    let title = '📝 Confirm Submission';
+    let isWarning = false;
+
+    if (skipped === 0 && flagged === 0) {
+        message = '✅ All questions answered. Submit your exam?';
+    } else if (skipped === 0 && flagged > 0) {
+        message = `✅ All questions answered. You have ${flagged} flagged question(s). Submit anyway?`;
+    } else if (skipped > 0 && flagged === 0) {
+        message = `⚠️ You have ${skipped} unanswered question(s). Submit anyway?`;
+        isWarning = true;
+        title = '⚠️ Confirm Submission';
+    } else {
+        message = `⚠️ You have ${skipped} unanswered and ${flagged} flagged question(s). Submit anyway?`;
+        isWarning = true;
+        title = '⚠️ Confirm Submission';
+    }
+
+    // Show custom confirmation modal
+    showCustomConfirm(
+        message,
+        title,
+        isWarning,
+        function() {
+            console.log('✅ User confirmed submission');
+            proceedWithSubmission();
+        },
+        function() {
+            console.log('❌ User cancelled submission');
+            showToast('📝 Submission cancelled', 'info');
+        }
+    );
+}
+
+function showCustomConfirm(message, title, isWarning, onConfirm, onCancel) {
+    console.log('🟣 [CONFIRM] Opening submission confirmation modal');
+
+    const existingModal = document.getElementById('custom-confirm-modal');
+    if (existingModal) existingModal.remove();
+
+    // Store callbacks globally so inline/capture handlers cannot be lost
+    // because of event-listener/stacking-context issues.
+    window.__nchsmSubmitConfirm = {
+        onConfirm: typeof onConfirm === 'function' ? onConfirm : null,
+        onCancel: typeof onCancel === 'function' ? onCancel : null
+    };
+
+    const modal = document.createElement('div');
+    modal.id = 'custom-confirm-modal';
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.style.cssText = `
+        position: fixed !important;
+        inset: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        background: rgba(0,0,0,0.6) !important;
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        z-index: 2147483647 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        pointer-events: auto !important;
+        font-family: 'Inter', sans-serif;
+    `;
+
+    modal.innerHTML = `
+        <div id="nchsm-confirm-card" style="
+            position:relative;
+            z-index:2147483647;
+            background:white;
+            border-radius:20px;
+            padding:32px;
+            max-width:480px;
+            width:90%;
+            box-shadow:0 20px 60px rgba(0,0,0,0.35);
+            pointer-events:auto !important;
+        ">
+            <div style="font-size:2.5rem; text-align:center; margin-bottom:12px;">
+                ${isWarning ? '⚠️' : '📋'}
+            </div>
+            <h3 style="text-align:center; color:${isWarning ? '#dc2626' : '#0A3D62'}; font-weight:700; font-size:1.2rem; margin-bottom:12px;">
+                ${title}
+            </h3>
+            <p style="text-align:center; color:#475569; font-size:0.95rem; line-height:1.6; margin-bottom:24px;">
+                ${message}
+            </p>
+            <div style="display:flex; gap:12px;">
+                <button
+                    type="button"
+                    id="confirm-cancel-btn"
+                    aria-label="Cancel submission"
+                    style="flex:1; padding:12px; border:2px solid #e2e8f0; border-radius:12px; background:white; color:#64748b; font-weight:600; font-size:0.9rem; cursor:pointer; pointer-events:auto !important; position:relative; z-index:2147483647;"
+                >
+                    Cancel
+                </button>
+                <button
+                    type="button"
+                    id="confirm-submit-btn"
+                    aria-label="Confirm submission"
+                    style="flex:1; padding:12px; border:none; border-radius:12px; background:linear-gradient(135deg,#10b981,#059669); color:white; font-weight:700; font-size:0.9rem; cursor:pointer; pointer-events:auto !important; position:relative; z-index:2147483647; box-shadow:0 4px 16px rgba(5,150,105,0.3);"
+                >
+                    ✅ Submit
+                </button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    const confirmBtn = modal.querySelector('#confirm-submit-btn');
+    const cancelBtn = modal.querySelector('#confirm-cancel-btn');
+
+    console.log('🟣 [CONFIRM] Buttons created:', {
+        confirm: !!confirmBtn,
+        cancel: !!cancelBtn,
+        confirmDisabled: confirmBtn ? confirmBtn.disabled : 'missing',
+        cancelDisabled: cancelBtn ? cancelBtn.disabled : 'missing'
+    });
+
+    const finish = (confirmed) => {
+        console.log(`🟣 [CONFIRM] ${confirmed ? 'SUBMIT' : 'CANCEL'} BUTTON ACTIVATED`);
+        const callbacks = window.__nchsmSubmitConfirm || {};
+        modal.remove();
+        window.__nchsmSubmitConfirm = null;
+        if (confirmed) {
+            if (typeof callbacks.onConfirm === 'function') callbacks.onConfirm();
+        } else {
+            if (typeof callbacks.onCancel === 'function') callbacks.onCancel();
+        }
+    };
+
+    // ============================================================
+    // HARDENED MOBILE/TOUCH SUBMIT HANDLER
+    // ============================================================
+    // Some Android/WebView/mobile browsers can visually receive a click
+    // while another document-level listener prevents the button action.
+    // Handle pointer/touch/click directly on the button and guard against
+    // the same physical tap firing more than once.
+    let actionHandled = false;
+
+    const activateConfirm = (e) => {
+        if (actionHandled) return;
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+        }
+        actionHandled = true;
+        console.log('🟢 [CONFIRM] SUBMIT BUTTON ACTIVATED');
+        finish(true);
+    };
+
+    const activateCancel = (e) => {
+        if (actionHandled) return;
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+        }
+        actionHandled = true;
+        console.log('🟣 [CONFIRM] CANCEL BUTTON ACTIVATED');
+        finish(false);
+    };
+
+    if (confirmBtn) {
+        confirmBtn.style.touchAction = 'manipulation';
+        confirmBtn.style.webkitTapHighlightColor = 'transparent';
+        confirmBtn.tabIndex = 0;
+        confirmBtn.onclick = activateConfirm;
+        confirmBtn.addEventListener('pointerup', activateConfirm, true);
+        confirmBtn.addEventListener('touchend', activateConfirm, { capture: true, passive: false });
+        confirmBtn.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') activateConfirm(e);
+        }, true);
+    }
+
+    if (cancelBtn) {
+        cancelBtn.style.touchAction = 'manipulation';
+        cancelBtn.style.webkitTapHighlightColor = 'transparent';
+        cancelBtn.tabIndex = 0;
+        cancelBtn.onclick = activateCancel;
+        cancelBtn.addEventListener('pointerup', activateCancel, true);
+        cancelBtn.addEventListener('touchend', activateCancel, { capture: true, passive: false });
+        cancelBtn.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') activateCancel(e);
+        }, true);
+    }
+
+    // Document-level capture fallback. It uses the same one-shot guard, so
+    // it cannot submit twice if both pointer and click fire for one tap.
+    const delegatedConfirmHandler = (e) => {
+        if (actionHandled) return;
+        const target = e.target && e.target.closest ? e.target.closest('#confirm-submit-btn, #confirm-cancel-btn') : null;
+        if (!target || !document.getElementById('custom-confirm-modal')) return;
+        console.log('🟡 [CONFIRM] Delegated capture handler:', target.id, e.type);
+        if (e.type === 'touchend' || e.type === 'pointerup' || e.type === 'click') {
+            if (e.type !== 'click' || !('PointerEvent' in window)) {
+                if (target.id === 'confirm-submit-btn') activateConfirm(e);
+                else activateCancel(e);
+            }
+        }
+    };
+    modal.__nchsmDelegatedConfirmHandler = delegatedConfirmHandler;
+    document.addEventListener('click', delegatedConfirmHandler, true);
+
+    const cleanupDelegated = () => {
+        document.removeEventListener('click', delegatedConfirmHandler, true);
+    };
+    modal.__nchsmCleanupConfirmHandler = cleanupDelegated;
+
+    // Escape = cancel
+    const keyHandler = (e) => {
+        if (e.key === 'Escape' && document.getElementById('custom-confirm-modal')) {
+            e.preventDefault();
+            e.stopPropagation();
+            finish(false);
+        }
+    };
+    modal.__nchsmKeyHandler = keyHandler;
+    document.addEventListener('keydown', keyHandler, true);
+
+    const originalRemove = modal.remove.bind(modal);
+    modal.remove = function() {
+        cleanupDelegated();
+        document.removeEventListener('keydown', keyHandler, true);
+        originalRemove();
+    };
+
+    if (confirmBtn) confirmBtn.focus();
+}
+
+function proceedWithSubmission() {
+    verifySignInAttendance().then(canSubmit => {
+        if (!canSubmit) return;
+
+        saveCurrentAnswer();
+        syncPendingAnswers();
+        executeSubmissionWithLoading();
+    }).catch(err => {
+        console.error('Attendance check failed:', err);
+        showToast('Error checking attendance. Please try again.', 'error');
+    });
+}
+
+function syncPendingAnswers() {
+    const draftKeys = Object.keys(localStorage).filter(key =>
+        key.startsWith(`${CONFIG.STORAGE_PREFIX}${AppState.examId}_draft_${AppState.studentId}`)
+    );
+
+    const pendingKeys = [];
+    let synced = 0;
+
+    for (const key of draftKeys) {
+        try {
+            const data = JSON.parse(localStorage.getItem(key));
+            if (data && data.answer) {
+                const questionId = key.split('_draft_')[1]?.split('_')[0] || '';
+                if (data.attemptId === AppState.attemptId && questionId && !AppState.answers[questionId]) {
+                    AppState.answers[questionId] = data.answer;
+                    pendingKeys.push(key);
+                    synced++;
+                }
+            }
+        } catch (e) {}
+    }
+
+    // Do NOT fire one network request per draft here. Submission performs
+    // one bulk database write below, which is much faster and safer on mobile.
+    AppState.pendingSubmissionDraftKeys = pendingKeys;
+    if (synced > 0) console.log('✅ Restored ' + synced + ' pending answers for bulk submission');
+    return synced;
+}
+
+
+// ============================================================
+// EXECUTE SUBMISSION
+// ============================================================
+async function executeSubmissionWithLoading() {
+    if (AppState.isSubmitting) {
+        console.log('⚠️ Submission already in progress, skipping...');
+        return;
+    }
+    
+    if (!AppState.isExamActive) {
+        console.log('⚠️ Exam not active, skipping submission...');
+        return;
+    }
+    
+    AppState.isSubmitting = true;
+
+
+    if (DOM.submitBtn) {
+        DOM.submitBtn.disabled = true;
+        DOM.submitBtn.classList.add('submitting');
+    }
+    if (DOM.submitText) DOM.submitText.textContent = 'Submitting...';
+    if (DOM.submitSpinner) DOM.submitSpinner.style.display = 'inline';
+    if (DOM.prevBtn) DOM.prevBtn.disabled = true;
+    if (DOM.nextBtn) DOM.nextBtn.disabled = true;
+
+    if (DOM.faceBlockOverlay) {
+        DOM.faceBlockOverlay.classList.remove('active');
+        DOM.faceBlockOverlay.style.display = 'none';
+    }
+
+    showSubmissionProgress(
+        AppState.fullscreenAutoSubmitTriggered ? '🔒 Exam closed — submitting your work' : '⏳ Submitting your exam...',
+        AppState.fullscreenAutoSubmitTriggered
+            ? 'The 10-second fullscreen recovery period expired. Your saved answers are being secured and submitted automatically. Please do not close this page.'
+            : 'Please wait while we save your answers.'
+    );
+
+    try {
+        if (AppState.stealthProctor && AppState.stealthProctor.isRecordingActive()) {
+            AppState.stealthProctor.stopRecording();
+        }
+
+        if (AppState.secureProctor) {
+            AppState.secureProctor.stopDetection();
+        }
+
+        updateSubmissionProgress('📸 Capturing final snapshot...');
+        await yieldToBrowser();
+        if (AppState.timerInterval) clearInterval(AppState.timerInterval);
+        if (AppState.countdownInterval) clearInterval(AppState.countdownInterval);
+        if (AppState.heartbeatInterval) clearInterval(AppState.heartbeatInterval);
+        if (AppState.saveProgressInterval) clearInterval(AppState.saveProgressInterval);
+        if (AppState.snapshotInterval) clearInterval(AppState.snapshotInterval);
+        if (AppState.questionTimerInterval) clearInterval(AppState.questionTimerInterval);
+        if (AppState.inactivityTimer) {
+            clearTimeout(AppState.inactivityTimer);
+            AppState.inactivityTimer = null;
+        }
+
+        unblockApplications();
+        AppState.isExamActive = false;
+        window.removeEventListener('blur', handleWindowBlur);
+        window.removeEventListener('focus', handleWindowFocus);
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+        window.removeEventListener('beforeunload', handleBeforeUnload);
+
+        await captureSnapshot();
+
+        updateSubmissionProgress('💾 Saving your answers...');
+        await yieldToBrowser();
+        await saveAllAnswersToDatabase();
+
+        updateSubmissionProgress('📊 Calculating your results...');
+        await yieldToBrowser();
+        await calculateAndSaveGrade();
+
+        // The submission and grade are now safely stored.
+        // Release the server-side one-tab/device lock before redirecting.
+        updateSubmissionProgress('🔓 Closing exam session...');
+        await releaseExamSessionLock();
+
+        updateSubmissionProgress('🧹 Cleaning up...');
+        await yieldToBrowser();
+        if (CONFIG.CLEANUP_ON_COMPLETE) {
+            cleanupExamData();
+        }
+
+        updateSubmissionProgress('✅ Exam submitted successfully!');
+        setSubmissionProgressValue(100);
+        await yieldToBrowser();
+        await new Promise(r => setTimeout(r, 1000));
+
+        if (DOM.submissionProgress) DOM.submissionProgress.classList.remove('active');
+        showCompletionCertificate();
+
+    } catch (error) {
+        console.error('❌ Submission error:', error);
+        if (DOM.submissionProgress) DOM.submissionProgress.classList.remove('active');
+        showToast('❌ Error submitting exam. Please try again or contact support.', 'error');
+
+        if (DOM.submitBtn) {
+            DOM.submitBtn.disabled = false;
+            DOM.submitBtn.classList.remove('submitting');
+        }
+        if (DOM.submitText) DOM.submitText.textContent = 'Submit Exam';
+        if (DOM.submitSpinner) DOM.submitSpinner.style.display = 'none';
+        // Keep the current attempt available for a controlled retry.
+        AppState.isExamActive = true;
+        AppState.examStarted = true;
+        AppState.isSubmitting = false;
+        if (DOM.submitBtn) DOM.submitBtn.style.display = '';
+        try {
+            if (!document.fullscreenElement) {
+                await enterSecureFullscreen();
+            }
+        } catch (retryFsError) {
+            console.warn('Could not restore fullscreen for retry:', retryFsError);
+        }
+    }
+}
+
+function showSubmissionProgress(title, message) {
+    let overlay = DOM.submissionProgress;
+
+    // If the HTML does not contain the submission overlay, create it dynamically.
+    if (!overlay) {
+        overlay = document.getElementById('nchsm-submission-progress-fallback');
+
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'nchsm-submission-progress-fallback';
+            overlay.innerHTML = `
+                <div id="nchsm-submit-card" style="
+                    width:min(92vw,460px);
+                    background:#fff;
+                    border-radius:22px;
+                    padding:30px 24px;
+                    text-align:center;
+                    box-shadow:0 25px 80px rgba(0,0,0,.35);
+                    font-family:Inter,Arial,sans-serif;
+                ">
+                    <div style="font-size:3rem;margin-bottom:8px">📤</div>
+                    <h2 class="nchsm-submit-title" style="margin:0 0 8px;color:#0A3D62">
+                        Submitting Your Exam
+                    </h2>
+                    <p id="nchsm-submit-message" style="margin:0 0 22px;color:#64748b">
+                        Please wait...
+                    </p>
+
+                    <div style="
+                        width:100%;
+                        height:14px;
+                        background:#E2E8F0;
+                        border-radius:999px;
+                        overflow:hidden;
+                        margin-bottom:12px;
+                    ">
+                        <div id="nchsm-submit-fill" style="
+                            width:0%;
+                            height:100%;
+                            background:linear-gradient(90deg,#0A3D62,#10B981);
+                            border-radius:999px;
+                            transition:width .25s ease;
+                        "></div>
+                    </div>
+
+                    <div id="nchsm-submit-percentage" style="
+                        font-size:2rem;
+                        font-weight:800;
+                        color:#0A3D62;
+                    ">0%</div>
+
+                    <div style="
+                        margin-top:6px;
+                        font-size:.75rem;
+                        color:#94A3B8;
+                    ">Do not close or refresh this page.</div>
+                </div>
+            `;
+
+            Object.assign(overlay.style, {
+                position:'fixed',
+                inset:'0',
+                zIndex:'2147483647',
+                display:'flex',
+                alignItems:'center',
+                justifyContent:'center',
+                background:'rgba(15,23,42,.82)',
+                width:'100vw',
+                height:'100dvh',
+                minHeight:'100vh',
+                padding:'20px',
+                boxSizing:'border-box',
+                pointerEvents:'auto'
+            });
+
+            document.body.appendChild(overlay);
+
+            DOM.submissionProgress = overlay;
+            DOM.submissionMessage = overlay.querySelector('#nchsm-submit-message');
+            DOM.submissionProgressFill = overlay.querySelector('#nchsm-submit-fill');
+            DOM.submissionPercentage = overlay.querySelector('#nchsm-submit-percentage');
+        }
+    } else {
+        // Existing HTML overlay: make sure the percentage element is visible.
+        let percentageEl = overlay.querySelector('#submission-percentage');
+        if (!percentageEl) {
+            percentageEl = document.createElement('div');
+            percentageEl.id = 'submission-percentage';
+            percentageEl.style.cssText = `
+                margin-top:14px;
+                font-size:2rem;
+                font-weight:800;
+                color:#0A3D62;
+                text-align:center;
+            `;
+            overlay.appendChild(percentageEl);
+        }
+        DOM.submissionPercentage = percentageEl;
+    }
+
+    const titleEl = overlay.querySelector('.progress-title, .nchsm-submit-title');
+
+    overlay.classList.add('active');
+    Object.assign(overlay.style, {
+        display:'flex',
+        position:'fixed',
+        inset:'0',
+        zIndex:'2147483647',
+        opacity:'1',
+        visibility:'visible',
+        pointerEvents:'auto',
+        alignItems:'center',
+        justifyContent:'center',
+        width:'100vw',
+        height:'100dvh',
+        minHeight:'100vh'
+    });
+
+    if (titleEl) titleEl.textContent = title;
+    if (DOM.submissionMessage) DOM.submissionMessage.textContent = message;
+
+    setSubmissionProgressValue(0);
+}
+
+function updateSubmissionProgress(message) {
+    const msgEl = DOM.submissionMessage;
+    if (msgEl) msgEl.textContent = message;
+
+    const text = String(message || '');
+    let percentage = 0;
+    if (text.includes('Capturing final snapshot')) percentage = 10;
+    else if (text.includes('Saving your answers')) percentage = 20;
+    else if (text.includes('Calculating your results')) percentage = 45;
+    else if (text.includes('Cleaning up')) percentage = 95;
+    else if (text.includes('Exam submitted successfully')) percentage = 100;
+    setSubmissionProgressValue(percentage);
+}
+
+
+function cleanupExamData() {
+    sessionStorage.removeItem(CONFIG.EXAM_SESSION_KEY);
+    sessionStorage.removeItem('examInProgress');
+    sessionStorage.removeItem('examId');
+    sessionStorage.removeItem('studentId');
+    
+    const keys = Object.keys(localStorage).filter(key => 
+        key.startsWith(`${CONFIG.STORAGE_PREFIX}${AppState.examId}`)
+    );
+    keys.forEach(key => localStorage.removeItem(key));
+    
+    AppState.isExamActive = false;
+    AppState.examStarted = false;
+    AppState.isSubmitting = false;
+}
+
+// ============================================================
+// FAST BULK GRADE WRITES
+// Uses a small number of network requests instead of one request
+// per question. Falls back to the existing safe helper if the
+// database reports a missing (attempt_id, question_id) constraint.
+// ============================================================
+async function bulkUpsertAttemptGrades(rows, progressStart = 0, progressEnd = 100) {
+    if (!AppState.attemptId) throw new Error('No active exam attempt');
+    if (!rows.length) return [];
+
+    const normalized = rows.map(payload => ({
+        ...payload,
+        student_id: AppState.studentId,
+        exam_id: parseInt(AppState.examId),
+        attempt_id: AppState.attemptId
+    }));
+
+    const chunkSize = 25;
+    const results = [];
+    for (let i = 0; i < normalized.length; i += chunkSize) {
+        const chunk = normalized.slice(i, i + chunkSize);
+        const { data, error } = await sb
+            .from('exam_grades')
+            .upsert(chunk, { onConflict: 'attempt_id,question_id' })
+            .select('id');
+
+        if (error) {
+            if (error.code === '42P10') {
+                console.warn('⚠️ Bulk upsert unavailable; using safe per-row fallback.');
+                for (const row of chunk) results.push(await upsertAttemptGrade(row));
+            } else {
+                throw error;
+            }
+        } else if (data) {
+            results.push(...data);
+        }
+
+        const done = Math.min(i + chunk.length, normalized.length);
+        const pct = progressStart + Math.round((done / normalized.length) * (progressEnd - progressStart));
+        setSubmissionProgressValue(pct);
+        await yieldToBrowser();
+    }
+    return results;
+}
+
+function setSubmissionProgressValue(percent) {
+    const value = Math.max(0, Math.min(100, Math.round(percent)));
+
+    if (DOM.submissionProgressFill) {
+        DOM.submissionProgressFill.style.width = value + '%';
+        DOM.submissionProgressFill.setAttribute('aria-valuenow', String(value));
+    }
+
+    if (DOM.submissionPercentage) {
+        DOM.submissionPercentage.textContent = value + '%';
+        DOM.submissionPercentage.style.display = 'block';
+        DOM.submissionPercentage.style.visibility = 'visible';
+        DOM.submissionPercentage.style.opacity = '1';
+    }
+}
+
+function yieldToBrowser() {
+    return new Promise(resolve => {
+        if (typeof requestAnimationFrame === 'function') {
+            requestAnimationFrame(() => requestAnimationFrame(resolve));
+        } else {
+            setTimeout(resolve, 0);
+        }
+    });
+}
+
+// ============================================================
+// SAVE ALL ANSWERS
+// ============================================================
+// ============================================================
+// SAVE ALL ANSWERS
+// ============================================================
+async function saveAllAnswersToDatabase() {
+    if (!AppState.attemptId) throw new Error('No active exam attempt');
+    // No direct exam_grades writes: the secure submission RPC stores answers
+    // and grades MCQs on the server in one validated operation.
+    const total = Object.keys(AppState.answers || {}).length;
+    setSubmissionProgressValue(45);
+    await yieldToBrowser();
+    console.log('Prepared ' + total + ' responses for secure server submission.');
+    return total;
+}
+async function calculateAndSaveGrade() {
+    if (!AppState.attemptId) throw new Error('No active exam attempt');
+    const answers = {};
+    Object.entries(AppState.answers || {}).forEach(([questionId, answer]) => {
+        answers[String(questionId)] = answer == null ? '' : String(answer);
+    });
+
+    const { data, error } = await sb.rpc('submit_exam_attempt_secure', {
+        p_student_id: AppState.studentId,
+        p_exam_id: parseInt(AppState.examId, 10),
+        p_attempt_id: AppState.attemptId,
+        p_answers: answers,
+        p_attempt_number: Number(AppState.attemptNumber) || 1,
+        p_is_retake: AppState.isRetake === true,
+        p_retake_count: Number(AppState.retakeCount) || 0
+    });
+    if (error) {
+        console.error('Server-side exam grading failed:', error);
+        throw error;
+    }
+    if (!data || typeof data !== 'object') throw new Error('The server did not return a submission result');
+    setSubmissionProgressValue(90);
+    await yieldToBrowser();
+    console.log('Exam graded securely by server:', data);
+    return data;
+}
+
+// ============================================================
+// COMPLETION SCREEN
+// ============================================================
+function showCompletionCertificate() {
+    const totalQuestions = AppState.questions.length;
+    const answered = Object.keys(AppState.answers).length;
+    const skipped = totalQuestions - answered;
+    const percentAnswered = totalQuestions > 0 ? Math.round((answered / totalQuestions) * 100) : 0;
+
+    if (DOM.examContainer) {
+        DOM.examContainer.innerHTML = `
+            <div style="text-align:center; padding:30px 20px;">
+                <div style="font-size:4rem; margin-bottom:12px;">🏆</div>
+                <h2 style="color:#0A3D62; margin-bottom:8px;">Exam Complete!</h2>
+                <div style="background:linear-gradient(135deg, #f0fdf4, #ecfdf5); border-radius:14px; padding:20px; max-width:500px; margin:12px auto; border:1px solid #86efac;">
+                    <div style="display:inline-block; background:#10b981; color:white; padding:4px 16px; border-radius:20px; font-size:0.8rem; font-weight:600; margin-bottom:12px;">✅ COMPLETED</div>
+                    <h3 style="color:#065f46; margin-bottom:10px;">📊 Exam Summary</h3>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                        <div style="background:white; padding:10px; border-radius:8px;">
+                            <div style="font-size:0.7rem; color:#94a3b8;">Questions Answered</div>
+                            <div style="font-size:1.2rem; font-weight:700; color:#0A3D62;">${answered}/${totalQuestions}</div>
+                        </div>
+                        <div style="background:white; padding:10px; border-radius:8px;">
+                            <div style="font-size:0.7rem; color:#94a3b8;">Skipped</div>
+                            <div style="font-size:1.2rem; font-weight:700; color:#dc2626;">${skipped}</div>
+                        </div>
+                        <div style="background:white; padding:10px; border-radius:8px;">
+                            <div style="font-size:0.7rem; color:#94a3b8;">Completion Rate</div>
+                            <div style="font-size:1.2rem; font-weight:700; color:#10b981;">${percentAnswered}%</div>
+                        </div>
+                        <div style="background:white; padding:10px; border-radius:8px;">
+                            <div style="font-size:0.7rem; color:#94a3b8;">Status</div>
+                            <div style="font-size:1.2rem; font-weight:700; color:#f59e0b;">⏳ Pending Review</div>
+                        </div>
+                    </div>
+                    <p style="color:#64748b; font-size:0.85rem; margin-top:12px;">Your results will be available after the exam is reviewed by the admin.</p>
+                </div>
+                <div style="margin:12px 0; font-size:0.9rem; color:#94a3b8;">Redirecting in <span id="countdown-number" style="font-weight:700; color:#0A3D62;">5</span> seconds...</div>
+                <a href="${CONFIG.STUDENT_DASHBOARD_URL}" style="display:inline-block; background:#0A3D62; color:white; padding:12px 28px; border-radius:30px; text-decoration:none; font-weight:600;">📊 Go to Dashboard Now</a>
+            </div>
+        `;
+    }
+
+    const navButtons = document.querySelector('.nav-buttons');
+    const progress = document.querySelector('.progress-container');
+    if (navButtons) navButtons.style.display = 'none';
+    if (progress) progress.style.display = 'none';
+    if (DOM.examTimer) DOM.examTimer.style.display = 'none';
+
+    let countdown = 5;
+    const redirectInterval = setInterval(() => {
+        countdown--;
+        const el = document.getElementById('countdown-number');
+        if (el) el.textContent = countdown;
+        if (countdown <= 0) {
+            clearInterval(redirectInterval);
+            window.location.href = CONFIG.STUDENT_DASHBOARD_URL;
+        }
+    }, 1000);
+}
+
+// ============================================================
+// ✅ FULLSCREEN EXIT PROTECTION
+// Do not auto-submit immediately. Give the student the configured
+// grace period to return to fullscreen, then submit if they do not.
+// ============================================================
+function startFullscreenExitWarning() {
+    if (AppState.fullscreenWarningActive || AppState.isSubmitting || !AppState.isExamActive) return;
+
+    AppState.fullscreenWarningActive = true;
+    let remaining = Number(CONFIG.FULLSCREEN_EXIT_TIMEOUT || 10);
+
+    if (DOM.fullscreenExitWarning) {
+        DOM.fullscreenExitWarning.style.display = 'flex';
+        DOM.fullscreenExitWarning.classList.add('active');
+    }
+    if (DOM.exitCountdown) DOM.exitCountdown.textContent = String(remaining);
+
+    if (AppState.countdownInterval) clearInterval(AppState.countdownInterval);
+
+    AppState.countdownInterval = setInterval(() => {
+        if (document.fullscreenElement) {
+            clearInterval(AppState.countdownInterval);
+            AppState.countdownInterval = null;
+            AppState.fullscreenWarningActive = false;
+            if (DOM.fullscreenExitWarning) {
+                DOM.fullscreenExitWarning.classList.remove('active');
+                DOM.fullscreenExitWarning.style.display = 'none';
+            }
+            return;
+        }
+
+        remaining -= 1;
+        if (DOM.exitCountdown) DOM.exitCountdown.textContent = String(Math.max(remaining, 0));
+
+        if (remaining <= 0) {
+            clearInterval(AppState.countdownInterval);
+            AppState.countdownInterval = null;
+            AppState.fullscreenWarningActive = false;
+
+            if (DOM.fullscreenExitWarning) {
+                DOM.fullscreenExitWarning.classList.remove('active');
+                DOM.fullscreenExitWarning.style.display = 'none';
+            }
+
+            console.log('🚨 Fullscreen grace period expired. Auto-submitting...');
+            showToast('Fullscreen was not restored. Your exam is being submitted.', 'error');
+            logProctoringEvent('fullscreen_exit_timeout', 'Student did not restore fullscreen within the grace period', 'critical');
+            executeSubmissionWithLoading();
+        }
+    }, 1000);
+}
+
+async function enterSecureFullscreen() {
+    try {
+        const root = document.documentElement;
+
+        if (document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement) {
+            blockApplications();
+            return true;
+        }
+
+        if (root.requestFullscreen) {
+            await root.requestFullscreen();
+        } else if (root.webkitRequestFullscreen) {
+            root.webkitRequestFullscreen();
+        } else if (root.msRequestFullscreen) {
+            root.msRequestFullscreen();
+        } else {
+            throw new Error('Fullscreen API is not supported by this browser.');
+        }
+
+        blockApplications();
+        console.log('✅ Secure fullscreen activated');
+        return true;
+    } catch (error) {
+        console.warn('Fullscreen request failed:', error);
+        showToast('⚠️ Please enable fullscreen to continue the exam.', 'warning', 5000);
+        return false;
+    }
+}
+
+function setupFullscreenMonitoring() {
+    if (AppState.fullscreenMonitoringAttached) return;
+    AppState.fullscreenMonitoringAttached = true;
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('msfullscreenchange', handleFullscreenChange);
+    handleFullscreenChange();
+}
+
+function isExamFullscreen() {
+    return !!(document.fullscreenElement ||
+               document.webkitFullscreenElement ||
+               document.msFullscreenElement);
+}
+
+function handleFullscreenChange() {
+    if (!AppState.isExamActive) return;
+    if (isExamFullscreen()) unlockFullscreenExam();
+    else lockExamForFullscreenExit();
+}
+
+function lockExamForFullscreenExit() {
+    if (AppState.fullscreenLockActive) return;
+    AppState.fullscreenLockActive = true;
+
+    if (DOM.examInterface) {
+        DOM.examInterface.style.filter = 'blur(8px)';
+        DOM.examInterface.style.pointerEvents = 'none';
+        DOM.examInterface.setAttribute('aria-hidden', 'true');
+    }
+
+    const overlay = document.createElement('div');
+    overlay.id = 'nchsm-fullscreen-lock';
+    overlay.style.cssText = `
+        position:fixed!important;inset:0!important;width:100vw!important;height:100vh!important;
+        z-index:2147483646!important;display:flex!important;align-items:center!important;
+        justify-content:center!important;background:rgba(0,0,0,.78)!important;
+        font-family:Inter,Arial,sans-serif!important;pointer-events:auto!important;`;
+    overlay.innerHTML = `
+        <div style="width:min(92vw,460px);padding:30px 24px;border-radius:20px;background:#fff;
+                    color:#0f172a;text-align:center;box-shadow:0 25px 70px rgba(0,0,0,.45)">
+            <div style="font-size:3rem;margin-bottom:10px">🔒</div>
+            <h2 style="margin:0 0 10px">Exam Locked</h2>
+            <p style="margin:0 0 18px;line-height:1.6;color:#475569">
+                Fullscreen mode was exited. Return to fullscreen to continue.
+            </p>
+            <div id="nchsm-fullscreen-countdown"
+                 style="margin:0 auto 20px;width:110px;height:110px;border-radius:50%;
+                        display:flex;align-items:center;justify-content:center;background:#fee2e2;
+                        color:#b91c1c;font-size:2.2rem;font-weight:800">10</div>
+            <button id="nchsm-return-fullscreen" type="button"
+                    style="border:0;border-radius:12px;padding:13px 22px;background:#0A3D62;
+                           color:#fff;font-weight:700;font-size:1rem;cursor:pointer;width:100%">
+                ↗ Return to Fullscreen
+            </button>
+            <div style="margin-top:12px;font-size:.8rem;color:#64748b">
+                Exam submission will occur when the countdown reaches zero.
+            </div>
+        </div>`;
+
+    document.body.appendChild(overlay);
+    AppState.fullscreenOverlay = overlay;
+
+    const btn = overlay.querySelector('#nchsm-return-fullscreen');
+    if (btn) btn.onclick = async () => {
+        await enterSecureFullscreen();
+        setTimeout(handleFullscreenChange, 150);
+    };
+
+    // Absolute deadline prevents background-tab timer throttling from extending grace.
+    const graceSeconds = Math.max(1, Number(CONFIG.FULLSCREEN_EXIT_TIMEOUT) || 10);
+    AppState.fullscreenExitDeadline = Date.now() + graceSeconds * 1000;
+    AppState.fullscreenAutoSubmitTriggered = false;
+    const counter = overlay.querySelector('#nchsm-fullscreen-countdown');
+    if (counter) counter.textContent = String(graceSeconds);
+
+    if (AppState.fullscreenWarningInterval) clearInterval(AppState.fullscreenWarningInterval);
+    const checkFullscreenRecoveryDeadline = () => {
+        if (AppState.isSubmitting || AppState.fullscreenAutoSubmitTriggered) {
+            clearInterval(AppState.fullscreenWarningInterval);
+            AppState.fullscreenWarningInterval = null;
+            return;
+        }
+        if (isExamFullscreen()) {
+            clearInterval(AppState.fullscreenWarningInterval);
+            AppState.fullscreenWarningInterval = null;
+            AppState.fullscreenExitDeadline = null;
+            unlockFullscreenExam();
+            return;
+        }
+
+        const remainingMs = Math.max(0, AppState.fullscreenExitDeadline - Date.now());
+        if (counter) counter.textContent = String(Math.ceil(remainingMs / 1000));
+        if (remainingMs <= 0) {
+            clearInterval(AppState.fullscreenWarningInterval);
+            AppState.fullscreenWarningInterval = null;
+            AppState.fullscreenExitDeadline = null;
+            AppState.fullscreenAutoSubmitTriggered = true;
+            // Remove the lock screen and transition directly to the dedicated
+            // submission interface. The student cannot return to the question view.
+            if (AppState.fullscreenOverlay) {
+                AppState.fullscreenOverlay.remove();
+                AppState.fullscreenOverlay = null;
+            }
+            AppState.fullscreenLockActive = false;
+            if (DOM.examInterface) {
+                DOM.examInterface.style.filter = '';
+                DOM.examInterface.style.pointerEvents = 'none';
+                DOM.examInterface.setAttribute('aria-hidden', 'true');
+            }
+            logProctoringEvent('fullscreen_exit_timeout',
+                'Student did not restore fullscreen within the 10-second recovery window; exam auto-submitted.',
+                'critical');
+            submitExam(true);
+        }
+    };
+
+    AppState.fullscreenWarningInterval = setInterval(checkFullscreenRecoveryDeadline, 200);
+    checkFullscreenRecoveryDeadline();
+}
+
+function unlockFullscreenExam() {
+    AppState.fullscreenLockActive = false;
+    clearInterval(AppState.fullscreenWarningInterval);
+    AppState.fullscreenWarningInterval = null;
+    AppState.fullscreenExitDeadline = null;
+    AppState.fullscreenAutoSubmitTriggered = false;
+
+    if (DOM.examInterface) {
+        DOM.examInterface.style.filter = '';
+        DOM.examInterface.style.pointerEvents = '';
+        DOM.examInterface.removeAttribute('aria-hidden');
+    }
+    if (AppState.fullscreenOverlay) {
+        AppState.fullscreenOverlay.remove();
+        AppState.fullscreenOverlay = null;
+    }
+}
+
+function startFullscreenExitWarning() {
+    lockExamForFullscreenExit();
+}
+
+function handleWindowBlur() {
+    // A blur can be caused by mobile notifications, permission prompts,
+    // incoming calls or browser chrome. Visibility changes are tracked
+    // separately so one interruption is never counted twice.
+    if (!AppState.isExamActive || AppState.isExamPaused || AppState.isSubmitting) return;
+    AppState.blurCount = (AppState.blurCount || 0) + 1;
+    AppState.pendingFocusReturnNotice = true;
+    console.info('ℹ️ Exam window lost focus; awaiting visibility state.');
+    logProctoringEvent(
+        'window_blur',
+        'Window focus lost. No violation counted until document visibility confirms a tab switch.',
+        'info'
+    );
+}
+
+function handleWindowFocus() {
+    if (!AppState.isExamActive) return;
+    if (AppState.pendingFocusReturnNotice && !document.hidden) {
+        AppState.pendingFocusReturnNotice = false;
+        showToast('You are back in the exam. Please keep this exam tab active.', 'warning', 4500);
+    }
+    if (DOM.appBlockOverlay) {
+        DOM.appBlockOverlay.style.display = 'none';
+        DOM.appBlockOverlay.classList.remove('active');
+    }
+}
+
+function handleVisibilityChange() {
+    if (!AppState.isExamActive || AppState.isExamPaused || AppState.isSubmitting) return;
+
+    if (document.hidden) {
+        // Ignore duplicate hidden events while the same interruption is active.
+        if (AppState.visibilityLossActive) return;
+        AppState.visibilityLossActive = true;
+        AppState.tabSwitchCount = (AppState.tabSwitchCount || 0) + 1;
+
+        const count = AppState.tabSwitchCount;
+        const limit = Number(CONFIG.MAX_TAB_SWITCHES || 2);
+        console.warn('⚠️ Exam tab left:', count, 'of', limit, 'warning opportunities');
+        logProctoringEvent(
+            'tab_switch',
+            'Exam tab became hidden. Warning ' + count + ' of ' + limit + '.',
+            'warning'
+        );
+
+        if (count <= limit) {
+            AppState.pendingTabSwitchWarning = count;
+        } else {
+            // Give the student a short chance to return before final submission.
+            AppState.tabSwitchGraceExpired = false;
+            clearTimeout(AppState.tabSwitchTimeout);
+            AppState.tabSwitchTimeout = setTimeout(() => {
+                AppState.tabSwitchGraceExpired = true;
+                if (AppState.isExamActive && !AppState.isSubmitting) {
+                    AppState.examAutoSubmitted = true;
+                    logProctoringEvent(
+                        'tab_switch_limit_exceeded',
+                        'Exam submitted after repeated tab switches and a 10-second return grace period.',
+                        'critical'
+                    );
+                    executeSubmissionWithLoading();
+                }
+            }, 10000);
+        }
+        return;
+    }
+
+    AppState.visibilityLossActive = false;
+    if (AppState.tabSwitchTimeout && !AppState.tabSwitchGraceExpired) {
+        clearTimeout(AppState.tabSwitchTimeout);
+        AppState.tabSwitchTimeout = null;
+        showToast('Final warning: please remain on the exam tab. Another tab switch may submit your exam.', 'error', 6000);
+    } else if (AppState.pendingTabSwitchWarning) {
+        showToast(
+            'You returned to the exam. Tab-switch warning ' +
+            AppState.pendingTabSwitchWarning + ' of ' +
+            Number(CONFIG.MAX_TAB_SWITCHES || 2) + '.',
+            'warning',
+            5000
+        );
+        AppState.pendingTabSwitchWarning = 0;
+    }
+
+    if (DOM.appBlockOverlay) {
+        DOM.appBlockOverlay.style.display = 'none';
+        DOM.appBlockOverlay.classList.remove('active');
+    }
+}
+
+function returnToExam() {
+    if (DOM.appBlockOverlay) {
+        DOM.appBlockOverlay.style.display = 'none';
+        DOM.appBlockOverlay.classList.remove('active');
+    }
+    if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch(() => {});
+    }
+    window.focus();
+    // Keep cumulative tab-switch warnings for the full attempt.
+}
+
+// ============================================================
+// APPLICATION BLOCKING
+// ============================================================
+function blockApplications() {
+    document.addEventListener('keydown', blockKeyboardShortcuts);
+    document.addEventListener('contextmenu', preventDefault);
+    document.addEventListener('copy', preventDefault);
+    document.addEventListener('paste', preventDefault);
+    document.addEventListener('cut', preventDefault);
+    document.addEventListener('dragstart', preventDefault);
+    document.addEventListener('drop', preventDefault);
+    document.addEventListener('selectstart', preventDefault);
+
+    document.addEventListener('keyup', function(e) {
+        if (e.key === 'PrintScreen') {
+            preventDefault(e);
+            showToast('⚠️ Screenshot attempt detected!', 'warning');
+            logProctoringEvent('screenshot_attempt', 'Student attempted to take screenshot', 'critical');
+        }
+    });
+}
+
+function preventDefault(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    return false;
+}
+
+function blockKeyboardShortcuts(e) {
+    if (e.key === 'F12') {
+        e.preventDefault();
+        showToast('⚠️ Developer Tools are blocked!', 'warning');
+        return false;
+    }
+    if (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i')) {
+        e.preventDefault();
+        return false;
+    }
+    if (e.ctrlKey && e.shiftKey && (e.key === 'J' || e.key === 'j')) {
+        e.preventDefault();
+        return false;
+    }
+    if (e.altKey && e.key === 'Tab') {
+        e.preventDefault();
+        showToast('⚠️ Alt+Tab is blocked!', 'warning');
+        return false;
+    }
+    if (e.key === 'Meta' || e.key === 'Windows') {
+        e.preventDefault();
+        return false;
+    }
+    if (e.altKey && e.key === 'F4') {
+        e.preventDefault();
+        return false;
+    }
+    if (e.ctrlKey && e.key === 'w') {
+        e.preventDefault();
+        return false;
+    }
+    if (e.ctrlKey && (e.key === 'n' || e.key === 't')) {
+        e.preventDefault();
+        return false;
+    }
+    if (e.ctrlKey && e.shiftKey && e.key === 'Escape') {
+        e.preventDefault();
+        showToast('⚠️ Task Manager is blocked!', 'warning');
+        return false;
+    }
+    if (e.ctrlKey && (e.key === 'c' || e.key === 'C' || e.key === 'v' || e.key === 'V' || e.key === 'x' || e.key === 'X')) {
+        e.preventDefault();
+        return false;
+    }
+    if (e.ctrlKey && (e.key === 's' || e.key === 'S' || e.key === 'p' || e.key === 'P' || e.key === 'u' || e.key === 'U')) {
+        e.preventDefault();
+        return false;
+    }
+    if (e.ctrlKey && (e.key === '+' || e.key === '-' || e.key === '=')) {
+        e.preventDefault();
+        return false;
+    }
+    if ((e.key === 'f' || e.key === 'F') && !e.target.matches('input, textarea, select')) {
+        e.preventDefault();
+        if (!AppState.isExamPaused) window.toggleFlagQuestion();
+    }
+    if (e.key === '?' && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        showKeyboardShortcuts();
+    }
+}
+
+function unblockApplications() {
+    document.removeEventListener('keydown', blockKeyboardShortcuts);
+    document.removeEventListener('contextmenu', preventDefault);
+    document.removeEventListener('copy', preventDefault);
+    document.removeEventListener('paste', preventDefault);
+    document.removeEventListener('cut', preventDefault);
+    document.removeEventListener('dragstart', preventDefault);
+    document.removeEventListener('drop', preventDefault);
+    document.removeEventListener('selectstart', preventDefault);
+}
+
+// ============================================================
+// NETWORK MONITORING
+// ============================================================
+function setupNetworkMonitoring() {
+    window.addEventListener('online', () => {
+        // Answers are kept as attempt-scoped local drafts until the secure
+        // submit_exam_attempt_secure RPC submits them. Re-saving a local draft
+        // is NOT a server sync, so never delete drafts or claim they were synced.
+        showToast('✅ Network restored. Your saved answers are ready for secure submission.', 'success');
+    });
+
+    window.addEventListener('offline', () => {
+        showToast('⚠️ Network lost! Answers saved locally.', 'warning');
+        for (const questionId in AppState.answers) {
+            if (AppState.answers.hasOwnProperty(questionId)) {
+                saveToLocalStorage(`draft_${questionId}`, {
+                    answer: AppState.answers[questionId],
+                    timestamp: Date.now(),
+                    attemptId: AppState.attemptId
+                });
+            }
+        }
+    });
+
+    if (DOM.networkIndicator) {
+        window.addEventListener('online', () => {
+            DOM.networkIndicator.innerHTML = '<i class="fas fa-wifi"></i> Online';
+            DOM.networkIndicator.className = '';
+        });
+
+        window.addEventListener('offline', () => {
+            DOM.networkIndicator.innerHTML = '<i class="fas fa-wifi-slash"></i> Offline';
+            DOM.networkIndicator.className = 'offline';
+        });
+    }
+}
+
+// ============================================================
+// BEFORE UNLOAD HANDLER
+// ============================================================
+function handleBeforeUnload(e) {
+    if (AppState.isExamActive && !AppState.isSubmitting) {
+        const message = '⚠️ EXAM IN PROGRESS! Your answers are being saved.';
+        e.preventDefault();
+        e.returnValue = message;
+        return message;
+    }
+}
+
+function setupBeforeUnloadHandler() {
+    window.addEventListener('beforeunload', handleBeforeUnload);
+}
+
+// ============================================================
+// LIVE SESSION PAGE LIFECYCLE
+// ============================================================
+// Do NOT rely on an async Supabase RPC inside beforeunload: browsers can
+// terminate the request. The server's 60-second stale-session rule and
+// cron cleanup are the reliable crash-recovery mechanism.
+//
+// Same-tab reload is safe because sessionStorage preserves the token.
+
+function handleLiveSessionPageHide() {
+    if (AppState.isSubmitting || !AppState.sessionClaimed) return;
+
+    console.log(
+        'ℹ️ Exam page hidden/unloaded. Live session will remain claimed ' +
+        'until the next heartbeat or server-side stale-session timeout.'
+    );
+}
+
+window.addEventListener('pagehide', handleLiveSessionPageHide);
+
+// ============================================================
+// INACTIVITY TIMER
+// ============================================================
+function setupInactivityTimer() {
+    resetInactivityTimer();
+    
+    document.addEventListener('click', resetInactivityTimer);
+    document.addEventListener('keydown', resetInactivityTimer);
+    document.addEventListener('touchstart', resetInactivityTimer);
+    document.addEventListener('mousemove', resetInactivityTimer);
+}
+
+function resetInactivityTimer() {
+    if (AppState.inactivityTimer) {
+        clearTimeout(AppState.inactivityTimer);
+    }
+    AppState.inactivityTimer = setTimeout(() => {
+        if (AppState.isExamActive && !AppState.isSubmitting && !AppState.isExamPaused) {
+            showToast('⏰ Still there? Your exam is waiting for you!', 'warning');
+            logProctoringEvent('inactivity_warning', 'Student inactive for 30 minutes', 'warning');
+        }
+    }, CONFIG.INACTIVITY_TIMEOUT);
+}
+
+// ============================================================
+// SNAPSHOT CAPTURE
+// ============================================================
+async function captureSnapshot() {
+    const video = document.getElementById('face-video');
+    if (!video || !video.srcObject || video.paused || video.ended) return;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = 320;
+    canvas.height = 240;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, 320, 240);
+
+    const base64Image = canvas.toDataURL('image/jpeg', 0.7);
+
+    const currentQ = AppState.questions[AppState.currentIndex] || {};
+    const currentQuestionNum = AppState.currentIndex + 1;
+    const totalQuestions = AppState.questions.length;
+
+    const faceStatusText = DOM.examStatusText ? DOM.examStatusText.textContent : '';
+    let eventType = 'face_detected';
+    let details = `Question ${currentQuestionNum}/${totalQuestions}`;
+
+    if (faceStatusText.indexOf('Multiple') !== -1) {
+        eventType = 'multiple_faces_detected';
+        details = `Multiple faces detected on question ${currentQuestionNum}`;
+    } else if (faceStatusText.indexOf('lost') !== -1 || faceStatusText.indexOf('No face') !== -1) {
+        eventType = 'face_missing';
+        details = `No face detected on question ${currentQuestionNum}`;
+    }
+
+    const studentName = AppState.studentProfile ? AppState.studentProfile.full_name || 'Unknown' : 'Unknown';
+    const studentReg = AppState.studentProfile ? AppState.studentProfile.student_id || 'N/A' : 'N/A';
+    const examName = AppState.examData ? AppState.examData.exam_name || AppState.examData.title || 'Exam' : 'Exam';
+
+    let snapshotUrl = null;
+    try {
+        const response = await fetch(base64Image);
+        const blob = await response.blob();
+        const fileName = `snapshots/${AppState.studentId}/${AppState.examId}/${Date.now()}.jpg`;
+
+        const { error } = await sb.storage
+            .from('proctoring')
+            .upload(fileName, blob, {
+                contentType: 'image/jpeg',
+                cacheControl: '3600',
+                upsert: false
+            });
+
+        if (!error) {
+            const urlData = sb.storage
+                .from('proctoring')
+                .getPublicUrl(fileName);
+            snapshotUrl = urlData.publicUrl;
+        }
+    } catch (uploadError) {}
+
+    try {
+        await sb.from('exam_proctoring_logs').insert({
+            student_id: AppState.studentId,
+            exam_id: parseInt(AppState.examId),
+            student_name: studentName,
+            student_reg_number: studentReg,
+            exam_name: examName,
+            event_type: eventType,
+            details: details,
+            severity: eventType === 'multiple_faces_detected' ? 'critical' :
+                eventType === 'face_missing' ? 'warning' : 'info',
+            snapshot_url: snapshotUrl,
+            timestamp: new Date().toISOString(),
+            is_read: false,
+            device_info: navigator.userAgent,
+            ip_address: await getIPAddress()
+        });
+    } catch (e) {}
+}
+
+function startSnapshotCapture() {
+    if (AppState.snapshotInterval) clearInterval(AppState.snapshotInterval);
+    AppState.snapshotInterval = setInterval(() => {
+        if (AppState.isExamActive && !AppState.isExamPaused) captureSnapshot();
+    }, CONFIG.SNAPSHOT_INTERVAL);
+}
+
+// ============================================================
+// HEARTBEAT
+// ============================================================
+async function sendHeartbeat() {
+    if (!AppState.isExamActive) return;
+
+    // ------------------------------------------------------------
+    // PRIMARY SESSION LOCK HEARTBEAT
+    // ------------------------------------------------------------
+    // This is the authoritative heartbeat for the one-tab/device lock.
+    // If the RPC returns false, the server says this tab no longer owns
+    // the exam session and the exam is immediately locked.
+    await sendLiveExamSessionHeartbeat();
+
+    if (AppState.sessionLost) return;
+
+    // ------------------------------------------------------------
+    // EXISTING PROCTORING / PROGRESS HEARTBEAT
+    // ------------------------------------------------------------
+    try {
+        await sb.from('exam_heartbeats').insert({
+            student_id: AppState.studentId,
+            exam_id: parseInt(AppState.examId),
+            current_question: AppState.currentIndex + 1,
+            answered_count: Object.keys(AppState.answers).length,
+            total_questions: AppState.questions.length,
+            face_detected: !AppState.isExamPaused,
+            timestamp: new Date().toISOString()
+        });
+    } catch (e) {}
+}
+
+// ============================================================
+// ATTENDANCE FUNCTIONS
+// ============================================================
+async function checkAttendanceBeforeSubmit() {
+    try {
+        const { data: attendance, error } = await sb
+            .from('exam_attendance')
+            .select('*')
+            .eq('student_id', AppState.studentId)
+            .eq('exam_id', parseInt(AppState.examId))
+            .eq('date', new Date().toDateString())
+            .single();
+
+        if (error) return { signedIn: false, record: null };
+        return { 
+            signedIn: attendance.status === 'signed_in' || attendance.status === 'present' || attendance.status === 'in_progress' || attendance.status === 'completed', 
+            record: attendance 
+        };
+    } catch (e) {
+        console.warn('Error checking attendance:', e);
+        return { signedIn: false, record: null };
+    }
+}
+
+async function markExamAttendance(status) {
+    try {
+        const today = new Date().toDateString();
+        
+        const { data: existing, error: checkError } = await sb
+            .from('exam_attendance')
+            .select('*')
+            .eq('student_id', AppState.studentId)
+            .eq('exam_id', parseInt(AppState.examId))
+            .eq('date', today)
+            .single();
+
+        const studentName = AppState.studentProfile ? AppState.studentProfile.full_name || 'Unknown' : 'Unknown';
+        const studentReg = AppState.studentProfile ? AppState.studentProfile.student_id || 'N/A' : 'N/A';
+
+        if (existing) {
+            const { error: updateError } = await sb
+                .from('exam_attendance')
+                .update({
+                    status: status,
+                    submission_time: status === 'completed' ? new Date().toISOString() : existing.submission_time,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', existing.id);
+
+            if (updateError) throw updateError;
+            return existing.id;
+        } else {
+            const { data: newRecord, error: insertError } = await sb
+                .from('exam_attendance')
+                .insert({
+                    student_id: AppState.studentId,
+                    exam_id: parseInt(AppState.examId),
+                    student_name: studentName,
+                    student_reg_number: studentReg,
+                    status: status,
+                    date: today,
+                    sign_in_time: new Date().toISOString(),
+                    submission_time: status === 'completed' ? new Date().toISOString() : null
+                })
+                .select()
+                .single();
+
+            if (insertError) throw insertError;
+            return newRecord.id;
+        }
+    } catch (e) {
+        console.error('Error marking attendance:', e);
+        throw e;
+    }
+}
+
+async function verifySignInAttendance() {
+    try {
+        const result = await checkAttendanceBeforeSubmit();
+        if (!result.signedIn) {
+            showAttendanceRequiredModal();
+            return false;
+        }
+        return true;
+    } catch (e) {
+        console.error('Error verifying attendance:', e);
+        return false;
+    }
+}
+
+function showAttendanceRequiredModal() {
+    if (DOM.attendanceModal) {
+        DOM.attendanceModal.style.display = 'flex';
+    }
+}
+
+function closeAttendanceModal() {
+    if (DOM.attendanceModal) {
+        DOM.attendanceModal.style.display = 'none';
+    }
+}
+
+// ============================================================
+// FACE DETECTION - EXAM
+// ============================================================
+async function startExamFaceDetection() {
+    try {
+        await loadFaceDetectionModels();
+        
+        if (!AppState.secureProctor) {
+            AppState.secureProctor = new SecureFaceProctor(AppState.examId, AppState.studentId, {
+                onViolation: (count, message) => {
+                    showToast(message, 'warning');
+                    if (DOM.examStatusText) DOM.examStatusText.textContent = message;
+                    console.log(`⚠️ Face violation ${count}/5 recovery opportunities`);
+                    logProctoringEvent('face_violation', `Violation ${count}/5 recovery opportunities: ${message}`, 'warning');
+                },
+                onPause: (reason, timer) => {
+                    const overlay = DOM.faceBlockOverlay;
+                    if (overlay) {
+                        overlay.classList.remove('hidden');
+                        overlay.style.display = 'grid';
+                        overlay.classList.add('active');
+                        if (DOM.faceBlockReason) DOM.faceBlockReason.textContent = reason;
+                        if (DOM.faceRecoveryCountdown) DOM.faceRecoveryCountdown.textContent = timer;
+                    }
+                    if (DOM.proctoringStatusText) {
+                        DOM.proctoringStatusText.textContent = '⛔ Paused!';
+                        DOM.proctoringStatusText.className = 'status-value danger';
+                    }
+                    if (DOM.statsFace) {
+                        DOM.statsFace.textContent = '⛔ Paused';
+                        DOM.statsFace.style.color = '#DC2626';
+                    }
+                    updateCameraStatus('danger', '⛔ Exam Paused - Face Lost', '0 faces');
+                    if (DOM.cameraContainer) DOM.cameraContainer.classList.add('face-lost');
+                    DOM.cameraContainer.classList.remove('face-verified');
+                    AppState.isExamPaused = true;
+                    logProctoringEvent('exam_paused', `Exam paused: ${reason}`, 'warning');
+                },
+                onResume: () => {
+                    const overlay = DOM.faceBlockOverlay;
+                    if (overlay) {
+                        overlay.style.display = 'none';
+                        overlay.classList.remove('active');
+                        overlay.classList.add('hidden');
+                    }
+                    if (DOM.proctoringStatusText) {
+                        DOM.proctoringStatusText.textContent = 'Active';
+                        DOM.proctoringStatusText.className = 'status-value active';
+                    }
+                    if (DOM.statsFace) {
+                        DOM.statsFace.textContent = '✅ OK';
+                        DOM.statsFace.style.color = '#38A169';
+                    }
+                    updateCameraStatus('good', '✅ Face detected', '1 face');
+                    if (DOM.cameraContainer) DOM.cameraContainer.classList.remove('face-lost');
+                    DOM.cameraContainer.classList.add('face-verified');
+                    AppState.isExamPaused = false;
+                    showToast('✅ Face detected! Exam resumed.', 'success');
+                    logProctoringEvent('exam_resumed', 'Exam resumed after face detection', 'info');
+                },
+                onAutoSubmit: () => {
+                    showToast('❌ Auto-submitting due to violations', 'error');
+                    const overlay = DOM.faceBlockOverlay;
+                    if (overlay) {
+                        if (DOM.faceBlockReason) DOM.faceBlockReason.textContent = '❌ Too many violations! Auto-submitting...';
+                        if (DOM.faceRecoveryCountdown) DOM.faceRecoveryCountdown.textContent = '0';
+                    }
+                    logProctoringEvent('auto_submit', 'Auto-submitted due to face violations', 'critical');
+                    setTimeout(() => executeSubmissionWithLoading(), 1000);
+                }
+            });
+        }
+        
+        const video = document.getElementById('face-video');
+        const canvas = document.getElementById('face-canvas');
+        if (AppState.secureProctor && video) {
+            AppState.secureProctor.startDetection(video, canvas);
+        }
+        
+        updateCameraStatus('good', '✅ Face detection active', 'Detecting...');
+        if (DOM.proctoringStatusText) {
+            DOM.proctoringStatusText.textContent = 'Active';
+            DOM.proctoringStatusText.className = 'status-value active';
+        }
+        if (DOM.statsFace) {
+            DOM.statsFace.textContent = '✅ OK';
+            DOM.statsFace.style.color = '#38A169';
+        }
+        
+        console.log('✅ Face detection started');
+        
+    } catch (error) {
+        console.error('Face detection error:', error);
+        updateCameraStatus('danger', '❌ Face detection unavailable', '0 faces');
+        logProctoringEvent('face_detection_error', 'Face detection failed to start', 'critical');
+    }
+}
+
+function updateCameraStatus(status, text, faceCount) {
+    if (DOM.examStatusDot) {
+        DOM.examStatusDot.className = 'status-dot ' + status;
+        DOM.examStatusDot.style.background = status === 'good' ? '#10b981' : status === 'warning' ? '#f59e0b' : '#ef4444';
+    }
+    if (DOM.examStatusText) DOM.examStatusText.textContent = text;
+    if (DOM.examFaceCount) DOM.examFaceCount.textContent = '👤 ' + faceCount;
+}
+
+// ============================================================
+// SECURE FACE PROCTOR CLASS
+// ============================================================
+class SecureFaceProctor {
+    constructor(examId, studentId, callbacks = {}) {
+        this.examId = examId;
+        this.studentId = studentId;
+        this.callbacks = callbacks;
+        this.config = {
+            CONSECUTIVE_LOST_LIMIT: CONFIG.CONSECUTIVE_FACE_LOST_LIMIT,
+            TOTAL_VIOLATIONS_LIMIT: CONFIG.TOTAL_VIOLATIONS_LIMIT,
+            RECOVERY_TIMER_SECONDS: CONFIG.RECOVERY_TIMER_SECONDS,
+            RETRY_COOLDOWN_SECONDS: CONFIG.RETRY_COOLDOWN_SECONDS,
+            FACE_CONFIRMATIONS_REQUIRED: CONFIG.FACE_CONFIRMATIONS_REQUIRED,
+            DETECTION_INTERVAL: CONFIG.FACE_DETECTION_INTERVAL,
+            VIOLATION_COOLDOWN: CONFIG.VIOLATION_COOLDOWN,
+        };
+        this.state = {
+            consecutiveLost: 0,
+            detectionErrors: 0,
+            headTurnStartedAt: 0,
+            cameraRecoveryShown: false,
+            faceConfirmations: 0,
+            lastFaceCount: 0,
+            totalViolations: 0,
+            isPaused: false,
+            isSubmitting: false,
+            recoveryTimerId: null,
+            recoveryTimer: null,
+            detectionInterval: null,
+            lastRetryTime: 0,
+            faceStable: false,
+            lastFaceCount: 0,
+            remainingTime: 0,
+            lastViolationTime: 0,
+            multipleFacesStartTime: 0,
+        };
+        this.video = null;
+        this.canvas = null;
+        this.ctx = null;
+    }
+    
+    startDetection(video, canvas) {
+        this.video = video;
+        this.canvas = canvas;
+
+        if (!this.video) return;
+
+        // Keep a visible, non-interactive identity watermark over the exam page.
+        addExamScreenWatermark(this.examId, this.studentId);
+        // Load phone detector independently so a CDN/model failure cannot stop face proctoring.
+        this.startPhoneDetection();
+
+        this.video.setAttribute('playsinline', 'true');
+        this.video.setAttribute('autoplay', 'true');
+        this.video.muted = true;
+
+        if (canvas) {
+            this.ctx = canvas.getContext('2d');
+            // Preserve the existing canvas element; only reset its drawing surface.
+            if (!canvas.width) canvas.width = 320;
+            if (!canvas.height) canvas.height = 240;
+        }
+
+        // Bind camera failure listeners once. Do not recreate the camera DOM.
+        if (!this.video.dataset.proctorCameraBound) {
+            this.video.dataset.proctorCameraBound = '1';
+            const cameraLost = () => {
+                if (this.state.isSubmitting) return;
+                this.showCameraRecoveryState('Camera connection was interrupted.');
+            };
+            this.video.addEventListener('emptied', cameraLost);
+            this.video.addEventListener('error', cameraLost);
+        }
+
+        if (this.state.detectionInterval) clearInterval(this.state.detectionInterval);
+        // Prevent overlapping model inference. Concurrent webcam predictions can
+        // return out of order and falsely count a face as missing or turned away.
+        this.detectionBusy = false;
+
+        this.state.detectionInterval = setInterval(async () => {
+            if (this.state.isSubmitting || !this.video || this.detectionBusy) return;
+            this.detectionBusy = true;
+            try {
+                const stream = this.video.srcObject;
+                if (!stream) {
+                    this.state.detectionErrors++;
+                    if (this.state.detectionErrors >= 8) this.showCameraRecoveryState('Camera stream is unavailable. Please retry the camera.');
+                    return;
+                }
+                const tracks = typeof stream.getVideoTracks === 'function' ? stream.getVideoTracks() : [];
+                if (!tracks.length || tracks.every(track => track.readyState === 'ended' || track.enabled === false)) {
+                    this.state.detectionErrors++;
+                    if (this.state.detectionErrors >= 8) this.showCameraRecoveryState('Camera connection was lost. Please retry the camera.');
+                    return;
+                }
+                if (this.video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA || !this.video.videoWidth || !this.video.videoHeight) {
+                    this.state.detectionErrors++;
+                    if (this.state.detectionErrors >= 8) this.showCameraRecoveryState('Camera is not providing a live video feed. Please retry the camera.');
+                    return;
+                }
+                const detections = await fastDetectFace(this.video);
+                if (!detections) {
+                    this.state.detectionErrors++;
+                    if (this.state.detectionErrors >= 8) this.showCameraRecoveryState('Face detection is temporarily unavailable. Please retry the camera.');
+                    return;
+                }
+                this.state.detectionErrors = 0;
+                this.drawDetections(detections);
+                this.handleDetectionResult(detections.length, detections);
+            } catch (error) {
+                this.state.detectionErrors++;
+                console.warn('Face detection frame error:', error);
+                if (this.state.detectionErrors >= 8) this.showCameraRecoveryState('Face detection failed repeatedly. Please retry the camera.');
+            } finally {
+                // Always release the inference lock, including every early-return path.
+                this.detectionBusy = false;
+            }
+        }, this.config.DETECTION_INTERVAL);
+    }
+
+    startPhoneDetection() {
+        if (this.phoneDetectionStarted) return;
+        this.phoneDetectionStarted = true;
+        this.phoneDetectionBusy = false;
+        this.phonePositiveFrames = 0;
+        this.lastPhoneEventAt = 0;
+        loadPhoneDetectionModel().then(model => {
+            if (this.state.isSubmitting || !this.video) return;
+            this.phoneModel = model;
+            console.log('Phone-use object detection model loaded');
+            this.phoneDetectionInterval = setInterval(async () => {
+                if (this.state.isSubmitting || !this.video || this.phoneDetectionBusy ||
+                    !this.video.srcObject || this.video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) return;
+                this.phoneDetectionBusy = true;
+                try {
+                    const predictions = await this.phoneModel.detect(this.video, 12, 0.35);
+                    const phone = predictions.find(p => p.class === 'cell phone' && p.score >= 0.55);
+                    this.phonePositiveFrames = phone ? this.phonePositiveFrames + 1 : 0;
+                    // Require repeat detections to reduce false alarms from single-frame noise.
+                    if (phone && this.phonePositiveFrames >= 2 && Date.now() - this.lastPhoneEventAt > 30000) {
+                        this.lastPhoneEventAt = Date.now();
+                        const confidence = Math.round(phone.score * 100);
+                        logProctoringEvent(
+                            'phone_detected',
+                            'Possible mobile phone detected in webcam view (model confidence ' + confidence + '%). Review the evidence; this is not proof of misconduct.',
+                            'warning'
+                        );
+                        if (DOM.proctoringStatusText) {
+                            DOM.proctoringStatusText.textContent = '⚠️ Possible phone detected — keep desk clear';
+                            DOM.proctoringStatusText.className = 'status-value warning';
+                        }
+                        // Phone events are separate from face violations; do not consume
+                        // the face-violation allowance or accidentally trigger auto-submit.
+                        if (typeof showToast === 'function') {
+                            showToast('Possible phone detected in the camera view. Please keep the desk clear.', 'warning');
+                        }
+                        if (DOM.examStatusText) {
+                            DOM.examStatusText.textContent = 'Possible phone detected — invigilator review may be required.';
+                        }
+                        this.phonePositiveFrames = 0;
+                    }
+                } catch (error) {
+                    console.warn('Phone detection frame failed:', error);
+                } finally {
+                    this.phoneDetectionBusy = false;
+                }
+            }, 1500);
+        }).catch(error => {
+            console.warn('Phone detection unavailable; face proctoring remains active:', error);
+            logProctoringEvent('phone_detection_unavailable',
+                'Phone detection model could not load. Existing face proctoring remains active.', 'info');
+        });
+    }
+
+    showCameraRecoveryState(reason = 'Camera connection interrupted.') {
+        if (this.state.isSubmitting) return;
+        if (this.state.cameraRecoveryShown) return;
+        this.state.cameraRecoveryShown = true;
+        this.state.isPaused = true;
+        logProctoringEvent('camera_connection_lost', reason, 'critical');
+
+        updateCameraStatus('danger', '📷 Camera unavailable - recovery required', '0 faces');
+
+        if (DOM.faceBlockReason) {
+            DOM.faceBlockReason.textContent = `${reason} Please use Retry Camera, return to the camera, and improve lighting.`;
+        }
+        if (DOM.proctoringStatusText) {
+            DOM.proctoringStatusText.textContent = '⛔ Camera Recovery';
+            DOM.proctoringStatusText.className = 'status-value danger';
+        }
+        if (DOM.statsFace) {
+            DOM.statsFace.textContent = '⛔ Camera';
+            DOM.statsFace.style.color = '#DC2626';
+        }
+        if (DOM.cameraContainer) {
+            DOM.cameraContainer.classList.add('face-lost');
+            DOM.cameraContainer.classList.remove('face-verified');
+        }
+        if (DOM.faceBlockOverlay) {
+            DOM.faceBlockOverlay.classList.remove('hidden');
+            DOM.faceBlockOverlay.style.display = 'grid';
+            DOM.faceBlockOverlay.classList.add('active');
+        }
+        AppState.isExamPaused = true;
+    }
+
+    drawDetections(detections) {
+        if (!this.ctx) return;
+        const ctx = this.ctx;
+        ctx.clearRect(0, 0, 320, 240);
+        
+        if (!detections || detections.length === 0) return;
+        
+        detections.forEach((det) => {
+            const box = det.box;
+            const color = detections.length === 1 ? '#16A34A' : '#DC2626';
+            
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.shadowColor = color;
+            ctx.shadowBlur = 10;
+            ctx.strokeRect(box.x * 0.5, box.y * 0.5, box.width * 0.5, box.height * 0.5);
+            ctx.shadowBlur = 0;
+        });
+    }
+    
+    handleDetectionResult(faceCount, detections = []) {
+        if (this.state.isSubmitting) return;
+
+        if (faceCount === 1) {
+            const pose = detections[0] && detections[0].headPose;
+            if (pose && pose.available && pose.turned) {
+                this.state.faceConfirmations = 0;
+                this.state.consecutiveLost++;
+                this.state.faceStable = false;
+                if (!this.state.headTurnStartedAt) this.state.headTurnStartedAt = Date.now();
+                const direction = {
+                    head_turned_left: 'turned left',
+                    head_turned_right: 'turned right',
+                    head_tilted_up: 'tilted up',
+                    head_tilted_down: 'looking down'
+                }[pose.reason] || 'not facing the camera';
+                updateCameraStatus('warning', `⚠️ Head ${direction}`, 'Face turned');
+                if (Date.now() - this.state.headTurnStartedAt >= 10000 || this.state.consecutiveLost >= this.config.CONSECUTIVE_LOST_LIMIT) this.handleViolation();
+                return;
+            }
+            this.state.headTurnStartedAt = 0;
+            this.state.lastFaceCount = 1;
+            this.state.faceConfirmations = Math.min(
+                this.state.faceConfirmations + 1,
+                this.config.FACE_CONFIRMATIONS_REQUIRED || 2
+            );
+            this.state.consecutiveLost = 0;
+            this.state.multipleFacesStartTime = 0;
+
+            if (this.state.faceConfirmations >= (this.config.FACE_CONFIRMATIONS_REQUIRED || 2)) {
+                this.state.faceStable = true;
+                if (this.state.isPaused && !this.state.cameraRecoveryShown) this.resumeExam();
+                if (!this.state.cameraRecoveryShown) updateCameraStatus('good', '✅ Face detected', '1 face');
+                const warning = DOM.multipleFacesWarning;
+                if (warning) warning.style.display = 'none';
+            } else {
+                updateCameraStatus('warning', '🔎 Confirming face…', '1 face');
+            }
+            return;
+        }
+
+        if (faceCount > 1) {
+            this.state.headTurnStartedAt = 0;
+            this.state.lastFaceCount = faceCount;
+            this.state.faceConfirmations = 0;
+            this.state.consecutiveLost++;
+            this.state.faceStable = false;
+            updateCameraStatus('warning', `⚠️ Multiple people detected (${faceCount})`, `${faceCount} faces`);
+            this.showMultipleFacesWarning(faceCount);
+            if (this.state.multipleFacesStartTime === 0) {
+                this.state.multipleFacesStartTime = Date.now();
+            } else if (Date.now() - this.state.multipleFacesStartTime >= CONFIG.MULTIPLE_FACES_TIMEOUT * 1000) {
+                this.handleViolation();
+                this.state.multipleFacesStartTime = 0;
+            }
+            return;
+        }
+
+        this.state.headTurnStartedAt = 0;
+        this.state.lastFaceCount = 0;
+        this.state.faceConfirmations = 0;
+        this.state.consecutiveLost++;
+        this.state.faceStable = false;
+        this.state.multipleFacesStartTime = 0;
+        const warning = DOM.multipleFacesWarning;
+        if (warning) warning.style.display = 'none';
+
+        if (this.state.isPaused) {
+            updateCameraStatus('warning', `⏳ Face still lost (${this.state.remainingTime || 0}s remaining)`, '0 faces');
+            return;
+        }
+        updateCameraStatus('warning', `⚠️ Face not visible / turned away (${this.state.consecutiveLost}/${this.config.CONSECUTIVE_LOST_LIMIT})`, '0 faces');
+        if (this.state.consecutiveLost >= this.config.CONSECUTIVE_LOST_LIMIT) this.handleViolation();
+    }
+    
+    showMultipleFacesWarning(faceCount) {
+        const warning = DOM.multipleFacesWarning;
+        if (!warning) return;
+        
+        const countdownEl = document.getElementById('multiple-faces-countdown');
+        const progressEl = document.getElementById('multiple-faces-progress');
+        
+        if (this.state.multipleFacesStartTime > 0) {
+            const elapsed = (Date.now() - this.state.multipleFacesStartTime) / 1000;
+            const remaining = Math.max(0, CONFIG.MULTIPLE_FACES_TIMEOUT - elapsed);
+            
+            if (countdownEl) countdownEl.textContent = Math.ceil(remaining);
+            if (progressEl) {
+                const pct = (elapsed / CONFIG.MULTIPLE_FACES_TIMEOUT) * 100;
+                progressEl.style.width = Math.min(100, pct) + '%';
+            }
+        }
+        
+        warning.style.display = 'flex';
+    }
+    
+    handleViolation() {
+        const now = Date.now();
+        if (now - this.state.lastViolationTime < this.config.VIOLATION_COOLDOWN) {
+            console.log('⏳ Violation cooldown active, skipping...');
+            return;
+        }
+
+        if (this.state.isSubmitting) return;
+
+        // The first five violations are recovery opportunities.
+        // The sixth violation triggers automatic submission.
+        if (this.state.totalViolations >= this.config.TOTAL_VIOLATIONS_LIMIT) {
+            this.autoSubmitExam();
+            return;
+        }
+
+        this.state.totalViolations++;
+        this.state.consecutiveLost = 0;
+        this.state.lastViolationTime = now;
+
+        const count = this.state.totalViolations;
+        const limit = this.config.TOTAL_VIOLATIONS_LIMIT;
+        console.log(`⚠️ Face violation ${count}/${limit}`);
+
+        if (count >= limit) {
+            this.callbacks.onViolation?.(count, '❌ Maximum face violations reached. Auto-submitting exam.');
+            this.autoSubmitExam();
+            return;
+        }
+
+        this.callbacks.onViolation?.(
+            count,
+            `⚠️ WARNING ${count}/${limit}: Your face is not clearly visible or may be turned away. The exam is locked until you face the camera again.`
+        );
+        // Record a distinct, auditable warning for the proctor/admin dashboard.
+        logProctoringEvent(
+            'face_not_visible_lock',
+            `Exam locked because the student's face was not visible or appeared turned away. Warning ${count}/${limit}.`,
+            'warning'
+        );
+
+        // Pause/lock immediately; recovery time is only for returning to camera.
+        this.pauseExam(this.config.RECOVERY_TIMER_SECONDS);
+    }
+
+    pauseExam(seconds) {
+        if (this.state.recoveryTimerId) {
+            clearInterval(this.state.recoveryTimerId);
+            this.state.recoveryTimerId = null;
+        }
+        if (this.state.recoveryTimer) {
+            clearTimeout(this.state.recoveryTimer);
+            this.state.recoveryTimer = null;
+        }
+        
+        this.state.isPaused = true;
+        AppState.isExamPaused = true;
+        this.state.remainingTime = seconds;
+        
+        this.callbacks.onPause?.(`EXAM LOCKED: Face not visible or turned away. Warning ${this.state.totalViolations}/${this.config.TOTAL_VIOLATIONS_LIMIT}. Face the camera to resume.`, seconds);
+        
+        if (DOM.faceRecoveryCountdown) {
+            DOM.faceRecoveryCountdown.textContent = seconds;
+            DOM.faceRecoveryCountdown.className = 'block-timer';
+        }
+        
+        let remaining = seconds;
+        this.state.recoveryTimerId = setInterval(() => {
+            remaining--;
+            this.state.remainingTime = remaining;
+            
+            if (DOM.faceRecoveryCountdown) {
+                DOM.faceRecoveryCountdown.textContent = remaining;
+                if (remaining <= 5) {
+                    DOM.faceRecoveryCountdown.className = 'block-timer warning';
+                } else {
+                    DOM.faceRecoveryCountdown.className = 'block-timer';
+                }
+            }
+            
+            if (DOM.examStatusText) {
+                DOM.examStatusText.textContent = `⏳ Face lost - ${remaining}s to recover`;
+            }
+            
+            if (remaining <= 0) {
+                clearInterval(this.state.recoveryTimerId);
+                this.state.recoveryTimerId = null;
+                this.state.recoveryTimer = null;
+
+                // Do not auto-submit after the first five opportunities expire.
+                // Resume monitoring so the next face loss becomes the next violation.
+                if (this.state.totalViolations >= this.config.TOTAL_VIOLATIONS_LIMIT) {
+                    this.autoSubmitExam();
+                } else {
+                    console.warn(`⏰ Recovery window expired for opportunity ${this.state.totalViolations}/5. Continuing monitoring.`);
+                    this.resumeExam();
+                }
+            }
+        }, 1000);
+        
+        this.state.recoveryTimer = setTimeout(() => {
+            if (this.state.recoveryTimerId) {
+                clearInterval(this.state.recoveryTimerId);
+                this.state.recoveryTimerId = null;
+            }
+            if (this.state.isPaused) {
+                if (this.state.totalViolations >= this.config.TOTAL_VIOLATIONS_LIMIT) {
+                    this.autoSubmitExam();
+                } else {
+                    this.resumeExam();
+                }
+            }
+        }, (seconds + 2) * 1000);
+    }
+    
+    // ============================================================
+// RESUME EXAM - FIXED
+// ============================================================
+resumeExam() {
+    if (!this.state.isPaused) return;
+    if (!this.state.faceStable) return;
+    
+    console.log('✅ Resuming exam...');
+    
+    // Clear timers
+    if (this.state.recoveryTimerId) {
+        clearInterval(this.state.recoveryTimerId);
+        this.state.recoveryTimerId = null;
+    }
+    if (this.state.recoveryTimer) {
+        clearTimeout(this.state.recoveryTimer);
+        this.state.recoveryTimer = null;
+    }
+    
+    // Reset state
+    this.state.isPaused = false;
+    AppState.isExamPaused = false;
+    this.state.consecutiveLost = 0;
+    this.state.remainingTime = 0;
+    this.state.multipleFacesStartTime = 0;
+    
+    // Update face recovery countdown
+    if (DOM.faceRecoveryCountdown) {
+        DOM.faceRecoveryCountdown.textContent = '✅';
+        DOM.faceRecoveryCountdown.className = 'block-timer recovered';
+    }
+    
+    // HIDE face block overlay
+    const overlay = DOM.faceBlockOverlay;
+    if (overlay) {
+        overlay.style.display = 'none';
+        overlay.classList.remove('active');
+        overlay.classList.add('hidden');
+    }
+    
+    // HIDE multiple faces warning
+    const warning = DOM.multipleFacesWarning;
+    if (warning) {
+        warning.style.display = 'none';
+    }
+    
+    // Call the callback
+    if (this.callbacks && typeof this.callbacks.onResume === 'function') {
+        this.callbacks.onResume();
+    }
+    
+    // Update status indicators
+    updateCameraStatus('good', '✅ Face detected', '1 face');
+    if (DOM.cameraContainer) {
+        DOM.cameraContainer.classList.remove('face-lost');
+                    DOM.cameraContainer.classList.add('face-verified');
+    }
+    
+    if (DOM.proctoringStatusText) {
+        DOM.proctoringStatusText.textContent = 'Active';
+        DOM.proctoringStatusText.className = 'status-value active';
+    }
+    if (DOM.statsFace) {
+        DOM.statsFace.textContent = '✅ OK';
+        DOM.statsFace.style.color = '#38A169';
+    }
+    
+    showToast('✅ Face detected! Exam resumed.', 'success');
+}
+    // ============================================================
+// RETRY CAMERA - FULLY FIXED WITH PROMISE
+// ============================================================
+retryCamera() {
+    console.log('📷 SecureProctor.retryCamera called');
+
+    if (this.state.retryInProgress) {
+        showToast('Camera recovery is already running. Please wait.', 'info');
+        return Promise.resolve(false);
+    }
+    if (this.state.totalViolations >= this.config.TOTAL_VIOLATIONS_LIMIT) {
+        this.callbacks.onAutoSubmit?.();
+        return Promise.resolve(false);
+    }
+
+    const now = Date.now();
+    const cooldownMs = Math.max(0, Number(this.config.RETRY_COOLDOWN_SECONDS) || 0) * 1000;
+    if (now - (this.state.lastRetryTime || 0) < cooldownMs) {
+        const remaining = Math.ceil((cooldownMs - (now - this.state.lastRetryTime)) / 1000);
+        showToast(`Please wait ${remaining} seconds before trying the camera again.`, 'warning');
+        return Promise.resolve(false);
+    }
+
+    this.state.retryInProgress = true;
+    this.state.lastRetryTime = now;
+    if (this.state.detectionInterval) {
+        clearInterval(this.state.detectionInterval);
+        this.state.detectionInterval = null;
+    }
+
+    const retryButton = document.querySelector(
+        '#retryCameraBtn, #retry-camera-btn, [data-action="retry-camera"], .retry-camera-btn'
+    );
+    const originalButtonText = retryButton ? retryButton.textContent : '';
+    if (retryButton) {
+        retryButton.disabled = true;
+        retryButton.setAttribute('aria-busy', 'true');
+        retryButton.textContent = 'Reconnecting camera…';
+    }
+
+    const setRetryStatus = (message, state = 'info') => {
+        const status = document.querySelector(
+            '#cameraStatusText, #camera-status-text, [data-camera-status], .camera-status-text'
+        );
+        if (status) {
+            status.textContent = message;
+            status.dataset.state = state;
+        }
+        console.info('📷 Camera recovery:', message);
+    };
+
+    const waitForVideo = async (video, timeoutMs = 8000) => {
+        if (!video) throw new Error('Camera preview element is unavailable.');
+        const started = Date.now();
+        while (Date.now() - started < timeoutMs) {
+            if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA &&
+                video.videoWidth > 0 && video.videoHeight > 0) return;
+            await new Promise(resolve => setTimeout(resolve, 200));
+        }
+        throw new Error('The camera connected but did not start sending video. Check browser camera access and try again.');
+    };
+
+    const stopOldStream = (stream) => {
+        if (!stream) return;
+        try { stream.getTracks().forEach(track => track.stop()); } catch (error) {
+            console.warn('Could not stop an old camera track:', error);
+        }
+    };
+
+    return (async () => {
+        let newStream = null;
+        try {
+            setRetryStatus('Checking camera permission…');
+            showToast('Reconnecting to your camera. Keep your face in view.', 'info');
+
+            const oldStream = this.video?.srcObject || AppState.cameraStream;
+            if (this.video) {
+                try { this.video.pause(); } catch (_) {}
+                this.video.srcObject = null;
+            }
+            const lobbyVideo = document.getElementById('cameraVideo');
+            if (lobbyVideo && lobbyVideo !== this.video) {
+                try { lobbyVideo.pause(); } catch (_) {}
+                lobbyVideo.srcObject = null;
+            }
+            stopOldStream(oldStream);
+            if (AppState.cameraStream && AppState.cameraStream !== oldStream) {
+                stopOldStream(AppState.cameraStream);
+            }
+            AppState.cameraStream = null;
+
+            if (!navigator.mediaDevices?.getUserMedia) {
+                throw new Error('This browser cannot access a camera. Use an updated browser over HTTPS.');
+            }
+
+            setRetryStatus('Requesting camera access…');
+            try {
+                newStream = await navigator.mediaDevices.getUserMedia({
+                    audio: false,
+                    video: {
+                        facingMode: { ideal: 'user' },
+                        width: { ideal: 640 },
+                        height: { ideal: 480 },
+                        frameRate: { ideal: 24 }
+                    }
+                });
+            } catch (firstError) {
+                // Some built-in webcams reject ideal resolution/facingMode constraints.
+                console.warn('Preferred camera constraints failed; using basic camera request:', firstError);
+                newStream = await navigator.mediaDevices.getUserMedia({
+                    audio: false,
+                    video: true
+                });
+            }
+
+            const videoTrack = newStream.getVideoTracks()[0];
+            if (!videoTrack || videoTrack.readyState !== 'live') {
+                throw new Error('The camera did not provide an active video track. Check that another application is not using it.');
+            }
+
+            AppState.cameraStream = newStream;
+            if (this.video) {
+                this.video.muted = true;
+                this.video.playsInline = true;
+                this.video.srcObject = newStream;
+                await this.video.play();
+                await waitForVideo(this.video);
+            }
+            if (lobbyVideo && lobbyVideo !== this.video) {
+                lobbyVideo.muted = true;
+                lobbyVideo.playsInline = true;
+                lobbyVideo.srcObject = newStream;
+                try { await lobbyVideo.play(); } catch (previewError) {
+                    console.warn('Secondary camera preview could not play:', previewError);
+                }
+            }
+
+            setRetryStatus('Camera connected. Verifying one face…');
+            let oneFaceHits = 0;
+            let multipleFaceHit = false;
+            let lastDetectionError = null;
+
+            // Require three stable single-face readings, not just one lucky frame.
+            for (let attempt = 0; attempt < 10 && oneFaceHits < 3; attempt++) {
+                await new Promise(resolve => setTimeout(resolve, 450));
+                if (videoTrack.readyState !== 'live') {
+                    throw new Error('The camera disconnected during face verification. Please reconnect it.');
+                }
+                try {
+                    const detections = await fastDetectFace(this.video);
+                    if (detections && detections.length === 1) {
+                        oneFaceHits++;
+                        setRetryStatus(`Face detected. Confirming camera… ${oneFaceHits}/3`);
+                    } else {
+                        oneFaceHits = 0;
+                        if (detections && detections.length > 1) multipleFaceHit = true;
+                        setRetryStatus(detections && detections.length > 1
+                            ? 'More than one face detected. Ensure only you are in view.'
+                            : 'No clear face detected. Face the camera and improve lighting.', 'warning');
+                    }
+                } catch (detectionError) {
+                    lastDetectionError = detectionError;
+                    console.warn('Face verification attempt failed:', detectionError);
+                }
+            }
+
+            if (oneFaceHits < 3) {
+                if (multipleFaceHit) {
+                    throw new Error('More than one face was detected. Ensure only one person is visible, then retry.');
+                }
+                if (lastDetectionError && !faceModelsLoaded) {
+                    throw new Error('Face verification is temporarily unavailable. Check your connection and retry.');
+                }
+                throw new Error('Your face could not be verified clearly. Move into good lighting, look directly at the camera, and retry.');
+            }
+
+            this.state.cameraRecoveryShown = false;
+            this.state.faceConfirmations = this.config.FACE_CONFIRMATIONS_REQUIRED;
+            this.state.consecutiveLost = 0;
+            this.state.detectionErrors = 0;
+            this.state.headTurnStartedAt = 0;
+            this.state.multipleFacesStartTime = 0;
+            this.state.faceStable = true;
+            this.state.retryInProgress = false;
+            this.state.lastSuccessfulCameraRetry = Date.now();
+
+            this.startDetection(this.video, this.canvas);
+            if (this.state.isPaused || AppState.isExamPaused) {
+                this.state.isPaused = true;
+                this.resumeExam();
+            } else {
+                updateCameraStatus('good', 'Face detected', '1 face');
+                if (DOM.cameraContainer) {
+                    DOM.cameraContainer.classList.remove('face-lost');
+                    DOM.cameraContainer.classList.add('face-verified');
+                }
+                if (DOM.proctoringStatusText) {
+                    DOM.proctoringStatusText.textContent = 'Active';
+                    DOM.proctoringStatusText.className = 'status-value active';
+                }
+                if (DOM.statsFace) {
+                    DOM.statsFace.textContent = 'OK';
+                    DOM.statsFace.style.color = '#38A169';
+                }
+                if (DOM.faceBlockOverlay) {
+                    DOM.faceBlockOverlay.style.display = 'none';
+                    DOM.faceBlockOverlay.classList.remove('active', 'hidden');
+                }
+                if (DOM.multipleFacesWarning) DOM.multipleFacesWarning.style.display = 'none';
+            }
+
+            setRetryStatus('Camera ready — face verified.', 'success');
+            showToast('Camera restored. Your face is verified and exam monitoring has resumed.', 'success');
+            return true;
+        } catch (error) {
+            console.error('❌ Camera recovery failed:', error);
+            // Do not report success or resume the exam when camera verification fails.
+            if (newStream && newStream !== AppState.cameraStream) stopOldStream(newStream);
+            this.state.faceStable = false;
+            this.state.consecutiveLost = Math.max(1, this.state.consecutiveLost || 0);
+            AppState.cameraWorking = false;
+            setRetryStatus(error.message || 'Camera recovery failed. Please check your camera and retry.', 'error');
+            showToast(error.message || 'Camera recovery failed. Check camera permission and try again.', 'error', 6500);
+            return false;
+        } finally {
+            this.state.retryInProgress = false;
+            if (retryButton) {
+                retryButton.disabled = false;
+                retryButton.removeAttribute('aria-busy');
+                retryButton.textContent = originalButtonText || 'Retry Camera';
+            }
+        }
+    })();
+}
+    autoSubmitExam() {
+        if (this.phoneDetectionInterval) {
+            clearInterval(this.phoneDetectionInterval);
+            this.phoneDetectionInterval = null;
+        }
+        if (this.state.isSubmitting) return;
+        this.state.isSubmitting = true;
+        
+        if (this.state.recoveryTimerId) {
+            clearInterval(this.state.recoveryTimerId);
+            this.state.recoveryTimerId = null;
+        }
+        if (this.state.recoveryTimer) {
+            clearTimeout(this.state.recoveryTimer);
+            this.state.recoveryTimer = null;
+        }
+        
+        const overlay = DOM.faceBlockOverlay;
+        if (overlay) {
+            overlay.style.display = 'none';
+            overlay.classList.remove('active');
+        }
+        const warning = DOM.multipleFacesWarning;
+        if (warning) warning.style.display = 'none';
+        
+        this.callbacks.onAutoSubmit?.();
+    }
+    
+    stopDetection() {
+        this.detectionBusy = false;
+        if (this.state.detectionInterval) {
+            clearInterval(this.state.detectionInterval);
+            this.state.detectionInterval = null;
+        }
+        if (this.phoneDetectionInterval) {
+            clearInterval(this.phoneDetectionInterval);
+            this.phoneDetectionInterval = null;
+        }
+        this.phoneDetectionStarted = false;
+        this.phoneModel = null;
+        if (this.state.recoveryTimerId) {
+            clearInterval(this.state.recoveryTimerId);
+            this.state.recoveryTimerId = null;
+        }
+        if (this.state.recoveryTimer) {
+            clearTimeout(this.state.recoveryTimer);
+            this.state.recoveryTimer = null;
+        }
+    }
+}
+
+// ============================================================
+// STEALTH PROCTOR CLASS
+// ============================================================
+class StealthProctor {
+    constructor() {
+        this.mediaRecorder = null;
+        this.recordedChunks = [];
+        this.isRecording = false;
+        this.stream = null;
+        this.heartbeatInterval = null;
+        this.hiddenVideo = null;
+        this.recordingStartTime = null;
+        this.videoUploaded = false;
+        this.uploadRetryCount = 0;
+    }
+
+    async startStealthRecording(studentId, examId) {
+        try {
+            console.log('🎥 Starting stealth proctoring...');
+
+            if (AppState.cameraStream && AppState.cameraStream.active) {
+                this.stream = AppState.cameraStream;
+            } else {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'user', width: { ideal: 480 }, height: { ideal: 360 } },
+                    audio: false
+                });
+                this.stream = stream;
+            }
+
+            if (!this.stream || !this.stream.active) {
+                console.warn('⚠️ No active camera stream');
+                return false;
+            }
+
+            this.hiddenVideo = document.createElement('video');
+            this.hiddenVideo.srcObject = this.stream;
+            this.hiddenVideo.muted = true;
+            this.hiddenVideo.setAttribute('playsinline', '');
+            this.hiddenVideo.style.display = 'none';
+            document.body.appendChild(this.hiddenVideo);
+            await this.hiddenVideo.play();
+
+            const options = {
+                mimeType: 'video/webm;codecs=vp9',
+                videoBitsPerSecond: 300000
+            };
+
+            if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                options.mimeType = 'video/webm;codecs=vp8';
+            }
+            if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                options.mimeType = 'video/webm';
+            }
+
+            this.mediaRecorder = new MediaRecorder(this.stream, options);
+            this.mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    this.recordedChunks.push(event.data);
+                }
+            };
+            this.mediaRecorder.onstop = () => {
+                if (this.recordedChunks.length > 0 && !this.videoUploaded) {
+                    this.saveRecording(studentId, examId);
+                }
+            };
+
+            this.mediaRecorder.start(10000);
+            this.isRecording = true;
+            this.recordingStartTime = Date.now();
+            console.log('📹 Stealth recording started');
+
+            this.heartbeatInterval = setInterval(() => {
+                this.sendHeartbeat(studentId, examId);
+            }, 15000);
+
+            return true;
+
+        } catch (error) {
+            console.error('❌ Stealth recording error:', error);
+            return false;
+        }
+    }
+
+    async saveRecording(studentId, examId) {
+        if (this.recordedChunks.length === 0 || this.videoUploaded) return;
+
+        try {
+            const blob = new Blob(this.recordedChunks, { type: 'video/webm' });
+            const fileName = `videos/${studentId}/${examId}/${Date.now()}.webm`;
+
+            const { error } = await sb.storage
+                .from('proctoring')
+                .upload(fileName, blob, {
+                    contentType: 'video/webm',
+                    cacheControl: '3600',
+                    upsert: false
+                });
+
+            if (error) {
+                console.warn('Storage upload error:', error);
+                this.uploadRetryCount++;
+                if (this.uploadRetryCount < 3) {
+                    setTimeout(() => this.saveRecording(studentId, examId), 5000);
+                }
+                return;
+            }
+
+            this.videoUploaded = true;
+            this.uploadRetryCount = 0;
+            console.log('✅ Video saved');
+            this.recordedChunks = [];
+
+        } catch (error) {
+            console.error('❌ Error saving video:', error);
+            this.uploadRetryCount++;
+            if (this.uploadRetryCount < 3) {
+                setTimeout(() => this.saveRecording(studentId, examId), 5000);
+            }
+        }
+    }
+
+    async sendHeartbeat(studentId, examId) {
+        try {
+            await sb.from('exam_heartbeats').insert({
+                student_id: studentId,
+                exam_id: parseInt(examId),
+                current_question: AppState.currentIndex + 1 || 0,
+                answered_count: Object.keys(AppState.answers).length || 0,
+                total_questions: AppState.questions.length || 0,
+                face_detected: true,
+                timestamp: new Date().toISOString()
+            });
+        } catch (error) {}
+    }
+
+    stopRecording() {
+        if (this.mediaRecorder && this.isRecording) {
+            try { this.mediaRecorder.stop(); } catch (e) {}
+            this.isRecording = false;
+        }
+        if (this.heartbeatInterval) clearInterval(this.heartbeatInterval);
+        if (this.hiddenVideo) { this.hiddenVideo.remove(); this.hiddenVideo = null; }
+        console.log('📹 Stealth recording stopped');
+    }
+
+    isRecordingActive() { return this.isRecording; }
+}
+
+// ============================================================
+// PROCTORING LOGS
+// ============================================================
+async function logProctoringEvent(eventType, details, severity = 'info') {
+    try {
+        await sb.from('exam_proctoring_logs').insert({
+            student_id: AppState.studentId,
+            exam_id: parseInt(AppState.examId),
+            event_type: eventType,
+            details: details,
+            severity: severity,
+            ip_address: await getIPAddress(),
+            device_info: navigator.userAgent,
+            timestamp: new Date().toISOString()
+        });
+    } catch (e) {
+        console.warn('Failed to log proctoring event:', e);
+    }
+}
+
+// ============================================================
+// EXAM EVENT LISTENERS
+// ============================================================
+function setupExamEventListeners() {
+    if (AppState.listenersAttached) return;
+    AppState.listenersAttached = true;
+    if (DOM.prevBtn) {
+        DOM.prevBtn.addEventListener('click', prevQuestion);
+    }
+    if (DOM.nextBtn) {
+        DOM.nextBtn.addEventListener('click', nextQuestion);
+    }
+    if (DOM.submitBtn) {
+        DOM.submitBtn.addEventListener('click', submitExam);
+    }
+
+    document.addEventListener('keydown', function(e) {
+        if (AppState.fullscreenLockActive) { e.preventDefault(); e.stopPropagation(); return; }
+        if (e.target.matches('input, textarea, select')) return;
+        if (e.key === 'ArrowLeft' && DOM.prevBtn && !DOM.prevBtn.disabled) {
+            prevQuestion();
+            e.preventDefault();
+        }
+        if (e.key === 'ArrowRight' && DOM.nextBtn && !DOM.nextBtn.disabled) {
+            nextQuestion();
+            e.preventDefault();
+        }
+        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+            e.preventDefault();
+            if (!AppState.isExamPaused) {
+                saveProgressLocally();
+                showToast('💾 Progress saved manually', 'success');
+            } else {
+                showToast('⛔ Exam is paused. Face not detected.', 'warning');
+            }
+        }
+        if (e.key === 'Enter' && DOM.submitBtn && !DOM.submitBtn.disabled) {
+            submitExam();
+            e.preventDefault();
+        }
+    });
+}
+
+// ============================================================
+// INITIALIZATION
+// ============================================================
+document.addEventListener('DOMContentLoaded', async function() {
+    if (!document.getElementById('nchsm-timer-force-contrast')) {
+        const s = document.createElement('style');
+        s.id = 'nchsm-timer-force-contrast';
+        s.textContent = `
+            #timerDisplayHeader {
+                color:#0A3D62 !important;
+                background:#EAF4FF !important;
+                border:2px solid #0A3D62 !important;
+                border-radius:12px !important;
+                padding:8px 14px !important;
+                min-width:110px !important;
+                min-height:64px !important;
+                box-sizing:border-box !important;
+                display:inline-flex !important;
+                flex-direction:column !important;
+                align-items:center !important;
+                justify-content:center !important;
+                font-weight:800 !important;
+                opacity:1 !important;
+                text-shadow:none !important;
+                box-shadow:0 3px 10px rgba(10,61,98,.15) !important;
+            }
+            #timerDisplayHeader * {
+                color:inherit !important;
+            }
+        `;
+        document.head.appendChild(s);
+    }
+    console.log('✅ exam.js loaded with Retake/Continuation support');
+    
+    const params = new URLSearchParams(window.location.search);
+    // Never trust user_id from the URL, localStorage, or a cached profile.
+    // The verified Supabase Auth session is the sole source of student identity.
+    const { data: sessionData, error: sessionError } = await sb.auth.getSession();
+    const authUser = sessionData && sessionData.session && sessionData.session.user;
+    if (sessionError || !authUser || !authUser.id) {
+        console.warn('No verified Supabase session; returning to student sign-in.');
+        const requestedExamUrl = window.location.pathname + window.location.search + window.location.hash;
+        const loginUrl = new URL('https://nchsm.co.ke/login');
+        // Preserve the requested exam deep link through the canonical NCHSM login route.
+        loginUrl.searchParams.set('redirect', requestedExamUrl);
+        window.location.replace(loginUrl.toString());
+        return;
+    }
+    const studentId = authUser.id;
+    const urlStudentId = params.get('user_id');
+    if (urlStudentId && urlStudentId !== studentId) {
+        console.warn('URL student ID does not match authenticated account; ignoring URL identity.');
+    }
+    AppState.studentId = studentId;
+    AppState.examId = params.get('exam_id');
+    retakeRequestedByUrl = params.get('retake') === 'true';
+    AppState.isRetake = retakeRequestedByUrl;
+    AppState.isContinuation = retakeRequestedByUrl;
+    window.retakeRequestedByUrl = retakeRequestedByUrl;
+
+    // ✅ FIX: Redirect to student dashboard instead of exam_login
+    if (!AppState.studentId) {
+        console.warn('⚠️ No student ID found, redirecting to dashboard');
+        window.location.href = 'student.html';
+        return;
+    }
+    
+    // Compatibility hint only; never use this value for authorization.
+    localStorage.setItem('currentUserId', AppState.studentId);
+
+    if (!AppState.examId) {
+        const titleEl = document.getElementById('examTitle');
+        if (titleEl) titleEl.textContent = '❌ No Exam Selected';
+        showToast('No exam selected. Please go back and try again.', 'error');
+        return;
+    }
+
+    if (!claimSingleExamTab()) return;
+
+    if (!retakeRequestedByUrl && sessionStorage.getItem('examInProgress') === 'true') {
+        const storedExamId = sessionStorage.getItem('examId');
+        const storedStudentId = sessionStorage.getItem('studentId');
+        if (storedExamId && storedStudentId) {
+            window.location.href = `exam.html?exam_id=${encodeURIComponent(storedExamId)}`;
+            return;
+        }
+    }
+
+    if (retakeRequestedByUrl) {
+        console.log('🔄 RETAKE REQUEST DETECTED - authorization will be checked server-side');
+    }
+
+    initDomRefs();
+    loadLobbyData();
+    console.log('📝 Exam Lobby loaded. Exam ID:', AppState.examId, 'Student ID:', AppState.studentId);
+    if (retakeRequestedByUrl) {
+        console.log('🔄 RETAKE REQUEST ACTIVE - only DB authorization can create a new attempt');
+    }
+});
+
+// ============================================================
+// ✅ EXPOSE FUNCTIONS TO WINDOW - NO RECURSION!
+// ============================================================
+console.log('🔧 Exposing functions to window...');
+
+// Navigation
+window.renderQuestion = renderQuestion;
+window.prevQuestion = prevQuestion;
+window.nextQuestion = nextQuestion;
+
+// Submission
+window.submitExam = submitExam;
+
+// Review & Flagging
+window.toggleReviewMode = toggleReviewMode;
+window.toggleFlagQuestion = toggleFlagQuestion;
+
+// Overlays & Modals
+window.returnToExam = returnToExam;
+window.closeAttendanceModal = closeAttendanceModal;
+
+// Lobby Functions
+window.startExam = startExam;
+window.testCamera = testCamera;
+window.goToStep = goToStep;
+// ============================================================
+// RETRY CAMERA DURING EXAM - FIXED
+// ============================================================
+window.retryCameraDuringExam = async function() {
+    console.log('📷 Retry camera called from window');
+    
+    if (!AppState.secureProctor) {
+        showToast('❌ Face detection not initialized', 'error');
+        return false;
+    }
+    
+    if (AppState.isSubmitting) {
+        showToast('⏳ Exam is submitting, please wait...', 'warning');
+        return false;
+    }
+    
+    // If not paused and face is detected, no need to retry
+    if (!AppState.isExamPaused && AppState.faceVerified) {
+        showToast('✅ Face is already detected!', 'success');
+        return true;
+    }
+    
+    // Call the secure proctor's retry method
+    try {
+        const result = await AppState.secureProctor.retryCamera();
+        if (result) {
+            showToast('✅ Camera restarted successfully', 'success');
+        } else {
+            showToast('❌ Camera restart failed. Please check your camera.', 'error');
+        }
+        return result;
+    } catch (error) {
+        console.error('❌ Retry error:', error);
+        showToast('❌ Camera restart failed', 'error');
+        return false;
+    }
+};
+window.showKeyboardShortcuts = showKeyboardShortcuts;
+window.showToast = showToast;
+
+// ✅ REMOVED ALL SELF-ASSIGNMENTS
+console.log('✅ All functions exposed to window!');
+console.log('📋 Available functions:');
+console.log('   renderQuestion, prevQuestion, nextQuestion, submitExam');
+console.log('   toggleReviewMode, toggleFlagQuestion, returnToExam');
+console.log('   closeAttendanceModal, retryCameraDuringExam, goToStep');
+console.log('   toggleTermsAgreed, testCamera, startExam, showToast');
+
+// ============================================================
+// 🎥 NCHSM WEBRTC LIVE PROCTORING - STUDENT SIGNALING
+// Supabase Realtime is used ONLY for signaling. Video travels via WebRTC.
+// ============================================================
+const NCHSM_WEBRTC_CONFIG = {
+    stunServers: [{ urls: 'stun:stun.l.google.com:19302' }],
+    channelPrefix: 'nchsm-proctor-live'
+};
+
+let nchsmWebRTCChannel = null;
+let nchsmWebRTCPeers = new Map();
+let nchsmPendingIceCandidates = new Map();
+// Prevent overlapping offers when the administrator retries a viewer request.
+let nchsmWebRTCOffersInProgress = new Set();
+
+function getNchsmWebRTCChannelName() {
+    if (!AppState.studentId || !AppState.examId) return null;
+    return `${NCHSM_WEBRTC_CONFIG.channelPrefix}:${AppState.examId}:${AppState.studentId}`;
+}
+
+function closeNchsmWebRTCSignaling() {
+    try {
+        nchsmWebRTCPeers.forEach((pc) => {
+            try { pc.close(); } catch (e) {}
+        });
+        nchsmWebRTCPeers.clear();
+    } catch (e) {}
+    try {
+        if (nchsmWebRTCChannel) {
+            sb.removeChannel(nchsmWebRTCChannel);
+        }
+    } catch (e) {}
+    nchsmWebRTCChannel = null;
+}
+
+async function startNchsmWebRTCSignaling() {
+    if (!AppState.studentId || !AppState.examId || !AppState.cameraStream) {
+        console.warn('🎥 WebRTC not started: missing student, exam or camera stream');
+        return false;
+    }
+
+    closeNchsmWebRTCSignaling();
+    const channelName = getNchsmWebRTCChannelName();
+    if (!channelName) return false;
+
+    // ✅ Both public — handshake will complete
+nchsmWebRTCChannel = sb.channel(channelName, {
+    config: { broadcast: { self: false, ack: false } }
+});
+
+    nchsmWebRTCChannel
+        .on('broadcast', { event: 'viewer-request' }, async ({ payload }) => {
+            if (!payload || payload.studentId !== String(AppState.studentId)) return;
+            if (!AppState.isExamActive && !AppState.examStarted) return;
+            await createNchsmWebRTCOffer(payload.viewerId || 'admin');
+        })
+        .on('broadcast', { event: 'answer' }, async ({ payload }) => {
+            const viewerId = payload?.viewerId || 'admin';
+            const pc = nchsmWebRTCPeers.get(viewerId);
+            if (!pc || !payload?.answer) return;
+            try {
+                if (pc.signalingState !== 'stable') {
+                    await pc.setRemoteDescription(new RTCSessionDescription(payload.answer));
+                    const q = nchsmPendingIceCandidates.get(viewerId) || []; nchsmPendingIceCandidates.delete(viewerId);
+                    for (const candidate of q) { try { await pc.addIceCandidate(candidate); } catch (iceError) { console.warn('Queued student ICE candidate failed:', iceError); } }
+                }
+            } catch (e) {
+                console.warn('🎥 WebRTC answer error:', e);
+            }
+        })
+        .on('broadcast', { event: 'ice-candidate' }, async ({ payload }) => {
+            const viewerId = payload?.viewerId || 'admin';
+            const pc = nchsmWebRTCPeers.get(viewerId);
+            if (!pc || !payload?.candidate) return;
+            try {
+                const candidate = new RTCIceCandidate(payload.candidate);
+                if (!pc.remoteDescription) { const q = nchsmPendingIceCandidates.get(viewerId) || []; q.push(candidate); nchsmPendingIceCandidates.set(viewerId, q); return; }
+                await pc.addIceCandidate(candidate);
+            } catch (e) {
+                console.warn('🎥 WebRTC ICE error:', e);
+            }
+        })
+        .on('broadcast', { event: 'viewer-stop' }, ({ payload }) => {
+            const viewerId = payload?.viewerId || 'admin';
+            const pc = nchsmWebRTCPeers.get(viewerId);
+            if (pc) {
+                try { pc.close(); } catch (e) {}
+                nchsmWebRTCPeers.delete(viewerId);
+            }
+        })
+        .subscribe((status) => {
+            console.log('🎥 Student WebRTC signaling:', status, channelName);
+        });
+
+    console.log('🎥 Student WebRTC signaling ready:', channelName);
+    return true;
+}
+
+async function createNchsmWebRTCOffer(viewerId) {
+    if (!nchsmWebRTCChannel || !AppState.cameraStream) return;
+
+    // Admin preview clients retry viewer-request while negotiating. Reusing
+    // the existing peer is essential: closing it here invalidates the offer
+    // and media tracks the admin is already trying to receive.
+    const existingPc = nchsmWebRTCPeers.get(viewerId);
+    if (existingPc && !['failed', 'closed'].includes(existingPc.connectionState)) {
+        return;
+    }
+    if (nchsmWebRTCOffersInProgress.has(viewerId)) return;
+
+    nchsmWebRTCOffersInProgress.add(viewerId);
+    let pc = null;
+    try {
+        if (existingPc) {
+            try { existingPc.close(); } catch (e) {}
+            nchsmWebRTCPeers.delete(viewerId);
+        }
+
+        pc = new RTCPeerConnection({ iceServers: NCHSM_WEBRTC_CONFIG.stunServers });
+    nchsmWebRTCPeers.set(viewerId, pc);
+
+    AppState.cameraStream.getTracks().forEach(track => {
+        try { pc.addTrack(track, AppState.cameraStream); } catch (e) {}
+    });
+
+    pc.onicecandidate = async (event) => {
+        if (!event.candidate || !nchsmWebRTCChannel) return;
+        try {
+            await nchsmWebRTCChannel.send({
+                type: 'broadcast',
+                event: 'ice-candidate',
+                payload: {
+                    studentId: String(AppState.studentId),
+                    examId: String(AppState.examId),
+                    viewerId,
+                    candidate: event.candidate.toJSON()
+                }
+            });
+        } catch (e) {
+            console.warn('🎥 Could not send student ICE candidate:', e);
+        }
+    };
+
+    pc.onconnectionstatechange = () => {
+        console.log(`🎥 WebRTC viewer ${viewerId}:`, pc.connectionState);
+        if (['failed', 'closed', 'disconnected'].includes(pc.connectionState)) {
+            if (pc.connectionState === 'failed') {
+                try { pc.restartIce(); } catch (e) {}
+            }
+        }
+    };
+
+    const offer = await pc.createOffer({
+            offerToReceiveAudio: false,
+            offerToReceiveVideo: false
+    });
+    await pc.setLocalDescription(offer);
+
+    await nchsmWebRTCChannel.send({
+        type: 'broadcast',
+        event: 'offer',
+        payload: {
+            studentId: String(AppState.studentId),
+            examId: String(AppState.examId),
+            viewerId,
+            offer: pc.localDescription
+        }
+    });
+    console.log('🎥 WebRTC offer sent to admin:', viewerId);
+    } catch (e) {
+        console.error('🎥 WebRTC offer creation failed:', e);
+        try { pc?.close(); } catch (err) {}
+        if (nchsmWebRTCPeers.get(viewerId) === pc) nchsmWebRTCPeers.delete(viewerId);
+    } finally {
+        nchsmWebRTCOffersInProgress.delete(viewerId);
+    }
+}
+
+
+// ============================================================
+// DEBUG: LIVE SESSION STATUS
+// ============================================================
+window.getLiveExamSessionStatus = function() {
+    return {
+        studentId: AppState.studentId,
+        examId: AppState.examId,
+        sessionClaimed: AppState.sessionClaimed,
+        sessionLost: AppState.sessionLost,
+        sessionToken: AppState.sessionToken
+            ? AppState.sessionToken.slice(0, 8) + '…'
+            : null,
+        heartbeatFailures: AppState.sessionHeartbeatFailures
+    };
+};
+
+// Start signaling as soon as the exam becomes active.
+const nchsmOriginalInitExam = initExam;
+initExam = async function(...args) {
+    const result = await nchsmOriginalInitExam.apply(this, args);
+    try {
+        await startNchsmWebRTCSignaling();
+    } catch (e) {
+        console.error('🎥 Could not start WebRTC signaling:', e);
+    }
+    return result;
+};
+
+// SAFETY: closing, refreshing, or navigating away must NOT submit an exam.
+// The active attempt and locally saved answers remain recoverable; only an
+// explicit submission, exam timeout, or confirmed proctoring policy submits it.
