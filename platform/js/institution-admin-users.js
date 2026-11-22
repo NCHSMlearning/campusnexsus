@@ -160,7 +160,7 @@
     groups.forEach(([heading,fields])=>{
       html+='<section class="ia-users-edit-section"><h3>'+heading+'</h3><div class="ia-users-edit-grid">';
       fields.forEach(([key,title,type,options])=>{
-        if(key==='email') html+=field(key,title,type,u[key],null,'readonly');
+        if(key==='email') html+='<label class="ia-users-edit-field"><span>Email address / login email</span><div class="ia-users-email-edit"><input id="iaEdit_email" name="email" type="email" value="'+safe(u.email||'')+'" required><button type="button" id="iaUsersEmailUpdate">Update login email</button></div><small class="ia-users-edit-hint">Updates the authentication login and institution profile together.</small></label>';
         else if(type==='select')html+=field(key,title,type,u[key],options);
         else html+=field(key,title,type,u[key],null);
       });
@@ -174,6 +174,27 @@
     html+='<div class="ia-users-edit-actions"><button type="submit" class="ia-users-save-btn">Save all changes</button><button type="button" class="ia-users-cancel-btn" id="iaUsersEditCancel">Cancel</button></div><div class="ia-users-password-reset"><button type="button" id="iaUsersSendReset">Send password reset link</button><span>Uses the secure Supabase recovery flow; no password is stored in this form.</span></div><p id="iaUsersEditFeedback" role="status"></p></form>';
     body.innerHTML=html;
     $('iaUsersEditCancel').addEventListener('click',()=>showDetails(u));
+    $('iaUsersEmailUpdate').addEventListener('click',async()=>{
+      const button=$('iaUsersEmailUpdate'),input=$('iaEdit_email'),nextEmail=String(input.value||'').trim().toLowerCase();
+      if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(nextEmail)){feedback.textContent='Enter a valid email address.';feedback.className='error';return;}
+      if(nextEmail===String(u.email||'').toLowerCase()){feedback.textContent='This is already the current email address.';feedback.className='';return;}
+      button.disabled=true;button.textContent='Updating…';feedback.textContent='';
+      try{
+        const client=state.api?.db||window.CampusInstitutionAdmin?.db;
+        const {data:sessionData,error:sessionError}=await client.auth.getSession();
+        if(sessionError||!sessionData?.session)throw new Error('Your session has expired. Sign in again.');
+        const response=await fetch('https://irahplkvocaakjxuisto.supabase.co/functions/v1/admin-update-institution-user-email',{
+          method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+sessionData.session.access_token},
+          body:JSON.stringify({userId:u.user_id,newEmail:nextEmail})
+        });
+        const result=await response.json();
+        if(!response.ok)throw new Error(result.error||'Email update failed.');
+        u.email=nextEmail;const row=state.rows.find(x=>x.user_id===u.user_id);if(row)row.email=nextEmail;
+        input.value=nextEmail;feedback.textContent='Login email updated successfully.';feedback.className='';
+        message('Login email updated successfully.');
+      }catch(err){feedback.textContent=err.message||'Unable to update login email.';feedback.className='error';}
+      finally{button.disabled=false;button.textContent='Update login email';}
+    });
     $('iaUsersSendReset').addEventListener('click',async()=>{const b=$('iaUsersSendReset');b.disabled=true;b.textContent='Sending…';try{const client=state.api?.db||window.CampusInstitutionAdmin?.db;if(!u.email)throw new Error('This account has no email address.');const {error}=await client.auth.resetPasswordForEmail(u.email);if(error)throw error;b.textContent='Reset link sent';}catch(err){b.disabled=false;b.textContent='Send password reset link';feedback.textContent=err.message||'Unable to send password reset link.';feedback.className='error';}});
     $('iaEdit_status').addEventListener('change',e=>{
       if(e.target.value==='blocked'||e.target.value==='inactive')$('iaEdit_login_enabled').value='false';
