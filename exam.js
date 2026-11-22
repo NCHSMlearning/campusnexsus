@@ -1262,7 +1262,7 @@ async function loadLobbyData() {
         if (examError) throw examError;
         if (!exam) throw new Error('This examination does not belong to your institution or is no longer available.');
         if (String(exam.approval_status || '').toLowerCase() !== 'approved' || exam.is_published !== true ||
-            ['draft', 'cancelled', 'rejected'].includes(String(exam.status || '').toLowerCase())) {
+            String(exam.status || '').toLowerCase() !== 'published') {
             throw new Error('This examination has not been approved and published by your institution.');
         }
 
@@ -1787,7 +1787,7 @@ async function initExam() {
         if (examResult.error) throw examResult.error;
         if (!examResult.data) throw new Error('This examination is not available to your institution.');
         if (String(examResult.data.approval_status || '').toLowerCase() !== 'approved' || examResult.data.is_published !== true ||
-            ['draft', 'cancelled', 'rejected'].includes(String(examResult.data.status || '').toLowerCase())) {
+            String(examResult.data.status || '').toLowerCase() !== 'published') {
             throw new Error('This examination is not approved and published.');
         }
         {
@@ -5331,9 +5331,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     const params = new URLSearchParams(window.location.search);
     // Never trust user_id from the URL, localStorage, or a cached profile.
     // The verified Supabase Auth session is the sole source of student identity.
-    const { data: sessionData, error: sessionError } = await sb.auth.getSession();
-    const authUser = sessionData && sessionData.session && sessionData.session.user;
-    if (sessionError || !authUser || !authUser.id) {
+    const { data: authData, error: authError } = await sb.auth.getUser();
+    const authUser = authData && authData.user;
+    if (authError || !authUser || !authUser.id) {
         console.warn('No verified Supabase session; returning to the Campus Nexus student examination centre.');
         // Keep unauthenticated visitors inside Campus Nexus. The student examination
         // centre will send them to the local exam login and preserve its own session flow.
