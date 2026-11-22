@@ -101,7 +101,21 @@
  <div class="ia-sidebar-bottom"><div class="ia-support"><i class="fa-solid fa-headset"></i><b>Need assistance?</b><small>Contact Campus Nexus support.</small></div><button id="iaLogout" class="ia-logout"><i class="fa-solid fa-arrow-right-from-bracket"></i> Sign out</button></div>
 </aside>
 <div class="ia-main-wrap">
-<header class="ia-topbar"><button class="ia-menu-toggle" id="iaMenuToggle" aria-controls="iaSidebar" aria-expanded="false" aria-label="Open navigation"><i class="fa-solid fa-bars"></i></button><div class="ia-top-title"><span id="iaTopInstitution">Institution workspace</span><small id="iaTopCode"></small></div><div class="ia-top-actions"><button class="ia-icon-btn" id="iaRefresh" title="Refresh data" aria-label="Refresh"><i class="fa-solid fa-rotate"></i></button><div class="ia-user"><span class="ia-avatar" id="iaAvatar">IA</span><span><b id="iaUserName">Administrator</b><small>Institution administrator</small></span></div></div></header>
+<header class="ia-topbar"><button class="ia-menu-toggle" id="iaMenuToggle" aria-controls="iaSidebar" aria-expanded="false" aria-label="Open navigation"><i class="fa-solid fa-bars"></i></button><div class="ia-top-title"><span id="iaTopInstitution">Institution workspace</span><small id="iaTopCode"></small></div><div class="ia-top-actions"><button class="ia-icon-btn" id="iaRefresh" title="Refresh data" aria-label="Refresh"><i class="fa-solid fa-rotate"></i></button><div class="ia-account-menu" id="iaAccountMenu">
+ <button type="button" class="ia-account-trigger" id="iaAccountTrigger" aria-haspopup="true" aria-expanded="false" aria-controls="iaAccountDropdown">
+  <span class="ia-account-logo" id="iaTopInstitutionLogo">IA</span>
+  <span class="ia-account-copy"><b id="iaTopInstitutionName">Institution workspace</b><small id="iaTopInstitutionRole">Institution administrator</small></span>
+  <i class="fa-solid fa-chevron-down ia-account-chevron" aria-hidden="true"></i>
+ </button>
+ <div class="ia-account-dropdown" id="iaAccountDropdown" hidden>
+  <div class="ia-account-dropdown-head"><b id="iaDropdownInstitutionName">Institution workspace</b><small id="iaDropdownAdminName">Administrator</small></div>
+  <button type="button" class="ia-account-option" id="iaOpenMyProfile"><i class="fa-regular fa-user"></i><span><b>My Profile</b><small>View your administrator details</small></span></button>
+  <button type="button" class="ia-account-option" id="iaOpenInstitutionProfile"><i class="fa-solid fa-school"></i><span><b>Institutional Profile</b><small>Official institution information</small></span></button>
+  <button type="button" class="ia-account-option" data-open-view="settings"><i class="fa-solid fa-sliders"></i><span><b>Institution Settings</b><small>Contacts, branding and module access</small></span></button>
+  <div class="ia-account-dropdown-divider"></div>
+  <button type="button" class="ia-account-option danger" id="iaTopLogout"><i class="fa-solid fa-arrow-right-from-bracket"></i><span><b>Sign out</b><small>Securely end your session</small></span></button>
+ </div>
+</div></div></header>
 <main class="ia-content">
 <div id="iaNotice" class="ia-notice" role="status" hidden></div>
 <section class="ia-view active" id="view-overview"><div class="ia-welcome"><div><span class="ia-eyebrow">INSTITUTION CONTROL CENTRE</span><h1>Good day, <span id="iaWelcomeName">Administrator</span></h1><p>Here is an overview of your institution's activity and academic operations.</p></div><div class="ia-date-chip"><i class="fa-regular fa-calendar"></i><span id="iaToday"></span></div></div>
@@ -609,7 +623,18 @@
 <section class="ia-view" id="view-communication"><div class="ia-page-heading"><div><span class="ia-eyebrow">CAMPUS NEXUS · INSTITUTION WORKSPACE</span><h1>Communications</h1><p>Manage announcements, communication campaigns and delivery status.</p></div><button class="ia-secondary-btn" data-workspace-refresh="communication"><i class="fa-solid fa-rotate"></i> Refresh</button></div><div class="ia-stat-grid ia-report-grid"><article class="ia-stat-card"><small>Total records</small><strong id="ws-communication-total">—</strong></article><article class="ia-stat-card"><small>Active / open</small><strong id="ws-communication-active">—</strong></article><article class="ia-stat-card"><small>Completed</small><strong id="ws-communication-done">—</strong></article><article class="ia-stat-card"><small>Needs attention</small><strong id="ws-communication-attention">—</strong></article></div><div class="ia-panel ia-table-panel"><div class="ia-panel-head"><div><h2>Communications register</h2><p>Records are restricted to this institution and this enabled module.</p></div><input class="ia-module-search" id="ws-communication-search" type="search" placeholder="Search records…"><button class="ia-primary-btn" data-workspace-create="communication"><i class="fa-solid fa-plus"></i> Add record</button></div><div class="ia-table-scroll"><table><thead><tr><th>Title / name</th><th>Reference</th><th>Category</th><th>Assigned to</th><th>Start date</th><th>Due date</th><th>Status</th><th>Actions</th></tr></thead><tbody id="ws-communication-rows"><tr><td colspan="8" class="ia-empty">Loading records…</td></tr></tbody></table></div></div></section>
 <section class="ia-view" id="view-helpdesk"><div class="ia-page-heading"><div><span class="ia-eyebrow">CAMPUS NEXUS · INSTITUTION WORKSPACE</span><h1>Helpdesk & support</h1><p>Track service requests, incidents, assignments and resolution.</p></div><button class="ia-secondary-btn" data-workspace-refresh="helpdesk"><i class="fa-solid fa-rotate"></i> Refresh</button></div><div class="ia-stat-grid ia-report-grid"><article class="ia-stat-card"><small>Total records</small><strong id="ws-helpdesk-total">—</strong></article><article class="ia-stat-card"><small>Active / open</small><strong id="ws-helpdesk-active">—</strong></article><article class="ia-stat-card"><small>Completed</small><strong id="ws-helpdesk-done">—</strong></article><article class="ia-stat-card"><small>Needs attention</small><strong id="ws-helpdesk-attention">—</strong></article></div><div class="ia-panel ia-table-panel"><div class="ia-panel-head"><div><h2>Helpdesk & support register</h2><p>Records are restricted to this institution and this enabled module.</p></div><input class="ia-module-search" id="ws-helpdesk-search" type="search" placeholder="Search records…"><button class="ia-primary-btn" data-workspace-create="helpdesk"><i class="fa-solid fa-plus"></i> Add record</button></div><div class="ia-table-scroll"><table><thead><tr><th>Title / name</th><th>Reference</th><th>Category</th><th>Assigned to</th><th>Start date</th><th>Due date</th><th>Status</th><th>Actions</th></tr></thead><tbody id="ws-helpdesk-rows"><tr><td colspan="8" class="ia-empty">Loading records…</td></tr></tbody></table></div></div></section>
 <footer class="ia-footer">Campus Nexus · Secure multi-institution administration</footer>
-</main></div></div>
+</main></div><dialog class="ia-account-profile-dialog" id="iaMyProfileDialog" aria-labelledby="iaMyProfileTitle">
+ <div class="ia-account-profile-head"><div><span>ACCOUNT INFORMATION</span><h2 id="iaMyProfileTitle">My Profile</h2></div><button type="button" id="iaCloseMyProfile" aria-label="Close profile"><i class="fa-solid fa-xmark"></i></button></div>
+ <div class="ia-account-profile-body">
+  <div class="ia-account-profile-avatar" id="iaMyProfileAvatar">IA</div>
+  <h3 id="iaMyProfileName">Administrator</h3><p id="iaMyProfileEmail">—</p>
+  <div class="ia-account-profile-details">
+   <div><small>Account role</small><b id="iaMyProfileRole">Institution administrator</b></div>
+   <div><small>Account status</small><b id="iaMyProfileStatus">—</b></div>
+   <div><small>Institution</small><b id="iaMyProfileInstitution">—</b></div>
+  </div>
+ </div>
+</dialog></div>
 <div class="ia-mobile-scrim" id="iaScrim"></div>
 
 </body></html>
