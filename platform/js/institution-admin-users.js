@@ -185,6 +185,83 @@
     html+='</div><p class="ia-users-edit-hint">Blocked or inactive accounts should have login disabled. Approving an account enables login unless you explicitly switch it off.</p></section>';
     html+='<section class="ia-users-edit-section"><h3>Academic history</h3><div id="iaUsersAcademicHistory" class="ia-users-history">Loading academic history…</div></section><div class="ia-users-edit-actions"><button type="submit" class="ia-users-save-btn">Save changes</button><button type="button" class="ia-users-cancel-btn" id="iaUsersEditCancel">Cancel</button></div><div class="ia-users-password-reset"><button type="button" id="iaUsersSendReset">Send password reset link</button><span>Uses the secure Supabase recovery flow; no password is stored in this form.</span></div><p id="iaUsersEditFeedback" role="status"></p></form>';
     body.innerHTML=html;
+    // Premium multi-stage editor: retain every existing field and action while
+    // presenting each complete section as its own navigable stage.
+    const editForm=$('iaUsersEditForm');
+    const formSections=[...editForm.querySelectorAll(':scope > .ia-users-edit-section')];
+    const historySection=formSections.find(section=>section.querySelector('#iaUsersAcademicHistory'))||null;
+    const accessSection=formSections.find(section=>section.classList.contains('ia-users-access-section'))||null;
+    const ordinarySections=formSections.filter(section=>section!==historySection&&section!==accessSection);
+    const stageDefinitions=[
+      {title:'Personal Information',sub:'Identity and personal details',icon:'fa-user'},
+      {title:'Guardian & Contact',sub:'Emergency and family contacts',icon:'fa-address-book'},
+      {title:'Academic Information',sub:'Programme, intake and progression',icon:'fa-graduation-cap'},
+      {title:'Documents & Professional',sub:'Verification and qualifications',icon:'fa-folder-open'},
+      {title:'Account & Access',sub:'Role, status and permissions',icon:'fa-shield-halved'},
+      {title:'Academic History',sub:'Units, grades and attendance',icon:'fa-clock-rotate-left'}
+    ];
+    const shell=document.createElement('div');shell.className='ia-users-edit-shell';
+    const sidebar=document.createElement('aside');sidebar.className='ia-users-edit-sidebar';
+    sidebar.innerHTML='<div class="ia-users-edit-brand"><span><i class="fa-solid fa-graduation-cap"></i></span><div><b>CAMPUS <em>NEXUS</em></b><small>USER PROFILE MANAGEMENT</small></div></div><div class="ia-users-edit-progress"><span id="iaUsersEditProgress"></span></div><nav class="ia-users-edit-nav" aria-label="Edit user sections"></nav><div class="ia-users-edit-sidebar-note"><i class="fa-solid fa-lock"></i><span>Changes are saved securely to this institution profile.</span></div>';
+    const workspace=document.createElement('div');workspace.className='ia-users-edit-workspace';
+    const mainHeading=document.createElement('div');mainHeading.className='ia-users-edit-main-heading';
+    mainHeading.innerHTML='<div><span class="ia-users-eyebrow">ACCOUNT MANAGEMENT</span><h3>Update user profile</h3><p>Review each section and save all changes when complete.</p></div><span class="ia-users-stage-indicator" id="iaUsersEditStageIndicator">01 / 06</span>';
+    const stageHost=document.createElement('div');stageHost.className='ia-users-edit-stage-host';
+    const stageNodes=[];
+    const allStageSections=[ordinarySections[0],ordinarySections[1],ordinarySections[2],ordinarySections[3],accessSection,historySection];
+    stageDefinitions.forEach((definition,index)=>{
+      const panel=document.createElement('section');panel.className='ia-users-edit-stage';panel.hidden=index!==0;
+      const section=allStageSections[index];
+      if(section){
+        section.classList.add('ia-users-edit-section');
+        panel.appendChild(section);
+      }else{
+        const empty=document.createElement('div');empty.className='ia-users-stage-empty';empty.textContent='No additional information is available for this section.';panel.appendChild(empty);
+      }
+      stageHost.appendChild(panel);stageNodes.push(panel);
+      const nav=document.createElement('button');nav.type='button';nav.className='ia-users-edit-nav-item';nav.dataset.stage=String(index);
+      nav.innerHTML='<span class="ia-users-edit-nav-icon"><i class="fa-solid '+definition.icon+'"></i></span><span><b>'+definition.title+'</b><small>'+definition.sub+'</small></span><i class="fa-solid fa-check ia-users-stage-check"></i>';
+      sidebar.querySelector('.ia-users-edit-nav').appendChild(nav);
+    });
+    const controls=editForm.querySelector('.ia-users-edit-actions');
+    const passwordReset=editForm.querySelector('.ia-users-password-reset');
+    const feedbackNode=$('iaUsersEditFeedback');
+    const formHero=editForm.querySelector('.ia-users-edit-hero');
+    if(formHero)workspace.appendChild(formHero);
+    workspace.append(mainHeading,stageHost);
+    const footer=document.createElement('div');footer.className='ia-users-edit-footer';
+    const previous=document.createElement('button');previous.type='button';previous.className='ia-users-edit-prev';previous.innerHTML='<i class="fa-solid fa-arrow-left"></i> Previous';
+    const next=document.createElement('button');next.type='button';next.className='ia-users-edit-next';next.innerHTML='Next section <i class="fa-solid fa-arrow-right"></i>';
+    const count=document.createElement('span');count.className='ia-users-edit-step-count';count.textContent='Section 1 of 6';
+    footer.append(previous,count,next);
+    if(controls)controls.replaceChildren(footer);
+    workspace.append(controls||footer);
+    if(passwordReset)workspace.append(passwordReset);
+    if(feedbackNode)workspace.append(feedbackNode);
+    shell.append(sidebar,workspace);
+    editForm.replaceChildren(shell);
+    let activeStage=0;
+    const renderStage=()=>{
+      stageNodes.forEach((panel,index)=>{panel.hidden=index!==activeStage;});
+      sidebar.querySelectorAll('.ia-users-edit-nav-item').forEach((button,index)=>{
+        button.classList.toggle('is-active',index===activeStage);
+        button.classList.toggle('is-complete',index<activeStage);
+        button.setAttribute('aria-current',index===activeStage?'step':'false');
+      });
+      $('iaUsersEditProgress').style.width=((activeStage+1)/stageDefinitions.length*100)+'%';
+      $('iaUsersEditStageIndicator').textContent=String(activeStage+1).padStart(2,'0')+' / '+String(stageDefinitions.length).padStart(2,'0');
+      count.textContent='Section '+(activeStage+1)+' of '+stageDefinitions.length;
+      previous.disabled=activeStage===0;
+      next.innerHTML=activeStage===stageDefinitions.length-1?'Review & Save <i class="fa-solid fa-check"></i>':'Next section <i class="fa-solid fa-arrow-right"></i>';
+      next.classList.toggle('is-review',activeStage===stageDefinitions.length-1);
+      const firstInput=stageNodes[activeStage].querySelector('input,select,textarea');
+      if(firstInput)firstInput.focus({preventScroll:true});
+    };
+    const moveStage=index=>{if(index<0||index>=stageNodes.length)return;activeStage=index;renderStage();};
+    sidebar.querySelectorAll('.ia-users-edit-nav-item').forEach(button=>button.addEventListener('click',()=>moveStage(Number(button.dataset.stage))));
+    previous.addEventListener('click',()=>moveStage(activeStage-1));
+    next.addEventListener('click',()=>moveStage(activeStage<stageNodes.length-1?activeStage+1:0));
+    renderStage();
     // Academic dropdowns: use consistent programme, block/term and year choices.
     const currentYear=new Date().getFullYear();
     const yearOptions=Array.from({length:currentYear-2014+6},(_,i)=>String(currentYear+5-i));
