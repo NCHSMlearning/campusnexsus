@@ -5,7 +5,7 @@
 <meta name="theme-color" content="#082f49"><title>Institution Admin | Campus Nexus</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<link rel="stylesheet" href="/platform/css/institution-admin.css?v=20261122-user-profile-photo-v1">
+<link rel="stylesheet" href="/platform/css/institution-admin.css?v=20261122-user-directory-premium-v3">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <script src="/platform/js/institution-admin.js?v=20261122-user-profile-photo-v1" defer></script>
@@ -15,7 +15,7 @@
 <script src="/platform/js/institution-admin-activity.js?v=20261122-activity-v1" defer></script>
 <script src="/platform/js/institution-admin-finance.js?v=20261122-finance-v2" defer></script>
 <script src="/platform/js/institution-admin-settings.js?v=20261122-settings-v2" defer></script>
-<script src="/platform/js/institution-admin-users.js?v=20261122-user-profile-photo-v2" defer></script>
+<script src="/platform/js/institution-admin-users.js?v=20261122-user-directory-premium-v3" defer></script>
 <script src="/code-protection.js?v=20261121-global-v4" defer></script>
 <style id="ia-canonical-program-styles">
 #view-academic #programs{max-width:100%;overflow:hidden}
@@ -228,7 +228,7 @@
    <select id="iaUsersBlockFilter" aria-label="Filter by block or year"><option value="all">All blocks / years</option></select>
   </div>
   <div class="ia-users-table-head"><div><h2 id="iaUsersTableTitle">All institution users</h2><p id="iaUsersTableDescription">A consolidated, institution-scoped view of user accounts.</p></div><span id="iaUsersResultCount">Loading users…</span></div>
-  <div class="ia-users-table-wrap"><table class="ia-users-table"><thead><tr><th><input type="checkbox" id="iaUsersSelectAll" aria-label="Select all visible users"></th><th>Student / Staff ID</th><th>Name</th><th>Email</th><th>Role</th><th>Programme</th><th>Intake</th><th>Block / Term</th><th>Status</th><th>Actions</th></tr></thead><tbody id="iaUsersRows"><tr><td colspan="10" class="ia-users-empty">Loading institution users…</td></tr></tbody></table></div>
+  <div class="ia-users-table-wrap"><table class="ia-users-table"><thead><tr><th><input type="checkbox" id="iaUsersSelectAll" aria-label="Select all visible users"></th><th>User / ID</th><th>Email Address</th><th>Role</th><th>Programme</th><th>Intake</th><th>Block / Term</th><th>Status</th><th>Actions</th></tr></thead><tbody id="iaUsersRows"><tr><td colspan="10" class="ia-users-empty">Loading institution users…</td></tr></tbody></table></div>
   <div class="ia-users-footer"><span id="iaUsersPageInfo">—</span><div><label for="iaUsersPageSize">Rows</label><select id="iaUsersPageSize"><option>10</option><option selected>20</option><option>50</option><option>100</option></select><button type="button" id="iaUsersPrev" disabled>Previous</button><button type="button" id="iaUsersNext" disabled>Next</button></div></div>
   <p class="ia-users-message" id="iaUsersMessage" role="status" aria-live="polite"></p>
  </div>
