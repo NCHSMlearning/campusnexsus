@@ -13,8 +13,9 @@ if (window.location.pathname.endsWith('.html')) {
     // ============================================
     // 🔧 CONFIGURATION
     // ============================================
-    const SUPABASE_URL = 'https://lwhtjozfsmbyihenfunw.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx3aHRqb3pmc21ieWloZW5mdW53Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk2NTgxMjcsImV4cCI6MjA3NTIzNDEyN30.7Z8AYvPQwTAEEEhODlW6Xk-IR1FK3Uj5ivZS7P17Wpk';
+    const examConfig = window.APP_CONFIG || {};
+    const SUPABASE_URL = examConfig.SUPABASE_URL || 'https://irahplkvocaakjxuisto.supabase.co';
+    const SUPABASE_PUBLISHABLE_KEY = examConfig.SUPABASE_PUBLISHABLE_KEY || examConfig.SUPABASE_ANON_KEY || 'sb_publishable_5Cg5FFudf03UnmOXGNGMHQ_uK9S-uQX';
 const ZERO_QUESTION_ID = '00000000-0000-0000-0000-000000000000';
 
     function escapeAdminHtml(value) {
@@ -23,10 +24,26 @@ const ZERO_QUESTION_ID = '00000000-0000-0000-0000-000000000000';
         }[character]));
     }
 
-    // Initialize Supabase
-    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    window.supabase = sb;
-window.sb = sb;
+    // Reuse the exact client initialized by /config.js. Exam Login stores its
+    // session under campus-nexus-exam-auth; creating another client here can
+    // race refreshes and previously connected this dashboard to the old project.
+    const sb = window.sb || window.supabaseClient || (
+        window.supabase && typeof window.supabase.createClient === 'function'
+            ? window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+                auth: {
+                    persistSession: true,
+                    autoRefreshToken: true,
+                    detectSessionInUrl: true,
+                    storageKey: 'campus-nexus-exam-auth'
+                }
+            })
+            : null
+    );
+    if (!sb || !sb.auth || typeof sb.auth.getSession !== 'function') {
+        throw new Error('Campus Nexus examination authentication is not initialized. Reload the page.');
+    }
+    window.sb = sb;
+    window.examSupabase = sb;
     // ============================================
     // 📦 STATE
     // ============================================
