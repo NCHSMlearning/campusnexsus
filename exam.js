@@ -29,8 +29,8 @@ const CONFIG = {
     INACTIVITY_TIMEOUT: 30 * 60 * 1000,
     MULTIPLE_FACES_TIMEOUT: 45,
     FULLSCREEN_EXIT_TIMEOUT: 10,
-    STUDENT_DASHBOARD_URL: '/student.html',
-    STUDENT_LOGIN_URL: '/examlogin.html',
+    STUDENT_DASHBOARD_URL: '/student',
+    STUDENT_LOGIN_URL: '/examlogin',
     VIOLATION_COOLDOWN: 5000,
     EXAM_SESSION_KEY: 'exam_session',
     MAX_SESSION_AGE: 5 * 60 * 1000,
@@ -5228,7 +5228,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         console.warn('No verified Supabase session; returning to the Campus Nexus student examination centre.');
         // Keep unauthenticated visitors inside Campus Nexus. The student examination
         // centre will send them to the local exam login and preserve its own session flow.
-        window.location.replace('/studentexam.html');
+        window.location.replace('/studentexam');
         return;
     }
     const studentId = authUser.id;
@@ -5246,7 +5246,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     // ✅ FIX: Redirect to student dashboard instead of exam_login
     if (!AppState.studentId) {
         console.warn('⚠️ No student ID found, redirecting to dashboard');
-        window.location.href = 'student.html';
+        window.location.href = '/student';
         return;
     }
     
@@ -5266,7 +5266,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         const storedExamId = sessionStorage.getItem('examId');
         const storedStudentId = sessionStorage.getItem('studentId');
         if (storedExamId && storedStudentId) {
-            window.location.href = `exam.html?exam_id=${encodeURIComponent(storedExamId)}`;
+            window.location.href = `/exam?exam_id=${encodeURIComponent(storedExamId)}`;
             return;
         }
     }
