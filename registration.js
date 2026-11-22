@@ -221,34 +221,63 @@ async function resolveInstitutionContext(code, host) {
 
 async function loadInstitutionPrograms(context) {
     const select = document.getElementById('program_type');
-    if (!select) return;
-    select.replaceChildren(new Option('-- Select Your Program --', ''));
+    if (!select) return 0;
+    select.replaceChildren(new Option('Loading institution programmes…', ''));
     select.disabled = true;
+    select.dataset.loadedFor = '';
+    const hint = document.getElementById('programDescription');
+    if (hint) hint.textContent = 'Loading programmes configured by your institution…';
+
     try {
         if (!context?.institution_id) throw new Error('Institution identity is missing.');
-        const { data, error } = await sb.rpc('get_public_institution_programs', { p_institution_id: context.institution_id });
+        const { data, error } = await sb.rpc('get_public_institution_programs', {
+            p_institution_id: context.institution_id
+        });
         if (error) throw error;
-        const programs = (data || []).filter(p => p.program_code && p.program_name);
+
+        const programs = (Array.isArray(data) ? data : [])
+            .filter(p => p && p.program_code && p.program_name);
         select.replaceChildren(new Option('-- Select Your Program --', ''));
+
         if (!programs.length) {
-            const empty = new Option('No active programmes configured', ''); empty.disabled = true; select.add(empty);
-            const hint = document.getElementById('programDescription');
+            const empty = new Option('No active programmes configured', '');
+            empty.disabled = true;
+            select.add(empty);
             if (hint) hint.textContent = 'This institution has not configured any active programmes yet. Please contact its administrator.';
-            return;
+            return 0;
         }
+
         const groups = new Map();
-        programs.forEach(p => { const key = String(p.category || 'Available Programmes').trim(); if (!groups.has(key)) groups.set(key, []); groups.get(key).push(p); });
+        programs.forEach(program => {
+            const category = String(program.category || 'Available Programmes').trim();
+            if (!groups.has(category)) groups.set(category, []);
+            groups.get(category).push(program);
+        });
+
         groups.forEach((items, category) => {
-            const group = document.createElement('optgroup'); group.label = category;
-            items.forEach(p => { const option = new Option(p.program_name, p.program_code); option.dataset.desc = p.description || p.program_name; option.dataset.category = p.category || ''; group.appendChild(option); });
+            const group = document.createElement('optgroup');
+            group.label = category;
+            items.forEach(program => {
+                const option = new Option(program.program_name, program.program_code);
+                option.dataset.desc = program.description || program.program_name;
+                option.dataset.category = program.category || '';
+                group.appendChild(option);
+            });
             select.appendChild(group);
         });
+
         select.disabled = false;
+        select.dataset.loadedFor = context.institution_id;
+        if (hint) hint.textContent = programs.length === 1
+            ? '1 active programme available at your institution.'
+            : programs.length + ' active programmes available at your institution.';
+        return programs.length;
     } catch (error) {
         console.error('Unable to load institution programmes:', error);
         select.replaceChildren(new Option('-- Programme list unavailable --', ''));
-        const hint = document.getElementById('programDescription');
-        if (hint) hint.textContent = 'We could not load this institution’s programme list. Please refresh or contact the institution administrator.';
+        select.disabled = true;
+        if (hint) hint.textContent = 'We could not load this institution’s programme list. Check your connection and refresh the page. If the problem continues, contact the institution administrator.';
+        return 0;
     }
 }
 
@@ -358,14 +387,35 @@ async function initializeInstitutionRegistration() {
     gate.append(heading, intro, input, button, message);
     form.parentNode.insertBefore(gate, form);
 
-    const showContext = (context) => {
+    const showContext = async (context) => {
         resolvedInstitutionContext = context;
+        resolvedRegistrationCode = normalizeSchoolCode(context.school_code || '');
         renderInstitutionContextBanner(context, form);
-        loadInstitutionPrograms(context);
         updateRegistrationSchoolCodeUrl(context.school_code);
+
+        // Do not expose the form as ready until the institution-specific
+        // programme list has finished loading. This prevents users reaching
+        // Academic Information with an empty, still-disabled programme field.
+        const programCount = await loadInstitutionPrograms(context);
+        if (!programCount) {
+            const status = document.createElement('p');
+            status.id = 'registration-program-load-status';
+            status.setAttribute('role', 'status');
+            status.style.cssText = 'margin:12px auto;padding:10px 14px;max-width:560px;border-radius:10px;background:#fff7ed;color:#9a3412;font-size:13px;line-height:1.5;';
+            status.textContent = 'Your institution was verified, but its programme list could not be loaded. You may continue with staff registration; student registration requires an active programme configured by the institution.';
+            const existing = document.getElementById(status.id);
+            if (existing) existing.remove();
+            mastheadInsert(status);
+        }
+
         gate.remove();
         form.hidden = false;
         form.style.display = originalFormDisplay || '';
+    };
+
+    const mastheadInsert = (status) => {
+        const masthead = document.getElementById('campus-nexus-registration-brand');
+        if (masthead && masthead.parentNode) masthead.parentNode.insertBefore(status, masthead.nextSibling);
     };
 
     const resolve = async (code, host) => {
@@ -376,7 +426,7 @@ async function initializeInstitutionRegistration() {
         try {
             const context = await resolveInstitutionContext(code, host);
             resolvedRegistrationCode = normalizeSchoolCode(code || context.school_code || '');
-            showContext(context);
+            await showContext(context);
         } catch (error) {
             message.style.color = '#b91c1c';
             message.textContent = error.message || 'Unable to verify this school code.';
