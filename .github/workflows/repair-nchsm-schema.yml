@@ -1,0 +1,137 @@
+name: Repair NCHSM schema in Campus Nexus
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/repair-nchsm-schema.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: campus-nexus-nchsm-schema-repair
+  cancel-in-progress: false
+
+jobs:
+  repair-schema:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    services:
+      postgres:
+        image: postgis/postgis:17-3.5
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: local_migration_only
+          POSTGRES_DB: migration_work
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d migration_work"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Validate secrets and source schema
+        env:
+          SRC: ${{ secrets.NCHSM_DATABASE_URL }}
+          DST: ${{ secrets.CAMPUS_NEXUS_DATABASE_URL }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          [[ -n "${SRC:-}" && -n "${DST:-}" ]] || { echo "::error::Missing database secrets"; exit 1; }
+          echo "Checking source and destination connectivity"
+          psql "$SRC" -X -v ON_ERROR_STOP=1 -Atc "select current_database(), current_setting('server_version_num')"
+          psql "$DST" -X -v ON_ERROR_STOP=1 -Atc "select current_database(), current_setting('server_version_num')"
+          src_tables=$(psql "$SRC" -X -v ON_ERROR_STOP=1 -Atc "select count(*) from information_schema.tables where table_schema='public' and table_type='BASE TABLE' and table_name <> 'spatial_ref_sys'")
+          [[ "$src_tables" -ge 200 ]] || { echo "::error::Unexpectedly low source table count: $src_tables"; exit 1; }
+          echo "Source application tables: $src_tables"
+
+      - name: Build isolated schema dump with PostgreSQL dependencies
+        env:
+          SRC: ${{ secrets.NCHSM_DATABASE_URL }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export PGPASSWORD=local_migration_only
+          until pg_isready -h 127.0.0.1 -p 5432 -U postgres; do sleep 2; done
+          pg_dump "$SRC" --format=custom --schema=public --exclude-table=public.spatial_ref_sys --no-owner --no-acl --file=/tmp/nchsm-public.dump
+          createdb -h 127.0.0.1 -U postgres schema_stage
+          pg_restore --host=127.0.0.1 --username=postgres --dbname=schema_stage --no-owner --no-acl --exit-on-error /tmp/nchsm-public.dump
+          psql -h 127.0.0.1 -U postgres -d schema_stage -v ON_ERROR_STOP=1 -c 'ALTER SCHEMA public RENAME TO nchsm;'
+          pg_dump --host=127.0.0.1 --username=postgres --dbname=schema_stage --format=custom --schema=nchsm --no-owner --no-acl --file=/tmp/nchsm-schema.dump
+          echo "Staged schema dump created."
+
+      - name: Preflight destination and preserve existing empty schema
+        env:
+          DST: ${{ secrets.CAMPUS_NEXUS_DATABASE_URL }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          existing_rows=$(psql "$DST" -X -v ON_ERROR_STOP=1 -Atc "select coalesce(sum(n_live_tup),0)::bigint from pg_stat_user_tables where schemaname='nchsm'")
+          if [[ "$existing_rows" -ne 0 ]]; then
+            echo "::error::Destination nchsm schema contains live rows ($existing_rows). Refusing to replace it."
+            exit 1
+          fi
+          outside_deps=$(psql "$DST" -X -v ON_ERROR_STOP=1 -Atc "
+            select count(*) from pg_depend d
+            join pg_namespace n on n.oid=d.refobjid
+            where n.nspname='nchsm' and d.deptype='n'
+              and d.classid <> 'pg_namespace'::regclass
+              and d.refclassid='pg_namespace'::regclass
+          " || echo 0)
+          echo "Destination nchsm live rows: $existing_rows"
+          echo "Preflight dependency indicator: $outside_deps"
+          echo "The existing schema will be retained under a timestamped archive name."
+
+      - name: Install NCHSM schema objects without touching Campus Nexus public schema
+        env:
+          DST: ${{ secrets.CAMPUS_NEXUS_DATABASE_URL }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          archive="nchsm_pre_repair_$(date -u +%Y%m%d_%H%M%S)"
+          psql "$DST" -X -v ON_ERROR_STOP=1 -v archive="$archive" <<'SQL'
+          DO $$
+          DECLARE archive_name text := current_setting('application_name', true);
+          BEGIN
+            IF EXISTS (SELECT 1 FROM pg_namespace WHERE nspname='nchsm') THEN
+              EXECUTE format('ALTER SCHEMA nchsm RENAME TO %I', :'archive');
+            END IF;
+          END $$;
+          CREATE SCHEMA nchsm;
+          GRANT USAGE ON SCHEMA nchsm TO anon, authenticated, service_role;
+          SQL
+          pg_restore --dbname="$DST" --no-owner --no-acl --exit-on-error --schema=nchsm /tmp/nchsm-schema.dump
+          psql "$DST" -X -v ON_ERROR_STOP=1 <<'SQL'
+          GRANT USAGE ON SCHEMA nchsm TO anon, authenticated, service_role;
+          GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA nchsm TO authenticated, service_role;
+          GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA nchsm TO authenticated, service_role;
+          GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA nchsm TO authenticated, service_role;
+          ALTER DEFAULT PRIVILEGES IN SCHEMA nchsm GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO authenticated, service_role;
+          ALTER DEFAULT PRIVILEGES IN SCHEMA nchsm GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO authenticated, service_role;
+          ALTER DEFAULT PRIVILEGES IN SCHEMA nchsm GRANT EXECUTE ON FUNCTIONS TO authenticated, service_role;
+          SQL
+
+      - name: Verify repaired schema inventory
+        env:
+          DST: ${{ secrets.CAMPUS_NEXUS_DATABASE_URL }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          psql "$DST" -X -v ON_ERROR_STOP=1 -F ' | ' -Atc "
+            select
+              'tables='||(select count(*) from information_schema.tables where table_schema='nchsm' and table_type='BASE TABLE'),
+              'columns='||(select count(*) from information_schema.columns where table_schema='nchsm'),
+              'constraints='||(select count(*) from information_schema.table_constraints where table_schema='nchsm'),
+              'triggers='||(select count(*) from information_schema.triggers where trigger_schema='nchsm'),
+              'policies='||(select count(*) from pg_policies where schemaname='nchsm'),
+              'routines='||(select count(*) from information_schema.routines where routine_schema='nchsm'),
+              'views='||(select count(*) from information_schema.views where table_schema='nchsm');
+          "
+          echo "Schema repair completed. No source data, auth users, storage schema, storage objects, or uploaded files were copied."
