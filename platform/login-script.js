@@ -1546,7 +1546,7 @@ loadStaffRecords: async function() {
             if (window.supabase) {
                 this.supabase = window.supabase.createClient(
                     'https://irahplkvocaakjxuisto.supabase.co',
-                    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlyYWhwbGt2b2NhYWtqeHVpc3RvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4ODY5ODQsImV4cCI6MjEwMzQ2Mjk4NH0.BFOwdRVDz4r1oYgUjm8zQbthqblGRq4c3WQWQaOhu7g',
+                    'sb_publishable_5Cg5FFudf03UnmOXGNGMHQ_uK9S-uQX',
                     {
                         auth: {
                             persistSession: true,
