@@ -103,9 +103,10 @@
     const meta=document.createElement('div'),nm=document.createElement('strong'),em=document.createElement('small');
     nm.textContent=u.full_name||'Name unavailable';em.textContent=label(u.role||u.role_id)+' · '+label(u.status);meta.append(nm,em);summary.append(avatar,meta);body.append(summary);
     const sections=[
-      ['Personal & contact',[['Full name',u.full_name],['Email address',u.email],['Phone number',u.phone],['User ID',u.user_id],['Profile ID',u.id]]],
-      ['Account & access',[['Role',u.role],['Role ID',u.role_id],['Account status',u.status],['Approved',u.approved],['Login access',u.login_enabled===false?'Disabled':'Enabled'],['Registered',date(u.created_at)],['Last updated',date(u.updated_at)]]],
-      ['Academic & employment',[['Student ID',u.student_id],['Admission number',u.admission_number],['Staff ID',u.staff_id],['Programme',u.program],['Department',u.department],['Intake year',u.intake_year],['Current block',u.current_block||u.block],['Block / programme year',u.block_program_year],['Current year',u.current_year],['Current term',u.current_term]]],
+      ['Personal & contact',[['Full name',u.full_name],['Email address',u.email],['Phone number',u.phone],['Alternative phone',u.alt_phone],['Date of birth',u.date_of_birth],['Gender',u.gender],['National ID',u.national_id],['Postal / physical address',u.address],['Profile photo',u.profile_photo_url],['User ID',u.user_id],['Profile ID',u.id]]],
+      ['Account & access',[['Role',u.role],['Role ID',u.role_id],['Account status',u.status],['Login access',u.login_enabled===false?'Disabled':'Enabled'],['Username',u.username],['Last login',date(u.last_login)],['Last activity',date(u.last_activity)],['Login count',u.login_count],['Two-factor authentication',u.two_factor_enabled?'Enabled':'Disabled'],['Registered',date(u.created_at)],['Last updated',date(u.updated_at)]]],
+      ['Academic & employment',[['Student ID',u.student_id],['Admission number',u.admission_number],['Staff ID',u.staff_id],['Programme',u.program],['Programme type',u.program_type],['Department',u.department],['Intake month',u.intake_month],['Intake year',u.intake_year],['Admission year',u.admission_year],['Admission date',u.admission_date],['Current block',u.current_block||u.block],['Block / programme year',u.block_program_year],['Block progress',u.block_progress],['Employment date',u.employment_date],['Qualifications',u.qualifications],['Specialization',u.specialization],['Professional bio',u.professional_bio]]],
+      ['Additional contact',[['Guardian name',u.guardian_name],['Guardian phone',u.guardian_phone],['Parent email',u.parent_email],['Parent address',u.parent_address]]],
       ['Institution',[['Institution ID',u.institution_id]]]
     ];
     sections.forEach(([heading,fields])=>{
@@ -123,7 +124,7 @@
     if(!api?.db||!api?.institutionId){message('Institution administrator session is not ready. Refresh the page.',true);return;}
     state.api=api;state.loading=true;message('Loading your institution user directory…');render();
     try{
-      const columns='id,user_id,email,full_name,phone,role,role_id,student_id,admission_number,staff_id,program,department,status,approved,created_at,updated_at,current_block,block,block_program_year,current_year,current_term,intake_year,login_enabled,institution_id';
+      const columns='id,user_id,email,full_name,phone,alt_phone,date_of_birth,gender,national_id,address,profile_photo_url,role,role_id,student_id,admission_number,staff_id,program,program_type,department,status,created_at,updated_at,current_block,block,block_program_year,block_progress,intake_year,intake_month,admission_year,admission_date,employment_date,login_enabled,username,last_login,last_activity,login_count,two_factor_enabled,guardian_name,guardian_phone,parent_email,parent_address,qualifications,specialization,professional_bio,institution_id';
       const {data,error}=await api.db.from('consolidated_user_profiles_table').select(columns)
         .eq('institution_id',api.institutionId).order('created_at',{ascending:false}).limit(2000);
       if(error)throw error;
@@ -152,8 +153,7 @@
   function init(){
     if(!$('view-user-management'))return;
     bind();
-    const attempt=()=>{const api=window.CampusInstitutionAdmin;if(api?.db&&api?.institutionId)load();else setTimeout(attempt,250);};
-    attempt();
+    let attempts=0;const attempt=()=>{const api=window.CampusInstitutionAdmin;if(api?.db&&api?.institutionId){load();return;}if(++attempts<80)setTimeout(attempt,250);else message('Institution administrator session is not ready. Refresh the page and sign in again.',true);};attempt();
     document.querySelectorAll('[data-view="user-management"]').forEach(b=>b.addEventListener('click',()=>{if(!state.rows.length&&!state.loading)load();}));
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
