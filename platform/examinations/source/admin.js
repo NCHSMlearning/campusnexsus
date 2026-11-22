@@ -900,22 +900,36 @@ document.getElementById('add-account-form')?.addEventListener('submit', async fu
 });
 
 window.approveUser = async function(userId, fullName) {
-    if (!confirm('Approve ' + fullName + '? Their institution membership will become active.')) return;
-
+    if (!confirm('Approve ' + fullName + '? Their institution membership and login access will be activated.')) return;
     try {
-        const { data, error } = await db.from('consolidated_user_profiles_table')
-            .update({ status: 'approved' })
-            .eq('user_id', userId)
-            .eq('status', 'pending')
-            .select('user_id,status')
-            .maybeSingle();
-
+        // The database transaction synchronizes profile status, login_enabled,
+        // institution membership, student/lecturer records and the audit log.
+        const { data, error } = await db.rpc('review_institution_registration', {
+            p_user_id: userId,
+            p_decision: 'approve',
+            p_reason: null
+        });
         if (error) throw error;
-        if (!data || data.status !== 'approved') {
-            throw new Error('This account is no longer pending or is outside your institution.');
+        if (!data || data.success !== true || data.status !== 'approved' || data.login_enabled !== true) {
+            throw new Error('Approval was not confirmed by the institution approval service.');
         }
 
-        showToast('✅ ' + fullName + ' approved!', 'success');
+        showToast('✅ ' + fullName + ' approved. Sending the approval email…', 'success');
+        // Email is deliberately best-effort: a mail outage must never undo approval.
+        try {
+            const { data: mailResult, error: mailError } = await db.functions.invoke('registration-approved-email', {
+                body: { user_id: userId }
+            });
+            if (mailError || !mailResult?.success) {
+                console.error('Approval email could not be sent:', mailError || mailResult);
+                showToast('Account approved, but the confirmation email could not be sent. Please retry from the user record.', 'warning');
+            } else {
+                showToast('📧 Approval confirmation accepted for delivery to the registered email.', 'success');
+            }
+        } catch (mailError) {
+            console.error('Approval email invocation failed:', mailError);
+            showToast('Account approved, but the confirmation email service is temporarily unavailable.', 'warning');
+        }
         await Promise.all([loadPendingUsers(), loadAllUsers(), loadDashboardNumbers()]);
     } catch(err) {
         showToast('Unable to approve account: ' + err.message, 'error');
