@@ -1580,7 +1580,11 @@ window.startExam = async function() {
     if (AppState.isExamActive) {
         AppState.stealthProctor = new StealthProctor();
         const recordingStarted = await AppState.stealthProctor.startStealthRecording(AppState.studentId, AppState.examId);
-        if (!recordingStarted) {
+        if (recordingStarted) {
+            if (DOM.proctoringStatusText) {
+                DOM.proctoringStatusText.innerHTML = '<i class="fa-solid fa-circle" style="color:#e5484d"></i> VIDEO RECORDING ACTIVE • PROCTORING ACTIVE';
+            }
+        } else {
             showToast('Video recording is required for this examination. Please contact the invigilator.', 'error', 7000);
         }
     }
