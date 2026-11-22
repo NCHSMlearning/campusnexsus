@@ -2162,103 +2162,10 @@ body.dark-theme #loginButton,body.dark-theme .login-button{background:linear-gra
 
 
 
-<script id="campus-nexus-school-code-gate">
-(function () {
-  "use strict";
-  const params = new URLSearchParams(window.location.search);
-  if ((params.get("school_code") || "").trim()) return;
-
-  // A restored, approved Supabase session must pass straight through to its
-  // dashboard. Do not cover it with the first-time school-code gate while
-  // login-script.js is restoring the session.
-  async function hasApprovedSession() {
-    const deadline = Date.now() + 6500;
-    let client = null;
-    while (Date.now() < deadline) {
-      client = window.NCHSMLogin && window.NCHSMLogin.supabase;
-      if (client && client.auth && typeof client.auth.getSession === "function") break;
-      await new Promise(resolve => setTimeout(resolve, 150));
-    }
-    if (!client) return false;
-    try {
-      const { data, error } = await client.auth.getSession();
-      const userId = data && data.session && data.session.user && data.session.user.id;
-      if (error || !userId) return false;
-      const { data: profile, error: profileError } = await client
-        .from("consolidated_user_profiles_table")
-        .select("status, login_enabled")
-        .eq("user_id", userId)
-        .maybeSingle();
-      return !profileError && !!profile &&
-        ["approved", "active"].includes(String(profile.status || "").toLowerCase()) &&
-        profile.login_enabled !== false;
-    } catch (error) {
-      console.warn("[Campus Nexus] Could not verify restored session before school-code gate:", error);
-      return false;
-    }
-  }
-
-  function mountGate() {
-    if (document.getElementById("campus-nexus-school-code-gate-panel")) return;
-    const style = document.createElement("style");
-    style.textContent = `
-      #campus-nexus-school-code-gate-panel{position:fixed;inset:0;z-index:2147482000;display:grid;place-items:center;padding:20px;background:rgba(7,25,45,.72);backdrop-filter:blur(5px);font-family:inherit}
-      #campus-nexus-school-code-gate-panel .cn-code-card{width:min(100%,420px);background:#fff;border-radius:18px;padding:26px;box-shadow:0 24px 70px rgba(0,0,0,.25);color:#16324a}
-      #campus-nexus-school-code-gate-panel h2{margin:0 0 8px;font-size:23px;color:#123653}
-      #campus-nexus-school-code-gate-panel p{margin:0 0 18px;color:#64748b;font-size:14px;line-height:1.55}
-      #campus-nexus-school-code-gate-panel label{display:block;font-size:13px;font-weight:700;margin-bottom:7px}
-      #campus-nexus-school-code-gate-panel input{box-sizing:border-box;width:100%;height:48px;border:1px solid #cbd5e1;border-radius:10px;padding:0 13px;font:600 16px system-ui,sans-serif;letter-spacing:.08em;outline:none}
-      #campus-nexus-school-code-gate-panel input:focus{border-color:#0f766e;box-shadow:0 0 0 3px rgba(15,118,110,.13)}
-      #campus-nexus-school-code-gate-panel button{width:100%;height:48px;margin-top:14px;border:0;border-radius:10px;background:#0f766e;color:#fff;font-weight:700;font-size:15px;cursor:pointer}
-      #campus-nexus-school-code-gate-panel .cn-code-error{min-height:18px;margin-top:10px;color:#b91c1c;font-size:13px}
-    `;
-    document.head.appendChild(style);
-    const panel = document.createElement("div");
-    panel.id = "campus-nexus-school-code-gate-panel";
-    panel.innerHTML = '<section class="cn-code-card" role="dialog" aria-modal="true" aria-labelledby="cn-code-title"><h2 id="cn-code-title">Welcome to Campus Nexus</h2><p>Enter your institution school code to continue to the correct login portal.</p><form id="cn-school-code-form"><label for="cn-school-code-input">Institution school code</label><input id="cn-school-code-input" name="school_code" inputmode="numeric" autocomplete="off" maxlength="3" pattern="[0-9]{3}" placeholder="Enter school code" required><button type="submit">Continue to login</button><div class="cn-code-error" id="cn-school-code-error" role="alert"></div></form></section>';
-    document.body.appendChild(panel);
-    const input = panel.querySelector("#cn-school-code-input");
-    input.focus();
-    panel.querySelector("#cn-school-code-form").addEventListener("submit", async function (event) {
-      event.preventDefault();
-      const code = input.value.trim().replace(/[\\s-]+/g, "");
-      const errorBox = panel.querySelector("#cn-school-code-error");
-      const button = panel.querySelector("button");
-      if (!/^[0-9]{3}$/.test(code)) { errorBox.textContent = "Enter the complete 3-digit school code."; input.focus(); return; }
-      if (!window.supabase?.createClient) { errorBox.textContent = "Login service is not ready. Refresh and try again."; return; }
-      button.disabled = true; button.textContent = "Checking school code…"; errorBox.textContent = "";
-      try {
-        const client = window.supabase.createClient(
-          "https://irahplkvocaakjxuisto.supabase.co",
-           "sb_publishable_5Cg5FFudf03UnmOXGNGMHQ_uK9S-uQX"
-        );
-        const result = await client.rpc("resolve_institution_registration_context", {p_code:code,p_host:null});
-        if (result.error) throw new Error("School-code verification failed: " + (result.error.message || "Unable to contact the institution service."));
-        // PostgREST may return a single row as an object or as a one-row array,
-        // depending on the RPC's declared return type. Normalize both shapes.
-        const institution = Array.isArray(result.data) ? result.data[0] : result.data;
-        if (!institution?.institution_id) throw new Error("No active institution was found for that school code. Check the code or contact the platform administrator.");
-        const next = new URL("/platform/login.html", window.location.origin);
-        next.searchParams.set("school_code", code);
-        window.location.replace(next.toString());
-      } catch (error) {
-        errorBox.textContent = error.message || "Unable to verify that school code.";
-        button.disabled = false; button.textContent = "Continue to login";
-      }
-    });
-  }
-
-  async function initializeGate() {
-    if (await hasApprovedSession()) {
-      console.info("[Campus Nexus] Approved session restored; skipping school-code gate.");
-      return;
-    }
-    mountGate();
-  }
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", initializeGate, {once:true});
-  else initializeGate();
-})();
-</script>
+<!-- School-code selection is optional before authentication. The authenticated
+     Campus Nexus profile and server-verified role determine the destination.
+     If a school_code is supplied by an institution link, login-script.js validates
+     that context after authentication; platform Super Admins remain cross-institution. -->
 <script src="/platform/js/institution-login-branding.js?v=20261122-campus-nexus-auth-v2" defer></script>
 <script id="campus-nexus-preserve-registration-code">
 (function () {
