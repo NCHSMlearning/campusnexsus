@@ -744,3 +744,31 @@ html,body{width:100%;max-width:100%;min-height:100%;margin:0}body{overflow-x:hid
 #view-user-management .ia-users-edit-footer .ia-users-edit-save{border:1px solid #083b78;background:linear-gradient(120deg,#07366e,#08628f);color:#fff;box-shadow:0 5px 14px #07366e28}
 #view-user-management .ia-users-edit-footer .ia-users-edit-save:hover{transform:translateY(-1px);box-shadow:0 8px 20px #07366e35}
 @media(max-width:620px){#view-user-management .ia-users-edit-footer .ia-users-edit-cancel,#view-user-management .ia-users-edit-footer .ia-users-edit-save{flex:1;margin:0}}
+
+/* Premium two-panel user view, visually paired with the edit wizard */
+#view-user-management .ia-users-view-shell{display:grid;grid-template-columns:250px minmax(0,1fr);min-height:640px;border:1px solid #d8e4f0;border-radius:20px;background:#fff;overflow:hidden}
+#view-user-management .ia-users-view-sidebar{display:flex;flex-direction:column;gap:20px;padding:18px 14px;background:linear-gradient(180deg,#f0f6ff,#f8fbff);border-right:1px solid #dce7f2}
+#view-user-management .ia-users-view-identity{display:flex;flex-direction:column;align-items:center;gap:8px;padding:18px 12px;border-radius:17px;background:linear-gradient(140deg,#062d63,#0b4d86 72%,#087b83);color:#fff;text-align:center}
+#view-user-management .ia-users-view-identity .ia-users-avatar{width:88px;height:88px;border:3px solid #efc84d;border-radius:50%;overflow:hidden;background:#eaf3ff;color:#0b477d;font-size:22px}
+#view-user-management .ia-users-view-identity .ia-users-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+#view-user-management .ia-users-view-identity strong{font-size:14px;font-weight:850;line-height:1.4}
+#view-user-management .ia-users-view-identity small{color:#d4e8f9;font-size:10px}
+#view-user-management .ia-users-view-nav{display:grid;gap:6px}
+#view-user-management .ia-users-view-nav-item{display:flex;align-items:center;gap:10px;min-height:42px;padding:9px 10px;border:1px solid transparent;border-radius:11px;background:transparent;color:#244766;text-align:left;font-size:10px;font-weight:800;cursor:pointer}
+#view-user-management .ia-users-view-nav-item i{width:19px;color:#1764a2;text-align:center}
+#view-user-management .ia-users-view-nav-item.is-active{border-color:#c4dcf6;background:#dcecff;color:#073b78}
+#view-user-management .ia-users-view-main{min-width:0;padding:20px 22px;max-height:70dvh;overflow:auto;scroll-behavior:smooth}
+#view-user-management .ia-users-view-heading{margin:0 0 16px}
+#view-user-management .ia-users-view-heading h3{margin:3px 0;color:#0a2f64;font-size:18px;font-weight:900}
+#view-user-management .ia-users-view-heading p{margin:0;color:#75869a;font-size:10px}
+#view-user-management .ia-users-view-main .ia-users-detail-section{scroll-margin-top:12px}
+#view-user-management .ia-users-view-main .ia-users-edit-btn{display:inline-flex;align-items:center;gap:9px;margin:4px 0 0}
+@media(max-width:620px){
+ #view-user-management .ia-users-view-shell{display:block;min-height:0}
+ #view-user-management .ia-users-view-sidebar{padding:10px;border-right:0;border-bottom:1px solid #dce7f2}
+ #view-user-management .ia-users-view-identity{flex-direction:row;text-align:left;padding:10px}
+ #view-user-management .ia-users-view-identity .ia-users-avatar{width:48px;height:48px;flex-basis:48px}
+ #view-user-management .ia-users-view-nav{display:flex;overflow-x:auto;gap:5px}
+ #view-user-management .ia-users-view-nav-item{flex:0 0 auto;min-height:34px;padding:7px 9px}
+ #view-user-management .ia-users-view-main{max-height:65dvh;padding:12px}
+}
