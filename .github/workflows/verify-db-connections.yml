@@ -2,6 +2,9 @@ name: Verify Supabase Migration Connections
 
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/verify-db-connections.yml'
 
 permissions:
   contents: read
