@@ -7,6 +7,7 @@
 
   const SUPABASE_URL = "https://irahplkvocaakjxuisto.supabase.co";
   const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_5Cg5FFudf03UnmOXGNGMHQ_uK9S-uQX";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlyYWhwbGt2b2NhYWtqeHVpc3RvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4ODY5ODQsImV4cCI6MjEwMzQ2Mjk4NH0.BFOwdRVDz4r1oYgUjm8zQbthqblGRq4c3WQWQaOhu7g";
 
   function applyBranding(institution) {
     if (!institution || !institution.institution_id) {
@@ -132,7 +133,7 @@
         headers: {
           "Content-Type": "application/json",
           "apikey": SUPABASE_PUBLISHABLE_KEY,
-          "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY
+          "Authorization": "Bearer " + SUPABASE_ANON_KEY
         },
         body: JSON.stringify({ p_code: code, p_host: null }),
         cache: "no-store"
