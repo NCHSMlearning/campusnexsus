@@ -8644,6 +8644,20 @@ document.addEventListener('DOMContentLoaded', async function() {
         return;
     }
 
+    // Render the primary workspace immediately after successful authentication.
+    // Data requests must never leave every tab hidden if one of them fails.
+    const primaryPane = document.getElementById('students');
+    if (primaryPane) {
+        primaryPane.hidden = false;
+        primaryPane.style.display = 'block';
+    }
+    document.querySelectorAll('.tab-content').forEach(pane => {
+        if (pane.id !== 'students') {
+            pane.hidden = true;
+            pane.style.display = 'none';
+        }
+    });
+
     // Continue through the existing dashboard authentication and original UI.
     if (!checkAdminAuth()) return;
 
@@ -8677,17 +8691,40 @@ document.addEventListener('DOMContentLoaded', async function() {
         ? 'Manage your institution’s examinations, results and academic assessments.'
         : 'Manage examinations, results and academic assessments across Campus Nexus.';
 
-    // ✅ Initialize dashboard - LOAD DATA FIRST
-    window.switchTab('students');
-    setupRealtimeNotifications();
-    updateTotalMarksHint();
+    // Initialize the visible tab independently from background data loading.
+    // A synchronous error in one module must not blank the entire dashboard.
+    try {
+        window.switchTab('students');
+    } catch (tabError) {
+        console.error('[Admin Exams] Could not initialize Students Results tab:', tabError);
+        if (primaryPane) {
+            primaryPane.hidden = false;
+            primaryPane.style.display = 'block';
+        }
+        if (typeof showToast === 'function') {
+            showToast('Dashboard opened, but the results tab encountered an error. Check the console.', 'warning');
+        }
+    }
+    try { setupRealtimeNotifications(); }
+    catch (error) { console.error('[Admin Exams] Notification startup failed:', error); }
+    try { updateTotalMarksHint(); }
+    catch (error) { console.error('[Admin Exams] Marks hint startup failed:', error); }
 
-    // ✅ Load all data with proper order
-    // First load students and exams data
-    loadAllStudents();
-    loadAllExams();
-    loadProctoringLogs();
-    loadAssessmentApprovals();
+    // Load dashboard data independently; failures in one module do not stop others.
+    const safeLoad = (label, loader) => {
+        try {
+            const result = loader();
+            if (result && typeof result.catch === 'function') {
+                result.catch(error => console.error('[Admin Exams] ' + label + ' failed:', error));
+            }
+        } catch (error) {
+            console.error('[Admin Exams] ' + label + ' failed:', error);
+        }
+    };
+    safeLoad('Students', loadAllStudents);
+    safeLoad('Exams', loadAllExams);
+    safeLoad('Proctoring', loadProctoringLogs);
+    safeLoad('Assessment approvals', loadAssessmentApprovals);
     
     // Then load results after exams map is ready
     setTimeout(() => {
