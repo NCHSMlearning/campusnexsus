@@ -2465,32 +2465,37 @@ body{
       || localStorage.getItem('currentUserId');
   }
 
-  function buildProfilePhotoUrl(profile, userId) {
+  async function buildProfilePhotoUrl(profile, userId) {
     if (!profile) return null;
+    const profilePhotoPath = profile.profile_photo_url || null;
+    const photoValue = profilePhotoPath || profile.passport_url || null;
+    if (!photoValue) return null;
 
-    // EXACT SAME PRIORITY AS PROFILE MODULE
-    const photoPath =
-      profile.profile_photo_url ||
-      profile.passport_url ||
-      null;
-
-    if (!photoPath) return null;
-
-    // Profile module returns an existing absolute URL unchanged.
-    if (photoPath.startsWith('http')) {
-      return photoPath;
+    const client = typeof sb !== 'undefined' ? sb : (window.examSupabase || window.supabaseClient);
+    let bucket = profilePhotoPath ? 'user-documents' : 'passports';
+    let objectPath = String(photoValue);
+    const storageMatch = objectPath.match(/\\/storage\\/v1\\/object\\/(?:public|sign)\\/([^/]+)\\/(.+?)(?:\\?.*)?$/);
+    if (storageMatch) {
+      bucket = decodeURIComponent(storageMatch[1]);
+      objectPath = decodeURIComponent(storageMatch[2]);
+    } else if (/^https?:\\/\\//i.test(objectPath)) {
+      return objectPath;
+    } else if (objectPath.startsWith('user-documents/')) {
+      bucket = 'user-documents';
+      objectPath = objectPath.slice('user-documents/'.length);
+    } else if (objectPath.startsWith('passports/')) {
+      bucket = 'passports';
+      objectPath = objectPath.slice('passports/'.length);
+    } else if (objectPath.startsWith('profiles/') || objectPath.startsWith('documents/')) {
+      bucket = 'user-documents';
+    } else if (profilePhotoPath) {
+      objectPath = `profiles/${userId}/${objectPath}`;
     }
 
-    // Profile module stores relative photo paths under:
-    // user-documents/profiles/{userId}/photo.ext
-    let fullPath = photoPath;
-
-    if (!photoPath.startsWith('profiles/')) {
-      fullPath = `profiles/${userId}/${photoPath}`;
-    }
-
-    // EXACT SAME PUBLIC STORAGE URL PATTERN + CACHE BUSTER
-    return `${SUPABASE_URL}/storage/v1/object/public/user-documents/${fullPath}?t=${new Date().getTime()}`;
+    if (!client?.storage?.from) return null;
+    const { data, error } = await client.storage.from(bucket).createSignedUrl(objectPath, 3600);
+    if (error) throw error;
+    return data?.signedUrl || null;
   }
 
   function fallbackPhoto(name) {
@@ -2558,7 +2563,7 @@ body{
 
       if (!profile) return;
 
-      const photoUrl = buildProfilePhotoUrl(profile, userId);
+      const photoUrl = await buildProfilePhotoUrl(profile, userId);
       const name = profile.full_name || 'Student';
 
       applyPhoto(photoUrl, name);
