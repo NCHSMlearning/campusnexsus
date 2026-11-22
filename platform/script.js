@@ -8,10 +8,10 @@
 // ============================================================
 
 const SUPABASE_URL = 'https://irahplkvocaakjxuisto.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlyYWhwbGt2b2Nhakp4dWlzdG8iLCJyb2xlIjoiYW5vbiIsImlhdCI6MTc4Nzg4Njk4NCwiZXhwIjoyMTAzNDYyOTg0fQ.BFOwdRVDz4r1oYgUjm8zQbthqblGRq4c3WQWQaOhu7g';
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_5Cg5FFudf03UnmOXGNGMHQ_uK9S-uQX';
 
 // Use the global supabase from CDN
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 window.sb = sb;
 window.supabase = sb;
 
@@ -3866,7 +3866,7 @@ if (typeof window.sendBirthdayEmail === 'undefined') {
             const result = await fetch('https://irahplkvocaakjxuisto.supabase.co/functions/v1/send-email', {
                 method: 'POST',
                 headers: {
-                    'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlyYWhwbGt2b2Nhakp4dWlzdG8iLCJyb2xlIjoiYW5vbiIsImlhdCI6MTc4Nzg4Njk4NCwiZXhwIjoyMTAzNDYyOTg0fQ.BFOwdRVDz4r1oYgUjm8zQbthqblGRq4c3WQWQaOhu7g',
+                    'Authorization': 'Bearer sb_publishable_5Cg5FFudf03UnmOXGNGMHQ_uK9S-uQX',
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
@@ -26012,7 +26012,7 @@ async function sendMarksApprovedEmail(studentEmail, studentName, subjectName, bl
         const response = await fetch('https://irahplkvocaakjxuisto.supabase.co/functions/v1/send-email', {
             method: 'POST',
             headers: {
-                'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlyYWhwbGt2b2Nhakp4dWlzdG8iLCJyb2xlIjoiYW5vbiIsImlhdCI6MTc4Nzg4Njk4NCwiZXhwIjoyMTAzNDYyOTg0fQ.BFOwdRVDz4r1oYgUjm8zQbthqblGRq4c3WQWQaOhu7g',
+                'Authorization': 'Bearer sb_publishable_5Cg5FFudf03UnmOXGNGMHQ_uK9S-uQX',
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
