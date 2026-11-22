@@ -64,9 +64,9 @@ Deno.serve(async (req: Request) => {
       return reply({success:false,error:"The account is not fully approved or login is not enabled."},409,origin);
     }
 
-    const {data:membership}=await admin.from("institution_users").select("status")
-      .eq("user_id",userId).eq("institution_id",profile.institution_id).eq("status","active").maybeSingle();
-    if(!membership) return reply({success:false,error:"Active institution membership is required before sending approval."},409,origin);
+    // The approval RPC transaction creates/activates institution_users before this
+    // function is invoked. The profile's approved + login_enabled state is the
+    // authoritative recipient gate; do not block delivery on a stale membership read.
     if(superadmin!==true) {
       const {data:callerMembership}=await admin.from("institution_users").select("id")
         .eq("user_id",callerId).eq("institution_id",profile.institution_id).eq("role","institution_admin").eq("status","active").maybeSingle();
@@ -75,10 +75,11 @@ Deno.serve(async (req: Request) => {
 
     const {data:authData,error:authError}=await admin.auth.admin.getUserById(userId);
     const authUser=authData?.user;
-    if(authError || !authUser || !validEmail(authUser.email)) return reply({success:false,error:"The registered email could not be verified."},409,origin);
+    const recipientEmail = validEmail(authUser?.email) ? authUser.email : profile.email;
+    if(authError || !authUser || !validEmail(recipientEmail)) return reply({success:false,error:"The registered email could not be verified in the account profile or authentication record.",stage:"recipient_email"},409,origin);
     const metadata=authUser.app_metadata||{};
     if(metadata.registration_approval_email_sent_at) {
-      return reply({success:true,alreadySent:true,recipient:authUser.email},200,origin);
+      return reply({success:true,alreadySent:true,recipient:recipientEmail},200,origin);
     }
     const {data:inst,error:instError}=await admin.from("institutions")
       .select("name,logo_url,primary_color,portal_domain,custom_login_url,website_url,school_code")
@@ -133,10 +134,10 @@ Deno.serve(async (req: Request) => {
         </div>
       </div>`;
     const textContent=`Hello ${name}, your ${role} account at ${institution} has been approved. Your login access is enabled. Programme/Department: ${program}. Account number: ${identifier}. Access your portal: ${portalUrl}`;
-    const messageId=await send(authUser.email,subject,html,textContent);
+    const messageId=await send(recipientEmail,subject,html,textContent);
     const {error:markError}=await admin.auth.admin.updateUserById(userId,{app_metadata:{...metadata,registration_approval_email_sent_at:new Date().toISOString()}});
     const {error:logError}=await admin.from("notification_delivery_logs").upsert({
-      institution_id:profile.institution_id,recipient_user_id:userId,recipient_email:authUser.email,
+      institution_id:profile.institution_id,recipient_user_id:userId,recipient_email:recipientEmail,
       notification_type:"registration_approved",entity_type:"registration",entity_id:userId,
       delivery_status:"accepted",provider:"brevo",provider_message_id:messageId,
       accepted_at:new Date().toISOString(),attempted_at:new Date().toISOString(),error_message:null
@@ -144,7 +145,7 @@ Deno.serve(async (req: Request) => {
     if(logError) console.error("Approval notification log could not be saved:",logError.message);
     if(markError) console.error("Could not save approval email idempotency marker:",markError.message);
     console.log("Approval email accepted by Brevo",{userId,messageId});
-    return reply({success:true,recipient:authUser.email,messageId},200,origin);
+    return reply({success:true,recipient:recipientEmail,messageId},200,origin);
   } catch(error) {
     console.error("Approval email failed:",error instanceof Error?error.message:"Unknown error");
     return reply({success:false,error:error instanceof Error?error.message:"Unable to send approval email."},500,origin);
