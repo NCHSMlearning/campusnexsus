@@ -608,7 +608,7 @@
       const adminState = i._adminUserId ? "Admin assigned" : "Admin pending";
       return '<tr><td><div class="cn-school"><span class="cn-school-mark" style="background:' + esc(i.primary_color || "#082f49") + '">' +
         (safeWebUrl(i.logo_url,true) ? '<img src="' + esc(safeWebUrl(i.logo_url,true)) + '" alt="" onerror="this.style.display=\'none\'">' : '<i class="fas fa-school"></i>') +
-        '</span><span><strong>' + esc(i.name) + '</strong><small>' + esc(i.short_code) + ' · ' + esc(i.country || "") + ' · 3-digit school code: ' + esc(i.school_code || "Not assigned") + '</small>' +
+        '</span><span><strong>' + esc(i.name) + '</strong><small>' + esc(i.short_code) + ' · ' + esc(i.country || "") + (i.county ? ' · ' + esc(i.county) : '') + (i.registration_number ? ' · Reg: ' + esc(i.registration_number) : '') + ' · 3-digit school code: ' + esc(i.school_code || "Not assigned") + '</small>' +
         (i.school_code ? '<button class="cn-row-action" type="button" data-copy-school-code="' + esc(i.id) + '">Copy school code</button>' : '') +
         '<small>' + esc(adminState) + ' · ' + esc(setupState === "ready" ? "Onboarding complete" : "Onboarding in progress") + '</small>' +
         '</span></div></td>' +
