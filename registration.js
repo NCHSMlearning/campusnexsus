@@ -693,47 +693,68 @@ function validateStudentId(studentId) {
         return { valid: false, message: 'Invalid characters detected' };
     }
 
-    // Nursing programme IDs use PROGRAM/0001/MAR/YYYY and support institution-specific nursing codes.
-    const nursingMatch = cleaned.match(/^([A-Z]{2,8})\/(\d{1,6})\/MAR\/(\d{4})$/);
-    if (nursingMatch) {
-        const program = nursingMatch[1];
-        const number = nursingMatch[2].padStart(4, '0');
-        const yearNum = Number(nursingMatch[3]);
-        if (yearNum < 2000 || yearNum > new Date().getFullYear() + 10) return { valid: false, message: 'Enter a valid four-digit intake year.' };
-        const display = program + '/' + number + '/MAR/' + nursingMatch[3];
-        return { valid: true, format: 'nursing', program, number, month: 'MAR', year: nursingMatch[3], display, canonical: display };
-    }
-
-    const match = cleaned.match(/^([A-Z]{2,8})\/(\d{1,8})\/(\d{1,2})\/(\d{2}|\d{4})$/);
-    if (match) {
-        const program = match[1];
-        const number = match[2];
-        const monthNum = Number(match[3]);
-        const rawYear = match[4];
-        // The programme code is checked against this institution’s active programme list during submission.
-        if (monthNum < 1 || monthNum > 12) {
-            return { valid: false, message: 'Month must be between 01 and 12.' };
-        }
-
-        const yearNum = Number(rawYear);
-        const fullYear = rawYear.length === 2 ? 2000 + yearNum : yearNum;
-        if (fullYear < 2000 || fullYear > new Date().getFullYear() + 10) {
-            return { valid: false, message: 'Enter a valid intake year.' };
-        }
-        const month = String(monthNum).padStart(2, '0');
-        const monthNames = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
-        const paddedNumber = number.padStart(5, '0');
-        const canonical = `${program}/${paddedNumber}/${month}/${rawYear.length === 2 ? String(fullYear).slice(-2) : fullYear}`;
+    // Flexible institutional registration format:
+    // PROGRAM / SERIAL / INTAKE-MONTH / YEAR
+    // Accepts 1-8 serial digits, numeric months (1-12), or
+    // three-letter month codes (JAN-DEC), and 2- or 4-digit years.
+    // The programme code is verified against the institution's active programmes.
+    const match = cleaned.match(/^([A-Z][A-Z0-9]{1,11})\/(\d{1,8})\/([A-Z]{3}|\d{1,2})\/(\d{2}|\d{4})$/);
+    if (!match) {
         return {
-            valid: true, format: 'tvet', program, number, paddedNumber, month,
-            monthName: monthNames[monthNum - 1], year: rawYear, fullYear: String(fullYear),
-            display: canonical, canonical, is2DigitYear: rawYear.length === 2
+            valid: false,
+            message: 'Use PROGRAM/NUMBER/MONTH/YEAR, e.g. KRCHN/0001/MAR/2024, KRCHN/12345/03/26 or DPOTT/27/5/2026. Different serial lengths are accepted.'
         };
     }
 
+    const program = match[1];
+    const rawNumber = match[2];
+    const rawMonth = match[3];
+    const rawYear = match[4];
+    const monthNames = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+    const yearNum = Number(rawYear);
+    const fullYear = rawYear.length === 2 ? 2000 + yearNum : yearNum;
+
+    if (fullYear < 2000 || fullYear > new Date().getFullYear() + 10) {
+        return { valid: false, message: 'Enter a valid intake year (2 or 4 digits).' };
+    }
+
+    let month;
+    let monthName;
+    let isNamedMonth = /^[A-Z]{3}$/.test(rawMonth);
+    if (isNamedMonth) {
+        if (!monthNames.includes(rawMonth)) {
+            return { valid: false, message: 'Use a valid month code from JAN to DEC.' };
+        }
+        month = rawMonth;
+        monthName = rawMonth;
+    } else {
+        const monthNum = Number(rawMonth);
+        if (monthNum < 1 || monthNum > 12) {
+            return { valid: false, message: 'Month must be between 1 and 12.' };
+        }
+        month = String(monthNum).padStart(2, '0');
+        monthName = monthNames[monthNum - 1];
+    }
+
+    // Preserve the familiar nursing (4-digit) and numeric-intake (5-digit)
+    // display conventions while accepting shorter or longer entered serials.
+    const paddedNumber = rawNumber.padStart(isNamedMonth ? 4 : 5, '0');
+    const year = rawYear.length === 2 ? String(fullYear).slice(-2) : String(fullYear);
+    const canonical = `${program}/${paddedNumber}/${month}/${year}`;
+
     return {
-        valid: false,
-        message: 'Use your full registration number, e.g. KRCHN/00001/05/26 or DCHN/0001/MAR/2024. Spaces, hyphens and letter case are accepted.'
+        valid: true,
+        format: isNamedMonth ? 'named-month' : 'numeric-month',
+        program,
+        number: rawNumber,
+        paddedNumber,
+        month,
+        monthName,
+        year: rawYear,
+        fullYear: String(fullYear),
+        display: canonical,
+        canonical,
+        is2DigitYear: rawYear.length === 2
     };
 }
 
