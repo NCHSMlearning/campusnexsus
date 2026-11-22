@@ -589,3 +589,30 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{ou
   .sidebar-header .brand-text h2 .cn-institution-brand-name{-webkit-line-clamp:2!important}
   .sidebar-header .brand-text h2{font-size:12px!important}
 }
+
+
+/* Final sidebar brand correction: show institution, code and portal role once. */
+.sidebar-header{
+  height:104px!important;min-height:104px!important;max-height:104px!important;
+  flex:0 0 104px!important;padding:9px 11px!important;overflow:hidden!important;
+}
+.sidebar-header .sidebar-brand{height:100%!important;align-items:center!important}
+.sidebar-header .brand-crest,
+.sidebar-header .brand-crest img{width:54px!important;height:70px!important;flex:0 0 54px!important}
+.sidebar-header .brand-text{display:flex!important;flex-direction:column!important;justify-content:center!important;gap:0!important}
+.sidebar-header .brand-text>small{display:none!important}
+.sidebar-header [data-cn-institution-label]{display:none!important}
+.sidebar-header .brand-text h2{margin:0!important;font-size:12px!important;line-height:1.12!important}
+.sidebar-header .brand-text h2 .cn-institution-brand-name{
+  display:block!important;font-size:12px!important;line-height:1.12!important;
+  -webkit-line-clamp:2!important;max-height:27px!important;
+}
+.sidebar-header .brand-text h2 .cn-institution-school-code{
+  margin-top:3px!important;font-size:9px!important;line-height:1.1!important;
+}
+.sidebar-header .brand-text h2 .cn-institution-portal-role{
+  margin-top:2px!important;font-size:9px!important;line-height:1.1!important;
+}
+@media(max-width:1000px){
+ .sidebar-header{height:104px!important;min-height:104px!important;max-height:104px!important;flex-basis:104px!important}
+}
