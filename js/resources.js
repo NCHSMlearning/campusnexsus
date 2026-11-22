@@ -1623,7 +1623,7 @@ class ResourcesModule {
         if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
             return filePath;
         }
-        const supabaseUrl = window.APP_CONFIG?.SUPABASE_URL || 'https://lwhtjozfsmbyihenfunw.supabase.co';
+        const supabaseUrl = window.APP_CONFIG?.SUPABASE_URL || 'https://irahplkvocaakjxuisto.supabase.co';
         return `${supabaseUrl}/storage/v1/object/public/resources/${filePath}`;
     }
     
