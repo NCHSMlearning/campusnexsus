@@ -137,7 +137,7 @@ async function refreshAll(){
   await Promise.all([loadAttempts(),loadProctoring(),loadAttendance(),loadStudentDirectory(),loadRetakes(),loadLiveStudents(),loadLiveFeed(),loadLecturerQuestions()]);
 }
 async function loadExams(){
-  const {data,error}=await scopeInstitution(sb.from("exams").select("id,institution_id,title,exam_name,exam_type,program_type,target_program,block,block_term,intake_year,intake_month,course_id,course_code,exam_date,start_time,exam_start_time,duration_minutes,total_marks,marks_out_of,pass_mark,status,approval_status,is_published,is_active,created_at,created_by,approved_by,approved_at,rejection_reason")).order("created_at",{ascending:false}).limit(1000);
+  const {data,error}=await scopeInstitution(sb.from("exams").select("id,institution_id,title,exam_name,exam_type,program_type,target_program,block,block_term,intake_year,intake_month,course_id,course_code,exam_date,start_time,exam_start_time,end_time,duration_minutes,total_marks,marks_out_of,pass_mark,instructions,status,approval_status,is_published,is_active,created_at,created_by,approved_by,approved_at,rejection_reason")).order("created_at",{ascending:false}).limit(1000);
   if(error) throw error;exams=data||[];
   const published=exams.filter(e=>e.is_published||String(e.status||"").toLowerCase()==="published").length;
   document.querySelectorAll(".stat-foot").forEach(el=>{if(allInstitutionsView)el.textContent="Across all institutions";});
@@ -155,7 +155,7 @@ function renderExamRows(){
  const table=body.closest("table");
  if(table)table.querySelector("thead tr").innerHTML=(allInstitutionsView?"<th>Institution</th>":"")+"<th>Examination</th><th>Programme</th><th>Block</th><th>Date</th><th>Duration</th><th>Approval</th><th>Publication</th><th>Actions</th>";
  if(!exams.length){body.innerHTML='<tr><td colspan="'+(allInstitutionsView?9:8)+'" class="empty-state">No examinations have been created for this institution yet.</td></tr>';return}
- body.innerHTML=exams.map(e=>{const id=escapeHTML(e.id),institutionCell=allInstitutionsView?'<td>'+escapeHTML(institutionNameMap.get(String(e.institution_id))||"Institution")+"</td>":"",approval=String(e.approval_status||"draft").toLowerCase();let actions="";if(approval==="pending")actions='<button class="secondary-button small" data-exam-action="approve" data-id="'+id+'">Approve</button> <button class="secondary-button small" data-exam-action="reject" data-id="'+id+'">Reject</button>';else if(approval==="approved"&&!e.is_published)actions='<button class="primary-button small" data-exam-action="publish" data-id="'+id+'">Publish</button>';else if(e.is_published)actions='<span class="muted-cell">Live</span>';return '<tr>'+institutionCell+'<td><strong>'+escapeHTML(e.title||e.exam_name||"Untitled examination")+'</strong><div class="muted-cell">'+escapeHTML(e.exam_type||"Assessment")+' · '+escapeHTML(e.course_code||"No unit linked")+'</div></td><td>'+escapeHTML(e.program_type||e.target_program||"—")+'</td><td>'+escapeHTML(e.block_term||e.block||"—")+'</td><td>'+escapeHTML(e.exam_date||"Not scheduled")+'</td><td>'+escapeHTML(e.duration_minutes||"—")+' min</td><td>'+approvalBadge(e)+(e.rejection_reason?'<div class="muted-cell">'+escapeHTML(e.rejection_reason)+'</div>':"")+'</td><td>'+publicationBadge(e)+'</td><td>'+actions+'</td></tr>'}).join("");
+ body.innerHTML=exams.map(e=>{const id=escapeHTML(e.id),institutionCell=allInstitutionsView?'<td>'+escapeHTML(institutionNameMap.get(String(e.institution_id))||"Institution")+"</td>":"",approval=String(e.approval_status||"draft").toLowerCase();let actions="";if(approval==="pending")actions='<button class="secondary-button small" data-exam-action="approve" data-id="'+id+'">Approve</button> <button class="secondary-button small" data-exam-action="reject" data-id="'+id+'">Reject</button>';else if(approval==="approved"&&!e.is_published)actions='<button class="primary-button small" data-exam-action="publish" data-id="'+id+'">Publish</button>';else if(e.is_published)actions='<span class="muted-cell">Live</span>';actions+=' <button class="secondary-button small" data-exam-action="edit" data-id="'+id+'"><i class="fa-solid fa-pen"></i> Edit</button>';return '<tr>'+institutionCell+'<td><strong>'+escapeHTML(e.title||e.exam_name||"Untitled examination")+'</strong><div class="muted-cell">'+escapeHTML(e.exam_type||"Assessment")+' · '+escapeHTML(e.course_code||"No unit linked")+'</div></td><td>'+escapeHTML(e.program_type||e.target_program||"—")+'</td><td>'+escapeHTML(e.block_term||e.block||"—")+'</td><td>'+escapeHTML(e.exam_date||"Not scheduled")+'</td><td>'+escapeHTML(e.duration_minutes||"—")+' min</td><td>'+approvalBadge(e)+(e.rejection_reason?'<div class="muted-cell">'+escapeHTML(e.rejection_reason)+'</div>':"")+'</td><td>'+publicationBadge(e)+'</td><td>'+actions+'</td></tr>'}).join("");
 }
 function renderRecent(){
  const target=$("recentExams");if(!exams.length){target.innerHTML='<div class="empty-state">No examinations yet. Create the first examination to get started.</div>';return}
@@ -260,6 +260,49 @@ async function saveExam(event){
  catch(error){notice(error.message||"Unable to save examination.",true)}
  finally{button.disabled=false;button.textContent="Create approved examination"}
 }
+function openEditExam(id){
+ const exam=exams.find(e=>String(e.id)===String(id));
+ if(!exam){notice("Examination not found in the current institution.",true);return;}
+ $("editExamId").value=exam.id;
+ $("editExamTitle").value=exam.title||exam.exam_name||"";
+ $("editExamType").value=exam.exam_type||"CAT";
+ $("editExamProgram").value=exam.program_type||exam.target_program||"";
+ $("editExamBlock").value=exam.block_term||exam.block||"";
+ $("editExamIntake").value=exam.intake_year||"";
+ $("editExamIntakeMonth").value=exam.intake_month||"";
+ $("editCourseCode").value=exam.course_code||"";
+ $("editExamDate").value=String(exam.exam_date||"").slice(0,10);
+ $("editExamTime").value=String(exam.exam_start_time||exam.start_time||"").slice(0,5);
+ $("editExamDuration").value=exam.duration_minutes||60;
+ $("editTotalMarks").value=exam.total_marks??exam.marks_out_of??100;
+ $("editPassMark").value=exam.pass_mark??60;
+ $("editExamInstructions").value=exam.instructions||"";
+ $("editExamModal").hidden=false;document.body.classList.add("modal-open");
+}
+function closeEditExamModal(){$("editExamModal").hidden=true;document.body.classList.remove("modal-open");}
+async function saveEditedExam(event){
+ event.preventDefault();if(!requireInstitution())return;
+ const id=$("editExamId").value,exam=exams.find(e=>String(e.id)===String(id));
+ if(!id||!exam){notice("The examination could not be identified. Refresh and try again.",true);return;}
+ const total=Number($("editTotalMarks").value),pass=Number($("editPassMark").value),duration=Number($("editExamDuration").value);
+ const date=$("editExamDate").value,time=$("editExamTime").value;
+ if(!date||!time||!Number.isFinite(duration)||duration<1||duration>600||!Number.isFinite(total)||total<1||pass<0||pass>total){notice("Check the date, start time, duration and marks. Pass mark cannot exceed total marks.",true);return;}
+ const start=date+"T"+time+":00",endDate=new Date(start);endDate.setMinutes(endDate.getMinutes()+duration);
+ const pad=n=>String(n).padStart(2,"0");
+ const end=endDate.getFullYear()+"-"+pad(endDate.getMonth()+1)+"-"+pad(endDate.getDate())+"T"+pad(endDate.getHours())+":"+pad(endDate.getMinutes())+":00";
+ const title=$("editExamTitle").value.trim(),program=$("editExamProgram").value.trim();
+ if(!title||!program){notice("Examination title and programme are required.",true);return;}
+ const payload={title,exam_name:title,exam_type:$("editExamType").value,program_type:program,target_program:program,block:$("editExamBlock").value.trim()||null,block_term:$("editExamBlock").value.trim()||null,intake_year:Number($("editExamIntake").value)||null,intake_month:$("editExamIntakeMonth").value||null,course_code:$("editCourseCode").value.trim()||null,exam_date:date,exam_start_time:time,start_time:start,end_time:end,duration_minutes:duration,total_marks:total,marks_out_of:total,pass_mark:pass,instructions:$("editExamInstructions").value.trim()||null,updated_at:new Date().toISOString()};
+ const button=$("editExamSaveBtn"),label=button.textContent;button.disabled=true;button.textContent="Saving changes…";
+ try{
+  const {data,error}=await sb.from("exams").update(payload).eq("id",id).eq("institution_id",institution.id).select("id,exam_date,exam_start_time,duration_minutes,title").single();
+  if(error)throw error;
+  if(!data)throw new Error("No examination was updated. Check your institution permissions and try again.");
+  closeEditExamModal();notice("Examination changes saved permanently.");
+  await loadExams();
+ }catch(error){notice("Could not save examination: "+(error.message||"Unknown database error"),true);}
+ finally{button.disabled=false;button.textContent=label;}
+}
 async function updateExamDecision(id,action){
  const exam=exams.find(e=>String(e.id)===String(id));if(!exam){notice("Examination not found in this institution.",true);return}
  const current=String(exam.approval_status||"").toLowerCase();let patch={};
@@ -326,7 +369,7 @@ function bind(){
  $("newExamBtn").addEventListener("click",openExamModal);$("quickCreate").addEventListener("click",openExamModal);$("listCreateBtn").addEventListener("click",openExamModal);
  document.querySelectorAll("[data-close-modal]").forEach(b=>b.addEventListener("click",closeExamModal));
  $("examForm").addEventListener("submit",saveExam);$("refreshBtn").addEventListener("click",()=>refreshAll().catch(e=>notice(e.message,true)));
- ["examsTable","approvalQueueTable"].forEach(id=>$(id).addEventListener("click",e=>{const b=e.target.closest("[data-exam-action]");if(b)updateExamDecision(b.dataset.id,b.dataset.examAction).catch(err=>notice(err.message,true))}));
+ $("examsTable").addEventListener("click",e=>{const b=e.target.closest("[data-exam-action]");if(!b)return;if(b.dataset.examAction==="edit"){openEditExam(b.dataset.id);return;}updateExamDecision(b.dataset.id,b.dataset.examAction).catch(err=>notice(err.message,true));});$("approvalQueueTable").addEventListener("click",e=>{const b=e.target.closest("[data-exam-action]");if(b)updateExamDecision(b.dataset.id,b.dataset.examAction).catch(err=>notice(err.message,true));});$("editExamForm").addEventListener("submit",saveEditedExam);$("closeEditExam").addEventListener("click",closeEditExamModal);$("cancelEditExam").addEventListener("click",closeEditExamModal);
  ["questionsTable","lecturerQuestionsTable"].forEach(id=>$(id).addEventListener("click",e=>{const b=e.target.closest("[data-question-action]");if(b)updateQuestionDecision(b.dataset.id,b.dataset.questionAction).catch(err=>notice(err.message,true))}));
  $("questionExam").addEventListener("change",loadQuestions);$("addQuestionBtn").addEventListener("click",()=>{$("questionComposer").hidden=false});
  $("cancelQuestion").addEventListener("click",()=>{$("questionComposer").hidden=true});$("saveQuestion").addEventListener("click",saveQuestion);
