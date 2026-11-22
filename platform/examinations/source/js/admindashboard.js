@@ -473,20 +473,20 @@ function checkAdminAuth() {
     }
 }
 
-window.logout = function() { 
-    // Clear all session data
-    localStorage.removeItem('adminSession');
-    localStorage.removeItem('userProfile');
-    localStorage.removeItem('campusNexusExamAdminAuth');
-    sessionStorage.clear();
-    
-    // Optional: Clear any other stored data
-    localStorage.removeItem('staffSession');
-    localStorage.removeItem('lecturerData');
-    localStorage.removeItem('user');
-    
-    // Redirect to admin login
-    window.location.replace('/platform/login.html?redirect=%2Fadminexams%2F'); 
+window.logout = async function() {
+    // End the Supabase session before clearing local portal state.
+    try {
+        if (sb?.auth?.signOut) {
+            const { error } = await sb.auth.signOut({ scope: 'local' });
+            if (error) console.warn('Exam portal sign-out warning:', error.message);
+        }
+    } catch (error) {
+        console.warn('Exam portal sign-out warning:', error);
+    } finally {
+        ['adminSession','userProfile','campusNexusExamAdminAuth','staffSession','lecturerData','user','currentUserId','studentEmail'].forEach(key => localStorage.removeItem(key));
+        sessionStorage.clear();
+        window.location.replace('/examlogin.html');
+    }
 };
 
     // ============================================
@@ -8334,42 +8334,67 @@ window.publishApprovedAssessment = async function(examId) {
         const form = document.getElementById('examForm');
         if (!form) return;
         form.reset();
-        document.getElementById('examModalTitle').innerHTML = examId
+        const byId = id => document.getElementById(id);
+        byId('examModalTitle').innerHTML = examId
             ? '<i class="fas fa-edit"></i> Edit Assessment'
             : '<i class="fas fa-plus-circle"></i> Create Assessment';
-        document.getElementById('editingExamId').value = examId || '';
-        document.getElementById('examType').value = 'EXAM';
-        document.getElementById('examTotalMarks').value = 100;
-        document.getElementById('examPassMark').value = 60;
-        document.getElementById('examDuration').value = 120;
-        document.getElementById('examStartTime').value = '09:00';
-        document.getElementById('examStatus').value = 'draft';
-        document.getElementById('examMinFee').value = 0;
+        byId('editingExamId').value = examId || '';
+        byId('examType').value = 'EXAM';
+        byId('examTotalMarks').value = 100;
+        byId('examPassMark').value = 60;
+        byId('examDuration').value = 120;
+        byId('examStartTime').value = '09:00';
+        byId('examStatus').value = 'draft';
+        byId('examMinFee').value = 0;
         const today = new Date();
         const localDate = new Date(today.getTime() - today.getTimezoneOffset() * 60000).toISOString().slice(0,10);
-        document.getElementById('examDate').value = localDate;
-        let exam = examId ? examsMap[examId] : null;
-        if (exam) {
-            document.getElementById('examName').value = exam.title || exam.exam_name || '';
-            document.getElementById('examType').value = exam.exam_type || 'EXAM';
-            document.getElementById('examBasis').value = exam.exam_basis || 'ordinary';
-            document.getElementById('examCourseOther').value = exam.course_name || exam.course_code || exam.course || '';
-            document.getElementById('examDuration').value = exam.duration_minutes || 120;
-            document.getElementById('examTotalMarks').value = exam.total_marks ?? exam.marks_out_of ?? 100;
-            document.getElementById('examPassMark').value = exam.pass_mark ?? Math.round(Number(exam.total_marks ?? 100) * .6);
-            document.getElementById('examLink').value = exam.online_link || exam.exam_link || '';
-            document.getElementById('examProgram').value = '';
-            document.getElementById('examBlock').value = exam.block_term || exam.block || '';
-            document.getElementById('examIntakeYear').value = '';
-            document.getElementById('examStatus').value = String(exam.status || 'draft').toLowerCase();
-            document.getElementById('examDate').value = exam.exam_date || localDate;
-            document.getElementById('examStartTime').value = exam.exam_start_time || '09:00';
-            document.getElementById('examDeadline').value = exam.marks_entry_deadline || '';
-            document.getElementById('examVenue').value = exam.description?.replace(/^Venue:\s*/i,'') || '';
-            document.getElementById('examMinFee').value = exam.min_fee_balance ?? 0;
+        byId('examDate').value = localDate;
+
+        let exam = null;
+        if (examId) {
+            exam = examsMap[examId] || allExams.find(item => String(item.id) === String(examId)) || null;
+            // Do not depend on a possibly stale list cache when editing.
+            const { data, error } = await sb.from('exams').select('*').eq('id', Number(examId)).maybeSingle();
+            if (error) throw error;
+            if (!data) throw new Error('This assessment could not be found or you do not have permission to edit it.');
+            exam = data;
+            examsMap[exam.id] = data;
+
+            const set = (id, value) => { const node=byId(id); if(node && value!==undefined && value!==null) node.value=String(value); };
+            set('examName', exam.title || exam.exam_name || exam.name || '');
+            set('examType', exam.exam_type || 'EXAM');
+            set('examBasis', exam.exam_basis || 'ordinary');
+            set('examCourseOther', exam.course_name || exam.course_code || exam.course || '');
+            set('examDuration', exam.duration_minutes ?? 120);
+            set('examTotalMarks', exam.total_marks ?? exam.marks_out_of ?? 100);
+            set('examPassMark', exam.pass_mark ?? Math.round(Number(exam.total_marks ?? exam.marks_out_of ?? 100) * .6));
+            set('examLink', exam.online_link || exam.exam_link || '');
+            set('examBlock', exam.block_term || exam.block || exam.term || '');
+            set('examIntakeMonth', exam.intake_month || '');
+            set('examStatus', String(exam.status || 'draft').toLowerCase());
+            set('examDate', String(exam.exam_date || localDate).slice(0,10));
+            set('examStartTime', String(exam.exam_start_time || '09:00').slice(0,5));
+            set('examDeadline', String(exam.marks_entry_deadline || '').slice(0,10));
+            set('examVenue', (exam.description || '').replace(/^Venue:\\s*/i,''));
+            set('examMinFee', exam.min_fee_balance ?? 0);
         }
-        await loadExamFormOptions(exam?.target_program || exam?.program_type || '', exam?.intake_year || '');
-        document.getElementById('examModal').style.display = 'flex';
+
+        await loadExamFormOptions(exam?.target_program || exam?.program_type || exam?.program || '', exam?.intake_year || exam?.intake || '');
+        // Preserve existing values even when their legacy value is not in the current dropdown list.
+        const ensureOption = (id, value) => {
+            const select=byId(id); if(!select || value===undefined || value===null || value==='') return;
+            const text=String(value);
+            if(![...select.options].some(option=>option.value===text)) select.add(new Option(text,text));
+            select.value=text;
+        };
+        if (exam) {
+            ensureOption('examType',exam.exam_type || 'EXAM');
+            ensureOption('examProgram',exam.target_program || exam.program_type || exam.program || '');
+            ensureOption('examIntakeYear',exam.intake_year || exam.intake || '');
+            ensureOption('examBlock',exam.block_term || exam.block || exam.term || '');
+            ensureOption('examStatus',String(exam.status || 'draft').toLowerCase());
+        }
+        byId('examModal').style.display = 'flex';
         updateTotalMarksHint();
     };
 
