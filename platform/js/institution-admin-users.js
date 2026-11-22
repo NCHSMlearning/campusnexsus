@@ -284,6 +284,10 @@
     // Premium multi-stage editor: retain every existing field and action while
     // presenting each complete section as its own navigable stage.
     const editForm=$('iaUsersEditForm');
+    // The editor is a multi-stage form. Native browser validation can block a
+    // submit when an invalid required field is inside a hidden stage, without
+    // firing the submit handler. Save is validated explicitly in saveUserEdit.
+    editForm.noValidate=true;
     const formSections=[...editForm.querySelectorAll(':scope > .ia-users-edit-section')];
     const historySection=formSections.find(section=>section.querySelector('#iaUsersAcademicHistory'))||null;
     const accessSection=formSections.find(section=>section.classList.contains('ia-users-access-section'))||null;
@@ -363,7 +367,16 @@
     const count=document.createElement('span');count.className='ia-users-edit-step-count';count.textContent='Section 1 of 6';
     footer.append(previous,count,next);
     if(cancelControl){cancelControl.classList.add('ia-users-edit-cancel');footer.append(cancelControl);}
-    if(saveControl){saveControl.classList.add('ia-users-edit-save');footer.append(saveControl);}
+    if(saveControl){
+      saveControl.classList.add('ia-users-edit-save');
+      saveControl.type='button';
+      saveControl.addEventListener('click',event=>{
+        event.preventDefault();
+        if(saveControl.dataset.saving==='true')return;
+        saveUserEdit({preventDefault(){},currentTarget:editForm},u);
+      });
+      footer.append(saveControl);
+    }
     if(controls)controls.replaceChildren(footer);
     workspace.append(controls||footer);
     if(passwordReset)workspace.append(passwordReset);
@@ -392,7 +405,10 @@
     previous.addEventListener('click',()=>moveStage(activeStage-1));
     next.addEventListener('click',()=>{
       if(activeStage<stageNodes.length-1)moveStage(activeStage+1);
-      else editForm.requestSubmit(saveControl||undefined);
+      else {
+        if(saveControl)saveControl.click();
+        else saveUserEdit({preventDefault(){},currentTarget:editForm},u);
+      }
     });
     renderStage();
     // Academic dropdowns: use consistent programme, block/term and year choices.
@@ -515,7 +531,9 @@
   async function saveUserEdit(event,user){
     event.preventDefault();
     const form=event.currentTarget,button=form.querySelector('.ia-users-edit-save')||form.querySelector('.ia-users-save-btn')||form.querySelector('[type="submit"]'),feedback=$('iaUsersEditFeedback');
-    button.disabled=true;button.textContent='Saving…';feedback.textContent='';
+    if(button.dataset.saving==='true')return;
+    button.dataset.saving='true';button.disabled=true;button.textContent='Saving…';
+    if(feedback){feedback.textContent='';feedback.className='';}
     try{
       const api=state.api||window.CampusInstitutionAdmin;
       if(!api?.db||!api?.institutionId)throw new Error('Institution session expired. Sign in again.');
@@ -575,7 +593,7 @@
       console.error('[Institution user edit]',error);
       feedback.textContent=error.message||'Unable to save user details.';
       feedback.className='error';
-    }finally{button.disabled=false;button.textContent='Save all changes';}
+    }finally{button.dataset.saving='false';button.disabled=false;button.textContent='Save changes';}
   }
   async function load(){
     if(state.loading)return;
