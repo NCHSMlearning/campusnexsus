@@ -503,7 +503,8 @@ function addExamScreenWatermark(examId, studentId) {
         });
         document.body.appendChild(watermark);
     }
-    const stamp = 'NCHSM • ' + String(studentId || 'STUDENT') + ' • EXAM ' + String(examId || '') + ' • ' + new Date().toLocaleString();
+    const institutionLabel = AppState.institution?.name || AppState.institution?.institution_name || 'CAMPUS NEXUS';
+    const stamp = institutionLabel + ' • ' + String(studentId || 'STUDENT') + ' • EXAM ' + String(examId || '') + ' • ' + new Date().toLocaleString();
     watermark.replaceChildren();
     for (let i = 0; i < 8; i++) {
         const mark = document.createElement('div');
@@ -1178,6 +1179,7 @@ function applyExamInstitutionBranding(institution) {
     });
 
     document.title = name + ' | Secure Online Examination';
+    document.querySelectorAll('link[rel~="icon"], link[rel="apple-touch-icon"]').forEach(link => { link.href = safeLogo; });
     document.documentElement.style.setProperty('--institution-brand-label', JSON.stringify(name + ' • Secure Examination'));
     const theme = institution?.primary_color;
     const secondary = institution?.secondary_color;
