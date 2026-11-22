@@ -161,6 +161,21 @@ body{background:var(--exam-canvas);color:var(--exam-ink)}
 
 <script src="/platform/js/campus-nexus-module-access.js?v=20261120-entitlements-v3" defer></script>
 <!-- DevTools remain available for this authenticated admin workspace; server-side RLS protects data. -->
+<style id="cn-complete-exam-form">
+#examModal .modal-content{max-width:980px!important;width:min(96vw,980px)!important;padding:24px!important}
+#examModal .cn-exam-form-section{padding:18px;margin:0 0 14px;border:1px solid #e1eaf2;border-radius:14px;background:#f8fbfe}
+#examModal .cn-exam-form-section h4{margin:0 0 14px;color:#0a3d62;font-size:14px;display:flex;align-items:center;gap:9px}
+#examModal .cn-exam-form-section h4 i{color:#d49b18}
+#examModal .cn-exam-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}
+#examModal .cn-exam-grid label{display:flex;flex-direction:column;gap:6px;min-width:0;color:#43566c;font-size:11px;font-weight:750}
+#examModal .cn-exam-grid label.wide{grid-column:span 2}
+#examModal .cn-exam-grid input,#examModal .cn-exam-grid select{width:100%;min-width:0;min-height:42px;padding:9px 11px;border:1px solid #d4e1ed;border-radius:9px;background:#fff;color:#183650;font:500 13px inherit;box-sizing:border-box}
+#examModal .cn-exam-grid input:focus,#examModal .cn-exam-grid select:focus{outline:0;border-color:#1683b5;box-shadow:0 0 0 3px #1683b51a}
+#examModal .cn-exam-help{display:block;margin-top:9px;color:#70849a;font-size:11px}
+#examModal .cn-exam-form-actions{position:sticky;bottom:-24px;display:flex;justify-content:flex-end;gap:10px;padding:15px 0 2px;background:#fff;border-top:1px solid #e5edf4}
+@media(max-width:720px){#examModal{padding:8px!important}#examModal .modal-content{width:100%!important;max-height:96vh!important;padding:15px!important}#examModal .cn-exam-grid{grid-template-columns:1fr 1fr}#examModal .cn-exam-grid label.wide{grid-column:1/-1}}
+@media(max-width:420px){#examModal .cn-exam-grid{grid-template-columns:1fr}}
+</style>
 </head>
 <body>
 
@@ -1696,78 +1711,58 @@ body{background:var(--exam-canvas);color:var(--exam-ink)}
                         style="background: none; border: none; font-size: 28px; cursor: pointer; color: #6b7280;">&times;</button>
             </div>
             
-            <form id="examForm">
-                <div style="background: #f8fafc; border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid #e5e7eb;">
-                    <h4 style="color: #4C1D95; margin: 0 0 15px 0; display: flex; align-items: center; gap: 10px;">
-                        <i class="fas fa-info-circle"></i> Exam Information
-                    </h4>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                        <div>
-                            <label style="font-weight: 600; font-size: 12px; color: #475569; display: block; margin-bottom: 4px;">Exam Name *</label>
-                            <input type="text" id="examName" required placeholder="e.g., OSCE Final Exam" 
-                                   style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 13px;">
-                        </div>
-                        <div>
-                            <label style="font-weight: 600; font-size: 12px; color: #475569; display: block; margin-bottom: 4px;">Exam Type *</label>
-                            <select id="examType" required onchange="updateTotalMarksHint()" 
-                                    style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 13px;">
-                                <option value="EXAM">Final Exam (70 marks)</option>
-                                <option value="CAT_1">CAT 1 (30 marks)</option>
-                                <option value="CAT_2">CAT 2 (30 marks)</option>
-                                <option value="CAT">CAT (30 marks)</option>
-                                <option value="QUIZ">Quiz</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label style="font-weight: 600; font-size: 12px; color: #475569; display: block; margin-bottom: 4px;">Course/Subject</label>
-                            <input type="text" id="examCourse" placeholder="e.g., Clinical Medicine" 
-                                   style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 13px;">
-                        </div>
-                        <div>
-                            <label style="font-weight: 600; font-size: 12px; color: #475569; display: block; margin-bottom: 4px;">Duration (minutes) *</label>
-                            <input type="number" id="examDuration" required value="30" min="1" max="180" 
-                                   style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 13px;">
-                        </div>
-                        <div>
-                            <label style="font-weight: 600; font-size: 12px; color: #475569; display: block; margin-bottom: 4px;">Total Marks</label>
-                            <input type="number" id="examTotalMarks" value="100" min="1" 
-                                   style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 13px;">
-                            <small style="display:block; color:#64748B; margin-top:4px; font-size: 11px;" id="totalMarksHint">📊 For CAT exams: 30 marks | For Final Exam: 70 marks</small>
-                        </div>
-                        <div>
-                            <label style="font-weight: 600; font-size: 12px; color: #475569; display: block; margin-bottom: 4px;">Exam Link / URL *</label>
-                            <input type="url" id="examLink" required placeholder="https://your-exam-platform.com/exam" 
-                                   style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 13px;">
-                        </div>
-                        <div>
-                            <label style="font-weight: 600; font-size: 12px; color: #475569; display: block; margin-bottom: 4px;">Program (leave empty for all)</label>
-                            <input type="text" id="examProgram" placeholder="e.g., Nursing, Clinical Medicine" 
-                                   style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 13px;">
-                        </div>
-                        <div>
-                            <label style="font-weight: 600; font-size: 12px; color: #475569; display: block; margin-bottom: 4px;">Block/Term</label>
-                            <input type="text" id="examBlock" placeholder="e.g., Block 1, Semester 1" 
-                                   style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 13px;">
-                        </div>
-                        <div>
-                            <label style="font-weight: 600; font-size: 12px; color: #475569; display: block; margin-bottom: 4px;">Intake Year</label>
-                            <input type="text" id="examIntakeYear" placeholder="e.g., 2024" 
-                                   style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 13px;">
-                        </div>
-                        <div>
-                            <label style="font-weight: 600; font-size: 12px; color: #475569; display: block; margin-bottom: 4px;">Pass Mark (60% of total marks)</label>
-                            <input type="number" id="examPassMark" value="60" min="1" max="100" 
-                                   style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 13px;">
-                            <small style="display:block; color:#64748B; margin-top:4px; font-size: 11px;">✅ Default: 60% of total marks</small>
-                        </div>
+            <form id="examForm" autocomplete="off">
+                <div class="cn-exam-form-section">
+                    <h4><i class="fas fa-clipboard-list"></i> Assessment details</h4>
+                    <div class="cn-exam-grid">
+                        <label class="wide">Exam / Assessment Title *<input type="text" id="examName" required maxlength="180" placeholder="e.g. End of Block 2 Examination"></label>
+                        <label>Assessment Type *<select id="examType" required onchange="updateTotalMarksHint()">
+                            <option value="EXAM">Final Examination</option><option value="END_TERM">End of Term Examination</option>
+                            <option value="CAT">CAT</option><option value="CAT_1">CAT 1</option><option value="CAT_2">CAT 2</option>
+                            <option value="OSCE">OSCE</option><option value="PRACTICAL">Practical Assessment</option>
+                            <option value="QUIZ">Quiz</option><option value="ASSIGNMENT">Assignment</option>
+                            <option value="SUPPLEMENTARY">Supplementary Examination</option><option value="SPECIAL">Special Examination</option>
+                        </select></label>
+                        <label>Assessment Basis *<select id="examBasis"><option value="ordinary">Ordinary</option><option value="consolidated">Consolidated</option><option value="supplementary">Supplementary</option><option value="special">Special</option></select></label>
+                        <label>Course / Unit<select id="examCourse" placeholder="Unit name or code"><option value="">Select / enter unit below</option></select></label>
+                        <label>Unit name or code<input id="examCourseOther" type="text" maxlength="120" placeholder="e.g. NCHN 214 — Medical Nursing"></label>
+                        <label>Publication status *<select id="examStatus"><option value="draft">Draft</option><option value="Upcoming">Upcoming</option><option value="published">Published</option></select></label>
+                    </div>
+                </div>
+                <div class="cn-exam-form-section">
+                    <h4><i class="fas fa-users"></i> Student cohort</h4>
+                    <div class="cn-exam-grid">
+                        <label>Programme *<select id="examProgram" required><option value="">Loading institution programmes…</option></select></label>
+                        <label>Intake year *<select id="examIntakeYear" required><option value="">Select programme first</option></select></label>
+                        <label>Intake month<select id="examIntakeMonth"><option value="">Any / not specified</option><option value="January">January</option><option value="February">February</option><option value="March">March</option><option value="April">April</option><option value="May">May</option><option value="June">June</option><option value="July">July</option><option value="August">August</option><option value="September">September</option><option value="October">October</option><option value="November">November</option><option value="December">December</option></select></label>
+                        <label>Block / Term *<select id="examBlock" required><option value="">Select block / term</option><option value="Block 1">Block 1</option><option value="Block 2">Block 2</option><option value="Block 3">Block 3</option><option value="Block 4">Block 4</option><option value="Block 5">Block 5</option><option value="Block 6">Block 6</option><option value="Semester 1">Semester 1</option><option value="Semester 2">Semester 2</option><option value="Term 1">Term 1</option><option value="Term 2">Term 2</option><option value="Term 3">Term 3</option></select></label>
+                    </div>
+                    <small class="cn-exam-help">Programme and intake options are loaded from the signed-in institution's student records. No institution is hardcoded.</small>
+                </div>
+                <div class="cn-exam-form-section">
+                    <h4><i class="fas fa-calculator"></i> Marks and duration</h4>
+                    <div class="cn-exam-grid">
+                        <label>Total marks *<input type="number" id="examTotalMarks" value="100" min="1" step="1" required></label>
+                        <label>Pass mark *<input type="number" id="examPassMark" value="60" min="0" step="1" required></label>
+                        <label>Duration (minutes) *<input type="number" id="examDuration" value="120" min="1" max="600" step="1" required></label>
+                        <label>Minimum fee balance (%)<input type="number" id="examMinFee" value="0" min="0" max="100" step="1"></label>
+                    </div>
+                    <small id="totalMarksHint" class="cn-exam-help">Pass mark defaults to 60% of total marks. Adjust if your institution's assessment policy requires it.</small>
+                </div>
+                <div class="cn-exam-form-section">
+                    <h4><i class="fas fa-calendar-alt"></i> Schedule and access</h4>
+                    <div class="cn-exam-grid">
+                        <label>Assessment date *<input type="date" id="examDate" required></label>
+                        <label>Start time *<input type="time" id="examStartTime" required value="09:00"></label>
+                        <label>Marks entry deadline<input type="date" id="examDeadline"></label>
+                        <label>Venue<input type="text" id="examVenue" maxlength="160" placeholder="e.g. Main Examination Hall"></label>
+                        <label class="wide">Online examination link (optional)<input type="url" id="examLink" placeholder="https://…"></label>
                     </div>
                 </div>
                 <input type="hidden" id="editingExamId" value="">
-                <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; border-top: 1px solid #e5e7eb; padding-top: 20px;">
-                    <button type="button" class="btn btn-danger" onclick="closeExamModal()" style="padding: 8px 20px; border-radius: 6px; border: none; cursor: pointer; font-weight: 600;">Cancel</button>
-                    <button type="submit" class="btn btn-primary" style="background: #4C1D95; color: white; padding: 8px 24px; border-radius: 6px; border: none; cursor: pointer; font-weight: 600;">
-                        <i class="fas fa-save"></i> Save Exam
-                    </button>
+                <div class="cn-exam-form-actions">
+                    <button type="button" class="btn btn-danger" onclick="closeExamModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save assessment</button>
                 </div>
             </form>
         </div>
