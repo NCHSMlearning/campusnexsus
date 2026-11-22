@@ -28,8 +28,8 @@ function trackGALogin(eventName, eventData) {
 // ✅ VERSION CHECK - WITHOUT CLEARING SESSION
 // ============================================
 (function() {
-    const VERSION = '5.3';
-    const storedVersion = localStorage.getItem('nchsm_js_version');
+    const VERSION = '6.0-campus-nexus';
+    const storedVersion = localStorage.getItem('campus_nexus_login_version');
     
     if (storedVersion !== VERSION) {
         console.log('🔄 Version mismatch detected. Updating version...');
@@ -46,7 +46,7 @@ function trackGALogin(eventName, eventData) {
         
         // Clear old cache items (not session!)
         const itemsToRemove = [
-            'nchsm_js_version',
+            'campus_nexus_login_version',
             'csrf_token',
             'trusted_devices',
             'failedAttempts',
@@ -66,8 +66,18 @@ function trackGALogin(eventName, eventData) {
         if (sessionExpires) localStorage.setItem('session_expires', sessionExpires);
         if (userEmail) localStorage.setItem('userEmail', userEmail);
         
+        // This login now authenticates against Campus Nexus, not the legacy NCHSM project.
+        // Remove only the old project's auth/session artifacts; preserve unrelated site data.
+        try {
+            Object.keys(localStorage).forEach(key => {
+                if (/^sb-lwhtjozfsmbyihenfunw-/i.test(key)) localStorage.removeItem(key);
+            });
+            ['userProfile','currentUserId','session_id','session_expires','userEmail'].forEach(key => localStorage.removeItem(key));
+            ['userProfile','currentUserId','pending_login_data'].forEach(key => sessionStorage.removeItem(key));
+        } catch (cleanupError) { console.warn('Legacy login session cleanup skipped:', cleanupError); }
+
         // Set new version
-        localStorage.setItem('nchsm_js_version', VERSION);
+        localStorage.setItem('campus_nexus_login_version', VERSION);
         
         console.log('✅ Version updated. Session data preserved.');
         console.log('   User ID preserved:', userId || 'None');
@@ -1535,8 +1545,8 @@ loadStaffRecords: async function() {
         try {
             if (window.supabase) {
                 this.supabase = window.supabase.createClient(
-                    'https://lwhtjozfsmbyihenfunw.supabase.co',
-                    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx3aHRqb3pmc21ieWloZW5mdW53Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk2NTgxMjcsImV4cCI6MjA3NTIzNDEyN30.7Z8AYvPQwTAEEEhODlW6Xk-IR1FK3Uj5ivZS7P17Wpk',
+                    'https://irahplkvocaakjxuisto.supabase.co',
+                    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlyYWhwbGt2b2NhYWtqeHVpc3RvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4ODY5ODQsImV4cCI6MjEwMzQ2Mjk4NH0.BFOwdRVDz4r1oYgUjm8zQbthqblGRq4c3WQWQaOhu7g',
                     {
                         auth: {
                             persistSession: true,
@@ -3045,7 +3055,7 @@ window.showQRCode = async function() {
             secret = newSecret;
         }
         
-        const appName = 'NCHSM Portal';
+        const appName = 'Campus Nexus';
         const email = userProfile.email;
         const otpauth = `otpauth://totp/${encodeURIComponent(appName)}:${encodeURIComponent(email)}?secret=${secret}&issuer=${encodeURIComponent(appName)}`;
         const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(otpauth)}`;
