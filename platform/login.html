@@ -2230,7 +2230,7 @@ body.dark-theme #loginButton,body.dark-theme .login-button{background:linear-gra
       try {
         const client = window.supabase.createClient(
           "https://irahplkvocaakjxuisto.supabase.co",
-          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx3aHRqb3pmc21ieWloZW5mdW53Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk2NTgxMjcsImV4cCI6MjA3NTIzNDEyN30.7Z8AYvPQwTAEEEhODlW6Xk-IR1FK3Uj5ivZS7P17Wpk"
+          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlyYWhwbGt2b2NhYWtqeHVpc3RvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4ODY5ODQsImV4cCI6MjEwMzQ2Mjk4NH0.BFOwdRVD4z1oYgUjm8zQbthqblGRq4c3WQWQaOhu7g"
         );
         const result = await client.rpc("resolve_institution_registration_context", {p_code:code,p_host:null});
         if (result.error) throw new Error("School-code verification failed: " + (result.error.message || "Unable to contact the institution service."));
