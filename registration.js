@@ -1839,7 +1839,7 @@ document.getElementById('register-form').addEventListener('submit', async functi
             password,
             options: { 
                 data: userMetadata,
-                emailRedirectTo: window.location.origin + '/login.html'
+                emailRedirectTo: getInstitutionLoginUrl(role)
             }
         });
         
@@ -1880,7 +1880,7 @@ document.getElementById('register-form').addEventListener('submit', async functi
                     '<p style="margin-top:24px;"><a href="' + safe(reviewUrl) +
                     '" style="background:#0f3b5b;color:#fff;padding:12px 18px;border-radius:8px;text-decoration:none;">Review pending registrations</a></p>' +
                     '<p style="color:#64748b;font-size:12px;">Campus Nexus · This account remains pending until approved.</p></div>';
-                const { error: notifyError } = await sb.functions.invoke('send-email', {
+                const { data: notifyData, error: notifyError } = await sb.functions.invoke('send-email', {
                     body: {
                         to: adminEmail,
                         subject: 'New ' + role + ' registration awaiting approval - ' + institutionName,
@@ -1888,10 +1888,10 @@ document.getElementById('register-form').addEventListener('submit', async functi
                         from: 'Campus Nexus <info@campusnexus.co.ke>'
                     }
                 });
-                if (notifyError || !data?.success) {
-                    console.warn('Administrator email notification failed:', notifyError || data?.error || 'Email gateway did not confirm acceptance.');
+                if (notifyError || !notifyData?.success) {
+                    console.warn('Administrator email notification failed:', notifyError || notifyData?.error || 'Email gateway did not confirm acceptance.');
                 } else {
-                    console.log('✅ Institution administrator notification accepted by Brevo:', data.messageId || 'message accepted');
+                    console.log('✅ Institution administrator notification accepted by Brevo:', notifyData.messageId || 'message accepted');
                 }
             } else {
                 console.warn('Administrator notification skipped: no notification email or authenticated session.');
