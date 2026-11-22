@@ -1409,3 +1409,54 @@ body>#iaApp .ia-user{min-width:170px!important;justify-content:flex-start!import
   text-align:center!important;
   white-space:normal!important;
 }
+
+/* Top bar institutional identity dropdown */
+.ia-account-menu{position:relative;display:flex;align-items:center;z-index:60}
+.ia-account-trigger{display:flex;align-items:center;gap:11px;min-width:220px;max-width:min(390px,46vw);padding:7px 11px 7px 8px;border:1px solid var(--line);border-radius:14px;background:#fff;color:var(--navy);text-align:left;cursor:pointer;transition:border-color .18s,box-shadow .18s}
+.ia-account-trigger:hover,.ia-account-trigger[aria-expanded="true"]{border-color:#9bcac6;box-shadow:0 5px 18px rgba(8,47,73,.09)}
+.ia-account-logo{display:grid;place-items:center;flex:0 0 40px;width:40px;height:40px;overflow:hidden;border:1px solid #e3edf2;border-radius:11px;background:#fff;color:var(--teal);font-size:12px;font-weight:900}
+.ia-account-logo img{display:block;width:100%;height:100%;object-fit:contain;padding:3px}
+.ia-account-copy{display:block;flex:1;min-width:0}
+.ia-account-copy b,.ia-account-copy small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ia-account-copy b{font-size:11px;font-weight:850}
+.ia-account-copy small{margin-top:4px;color:var(--muted);font-size:9px}
+.ia-account-chevron{color:#718195;font-size:10px;margin-left:3px}
+.ia-account-dropdown{position:absolute;top:calc(100% + 10px);right:0;width:min(310px,calc(100vw - 28px));padding:8px;border:1px solid #e2eaf0;border-radius:16px;background:#fff;box-shadow:0 18px 48px rgba(8,35,55,.2);z-index:100}
+.ia-account-dropdown[hidden]{display:none!important}
+.ia-account-dropdown-head{padding:12px 12px 13px;border-bottom:1px solid #edf2f5;margin-bottom:5px}
+.ia-account-dropdown-head b,.ia-account-dropdown-head small{display:block}
+.ia-account-dropdown-head b{font-size:12px;color:var(--navy);line-height:1.4}
+.ia-account-dropdown-head small{margin-top:4px;color:var(--muted);font-size:10px}
+.ia-account-option{display:flex;align-items:center;gap:12px;width:100%;padding:11px 12px;border:0;border-radius:10px;background:transparent;color:var(--navy);text-align:left;cursor:pointer}
+.ia-account-option:hover{background:#f1f7f8}
+.ia-account-option>i{width:18px;text-align:center;color:var(--teal);font-size:14px}
+.ia-account-option span{display:block;min-width:0}
+.ia-account-option b,.ia-account-option small{display:block}
+.ia-account-option b{font-size:11px}
+.ia-account-option small{margin-top:3px;color:var(--muted);font-size:9px}
+.ia-account-option.danger>i,.ia-account-option.danger b{color:#c43e4b}
+.ia-account-dropdown-divider{height:1px;margin:5px 4px;background:#edf2f5}
+.ia-account-profile-dialog{width:min(430px,calc(100vw - 28px));padding:0;border:1px solid #e1eaf0;border-radius:18px;background:#fff;color:var(--ink);box-shadow:0 25px 70px rgba(8,35,55,.28)}
+.ia-account-profile-dialog::backdrop{background:rgba(4,20,34,.55);backdrop-filter:blur(3px)}
+.ia-account-profile-head{display:flex;align-items:center;justify-content:space-between;padding:17px 20px;border-bottom:1px solid #edf2f5}
+.ia-account-profile-head span{color:var(--teal);font-size:9px;font-weight:900;letter-spacing:.12em}
+.ia-account-profile-head h2{margin:5px 0 0;color:var(--navy);font-size:18px}
+.ia-account-profile-head button{width:34px;height:34px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--navy);cursor:pointer}
+.ia-account-profile-body{padding:23px;text-align:center}
+.ia-account-profile-avatar{display:grid;place-items:center;width:62px;height:62px;margin:0 auto 12px;border-radius:50%;background:linear-gradient(145deg,#0b4560,#0f9a8d);color:#fff;font-size:17px;font-weight:900}
+.ia-account-profile-body h3{margin:0;color:var(--navy);font-size:16px}
+.ia-account-profile-body>p{margin:5px 0 18px;color:var(--muted);font-size:11px}
+.ia-account-profile-details{display:grid;gap:0;text-align:left;border:1px solid var(--line);border-radius:12px;padding:4px 13px}
+.ia-account-profile-details>div{display:flex;justify-content:space-between;gap:14px;padding:11px 0;border-bottom:1px solid #edf2f5}
+.ia-account-profile-details>div:last-child{border-bottom:0}
+.ia-account-profile-details small{color:var(--muted);font-size:10px}
+.ia-account-profile-details b{max-width:60%;color:var(--navy);font-size:10px;text-align:right;overflow-wrap:anywhere}
+@media(max-width:760px){
+ .ia-account-trigger{min-width:0;max-width:54vw;padding:6px 8px 6px 6px;gap:7px}
+ .ia-account-logo{width:34px;height:34px;flex-basis:34px;border-radius:9px}
+ .ia-account-copy b{max-width:30vw;font-size:10px}
+ .ia-account-copy small{display:block!important;font-size:8px}
+ .ia-account-chevron{font-size:9px}
+ .ia-top-actions{gap:8px}
+}
+@media(max-width:380px){.ia-account-trigger{max-width:50vw}.ia-account-copy b{max-width:25vw}.ia-icon-btn{width:32px;height:32px}}
