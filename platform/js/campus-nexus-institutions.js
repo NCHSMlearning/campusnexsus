@@ -229,13 +229,13 @@
         @media(max-width:760px){.cn-product-access-grid{grid-template-columns:1fr}}
         .cn-institution-modal{position:fixed;inset:0;z-index:10050;display:none;align-items:center;justify-content:center;padding:clamp(10px,3vw,28px);background:rgba(8,20,38,.68);backdrop-filter:blur(5px)}
         .cn-institution-modal.is-open{display:flex}
-        .cn-institution-dialog{width:min(1120px,100%);max-height:94vh;display:flex;flex-direction:column;background:#fff;border-radius:20px;box-shadow:0 24px 80px rgba(0,0,0,.3);overflow:hidden}
+        .cn-institution-dialog{width:min(980px,100%);max-height:90vh;display:flex;flex-direction:column;background:#fff;border-radius:20px;box-shadow:0 24px 80px rgba(0,0,0,.3);overflow:hidden}
         .cn-institution-modal-head{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 24px;background:linear-gradient(120deg,#082f49,#0f766e);color:#fff;flex:0 0 auto}
         .cn-institution-modal-head h2{margin:0;font-size:19px;font-weight:750;color:#fff}
         .cn-institution-modal-head p{margin:4px 0 0;color:rgba(255,255,255,.8);font-size:12px}
         .cn-institution-modal-close{width:38px;height:38px;border:1px solid rgba(255,255,255,.35);border-radius:11px;background:rgba(255,255,255,.12);color:#fff;font-size:23px;cursor:pointer}
         .cn-institution-modal-body{padding:22px 24px;overflow:auto;min-height:0}
-        .cn-institution-modal-body #cnInstitutionForm{width:100%;max-width:none;margin:0}
+        .cn-institution-modal-body #cnInstitutionForm{width:100%;max-width:780px;margin:0 auto;}
         .cn-institution-modal-body #cnInstitutionFormTitle{display:none}
         body.cn-modal-lock{overflow:hidden}
         @media(max-width:640px){.cn-institution-modal{padding:0;align-items:flex-end}.cn-institution-dialog{max-height:96vh;border-radius:18px 18px 0 0}.cn-institution-modal-head{padding:15px 17px}.cn-institution-modal-body{padding:16px}}
@@ -304,7 +304,7 @@
         .cn-logo-status{color:#64748b;font-size:10px}
         @media(max-width:720px){.cn-logo-studio{grid-template-columns:1fr;padding:13px;gap:12px}.cn-logo-studio-head{grid-column:auto}.cn-logo-preview{height:130px}}
         /* Consistent, responsive alignment for every field in the institution editor */
-        #cnInstitutionForm{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:18px;row-gap:14px;align-content:start}
+        #cnInstitutionForm{display:grid;grid-template-columns:minmax(0,1fr);column-gap:0;row-gap:8px;align-content:start}
         #cnInstitutionForm>*{min-width:0}
         #cnInstitutionForm .form-group,#cnInstitutionForm .form-field,#cnInstitutionForm .field,#cnInstitutionForm .mb-3{min-width:0;width:100%;margin:0}
         #cnInstitutionForm label{display:block;margin:0 0 6px;color:#29465b;font-size:11px;font-weight:800;line-height:1.4}
