@@ -72,6 +72,25 @@ function examState(exam){
 }
 function onlineHref(exam){const raw=val(exam.exam_link,exam.online_link,'');if(!raw)return '';try{const url=new URL(raw,location.origin);return ['http:','https:'].includes(url.protocol)?url.href:''}catch(_){return ''}}
 function dateLabel(exam){const d=startsAt(exam);return d?d.toLocaleString('en-KE',{timeZone:'Africa/Nairobi',dateStyle:'medium',timeStyle:'short'})+' EAT':'Schedule to be confirmed'}
+let examCountdownTicker=null;
+function countdownText(target){
+ const left=Math.max(0,Number(target)-Date.now());
+ const days=Math.floor(left/86400000),hours=Math.floor(left%86400000/3600000),minutes=Math.floor(left%3600000/60000),seconds=Math.floor(left%60000/1000);
+ return days>0?days+'d '+hours+'h '+minutes+'m':hours>0?hours+'h '+minutes+'m '+seconds+'s':minutes+'m '+seconds+'s';
+}
+function startExamCountdownTicker(){
+ if(examCountdownTicker)return;
+ examCountdownTicker=setInterval(()=>{
+  let becameAvailable=false;
+  document.querySelectorAll('.exam-countdown[data-start]').forEach(node=>{
+   const target=Number(node.dataset.start);
+   if(!Number.isFinite(target))return;
+   if(target<=Date.now()){node.textContent='Scheduled start reached';becameAvailable=true;}
+   else node.textContent=countdownText(target);
+  });
+  if(becameAvailable)render();
+ },1000);
+}
 function renderDailyWelcome(){
  const now=new Date(),hour=Number(new Intl.DateTimeFormat('en-KE',{timeZone:'Africa/Nairobi',hour:'2-digit',hourCycle:'h23'}).format(now));
  const greeting=hour>=5&&hour<12?'Good morning':hour>=12&&hour<17?'Good afternoon':hour>=17&&hour<21?'Good evening':'Good night';
@@ -153,12 +172,15 @@ function render(){
  $('exam-panel').innerHTML='<div class="exam-grid">'+rows.map(({exam,status})=>{
   const title=val(exam.title,exam.exam_name,exam.name,'Examination');
   const unit=val(exam.course_name,exam.unit_name,exam.subject_name,exam.course?.course_name,'General assessment');
-  const link=onlineHref(exam);
+  const link=onlineHref(exam),start=startsAt(exam),isOnline=!!link;
   const badge=status==='open'?'open':status==='upcoming'?'upcoming':'completed';
   const label=status==='open'?'Available now':status==='upcoming'?'Upcoming':'Closed';
-  const action=status==='open'&&link?'<a class="primary-btn" href="'+esc(link)+'" target="_blank" rel="noopener noreferrer">Start Online Examination <i class="fa-solid fa-arrow-up-right-from-square"></i></a>':status==='open'?'<button class="secondary-btn" disabled>Online link not yet added</button>':status==='upcoming'?'<button class="secondary-btn" disabled>Opens at scheduled time</button>':'<button class="secondary-btn" disabled>Examination closed</button>';
-  return '<article class="exam-card"><div class="exam-card-top"><div><h3>'+esc(title)+'</h3><div class="exam-unit">'+esc(unit)+'</div></div><span class="status '+badge+'">'+label+'</span></div><div class="exam-meta"><span><i class="fa-regular fa-calendar"></i>'+esc(dateLabel(exam))+'</span><span><i class="fa-solid fa-layer-group"></i>'+esc(val(exam.exam_type,'Examination'))+'</span><span><i class="fa-regular fa-hourglass-half"></i>'+esc((Number(exam.duration_minutes)||40)+' minutes')+'</span></div><div class="exam-actions"><span class="exam-date">'+esc(val(exam.block_term,exam.block,exam.term,'All blocks'))+' · '+esc(val(exam.intake_year,'All intakes'))+'</span>'+action+'</div></article>';
+  const countdown=status==='upcoming'&&start?'<div class="exam-countdown-panel"><span class="countdown-label"><i class="fa-regular fa-clock"></i> Starts in</span><strong class="exam-countdown" data-start="'+start.getTime()+'">'+countdownText(start.getTime())+'</strong></div>':'';
+  const action=isOnline&&status==='open'?'<a class="primary-btn" href="'+esc(link)+'" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-laptop"></i> Enter Online Exam <i class="fa-solid fa-arrow-up-right-from-square"></i></a>':isOnline&&status==='upcoming'?'<button class="secondary-btn online-pending" disabled><i class="fa-solid fa-lock"></i> Online exam · Not open yet</button>':status==='closed'?'<span class="exam-closed-note"><i class="fa-solid fa-circle-check"></i> Examination closed</span>':'';
+  const mode=isOnline?'<span class="exam-mode online"><i class="fa-solid fa-wifi"></i> Online examination</span>':'<span class="exam-mode venue"><i class="fa-solid fa-building-columns"></i> Scheduled examination</span>';
+  return '<article class="exam-card '+(status==='upcoming'?'is-upcoming':'')+'"><div class="exam-card-top"><div class="exam-title-wrap"><div class="exam-card-kicker">ASSESSMENT</div><h3>'+esc(title)+'</h3><div class="exam-unit">'+esc(unit)+'</div></div><span class="status '+badge+'">'+label+'</span></div><div class="exam-mode-row">'+mode+'</div><div class="exam-meta"><span><i class="fa-regular fa-calendar"></i>'+esc(dateLabel(exam))+'</span><span><i class="fa-solid fa-layer-group"></i>'+esc(val(exam.exam_type,'Examination'))+'</span><span><i class="fa-regular fa-hourglass-half"></i>'+esc((Number(exam.duration_minutes)||40)+' minutes')+'</span></div>'+countdown+'<div class="exam-actions"><span class="exam-date">'+esc(val(exam.block_term,exam.block,exam.term,'All blocks'))+' · '+esc(val(exam.intake_year,'All intakes'))+'</span>'+action+'</div></article>';
  }).join('')+'</div>';
+ startExamCountdownTicker();
 }
 async function loadDashboardStats(){
  const {data,error}=await state.client.rpc('get_student_exam_dashboard_stats');
