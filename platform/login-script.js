@@ -1298,7 +1298,7 @@ loadStaffRecords: async function() {
         // ✅ Load ALL staff, not just login_enabled=true
         const { data, error } = await this.supabase
             .from('staff_records')
-            .select('id, email, first_name, other_names, department, designation, login_enabled, status, password_hash');
+            .select('id, email, first_name, other_names, department, designation, login_enabled, status, password_hash, institution_id');
         
         if (!error && data) {
             this.staffRecords = data;
@@ -2030,6 +2030,26 @@ executeLogin: async function(identifier, password) {
     // One targeted staff lookup instead of loading every staff record twice.
     const staffProfile = await this.verifyStaffLogin(identifier, password);
     if (staffProfile) {
+        // Resolve linked staff accounts through their authenticated Campus Nexus UUID.
+        // Staff-record IDs are text IDs, so never use them as auth UUIDs.
+        if (staffProfile.user_id && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(staffProfile.user_id))) {
+            try {
+                const { data: memberships, error: membershipError } = await this.supabase
+                    .from('institution_users')
+                    .select('institution_id, role, status')
+                    .eq('user_id', staffProfile.user_id)
+                    .eq('role', 'institution_admin')
+                    .eq('status', 'active');
+                if (!membershipError && Array.isArray(memberships) && memberships.length) {
+                    staffProfile.role = 'institution_admin';
+                    staffProfile.institution_id = memberships[0].institution_id;
+                } else if (membershipError) {
+                    console.warn('Staff institution membership lookup unavailable:', membershipError.message);
+                }
+            } catch (roleResolutionError) {
+                console.warn('Staff role resolution fell back to the linked profile:', roleResolutionError);
+            }
+        }
         const selectedSchoolCode = (new URLSearchParams(window.location.search).get('school_code') ||
             sessionStorage.getItem('campus_nexus_school_code') || '').trim();
         if (selectedSchoolCode && !['superadmin', 'super_admin'].includes(String(staffProfile.role || '').toLowerCase())) {
