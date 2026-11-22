@@ -214,7 +214,7 @@ async function init(){
  const session=data?.session;
  if(!session?.user){location.replace('/examlogin?redirect='+encodeURIComponent('/studentexam'));return}
  state.user=session.user;
- const profileResult=await state.client.from('consolidated_user_profiles_table').select('user_id,full_name,role,status,login_enabled,institution_id,admission_number,student_id,program,program_type,current_block,block,intake_year,intake_month,admission_year').eq('user_id',session.user.id).maybeSingle();
+ const profileResult=await state.client.from('consolidated_user_profiles_table').select('*').eq('user_id',session.user.id).maybeSingle();
  if(profileResult.error)throw profileResult.error;
  state.profile=profileResult.data;
  const p=state.profile,role=norm(p?.role),status=norm(p?.status);
