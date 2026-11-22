@@ -416,6 +416,33 @@
     preview.innerHTML = url ? '<img alt="Institution logo preview" src="' + esc(url) + '">' : '<i class="fas fa-school"></i>';
   }
 
+  function setupInstitutionProfileFields() {
+    const country = $("cnInstitutionCountry");
+    if (!country || $("cnInstitutionOfficialDetails")) return;
+    const anchor = country.closest(".form-group,.form-field,.field,.mb-3") || country.parentElement;
+    if (!anchor?.parentElement) return;
+    const section = document.createElement("section");
+    section.id = "cnInstitutionOfficialDetails";
+    section.className = "cn-institution-official-details";
+    section.innerHTML = `
+      <style>
+        .cn-institution-official-details{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:15px;margin:10px 0;border:1px solid #dbe6ec;border-radius:13px;background:#f8fbfd}
+        .cn-institution-official-details .cn-official-field{display:flex;flex-direction:column;gap:6px;min-width:0}
+        .cn-institution-official-details .cn-official-field.wide{grid-column:1/-1}
+        .cn-institution-official-details label{font-size:11px;font-weight:800;color:#29465b}
+        .cn-institution-official-details input,.cn-institution-official-details textarea{width:100%;min-width:0;box-sizing:border-box;border:1px solid #d4e0e7;border-radius:9px;padding:10px 12px;background:#fff;color:#102f46;font:inherit}
+        .cn-institution-official-details textarea{min-height:64px;resize:vertical}
+        .cn-institution-official-details small{grid-column:1/-1;color:#64748b;font-size:10px;line-height:1.5}
+        @media(max-width:640px){.cn-institution-official-details{grid-template-columns:1fr}.cn-institution-official-details .cn-official-field.wide{grid-column:auto}}
+      </style>
+      <div class="cn-official-field"><label for="cnInstitutionCounty">County / Region</label><input id="cnInstitutionCounty" type="text" maxlength="100" placeholder="e.g. Nakuru"></div>
+      <div class="cn-official-field"><label for="cnInstitutionRegistrationNumber">Registration / Accreditation number</label><input id="cnInstitutionRegistrationNumber" type="text" maxlength="100" placeholder="Official institution registration number"></div>
+      <div class="cn-official-field wide"><label for="cnInstitutionPhysicalAddress">Physical address</label><textarea id="cnInstitutionPhysicalAddress" maxlength="500" placeholder="Building, street, town and location"></textarea></div>
+      <div class="cn-official-field wide"><label for="cnInstitutionPostalAddress">Postal address</label><textarea id="cnInstitutionPostalAddress" maxlength="300" placeholder="P.O. Box and postal code"></textarea></div>
+      <small>These official details appear in the institution profile and can be updated later.</small>`;
+    anchor.insertAdjacentElement("afterend", section);
+  }
+
   function setupInstitutionAdminFields() {
     const email = $("cnInstitutionAdmin");
     if (!email) return;
@@ -447,11 +474,11 @@
         .cn-admin-password-wrap{display:flex;gap:7px}.cn-admin-password-wrap input{flex:1;min-width:0}.cn-admin-password-wrap button{border:1px solid #cbd5e1;border-radius:9px;background:#fff;color:#12334a;padding:0 12px;font-weight:700;cursor:pointer}
         @media(max-width:600px){.cn-admin-provisioning{grid-template-columns:1fr}.cn-admin-provisioning .cn-admin-field:first-child{grid-column:auto}}
       </style>
-      <div class="cn-admin-field"><label for="cnInstitutionAdminName">Institution administrator full name *</label><input id="cnInstitutionAdminName" type="text" maxlength="120" autocomplete="name" placeholder="Enter administrator's full name"></div>
+      <div class="cn-admin-field"><label for="cnInstitutionAdminName">Administrator full name</label><input id="cnInstitutionAdminName" type="text" maxlength="120" autocomplete="name" placeholder="Required only when creating a new account"></div>
       <div class="cn-admin-field"><label for="cnInstitutionAdminPhone">Administrator phone number</label><input id="cnInstitutionAdminPhone" type="tel" maxlength="30" autocomplete="tel" placeholder="+254 7XX XXX XXX"></div>
-      <div class="cn-admin-field"><label for="cnInstitutionAdminPassword">Initial password *</label><div class="cn-admin-password-wrap"><input id="cnInstitutionAdminPassword" type="password" minlength="10" maxlength="72" autocomplete="new-password" placeholder="At least 10 characters"><button type="button" data-toggle-password="cnInstitutionAdminPassword">Show</button></div></div>
-      <div class="cn-admin-field"><label for="cnInstitutionAdminPasswordConfirm">Confirm password *</label><div class="cn-admin-password-wrap"><input id="cnInstitutionAdminPasswordConfirm" type="password" minlength="10" maxlength="72" autocomplete="new-password" placeholder="Re-enter password"><button type="button" data-toggle-password="cnInstitutionAdminPasswordConfirm">Show</button></div></div>
-      <small>Set the first password for the institution administrator. The account is created securely in Supabase Auth and linked to this institution. Keep the password private and share it directly with the administrator.</small>`;
+      <div class="cn-admin-field"><label for="cnInstitutionAdminPassword">Initial password</label><div class="cn-admin-password-wrap"><input id="cnInstitutionAdminPassword" type="password" minlength="10" maxlength="72" autocomplete="new-password" placeholder="Optional — create a new account"></div><button type="button" data-toggle-password="cnInstitutionAdminPassword">Show</button></div>
+      <div class="cn-admin-field"><label for="cnInstitutionAdminPasswordConfirm">Confirm new password</label><div class="cn-admin-password-wrap"><input id="cnInstitutionAdminPasswordConfirm" type="password" minlength="10" maxlength="72" autocomplete="new-password" placeholder="Re-enter password"><button type="button" data-toggle-password="cnInstitutionAdminPasswordConfirm">Show</button></div></div>
+      <small>Enter only the administrator's email to assign an existing Campus Nexus account or allow the person to register and claim access. Enter a name and password as well only when creating a brand-new administrator account.</small>`;
     const field = email.closest(".form-group,.form-field,.field,.mb-3") || email.parentElement;
     field.insertAdjacentElement("afterend", host);
     const label = field.querySelector("label");
@@ -476,6 +503,7 @@
     if ($("cnInstitutionAdminPasswordConfirm")) $("cnInstitutionAdminPasswordConfirm").value = "";
     if ($("cnInstitutionStatus")) $("cnInstitutionStatus").value = "pending";
     if ($("cnInstitutionType")) $("cnInstitutionType").value = "college";
+    ["cnInstitutionCounty","cnInstitutionRegistrationNumber","cnInstitutionPhysicalAddress","cnInstitutionPostalAddress"].forEach(id => { if ($(id)) $(id).value = ""; });
     if ($("cnInstitutionAmount")) $("cnInstitutionAmount").value = "5000";
     applyBrandColors();
     if ($("cnInstitutionPortalMode")) $("cnInstitutionPortalMode").value = "campus_nexus";
@@ -495,6 +523,8 @@
     const fields = {
       cnInstitutionName:item.name, cnInstitutionCode:item.short_code, cnInstitutionSlug:item.slug,
       cnInstitutionType:item.institution_type, cnInstitutionCountry:item.country,
+      cnInstitutionCounty:item.county, cnInstitutionRegistrationNumber:item.registration_number,
+      cnInstitutionPhysicalAddress:item.physical_address, cnInstitutionPostalAddress:item.postal_address,
       cnInstitutionEmail:item.contact_email, cnInstitutionPhone:item.contact_phone,
       cnInstitutionWebsite:item.website_url, cnInstitutionLogo:item.logo_url,
       cnInstitutionDomain:item.portal_domain, cnInstitutionAdmin:item.admin_email, cnInstitutionColor:item.primary_color,
@@ -550,6 +580,7 @@
         (safeWebUrl(i.logo_url,true) ? '<img src="' + esc(safeWebUrl(i.logo_url,true)) + '" alt="" onerror="this.style.display=\'none\'">' : '<i class="fas fa-school"></i>') +
         '</span><span><strong>' + esc(i.name) + '</strong><small>' + esc(i.short_code) + ' · ' + esc(i.country || "") + ' · 3-digit school code: ' + esc(i.school_code || "Not assigned") + '</small>' +
         (i.school_code ? '<button class="cn-row-action" type="button" data-copy-school-code="' + esc(i.id) + '">Copy school code</button>' : '') +
+        '<small>' + esc(adminState) + ' · ' + esc(setupState === "ready" ? "Onboarding complete" : "Onboarding in progress") + '</small>' +
         '</span></div></td>' +
         '<td><span class="cn-status cn-status-' + esc(i.status) + '">' + status + '</span></td>' +
         '<td>' + esc(i._subscription?.plan_name || "—") + '<small class="cn-subline">' +
@@ -657,11 +688,11 @@
     const adminPhone = $("cnInstitutionAdminPhone")?.value.trim() || "";
     const adminPassword = $("cnInstitutionAdminPassword")?.value || "";
     const adminPasswordConfirm = $("cnInstitutionAdminPasswordConfirm")?.value || "";
-    if (!adminEmail || (!editingId && !adminName)) return notify("Enter the institution administrator name and email address.", "error");
-    if (!editingId && adminPassword.length < 10) return notify("Set an initial administrator password with at least 10 characters.", "error");
-    if (!editingId && adminPassword !== adminPasswordConfirm) return notify("The administrator passwords do not match.", "error");
-    if (adminPassword && adminPassword.length < 10) return notify("The administrator password must contain at least 10 characters.", "error");
-    if (adminPassword && adminPassword !== adminPasswordConfirm) return notify("The administrator passwords do not match.", "error");
+    if (!adminEmail) return notify("Enter the institution administrator email address.", "error");
+    const creatingAdminAccount = Boolean(adminName || adminPassword || adminPasswordConfirm);
+    if (creatingAdminAccount && !adminName) return notify("Enter the administrator's full name when creating a new account.", "error");
+    if (creatingAdminAccount && adminPassword.length < 10) return notify("Set an initial administrator password with at least 10 characters.", "error");
+    if (creatingAdminAccount && adminPassword !== adminPasswordConfirm) return notify("The administrator passwords do not match.", "error");
     const amount = Number($("cnInstitutionAmount").value);
     if (!Number.isFinite(amount) || amount < 0) return notify("Enter a valid subscription amount.", "error");
     const portalMode = document.querySelector('input[name="cnInstitutionPortalModeChoice"]:checked')?.value || "campus_nexus";
@@ -680,6 +711,10 @@
       ...(editingId ? {id:editingId} : {}),
       name, short_code:code, slug, institution_type:$("cnInstitutionType").value,
       country:$("cnInstitutionCountry").value.trim() || "Kenya",
+      county:$("cnInstitutionCounty")?.value.trim() || null,
+      registration_number:$("cnInstitutionRegistrationNumber")?.value.trim() || null,
+      physical_address:$("cnInstitutionPhysicalAddress")?.value.trim() || null,
+      postal_address:$("cnInstitutionPostalAddress")?.value.trim() || null,
       contact_email:$("cnInstitutionEmail").value.trim() || null,
       contact_phone:$("cnInstitutionPhone").value.trim() || null,
       website_url:website || null, logo_url:logo || null,
@@ -692,7 +727,10 @@
       administrator_portal_url:$("cnInstitutionAdminPortal").value.trim() || null,
       status:$("cnInstitutionStatus").value
     };
-    const enabledModules = [...document.querySelectorAll('input[name="cnModule"]:checked')].map(x => x.value).filter(key => key !== "library");
+    const enabledModules = [...document.querySelectorAll('input[name="cnModule"]:checked')].map(x => x.value);
+    const examSelected = $("cnProductExam")?.checked;
+    const lmsSelected = $("cnProductLms")?.checked;
+    if (!examSelected && !lmsSelected) return notify("Select at least one product: Examination Dashboard, LMS, or both.", "error");
     setBusy(true);
     try {
       if (selectedLogoFile) {
@@ -767,6 +805,7 @@
     renderModuleOptions(["student_management","lecturer_portal","administrator_portal"]);
     setupLogoUploader();
     setupInstitutionAdminFields();
+    setupInstitutionProfileFields();
     ensureInstitutionModal();
     $("cnInstitutionCancel").addEventListener("click",resetForm);
     $("cnInstitutionSearch").addEventListener("input",renderRows);
