@@ -618,3 +618,123 @@ html,body{width:100%;max-width:100%;min-height:100%;margin:0}body{overflow-x:hid
   #view-user-management .ia-users-edit-actions{gap:8px}
   #view-user-management .ia-users-edit-actions>*{flex:1}
 }
+
+
+/* ============================================================
+   CAMPUS NEXUS — Unified premium user profile experience
+   All profile stages, all fields, desktop and mobile layouts
+   ============================================================ */
+#view-user-management .ia-users-dialog{width:min(1180px,calc(100vw - 36px));max-height:min(94dvh,1100px);border:1px solid #d7e3ef;border-radius:25px;background:#f4f7fc;overflow:hidden;box-shadow:0 38px 130px rgba(2,16,38,.42)}
+#view-user-management .ia-users-dialog::backdrop{background:rgba(3,17,36,.76);backdrop-filter:blur(11px) saturate(125%)}
+#view-user-management .ia-users-dialog-head{min-height:78px;padding:19px 28px;background:linear-gradient(112deg,#062b5c 0%,#08447e 68%,#086c78 100%);border-bottom:3px solid #e0b52e;align-items:center}
+#view-user-management .ia-users-dialog-head span{color:#f5d879;letter-spacing:.16em;font-size:9px}
+#view-user-management .ia-users-dialog-head h2{font-size:21px;font-weight:850;letter-spacing:-.025em}
+#view-user-management .ia-users-dialog-head button{width:42px;height:42px;border-radius:13px}
+#view-user-management .ia-users-dialog-body{padding:20px;max-height:calc(94dvh - 81px);overflow:auto;background:linear-gradient(145deg,#f7faff,#edf3fb)}
+/* View profile hero and complete information cards */
+#view-user-management .ia-users-profile-hero{padding:22px;border:1px solid #d5e4f3;border-radius:20px;background:linear-gradient(120deg,#062d63 0%,#0b4d86 72%,#087b83 100%);color:#fff;box-shadow:0 12px 30px rgba(7,48,93,.17);position:relative;overflow:hidden}
+#view-user-management .ia-users-profile-hero:after{content:"";position:absolute;width:240px;height:240px;border:1px solid #ffffff20;border-radius:50%;right:-80px;top:-135px;box-shadow:0 0 0 22px #ffffff08,0 0 0 48px #ffffff06;pointer-events:none}
+#view-user-management .ia-users-profile-hero .ia-users-avatar{width:76px;height:76px;flex:0 0 76px;border:3px solid #f1c84b;border-radius:50%;background:#e9f2ff;color:#0b477d;font-size:22px;box-shadow:0 5px 18px #001d3b55}
+#view-user-management .ia-users-profile-meta>strong{color:#fff;font-size:20px;font-weight:850}
+#view-user-management .ia-users-profile-meta>small{color:#d6e7f8;font-size:12px}
+#view-user-management .ia-users-profile-chip{border-color:#ffffff45;background:#ffffff18;color:#fff}
+#view-user-management .ia-users-profile-chip.status{background:#dcfce7;border-color:#86efac;color:#166534}
+#view-user-management .ia-users-profile-chip.access{background:#dbeafe;border-color:#93c5fd;color:#1e40af}
+#view-user-management .ia-users-detail-section{padding:19px;margin:15px 0;border:1px solid #dce6f0;border-radius:18px;background:#fff;box-shadow:0 7px 22px rgba(10,40,70,.045)}
+#view-user-management .ia-users-detail-section h3{font-size:14px;color:#092f63;padding-bottom:12px;border-bottom:1px solid #e8eef6}
+#view-user-management .ia-users-detail-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:0}
+#view-user-management .ia-users-detail-grid>div{padding:13px;border:1px solid #e4ebf3;border-radius:12px;background:linear-gradient(145deg,#fbfdff,#f5f8fc)}
+#view-user-management .ia-users-detail-grid small{color:#71839a;font-size:9px;letter-spacing:.07em}
+#view-user-management .ia-users-detail-grid strong{color:#183a60;font-size:12px;line-height:1.5}
+#view-user-management .ia-users-edit-btn,#view-user-management .ia-users-review-btn{min-height:44px;padding:12px 18px;border:0;border-radius:12px;background:linear-gradient(120deg,#07366e,#075c91);color:#fff;font-size:12px;font-weight:850;box-shadow:0 6px 16px #07366e2c}
+/* Edit wizard frame */
+#view-user-management .ia-users-edit-shell{display:grid;grid-template-columns:265px minmax(0,1fr);min-height:690px;border:1px solid #d8e4f0;border-radius:21px;background:#fff;overflow:hidden;box-shadow:0 10px 32px rgba(8,38,70,.07)}
+#view-user-management .ia-users-edit-sidebar{display:flex;flex-direction:column;gap:20px;padding:21px 15px;background:linear-gradient(180deg,#f0f6ff,#f7faff);border-right:1px solid #dce7f2}
+#view-user-management .ia-users-edit-brand{display:flex;align-items:center;gap:10px;padding:0 4px 17px;border-bottom:1px solid #dce7f2}
+#view-user-management .ia-users-edit-brand>span{width:43px;height:43px;display:grid;place-items:center;border-radius:13px;background:linear-gradient(135deg,#07366e,#087d83);color:#fff;font-size:20px}
+#view-user-management .ia-users-edit-brand b{display:block;color:#092f63;font-size:13px;letter-spacing:.02em}
+#view-user-management .ia-users-edit-brand em{color:#bd8b0c;font-style:normal}
+#view-user-management .ia-users-edit-brand small{display:block;margin-top:4px;color:#7b8da2;font-size:8px;font-weight:850;letter-spacing:.12em}
+#view-user-management .ia-users-edit-progress{height:6px;border-radius:99px;background:#dce7f2;overflow:hidden}
+#view-user-management .ia-users-edit-progress span{display:block;height:100%;width:16.6%;border-radius:99px;background:linear-gradient(90deg,#1268c5,#078b91);transition:width .22s}
+#view-user-management .ia-users-edit-nav{display:grid;gap:8px}
+#view-user-management .ia-users-edit-nav-item{display:flex;align-items:center;gap:10px;width:100%;min-height:58px;padding:9px 10px;border:1px solid transparent;border-radius:13px;background:transparent;text-align:left;color:#1b3d61;cursor:pointer;transition:.18s}
+#view-user-management .ia-users-edit-nav-item:hover{background:#e8f2ff;border-color:#d5e6f8}
+#view-user-management .ia-users-edit-nav-item.is-active{background:#dcecff;border-color:#bfd9f5;color:#073b78;box-shadow:0 3px 10px #0b477d0c}
+#view-user-management .ia-users-edit-nav-icon{width:33px;height:33px;flex:0 0 33px;display:grid;place-items:center;border-radius:10px;background:#e1ebf7;color:#175a99}
+#view-user-management .ia-users-edit-nav-item.is-active .ia-users-edit-nav-icon{background:#0c65bd;color:#fff}
+#view-user-management .ia-users-edit-nav-item>span:nth-child(2){min-width:0;flex:1}
+#view-user-management .ia-users-edit-nav-item b{display:block;font-size:11px;font-weight:850;line-height:1.35}
+#view-user-management .ia-users-edit-nav-item small{display:block;margin-top:3px;color:#75869a;font-size:9px;line-height:1.35}
+#view-user-management .ia-users-stage-check{display:none;color:#07866f;font-size:11px}
+#view-user-management .ia-users-edit-nav-item.is-complete .ia-users-stage-check{display:block}
+#view-user-management .ia-users-edit-sidebar-note{display:flex;gap:8px;align-items:flex-start;margin-top:auto;padding:13px 9px;border-top:1px solid #dce7f2;color:#71849a;font-size:9px;line-height:1.5}
+#view-user-management .ia-users-edit-sidebar-note i{color:#0b6b83}
+#view-user-management .ia-users-edit-workspace{display:flex;flex-direction:column;min-width:0;padding:20px 23px 0;background:#fff}
+#view-user-management .ia-users-edit-hero{display:flex;align-items:center;gap:12px;padding:13px 16px;margin:0 0 15px;border:1px solid #dce9f6;border-radius:15px;background:linear-gradient(110deg,#eaf3ff,#f5faff)}
+#view-user-management .ia-users-edit-hero-icon{width:40px;height:40px;display:grid;place-items:center;flex:0 0 40px;border-radius:50%;background:#0d68bd;color:#fff;font-size:17px}
+#view-user-management .ia-users-edit-hero strong{display:block;color:#0b326b;font-size:15px;font-weight:900}
+#view-user-management .ia-users-edit-hero small{display:block;color:#5e7590;font-size:10px;margin-top:3px}
+#view-user-management .ia-users-edit-id{margin-left:auto;padding:6px 9px;border:1px solid #d3e2f1;border-radius:8px;background:#fff;color:#45617d;font-size:9px;font-weight:850}
+#view-user-management .ia-users-edit-main-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 15px}
+#view-user-management .ia-users-eyebrow{color:#0c70a0;font-size:8px;font-weight:900;letter-spacing:.15em}
+#view-user-management .ia-users-edit-main-heading h3{margin:3px 0;color:#0a2f64;font-size:18px;font-weight:900}
+#view-user-management .ia-users-edit-main-heading p{margin:0;color:#75869a;font-size:10px}
+#view-user-management .ia-users-stage-indicator{padding:7px 10px;border-radius:9px;background:#edf4fc;color:#22547f;font-size:10px;font-weight:900}
+#view-user-management .ia-users-edit-stage-host{flex:1;min-width:0}
+#view-user-management .ia-users-edit-stage[hidden]{display:none!important}
+#view-user-management .ia-users-edit-stage>.ia-users-edit-section{padding:18px;margin:0;border:1px solid #dce6f0;border-radius:16px;background:#fff;box-shadow:0 5px 18px rgba(10,40,70,.035)}
+#view-user-management .ia-users-edit-section h3{display:flex;align-items:center;gap:11px;margin:0 0 17px;padding:0 0 13px;border-bottom:1px solid #eaf0f6;color:#0a3468;font-size:13px}
+#view-user-management .ia-users-edit-section h3>span:last-child{display:flex;flex-direction:column;gap:3px}
+#view-user-management .ia-users-edit-section h3 small{color:#8091a4;font-size:9px;font-weight:500}
+#view-user-management .ia-users-section-icon{width:34px;height:34px;display:grid;place-items:center;flex:0 0 34px;border-radius:10px;background:#eaf3ff;color:#0b65b4}
+#view-user-management .ia-users-edit-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 16px}
+#view-user-management .ia-users-edit-field{display:grid;align-content:start;gap:7px;min-width:0;color:#294966;font-size:10px;font-weight:850}
+#view-user-management .ia-users-edit-field input,#view-user-management .ia-users-edit-field select,#view-user-management .ia-users-edit-field textarea{width:100%;min-width:0;min-height:44px;padding:10px 12px;border:1px solid #d3dfec;border-radius:10px;background:#fbfdff;color:#183957;font:500 12px Inter,system-ui,sans-serif;transition:border-color .18s,box-shadow .18s}
+#view-user-management .ia-users-edit-field input:focus,#view-user-management .ia-users-edit-field select:focus,#view-user-management .ia-users-edit-field textarea:focus{outline:0;border-color:#2377bb;background:#fff;box-shadow:0 0 0 3px #2377bb1c}
+#view-user-management .ia-users-edit-field input[readonly]{background:#eef3f8;color:#71839a}
+#view-user-management .ia-users-access-section{background:linear-gradient(120deg,#f2f7ff,#f1fbfa);border-color:#cbddea}
+#view-user-management .ia-users-history-group{padding:13px 15px;border:1px solid #e2eaf3;border-radius:12px;background:#f9fbfe}
+#view-user-management .ia-users-history-group>strong{color:#0a3a70;font-size:11px}
+#view-user-management .ia-users-history-row{padding:8px 0;font-size:10px}
+#view-user-management .ia-users-stage-empty{padding:28px;border:1px dashed #ccd9e7;border-radius:14px;color:#70839a;text-align:center;font-size:12px}
+#view-user-management .ia-users-edit-actions{margin:18px -23px 0;padding:12px 23px;border-top:1px solid #e1e9f1;background:#fff}
+#view-user-management .ia-users-edit-footer{display:flex;align-items:center;justify-content:space-between;gap:12px}
+#view-user-management .ia-users-edit-footer button{min-height:40px;padding:10px 15px;border:1px solid #d4dfeb;border-radius:10px;background:#f3f6fa;color:#294762;font-size:11px;font-weight:850;cursor:pointer}
+#view-user-management .ia-users-edit-footer button:disabled{opacity:.35;cursor:not-allowed}
+#view-user-management .ia-users-edit-footer .ia-users-edit-next{border-color:#0a3c79;background:linear-gradient(120deg,#07366e,#08628f);color:#fff}
+#view-user-management .ia-users-edit-footer .ia-users-edit-next.is-review{background:linear-gradient(120deg,#0d766e,#087d83)}
+#view-user-management .ia-users-edit-step-count{color:#8191a3;font-size:9px;font-weight:800}
+#view-user-management .ia-users-password-reset{margin:13px 0 15px;padding:12px;border:1px dashed #cbdceb;border-radius:12px;background:#f7faff}
+#view-user-management .ia-users-password-reset button{min-height:36px;border:0;border-radius:9px;background:#e2efff;color:#17558e;font-size:10px;font-weight:850}
+#view-user-management #iaUsersEditFeedback{margin:0 0 13px;font-size:11px;font-weight:700}
+@media(max-width:850px){
+ #view-user-management .ia-users-edit-shell{grid-template-columns:210px minmax(0,1fr)}
+ #view-user-management .ia-users-edit-sidebar{padding:15px 10px}
+ #view-user-management .ia-users-edit-workspace{padding:15px 15px 0}
+ #view-user-management .ia-users-edit-actions{margin-left:-15px;margin-right:-15px;padding-left:15px;padding-right:15px}
+ #view-user-management .ia-users-detail-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:620px){
+ #view-user-management .ia-users-dialog{width:calc(100vw - 12px);max-height:96dvh;border-radius:17px}
+ #view-user-management .ia-users-dialog-body{padding:8px;max-height:calc(96dvh - 74px)}
+ #view-user-management .ia-users-edit-shell{display:block;min-height:0}
+ #view-user-management .ia-users-edit-sidebar{padding:10px;gap:9px;border-right:0;border-bottom:1px solid #dce7f2}
+ #view-user-management .ia-users-edit-brand,#view-user-management .ia-users-edit-sidebar-note{display:none}
+ #view-user-management .ia-users-edit-progress{height:4px}
+ #view-user-management .ia-users-edit-nav{display:flex;overflow-x:auto;gap:6px;padding-bottom:3px}
+ #view-user-management .ia-users-edit-nav-item{flex:0 0 auto;width:auto;min-height:38px;padding:6px 8px}
+ #view-user-management .ia-users-edit-nav-item>span:nth-child(2){display:none}
+ #view-user-management .ia-users-edit-nav-icon{width:27px;height:27px;flex-basis:27px}
+ #view-user-management .ia-users-stage-check{display:none!important}
+ #view-user-management .ia-users-edit-workspace{padding:12px 10px 0}
+ #view-user-management .ia-users-edit-hero{padding:10px;margin-bottom:11px}
+ #view-user-management .ia-users-edit-main-heading h3{font-size:15px}
+ #view-user-management .ia-users-edit-grid{grid-template-columns:1fr}
+ #view-user-management .ia-users-edit-section{padding:13px}
+ #view-user-management .ia-users-edit-actions{margin:14px -10px 0;padding:10px}
+ #view-user-management .ia-users-detail-grid{grid-template-columns:1fr}
+ #view-user-management .ia-users-profile-hero{padding:14px;gap:11px}
+ #view-user-management .ia-users-profile-hero .ia-users-avatar{width:54px;height:54px;flex-basis:54px}
+ #view-user-management .ia-users-profile-meta>strong{font-size:15px}
+}
