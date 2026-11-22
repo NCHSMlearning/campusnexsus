@@ -224,6 +224,8 @@
       sidebar.querySelector('.ia-users-edit-nav').appendChild(nav);
     });
     const controls=editForm.querySelector('.ia-users-edit-actions');
+    const saveControl=controls?.querySelector('.ia-users-save-btn');
+    const cancelControl=controls?.querySelector('#iaUsersEditCancel');
     const passwordReset=editForm.querySelector('.ia-users-password-reset');
     const feedbackNode=$('iaUsersEditFeedback');
     const formHero=editForm.querySelector('.ia-users-edit-hero');
@@ -234,6 +236,8 @@
     const next=document.createElement('button');next.type='button';next.className='ia-users-edit-next';next.innerHTML='Next section <i class="fa-solid fa-arrow-right"></i>';
     const count=document.createElement('span');count.className='ia-users-edit-step-count';count.textContent='Section 1 of 6';
     footer.append(previous,count,next);
+    if(cancelControl){cancelControl.classList.add('ia-users-edit-cancel');footer.append(cancelControl);}
+    if(saveControl){saveControl.classList.add('ia-users-edit-save');footer.append(saveControl);}
     if(controls)controls.replaceChildren(footer);
     workspace.append(controls||footer);
     if(passwordReset)workspace.append(passwordReset);
@@ -260,7 +264,10 @@
     const moveStage=index=>{if(index<0||index>=stageNodes.length)return;activeStage=index;renderStage();};
     sidebar.querySelectorAll('.ia-users-edit-nav-item').forEach(button=>button.addEventListener('click',()=>moveStage(Number(button.dataset.stage))));
     previous.addEventListener('click',()=>moveStage(activeStage-1));
-    next.addEventListener('click',()=>moveStage(activeStage<stageNodes.length-1?activeStage+1:0));
+    next.addEventListener('click',()=>{
+      if(activeStage<stageNodes.length-1)moveStage(activeStage+1);
+      else editForm.requestSubmit(saveControl||undefined);
+    });
     renderStage();
     // Academic dropdowns: use consistent programme, block/term and year choices.
     const currentYear=new Date().getFullYear();
