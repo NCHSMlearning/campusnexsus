@@ -102,8 +102,14 @@
     body.replaceChildren();
     const summary=document.createElement('div');summary.className='ia-users-detail-summary';
     const avatar=document.createElement('span');avatar.className='ia-users-avatar large';avatar.textContent=(u.full_name||u.email||'U').trim().split(/\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase();
-    const meta=document.createElement('div'),nm=document.createElement('strong'),em=document.createElement('small');
-    nm.textContent=u.full_name||'Name unavailable';em.textContent=label(u.role||u.role_id)+' · '+label(u.status);meta.append(nm,em);summary.append(avatar,meta);body.append(summary);
+    summary.classList.add('ia-users-profile-hero');
+    const meta=document.createElement('div');meta.className='ia-users-profile-meta';
+    const nm=document.createElement('strong'),em=document.createElement('small');
+    nm.textContent=u.full_name||'Name unavailable';
+    em.textContent=u.email||'No email address';
+    const chips=document.createElement('div');chips.className='ia-users-profile-chips';
+    [[label(u.role||u.role_id),'role'],[label(u.status||statusOf(u)),'status'],[u.login_enabled===false?'Login disabled':'Login enabled','access']].forEach(([text,type])=>{const chip=document.createElement('span');chip.className='ia-users-profile-chip '+type;chip.textContent=text;chips.append(chip);});
+    meta.append(nm,em,chips);summary.append(avatar,meta);body.append(summary);
     const sections=[
       ['Personal information',[['Full name',u.full_name],['Email address',u.email],['Phone',u.phone],['Alternative phone',u.alt_phone],['Gender',u.gender],['Date of birth',u.date_of_birth],['National ID',u.national_id],['Address',u.address],['Profile photo URL',u.profile_photo_url]]],
       ['Guardian / parent information',[['Guardian name',u.guardian_name],['Guardian phone',u.guardian_phone],['Parent email',u.parent_email],['Parent address',u.parent_address]]],
@@ -158,9 +164,10 @@
     ];
     const currentStatus=statusOf(u);
     const statusValue=['approved','active'].includes(currentStatus)?'approved':(currentStatus==='blocked'?'blocked':'inactive');
-    let html='<form id="iaUsersEditForm" class="ia-users-edit-form"><input type="hidden" name="user_id" value="'+safe(u.user_id||'')+'">';
+    let html='<form id="iaUsersEditForm" class="ia-users-edit-form"><input type="hidden" name="user_id" value="'+safe(u.user_id||'')+'"><div class="ia-users-edit-hero"><span class="ia-users-edit-hero-icon"><i class="fa-solid fa-user-pen"></i></span><div><strong>Update user profile</strong><small>Manage personal details, academic placement, documents and account access</small></div><span class="ia-users-edit-id">'+safe(identityOf(u))+'</span></div>';
     groups.forEach(([heading,fields])=>{
-      html+='<section class="ia-users-edit-section"><h3>'+heading+'</h3><div class="ia-users-edit-grid">';
+      const sectionIcons={'Personal information':'fa-user','Guardian / parent information':'fa-people-roof','Academic & employment information':'fa-graduation-cap','Documents & professional profile':'fa-folder-open'};
+      html+='<section class="ia-users-edit-section"><h3><span class="ia-users-section-icon"><i class="fa-solid '+(sectionIcons[heading]||'fa-layer-group')+'"></i></span><span>'+heading+'<small>Review and update '+heading.toLowerCase()+'</small></span></h3><div class="ia-users-edit-grid">';
       fields.forEach(([key,title,type,options])=>{
         if(key==='email') html+='<label class="ia-users-edit-field"><span>Email address / login email</span><div class="ia-users-email-edit"><input id="iaEdit_email" name="email" type="email" value="'+safe(u.email||'')+'" required><button type="button" id="iaUsersEmailUpdate">Update login email</button></div><small class="ia-users-edit-hint">Updates the authentication login and institution profile together.</small></label>';
         else if(type==='select')html+=field(key,title,type,u[key],options);
