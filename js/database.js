@@ -1821,17 +1821,18 @@ class Database {
                 throw uploadError;
             }
 
-            const { data: urlData } = supabase.storage
+            const { data: urlData, error: signedUrlError } = await supabase.storage
                 .from('user-documents')
-                .getPublicUrl(filePath);
+                .createSignedUrl(filePath, 3600);
 
-            const publicUrl = urlData.publicUrl;
+            if (signedUrlError) throw signedUrlError;
+            const publicUrl = urlData.signedUrl;
 
             const { error: updateError } = await supabase
                 .from('consolidated_user_profiles_table')
                 .update({
                     profile_photo_url: filePath,
-                    passport_url: publicUrl,
+                    passport_url: filePath,
                     updated_at: new Date().toISOString()
                 })
                 .eq('user_id', userId);
@@ -1840,7 +1841,7 @@ class Database {
 
             if (this.currentUserProfile) {
                 this.currentUserProfile.profile_photo_url = filePath;
-                this.currentUserProfile.passport_url = publicUrl;
+                this.currentUserProfile.passport_url = filePath;
             }
 
             await this.updateLastActivity();
@@ -1856,23 +1857,41 @@ class Database {
         }
     }
 
-    getPhotoUrl(userId = null) {
+    async getPhotoUrl(userId = null) {
         const id = userId || this.currentUserId;
         if (!id) return null;
-
         const profile = this.currentUserProfile;
         if (!profile) return null;
 
-        const photoPath = profile.profile_photo_url || profile.passport_url;
-        if (!photoPath) return null;
+        const profilePhotoPath = profile.profile_photo_url || null;
+        const photoValue = profilePhotoPath || profile.passport_url;
+        if (!photoValue) return null;
 
-        if (photoPath.startsWith('http')) {
-            return photoPath;
+        const supabase = this.getSupabaseClient?.() || this.client || window.supabaseClient || window.examSupabase;
+        let bucket = profilePhotoPath ? 'user-documents' : 'passports';
+        let objectPath = String(photoValue);
+        const storageMatch = objectPath.match(/\\/storage\\/v1\\/object\\/(?:public|sign)\\/([^/]+)\\/(.+?)(?:\\?.*)?$/);
+        if (storageMatch) {
+            bucket = decodeURIComponent(storageMatch[1]);
+            objectPath = decodeURIComponent(storageMatch[2]);
+        } else if (/^https?:\\/\\//i.test(objectPath)) {
+            return objectPath;
+        } else if (objectPath.startsWith('user-documents/')) {
+            bucket = 'user-documents';
+            objectPath = objectPath.slice('user-documents/'.length);
+        } else if (objectPath.startsWith('passports/')) {
+            bucket = 'passports';
+            objectPath = objectPath.slice('passports/'.length);
+        } else if (objectPath.startsWith('profiles/') || objectPath.startsWith('documents/')) {
+            bucket = 'user-documents';
+        } else if (profilePhotoPath) {
+            objectPath = `profiles/${id}/${objectPath}`;
         }
 
-        const supabaseUrl = window.APP_CONFIG?.SUPABASE_URL;
-        if (!supabaseUrl) throw new Error('Supabase URL is not configured.');
-        return `${supabaseUrl}/storage/v1/object/public/user-documents/${photoPath}`;
+        if (!supabase?.storage?.from) throw new Error('Storage service is unavailable.');
+        const { data, error } = await supabase.storage.from(bucket).createSignedUrl(objectPath, 3600);
+        if (error) throw error;
+        return data?.signedUrl || null;
     }
 
     getCurrentUserProfile() {
