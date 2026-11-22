@@ -49,6 +49,8 @@ window.APP_CONFIG = {
     // Public Supabase credentials
     SUPABASE_URL: 'https://irahplkvocaakjxuisto.supabase.co',
     SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_5Cg5FFudf03UnmOXGNGMHQ_uK9S-uQX',
+    // Backward-compatible alias used by existing dashboard modules.
+    SUPABASE_ANON_KEY: 'sb_publishable_5Cg5FFudf03UnmOXGNGMHQ_uK9S-uQX',
     
     // Optional LocationIQ API key (get from https://locationiq.com/)
     LOCATIONIQ_API_KEY: '',
