@@ -651,30 +651,46 @@ class ProfileModule {
     
     async loadProfilePhoto() {
         if (!this.userProfile) return;
-        
-        let photoUrl = this.userProfile.profile_photo_url || this.userProfile.passport_url || null;
-        
-        let finalPhotoSrc = 'https://ui-avatars.com/api/?name=' + 
-            encodeURIComponent(this.userProfile.full_name || 'Student') + 
+
+        const profilePhotoPath = this.userProfile.profile_photo_url || null;
+        const photoValue = profilePhotoPath || this.userProfile.passport_url || null;
+        const fallback = 'https://ui-avatars.com/api/?name=' +
+            encodeURIComponent(this.userProfile.full_name || 'Student') +
             '&background=4C1D95&color=fff&size=120';
-        
-        if (photoUrl) {
+        let finalPhotoSrc = fallback;
+
+        if (photoValue) {
             try {
-                if (photoUrl.startsWith('http')) {
-                    finalPhotoSrc = photoUrl;
-                } else {
-                    const supabaseUrl = window.SUPABASE_URL || 
-                                       window.APP_CONFIG?.SUPABASE_URL || 
-                                       'https://lwhtjozfsmbyihenfunw.supabase.co';
-                    
-                    let fullPath = photoUrl;
-                    if (!photoUrl.includes('profiles/') && !photoUrl.includes('user-documents')) {
-                        fullPath = `profiles/${this.userId}/${photoUrl}`;
-                    }
-                    
-                    finalPhotoSrc = `${supabaseUrl}/storage/v1/object/public/user-documents/${fullPath}?t=${new Date().getTime()}`;
+                const supabase = this.getSupabaseClient();
+                let bucket = profilePhotoPath ? 'user-documents' : 'passports';
+                let objectPath = String(photoValue);
+                let resolvedUrl = null;
+                const storageMatch = objectPath.match(/\\/storage\\/v1\\/object\\/(?:public|sign)\\/([^/]+)\\/(.+?)(?:\\?.*)?$/);
+
+                if (storageMatch) {
+                    bucket = decodeURIComponent(storageMatch[1]);
+                    objectPath = decodeURIComponent(storageMatch[2]);
+                } else if (/^https?:\\/\\//i.test(objectPath)) {
+                    resolvedUrl = objectPath;
+                } else if (objectPath.startsWith('user-documents/')) {
+                    bucket = 'user-documents';
+                    objectPath = objectPath.slice('user-documents/'.length);
+                } else if (objectPath.startsWith('passports/')) {
+                    bucket = 'passports';
+                    objectPath = objectPath.slice('passports/'.length);
+                } else if (objectPath.startsWith('profiles/') || objectPath.startsWith('documents/')) {
+                    bucket = 'user-documents';
                 }
-                
+
+                if (!resolvedUrl) {
+                    if (!supabase?.storage?.from) throw new Error('Storage service is unavailable');
+                    const { data, error } = await supabase.storage.from(bucket).createSignedUrl(objectPath, 3600);
+                    if (error) throw error;
+                    resolvedUrl = data?.signedUrl || null;
+                }
+                if (!resolvedUrl) throw new Error('Could not create a secure photo link');
+                finalPhotoSrc = resolvedUrl;
+
                 await new Promise((resolve, reject) => {
                     const img = new Image();
                     img.onload = resolve;
@@ -683,15 +699,13 @@ class ProfileModule {
                 });
             } catch (error) {
                 console.warn('Photo load error:', error);
-                finalPhotoSrc = 'https://ui-avatars.com/api/?name=' + 
-                    encodeURIComponent(this.userProfile.full_name || 'Student') + 
-                    '&background=4C1D95&color=fff&size=120';
+                finalPhotoSrc = fallback;
             }
         }
-        
+
         if (this.passportPreview) {
             this.passportPreview.src = finalPhotoSrc;
-            this.passportPreview.alt = photoUrl ? 'Your passport photo' : 'Upload passport photo';
+            this.passportPreview.alt = photoValue ? 'Your profile photo' : 'Upload profile photo';
         }
     }
     
@@ -699,25 +713,33 @@ class ProfileModule {
     // 📸 GET PHOTO URL - HELPER
     // ============================================================
     
-    getPhotoUrl(profile) {
+    async getPhotoUrl(profile) {
         if (!profile) return null;
-        
-        const photoPath = profile.profile_photo_url || profile.passport_url || null;
-        if (!photoPath) return null;
-        
-        if (photoPath.startsWith('http')) {
-            return photoPath;
+        const profilePhotoPath = profile.profile_photo_url || null;
+        const photoValue = profilePhotoPath || profile.passport_url || null;
+        if (!photoValue) return null;
+
+        const supabase = this.getSupabaseClient();
+        let bucket = profilePhotoPath ? 'user-documents' : 'passports';
+        let objectPath = String(photoValue);
+        const storageMatch = objectPath.match(/\\/storage\\/v1\\/object\\/(?:public|sign)\\/([^/]+)\\/(.+?)(?:\\?.*)?$/);
+        if (storageMatch) {
+            bucket = decodeURIComponent(storageMatch[1]);
+            objectPath = decodeURIComponent(storageMatch[2]);
+        } else if (/^https?:\\/\\//i.test(objectPath)) {
+            return objectPath;
+        } else if (objectPath.startsWith('user-documents/')) {
+            bucket = 'user-documents';
+            objectPath = objectPath.slice('user-documents/'.length);
+        } else if (objectPath.startsWith('passports/')) {
+            bucket = 'passports';
+            objectPath = objectPath.slice('passports/'.length);
+        } else if (objectPath.startsWith('profiles/') || objectPath.startsWith('documents/')) {
+            bucket = 'user-documents';
         }
-        
-        const supabaseUrl = window.SUPABASE_URL || 
-                           window.APP_CONFIG?.SUPABASE_URL || 
-                           'https://lwhtjozfsmbyihenfunw.supabase.co';
-        
-        let fullPath = photoPath;
-        if (!photoPath.startsWith('profiles/')) {
-            fullPath = `profiles/${this.userId}/${photoPath}`;
-        }
-        return `${supabaseUrl}/storage/v1/object/public/user-documents/${fullPath}`;
+        const { data, error } = await supabase.storage.from(bucket).createSignedUrl(objectPath, 3600);
+        if (error) throw error;
+        return data?.signedUrl || null;
     }
     
     // ============================================================
@@ -870,14 +892,12 @@ class ProfileModule {
             
             if (uploadError) throw uploadError;
             
-            const { data: urlData } = supabase.storage.from('user-documents').getPublicUrl(filePath);
-            const publicUrl = urlData.publicUrl;
             
             const { error: updateError } = await supabase
                 .from('consolidated_user_profiles_table')
                 .update({ 
                     profile_photo_url: filePath,
-                    passport_url: publicUrl,
+                    passport_url: filePath,
                     updated_at: new Date().toISOString()
                 })
                 .eq('user_id', this.userId);
