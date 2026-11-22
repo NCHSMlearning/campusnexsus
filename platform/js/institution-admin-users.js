@@ -200,21 +200,19 @@
     setOptions('iaEdit_block_program_year',['Year 1','Year 2','Year 3','Year 4'].map(value=>({value,label:value})),u.block_program_year,'Select year of study');
     const updateAcademicChoices=(preferred)=>{
       const code=String(programme?.value||'').trim().toUpperCase();
-      const tvet=code==='TVET'||String(u.program_type||'').toUpperCase()==='TVET';
+      const tvet=code==='TVET'||(!['DCHN','KCHN'].includes(code)&&String($('iaEdit_program_type')?.value||u.program_type||'').toUpperCase()==='TVET');
       const levels=tvet?['Term 1','Term 2','Term 3']:['Block 1','Block 2','Block 3','Block 4','Block 5','Block 6'];
       const options=levels.map(value=>({value,label:value}));
       const selected=preferred??(block?.value||currentBlock?.value||u.current_block||u.block||'');
       setOptions('iaEdit_block',options,selected,'Select '+(tvet?'term':'block'));
       setOptions('iaEdit_current_block',options,selected,'Select current '+(tvet?'term':'block'));
-      if(block&&currentBlock){
-        block.addEventListener('change',()=>{currentBlock.value=block.value;});
-        currentBlock.addEventListener('change',()=>{block.value=currentBlock.value;});
-      }
       const blockLabel=block?.closest('.ia-users-edit-field')?.querySelector('span');
       const currentLabel=currentBlock?.closest('.ia-users-edit-field')?.querySelector('span');
       if(blockLabel)blockLabel.textContent=tvet?'Term':'Block';
       if(currentLabel)currentLabel.textContent=tvet?'Current term':'Current block';
     };
+    block?.addEventListener('change',()=>{if(currentBlock)currentBlock.value=block.value;});
+    currentBlock?.addEventListener('change',()=>{if(block)block.value=currentBlock.value;});
     updateAcademicChoices();
     programme?.addEventListener('change',()=>{
       const tvet=programme.value.toUpperCase()==='TVET';
