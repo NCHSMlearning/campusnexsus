@@ -1364,24 +1364,42 @@ class UIModule {
         try {
             let profile = userProfile || window.currentUserProfile;
             let photoUrl = null;
-            const supabaseStorageUrl = 'https://lwhtjozfsmbyihenfunw.supabase.co/storage/v1/object/public/passports/';
+            const storedPhoto = profile?.profile_photo_url || profile?.passport_url || null;
             
             if ((!profile || !profile.passport_url) && window.currentUserId && this.supabase) {
                 const { data } = await this.supabase
                     .from('consolidated_user_profiles_table')
-                    .select('full_name, passport_url')
+                    .select('full_name, profile_photo_url, passport_url')
                     .eq('user_id', window.currentUserId)
                     .single();
                 profile = data;
             }
             
-            if (profile && profile.passport_url) {
-                if (profile.passport_url.startsWith('http')) {
-                    photoUrl = profile.passport_url;
-                } else {
-                    photoUrl = supabaseStorageUrl + profile.passport_url;
+            const photoValue = profile?.profile_photo_url || profile?.passport_url || storedPhoto;
+            if (photoValue) {
+                let bucket = profile?.profile_photo_url ? 'user-documents' : 'passports';
+                let objectPath = String(photoValue);
+                const storageMatch = objectPath.match(/\\/storage\\/v1\\/object\\/(?:public|sign)\\/([^/]+)\\/(.+?)(?:\\?.*)?$/);
+                if (storageMatch) {
+                    bucket = decodeURIComponent(storageMatch[1]);
+                    objectPath = decodeURIComponent(storageMatch[2]);
+                } else if (/^https?:\\/\\//i.test(objectPath)) {
+                    photoUrl = objectPath;
+                } else if (objectPath.startsWith('user-documents/')) {
+                    bucket = 'user-documents';
+                    objectPath = objectPath.slice('user-documents/'.length);
+                } else if (objectPath.startsWith('passports/')) {
+                    bucket = 'passports';
+                    objectPath = objectPath.slice('passports/'.length);
+                } else if (objectPath.startsWith('profiles/') || objectPath.startsWith('documents/')) {
+                    bucket = 'user-documents';
                 }
-                console.log('✅ Using passport photo from database');
+                if (!photoUrl && this.supabase?.storage?.from) {
+                    const { data, error } = await this.supabase.storage.from(bucket).createSignedUrl(objectPath, 3600);
+                    if (error) throw error;
+                    photoUrl = data?.signedUrl || null;
+                }
+                console.log('✅ Using secured profile photo URL');
             }
             
             if (!photoUrl) {
