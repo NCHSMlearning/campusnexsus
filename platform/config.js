@@ -48,7 +48,7 @@ console.log('🚀 Loading NCHSM Portal Configuration');
 window.APP_CONFIG = {
     // Public Supabase credentials
     SUPABASE_URL: 'https://irahplkvocaakjxuisto.supabase.co',
-    SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlyYWhwbGt2b2NhYWtqeHVpc3RvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4ODY5ODQsImV4cCI6MjEwMzQ2Mjk4NH0.BFOwdRVDz4r1oYgUjm8zQbthqblGRq4c3WQWQaOhu7g',
+    SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_5Cg5FFudf03UnmOXGNGMHQ_uK9S-uQX',
     
     // Optional LocationIQ API key (get from https://locationiq.com/)
     LOCATIONIQ_API_KEY: '',
@@ -73,7 +73,7 @@ if (typeof supabase !== 'undefined') {
         // Create the Supabase client
         const supabaseClient = supabase.createClient(
             window.APP_CONFIG.SUPABASE_URL,
-            window.APP_CONFIG.SUPABASE_ANON_KEY,
+            window.APP_CONFIG.SUPABASE_PUBLISHABLE_KEY,
             {
                 auth: {
                     persistSession: true,
@@ -110,7 +110,7 @@ if (typeof window.sb === 'undefined') {
         if (typeof supabase !== 'undefined') {
             window.sb = supabase.createClient(
                 window.APP_CONFIG.SUPABASE_URL,
-                window.APP_CONFIG.SUPABASE_ANON_KEY
+                window.APP_CONFIG.SUPABASE_PUBLISHABLE_KEY
             );
             console.log('✅ Fallback Supabase client created');
         } else {
@@ -146,7 +146,7 @@ if (typeof window.sb === 'undefined') {
 // VALIDATION
 // ============================================================
 
-if (!window.APP_CONFIG.SUPABASE_URL || !window.APP_CONFIG.SUPABASE_ANON_KEY) {
+if (!window.APP_CONFIG.SUPABASE_URL || !window.APP_CONFIG.SUPABASE_PUBLISHABLE_KEY) {
     console.error('❌ Missing Supabase credentials in APP_CONFIG');
 }
 
