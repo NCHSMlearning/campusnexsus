@@ -317,3 +317,27 @@ html,body{width:100%;max-width:100%;min-height:100%;margin:0}body{overflow-x:hid
  #view-user-management .ia-users-footer{gap:10px;align-items:flex-start;flex-wrap:wrap}
  #view-user-management .ia-users-detail-grid{grid-template-columns:1fr}
 }
+
+
+/* Institution user profile edit modal */
+#view-user-management .ia-users-edit-btn{margin-left:6px;background:#e8f1ff;color:#164e8a}
+#view-user-management .ia-users-edit-form{display:grid;gap:16px}
+#view-user-management .ia-users-edit-section{padding:18px;border:1px solid #e4eaf1;border-radius:13px;background:#f9fbfd}
+#view-user-management .ia-users-edit-section h3{margin:0 0 13px;color:#0f3550;font-size:14px;font-weight:800}
+#view-user-management .ia-users-edit-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+#view-user-management .ia-users-edit-field{display:grid;gap:5px;min-width:0;color:#475569;font-size:12px;font-weight:700}
+#view-user-management .ia-users-edit-field input,#view-user-management .ia-users-edit-field select,#view-user-management .ia-users-edit-field textarea{width:100%;box-sizing:border-box;min-width:0;padding:10px 11px;border:1px solid #d8e1eb;border-radius:9px;background:#fff;color:#1e293b;font:500 13px Inter, sans-serif}
+#view-user-management .ia-users-edit-field input:focus,#view-user-management .ia-users-edit-field select:focus,#view-user-management .ia-users-edit-field textarea:focus{outline:2px solid #99c6e8;border-color:#0f766e}
+#view-user-management .ia-users-edit-field input[readonly]{background:#eef2f6;color:#64748b}
+#view-user-management .ia-users-access-section{background:#f1f5f9}
+#view-user-management .ia-users-edit-hint{margin:10px 0 0;color:#64748b;font-size:12px}
+#view-user-management .ia-users-edit-actions{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+#view-user-management .ia-users-save-btn,#view-user-management .ia-users-cancel-btn,#view-user-management .ia-users-password-reset button{border:0;border-radius:9px;padding:11px 17px;font-weight:750;cursor:pointer}
+#view-user-management .ia-users-save-btn{background:#0f766e;color:#fff}
+#view-user-management .ia-users-cancel-btn{background:#e8edf3;color:#334155}
+#view-user-management .ia-users-password-reset{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+#view-user-management .ia-users-password-reset button{background:#e8f1ff;color:#164e8a}
+#view-user-management .ia-users-password-reset span{color:#64748b;font-size:11px}
+#view-user-management #iaUsersEditFeedback.error{color:#b91c1c}
+#view-user-management .ia-users-review-btn{white-space:nowrap}
+@media(max-width:640px){#view-user-management .ia-users-edit-grid{grid-template-columns:1fr}#view-user-management .ia-users-edit-section{padding:13px}#view-user-management .ia-users-edit-actions>*{flex:1}}
