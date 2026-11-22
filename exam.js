@@ -59,6 +59,9 @@ const AppState = {
     fullscreenAutoSubmitTriggered: false,
     studentId: null,
     studentProfile: null,
+    institutionId: null,
+    institution: null,
+    institutionReady: false,
     examId: null,
     examData: null,
     questions: [],
@@ -1140,19 +1143,93 @@ function showKeyboardShortcuts() {
 }
 
 // ============================================================
-// LOBBY DATA LOADING
+// AUTHENTICATED STUDENT INSTITUTION CONTEXT
 // ============================================================
+function applyExamInstitutionBranding(institution) {
+    const name = String(institution?.name || institution?.institution_name || 'Your Institution').trim();
+    const code = String(institution?.school_code || institution?.short_code || '').trim();
+    const logo = String(institution?.logo_url || '').trim();
+    const safeLogo = /^https:\/\//i.test(logo) ? logo : '/images/campus-nexus-logo.png';
+
+    const logoIds = ['institutionBrandLogo', 'examInstitutionLogo'];
+    logoIds.forEach(id => {
+        const image = document.getElementById(id);
+        if (image) {
+            image.src = safeLogo;
+            image.alt = name + ' logo';
+            image.onerror = () => { image.onerror = null; image.src = '/images/campus-nexus-logo.png'; };
+        }
+    });
+
+    const labels = {
+        institutionBrandName: name,
+        institutionBrandCode: code ? 'SCHOOL CODE ' + code : 'Secure Institutional Examination',
+        examInstitutionName: name + ' Examination',
+        examInstitutionCode: code ? 'School code ' + code + ' • Secure assessment' : 'Secure assessment environment',
+        institutionAssessmentLabel: name.toUpperCase() + ' DIGITAL ASSESSMENT',
+        institutionCampusChip: name,
+        institutionCampusName: name,
+        institutionCampusSubtitle: code ? 'School code ' + code + ' • Examination Centre' : 'Institutional Examination Centre',
+        institutionAssuranceQuote: 'Secure assessment • Academic integrity • ' + name
+    };
+    Object.entries(labels).forEach(([id, value]) => {
+        const node = document.getElementById(id);
+        if (node) node.textContent = value;
+    });
+
+    document.title = name + ' | Secure Online Examination';
+    const theme = institution?.primary_color;
+    if (typeof theme === 'string' && /^#[0-9a-f]{3,8}$/i.test(theme)) {
+        document.documentElement.style.setProperty('--navy', theme);
+        const meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.content = theme;
+    }
+}
+
+async function ensureStudentInstitutionContext(profile = AppState.studentProfile) {
+    if (AppState.institutionReady && AppState.institutionId) return AppState.institution;
+    if (!profile || !profile.institution_id) {
+        throw new Error('Your student account is not linked to an institution. Please contact your institution administrator.');
+    }
+
+    const role = String(profile.role || '').trim().toLowerCase();
+    const status = String(profile.status || '').trim().toLowerCase();
+    if (role !== 'student' || !['approved', 'active'].includes(status) || profile.login_enabled === false) {
+        throw new Error('Your account is not approved for secure examinations. Please contact your institution administrator.');
+    }
+
+    const { data, error } = await sb.rpc('get_my_exam_institution');
+    if (error) throw new Error('Your institution details could not be verified. Please return to the student examination centre.');
+    const institution = Array.isArray(data) ? data[0] : data;
+    if (!institution) throw new Error('Your institution could not be identified. Please contact your institution administrator.');
+
+    const returnedInstitutionId = institution.institution_id || institution.id || null;
+    if (returnedInstitutionId && String(returnedInstitutionId) !== String(profile.institution_id)) {
+        throw new Error('Your institution record does not match your student account. Examination access has been blocked.');
+    }
+
+    AppState.institutionId = String(profile.institution_id);
+    AppState.institution = institution;
+    AppState.institutionReady = true;
+    applyExamInstitutionBranding(institution);
+    return institution;
+}
+
 async function loadLobbyData() {
     console.log('📝 Loading lobby data...');
     
     try {
-        const { data: profile } = await sb
+        const { data: profile, error: profileError } = await sb
             .from('consolidated_user_profiles_table')
             .select('*')
             .eq('user_id', AppState.studentId)
-            .single();
+            .maybeSingle();
+        if (profileError) throw profileError;
+        if (!profile) throw new Error('Your student profile could not be found. Please contact your institution administrator.');
 
-        if (profile) {
+        AppState.studentProfile = profile;
+        await ensureStudentInstitutionContext(profile);
+        {
             AppState.studentProfile = profile;
             console.log('✅ Profile loaded:', profile.full_name);
             
@@ -1175,13 +1252,20 @@ async function loadLobbyData() {
             }
         }
 
-        const { data: exam } = await sb
+        const { data: exam, error: examError } = await sb
             .from('exams')
             .select('*')
             .eq('id', parseInt(AppState.examId))
-            .single();
+            .eq('institution_id', AppState.institutionId)
+            .maybeSingle();
+        if (examError) throw examError;
+        if (!exam) throw new Error('This examination does not belong to your institution or is no longer available.');
+        if (String(exam.approval_status || '').toLowerCase() !== 'approved' || exam.is_published !== true ||
+            ['draft', 'cancelled', 'rejected'].includes(String(exam.status || '').toLowerCase())) {
+            throw new Error('This examination has not been approved and published by your institution.');
+        }
 
-        if (exam) {
+        {
             AppState.examData = exam;
             console.log('✅ Exam loaded:', exam.title);
             
@@ -1203,8 +1287,13 @@ async function loadLobbyData() {
         console.log('✅ Lobby data loaded successfully!');
 
     } catch (error) {
-        console.error('Error loading data:', error);
-        showToast('Error loading exam data', 'error');
+        console.error('Error loading institution-scoped exam data:', error);
+        showToast(error.message || 'Unable to verify your institutional examination access.', 'error', 6000);
+        const startButton = document.getElementById('startExamBtn');
+        if (startButton) startButton.disabled = true;
+        if (/institution|student profile|approved|published|belong to/i.test(String(error.message || ''))) {
+            setTimeout(() => window.location.replace('/studentexam'), 3500);
+        }
     }
 }
 
@@ -1676,13 +1765,21 @@ async function initExam() {
 
         await getOrCreateCurrentAttempt();
 
+        await ensureStudentInstitutionContext();
         const examResult = await sb
             .from('exams')
-            .select('exam_name, duration_minutes, pass_mark, total_marks')
+            .select('exam_name, duration_minutes, pass_mark, total_marks, institution_id, approval_status, is_published, status')
             .eq('id', parseInt(AppState.examId))
-            .single();
+            .eq('institution_id', AppState.institutionId)
+            .maybeSingle();
 
-        if (examResult.data) {
+        if (examResult.error) throw examResult.error;
+        if (!examResult.data) throw new Error('This examination is not available to your institution.');
+        if (String(examResult.data.approval_status || '').toLowerCase() !== 'approved' || examResult.data.is_published !== true ||
+            ['draft', 'cancelled', 'rejected'].includes(String(examResult.data.status || '').toLowerCase())) {
+            throw new Error('This examination is not approved and published.');
+        }
+        {
             const exam = examResult.data;
             if (DOM.examTitle) DOM.examTitle.textContent = exam.exam_name || 'Examination';
             AppState.duration = exam.duration_minutes || 30;
@@ -3916,6 +4013,7 @@ async function captureSnapshot() {
 
     try {
         await sb.from('exam_proctoring_logs').insert({
+            institution_id: AppState.institutionId,
             student_id: AppState.studentId,
             exam_id: parseInt(AppState.examId),
             student_name: studentName,
