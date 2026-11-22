@@ -80,6 +80,7 @@ jobs:
           protection = '<script src="/code-protection.js" defer></script>'
           clean_urls = """<script>
           (function(){
+            if(window.top!==window.self)return;
             var p=window.location.pathname;
             if(/\.html$/i.test(p)){
               var u=new URL(window.location.href);
