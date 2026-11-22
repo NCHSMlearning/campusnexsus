@@ -80,18 +80,19 @@ form.addEventListener('submit',async e=>{
   const accountRole=String(profile.role||'').trim().toLowerCase();
   const accountStatus=String(profile.status||'').trim().toLowerCase();
   if(!['approved','active'].includes(accountStatus)||profile.login_enabled===false)throw new Error('Your account is awaiting approval or has been disabled.');
-  const isInstitutionAdmin=(memberships||[]).some(m=>String(m.institution_id)===String(selectedInstitution.id));
-  const isPlatformAdmin=!superError&&isSuper===true;
+  const isInstitutionAdmin=(memberships||[]).some(m=>String(m.institution_id)===String(selectedInstitution.id)) || (accountRole==='institution_admin' && String(profile.institution_id)===String(selectedInstitution.id));
+  const isPlatformAdmin=isSuper===true || ['superadmin','super_admin','platform_admin'].includes(accountRole);
   if(accountRole==='student'){
    if(String(profile.institution_id)!==String(selectedInstitution.id))throw new Error('This student account does not belong to '+selectedInstitution.name+'. Check the school code.');
    show('Sign-in successful. Opening your examinations…','info');
-   location.replace('/studentexam?v=20261121-standalone');
+   location.replace(nextPath('student'));
    return;
   }
   if(isInstitutionAdmin||isPlatformAdmin){
    // Carry the role verification into this tab so the dashboard does not
    // repeat profile/membership reads that may be blocked by dashboard RLS.
-   sessionStorage.setItem('campusNexusExamAdminAuth',JSON.stringify({user_id:data.user.id,role:isPlatformAdmin?'superadmin':'institution_admin',institution_id:isInstitutionAdmin?memberships.find(m=>String(m.institution_id)===String(selectedInstitution.id)).institution_id:(profile.institution_id||null),verified_at:Date.now()}));
+   const matchedMembership=(memberships||[]).find(m=>String(m.institution_id)===String(selectedInstitution.id));
+   sessionStorage.setItem('campusNexusExamAdminAuth',JSON.stringify({user_id:data.user.id,role:isPlatformAdmin?'superadmin':'institution_admin',institution_id:isInstitutionAdmin?(matchedMembership?.institution_id||profile.institution_id||selectedInstitution.id):(profile.institution_id||null),verified_at:Date.now()}));
    show('Administrator verified. Opening the examination dashboard…','info');
    location.replace('/adminexams/');
    return;
