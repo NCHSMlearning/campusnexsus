@@ -353,3 +353,165 @@ html,body{width:100%;max-width:100%;min-height:100%;margin:0}body{overflow-x:hid
 #view-user-management .ia-users-history-group>strong{display:block;margin-bottom:7px;color:#0f3550;font-size:12px}
 #view-user-management .ia-users-history-group p{margin:3px 0;color:#64748b;font-size:11px}
 #view-user-management .ia-users-history-row{padding:6px 0;border-top:1px solid #edf1f5;color:#475569;font-size:11px;overflow-wrap:anywhere}
+
+
+/* Ultra-modern account status & access panel */
+#view-user-management .ia-users-dialog{
+  width:min(820px,calc(100vw - 28px));
+  max-height:min(90dvh,960px);
+  border:1px solid rgba(203,213,225,.72);
+  border-radius:24px;
+  background:#f7f9fc;
+  box-shadow:0 34px 110px rgba(2,15,35,.34),0 4px 18px rgba(15,23,42,.08);
+}
+#view-user-management .ia-users-dialog::backdrop{
+  background:rgba(5,18,35,.66);
+  backdrop-filter:blur(9px) saturate(125%);
+}
+#view-user-management .ia-users-dialog-head{
+  padding:25px 28px;
+  background:
+    radial-gradient(circle at 88% 12%,rgba(45,212,191,.27),transparent 32%),
+    linear-gradient(122deg,#071b34 0%,#0b3b58 56%,#087f79 100%);
+}
+#view-user-management .ia-users-dialog-head span{color:#a7f3e8;letter-spacing:.16em}
+#view-user-management .ia-users-dialog-head h2{font-size:21px;letter-spacing:-.035em}
+#view-user-management .ia-users-dialog-head button{
+  width:38px;height:38px;border-radius:12px;
+  background:rgba(255,255,255,.12);
+  transition:background .18s ease,transform .18s ease;
+}
+#view-user-management .ia-users-dialog-head button:hover{background:rgba(255,255,255,.23);transform:rotate(90deg)}
+#view-user-management .ia-users-dialog-body{padding:25px 27px 28px}
+#view-user-management .ia-users-detail-summary{
+  position:relative;overflow:hidden;gap:15px;
+  margin-bottom:21px;padding:18px;
+  border:1px solid #dce8ef;border-radius:18px;
+  background:linear-gradient(115deg,#fff 0%,#f0fdfa 100%);
+  box-shadow:0 8px 24px rgba(15,23,42,.045);
+}
+#view-user-management .ia-users-detail-summary:after{
+  content:"";position:absolute;right:-35px;top:-58px;width:150px;height:150px;
+  border-radius:50%;background:radial-gradient(circle,rgba(20,184,166,.13),transparent 68%);
+  pointer-events:none;
+}
+#view-user-management .ia-users-avatar.large{
+  width:58px;height:58px;border:3px solid #fff;border-radius:18px;
+  background:linear-gradient(145deg,#dbeafe,#99f6e4);
+  box-shadow:0 5px 16px rgba(15,118,110,.16);
+  color:#075985;font-size:16px;
+}
+#view-user-management .ia-users-detail-summary strong{font-size:17px;letter-spacing:-.025em}
+#view-user-management .ia-users-detail-summary small{font-size:11px;font-weight:650}
+#view-user-management .ia-users-detail-section{
+  margin:15px 0 0;padding:17px;
+  border:1px solid #e2eaf1;border-radius:18px;
+  background:linear-gradient(145deg,#fff 0%,#fbfdff 100%);
+  box-shadow:0 5px 18px rgba(15,23,42,.035);
+}
+#view-user-management .ia-users-detail-section h3{
+  display:flex;align-items:center;gap:9px;
+  margin:0 0 13px;color:#102f49;font-size:13px;font-weight:850;
+  letter-spacing:-.01em;
+}
+#view-user-management .ia-users-detail-section h3:before{
+  content:"";width:4px;height:17px;border-radius:5px;
+  background:linear-gradient(180deg,#14b8a6,#0f4c81);
+}
+#view-user-management .ia-users-detail-grid{gap:10px;margin-top:0}
+#view-user-management .ia-users-detail-grid>div{
+  min-height:68px;padding:13px 14px;
+  border:1px solid #e5edf3;border-radius:13px;
+  background:linear-gradient(145deg,#fbfdff,#f5f8fc);
+  transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease;
+}
+#view-user-management .ia-users-detail-grid>div:hover{
+  transform:translateY(-2px);border-color:#b9dcd8;
+  box-shadow:0 8px 18px rgba(15,118,110,.07);
+}
+#view-user-management .ia-users-detail-grid small{
+  margin-bottom:7px;color:#718096;font-size:9px;font-weight:800;
+  letter-spacing:.075em;
+}
+#view-user-management .ia-users-detail-grid strong{
+  color:#10243a;font-size:13px;font-weight:750;line-height:1.45;
+  font-variant-numeric:tabular-nums;
+}
+/* Account panel: distinct security-focused hierarchy */
+#view-user-management .ia-users-detail-section:nth-of-type(5){
+  position:relative;overflow:hidden;
+  border-color:#d8e7ee;
+  background:
+    radial-gradient(circle at 100% 0%,rgba(20,184,166,.09),transparent 35%),
+    linear-gradient(145deg,#f4f9fc,#fff 62%);
+}
+#view-user-management .ia-users-detail-section:nth-of-type(5) .ia-users-detail-grid{
+  grid-template-columns:repeat(3,minmax(0,1fr));
+}
+#view-user-management .ia-users-detail-section:nth-of-type(5) .ia-users-detail-grid>div{
+  min-height:76px;background:rgba(255,255,255,.88);
+}
+#view-user-management .ia-users-detail-section:nth-of-type(5) .ia-users-detail-grid>div:nth-child(1) strong{
+  display:inline-flex;align-items:center;gap:7px;
+  color:#087b56;
+}
+#view-user-management .ia-users-detail-section:nth-of-type(5) .ia-users-detail-grid>div:nth-child(1) strong:before{
+  content:"";width:7px;height:7px;border-radius:50%;background:#10b981;
+  box-shadow:0 0 0 4px rgba(16,185,129,.12);
+}
+#view-user-management .ia-users-detail-section:nth-of-type(5) .ia-users-detail-grid>div:nth-child(2) strong{
+  display:inline-flex;align-items:center;gap:7px;color:#087b56;
+}
+#view-user-management .ia-users-detail-section:nth-of-type(5) .ia-users-detail-grid>div:nth-child(2) strong:before{
+  content:"";width:7px;height:7px;border-radius:50%;background:#10b981;
+  box-shadow:0 0 0 4px rgba(16,185,129,.12);
+}
+#view-user-management .ia-users-dialog-body>.ia-users-review-btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  min-height:44px;margin-top:20px;padding:0 19px;
+  border:0;border-radius:12px;
+  background:linear-gradient(110deg,#0b4562,#0f8b80);
+  box-shadow:0 8px 18px rgba(15,118,110,.2);
+  color:#fff;font-size:12px;font-weight:800;
+  transition:transform .18s ease,box-shadow .18s ease;
+}
+#view-user-management .ia-users-dialog-body>.ia-users-review-btn:hover{
+  transform:translateY(-2px);box-shadow:0 12px 24px rgba(15,118,110,.27);
+  background:linear-gradient(110deg,#083b56,#0b776f);
+}
+#view-user-management .ia-users-edit-section{
+  border-color:#e1eaf0;border-radius:16px;
+  background:linear-gradient(145deg,#fff,#f7fafc);
+}
+#view-user-management .ia-users-edit-section h3{letter-spacing:-.015em}
+#view-user-management .ia-users-edit-field input,
+#view-user-management .ia-users-edit-field select,
+#view-user-management .ia-users-edit-field textarea{
+  min-height:42px;border-radius:11px;transition:border-color .18s ease,box-shadow .18s ease;
+}
+#view-user-management .ia-users-edit-field input:focus,
+#view-user-management .ia-users-edit-field select:focus,
+#view-user-management .ia-users-edit-field textarea:focus{
+  outline:0;border-color:#0d9488;box-shadow:0 0 0 4px rgba(13,148,136,.11);
+}
+#view-user-management .ia-users-save-btn,
+#view-user-management .ia-users-cancel-btn,
+#view-user-management .ia-users-password-reset button{
+  min-height:43px;border-radius:11px;transition:transform .16s ease,box-shadow .16s ease;
+}
+#view-user-management .ia-users-save-btn{
+  background:linear-gradient(110deg,#0b4562,#0f8b80);
+  box-shadow:0 7px 16px rgba(15,118,110,.17);
+}
+#view-user-management .ia-users-save-btn:hover{transform:translateY(-1px);box-shadow:0 10px 20px rgba(15,118,110,.22)}
+@media(max-width:640px){
+  #view-user-management .ia-users-dialog{width:calc(100vw - 16px);max-height:94dvh;border-radius:19px}
+  #view-user-management .ia-users-dialog-head{padding:19px}
+  #view-user-management .ia-users-dialog-body{padding:14px}
+  #view-user-management .ia-users-detail-section{padding:13px;border-radius:14px}
+  #view-user-management .ia-users-detail-section:nth-of-type(5) .ia-users-detail-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #view-user-management .ia-users-detail-grid>div{min-height:64px;padding:11px}
+}
+@media(max-width:390px){
+  #view-user-management .ia-users-detail-section:nth-of-type(5) .ia-users-detail-grid{grid-template-columns:1fr}
+}
