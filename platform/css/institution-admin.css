@@ -955,3 +955,12 @@ html,body{width:100%;max-width:100%;min-height:100%;margin:0}body{overflow-x:hid
 #view-overview .ia-module-activity-grid{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))!important;gap:11px!important}
 #view-overview .ia-chart-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:14px!important}
 @media(max-width:760px){#view-overview .ia-chart-grid{grid-template-columns:1fr!important}#view-overview .ia-stat-grid,#view-overview .ia-module-activity-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+
+
+/* Align the app shell to the viewport: eliminate the stray top band */
+html,body{margin:0!important;padding:0!important}
+body>#iaApp{position:relative!important;top:-17px!important;margin-top:0!important}
+body>#iaApp>.ia-sidebar{top:0!important;bottom:0!important}
+body>#iaApp>.ia-main-wrap{margin-top:0!important}
+body>#iaApp>.ia-main-wrap>.ia-topbar{top:0!important;margin-top:0!important}
+@media(max-width:768px){body>#iaApp{top:-17px!important}}
