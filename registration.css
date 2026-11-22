@@ -129,10 +129,9 @@ body::before {
     content: "";
     position: fixed;
     inset: 0;
-    background: 
-        var(--gradient-hero),
-        url('https://nakurucollegeofhealth.ac.ke/wp-content/uploads/2026/02/IMG_20251219_080858_996-rotated.jpg') 
-        center center / cover no-repeat fixed;
+    /* Keep the registration background institution-neutral.
+       The verified institution logo is rendered from its own database record. */
+    background: var(--gradient-hero);
     background-size: cover;
     z-index: -2;
 }
