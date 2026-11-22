@@ -225,3 +225,38 @@ html,body{width:100%;max-width:100%;min-height:100%;margin:0}body{overflow-x:hid
 .ia-workspace-stat>em{font-size:11px!important;line-height:1.45;overflow-wrap:anywhere}
 .ia-workspace-stat[hidden]{display:none!important}
 @media(max-width:768px){.ia-module-activity>.ia-panel-head{align-items:flex-start;flex-direction:column}.ia-module-activity-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:11px!important}.ia-workspace-stat{padding:13px!important}.ia-workspace-stat>strong{font-size:23px!important}}
+
+/* Institution settings: independent, data-rich sections */
+.ia-settings-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 18px;padding:7px;background:#e9eff5;border:1px solid #dce6ee;border-radius:13px}
+.ia-settings-tab{display:inline-flex;align-items:center;gap:9px;min-height:42px;padding:10px 15px;border:1px solid transparent;border-radius:9px;background:transparent;color:#475569;font:600 13px Inter, sans-serif;cursor:pointer;transition:background .18s,border-color .18s,color .18s}
+.ia-settings-tab:hover{background:#fff;color:#0f766e}
+.ia-settings-tab.active{background:#fff;color:#0f766e;border-color:#d8e5e9;box-shadow:0 2px 7px rgba(15,23,42,.06)}
+.ia-settings-section{display:none;min-width:0}.ia-settings-section.active{display:block}.ia-settings-section[hidden]{display:none!important}
+.ia-settings-card{min-width:0}.ia-settings-card .ia-panel-head{align-items:center}.ia-settings-card-icon{display:grid;place-items:center;width:42px;height:42px;border-radius:12px;background:#e6f5f3;color:#0f766e;flex:0 0 auto}
+.ia-settings-data-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:20px}
+.ia-settings-data{min-width:0;padding:15px 16px;border:1px solid #e5edf2;border-radius:11px;background:#f8fafc}
+.ia-settings-data>small{display:block;margin-bottom:7px;color:#64748b;font-size:11px;font-weight:650;text-transform:uppercase;letter-spacing:.045em}
+.ia-settings-data>b{display:block;color:#0f172a;font-size:14px;font-weight:700;overflow-wrap:anywhere}
+.ia-settings-wide{grid-column:1/-1}
+.ia-settings-note{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;min-height:220px;background:linear-gradient(145deg,#f0fdfa,#fff)}
+.ia-settings-note-icon{display:grid;place-items:center;width:42px;height:42px;border-radius:12px;background:#ccfbf1;color:#0f766e}
+.ia-settings-note h2{margin:14px 0 5px;color:#0f172a;font-size:17px}.ia-settings-note p{margin:0;color:#475569;font-size:13px;line-height:1.7}.ia-settings-note small,.ia-settings-footnote{margin-top:14px;color:#64748b;font-size:11px;line-height:1.6}
+.ia-settings-brand-preview{display:flex;align-items:center;gap:14px;padding:16px;border:1px solid #e5edf2;border-radius:12px;background:#f8fafc}
+.ia-settings-brand-preview b,.ia-settings-brand-preview small{display:block}.ia-settings-brand-preview b{color:#0f172a;font-size:16px}.ia-settings-brand-preview small{margin-top:4px;color:#64748b;font-size:12px}
+.ia-colour-value{display:flex;align-items:center;gap:9px}.ia-colour-value i{width:22px;height:22px;border:1px solid #cbd5e1;border-radius:7px;background:#e2e8f0}.ia-colour-value b{font-size:13px;color:#0f172a}
+.ia-settings-access-summary{display:flex;align-items:baseline;gap:9px;margin:16px 0;padding:14px 16px;border-radius:11px;background:#f0fdfa;color:#0f766e}.ia-settings-access-summary strong{font-size:25px;font-weight:800}.ia-settings-access-summary span{font-size:12px;font-weight:600}
+.ia-settings-identity{display:flex;align-items:center;gap:15px;padding:16px 0 4px}.ia-settings-identity h3{margin:0;color:#0f172a;font-size:18px}.ia-settings-identity p{margin:5px 0 0;color:#64748b;font-size:12px}
+.ia-settings-identity .ia-profile-logo,.ia-settings-brand-preview .ia-profile-logo{overflow:hidden}.ia-settings-identity img,.ia-settings-brand-preview img{width:100%;height:100%;object-fit:contain}
+.ia-module-dialog{width:min(720px,calc(100vw - 28px));max-width:720px;max-height:min(88dvh,900px);padding:0;border:1px solid #dce6ee;border-radius:18px;background:#fff;color:#0f172a;box-shadow:0 28px 90px rgba(2,20,35,.28);overflow:auto}
+.ia-module-dialog::backdrop{background:rgba(2,15,27,.58);backdrop-filter:blur(4px)}
+.ia-module-form{display:block;padding:0}.ia-module-form-head{position:sticky;top:0;z-index:2;display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding:21px 24px;background:linear-gradient(135deg,#082f49,#0f766e);color:#fff}
+.ia-module-form-head small{display:block;margin-bottom:6px;color:#99f6e4;font-size:10px;font-weight:800;letter-spacing:.1em}.ia-module-form-head h2{margin:0;color:#fff;font-size:20px;font-weight:800}
+.ia-module-form-head [data-close-dialog],.ia-module-close{display:grid;place-items:center;width:36px;height:36px;flex:0 0 auto;border:1px solid rgba(255,255,255,.3);border-radius:10px;background:rgba(255,255,255,.12);color:#fff;font-size:24px;line-height:1;cursor:pointer}
+.ia-module-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px;padding:22px 24px}
+.ia-form-field{display:flex;flex-direction:column;gap:7px;min-width:0;color:#334155;font-size:12px;font-weight:700}.ia-form-field:has(textarea),.ia-form-field:has(input[type=file]){grid-column:1/-1}
+.ia-form-field input,.ia-form-field select,.ia-form-field textarea{width:100%;min-width:0;box-sizing:border-box;padding:11px 12px;border:1px solid #d8e2e9;border-radius:9px;background:#fff;color:#0f172a;font:500 13px Inter,sans-serif;outline:none}
+.ia-form-field input:focus,.ia-form-field select:focus,.ia-form-field textarea:focus{border-color:#0f766e;box-shadow:0 0 0 3px rgba(15,118,110,.12)}
+.ia-form-field textarea{resize:vertical;min-height:92px}.ia-module-form-actions{position:sticky;bottom:0;display:flex;justify-content:flex-end;gap:10px;padding:15px 24px;border-top:1px solid #e5edf2;background:#fff}
+.ia-module-form-actions button{min-height:40px;padding:9px 16px;border-radius:9px;font-weight:700}
+.ia-module-dialog[open]{animation:iaDialogIn .18s ease-out}@keyframes iaDialogIn{from{opacity:0;transform:translateY(8px) scale(.99)}to{opacity:1;transform:translateY(0) scale(1)}}
+@media(max-width:640px){.ia-settings-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.ia-settings-tab{justify-content:flex-start;padding:10px;font-size:11px}.ia-settings-data-grid{grid-template-columns:1fr}.ia-settings-wide{grid-column:auto}.ia-settings-note{min-height:0}.ia-module-form-grid{grid-template-columns:1fr;padding:18px}.ia-module-form-head{padding:17px 18px}.ia-module-form-actions{padding:13px 18px}.ia-module-form-head h2{font-size:17px}}
