@@ -75,7 +75,8 @@ form.addEventListener('submit',async e=>{
    client.rpc('is_current_user_superadmin')
   ]);
   if(profileError)throw profileError;
-  if(membershipError)throw membershipError;
+  // Membership lookup is an additional verification path; an RLS denial must not
+  // block an institution_admin whose active profile is already linked to this school.
   if(!profile)throw new Error('No account profile is linked to this login. Contact your institution administrator.');
   const accountRole=String(profile.role||'').trim().toLowerCase();
   const accountStatus=String(profile.status||'').trim().toLowerCase();
