@@ -2149,6 +2149,36 @@ executeLogin: async function(identifier, password) {
             throw new Error('Your sign-in succeeded, but your Campus Nexus profile could not be loaded. Please contact support.');
         }
 
+        // Resolve privileged roles from authoritative Campus Nexus records.
+        // An active institution_users membership takes precedence over a generic
+        // profile role such as "admin"; platform superadmin status is checked server-side.
+        try {
+            const [membershipResult, superadminResult] = await Promise.all([
+                this.supabase
+                    .from('institution_users')
+                    .select('institution_id, role, status')
+                    .eq('user_id', authData.user.id)
+                    .eq('role', 'institution_admin')
+                    .eq('status', 'active'),
+                this.supabase.rpc('is_current_user_superadmin')
+            ]);
+
+            if (superadminResult.error) {
+                console.warn('Platform superadmin role check unavailable:', superadminResult.error.message);
+            } else if (superadminResult.data === true ||
+                superadminResult.data?.is_superadmin === true) {
+                profile.role = 'superadmin';
+            } else if (!membershipResult.error && Array.isArray(membershipResult.data) &&
+                membershipResult.data.length > 0) {
+                profile.role = 'institution_admin';
+                profile.institution_id = membershipResult.data[0].institution_id;
+            } else if (membershipResult.error) {
+                console.warn('Institution membership lookup unavailable:', membershipResult.error.message);
+            }
+        } catch (roleResolutionError) {
+            console.warn('Role resolution fell back to the verified profile role:', roleResolutionError);
+        }
+
         // Enforce the institution selected by the school-code gate. Platform superadmins
         // remain cross-institution users; all other accounts must belong to this school.
         const selectedSchoolCode = (new URLSearchParams(window.location.search).get('school_code') ||
@@ -2678,15 +2708,7 @@ executeLogin: async function(identifier, password) {
                     (role === 'superadmin' && (path === '/superadmin.html' || path === '/superadmin')) ||
                     (role === 'institution_admin' && (
                         path === '/platform/institution-admin.html' ||
-                        path === '/platform/institution-admin' ||
-                        path === '/adminexams' ||
-                        path === '/adminexams/' ||
-                        path === '/adminexams/index.html'
-                    )) ||
-                    (['admin', 'superadmin'].includes(role) && (
-                        path === '/adminexams' ||
-                        path === '/adminexams/' ||
-                        path === '/adminexams/index.html'
+                        path === '/platform/institution-admin'
                     ))
                 );
                 if (isRoleDashboard || isStudentRoute) redirectFile = target.pathname + target.search + target.hash;
