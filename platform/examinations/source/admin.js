@@ -9,7 +9,7 @@
 // SUPABASE CONFIGURATION
 // ------------------------------------------------------------------
 const SUPABASE_URL = 'https://irahplkvocaakjxuisto.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlyYWhwbGt2b2Nhakp4dWlzdG8iLCJyb2xlIjoiYW5vbiIsImlhdCI6MTc4Nzg4Njk4NCwiZXhwIjoyMTAzNDYyOTg0fQ.BFOwdRVDz4r1oYgUjm8zQbthqblGRq4c3WQWQaOhu7g';
+const SUPABASE_KEY = 'sb_publishable_5Cg5FFudf03UnmOXGNGMHQ_uK9S-uQX';
 
 let db = null;
 let currentAdmin = null;
