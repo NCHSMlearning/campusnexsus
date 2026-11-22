@@ -8280,138 +8280,188 @@ window.publishApprovedAssessment = async function(examId) {
         }
     }
 };
-    window.openCreateExamModal = function(examId = null) {
-    document.getElementById('examModalTitle').innerHTML = examId ? '<i class="fas fa-edit"></i> Edit Exam' : '<i class="fas fa-plus-circle"></i> Create New Exam';
-    document.getElementById('editingExamId').value = examId || '';
-    
-    if (examId && examsMap[examId]) {
-        const exam = examsMap[examId];
-        document.getElementById('examName').value = exam.title || exam.exam_name || '';
-        document.getElementById('examType').value = exam.exam_type || 'EXAM';
-        document.getElementById('examCourse').value = exam.course_code || exam.course || '';
-        document.getElementById('examDuration').value = exam.duration_minutes || 30;
-        
-        // ✅ FIX: Load the actual total_marks from the exam
-        document.getElementById('examTotalMarks').value = exam.total_marks || exam.marks_out_of || 100;
-        document.getElementById('examLink').value = exam.online_link || exam.exam_link || '';
-        document.getElementById('examProgram').value = exam.program_type || '';
-        document.getElementById('examBlock').value = exam.block || exam.block_term || '';
-        document.getElementById('examIntakeYear').value = exam.intake_year || '';
-        
-        // ✅ FIX: Load the actual pass_mark from the exam
-        document.getElementById('examPassMark').value = exam.pass_mark || Math.round((exam.total_marks || 100) * 0.6);
-        
-        // ✅ Set status if the field exists
-        const statusSelect = document.getElementById('examStatus');
-        if (statusSelect) statusSelect.value = exam.status || 'draft';
-        
-    } else {
-        // New exam defaults
-        document.getElementById('examName').value = '';
-        document.getElementById('examType').value = 'EXAM';
-        document.getElementById('examCourse').value = '';
-        document.getElementById('examDuration').value = 30;
-        document.getElementById('examTotalMarks').value = 70;
-        document.getElementById('examLink').value = '';
-        document.getElementById('examProgram').value = '';
-        document.getElementById('examBlock').value = '';
-        document.getElementById('examIntakeYear').value = '';
-        document.getElementById('examPassMark').value = 42;
-        const statusSelect = document.getElementById('examStatus');
-        if (statusSelect) statusSelect.value = 'draft';
-    }
-    
-    updateTotalMarksHint();
-    document.getElementById('examModal').style.display = 'flex';
-};
-
-   document.getElementById('examForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const examId = document.getElementById('editingExamId').value;
-    const examType = document.getElementById('examType').value;
-    
-    // Read form values without treating a deliberate zero as an empty value.
-    const totalMarksRaw = document.getElementById('examTotalMarks').value.trim();
-    const passMarkRaw = document.getElementById('examPassMark').value.trim();
-    const durationRaw = document.getElementById('examDuration').value.trim();
-    const totalMarks = totalMarksRaw === '' ? 100 : Number.parseInt(totalMarksRaw, 10);
-    const passMark = passMarkRaw === '' ? Math.round(totalMarks * 0.6) : Number.parseInt(passMarkRaw, 10);
-    const duration = durationRaw === '' ? 30 : Number.parseInt(durationRaw, 10);
-    
-    const examData = {
-        title: document.getElementById('examName').value,
-        exam_name: document.getElementById('examName').value,
-        exam_type: examType,
-        course_code: document.getElementById('examCourse').value,
-        duration_minutes: duration,
-        total_marks: totalMarks,      // ✅ Uses user input
-        marks_out_of: totalMarks,     // ✅ Uses user input
-        pass_mark: passMark,          // ✅ Uses user input
-        online_link: document.getElementById('examLink').value,
-        program_type: document.getElementById('examProgram').value || null,
-        block: document.getElementById('examBlock').value || null,
-        intake_year: document.getElementById('examIntakeYear').value || null,
-        status: document.getElementById('examStatus')?.value || 'draft',
-        updated_at: new Date().toISOString()
-    };
-    
-    // ✅ Add validation
-    if (!examData.title || examData.title.trim() === '') {
-        alert('Please enter an exam name.');
-        return;
-    }
-    if (!examData.online_link || examData.online_link.trim() === '') {
-        alert('Please enter an exam link.');
-        return;
-    }
-    if (!Number.isFinite(examData.duration_minutes) || examData.duration_minutes < 1) {
-        alert('Duration must be a whole number of at least 1 minute.');
-        return;
-    }
-    if (!Number.isFinite(examData.total_marks) || examData.total_marks < 1) {
-        alert('Total marks must be a whole number of at least 1.');
-        return;
-    }
-    if (!Number.isFinite(examData.pass_mark) || examData.pass_mark < 0 || examData.pass_mark > examData.total_marks) {
-        alert('Pass mark must be between 0 and the total marks.');
-        return;
-    }
-    
-    let result;
-    if (examId) {
-        result = await sb.from('exams').update(examData).eq('id', parseInt(examId));
-    } else {
-        const { data: authData, error: authError } = await sb.auth.getUser();
-        if (authError || !authData?.user?.id) {
-            alert('Unable to verify your secure login. Please sign in again.');
-            return;
-        }
-        const rawSession = localStorage.getItem('adminSession') || localStorage.getItem('userProfile');
-        let sessionRole = '';
+    async function loadExamFormOptions(selectedProgram = '', selectedIntake = '') {
+        const program = document.getElementById('examProgram');
+        const intake = document.getElementById('examIntakeYear');
+        if (!program || !intake) return;
+        program.innerHTML = '<option value="">Loading programmes…</option>';
+        intake.innerHTML = '<option value="">Loading intakes…</option>';
         try {
-            const savedSession = JSON.parse(rawSession || '{}');
-            sessionRole = String(savedSession.role || savedSession.user_role || '').toLowerCase();
-        } catch (_) {}
-        const adminCreating = ['admin', 'superadmin', 'super_admin', 'administrator'].includes(sessionRole);
-        examData.created_by = authData.user.id;
-        examData.approval_status = adminCreating ? 'approved' : 'pending';
-        examData.approved_by = adminCreating ? authData.user.id : null;
-        examData.approved_at = adminCreating ? new Date().toISOString() : null;
-        examData.rejection_reason = null;
-        examData.is_published = false;
-        examData.status = 'draft';
-        result = await sb.from('exams').insert([examData]);
+            const auth = await sb.auth.getUser();
+            const user = auth.data?.user;
+            if (!user) throw new Error('Your login has expired. Sign in again.');
+            const profileResult = await sb.from('consolidated_user_profiles_table')
+                .select('institution_id').eq('user_id', user.id).maybeSingle();
+            if (profileResult.error) throw profileResult.error;
+            let institutionId = profileResult.data?.institution_id || null;
+            if (!institutionId) {
+                const membership = await sb.from('institution_users')
+                    .select('institution_id').eq('user_id', user.id).eq('status', 'active');
+                if (membership.error) throw membership.error;
+                const ids = [...new Set((membership.data || []).map(x => x.institution_id).filter(Boolean))];
+                if (ids.length === 1) institutionId = ids[0];
+            }
+            if (!institutionId) throw new Error('Your account is not linked to an institution.');
+            window.cnAdminExamInstitutionId = institutionId;
+            let query = sb.from('consolidated_user_profiles_table')
+                .select('program,intake_year').not('program', 'is', null);
+            query = query.eq('institution_id', institutionId);
+            const students = await query;
+            if (students.error) throw students.error;
+            const programs = [...new Set((students.data || []).map(x => String(x.program || '').trim()).filter(Boolean))].sort();
+            const years = [...new Set((students.data || []).map(x => String(x.intake_year || '').trim()).filter(Boolean))].sort((x,y)=>Number(y)-Number(x));
+            program.innerHTML = '<option value="">Select programme</option>' +
+                programs.map(v => '<option value="' + escapeAdminHtml(v) + '">' + escapeAdminHtml(v) + '</option>').join('');
+            if (selectedProgram && !programs.includes(String(selectedProgram))) {
+                program.insertAdjacentHTML('beforeend','<option value="' + escapeAdminHtml(selectedProgram) + '">' + escapeAdminHtml(selectedProgram) + '</option>');
+            }
+            program.value = selectedProgram || '';
+            intake.innerHTML = '<option value="">Select intake year</option>' +
+                years.map(v => '<option value="' + escapeAdminHtml(v) + '">' + escapeAdminHtml(v) + '</option>').join('');
+            if (selectedIntake && !years.includes(String(selectedIntake))) {
+                intake.insertAdjacentHTML('beforeend','<option value="' + escapeAdminHtml(selectedIntake) + '">' + escapeAdminHtml(selectedIntake) + '</option>');
+            }
+            intake.value = selectedIntake || '';
+        } catch (error) {
+            console.error('Unable to load institution exam options:', error);
+            program.innerHTML = '<option value="">Unable to load programmes</option>';
+            intake.innerHTML = '<option value="">Unable to load intakes</option>';
+            showToast?.('Could not load programme/intake options: ' + error.message, 'error');
+        }
     }
-    
-    if (result.error) { 
-        alert('❌ Error: ' + result.error.message); 
-    } else { 
-        alert(examId ? '✅ Exam updated successfully!' : '✅ Exam created successfully!'); 
-        closeExamModal(); 
-        loadAllExams(); 
-        loadStudentsWithResults();
-    }
-});
+
+    window.openCreateExamModal = async function(examId = null) {
+        const form = document.getElementById('examForm');
+        if (!form) return;
+        form.reset();
+        document.getElementById('examModalTitle').innerHTML = examId
+            ? '<i class="fas fa-edit"></i> Edit Assessment'
+            : '<i class="fas fa-plus-circle"></i> Create Assessment';
+        document.getElementById('editingExamId').value = examId || '';
+        document.getElementById('examType').value = 'EXAM';
+        document.getElementById('examTotalMarks').value = 100;
+        document.getElementById('examPassMark').value = 60;
+        document.getElementById('examDuration').value = 120;
+        document.getElementById('examStartTime').value = '09:00';
+        document.getElementById('examStatus').value = 'draft';
+        document.getElementById('examMinFee').value = 0;
+        const today = new Date();
+        const localDate = new Date(today.getTime() - today.getTimezoneOffset() * 60000).toISOString().slice(0,10);
+        document.getElementById('examDate').value = localDate;
+        let exam = examId ? examsMap[examId] : null;
+        if (exam) {
+            document.getElementById('examName').value = exam.title || exam.exam_name || '';
+            document.getElementById('examType').value = exam.exam_type || 'EXAM';
+            document.getElementById('examBasis').value = exam.exam_basis || 'ordinary';
+            document.getElementById('examCourseOther').value = exam.course_name || exam.course_code || exam.course || '';
+            document.getElementById('examDuration').value = exam.duration_minutes || 120;
+            document.getElementById('examTotalMarks').value = exam.total_marks ?? exam.marks_out_of ?? 100;
+            document.getElementById('examPassMark').value = exam.pass_mark ?? Math.round(Number(exam.total_marks ?? 100) * .6);
+            document.getElementById('examLink').value = exam.online_link || exam.exam_link || '';
+            document.getElementById('examProgram').value = '';
+            document.getElementById('examBlock').value = exam.block_term || exam.block || '';
+            document.getElementById('examIntakeYear').value = '';
+            document.getElementById('examStatus').value = String(exam.status || 'draft').toLowerCase();
+            document.getElementById('examDate').value = exam.exam_date || localDate;
+            document.getElementById('examStartTime').value = exam.exam_start_time || '09:00';
+            document.getElementById('examDeadline').value = exam.marks_entry_deadline || '';
+            document.getElementById('examVenue').value = exam.description?.replace(/^Venue:\s*/i,'') || '';
+            document.getElementById('examMinFee').value = exam.min_fee_balance ?? 0;
+        }
+        await loadExamFormOptions(exam?.target_program || exam?.program_type || '', exam?.intake_year || '');
+        document.getElementById('examModal').style.display = 'flex';
+        updateTotalMarksHint();
+    };
+
+    document.getElementById('examForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const form = e.currentTarget;
+        const submit = form.querySelector('button[type="submit"]');
+        if (submit?.disabled) return;
+        const original = submit?.innerHTML;
+        if (submit) { submit.disabled = true; submit.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving…'; }
+        try {
+            const examId = document.getElementById('editingExamId').value;
+            const userResult = await sb.auth.getUser();
+            const user = userResult.data?.user;
+            if (userResult.error || !user) throw new Error('Secure login could not be verified. Sign in again.');
+            let institutionId = window.cnAdminExamInstitutionId || null;
+            if (!institutionId) {
+                const profile = await sb.from('consolidated_user_profiles_table').select('institution_id')
+                    .eq('user_id', user.id).maybeSingle();
+                if (profile.error) throw profile.error;
+                institutionId = profile.data?.institution_id || null;
+            }
+            if (!institutionId) throw new Error('Your account is not linked to an institution. Ask the institution administrator to complete your account setup.');
+            const title = document.getElementById('examName').value.trim();
+            const type = document.getElementById('examType').value;
+            const program = document.getElementById('examProgram').value;
+            const intake = document.getElementById('examIntakeYear').value;
+            const block = document.getElementById('examBlock').value;
+            const totalMarks = Number(document.getElementById('examTotalMarks').value);
+            const passMark = Number(document.getElementById('examPassMark').value);
+            const duration = Number(document.getElementById('examDuration').value);
+            const examDate = document.getElementById('examDate').value;
+            const startTime = document.getElementById('examStartTime').value;
+            const courseText = document.getElementById('examCourseOther').value.trim() ||
+                document.getElementById('examCourse').value.trim();
+            const onlineLink = document.getElementById('examLink').value.trim() || null;
+            const fee = Number(document.getElementById('examMinFee').value || 0);
+            if (!title || !type || !program || !intake || !block || !examDate || !startTime) {
+                throw new Error('Complete the title, assessment type, programme, intake, block/term, date and start time.');
+            }
+            if (!Number.isInteger(totalMarks) || totalMarks < 1) throw new Error('Total marks must be a positive whole number.');
+            if (!Number.isInteger(passMark) || passMark < 0 || passMark > totalMarks) throw new Error('Pass mark must be between zero and total marks.');
+            if (!Number.isInteger(duration) || duration < 1 || duration > 600) throw new Error('Duration must be between 1 and 600 minutes.');
+            if (!Number.isFinite(fee) || fee < 0 || fee > 100) throw new Error('Minimum fee balance must be between 0 and 100%.');
+            if (onlineLink && !/^https:\/\//i.test(onlineLink)) throw new Error('Online link must start with https://.');
+            const sessionRaw = localStorage.getItem('adminSession') || localStorage.getItem('userProfile');
+            let role = '';
+            try { const saved = JSON.parse(sessionRaw || '{}'); role = String(saved.role || saved.user_role || '').toLowerCase(); } catch (_) {}
+            const isInstitutionAdmin = ['admin','institution_admin','superadmin','super_admin','administrator','platform_admin'].includes(role);
+            const now = new Date().toISOString();
+            const row = {
+                title, exam_name:title, exam_type:type,
+                exam_basis:document.getElementById('examBasis').value || 'ordinary',
+                course_name:courseText || null, course_code:courseText || null,
+                duration_minutes:duration, total_marks:totalMarks, marks_out_of:totalMarks, MARKS:String(totalMarks),
+                pass_mark:passMark, min_fee_balance:fee,
+                online_link:onlineLink, exam_link:onlineLink,
+                program_type:program, target_program:program,
+                block, block_term:block, intake_year:parseInt(intake,10),
+                intake_month:document.getElementById('examIntakeMonth').value || null,
+                exam_date:examDate, exam_start_time:startTime,
+                marks_entry_deadline:document.getElementById('examDeadline').value || null,
+                description:document.getElementById('examVenue').value.trim() ? 'Venue: ' + document.getElementById('examVenue').value.trim() : null,
+                status:examId ? document.getElementById('examStatus').value : 'draft',
+                institution_id:institutionId, updated_at:now
+            };
+            let result;
+            if (examId) {
+                result = await sb.from('exams').update(row).eq('id', Number(examId)).eq('institution_id', institutionId);
+            } else {
+                row.created_by = user.id;
+                row.approval_status = isInstitutionAdmin ? 'approved' : 'pending';
+                row.approved_by = isInstitutionAdmin ? user.id : null;
+                row.approved_at = isInstitutionAdmin ? now : null;
+                row.rejection_reason = null;
+                row.is_active = true;
+                row.is_published = false;
+                row.status = 'draft';
+                row.created_at = now;
+                result = await sb.from('exams').insert([row]);
+            }
+            if (result.error) throw result.error;
+            alert(examId ? 'Assessment updated successfully.' : 'Assessment created and saved successfully.');
+            closeExamModal();
+            await Promise.all([loadAllExams(), loadStudentsWithResults()]);
+        } catch (error) {
+            console.error('Assessment save failed:', error);
+            alert('Unable to save assessment: ' + (error.message || 'Unknown error'));
+        } finally {
+            if (submit) { submit.disabled = false; submit.innerHTML = original; }
+        }
+    });
 
     window.deleteExam = async function(examId, examName) {
         if (confirm(`Delete exam "${examName}"? This will also delete all student answers.`)) {
