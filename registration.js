@@ -1852,53 +1852,8 @@ document.getElementById('register-form').addEventListener('submit', async functi
         
         console.log('✅ Auth user created:', authData.user.id);
 
-        // Notify the institution's configured administrator. This is a notification only:
-        // account creation does not depend on email delivery and no verification email is requested.
-        try {
-            const adminEmail = resolvedInstitutionContext?.notification_email;
-            if (adminEmail && authData.session?.access_token) {
-                const applicantName = full_name || email;
-                const institutionName = resolvedInstitutionContext?.institution_name || 'Your institution';
-                const reviewUrl = new URL('/admin-dashboard.html', window.location.origin).toString();
-                const safe = value => String(value || '').replace(/[&<>"']/g, ch => ({
-                    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-                }[ch]));
-                const details = [
-                    ['Applicant', applicantName],
-                    ['Email', email],
-                    ['Account type', role],
-                    ...(role === 'student' ? [['Programme', program_type], ['Student ID', student_id_number]] : [['Department', department]])
-                ];
-                const rows = details.map(([label, value]) =>
-                    '<tr><td style="padding:8px;border-bottom:1px solid #e5e7eb;color:#64748b;">' + safe(label) +
-                    '</td><td style="padding:8px;border-bottom:1px solid #e5e7eb;font-weight:600;">' + safe(value) + '</td></tr>'
-                ).join('');
-                const html = '<div style="font-family:Arial,sans-serif;max-width:640px;margin:auto;color:#172033;">' +
-                    '<h2>New registration awaiting approval</h2><p>A new account has been created for ' +
-                    safe(institutionName) + ' and is awaiting administrator review.</p>' +
-                    '<table style="border-collapse:collapse;width:100%;">' + rows + '</table>' +
-                    '<p style="margin-top:24px;"><a href="' + safe(reviewUrl) +
-                    '" style="background:#0f3b5b;color:#fff;padding:12px 18px;border-radius:8px;text-decoration:none;">Review pending registrations</a></p>' +
-                    '<p style="color:#64748b;font-size:12px;">Campus Nexus · This account remains pending until approved.</p></div>';
-                const { data: notifyData, error: notifyError } = await sb.functions.invoke('send-email', {
-                    body: {
-                        to: adminEmail,
-                        subject: 'New ' + role + ' registration awaiting approval - ' + institutionName,
-                        html,
-                        from: 'Campus Nexus <info@campusnexus.co.ke>'
-                    }
-                });
-                if (notifyError || !notifyData?.success) {
-                    console.warn('Administrator email notification failed:', notifyError || notifyData?.error || 'Email gateway did not confirm acceptance.');
-                } else {
-                    console.log('✅ Institution administrator notification accepted by Brevo:', notifyData.messageId || 'message accepted');
-                }
-            } else {
-                console.warn('Administrator notification skipped: no notification email or authenticated session.');
-            }
-        } catch (notifyError) {
-            console.warn('Administrator notification failed; registration remains successful:', notifyError);
-        }
+        // Registration email is sent server-side after the profile trigger has completed.
+        // The Edge Function verifies the newly-created account and derives all recipients from trusted records.
         
         if (role === 'lecturer') {
             // The trusted auth.users trigger creates the institution-bound
@@ -1919,6 +1874,25 @@ document.getElementById('register-form').addEventListener('submit', async functi
             console.warn('⚠️ Profile not found yet, continuing...');
         } else {
             console.log('✅ Profile created:', profile);
+        }
+        
+        // Send the applicant receipt and institution approval notification through Brevo.
+        // Email delivery is best-effort and never rolls back a successful account registration.
+        try {
+            const { data: emailResult, error: emailError } = await sb.functions.invoke('registration-email-notification', {
+                body: { user_id: authData.user.id }
+            });
+            if (emailError || !emailResult?.success) {
+                console.warn('Registration email notification was not accepted:', emailError || emailResult?.error || 'No confirmation from email service.');
+            } else {
+                console.log('Registration email notification accepted:', {
+                    applicantEmailSent: Boolean(emailResult.applicantEmailSent),
+                    institutionEmailSent: Boolean(emailResult.institutionEmailSent),
+                    alreadySent: Boolean(emailResult.alreadySent)
+                });
+            }
+        } catch (emailNotifyError) {
+            console.warn('Registration email notification failed; account registration remains successful:', emailNotifyError);
         }
         
         const userId = authData.user.id;
