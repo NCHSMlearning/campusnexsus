@@ -847,3 +847,69 @@ html,body{width:100%;max-width:100%;min-height:100%;margin:0}body{overflow-x:hid
 #view-user-management .ia-users-edit-btn{background:linear-gradient(120deg,#0756b7,#087caa);box-shadow:0 4px 11px #0756b72b}
 #view-user-management .ia-users-status{box-shadow:inset 0 0 0 1px #ffffff80}
 @media(max-width:760px){#view-user-management .ia-users-stat{min-height:96px;padding:14px}#view-user-management .ia-users-table-avatar{width:36px;height:36px;flex-basis:36px}}
+
+
+/* Campus Nexus institution dashboard — refreshed visual system */
+#view-overview{--dash-blue:#1458d4;--dash-teal:#0c9b8c;--dash-gold:#f3a20b}
+.ia-topbar{background:linear-gradient(105deg,#062d63 0%,#07558a 58%,#087c87 100%);border:0;color:#fff;box-shadow:0 5px 18px rgba(3,35,78,.18)}
+.ia-top-title,.ia-top-title small,.ia-user b,.ia-user small{color:#fff}
+.ia-top-title{font-size:13px;font-weight:850;letter-spacing:.01em}
+.ia-top-title small{opacity:.76}
+.ia-icon-btn{border-color:#ffffff45;background:#ffffff14;color:#fff}
+.ia-icon-btn:hover{background:#ffffff28}
+.ia-avatar{background:#fff;color:#07558a;border:2px solid #f2c94c;box-shadow:0 3px 12px #001b3b45}
+.ia-content{max-width:1800px;padding:24px 26px 34px;background:linear-gradient(180deg,#f0f5ff 0%,#f7f9fd 55%,#f2f6fb 100%)}
+#view-overview .ia-welcome{position:relative;isolation:isolate;overflow:hidden;min-height:112px;padding:20px 24px;margin-bottom:18px;border:1px solid #167caa;border-radius:16px;background:linear-gradient(110deg,#062d63 0%,#07568e 54%,#087d85 100%);box-shadow:0 9px 24px rgba(8,48,104,.2)}
+#view-overview .ia-welcome:before{content:"";position:absolute;z-index:-1;right:-3%;top:-110px;width:48%;height:260px;border:1px solid #ffffff20;border-radius:50%;transform:rotate(-13deg);box-shadow:0 0 0 24px #ffffff08,0 0 0 50px #ffffff06}
+#view-overview .ia-welcome:after{content:"";position:absolute;z-index:-1;right:12%;bottom:-88px;width:290px;height:170px;border-radius:50%;background:radial-gradient(ellipse,#24c5c055 0%,#24c5c000 70%)}
+#view-overview .ia-eyebrow{color:#ffda55;font-size:10px;letter-spacing:.1em}
+#view-overview .ia-welcome h1{margin:7px 0 5px;color:#fff;font-size:25px;font-weight:900;letter-spacing:-.04em}
+#view-overview .ia-welcome p{color:#e1efff;font-size:12px}
+#view-overview .ia-date-chip{border:1px solid #f3cf50;background:#ffffff12;color:#fff;font-weight:800}
+#view-overview .ia-stat-grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:11px;margin-bottom:17px}
+#view-overview .ia-stat-card{min-height:112px;padding:13px 14px;border:1px solid #e1e9f4;border-top:3px solid #2870e8;border-radius:13px;background:linear-gradient(145deg,#fff 0%,#f8fbff 100%);box-shadow:0 5px 16px rgba(24,58,100,.055);transition:transform .18s,box-shadow .18s}
+#view-overview .ia-stat-card:hover{transform:translateY(-2px);box-shadow:0 10px 22px rgba(24,58,100,.11)}
+#view-overview .ia-stat-card:nth-child(5n+2){border-top-color:#13a56b;background:linear-gradient(145deg,#fff,#f0fff7)}
+#view-overview .ia-stat-card:nth-child(5n+3){border-top-color:#f59e0b;background:linear-gradient(145deg,#fff,#fff9ed)}
+#view-overview .ia-stat-card:nth-child(5n+4){border-top-color:#8b5cf6;background:linear-gradient(145deg,#fff,#f8f4ff)}
+#view-overview .ia-stat-card:nth-child(5n+5){border-top-color:#0d9c91;background:linear-gradient(145deg,#fff,#effcfb)}
+#view-overview .ia-stat-icon{width:30px;height:30px;margin-bottom:9px;border-radius:10px;font-size:13px}
+#view-overview .ia-stat-card small{font-size:10px;color:#4d6380}
+#view-overview .ia-stat-card strong{margin:4px 0;font-size:25px;line-height:1.05;color:#092d59}
+#view-overview .ia-stat-card em{font-size:9px;color:#8192a8}
+#view-overview .ia-module-activity{margin:3px 0 20px}
+#view-overview .ia-module-activity .ia-panel-head{margin-bottom:10px}
+#view-overview .ia-module-activity .ia-panel-head h2,#view-overview .ia-student-analytics>.ia-panel-head h2{font-size:14px;font-weight:900;color:#123b70}
+#view-overview .ia-module-activity-grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:0}
+#view-overview .ia-module-activity-grid .ia-stat-card{min-height:94px;padding:11px 13px;border-top-width:2px}
+#view-overview .ia-module-activity-grid .ia-stat-icon{width:27px;height:27px;margin-bottom:7px}
+#view-overview .ia-module-activity-grid .ia-stat-card strong{font-size:21px}
+#view-overview .ia-student-analytics{margin-top:6px}
+#view-overview .ia-chart-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+#view-overview .ia-chart-card{min-height:230px;padding:15px 17px;border:1px solid #dfe7f2;border-radius:14px;background:#fff;box-shadow:0 5px 17px rgba(24,58,100,.055)}
+#view-overview .ia-chart-card .ia-panel-head{margin-bottom:8px}
+#view-overview .ia-chart-card .ia-panel-head h3{margin:0;color:#163d70;font-size:12px;font-weight:900}
+#view-overview .ia-chart-card .ia-panel-head p{font-size:9px}
+#view-overview .ia-chart-wrap{height:175px;position:relative;min-width:0}
+#view-overview .ia-chart-wrap.ia-chart-wide{height:175px}
+#view-overview .ia-overview-grid{grid-template-columns:minmax(0,1.35fr) minmax(300px,1fr);gap:14px;margin-top:14px}
+#view-overview .ia-overview-grid>.ia-panel{padding:16px;border:1px solid #dfe7f2;border-radius:14px;box-shadow:0 5px 17px rgba(24,58,100,.055)}
+#view-overview .ia-overview-grid .ia-panel-head h2{font-size:13px;font-weight:900;color:#163d70}
+#view-overview .ia-profile-summary{background:linear-gradient(110deg,#f0f6ff,#f3fbfb);border:1px solid #e2ebf6}
+#view-overview .ia-profile-logo{border-radius:13px;background:linear-gradient(140deg,#dcecff,#d9f6ef);color:#0c548c}
+#view-overview .ia-secondary-btn{border-color:#c7d9ee;background:#f7fbff;color:#07558a}
+#view-overview .ia-panel{box-shadow:0 5px 17px rgba(24,58,100,.055)}
+@media(max-width:1250px){#view-overview .ia-stat-grid,#view-overview .ia-module-activity-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:900px){#view-overview .ia-stat-grid,#view-overview .ia-module-activity-grid{grid-template-columns:repeat(3,minmax(0,1fr))}#view-overview .ia-overview-grid{grid-template-columns:1fr}}
+@media(max-width:620px){
+ .ia-content{padding:14px 12px 25px}
+ #view-overview .ia-welcome{align-items:flex-start;padding:16px;min-height:0}
+ #view-overview .ia-welcome h1{font-size:21px}
+ #view-overview .ia-date-chip{font-size:9px;padding:8px;margin-top:5px}
+ #view-overview .ia-stat-grid,#view-overview .ia-module-activity-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ #view-overview .ia-stat-card{min-height:100px;padding:11px}
+ #view-overview .ia-stat-card strong{font-size:23px}
+ #view-overview .ia-chart-grid{grid-template-columns:1fr;gap:10px}
+ #view-overview .ia-chart-card{min-height:215px;padding:13px}
+ #view-overview .ia-overview-grid{grid-template-columns:1fr}
+}
