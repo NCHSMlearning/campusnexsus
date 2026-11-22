@@ -74,8 +74,10 @@
       cell(tr,blockOf(u));
       const statusCell=cell(tr,label(u.status || (u.approved===true?'approved':'pending')));
       const badge=document.createElement('span');badge.className='ia-users-status status-'+statusOf(u).replace(/[^a-z0-9_-]/g,'');badge.textContent=label(u.status || (u.approved===true?'approved':'pending'));statusCell.replaceChildren(badge);
-      const actions=document.createElement('td'), view=document.createElement('button');
-      view.type='button';view.className='ia-users-review-btn';view.textContent='View';view.addEventListener('click',()=>showDetails(u));actions.append(view);tr.append(actions);
+      const actions=document.createElement('td'), view=document.createElement('button'), edit=document.createElement('button');
+      view.type='button';view.className='ia-users-review-btn';view.textContent='View';view.addEventListener('click',()=>showDetails(u));
+      edit.type='button';edit.className='ia-users-review-btn ia-users-edit-btn';edit.textContent='Edit';edit.addEventListener('click',()=>openEditForm(u));
+      actions.append(view,edit);tr.append(actions);
       body.append(tr);
     });
     const count=data.length;
@@ -116,7 +118,104 @@
       fields.forEach(([k,v])=>{const item=document.createElement('div'),dt=document.createElement('small'),dd=document.createElement('strong');dt.textContent=k;dd.textContent=val(v);item.append(dt,dd);grid.append(item);});
       section.append(grid);body.append(section);
     });
+    const editButton=document.createElement('button');editButton.type='button';editButton.className='ia-users-review-btn ia-users-edit-btn';editButton.textContent='Edit user details';editButton.addEventListener('click',()=>openEditForm(u));body.append(editButton);
     if(typeof dialog.showModal==='function')dialog.showModal();else dialog.setAttribute('open','');
+  }
+  function openEditForm(u){
+    const dialog=$('iaUsersDialog'),body=$('iaUsersDialogBody');if(!dialog||!body)return;
+    $('iaUsersDialogTitle').textContent='Edit user profile';
+    const field=(key,label,type='text',value=u[key]??'',opts=null,attrs='')=>{
+      const id='iaEdit_'+key, v=String(value??'');
+      let control='';
+      if(type==='select')control='<select id="'+id+'" name="'+key+'" '+attrs+'>'+opts.map(([x,t])=>'<option value="'+safe(x)+'" '+(String(x)===v?'selected':'')+'>'+safe(t)+'</option>').join('')+'</select>';
+      else if(type==='textarea')control='<textarea id="'+id+'" name="'+key+'" rows="3" '+attrs+'>'+safe(v)+'</textarea>';
+      else control='<input id="'+id+'" name="'+key+'" type="'+type+'" value="'+safe(v)+'" '+attrs+'>';
+      return '<label class="ia-users-edit-field"><span>'+safe(label)+'</span>'+control+'</label>';
+    };
+    const roles=[['student','Student'],['lecturer','Lecturer'],['institution_admin','Institution administrator'],['finance_officer','Finance officer'],['director','Director'],['registrar','Registrar'],['hod','Head of department']];
+    if(u.role&&!roles.some(x=>x[0]===u.role))roles.push([u.role,label(u.role)]);
+    const statusOptions=[['approved','Approved'],['blocked','Blocked'],['inactive','Inactive']];
+    const profileFields=[
+      ['full_name','Full name','text'],['email','Email address','email'],['phone','Phone number','tel'],['alt_phone','Alternative phone','tel'],
+      ['gender','Gender','select',[['','Select gender'],['Male','Male'],['Female','Female'],['Other','Other']]],
+      ['date_of_birth','Date of birth','date'],['national_id','National ID','text'],['address','Address','text'],
+      ['guardian_name','Guardian name','text'],['guardian_phone','Guardian phone','tel'],['parent_email','Parent / guardian email','email'],['parent_address','Parent / guardian address','text'],
+      ['student_id','Student / staff ID','text'],['admission_number','Admission number','text'],['staff_id','Staff ID','text'],
+      ['program','Programme code','text'],['program_type','Programme type','text'],['department','Department','text'],['intake_year','Intake year','text'],['intake_month','Intake month','text'],
+      ['block','Block / term','text'],['current_block','Current block / term','text'],['block_program_year','Block / programme year','text'],['admission_date','Admission date','date'],['admission_year','Admission year','text'],['employment_date','Employment date','date'],
+      ['doc_kcse','KCSE document status','select',[['pending','Pending'],['uploaded','Uploaded'],['verified','Verified'],['rejected','Rejected']]],
+      ['doc_id','ID / passport document status','select',[['pending','Pending'],['uploaded','Uploaded'],['verified','Verified'],['rejected','Rejected']]],
+      ['profile_photo_url','Profile photo URL','url'],['passport_url','Passport / ID document URL','url'],
+      ['qualifications','Qualifications','textarea'],['specialization','Specialization','text'],['professional_bio','Professional bio','textarea']
+    ];
+    const groups=[
+      ['Personal information',profileFields.slice(0,8)],
+      ['Guardian / parent information',profileFields.slice(8,12)],
+      ['Academic & employment information',profileFields.slice(12,27)],
+      ['Documents & professional profile',profileFields.slice(27)]
+    ];
+    const currentStatus=statusOf(u);
+    const statusValue=statusOptions.some(x=>x[0]===currentStatus)?currentStatus:(currentStatus==='pending'?'inactive':currentStatus);
+    let html='<form id="iaUsersEditForm" class="ia-users-edit-form"><input type="hidden" name="user_id" value="'+safe(u.user_id||'')+'">';
+    groups.forEach(([heading,fields])=>{
+      html+='<section class="ia-users-edit-section"><h3>'+heading+'</h3><div class="ia-users-edit-grid">';
+      fields.forEach(([key,title,type,options])=>{
+        if(key==='email') html+=field(key,title,type,u[key],null,'readonly');
+        else if(type==='select')html+=field(key,title,type,u[key],options);
+        else html+=field(key,title,type,u[key],null);
+      });
+      html+='</div></section>';
+    });
+    html+='<section class="ia-users-edit-section ia-users-access-section"><h3>Account permissions & access</h3><div class="ia-users-edit-grid">';
+    html+=field('role','User role','select',u.role,roles);
+    html+=field('status','Account status','select',statusValue,statusOptions);
+    html+=field('login_enabled','Login access','select',u.login_enabled===false?'false':'true',[['true','Enabled'],['false','Disabled']]);
+    html+='</div><p class="ia-users-edit-hint">Blocked or inactive accounts should have login disabled. Approving an account enables login unless you explicitly switch it off.</p></section>';
+    html+='<div class="ia-users-edit-actions"><button type="submit" class="ia-users-save-btn">Save all changes</button><button type="button" class="ia-users-cancel-btn" id="iaUsersEditCancel">Cancel</button></div><p id="iaUsersEditFeedback" role="status"></p></form>';
+    body.innerHTML=html;
+    $('iaUsersEditCancel').addEventListener('click',()=>showDetails(u));
+    $('iaEdit_status').addEventListener('change',e=>{
+      if(e.target.value==='blocked'||e.target.value==='inactive')$('iaEdit_login_enabled').value='false';
+      else if(e.target.value==='approved')$('iaEdit_login_enabled').value='true';
+    });
+    $('iaUsersEditForm').addEventListener('submit',e=>saveUserEdit(e,u));
+    if(typeof dialog.showModal==='function'&&!dialog.open)dialog.showModal();else dialog.setAttribute('open','');
+  }
+  async function saveUserEdit(event,user){
+    event.preventDefault();
+    const form=event.currentTarget,button=form.querySelector('[type="submit"]'),feedback=$('iaUsersEditFeedback');
+    button.disabled=true;button.textContent='Saving…';feedback.textContent='';
+    try{
+      const api=state.api||window.CampusInstitutionAdmin;
+      if(!api?.db||!api?.institutionId)throw new Error('Institution session expired. Sign in again.');
+      const get=name=>form.elements.namedItem(name)?.value??null;
+      const payload={
+        full_name:get('full_name'),phone:get('phone'),alt_phone:get('alt_phone'),gender:get('gender'),date_of_birth:get('date_of_birth')||null,
+        national_id:get('national_id'),address:get('address'),guardian_name:get('guardian_name'),guardian_phone:get('guardian_phone'),
+        parent_email:get('parent_email'),parent_address:get('parent_address'),student_id:get('student_id'),admission_number:get('admission_number'),
+        staff_id:get('staff_id'),program:get('program'),program_type:get('program_type'),department:get('department'),
+        intake_year:get('intake_year'),intake_month:get('intake_month'),block:get('block'),current_block:get('current_block')||get('block'),
+        block_program_year:get('block_program_year'),admission_date:get('admission_date')||null,admission_year:get('admission_year'),
+        employment_date:get('employment_date')||null,doc_kcse:get('doc_kcse'),doc_id:get('doc_id'),
+        profile_photo_url:get('profile_photo_url'),passport_url:get('passport_url'),qualifications:get('qualifications'),
+        specialization:get('specialization'),professional_bio:get('professional_bio'),role:get('role'),status:get('status'),
+        login_enabled:get('login_enabled')==='true',updated_at:new Date().toISOString()
+      };
+      if(!payload.full_name?.trim())throw new Error('Full name is required.');
+      if(['blocked','inactive'].includes(payload.status))payload.login_enabled=false;
+      const {data,error}=await api.db.from('consolidated_user_profiles_table').update(payload)
+        .eq('user_id',user.user_id).eq('institution_id',api.institutionId).select('id,user_id');
+      if(error)throw error;
+      if(!data?.length)throw new Error('No matching user was updated. Check your institution permissions and enabled modules.');
+      Object.assign(user,payload);
+      await load();
+      showDetails(state.rows.find(x=>x.user_id===user.user_id)||user);
+      message('User profile updated successfully.');
+    }catch(error){
+      console.error('[Institution user edit]',error);
+      feedback.textContent=error.message||'Unable to save user details.';
+      feedback.className='error';
+    }finally{button.disabled=false;button.textContent='Save all changes';}
   }
   async function load(){
     if(state.loading)return;
