@@ -1593,6 +1593,17 @@ window.startExam = async function() {
         return;
     }
 
+    try {
+        await ensureStudentInstitutionContext();
+        if (!AppState.examData || String(AppState.examData.institution_id) !== String(AppState.institutionId)) {
+            throw new Error('This examination is not assigned to your institution. Access has been blocked.');
+        }
+    } catch (institutionError) {
+        showToast(institutionError.message || 'Your institutional exam access could not be verified.', 'error', 7000);
+        window.location.replace('/studentexam');
+        return;
+    }
+
     // ========================================================
     // SERVER-SIDE SINGLE-SESSION LOCK
     // Claim this exam before any exam DB write.
@@ -1757,6 +1768,7 @@ async function initExam() {
     console.log('📝 Initializing exam...');
 
     try {
+        await ensureStudentInstitutionContext();
         const recovered = recoverExamSession();
         AppState.sessionRecovered = recovered === true;
         if (recovered) {
@@ -1764,8 +1776,6 @@ async function initExam() {
         }
 
         await getOrCreateCurrentAttempt();
-
-        await ensureStudentInstitutionContext();
         const examResult = await sb
             .from('exams')
             .select('exam_name, duration_minutes, pass_mark, total_marks, institution_id, approval_status, is_published, status')
