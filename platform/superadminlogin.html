@@ -270,12 +270,12 @@ input:focus{border-color:#087fc5;box-shadow:0 0 0 4px rgba(8,127,197,.12)}
 "use strict";
 
 const SUPABASE_URL="https://irahplkvocaakjxuisto.supabase.co";
-const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlyYWhwbGt2b2Nhakp4dWlzdG8iLCJyb2xlIjoiYW5vbiIsImlhdCI6MTc4Nzg4Njk4NCwiZXhwIjoyMTAzNDYyOTg0fQ.BFOwdRVDz4r1oYgUjm8zQbthqblGRq4c3WQWQaOhu7g";
+const SUPABASE_PUBLISHABLE_KEY="sb_publishable_5Cg5FFudf03UnmOXGNGMHQ_uK9S-uQX";
 
 // Remove any previously exposed Brevo key cached by older login versions.
 try{sessionStorage.removeItem('brevo_api_key');}catch(_){}
 
-const supabase=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{
+const supabase=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{
  auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false},
  db:{schema:"public"}
 });
