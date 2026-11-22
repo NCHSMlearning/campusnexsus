@@ -2128,7 +2128,7 @@ body.dark-theme #loginButton,body.dark-theme .login-button{background:linear-gra
     </div>
 
     <!-- ===== MAIN SECURITY SCRIPT ===== -->
-    <script src="/platform/login-script.js?v=20261122-campus-nexus-auth-v5"></script>
+    <script src="/platform/login-script.js?v=20261122-campus-nexus-key-fix1"></script>
 <div id="nchsmAuthLoading" aria-hidden="true" role="status">
   <div class="nchsm-loading-card">
     <div class="nchsm-loading-logo"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23082f49'/%3E%3Cpath d='M12 18h12v28H12zm14 0h12v28H26zm14 0h12v28H40z' fill='%235eead4'/%3E%3C/svg%3E" alt="Campus Nexus"></div>
@@ -2172,7 +2172,7 @@ body.dark-theme #loginButton,body.dark-theme .login-button{background:linear-gra
 
   // A restored, approved Supabase session must pass straight through to its
   // dashboard. Do not cover it with the first-time school-code gate while
-  // login-script.js is restoring the session.
+  // login-script.js?v=20261122-campus-nexus-key-fix1 is restoring the session.
   async function hasApprovedSession() {
     const deadline = Date.now() + 6500;
     let client = null;
@@ -2232,7 +2232,7 @@ body.dark-theme #loginButton,body.dark-theme .login-button{background:linear-gra
       try {
         const client = window.supabase.createClient(
           "https://irahplkvocaakjxuisto.supabase.co",
-          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlyYWhwbGt2b2Nhakp4dWlzdG8iLCJyb2xlIjoiYW5vbiIsImlhdCI6MTc4Nzg4Njk4NCwiZXhwIjoyMTAzNDYyOTg0fQ.BFOwdRVDz4r1oYgUjm8zQbthqblGRq4c3WQWQaOhu7g"
+          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlyYWhwbGt2b2NhYWtqeHVpc3RvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4ODY5ODQsImV4cCI6MjEwMzQ2Mjk4NH0.BFOwdRVDz4r1oYgUjm8zQbthqblGRq4c3WQWQaOhu7g"
         );
         const result = await client.rpc("resolve_institution_registration_context", {p_code:code,p_host:null});
         if (result.error) throw new Error("School-code verification failed: " + (result.error.message || "Unable to contact the institution service."));
