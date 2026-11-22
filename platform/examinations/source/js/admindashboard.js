@@ -430,7 +430,7 @@ function checkAdminAuth() {
             console.log('❌ Unauthorized role:', role);
             localStorage.removeItem('adminSession');
             localStorage.removeItem('userProfile');
-            window.location.href = 'login.html';
+            window.location.replace('/examlogin.html');
             return false;
         }
         
@@ -8612,9 +8612,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         const { data: authData, error: authError } = await sb.auth.getSession();
         const authUser = authData?.session?.user;
         let verified = null;
-        try { verified = JSON.parse(sessionStorage.getItem('campusNexusExamAdminAuth') || 'null'); } catch (_) {}
+        try { verified = JSON.parse(sessionStorage.getItem('campusNexusExamAdminAuth') || localStorage.getItem('campusNexusExamAdminAuth') || 'null'); } catch (_) {}
         const allowed = ['institution_admin', 'superadmin'];
         if (authError || !authUser?.id || !verified || verified.user_id !== authUser.id || !allowed.includes(verified.role)) {
+            sessionStorage.removeItem('campusNexusExamAdminAuth');
+            localStorage.removeItem('campusNexusExamAdminAuth');
             window.location.replace('/examlogin.html');
             return;
         }
