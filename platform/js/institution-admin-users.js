@@ -141,8 +141,10 @@
       ['date_of_birth','Date of birth','date'],['national_id','National ID','text'],['address','Address','text'],
       ['guardian_name','Guardian name','text'],['guardian_phone','Guardian phone','tel'],['parent_email','Parent / guardian email','email'],['parent_address','Parent / guardian address','text'],
       ['student_id','Student / staff ID','text'],['admission_number','Admission number','text'],['staff_id','Staff ID','text'],
-      ['program','Programme code','text'],['program_type','Programme type','text'],['department','Department','text'],['intake_year','Intake year','text'],['intake_month','Intake month','text'],
-      ['block','Block / term','text'],['current_block','Current block / term','text'],['block_program_year','Block / programme year','text'],['admission_date','Admission date','date'],['admission_year','Admission year','text'],['employment_date','Employment date','date'],
+      ['program','Programme','select',[['DCHN','DCHN'],['KCHN','KCHN'],['TVET','TVET course'],['KRCHN','KRCHN (legacy)']]],
+      ['program_type','Programme type','select',[['Nursing','Nursing'],['TVET','TVET'],['Other','Other']]],
+      ['department','Department','text'],['intake_year','Intake year','select',[]],['intake_month','Intake month','select',[['','Select intake month'],...['January','February','March','April','May','June','July','August','September','October','November','December'].map(x=>[x,x])]],
+      ['block','Block / Term','select',[]],['current_block','Current Block / Term','select',[]],['block_program_year','Year of study','select',[]],['admission_date','Admission date','date'],['admission_year','Admission year','select',[]],['employment_date','Employment date','date'],
       ['doc_kcse','KCSE document status','select',[['pending','Pending'],['uploaded','Uploaded'],['verified','Verified'],['rejected','Rejected']]],
       ['doc_id','ID / passport document status','select',[['pending','Pending'],['uploaded','Uploaded'],['verified','Verified'],['rejected','Rejected']]],
       ['profile_photo_url','Profile photo URL','url'],['passport_url','Passport / ID document URL','url'],
@@ -173,6 +175,52 @@
     html+='</div><p class="ia-users-edit-hint">Blocked or inactive accounts should have login disabled. Approving an account enables login unless you explicitly switch it off.</p></section>';
     html+='<section class="ia-users-edit-section"><h3>Academic history</h3><div id="iaUsersAcademicHistory" class="ia-users-history">Loading academic history…</div></section><div class="ia-users-edit-actions"><button type="submit" class="ia-users-save-btn">Save changes</button><button type="button" class="ia-users-cancel-btn" id="iaUsersEditCancel">Cancel</button></div><div class="ia-users-password-reset"><button type="button" id="iaUsersSendReset">Send password reset link</button><span>Uses the secure Supabase recovery flow; no password is stored in this form.</span></div><p id="iaUsersEditFeedback" role="status"></p></form>';
     body.innerHTML=html;
+    // Academic dropdowns: use consistent programme, block/term and year choices.
+    const currentYear=new Date().getFullYear();
+    const yearOptions=Array.from({length:currentYear-2014+6},(_,i)=>String(currentYear+5-i));
+    const setOptions=(id,options,current,placeholder)=>{
+      const select=$(id);if(!select)return;
+      const value=String(current??'');
+      select.replaceChildren(new Option(placeholder||'Select…',''));
+      options.forEach(item=>select.add(new Option(item.label||item.value,item.value)));
+      if(value&&!options.some(item=>String(item.value)===value))select.add(new Option(value+' (current)',value));
+      select.value=value;
+    };
+    const programme=$('iaEdit_program');
+    const block=$('iaEdit_block');
+    const currentBlock=$('iaEdit_current_block');
+    const studyYear=$('iaEdit_block_program_year');
+    const intakeYear=$('iaEdit_intake_year');
+    const admissionYear=$('iaEdit_admission_year');
+    const programmeOptions=[['DCHN','DCHN'],['KCHN','KCHN'],['TVET','TVET course']];
+    if(u.program&&!programmeOptions.some(x=>x[0]===String(u.program)))programmeOptions.push([String(u.program),String(u.program)+' (current)']);
+    setOptions('iaEdit_program',programmeOptions.map(([value,label])=>({value,label})),u.program,'Select programme');
+    setOptions('iaEdit_intake_year',yearOptions.map(value=>({value,label:value})),u.intake_year,'Select intake year');
+    setOptions('iaEdit_admission_year',yearOptions.map(value=>({value,label:value})),u.admission_year,'Select admission year');
+    setOptions('iaEdit_block_program_year',['Year 1','Year 2','Year 3','Year 4'].map(value=>({value,label:value})),u.block_program_year,'Select year of study');
+    const updateAcademicChoices=(preferred)=>{
+      const code=String(programme?.value||'').trim().toUpperCase();
+      const tvet=code==='TVET'||String(u.program_type||'').toUpperCase()==='TVET';
+      const levels=tvet?['Term 1','Term 2','Term 3']:['Block 1','Block 2','Block 3','Block 4','Block 5','Block 6'];
+      const options=levels.map(value=>({value,label:value}));
+      const selected=preferred??(block?.value||currentBlock?.value||u.current_block||u.block||'');
+      setOptions('iaEdit_block',options,selected,'Select '+(tvet?'term':'block'));
+      setOptions('iaEdit_current_block',options,selected,'Select current '+(tvet?'term':'block'));
+      if(block&&currentBlock){
+        block.addEventListener('change',()=>{currentBlock.value=block.value;});
+        currentBlock.addEventListener('change',()=>{block.value=currentBlock.value;});
+      }
+      const blockLabel=block?.closest('.ia-users-edit-field')?.querySelector('span');
+      const currentLabel=currentBlock?.closest('.ia-users-edit-field')?.querySelector('span');
+      if(blockLabel)blockLabel.textContent=tvet?'Term':'Block';
+      if(currentLabel)currentLabel.textContent=tvet?'Current term':'Current block';
+    };
+    updateAcademicChoices();
+    programme?.addEventListener('change',()=>{
+      const tvet=programme.value.toUpperCase()==='TVET';
+      const type=$('iaEdit_program_type');if(type)type.value=tvet?'TVET':'Nursing';
+      updateAcademicChoices('');
+    });
     $('iaUsersEditCancel').addEventListener('click',()=>showDetails(u));
     $('iaUsersEmailUpdate').addEventListener('click',async()=>{
       const button=$('iaUsersEmailUpdate'),input=$('iaEdit_email'),nextEmail=String(input.value||'').trim().toLowerCase();
