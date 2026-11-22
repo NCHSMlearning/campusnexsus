@@ -140,7 +140,7 @@
     const identityCode=document.createElement('small');identityCode.textContent=identityOf(u);
     profileIdentity.append(identityName,identityCode);
     const profileNav=document.createElement('nav');profileNav.className='ia-users-view-nav';profileNav.setAttribute('aria-label','User profile sections');
-    const viewIcons=['fa-user','fa-people-roof','fa-graduation-cap','fa-folder-open','fa-shield-halved'];
+    const viewIcons=['fa-user','fa-people-roof','fa-graduation-cap','fa-folder-open','fa-shield-halved','fa-clock-rotate-left'];
     sections.forEach(([heading],index)=>{
       const section=body.querySelectorAll('.ia-users-detail-section')[index];
       if(!section)return;
@@ -155,6 +155,13 @@
     profileMain.append(profileHeading);
     const detailSections=[...body.querySelectorAll('.ia-users-detail-section')];
     detailSections.forEach(section=>profileMain.append(section));
+    const historySection=document.createElement('section');historySection.className='ia-users-detail-section ia-users-view-history';
+    const historyHeading=document.createElement('h3');historyHeading.textContent='Academic history';historySection.append(historyHeading);
+    const historyHost=document.createElement('div');historyHost.id='iaUsersAcademicHistory';historyHost.className='ia-users-history';historyHost.textContent='Loading academic history…';historySection.append(historyHost);profileMain.append(historySection);
+    const historyNav=document.createElement('button');historyNav.type='button';historyNav.className='ia-users-view-nav-item';historyNav.innerHTML='<i class="fa-solid fa-clock-rotate-left"></i><span>Academic history</span>';
+    historyNav.addEventListener('click',()=>{profileNav.querySelectorAll('button').forEach(x=>x.classList.toggle('is-active',x===historyNav));historySection.scrollIntoView({behavior:'smooth',block:'start'});});
+    profileNav.append(historyNav);
+    loadAcademicHistory(u).catch(error=>{historyHost.textContent=error.message||'Unable to load academic history.';});
     const editButton=document.createElement('button');editButton.type='button';editButton.className='ia-users-review-btn ia-users-edit-btn';editButton.innerHTML='<i class="fa-solid fa-user-pen"></i> Edit user details';editButton.addEventListener('click',()=>openEditForm(u));
     profileMain.append(editButton);profileShell.append(profileSide,profileMain);body.replaceChildren(profileShell);
     if(typeof dialog.showModal==='function')dialog.showModal();else dialog.setAttribute('open','');
@@ -476,7 +483,7 @@
     if(!api?.db||!api?.institutionId){message('Institution administrator session is not ready. Refresh the page.',true);return;}
     state.api=api;state.loading=true;message('Loading your institution user directory…');render();
     try{
-      const columns='id,user_id,email,full_name,phone,alt_phone,date_of_birth,gender,national_id,address,profile_photo_url,role,role_id,student_id,admission_number,staff_id,program,program_type,department,status,created_at,updated_at,current_block,block,block_program_year,block_progress,intake_year,intake_month,admission_year,admission_date,employment_date,login_enabled,username,last_login,last_activity,login_count,two_factor_enabled,guardian_name,guardian_phone,parent_email,parent_address,qualifications,specialization,professional_bio,institution_id';
+      const columns='id,user_id,email,full_name,phone,alt_phone,date_of_birth,gender,national_id,address,profile_photo_url,role,role_id,student_id,admission_number,staff_id,program,program_type,department,status,created_at,updated_at,current_block,block,block_program_year,block_progress,intake_year,intake_month,admission_year,admission_date,employment_date,login_enabled,username,last_login,last_activity,login_count,two_factor_enabled,guardian_name,guardian_phone,parent_email,parent_address,qualifications,specialization,professional_bio,doc_kcse,doc_id,passport_url,institution_id';
       const {data,error}=await api.db.from('consolidated_user_profiles_table').select(columns)
         .eq('institution_id',api.institutionId).order('created_at',{ascending:false}).limit(2000);
       if(error)throw error;
