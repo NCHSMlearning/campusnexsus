@@ -1087,3 +1087,66 @@ body>#iaApp .ia-user{min-width:170px!important;justify-content:flex-start!import
  #view-overview .ia-stat-grid,#view-overview .ia-module-activity-grid{grid-template-columns:1fr 1fr!important;gap:8px!important}
  #view-overview .ia-stat-grid>.ia-stat-card{padding:11px!important}
 }
+
+
+/* Mobile navigation recovery — closed by default, contained drawer, no dark top overlay */
+@media(max-width:768px){
+ html,body{width:100%!important;max-width:100%!important;overflow-x:hidden!important}
+ body{margin:0!important;padding:0!important;background:#f0f5ff!important}
+ body>#iaApp{position:relative!important;top:0!important;left:0!important;right:0!important;width:100%!important;max-width:100%!important;overflow-x:clip!important}
+ body>#iaApp>.ia-sidebar{
+  position:fixed!important;inset:0 auto 0 0!important;
+  width:min(292px,86vw)!important;max-width:86vw!important;height:100vh!important;height:100dvh!important;
+  left:0!important;right:auto!important;transform:translateX(-105%)!important;
+  visibility:hidden!important;pointer-events:none!important;
+  z-index:1400!important;overflow-y:auto!important;overflow-x:hidden!important;
+  transition:transform .24s ease,visibility .24s ease!important;
+  box-shadow:12px 0 32px rgba(0,20,45,.22)!important
+ }
+ body>#iaApp>.ia-sidebar.open{
+  left:0!important;transform:translateX(0)!important;
+  visibility:visible!important;pointer-events:auto!important
+ }
+ body>#iaApp>.ia-main-wrap{
+  display:block!important;width:100%!important;max-width:100%!important;min-width:0!important;
+  margin:0!important;padding:0!important;transform:none!important
+ }
+ body>#iaApp .ia-topbar{
+  position:sticky!important;top:0!important;z-index:100!important;
+  display:flex!important;width:100%!important;min-height:64px!important;height:auto!important;
+  box-sizing:border-box!important;padding:9px 12px 9px 62px!important;
+  margin:0!important;gap:9px!important;background:linear-gradient(105deg,#062d63,#07558a 58%,#087c87)!important;
+  box-shadow:0 3px 12px rgba(5,35,70,.12)!important
+ }
+ body>#iaApp .ia-menu-toggle{
+  display:flex!important;position:fixed!important;top:10px!important;left:10px!important;
+  z-index:1500!important;width:42px!important;height:42px!important;
+  align-items:center!important;justify-content:center!important;
+  border:1px solid rgba(255,255,255,.42)!important;border-radius:11px!important;
+  background:#ffffff!important;color:#07558a!important;
+  box-shadow:0 2px 8px rgba(0,20,45,.12)!important;cursor:pointer!important
+ }
+ body>#iaApp .ia-top-title{min-width:0!important;max-width:calc(100vw - 145px)!important;font-size:11px!important;line-height:1.25!important}
+ body>#iaApp .ia-top-title>span{display:block!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;font-size:11px!important}
+ body>#iaApp .ia-top-title small{font-size:9px!important}
+ body>#iaApp .ia-top-actions{gap:6px!important;flex:0 0 auto!important}
+ body>#iaApp .ia-user{min-width:0!important;padding:4px 7px!important;gap:6px!important}
+ body>#iaApp .ia-user b{max-width:72px!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important}
+ body>#iaApp .ia-content{box-sizing:border-box!important;width:100%!important;max-width:100%!important;margin:0!important;padding:16px 12px 26px!important}
+ body>#iaApp .ia-mobile-scrim{
+  display:none!important;position:fixed!important;inset:0!important;
+  z-index:1300!important;background:transparent!important;backdrop-filter:none!important;
+  pointer-events:none!important
+ }
+ body>#iaApp .ia-mobile-scrim.show{
+  display:block!important;background:rgba(4,22,42,.18)!important;
+  pointer-events:auto!important;backdrop-filter:none!important
+ }
+ #view-overview .ia-welcome{margin-top:0!important}
+}
+@media(max-width:420px){
+ body>#iaApp .ia-top-title{max-width:calc(100vw - 132px)!important}
+ body>#iaApp .ia-top-title>span{font-size:10px!important}
+ body>#iaApp .ia-user small{display:none!important}
+ body>#iaApp .ia-icon-btn{width:34px!important;height:34px!important}
+}
