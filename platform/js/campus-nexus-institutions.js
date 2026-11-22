@@ -419,6 +419,39 @@
         .cn-institution-modal-body #cnInstitutionForm .cn-module-group{margin:0 0 13px!important}
         .cn-institution-modal-body #cnInstitutionSave{min-width:170px}
         .cn-institution-modal-body #cnInstitutionCancel{min-width:110px}
+
+        .cn-wizard-shell{display:grid;grid-template-columns:260px minmax(0,1fr);min-height:610px;background:#fff;border:1px solid #e2eaf2;border-radius:17px;overflow:hidden;box-shadow:0 12px 38px rgba(8,47,73,.06)}
+        .cn-wizard-sidebar{display:flex;flex-direction:column;gap:22px;padding:22px 17px;background:linear-gradient(180deg,#f2f7ff,#f7fbff);border-right:1px solid #e1eaf4}
+        .cn-wizard-brand{display:flex;align-items:center;gap:10px;padding:0 4px 18px;border-bottom:1px solid #dce7f1;color:#082f62}
+        .cn-wizard-cap{width:42px;height:42px;display:grid;place-items:center;border-radius:13px;background:#0b477d;color:#fff;font-size:20px}
+        .cn-wizard-brand b{font-size:13px;letter-spacing:.02em}.cn-wizard-brand em{font-style:normal;color:#c28b0a}.cn-wizard-brand small{display:block;margin-top:3px;color:#64748b;font-size:9px}
+        .cn-wizard-progress{height:5px;border-radius:99px;background:#dbe7f2;overflow:hidden}.cn-wizard-progress span{display:block;height:100%;width:16.6%;background:linear-gradient(90deg,#0b66c3,#0f8b8d);transition:width .2s}
+        .cn-wizard-nav{display:grid;gap:8px}
+        .cn-wizard-nav-item{display:flex;align-items:flex-start;gap:10px;width:100%;padding:10px 9px;border:1px solid transparent;border-radius:12px;background:transparent;text-align:left;color:#19334e;cursor:pointer}
+        .cn-wizard-nav-item:hover{background:#eaf3ff}.cn-wizard-nav-item.is-active{background:#dcecff;border-color:#c5ddfb;color:#073b78}.cn-wizard-nav-item.is-complete .cn-wizard-number{background:#0f766e;color:#fff}
+        .cn-wizard-number{width:28px;height:28px;flex:0 0 28px;display:grid;place-items:center;border-radius:50%;background:#b9cadd;color:#fff;font-size:12px;font-weight:800}
+        .cn-wizard-nav-item.is-active .cn-wizard-number{background:#0865c5}
+        .cn-wizard-nav-item b{display:block;font-size:11px;font-weight:850;line-height:1.35}.cn-wizard-nav-item small{display:block;margin-top:3px;color:#64748b;font-size:10px;line-height:1.35}
+        .cn-wizard-campus{margin-top:auto;padding:18px 8px 8px;text-align:center;color:#0b5798}.cn-wizard-campus i{display:block;font-size:55px;margin-bottom:8px}.cn-wizard-campus small{color:#72849a;font-size:10px;line-height:1.5}
+        .cn-wizard-main{display:flex;flex-direction:column;min-width:0;padding:20px 24px 16px}
+        .cn-wizard-panel{flex:1;min-width:0}.cn-wizard-panel[hidden]{display:none!important}
+        .cn-wizard-step-heading{display:flex;align-items:center;gap:13px;margin:0 0 18px;padding:13px 15px;border-radius:13px;background:linear-gradient(100deg,#eaf3ff,#f1f8ff)}
+        .cn-wizard-step-icon{width:42px;height:42px;display:grid;place-items:center;border-radius:50%;background:#0d62b3;color:#fff;font-size:18px}
+        .cn-wizard-step-heading b{display:block;color:#102b60;font-size:16px;font-weight:850}.cn-wizard-step-heading small{display:block;margin-top:3px;color:#526984;font-size:11px}
+        .cn-wizard-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px 16px;align-content:start}
+        .cn-wizard-fields>*{min-width:0}.cn-wizard-fields .form-group,.cn-wizard-fields .form-field,.cn-wizard-fields .field,.cn-wizard-fields .mb-3{margin:0!important}
+        .cn-wizard-fields .cn-institution-official-details,.cn-wizard-fields .cn-admin-provisioning,.cn-wizard-fields .cn-subscription-dates,.cn-wizard-fields .cn-logo-studio,.cn-wizard-fields #cnModuleOptions{grid-column:1/-1}
+        .cn-wizard-fields .cn-institution-official-details,.cn-wizard-fields .cn-admin-provisioning{grid-template-columns:repeat(2,minmax(0,1fr))}
+        .cn-wizard-fields #cnModuleOptions{width:100%}
+        .cn-wizard-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:22px;padding-top:16px;border-top:1px solid #e1eaf2}
+        .cn-wizard-footer button{min-height:42px;padding:10px 16px;border:1px solid #d6e0eb;border-radius:10px;font-size:12px;font-weight:800;cursor:pointer}
+        .cn-wizard-previous{background:#edf2f8;color:#50657b}.cn-wizard-previous:disabled{opacity:.4;cursor:not-allowed}
+        .cn-wizard-footer-actions{display:flex;gap:10px}.cn-wizard-cancel{background:#fff;color:#17324d}.cn-wizard-next{border-color:#082f62!important;background:linear-gradient(120deg,#082f62,#0b477d);color:#fff}.cn-wizard-next.is-final{background:linear-gradient(120deg,#0f766e,#0b477d)}
+        .cn-wizard-step-count{color:#73849a;font-size:10px;font-weight:750}
+        .cn-wizard-fields input,.cn-wizard-fields select,.cn-wizard-fields textarea{max-width:100%}
+        @media(max-width:900px){.cn-wizard-shell{grid-template-columns:205px minmax(0,1fr)}.cn-wizard-sidebar{padding:16px 11px}.cn-wizard-main{padding:16px}}
+        @media(max-width:680px){.cn-wizard-shell{display:block;min-height:0}.cn-wizard-sidebar{padding:12px;gap:10px;border-right:0;border-bottom:1px solid #e1eaf4}.cn-wizard-brand,.cn-wizard-campus,.cn-wizard-progress{display:none}.cn-wizard-nav{display:flex;overflow-x:auto;gap:6px;padding-bottom:3px}.cn-wizard-nav-item{flex:0 0 auto;width:auto;max-width:155px;padding:8px}.cn-wizard-nav-item small{display:none}.cn-wizard-nav-item b{font-size:10px}.cn-wizard-number{width:24px;height:24px;flex-basis:24px}.cn-wizard-main{padding:13px}.cn-wizard-fields{grid-template-columns:minmax(0,1fr);gap:11px}.cn-wizard-footer{flex-wrap:wrap}.cn-wizard-step-count{order:3;width:100%;text-align:center}.cn-wizard-footer-actions{margin-left:auto}.cn-wizard-footer button{padding:9px 11px}}
+
         .cn-institution-modal-head{padding:20px clamp(18px,3vw,32px)!important}
         .cn-institution-modal-head h2{font-size:clamp(17px,2vw,22px)!important}
         .cn-institution-modal-body{padding:clamp(12px,2.4vw,28px)!important}
@@ -459,6 +492,109 @@
     document.addEventListener("keydown",e => { if (e.key === "Escape" && institutionModal.classList.contains("is-open")) close(); });
     $("cnInstitutionModalBody").appendChild(form);
   }
+
+  function setupInstitutionWizard() {
+    const form = $("cnInstitutionForm");
+    if (!form || form.dataset.cnWizardReady === "1") return;
+    form.dataset.cnWizardReady = "1";
+    form.noValidate = true;
+    const steps = [
+      {title:"Institution Profile",sub:"Core details & identification",icon:"fa-university",ids:["cnInstitutionName","cnInstitutionCode","cnInstitutionSlug","cnInstitutionType","cnInstitutionCountry","cnInstitutionCounty","cnInstitutionRegistrationNumber","cnInstitutionPhysicalAddress","cnInstitutionPostalAddress"]},
+      {title:"Contact Details",sub:"Communication & address",icon:"fa-envelope",ids:["cnInstitutionEmail","cnInstitutionPhone","cnInstitutionWebsite"]},
+      {title:"Branding & Portal",sub:"Logo, colours & portal setup",icon:"fa-pen-nib",ids:["cnInstitutionLogo","cnInstitutionLogoUpload","cnInstitutionDomain","cnInstitutionColor","cnInstitutionAccent","cnInstitutionColor3","cnInstitutionColor4","cnInstitutionColor5","cnInstitutionColor6","cnInstitutionPortalMode","cnInstitutionCustomLogin","cnInstitutionAdminPortal"]},
+      {title:"Administrator Setup",sub:"Institution administrator account",icon:"fa-user",ids:["cnInstitutionAdmin","cnInstitutionAdminName","cnInstitutionAdminPhone","cnInstitutionAdminPassword","cnInstitutionAdminPasswordConfirm"]},
+      {title:"Products & Permissions",sub:"Systems and module access",icon:"fa-file-alt",ids:["cnModuleOptions"]},
+      {title:"Subscription & Activation",sub:"Plan, billing and status",icon:"fa-dollar-sign",ids:["cnInstitutionAmount","cnInstitutionPlan","cnInstitutionCycle","cnInstitutionSubscriptionStart","cnInstitutionSubscriptionEnd","cnInstitutionSubscriptionStatus","cnInstitutionStatus"]}
+    ];
+    const all = [...form.children];
+    const shell = document.createElement("div");
+    shell.className = "cn-wizard-shell";
+    const side = document.createElement("aside");
+    side.className = "cn-wizard-sidebar";
+    side.innerHTML = '<div class="cn-wizard-brand"><span class="cn-wizard-cap"><i class="fas fa-graduation-cap"></i></span><span><b>CAMPUS <em>NEXUS</em></b><small>Smart Campus. Connected Future.</small></span></div><div class="cn-wizard-progress"><span id="cnWizardProgressFill"></span></div><nav class="cn-wizard-nav" aria-label="Institution setup steps"></nav><div class="cn-wizard-campus"><i class="fas fa-university"></i><small>One connected campus.<br>Everything in one place.</small></div>';
+    const main = document.createElement("div");
+    main.className = "cn-wizard-main";
+    const panels = steps.map((step,index) => {
+      const panel = document.createElement("section");
+      panel.className = "cn-wizard-panel";
+      panel.dataset.step = String(index);
+      panel.hidden = index !== 0;
+      panel.innerHTML = '<div class="cn-wizard-step-heading"><span class="cn-wizard-step-icon"><i class="fas '+step.icon+'"></i></span><span><b>'+step.title+'</b><small>'+step.sub+'</small></span></div><div class="cn-wizard-fields"></div>';
+      main.appendChild(panel);
+      const nav = document.createElement("button");
+      nav.type = "button";
+      nav.className = "cn-wizard-nav-item";
+      nav.dataset.goStep = String(index);
+      nav.innerHTML = '<span class="cn-wizard-number">'+(index+1)+'</span><span><b>'+step.title+'</b><small>'+step.sub+'</small></span>';
+      side.querySelector(".cn-wizard-nav").appendChild(nav);
+      return panel;
+    });
+    const footer = document.createElement("div");
+    footer.className = "cn-wizard-footer";
+    footer.innerHTML = '<button type="button" class="cn-wizard-previous" id="cnWizardPrevious"><i class="fas fa-arrow-left"></i> Previous</button><span class="cn-wizard-step-count" id="cnWizardStepCount">Step 1 of 6</span><div class="cn-wizard-footer-actions"><button type="button" class="cn-wizard-cancel" id="cnWizardCancel">Cancel</button><button type="button" class="cn-wizard-next" id="cnWizardNext">Save & Continue <i class="fas fa-arrow-right"></i></button></div>';
+    main.appendChild(footer);
+    const actions = all.filter(node => node.querySelector?.("#cnInstitutionSave,#cnInstitutionCancel") || ["cnInstitutionSave","cnInstitutionCancel"].includes(node.id));
+    all.filter(node => !actions.includes(node)).forEach(node => {
+      const ids = [node.id,...[...(node.querySelectorAll?.("[id]") || [])].map(el=>el.id)];
+      let target = steps.findIndex(step => step.ids.some(id => ids.includes(id)));
+      if (target < 0) target = 0;
+      panels[target].querySelector(".cn-wizard-fields").appendChild(node);
+    });
+    actions.forEach(node => node.remove());
+    form.replaceChildren(shell);
+    shell.append(side,main);
+    footer.querySelector("#cnWizardCancel").addEventListener("click",resetForm);
+    let active = 0;
+    const render = () => {
+      panels.forEach((panel,i) => { panel.hidden = i !== active; });
+      side.querySelectorAll(".cn-wizard-nav-item").forEach((button,i) => {
+        button.classList.toggle("is-active",i===active);
+        button.classList.toggle("is-complete",i<active);
+        button.setAttribute("aria-current",i===active?"step":"false");
+      });
+      $("cnWizardProgressFill").style.width = ((active+1)/steps.length*100)+"%";
+      $("cnWizardStepCount").textContent = "Step "+(active+1)+" of "+steps.length;
+      $("cnWizardPrevious").disabled = active===0;
+      $("cnWizardNext").innerHTML = active===steps.length-1 ? 'Save Institution <i class="fas fa-check"></i>' : 'Save & Continue <i class="fas fa-arrow-right"></i>';
+      $("cnWizardNext").classList.toggle("is-final",active===steps.length-1);
+      $("cnInstitutionModalBody").scrollTop = 0;
+    };
+    const validate = () => {
+      const fields = [...panels[active].querySelectorAll("input,select,textarea")].filter(el=>!el.disabled && el.type!=="hidden" && el.required);
+      const invalid = fields.find(el=>!el.checkValidity());
+      if (invalid) { invalid.reportValidity(); invalid.focus(); return false; }
+      if (active===0 && (!$("cnInstitutionName")?.value.trim() || !$("cnInstitutionCode")?.value.trim() || !$("cnInstitutionSlug")?.value.trim())) {
+        notify("Complete the institution name, code and portal slug before continuing.","error"); return false;
+      }
+      if (active===3) {
+        const pass=$("cnInstitutionAdminPassword")?.value||"", confirm=$("cnInstitutionAdminPasswordConfirm")?.value||"";
+        if ((pass || confirm) && pass.length<10) { notify("The administrator password must contain at least 10 characters.","error"); return false; }
+        if (pass!==confirm) { notify("The administrator passwords do not match.","error"); return false; }
+      }
+      if (active===4 && !$("cnProductExam")?.checked && !$("cnProductLms")?.checked) { notify("Select Examination Dashboard, LMS, or both.","error"); return false; }
+      return true;
+    };
+    const go = next => {
+      if (next>active && !validate()) return;
+      if (next<0 || next>=steps.length) return;
+      active=next; render();
+    };
+    side.querySelectorAll("[data-go-step]").forEach(button=>button.addEventListener("click",()=>go(Number(button.dataset.goStep))));
+    $("cnWizardPrevious").addEventListener("click",()=>go(active-1));
+    $("cnWizardNext").addEventListener("click",()=>{
+      if (!validate()) return;
+      if (active<steps.length-1) go(active+1);
+      else {
+        const save=$("cnInstitutionSave");
+        if (save) save.click();
+        else form.requestSubmit();
+      }
+    });
+    render();
+    form.dataset.cnWizardGo = String(active);
+    form.addEventListener("cn:wizard-reset",()=>{active=0;render();});
+  }
+
   function openInstitutionModal() {
     ensureInstitutionModal();
     if (!institutionModal) return;
@@ -750,6 +886,7 @@
     $("cnInstitutionFormTitle").textContent = "Register a new institution";
     $("cnInstitutionCancel").hidden = true;
     closeInstitutionModal();
+    $("cnInstitutionForm")?.dispatchEvent(new Event("cn:wizard-reset"));
   }
 
   function fillForm(item) {
@@ -1058,6 +1195,7 @@
     setupInstitutionProfileFields();
     setupSubscriptionFields();
     ensureInstitutionModal();
+    setupInstitutionWizard();
     $("cnInstitutionCancel").addEventListener("click",resetForm);
     $("cnInstitutionSearch").addEventListener("input",renderRows);
     $("cnInstitutionFilter").addEventListener("change",renderRows);
