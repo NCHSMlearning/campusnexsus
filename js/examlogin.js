@@ -70,7 +70,7 @@ form.addEventListener('submit',async e=>{
   localStorage.setItem('currentUserId',data.user.id);
   localStorage.setItem('studentEmail',email.value.trim());
   const [{data:profile,error:profileError},{data:memberships,error:membershipError},{data:isSuper,error:superError}]=await Promise.all([
-   client.from('consolidated_user_profiles_table').select('role,status,login_enabled,institution_id').eq('user_id',data.user.id).maybeSingle(),
+   client.from('consolidated_user_profiles_table').select('role,status,login_enabled,institution_id,full_name,email').eq('user_id',data.user.id).maybeSingle(),
    client.from('institution_users').select('institution_id,role,status').eq('user_id',data.user.id).eq('role','institution_admin').eq('status','active'),
    client.rpc('is_current_user_superadmin')
   ]);
@@ -93,7 +93,7 @@ form.addEventListener('submit',async e=>{
    // Carry the role verification into this tab so the dashboard does not
    // repeat profile/membership reads that may be blocked by dashboard RLS.
    const matchedMembership=(memberships||[]).find(m=>String(m.institution_id)===String(selectedInstitution.id));
-   const adminVerification={user_id:data.user.id,role:isPlatformAdmin?'superadmin':'institution_admin',institution_id:isInstitutionAdmin?(matchedMembership?.institution_id||profile.institution_id||selectedInstitution.id):(profile.institution_id||null),verified_at:Date.now()};
+   const adminVerification={user_id:data.user.id,role:isPlatformAdmin?'superadmin':'institution_admin',institution_id:isInstitutionAdmin?(matchedMembership?.institution_id||profile.institution_id||selectedInstitution.id):(profile.institution_id||null),full_name:profile.full_name||data.user.user_metadata?.full_name||'',email:profile.email||data.user.email||'',institution_name:selectedInstitution.name||'',school_code:selectedInstitution.school_code||selectedInstitution.short_code||'',verified_at:Date.now()};
    // Keep the verified hand-off available if the browser opens /adminexams/ in a fresh tab.
    sessionStorage.setItem('campusNexusExamAdminAuth',JSON.stringify(adminVerification));
    localStorage.setItem('campusNexusExamAdminAuth',JSON.stringify(adminVerification));
