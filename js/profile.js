@@ -680,6 +680,8 @@ class ProfileModule {
                     objectPath = objectPath.slice('passports/'.length);
                 } else if (objectPath.startsWith('profiles/') || objectPath.startsWith('documents/')) {
                     bucket = 'user-documents';
+                } else if (profilePhotoPath) {
+                    objectPath = `profiles/${this.userId}/${objectPath}`;
                 }
 
                 if (!resolvedUrl) {
@@ -736,6 +738,8 @@ class ProfileModule {
             objectPath = objectPath.slice('passports/'.length);
         } else if (objectPath.startsWith('profiles/') || objectPath.startsWith('documents/')) {
             bucket = 'user-documents';
+        } else if (profilePhotoPath) {
+            objectPath = `profiles/${this.userId}/${objectPath}`;
         }
         const { data, error } = await supabase.storage.from(bucket).createSignedUrl(objectPath, 3600);
         if (error) throw error;
