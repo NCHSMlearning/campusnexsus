@@ -11,10 +11,6 @@ function activateModule(id,updateHash=true){
  const allowed=['dashboard','examinations','timetable','announcements','exam-history','exam-support','profile'];
  const active=allowed.includes(id)?id:'examinations';
  document.querySelectorAll('.module-view').forEach(section=>{const on=section.id===active;section.classList.toggle('active',on);section.hidden=!on;});
- document.querySelectorAll('[data-exam-filter]').forEach(button=>button.addEventListener('click',()=>{dashboardExamFilter=button.dataset.examFilter;renderDashboard();}));
-$('calendar-prev')?.addEventListener('click',()=>{dashboardCalendarOffset--;renderDashboardCalendar();});
-$('calendar-next')?.addEventListener('click',()=>{dashboardCalendarOffset++;renderDashboardCalendar();});
-document.querySelectorAll('[data-open-module]').forEach(button=>button.addEventListener('click',()=>activateModule(button.dataset.openModule)));
 document.querySelectorAll('.exam-nav a[data-module]').forEach(link=>{const on=link.dataset.module===active;link.classList.toggle('active',on);if(on)link.setAttribute('aria-current','page');else link.removeAttribute('aria-current');});
  const labels={dashboard:'Student Dashboard',examinations:'Examination Centre',timetable:'Examination Timetable',announcements:'Institution Announcements','exam-history':'Examination History','exam-support':'Examination Support',profile:'My Student Profile'};
  const heading=document.querySelector('.header-left>div>b');if(heading)heading.textContent=labels[active];
@@ -327,6 +323,11 @@ async function init(){
 document.querySelectorAll('.exam-nav a[data-module]').forEach(link=>link.addEventListener('click',event=>{event.preventDefault();activateModule(link.dataset.module);document.getElementById('exam-sidebar').classList.remove('show');document.getElementById('mobile-scrim').classList.remove('show');}));
 window.addEventListener('hashchange',()=>activateModule(location.hash.slice(1),false));
 activateModule(location.hash.slice(1)||'dashboard',false);
+document.querySelectorAll('[data-exam-filter]').forEach(button=>button.addEventListener('click',()=>{dashboardExamFilter=button.dataset.examFilter;renderDashboard();}));
+$('calendar-prev')?.addEventListener('click',()=>{dashboardCalendarOffset--;renderDashboardCalendar();});
+$('calendar-next')?.addEventListener('click',()=>{dashboardCalendarOffset++;renderDashboardCalendar();});
+document.querySelectorAll('[data-open-module]').forEach(button=>button.addEventListener('click',()=>activateModule(button.dataset.openModule)));
+
 $('refresh-btn').addEventListener('click',()=>loadExams().then(renderTimetable).catch(e=>notify(e.message||'Could not refresh examinations.')));
 $('refresh-announcements').addEventListener('click',()=>loadAnnouncements().catch(e=>notify(e.message||'Could not load announcements.')));
 $('refresh-history').addEventListener('click',()=>loadHistory().catch(e=>notify(e.message||'Could not load examination history.')));
