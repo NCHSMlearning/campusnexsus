@@ -1188,3 +1188,79 @@ body>#iaApp .ia-user{min-width:170px!important;justify-content:flex-start!import
  #iaApp .ia-mobile-scrim{display:none!important;background:transparent!important;backdrop-filter:none!important}
  #iaApp .ia-mobile-scrim.show{display:block!important;position:fixed!important;inset:0!important;z-index:1300!important;background:rgba(4,22,42,.16)!important;backdrop-filter:none!important}
 }
+
+/* Final mobile sidebar surface repair — keep every sidebar section on the branded surface */
+#iaApp #iaSidebar{
+  background:linear-gradient(180deg,#062b5b 0%,#073d70 58%,#05264f 100%)!important;
+  background-color:#073d70!important;
+  isolation:isolate!important;
+  overflow-x:hidden!important;
+}
+#iaApp #iaSidebar > .ia-brand,
+#iaApp #iaSidebar > .ia-tenant,
+#iaApp #iaSidebar > .ia-sidebar-search,
+#iaApp #iaSidebar > .ia-nav,
+#iaApp #iaSidebar > .ia-sidebar-bottom{
+  position:relative!important;
+  z-index:1!important;
+  background-color:transparent!important;
+  background-image:none!important;
+}
+#iaApp #iaSidebar > .ia-nav{
+  flex:1 1 auto!important;
+  min-height:0!important;
+  overflow-x:hidden!important;
+  overflow-y:auto!important;
+  scrollbar-color:rgba(190,205,225,.42) transparent!important;
+}
+#iaApp #iaSidebar > .ia-nav::before,
+#iaApp #iaSidebar > .ia-nav::after{
+  content:none!important;
+  display:none!important;
+}
+#iaApp #iaSidebar > .ia-nav > .ia-nav-label{background:transparent!important}
+#iaApp #iaSidebar > .ia-nav > .ia-nav-item{background:transparent!important}
+#iaApp #iaSidebar > .ia-nav > .ia-nav-item:hover,
+#iaApp #iaSidebar > .ia-nav > .ia-nav-item.active{
+  background:linear-gradient(100deg,#087bd1,#087f9f)!important;
+  color:#fff!important;
+}
+#iaApp #iaSidebar > .ia-nav > .ia-nav-item.active{
+  border-left-color:#ffd44d!important;
+}
+#iaApp .ia-mobile-scrim,
+#iaApp .ia-mobile-scrim.show{
+  background:transparent!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+}
+@media(max-width:768px){
+  #iaApp #iaSidebar{
+    left:0!important;
+    right:auto!important;
+    width:min(292px,86vw)!important;
+    max-width:86vw!important;
+    height:100vh!important;
+    height:100dvh!important;
+    transform:translateX(-105%)!important;
+    visibility:hidden!important;
+    pointer-events:none!important;
+    z-index:1400!important;
+    transition:transform .22s ease,visibility .22s ease!important;
+  }
+  #iaApp #iaSidebar.open{
+    transform:translateX(0)!important;
+    visibility:visible!important;
+    pointer-events:auto!important;
+  }
+  #iaApp .ia-main-wrap{width:100%!important;margin:0!important}
+  #iaApp .ia-topbar{padding-left:62px!important}
+  #iaApp .ia-menu-toggle{z-index:1500!important}
+  #iaApp .ia-mobile-scrim.show{
+    display:block!important;
+    position:fixed!important;
+    inset:0!important;
+    z-index:1300!important;
+    pointer-events:auto!important;
+  }
+}
