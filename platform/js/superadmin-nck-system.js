@@ -1885,15 +1885,15 @@ function showNotification(message, type = 'success') {
     container.style.cssText = [
         'position:fixed',
         'top:calc(14px + env(safe-area-inset-top, 0px))',
-        'left:14px',
-        'right:auto',
+        'right:14px',
+        'left:auto',
         'bottom:auto',
         'z-index:100000',
         'display:flex',
         'flex-direction:column',
-        'align-items:flex-start',
+        'align-items:flex-end',
         'gap:8px',
-        'width:max-content',
+        'width:min(420px, calc(100vw - 28px))',
         'max-width:calc(100vw - 28px)',
         'pointer-events:none'
     ].join(';');
