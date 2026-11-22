@@ -341,3 +341,9 @@ html,body{width:100%;max-width:100%;min-height:100%;margin:0}body{overflow-x:hid
 #view-user-management #iaUsersEditFeedback.error{color:#b91c1c}
 #view-user-management .ia-users-review-btn{white-space:nowrap}
 @media(max-width:640px){#view-user-management .ia-users-edit-grid{grid-template-columns:1fr}#view-user-management .ia-users-edit-section{padding:13px}#view-user-management .ia-users-edit-actions>*{flex:1}}
+
+#view-user-management .ia-users-email-edit{display:flex;gap:7px;align-items:center}
+#view-user-management .ia-users-email-edit input{flex:1;min-width:0}
+#view-user-management .ia-users-email-edit button{flex:0 0 auto;border:0;border-radius:8px;padding:10px 12px;background:#0f766e;color:#fff;font-size:11px;font-weight:800;cursor:pointer}
+#view-user-management .ia-users-email-edit button:disabled{opacity:.6;cursor:wait}
+@media(max-width:640px){#view-user-management .ia-users-email-edit{align-items:stretch;flex-direction:column}#view-user-management .ia-users-email-edit button{width:100%}}
