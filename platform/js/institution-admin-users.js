@@ -104,7 +104,9 @@
     $('iaUsersDialogTitle').textContent=u.full_name||u.email||'User profile';
     body.replaceChildren();
     const summary=document.createElement('div');summary.className='ia-users-detail-summary';
-    const avatar=document.createElement('span');avatar.className='ia-users-avatar large';avatar.textContent=(u.full_name||u.email||'U').trim().split(/\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase();
+    const avatar=document.createElement('span');avatar.className='ia-users-avatar large';
+    const initials=(u.full_name||u.email||'U').trim().split(/\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase();
+    if(u.profile_photo_url&&/^https?:\/\//i.test(String(u.profile_photo_url))){const img=document.createElement('img');img.src=u.profile_photo_url;img.alt='';img.referrerPolicy='no-referrer';img.onerror=()=>{img.remove();avatar.textContent=initials;};avatar.append(img);}else avatar.textContent=initials;
     summary.classList.add('ia-users-profile-hero');
     const meta=document.createElement('div');meta.className='ia-users-profile-meta';
     const nm=document.createElement('strong'),em=document.createElement('small');
@@ -127,7 +129,34 @@
       fields.forEach(([k,v])=>{const item=document.createElement('div'),dt=document.createElement('small'),dd=document.createElement('strong');dt.textContent=k;dd.textContent=val(v);item.append(dt,dd);grid.append(item);});
       section.append(grid);body.append(section);
     });
-    const editButton=document.createElement('button');editButton.type='button';editButton.className='ia-users-review-btn ia-users-edit-btn';editButton.textContent='Edit user details';editButton.addEventListener('click',()=>openEditForm(u));body.append(editButton);
+    // Put the complete user profile into the same premium two-panel layout
+    // as the editor, with navigation across every information category.
+    const profileShell=document.createElement('div');profileShell.className='ia-users-view-shell';
+    const profileSide=document.createElement('aside');profileSide.className='ia-users-view-sidebar';
+    const profileMain=document.createElement('div');profileMain.className='ia-users-view-main';
+    const profileIdentity=document.createElement('div');profileIdentity.className='ia-users-view-identity';
+    const identityAvatar=avatar.cloneNode(true);profileIdentity.append(identityAvatar);
+    const identityName=document.createElement('strong');identityName.textContent=u.full_name||'Name unavailable';
+    const identityCode=document.createElement('small');identityCode.textContent=identityOf(u);
+    profileIdentity.append(identityName,identityCode);
+    const profileNav=document.createElement('nav');profileNav.className='ia-users-view-nav';profileNav.setAttribute('aria-label','User profile sections');
+    const viewIcons=['fa-user','fa-people-roof','fa-graduation-cap','fa-folder-open','fa-shield-halved'];
+    sections.forEach(([heading],index)=>{
+      const section=body.querySelectorAll('.ia-users-detail-section')[index];
+      if(!section)return;
+      const nav=document.createElement('button');nav.type='button';nav.className='ia-users-view-nav-item'+(index===0?' is-active':'');
+      nav.innerHTML='<i class="fa-solid '+viewIcons[index]+'"></i><span>'+safe(heading)+'</span>';
+      nav.addEventListener('click',()=>{profileNav.querySelectorAll('button').forEach(x=>x.classList.toggle('is-active',x===nav));section.scrollIntoView({behavior:'smooth',block:'start'});});
+      profileNav.append(nav);
+    });
+    profileSide.append(profileIdentity,profileNav);
+    const profileHeading=document.createElement('div');profileHeading.className='ia-users-view-heading';
+    profileHeading.innerHTML='<span class="ia-users-eyebrow">USER PROFILE</span><h3>Account overview</h3><p>Complete personal, academic, document and access information.</p>';
+    profileMain.append(profileHeading);
+    const detailSections=[...body.querySelectorAll('.ia-users-detail-section')];
+    detailSections.forEach(section=>profileMain.append(section));
+    const editButton=document.createElement('button');editButton.type='button';editButton.className='ia-users-review-btn ia-users-edit-btn';editButton.innerHTML='<i class="fa-solid fa-user-pen"></i> Edit user details';editButton.addEventListener('click',()=>openEditForm(u));
+    profileMain.append(editButton);profileShell.append(profileSide,profileMain);body.replaceChildren(profileShell);
     if(typeof dialog.showModal==='function')dialog.showModal();else dialog.setAttribute('open','');
   }
   function openEditForm(u){
