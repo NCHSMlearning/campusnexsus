@@ -8326,7 +8326,7 @@ window.publishApprovedAssessment = async function(examId) {
             console.error('Unable to load institution exam options:', error);
             program.innerHTML = '<option value="">Unable to load programmes</option>';
             intake.innerHTML = '<option value="">Unable to load intakes</option>';
-            showToast?.('Could not load programme/intake options: ' + error.message, 'error');
+            window.showToast?.('Could not load programme/intake options: ' + error.message, 'error');
         }
     }
 
