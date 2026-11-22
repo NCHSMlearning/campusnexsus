@@ -1249,7 +1249,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 
 /* Add a subtle campus caption over the faded image without changing HTML. */
 .welcome-hero:before{
-  content:"NCHSM  •  Nakuru College of Health Science & Management";
+  content:var(--institution-brand-label, "Secure Institutional Examination");
   position:absolute;
   z-index:1;
   right:28px;
@@ -1887,6 +1887,15 @@ body{
     font-size:17px!important;
   }
 }
+
+/* Render the active institution's own logo in the secure exam identity panels */
+.welcome-campus img#institutionHeroImage,
+.campus-visual img#institutionCampusImage{
+  object-fit:contain!important;
+  object-position:center!important;
+  padding:24px!important;
+  background:#fff!important;
+}
 </style>
 
 <style id="header-symbol-fix">
@@ -2102,8 +2111,9 @@ body{
     <aside class="lobby-aside" aria-label="Institution campus and examination information">
       <div class="campus-visual">
         <img
+          id="institutionCampusImage"
           src="https://raw.githubusercontent.com/NCHSMlearning/NCHSM-Digital-campus-/main/images/campus-header.jpg"
-          alt="Nakuru College of Health Science & Management campus"
+          alt="Institution logo"
           loading="eager"
           referrerpolicy="no-referrer">
         <div class="campus-caption">
