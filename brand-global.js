@@ -6,7 +6,7 @@
   "use strict";
   var BRAND = "/images/campus-nexus-original-logo.webp?v=1";
   var BRAND_ALT = "Campus Nexus — Smart Campus. Connected Future.";
-  var LOCAL_BRAND_PATTERN = /(campus.?nexus|nchsm|logo[-_]?icon|logo_nchsm|data:image\\/svg\\+xml)/i;
+  var LOCAL_BRAND_PATTERN = /(logo|brand)/i;
 
   function applyBranding() {
     var images = document.querySelectorAll(
@@ -20,7 +20,7 @@
       var src = img.getAttribute("src") || "";
       var alt = img.getAttribute("alt") || "";
       // Never replace externally hosted institution-specific logos.
-      if (/^https?:\\/\\//i.test(src) && !/^https?:\\/\\/(www\\.)?campusnexus\\.co\\.ke\\//i.test(src)) return;
+      if (src.toLowerCase().startsWith("http") && !src.toLowerCase().startsWith(window.location.origin.toLowerCase())) return;
       if (!LOCAL_BRAND_PATTERN.test(src + " " + alt)) return;
       img.src = BRAND;
       img.alt = BRAND_ALT;
