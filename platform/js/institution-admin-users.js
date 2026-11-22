@@ -99,6 +99,41 @@
     master.checked=visible.length>0&&visible.every(u=>state.selected.has(u.id));
     master.indeterminate=visible.some(u=>state.selected.has(u.id))&&!master.checked;
   }
+  async function resolveUserPhoto(photoValue,userId){
+    if(!photoValue)return null;
+    const value=String(photoValue);
+    if(/^https?:\/\//i.test(value))return value;
+    const client=state.api?.db||window.CampusInstitutionAdmin?.db;
+    if(!client?.storage)return null;
+    let bucket='user-documents',path=value;
+    const match=value.match(/\/storage\/v1\/object\/(?:public|sign)\/([^/]+)\/(.+?)(?:\?.*)?$/);
+    if(match){bucket=decodeURIComponent(match[1]);path=decodeURIComponent(match[2]);}
+    else if(value.startsWith('user-documents/'))path=value.slice('user-documents/'.length);
+    else if(value.startsWith('passports/')){bucket='passports';path=value.slice('passports/'.length);}
+    const result=await client.storage.from(bucket).createSignedUrl(path,3600);
+    if(result.error){console.warn('[Institution users] Profile photo URL unavailable:',result.error.message);return null;}
+    return result.data?.signedUrl||null;
+  }
+  async function uploadUserProfilePhoto(file,user){
+    const api=state.api||window.CampusInstitutionAdmin,client=api?.db;
+    if(!client||!api?.institutionId||!user?.user_id)throw new Error('Institution session is not ready. Refresh and try again.');
+    if(!file||!/^image\/(jpeg|png|webp)$/i.test(file.type))throw new Error('Choose a JPG, PNG or WebP image.');
+    if(file.size>2*1024*1024)throw new Error('Profile photo must be 2 MB or smaller.');
+    const ext=({ 'image/jpeg':'jpg','image/png':'png','image/webp':'webp'})[file.type]||'jpg';
+    const path='profiles/'+user.user_id+'/photo-'+Date.now()+'.'+ext;
+    const uploaded=await client.storage.from('user-documents').upload(path,file,{upsert:false,contentType:file.type,cacheControl:'3600'});
+    if(uploaded.error)throw uploaded.error;
+    const update=await client.from('consolidated_user_profiles_table')
+      .update({profile_photo_url:path,passport_url:path,updated_at:new Date().toISOString()})
+      .eq('user_id',user.user_id).eq('institution_id',api.institutionId).select('user_id');
+    if(update.error||!update.data?.length){
+      await client.storage.from('user-documents').remove([path]);
+      throw update.error||new Error('The profile photo could not be saved for this institution user.');
+    }
+    user.profile_photo_url=path;user.passport_url=path;
+    const row=state.rows.find(x=>x.user_id===user.user_id);if(row){row.profile_photo_url=path;row.passport_url=path;}
+    return await resolveUserPhoto(path,user.user_id);
+  }
   function showDetails(u){
     const dialog=$('iaUsersDialog'), body=$('iaUsersDialogBody');if(!dialog||!body)return;
     $('iaUsersDialogTitle').textContent=u.full_name||u.email||'User profile';
@@ -106,7 +141,12 @@
     const summary=document.createElement('div');summary.className='ia-users-detail-summary';
     const avatar=document.createElement('span');avatar.className='ia-users-avatar large';
     const initials=(u.full_name||u.email||'U').trim().split(/\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase();
-    if(u.profile_photo_url&&/^https?:\/\//i.test(String(u.profile_photo_url))){const img=document.createElement('img');img.src=u.profile_photo_url;img.alt='';img.referrerPolicy='no-referrer';img.onerror=()=>{img.remove();avatar.textContent=initials;};avatar.append(img);}else avatar.textContent=initials;
+    avatar.textContent=initials;
+    resolveUserPhoto(u.profile_photo_url||u.passport_url,u.user_id).then(url=>{
+      if(!url||!avatar.isConnected)return;
+      const img=document.createElement('img');img.src=url;img.alt='Profile photo';img.referrerPolicy='no-referrer';
+      img.onerror=()=>{img.remove();avatar.textContent=initials;};avatar.replaceChildren(img);
+    }).catch(()=>{});
     summary.classList.add('ia-users-profile-hero');
     const meta=document.createElement('div');meta.className='ia-users-profile-meta';
     const nm=document.createElement('strong'),em=document.createElement('small');
@@ -116,7 +156,7 @@
     [[label(u.role||u.role_id),'role'],[label(u.status||statusOf(u)),'status'],[u.login_enabled===false?'Login disabled':'Login enabled','access']].forEach(([text,type])=>{const chip=document.createElement('span');chip.className='ia-users-profile-chip '+type;chip.textContent=text;chips.append(chip);});
     meta.append(nm,em,chips);summary.append(avatar,meta);body.append(summary);
     const sections=[
-      ['Personal information',[['Full name',u.full_name],['Email address',u.email],['Phone',u.phone],['Alternative phone',u.alt_phone],['Gender',u.gender],['Date of birth',u.date_of_birth],['National ID',u.national_id],['Address',u.address],['Profile photo URL',u.profile_photo_url]]],
+      ['Personal information',[['Full name',u.full_name],['Email address',u.email],['Phone',u.phone],['Alternative phone',u.alt_phone],['Gender',u.gender],['Date of birth',u.date_of_birth],['National ID',u.national_id],['Address',u.address],['Profile photo',u.profile_photo_url?'Uploaded':'Not uploaded']]],
       ['Guardian / parent information',[['Guardian name',u.guardian_name],['Guardian phone',u.guardian_phone],['Parent email',u.parent_email],['Parent address',u.parent_address]]],
       ['Academic & employment information',[['Role',u.role],['Role ID',u.role_id],['Student ID',u.student_id],['Admission number',u.admission_number],['Staff ID',u.staff_id],['Programme',u.program],['Programme type',u.program_type],['Department',u.department],['Intake month',u.intake_month],['Intake year',u.intake_year],['Admission year',u.admission_year],['Admission date',u.admission_date],['Current block',u.current_block||u.block],['Block / programme year',u.block_program_year],['Block progress',u.block_progress],['Employment date',u.employment_date],['Qualifications',u.qualifications],['Specialization',u.specialization],['Professional bio',u.professional_bio]]],
       ['Documents',[['KCSE document status',u.doc_kcse],['ID document status',u.doc_id],['Passport / ID document URL',u.passport_url]]],
@@ -265,7 +305,37 @@
     const passwordReset=editForm.querySelector('.ia-users-password-reset');
     const feedbackNode=$('iaUsersEditFeedback');
     const formHero=editForm.querySelector('.ia-users-edit-hero');
-    if(formHero)workspace.appendChild(formHero);
+    if(formHero){
+      const photoCard=document.createElement('div');photoCard.className='ia-users-photo-editor';
+      const photoFrame=document.createElement('div');photoFrame.className='ia-users-photo-frame';
+      const photoInitials=(u.full_name||u.email||'U').trim().split(/\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase();
+      photoFrame.textContent=photoInitials;
+      const photoImage=document.createElement('img');photoImage.alt='User profile photo';photoImage.hidden=true;
+      photoFrame.append(photoImage);
+      const photoInfo=document.createElement('div');photoInfo.className='ia-users-photo-info';
+      photoInfo.innerHTML='<strong>Profile photo</strong><small>Use a clear JPG, PNG or WebP image. Maximum size 2 MB.</small>';
+      const photoActions=document.createElement('div');photoActions.className='ia-users-photo-actions';
+      const choosePhoto=document.createElement('button');choosePhoto.type='button';choosePhoto.className='ia-users-photo-choose';choosePhoto.innerHTML='<i class="fa-solid fa-camera"></i> Change photo';
+      const photoInput=document.createElement('input');photoInput.type='file';photoInput.accept='image/jpeg,image/png,image/webp';photoInput.hidden=true;photoInput.id='iaUsersProfilePhotoInput';
+      const photoStatus=document.createElement('small');photoStatus.className='ia-users-photo-status';photoStatus.setAttribute('role','status');
+      choosePhoto.addEventListener('click',()=>photoInput.click());
+      photoInput.addEventListener('change',async()=>{
+        const file=photoInput.files?.[0];if(!file)return;
+        if(!/^image\/(jpeg|png|webp)$/i.test(file.type)||file.size>2*1024*1024){photoStatus.textContent='Choose JPG, PNG or WebP up to 2 MB.';photoStatus.className='ia-users-photo-status error';photoInput.value='';return;}
+        const preview=URL.createObjectURL(file);photoImage.src=preview;photoImage.hidden=false;photoFrame.firstChild?.nodeType===3&&photoFrame.firstChild.remove();
+        choosePhoto.disabled=true;choosePhoto.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Uploading…';photoStatus.textContent='Uploading and saving profile photo…';
+        try{
+          const signed=await uploadUserProfilePhoto(file,u);
+          if(signed){photoImage.src=signed;photoImage.hidden=false;}
+          photoStatus.textContent='Profile photo updated successfully.';photoStatus.className='ia-users-photo-status success';
+        }catch(error){photoImage.hidden=true;photoImage.removeAttribute('src');photoFrame.textContent=photoInitials;photoStatus.textContent=error.message||'Photo upload failed.';photoStatus.className='ia-users-photo-status error';}
+        finally{choosePhoto.disabled=false;choosePhoto.innerHTML='<i class="fa-solid fa-camera"></i> Change photo';photoInput.value='';}
+      });
+      resolveUserPhoto(u.profile_photo_url||u.passport_url,u.user_id).then(url=>{if(url){photoImage.src=url;photoImage.hidden=false;photoFrame.childNodes.forEach(n=>{if(n.nodeType===3)n.remove();});}});
+      photoActions.append(choosePhoto,photoInput,photoStatus);photoInfo.append(photoActions);
+      photoCard.append(photoFrame,photoInfo);
+      workspace.append(photoCard,formHero);
+    }
     workspace.append(mainHeading,stageHost);
     const footer=document.createElement('div');footer.className='ia-users-edit-footer';
     const previous=document.createElement('button');previous.type='button';previous.className='ia-users-edit-prev';previous.innerHTML='<i class="fa-solid fa-arrow-left"></i> Previous';
@@ -438,7 +508,7 @@
         intake_year:get('intake_year'),intake_month:get('intake_month'),block:get('block'),current_block:get('current_block')||get('block'),
         block_program_year:get('block_program_year'),admission_date:get('admission_date')||null,admission_year:get('admission_year'),
         employment_date:get('employment_date')||null,doc_kcse:get('doc_kcse'),doc_id:get('doc_id'),
-        profile_photo_url:get('profile_photo_url'),passport_url:get('passport_url'),qualifications:get('qualifications'),
+        profile_photo_url:user.profile_photo_url||get('profile_photo_url'),passport_url:user.passport_url||get('passport_url'),qualifications:get('qualifications'),
         specialization:get('specialization'),professional_bio:get('professional_bio'),role:get('role'),status:get('status'),
         login_enabled:get('login_enabled')==='true',updated_at:new Date().toISOString()
       };
