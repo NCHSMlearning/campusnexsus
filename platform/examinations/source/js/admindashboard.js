@@ -8624,8 +8624,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         const dashboardSession = {
             user_id: authUser.id,
             email: authUser.email || '',
-            name: authUser.user_metadata?.full_name || authUser.email || 'Administrator',
-            full_name: authUser.user_metadata?.full_name || authUser.email || 'Administrator',
+            name: verified.full_name || authUser.user_metadata?.full_name || authUser.email || 'Administrator',
+            full_name: verified.full_name || authUser.user_metadata?.full_name || authUser.email || 'Administrator',
             role: verified.role,
             institution_id: verified.institution_id || null
         };
@@ -8651,8 +8651,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
     
     // ✅ Set admin info from session
-    const name = sessionData.name || sessionData.full_name || 'Admin';
-    const email = sessionData.email || 'admin@nchsm.ac.ke';
+    const name = sessionData.name || sessionData.full_name || sessionData.email || 'Administrator';
+    const email = sessionData.email || '';
     const initial = name.charAt(0).toUpperCase();
     
     document.querySelectorAll('#adminName, #adminNameTop, .admin-name').forEach(el => {
@@ -8664,6 +8664,12 @@ document.addEventListener('DOMContentLoaded', async function() {
     document.querySelectorAll('#adminInitial, #adminAvatar, .admin-avatar').forEach(el => {
         if (el) el.textContent = initial;
     });
+    const welcomeHeading = document.querySelector('.command-welcome .welcome-copy h2');
+    if (welcomeHeading) welcomeHeading.innerHTML = 'Welcome, ' + escapeAdminHtml(name) + ' <span>👋</span>';
+    const welcomeCopy = document.querySelector('.command-welcome .welcome-copy p');
+    if (welcomeCopy) welcomeCopy.textContent = sessionData.role === 'institution_admin'
+        ? 'Manage your institution’s examinations, results and academic assessments.'
+        : 'Manage examinations, results and academic assessments across Campus Nexus.';
 
     // ✅ Initialize dashboard - LOAD DATA FIRST
     window.switchTab('students');
