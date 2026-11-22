@@ -1867,7 +1867,7 @@ class Database {
         const photoValue = profilePhotoPath || profile.passport_url;
         if (!photoValue) return null;
 
-        const supabase = this.getSupabaseClient?.() || this.client || window.supabaseClient || window.examSupabase;
+        const supabase = this.supabase || window.supabaseClient || window.examSupabase;
         let bucket = profilePhotoPath ? 'user-documents' : 'passports';
         let objectPath = String(photoValue);
         const storageMatch = objectPath.match(/\\/storage\\/v1\\/object\\/(?:public|sign)\\/([^/]+)\\/(.+?)(?:\\?.*)?$/);
