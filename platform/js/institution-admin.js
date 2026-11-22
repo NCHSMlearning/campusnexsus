@@ -4,10 +4,11 @@ const URL="https://irahplkvocaakjxuisto.supabase.co";
 const KEY="sb_publishable_5Cg5FFudf03UnmOXGNGMHQ_uK9S-uQX";
 const $=id=>document.getElementById(id), state={db:null,user:null,profile:null,institution:null,institutionId:null,modules:new Set(),rows:{}};
 const MODULES={marks_entry:"Marks entry",marks_approval:"Marks approval",mark_entry_control:"Mark entry control",published_marks:"Published marks",student_management:"Student management",lecturer_portal:"Staff & lecturers",academic_management:"Academic management",admin_exams:"Examinations",examinations:"Examinations",attendance:"Attendance",learning_management:"Learning management",analytics_reports:"Analytics & reports",administrator_portal:"Institution settings",proctoring:"Exam proctoring",transcripts_certificates:"Transcripts & certificates",admissions:"Admissions",timetable:"Timetabling & sessions",clinical_placements:"Clinical placements",research_management:"Research management",quality_assurance:"Quality assurance",student_welfare:"Student welfare & discipline",library:"Library management",hostel_management:"Accommodation & hostels",transport_management:"Transport management",career_services:"Career services & alumni",events:"Events & calendar",human_resources:"Human resources",timetable:"Timetabling",clinical_placements:"Clinical placements",research_management:"Research management",student_welfare:"Student welfare & discipline",finance:"Finance & payments",inventory:"Inventory & procurement",asset_management:"Asset management",document_management:"Records & document management",communication:"Communication & notifications",helpdesk:"Helpdesk & support",};
-function message(text,error=false){const el=$("iaNotice");el.hidden=!text;el.textContent=text||"";el.style.background=error?"#fff0ef":"#eaf8f2";el.style.color=error?"#a12b2b":"#16634a";}
-function bootStage(text){$("iaBootMessage").textContent=text;}
+function message(text,error=false){const el=$("iaNotice");if(!el)return;el.hidden=!text;el.textContent=text||"";el.style.background=error?"#fff0ef":"#eaf8f2";el.style.color=error?"#a12b2b":"#16634a";}
+function setText(id,value){const el=$(id);if(el)el.textContent=value==null?"":String(value);return el;}
+function bootStage(text){setText("iaBootMessage",text);}
 function withTimeout(promise,label,ms=12000){let timer;return Promise.race([promise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error(label+" timed out. Check your internet connection and sign in again.")),ms);})]).finally(()=>clearTimeout(timer));}
-function fail(text){$("iaBootMessage").textContent=text;const spinner=$("iaBoot").querySelector(".ia-spinner");if(spinner)spinner.hidden=true;const p=document.createElement("p");p.className="ia-error";p.textContent=text;$("iaBoot").querySelector(".ia-boot-card").append(p);}
+function fail(text){const boot=$("iaBoot");if(!boot)return;setText("iaBootMessage",text);const spinner=boot.querySelector(".ia-spinner");if(spinner)spinner.hidden=true;const card=boot.querySelector(".ia-boot-card");if(card){const old=card.querySelector(".ia-error");if(old)old.remove();const p=document.createElement("p");p.className="ia-error";p.setAttribute("role","alert");p.textContent=text;card.append(p);}}
 function initials(v){return String(v||"IA").trim().split(/\s+/).slice(0,2).map(x=>x[0]||"").join("").toUpperCase()||"IA";}
 function cell(tr,value,bold=false){const td=document.createElement("td");if(bold){const b=document.createElement("strong");b.textContent=value??"—";td.append(b);}else td.textContent=value??"—";tr.append(td);}
 function empty(id,cols,text){const body=$(id);if(body)body.innerHTML='<tr><td class="ia-empty" colspan="'+cols+'">'+text+'</td></tr>';}
@@ -41,37 +42,40 @@ async function verifyAccess(){
  const i=await withTimeout(state.db.from("institutions").select("id,name,school_code,short_code,institution_type,logo_url,primary_color,secondary_color,brand_colors,status,admin_email,contact_email,contact_phone,website_url").eq("id",state.institutionId).single(),"Institution details lookup");
  if(i.error)throw i.error;state.institution=i.data;
  const institutionCode=i.data.school_code||i.data.short_code||"";
- if(institutionCode){const codeEl=$("iaBootInstitutionCode");codeEl.textContent="Institution code: "+institutionCode;codeEl.hidden=false;}
+ if(institutionCode){const codeEl=$("iaBootInstitutionCode");if(codeEl){codeEl.textContent="Institution code: "+institutionCode;codeEl.hidden=false;}}
  bootStage("Loading your enabled academic modules…");
  const ent=await withTimeout(state.db.rpc("current_user_module_entitlements"),"Module permissions lookup");
  if(!ent.error&&Array.isArray(ent.data))state.modules=new Set(ent.data.map(x=>String(x).toLowerCase()));
  else {const mods=await withTimeout(state.db.from("institution_modules").select("module_key").eq("institution_id",state.institutionId).eq("enabled",true),"Institution modules lookup");if(mods.error)throw mods.error;state.modules=new Set((mods.data||[]).map(x=>String(x.module_key).toLowerCase()));}
 }
 function applyIdentity(){
- const i=state.institution,p=state.profile,name=i.name||"Your Institution",code=i.school_code||i.short_code||"";
+ const i=state.institution||{},p=state.profile||{},name=i.name||"Your Institution",code=i.school_code||i.short_code||"";
  document.title=name+" | Institution Admin";
- $("iaTenantName").textContent=name;$("iaSchoolCode").textContent=code?"School code "+code:"Institution workspace";
- $("iaTopInstitution").textContent=name;$("iaTopCode").textContent=code?"School code "+code:"";
- $("iaTopInstitutionName").textContent=name;$("iaDropdownInstitutionName").textContent=name;
- $("iaDropdownAdminName").textContent=p.full_name||p.email||"Administrator";
- $("iaTopInstitutionRole").textContent=p.full_name||p.email||"Institution administrator";
- $("iaMyProfileName").textContent=p.full_name||"Administrator";$("iaMyProfileEmail").textContent=p.email||state.user.email||"—";
- $("iaMyProfileRole").textContent=String(p.role||"institution_admin").replace(/_/g," ").replace(/\b\w/g,x=>x.toUpperCase());
- $("iaMyProfileStatus").textContent=statusLabel(p.status);$("iaMyProfileInstitution").textContent=name;
- $("iaMyProfileAvatar").textContent=initials(p.full_name||p.email);
- $("iaWelcomeName").textContent=(p.full_name||"Administrator").split(/\s+/)[0];$("iaAvatar").textContent=initials(p.full_name||p.email);
- $("iaToday").textContent=new Intl.DateTimeFormat("en-KE",{weekday:"short",day:"numeric",month:"short",year:"numeric"}).format(new Date());
- $("iaProfileName").textContent=name;$("iaProfileType").textContent=i.institution_type||"Institution";$("iaProfileEmail").textContent=i.contact_email||i.admin_email||"";
- $("iaProfileCode").textContent=code||"—";$("iaProfileStatus").textContent=statusLabel(i.status);$("iaProfileModules").textContent=state.modules.size+" enabled";
- $("iaSettingsName").textContent=name;$("iaSettingsType").textContent=i.institution_type||"Institution";
- $("setCode").textContent=code||"—";$("setAdminEmail").textContent=i.admin_email||"—";$("setContactEmail").textContent=i.contact_email||"—";$("setPhone").textContent=i.contact_phone||"—";$("setWebsite").textContent=i.website_url||"—";$("setStatus").textContent=statusLabel(i.status);
+ setText("iaTenantName",name);setText("iaSchoolCode",code?"School code "+code:"Institution workspace");
+ setText("iaTopInstitution",name);setText("iaTopCode",code?"School code "+code:"");
+ setText("iaTopInstitutionName",name);setText("iaDropdownInstitutionName",name);
+ setText("iaDropdownAdminName",p.full_name||p.email||"Administrator");
+ setText("iaTopInstitutionRole",p.full_name||p.email||"Institution administrator");
+ setText("iaMyProfileName",p.full_name||"Administrator");setText("iaMyProfileEmail",p.email||state.user?.email||"—");
+ setText("iaMyProfileRole",String(p.role||"institution_admin").replace(/_/g," ").replace(/\b\w/g,x=>x.toUpperCase()));
+ setText("iaMyProfileStatus",statusLabel(p.status));setText("iaMyProfileInstitution",name);
+ setText("iaMyProfileAvatar",initials(p.full_name||p.email));
+ setText("iaWelcomeName",(p.full_name||"Administrator").split(/\s+/)[0]);
+ // The old iaAvatar selector was removed when the account menu was redesigned.
+ // Keep this optional so a missing legacy avatar can never stop the entire portal boot.
+ setText("iaAvatar",initials(p.full_name||p.email));
+ setText("iaToday",new Intl.DateTimeFormat("en-KE",{weekday:"short",day:"numeric",month:"short",year:"numeric"}).format(new Date()));
+ setText("iaProfileName",name);setText("iaProfileType",i.institution_type||"Institution");setText("iaProfileEmail",i.contact_email||i.admin_email||"");
+ setText("iaProfileCode",code||"—");setText("iaProfileStatus",statusLabel(i.status));setText("iaProfileModules",state.modules.size+" enabled");
+ setText("iaSettingsName",name);setText("iaSettingsType",i.institution_type||"Institution");
+ setText("setCode",code||"—");setText("setAdminEmail",i.admin_email||"—");setText("setContactEmail",i.contact_email||"—");setText("setPhone",i.contact_phone||"—");setText("setWebsite",i.website_url||"—");setText("setStatus",statusLabel(i.status));
  const logo=i.logo_url&&/^https:\/\//i.test(i.logo_url)?i.logo_url:"";
- ["iaLogo","iaProfileLogo","iaSettingsLogo"].forEach(id=>{const el=$(id);if(logo){const img=document.createElement("img");img.src=logo;img.alt=name+" logo";el.replaceChildren(img);}else el.textContent=initials(name);});
+ ["iaLogo","iaProfileLogo","iaSettingsLogo"].forEach(id=>{const el=$(id);if(!el)return;if(logo){const img=document.createElement("img");img.src=logo;img.alt=name+" logo";el.replaceChildren(img);}else el.textContent=initials(name);});
  const topLogo=$("iaTopInstitutionLogo");if(topLogo){if(logo){const img=document.createElement("img");img.src=logo;img.alt=name+" logo";topLogo.replaceChildren(img);}else topLogo.textContent=initials(name);}
- const list=$("iaModuleList");list.replaceChildren();const keys=[...state.modules].filter(k=>MODULES[k]);if(!keys.length){const s=document.createElement("p");s.className="ia-empty";s.textContent="No module entitlements were returned.";list.append(s);}keys.forEach(k=>{const row=document.createElement("div");row.className="ia-module-row";const ic=document.createElement("i");ic.className="fa-solid fa-circle-check";const label=document.createElement("b");label.textContent=MODULES[k];const stateEl=document.createElement("span");stateEl.className="ia-module-state";stateEl.textContent="Enabled";row.append(ic,label,stateEl);list.append(row);});
+ const list=$("iaModuleList");if(list){list.replaceChildren();const keys=[...state.modules].filter(k=>MODULES[k]);if(!keys.length){const s=document.createElement("p");s.className="ia-empty";s.textContent="No module entitlements were returned.";list.append(s);}keys.forEach(k=>{const row=document.createElement("div");row.className="ia-module-row";const ic=document.createElement("i");ic.className="fa-solid fa-circle-check";const label=document.createElement("b");label.textContent=MODULES[k];const stateEl=document.createElement("span");stateEl.className="ia-module-state";stateEl.textContent="Enabled";row.append(ic,label,stateEl);list.append(row);});}
  document.querySelectorAll("[data-module]").forEach(el=>{const key=el.dataset.module;const allowed=key==="administrator_portal"||state.modules.has(key)||(key==="admin_exams"&&state.modules.has("examinations"));el.hidden=!allowed;});
 }
-function activate(view){if(!$( "view-"+view))return;document.querySelectorAll(".ia-view").forEach(x=>x.classList.toggle("active",x.id==="view-"+view));document.querySelectorAll(".ia-nav-item").forEach(x=>x.classList.toggle("active",x.dataset.view===view));$("iaSidebar").classList.remove("open");$("iaScrim").classList.remove("show");}
+function activate(view){if(!$("view-"+view))return;document.querySelectorAll(".ia-view").forEach(x=>x.classList.toggle("active",x.id==="view-"+view));document.querySelectorAll(".ia-nav-item").forEach(x=>x.classList.toggle("active",x.dataset.view===view));$("iaSidebar")?.classList.remove("open");$("iaScrim")?.classList.remove("show");}
 const studentCharts={};
 function chartEmpty(id,text){const canvas=$(id);if(!canvas)return;const wrap=canvas.parentElement;wrap.innerHTML='<div class="ia-chart-empty">'+text+'</div>';}
 function drawStudentChart(id,type,labels,data,label){const canvas=$(id);if(!canvas||!window.Chart)return;if(studentCharts[id])studentCharts[id].destroy();const colors=['#2563eb','#0d9488','#f59e0b','#8b5cf6','#ec4899','#0891b2','#65a30d','#ea580c','#64748b','#be123c'];studentCharts[id]=new Chart(canvas,{type,data:{labels,datasets:[{label,data,backgroundColor:type==='line'?'rgba(13,148,136,.14)':colors,borderColor:type==='line'?'#0d9488':colors,borderWidth:type==='line'?3:1,fill:type==='line',tension:.35,pointRadius:type==='line'?3:0,pointHoverRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:type==='doughnut',position:'bottom',labels:{usePointStyle:true,boxWidth:8,padding:14}},tooltip:{enabled:true}},scales:type==='doughnut'?{}:{y:{beginAtZero:true,ticks:{precision:0},grid:{color:'rgba(148,163,184,.16)'}},x:{grid:{display:false}}}}});}
@@ -135,9 +139,9 @@ async function loadDashboard(){
  await loadStudentAnalytics();
  await loadWorkspaceDashboardStats();
  values.forEach(([k,v])=>{const ids={students:"statStudents",activeStudents:"statActiveStudents",pendingStudents:"statPendingStudents",graduatedStudents:"statGraduatedStudents",staff:"statStaff",programs:"statPrograms",exams:"statExams",attendance:"statAttendance",results:"statResults",admissions:"statAdmissions",hr:"statHR",timetable:"statTimetable",placements:"statPlacements",research:"statResearch",welfare:"statWelfare"};const id=ids[k];if($(id))$(id).textContent=v===null?"—":v.toLocaleString("en-KE");const reportIds={students:"repStudents",activeStudents:null,pendingStudents:null,graduatedStudents:null,staff:"repStaff",programs:"repPrograms",exams:"repExams",attendance:"repAttendance",results:"repResults",admissions:"repAdmissions",hr:"repHR",timetable:"repTimetable",placements:"repPlacements",research:"repResearch",welfare:"repWelfare"};const reportId=reportIds[k];if($(reportId))$(reportId).textContent=v===null?"—":v.toLocaleString("en-KE");});
- $("iaStudentNavCount").textContent=$("statStudents").textContent;
+ $("iaStudentNavCount")?.textContent=$("statStudents")?.textContent||"—";
  let exams=[];try{exams=await loadRows("exams","id,title,exam_name,course_name,target_program,program_type,block,exam_date,approval_status,is_published,status,created_at",6);}catch(e){console.warn("Recent examinations unavailable:",e.message);}
- const recent=$("iaRecentExams");recent.replaceChildren();if(!exams.length){const e=document.createElement("div");e.className="ia-empty";e.textContent="No examination records are available yet.";recent.append(e);}else exams.forEach(x=>{const box=document.createElement("div");box.className="ia-list-row";const left=document.createElement("div");const b=document.createElement("b");b.textContent=x.title||x.exam_name||x.course_name||"Examination";const sm=document.createElement("small");sm.textContent=[x.target_program||x.program_type,x.exam_date].filter(Boolean).join(" · ");left.append(b,sm);const tag=document.createElement("span");tag.className="ia-status";tag.textContent=x.is_published?"Published":statusLabel(x.approval_status||x.status);box.append(left,tag);recent.append(box);});
+ const recent=$("iaRecentExams");if(!recent)return;recent.replaceChildren();if(!exams.length){const e=document.createElement("div");e.className="ia-empty";e.textContent="No examination records are available yet.";recent.append(e);}else exams.forEach(x=>{const box=document.createElement("div");box.className="ia-list-row";const left=document.createElement("div");const b=document.createElement("b");b.textContent=x.title||x.exam_name||x.course_name||"Examination";const sm=document.createElement("small");sm.textContent=[x.target_program||x.program_type,x.exam_date].filter(Boolean).join(" · ");left.append(b,sm);const tag=document.createElement("span");tag.className="ia-status";tag.textContent=x.is_published?"Published":statusLabel(x.approval_status||x.status);box.append(left,tag);recent.append(box);});
 }
 async function loadStudents(){const data=await loadRows("students","id,full_name,email,admission_number,course,block,current_block,status",500);state.rows.students=data;renderStudents();}
 function renderStudents(){const q=($("iaStudentSearch").value||"").toLowerCase();const data=state.rows.students.filter(x=>[x.full_name,x.email,x.admission_number,x.course].some(v=>String(v||"").toLowerCase().includes(q)));$("iaStudentCount").textContent=data.length+" students";rows("iaStudents",data,5,(tr,x)=>{cell(tr,x.full_name,true);cell(tr,x.admission_number);cell(tr,x.course);cell(tr,x.current_block||x.block);cell(tr,statusLabel(x.status));});}
