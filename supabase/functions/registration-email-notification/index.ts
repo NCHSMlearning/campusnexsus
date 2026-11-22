@@ -6,10 +6,12 @@ const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 const BREVO_API_KEY = (Deno.env.get("BREVO_API_KEY") || "").trim();
 const BREVO_SENDER_EMAIL = (Deno.env.get("BREVO_SENDER_EMAIL") || "").trim();
 
-const allowedOrigins = new Set([
-  "https://campusnexus.co.ke",
-  "https://www.campusnexus.co.ke",
-]);
+const isSecureOrigin = (origin: string) => {
+  try {
+    const parsed = new URL(origin);
+    return parsed.protocol === "https:" && !parsed.username && !parsed.password;
+  } catch { return false; }
+};
 const corsHeaders = (origin: string) => ({
   "Access-Control-Allow-Origin": origin,
   "Access-Control-Allow-Headers": "authorization, apikey, x-client-info, content-type",
@@ -53,7 +55,7 @@ async function sendBrevo(to: string, subject: string, htmlContent: string, reply
 
 Deno.serve(async (req: Request) => {
   const origin = req.headers.get("origin") || "";
-  if (!allowedOrigins.has(origin)) return new Response("Origin not allowed", { status: 403 });
+  if (!isSecureOrigin(origin)) return new Response("Secure origin required", { status: 403 });
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders(origin) });
   if (req.method !== "POST") return json({ success: false, error: "Method not allowed" }, 405, origin);
 
@@ -125,6 +127,21 @@ Deno.serve(async (req: Request) => {
     if (institutionError || !institution) {
       console.error("Registration institution lookup failed:", institutionError?.message);
       return json({ success: false, error: "The institution linked to this registration could not be verified." }, 409, origin);
+    }
+
+    const requestHost = new URL(origin).hostname.toLowerCase();
+    let institutionPortalHost = "";
+    try {
+      const configuredHost = String(institution.portal_domain || "").trim();
+      if (configuredHost) {
+        const portalUrl = configuredHost.startsWith("http://") || configuredHost.startsWith("https://")
+          ? configuredHost : "https://" + configuredHost;
+        institutionPortalHost = new URL(portalUrl).hostname.toLowerCase();
+      }
+    } catch { institutionPortalHost = ""; }
+    const isCampusNexusHost = ["campusnexus.co.ke", "www.campusnexus.co.ke"].includes(requestHost);
+    if (!isCampusNexusHost && (!institutionPortalHost || requestHost !== institutionPortalHost)) {
+      return json({ success: false, error: "Registration origin does not match the institution portal." }, 403, origin);
     }
 
     const applicantEmail = authUser.email.toLowerCase();
