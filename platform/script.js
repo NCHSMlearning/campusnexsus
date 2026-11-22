@@ -442,7 +442,7 @@ function showFeedback(msg, type = 'info') {
     const toast = document.createElement('div');
     toast.className = 'feedback-toast';
     toast.style.cssText = `
-        position:fixed;bottom:24px;right:24px;padding:12px 20px;border-radius:12px;color:#fff;
+        position:fixed;top:20px;right:20px;bottom:auto;left:auto;padding:12px 20px;border-radius:12px;color:#fff;
         font-weight:600;font-size:13px;z-index:99999;max-width:400px;box-shadow:0 8px 32px rgba(0,0,0,0.15);
         background:${colors[type] || colors.info};animation:slideUp 0.25s ease;font-family:Inter,sans-serif;
     `;
@@ -23598,9 +23598,11 @@ if (typeof window.showToast === 'undefined') {
             newContainer.id = 'toast-container';
             newContainer.style.cssText = `
                 position: fixed;
-                bottom: 20px;
+                top: 20px;
                 right: 20px;
-                z-index: 9999;
+                bottom: auto;
+                left: auto;
+                z-index: 100100;
                 display: flex;
                 flex-direction: column;
                 gap: 10px;
