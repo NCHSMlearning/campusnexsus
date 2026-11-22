@@ -738,3 +738,9 @@ html,body{width:100%;max-width:100%;min-height:100%;margin:0}body{overflow-x:hid
  #view-user-management .ia-users-profile-hero .ia-users-avatar{width:54px;height:54px;flex-basis:54px}
  #view-user-management .ia-users-profile-meta>strong{font-size:15px}
 }
+
+#view-user-management .ia-users-edit-footer{flex-wrap:wrap}
+#view-user-management .ia-users-edit-footer .ia-users-edit-cancel{margin-left:auto;border:1px solid #d5dfeb;background:#f2f5f9;color:#36516d}
+#view-user-management .ia-users-edit-footer .ia-users-edit-save{border:1px solid #083b78;background:linear-gradient(120deg,#07366e,#08628f);color:#fff;box-shadow:0 5px 14px #07366e28}
+#view-user-management .ia-users-edit-footer .ia-users-edit-save:hover{transform:translateY(-1px);box-shadow:0 8px 20px #07366e35}
+@media(max-width:620px){#view-user-management .ia-users-edit-footer .ia-users-edit-cancel,#view-user-management .ia-users-edit-footer .ia-users-edit-save{flex:1;margin:0}}
