@@ -415,7 +415,7 @@ function checkAdminAuth() {
     
     if (!session) { 
         console.log('❌ No session found, redirecting to login...');
-        window.location.replace('/platform/login.html?redirect=%2Fadminexams%2F'); 
+        window.location.replace('/examlogin.html'); 
         return false; 
     }
     
@@ -477,6 +477,7 @@ window.logout = function() {
     // Clear all session data
     localStorage.removeItem('adminSession');
     localStorage.removeItem('userProfile');
+    localStorage.removeItem('campusNexusExamAdminAuth');
     sessionStorage.clear();
     
     // Optional: Clear any other stored data
