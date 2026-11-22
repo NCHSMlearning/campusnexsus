@@ -1,6 +1,6 @@
 (() => {
 "use strict";
-const SUPABASE_URL="https://lwhtjozfsmbyihenfunw.supabase.co";
+const SUPABASE_URL="https://irahplkvocaakjxuisto.supabase.co";
 const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx3aHRqb3pmc21ieWloZW5mdW53Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk2NTgxMjcsImV4cCI6MjA3NTIzNDEyN30.7Z8AYvPQwTAEEEhODlW6Xk-IR1FK3Uj5ivZS7P17Wpk";
 const $=id=>document.getElementById(id);
 let sb,authUser,institution=null,profile,exams=[],selectedExamId=null,markStudents=[],markUnits=[],institutionOptions=[],institutionNameMap=new Map(),platformSuperadmin=false,allInstitutionsView=false;
@@ -266,7 +266,7 @@ async function updateExamDecision(id,action){
  if(action==="approve"){if(current!=="pending"){notice("Only pending assessments can be approved.",true);return}patch={approval_status:"approved",approved_by:authUser.id,approved_at:new Date().toISOString(),rejection_reason:null};}
  else if(action==="reject"){if(current!=="pending"){notice("Only pending assessments can be rejected.",true);return}const reason=window.prompt("Reason for rejecting this assessment:");if(reason===null)return;if(!reason.trim()){notice("A rejection reason is required.",true);return}patch={approval_status:"rejected",rejection_reason:reason.trim(),is_published:false};}
  else if(action==="publish"){if(current!=="approved"){notice("Approve the assessment before publishing it.",true);return}patch={is_published:true,is_active:true,status:"published"};}else return;
- const {error}=await scopeInstitution(sb.from("exams").update(patch).eq("id",id));if(error){notice(error.message,true);return}notice(action==="approve"?"Assessment approved.":action==="reject"?"Assessment rejected.":"Assessment published to its assigned students.");await loadExams();
+ const {error}=await scopeInstitution(sb.from("exams").update(patch).eq("id",id));if(error){notice(error.message,true);return}if(action==="publish"){notice("Examination published. Sending student notifications…");try{const {data:mailResult,error:mailError}=await sb.functions.invoke("exam-published-notification",{body:{exam_id:Number(id)}});if(mailError||!mailResult?.success){console.error("Exam notification failed:",mailError||mailResult);notice("Examination is published, but student email notifications could not be completed. Check the notification service and retry.",true);}else{notice("Examination published. Email notifications accepted for "+mailResult.sent+" students ("+mailResult.skipped+" already notified or without valid email, "+mailResult.failed+" failed).");}}catch(mailError){console.error("Exam notification invocation failed:",mailError);notice("Examination published, but email notification service is temporarily unavailable.",true);}}else notice(action==="approve"?"Assessment approved.":"Assessment rejected.");await loadExams();
 }
 async function updateQuestionDecision(id,action){
  if(!selectedExamId||!exams.some(e=>String(e.id)===String(selectedExamId))){notice("Select an examination belonging to this institution.",true);return}
