@@ -240,6 +240,61 @@
         body.cn-modal-lock{overflow:hidden}
         @media(max-width:640px){.cn-institution-modal{padding:0;align-items:flex-end}.cn-institution-dialog{max-height:96vh;border-radius:18px 18px 0 0}.cn-institution-modal-head{padding:15px 17px}.cn-institution-modal-body{padding:16px}}
         .cn-school-mark img{display:block;width:100%;height:100%;object-fit:contain;background:#fff}
+
+        /* Add Institution modal — refined Campus Nexus form system */
+        .cn-institution-dialog{width:min(1120px,100%);max-height:min(92vh,980px);border:1px solid rgba(255,255,255,.5);border-radius:22px;background:#f7f9fc;box-shadow:0 28px 90px rgba(2,18,38,.38)}
+        .cn-institution-modal-head{min-height:82px;padding:19px 28px;background:linear-gradient(112deg,#082f62 0%,#0b477d 68%,#0f766e 100%);position:relative}
+        .cn-institution-modal-head:after{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;background:linear-gradient(90deg,#d4a017,#f4c84a,transparent 78%)}
+        .cn-institution-modal-head h2{font-size:21px;letter-spacing:-.025em}
+        .cn-institution-modal-head p{font-size:12.5px}
+        .cn-institution-modal-close{width:40px;height:40px;border-radius:12px;font-size:25px;transition:background .18s,transform .18s}
+        .cn-institution-modal-close:hover{background:rgba(255,255,255,.24);transform:rotate(90deg)}
+        .cn-institution-modal-body{padding:26px clamp(16px,3vw,34px) 30px;background:linear-gradient(180deg,#f8fbff 0%,#f3f7fb 100%)}
+        .cn-institution-modal-body #cnInstitutionForm{max-width:100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px 18px;padding:24px;border:1px solid #e0e8f0;border-radius:19px;background:#fff;box-shadow:0 10px 32px rgba(8,47,73,.07)}
+        .cn-institution-modal-body #cnInstitutionForm>*{min-width:0}
+        .cn-institution-modal-body #cnInstitutionForm label{display:flex;flex-direction:column;gap:7px;color:#17324d;font-size:12px;font-weight:750;line-height:1.4}
+        .cn-institution-modal-body #cnInstitutionForm input:not([type=checkbox]):not([type=radio]):not([type=color]):not([type=file]),
+        .cn-institution-modal-body #cnInstitutionForm select,
+        .cn-institution-modal-body #cnInstitutionForm textarea{width:100%;min-height:44px;padding:11px 13px;border:1px solid #d5e0eb;border-radius:10px;background:#fbfdff;color:#102b46;font:500 13px inherit;outline:none;transition:border-color .18s,box-shadow .18s,background .18s}
+        .cn-institution-modal-body #cnInstitutionForm textarea{min-height:90px;resize:vertical}
+        .cn-institution-modal-body #cnInstitutionForm input:focus,
+        .cn-institution-modal-body #cnInstitutionForm select:focus,
+        .cn-institution-modal-body #cnInstitutionForm textarea:focus{border-color:#2474b5;background:#fff;box-shadow:0 0 0 3px rgba(36,116,181,.12)}
+        .cn-institution-modal-body #cnInstitutionForm input::placeholder,
+        .cn-institution-modal-body #cnInstitutionForm textarea::placeholder{color:#91a1b2}
+        .cn-institution-modal-body #cnInstitutionForm input[type=color]{width:46px;height:40px;padding:4px;border:1px solid #dbe4ed;border-radius:9px;background:#fff}
+        .cn-institution-modal-body #cnInstitutionForm input[type=file]{width:100%;padding:10px;border:1px dashed #b9cbdc;border-radius:10px;background:#f8fbff;color:#50657a;font-size:12px}
+        .cn-institution-modal-body #cnInstitutionForm input[type=checkbox],
+        .cn-institution-modal-body #cnInstitutionForm input[type=radio]{accent-color:#0f766e}
+        .cn-institution-modal-body #cnInstitutionForm fieldset{min-width:0;margin:0;padding:17px;border:1px solid #e0e8f0;border-radius:14px;background:#fbfdff}
+        .cn-institution-modal-body #cnInstitutionForm legend{padding:0 8px;color:#0b477d;font-size:13px;font-weight:850}
+        .cn-institution-modal-body #cnInstitutionForm hr{grid-column:1/-1;width:100%;border:0;border-top:1px solid #e8eef4;margin:4px 0}
+        .cn-institution-modal-body #cnInstitutionForm [id*="Title"],
+        .cn-institution-modal-body #cnInstitutionForm [class*="section-title"],
+        .cn-institution-modal-body #cnInstitutionForm [class*="form-section"]{min-width:0}
+        .cn-institution-modal-body #cnInstitutionForm #cnModuleOptions,
+        .cn-institution-modal-body #cnInstitutionForm .cn-product-access,
+        .cn-institution-modal-body #cnInstitutionForm .cn-module-group,
+        .cn-institution-modal-body #cnInstitutionForm .cn-form-section,
+        .cn-institution-modal-body #cnInstitutionForm .form-section,
+        .cn-institution-modal-body #cnInstitutionForm .form-actions,
+        .cn-institution-modal-body #cnInstitutionForm .cn-form-actions{grid-column:1/-1}
+        .cn-institution-modal-body #cnInstitutionForm button{min-height:42px;padding:10px 17px;border:1px solid #d5e0eb;border-radius:10px;font-size:12px;font-weight:800;cursor:pointer;transition:transform .16s,box-shadow .16s,background .16s}
+        .cn-institution-modal-body #cnInstitutionForm button:hover{transform:translateY(-1px);box-shadow:0 5px 14px rgba(8,47,73,.12)}
+        .cn-institution-modal-body #cnInstitutionSave{border-color:#0b3971;background:linear-gradient(120deg,#082f62,#0b477d);color:#fff}
+        .cn-institution-modal-body #cnInstitutionCancel{background:#eef3f8;color:#29445f}
+        .cn-institution-modal-body #cnInstitutionForm #cnInstitutionFormTitle{display:none}
+        .cn-institution-modal-body #cnInstitutionForm .cn-product-access{border-color:#cbdde8;border-radius:15px;box-shadow:0 5px 18px rgba(8,47,73,.045)}
+        .cn-institution-modal-body #cnInstitutionForm .cn-module-group{margin:0 0 12px;padding:15px}
+        @media(max-width:760px){
+          .cn-institution-modal{padding:0;align-items:flex-end}
+          .cn-institution-dialog{width:100%;max-height:96vh;border-radius:19px 19px 0 0}
+          .cn-institution-modal-head{padding:15px 18px}
+          .cn-institution-modal-body{padding:13px}
+          .cn-institution-modal-body #cnInstitutionForm{grid-template-columns:minmax(0,1fr);gap:13px;padding:16px}
+          .cn-institution-modal-body #cnInstitutionForm>*{grid-column:1/-1}
+        }
+
       </style>
       <section class="cn-institution-dialog" role="dialog" aria-modal="true" aria-labelledby="cnInstitutionModalHeading">
         <header class="cn-institution-modal-head"><div><h2 id="cnInstitutionModalHeading">Manage institution</h2><p>Update institution details, branding, access and enabled modules</p></div><button type="button" class="cn-institution-modal-close" aria-label="Close">&times;</button></header>
