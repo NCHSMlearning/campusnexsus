@@ -3,7 +3,7 @@
 // ============================================================
 const CONFIG = {
     SUPABASE_URL: 'https://irahplkvocaakjxuisto.supabase.co',
-    SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlyYWhwbGt2b2Nhakp4dWlzdG8iLCJyb2xlIjoiYW5vbiIsImlhdCI6MTc4Nzg4Njk4NCwiZXhwIjoyMTAzNDYyOTg0fQ.BFOwdRVDz4r1oYgUjm8zQbthqblGRq4c3WQWQaOhu7g',
+    SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_5Cg5FFudf03UnmOXGNGMHQ_uK9S-uQX',
     FACE_MODEL_URL: 'https://justadudewhohacks.github.io/face-api.js/models',
     FACE_DETECTION_INTERVAL: 650,
     // Slightly more sensitive detection plus adaptive frame brightening improves
