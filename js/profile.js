@@ -17,12 +17,12 @@
 // ============================================================
 
 if (typeof SUPABASE_URL === 'undefined') {
-    window.SUPABASE_URL = 'https://lwhtjozfsmbyihenfunw.supabase.co';
+    window.SUPABASE_URL = 'https://irahplkvocaakjxuisto.supabase.co';
 }
 
 if (typeof APP_CONFIG === 'undefined') {
     window.APP_CONFIG = {
-        SUPABASE_URL: 'https://lwhtjozfsmbyihenfunw.supabase.co'
+        SUPABASE_URL: 'https://irahplkvocaakjxuisto.supabase.co'
     };
 }
 
