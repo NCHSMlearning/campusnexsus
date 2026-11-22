@@ -125,7 +125,7 @@ jobs:
               if brand_script in html:
                   continue
               if re.search(r"</head>", html, re.I):
-                  html = re.sub(r"</head>", brand_script + "\\n</head>", html, count=1, flags=re.I)
+                  html = re.sub(r"</head>", brand_script + chr(10) + "</head>", html, count=1, flags=re.I)
               else:
                   html = brand_script + html
               page.write_text(html, encoding="utf-8")
