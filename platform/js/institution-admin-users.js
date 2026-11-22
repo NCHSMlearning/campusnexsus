@@ -20,7 +20,7 @@
     const q=norm(state.search);
     return state.rows.filter(u=>{
       const r=roleOf(u), s=statusOf(u), block=norm(blockOf(u));
-      if(state.tab==='pending' && !['pending','submitted','awaiting_approval'].includes(s)) return false;
+      if(state.tab==='pending' && !['pending','pending_application','submitted','awaiting_approval'].includes(s)) return false;
       if(state.tab==='students' && r!=='student') return false;
       if(state.tab==='lecturers' && !['lecturer','tutor','clinical_instructor'].includes(r)) return false;
       if(state.tab==='administrators' && !['institution_admin','director','finance_officer','registrar','hod','admin'].includes(r)) return false;
@@ -77,7 +77,7 @@
       const actions=document.createElement('td'), view=document.createElement('button'), edit=document.createElement('button');
       view.type='button';view.className='ia-users-review-btn';view.textContent='View';view.addEventListener('click',()=>showDetails(u));
       edit.type='button';edit.className='ia-users-review-btn ia-users-edit-btn';edit.textContent='Edit';edit.addEventListener('click',()=>openEditForm(u));
-      if(state.tab==='pending' && ['pending','submitted','awaiting_approval'].includes(statusOf(u))){
+      if(state.tab==='pending' && ['pending','pending_application','submitted','awaiting_approval'].includes(statusOf(u))){
         const approve=document.createElement('button');approve.type='button';approve.className='ia-users-review-btn ia-users-edit-btn';approve.textContent='Approve';approve.addEventListener('click',()=>approvePendingUser(u,approve));actions.append(approve);
       }
       actions.append(view,edit);tr.append(actions);
@@ -143,7 +143,7 @@
     };
     const roles=[['student','Student'],['lecturer','Lecturer']];
     if(u.role&&!roles.some(x=>x[0]===u.role))roles.push([u.role,label(u.role)+' (current role)']);
-    const statusOptions=[['approved','Approved'],['blocked','Blocked'],['inactive','Inactive']];
+    const statusOptions=[['pending','Pending approval'],['approved','Approved'],['blocked','Blocked'],['inactive','Inactive']];
     const profileFields=[
       ['full_name','Full name','text'],['email','Email address','email'],['phone','Phone number','tel'],['alt_phone','Alternative phone','tel'],
       ['gender','Gender','select',[['','Select gender'],['Male','Male'],['Female','Female'],['Other','Other']]],
@@ -166,7 +166,7 @@
       ['Documents & professional profile',profileFields.slice(26)]
     ];
     const currentStatus=statusOf(u);
-    const statusValue=['approved','active'].includes(currentStatus)?'approved':(currentStatus==='blocked'?'blocked':'inactive');
+    const statusValue=['approved','active'].includes(currentStatus)?'approved':(['pending','pending_application','submitted','awaiting_approval'].includes(currentStatus)?'pending':(currentStatus==='blocked'?'blocked':'inactive'));
     let html='<form id="iaUsersEditForm" class="ia-users-edit-form"><input type="hidden" name="user_id" value="'+safe(u.user_id||'')+'"><div class="ia-users-edit-hero"><span class="ia-users-edit-hero-icon"><i class="fa-solid fa-user-pen"></i></span><div><strong>Update user profile</strong><small>Manage personal details, academic placement, documents and account access</small></div><span class="ia-users-edit-id">'+safe(identityOf(u))+'</span></div>';
     groups.forEach(([heading,fields])=>{
       const sectionIcons={'Personal information':'fa-user','Guardian / parent information':'fa-people-roof','Academic & employment information':'fa-graduation-cap','Documents & professional profile':'fa-folder-open'};
@@ -263,7 +263,7 @@
   async function approvePendingUser(user,button){
     const api=state.api||window.CampusInstitutionAdmin;
     if(!api?.db||!api?.institutionId){message('Institution administrator session expired. Sign in again.',true);return;}
-    if(!user?.user_id||!['pending','submitted','awaiting_approval'].includes(statusOf(user))){message('This account is no longer pending. Refresh the directory.',true);return;}
+    if(!user?.user_id||!['pending','pending_application','submitted','awaiting_approval'].includes(statusOf(user))){message('This account is no longer pending. Refresh the directory.',true);return;}
     button.disabled=true;const oldLabel=button.textContent;button.textContent='Approving…';
     try{
       const {data,error}=await api.db.rpc('review_institution_registration',{p_user_id:user.user_id,p_decision:'approve',p_reason:null});
