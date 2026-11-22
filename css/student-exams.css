@@ -148,3 +148,25 @@
  #dashboard .gpa-trend-card{padding:14px 12px}
  #dashboard .gpa-trend .chart-empty{padding:13px 9px}
 }
+
+/* Modern examination cards: clear delivery mode, live countdown and focused actions */
+.exam-grid{gap:16px}
+.exam-card{padding:20px;border-radius:18px;border-color:#dfe8f0;background:linear-gradient(145deg,#fff 0%,#fbfdff 100%);box-shadow:0 7px 24px rgba(16,54,85,.045);overflow:hidden}
+.exam-card:before{content:"";position:absolute;inset:0 auto 0 0;width:3px;background:linear-gradient(180deg,#168f96,#e8b447);opacity:.8}
+.exam-card.is-upcoming{background:radial-gradient(ellipse at 100% 0%,rgba(235,181,70,.10),transparent 48%),linear-gradient(145deg,#fff,#fbfdff)}
+.exam-card-top{align-items:flex-start}.exam-title-wrap{min-width:0}
+.exam-card-kicker{margin-bottom:6px;font-size:8px;font-weight:850;letter-spacing:1.4px;color:#8497a8}
+.exam-card h3{font-size:15px;line-height:1.35;letter-spacing:-.25px;margin-bottom:5px;color:#123b5c}
+.exam-unit{font-size:11px;line-height:1.5}
+.exam-mode-row{margin-top:14px}
+.exam-mode{display:inline-flex;align-items:center;gap:7px;padding:7px 10px;border-radius:30px;font-size:9px;font-weight:800;letter-spacing:.1px}
+.exam-mode.online{background:#e8f7f5;color:#087b7c}.exam-mode.venue{background:#edf3f8;color:#526e84}
+.exam-meta{gap:10px 17px;margin:16px 0;color:#70859a;font-size:10px}.exam-meta i{font-size:11px}
+.exam-countdown-panel{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:3px 0 15px;padding:12px 14px;border:1px solid #f0e3c8;border-radius:12px;background:linear-gradient(100deg,#fff9ed,#fffdf8)}
+.countdown-label{display:flex;align-items:center;gap:7px;color:#8b6a31;font-size:10px;font-weight:750}.countdown-label i{font-size:12px}
+.exam-countdown{font-variant-numeric:tabular-nums;font-size:15px;letter-spacing:.2px;color:#8b5e13}
+.exam-actions{padding-top:14px;gap:12px}.exam-date{font-size:10px;line-height:1.5}
+.primary-btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:40px;padding:0 16px;border-radius:11px;font-size:10px;background:linear-gradient(110deg,#103d61,#087f83);box-shadow:0 7px 17px rgba(8,103,112,.17)}
+.secondary-btn.online-pending{display:inline-flex;align-items:center;gap:8px;min-height:38px;padding:0 13px;border:1px solid #dfe8ef;background:#f1f5f8;color:#60788b;opacity:1}
+.exam-closed-note{display:inline-flex;align-items:center;gap:7px;color:#7b8b9a;font-size:10px;font-weight:750}
+@media(max-width:680px){.exam-card{padding:16px;border-radius:15px}.exam-card h3{font-size:14px}.exam-meta{font-size:9px;gap:9px 12px}.exam-actions{align-items:flex-start}.exam-actions .primary-btn,.exam-actions .secondary-btn{width:100%;min-height:43px}.exam-countdown{font-size:13px}}
