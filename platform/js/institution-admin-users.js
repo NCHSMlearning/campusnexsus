@@ -171,7 +171,7 @@
     html+=field('status','Account status','select',statusValue,statusOptions);
     html+=field('login_enabled','Login access','select',u.login_enabled===false?'false':'true',[['true','Enabled'],['false','Disabled']]);
     html+='</div><p class="ia-users-edit-hint">Blocked or inactive accounts should have login disabled. Approving an account enables login unless you explicitly switch it off.</p></section>';
-    html+='<div class="ia-users-edit-actions"><button type="submit" class="ia-users-save-btn">Save all changes</button><button type="button" class="ia-users-cancel-btn" id="iaUsersEditCancel">Cancel</button></div><div class="ia-users-password-reset"><button type="button" id="iaUsersSendReset">Send password reset link</button><span>Uses the secure Supabase recovery flow; no password is stored in this form.</span></div><p id="iaUsersEditFeedback" role="status"></p></form>';
+    html+='<section class="ia-users-edit-section"><h3>Academic history</h3><div id="iaUsersAcademicHistory" class="ia-users-history">Loading academic history…</div></section><div class="ia-users-edit-actions"><button type="submit" class="ia-users-save-btn"><button type="button" class="ia-users-cancel-btn" id="iaUsersEditCancel">Cancel</button></div><div class="ia-users-password-reset"><button type="button" id="iaUsersSendReset">Send password reset link</button><span>Uses the secure Supabase recovery flow; no password is stored in this form.</span></div><p id="iaUsersEditFeedback" role="status"></p></form>';
     body.innerHTML=html;
     $('iaUsersEditCancel').addEventListener('click',()=>showDetails(u));
     $('iaUsersEmailUpdate').addEventListener('click',async()=>{
@@ -201,7 +201,32 @@
       else if(e.target.value==='approved')$('iaEdit_login_enabled').value='true';
     });
     $('iaUsersEditForm').addEventListener('submit',e=>saveUserEdit(e,u));
+    loadAcademicHistory(u).catch(error=>{const host=$('iaUsersAcademicHistory');if(host)host.textContent=error.message||'Unable to load academic history.';});
     if(typeof dialog.showModal==='function'&&!dialog.open)dialog.showModal();else dialog.setAttribute('open','');
+  }
+  async function loadAcademicHistory(user){
+    const host=$('iaUsersAcademicHistory');if(!host)return;
+    host.textContent='Loading academic history…';
+    const client=state.api?.db||window.CampusInstitutionAdmin?.db;
+    const id=user.user_id;
+    if(!client||!id){host.textContent='Academic history is unavailable for this account.';return;}
+    const [regs,grades,attendance]=await Promise.all([
+      client.from('student_unit_registrations').select('unit_code,unit_name,status,reg_type,submitted_date').eq('student_id',id).order('submitted_date',{ascending:false}).limit(20),
+      client.from('exam_grades').select('total_score,graded_at,subject_name,exams:exam_id(unit_code,course_name,block_term,exam_name)').eq('student_id',id).order('graded_at',{ascending:false}).limit(20),
+      client.from('geo_attendance_logs').select('check_in_time,session_type,target_name,is_verified').eq('student_id',id).order('check_in_time',{ascending:false}).limit(10)
+    ]);
+    host.replaceChildren();
+    const addGroup=(title,rows,renderRow)=>{
+      const section=document.createElement('div');section.className='ia-users-history-group';
+      const heading=document.createElement('strong');heading.textContent=title+' ('+(rows?.data?.length||0)+')';section.append(heading);
+      if(rows?.error){const p=document.createElement('p');p.textContent='Not available with current institution permissions.';section.append(p);}
+      else if(!rows?.data?.length){const p=document.createElement('p');p.textContent='No records found.';section.append(p);}
+      else rows.data.forEach(row=>{const line=document.createElement('div');line.className='ia-users-history-row';line.textContent=renderRow(row);section.append(line);});
+      host.append(section);
+    };
+    addGroup('Registered units',regs,r=>[r.unit_code,r.unit_name,r.reg_type,r.status,r.submitted_date?new Date(r.submitted_date).toLocaleDateString():null].filter(Boolean).join(' · '));
+    addGroup('Exam grades',grades,r=>{const ex=r.exams||{};return [ex.unit_code||ex.course_name||r.subject_name,ex.exam_name,r.total_score==null?null:String(r.total_score)+'%',r.graded_at?new Date(r.graded_at).toLocaleDateString():null].filter(Boolean).join(' · ');});
+    addGroup('Attendance',attendance,r=>[r.target_name,r.session_type,r.is_verified?'Verified':'Unverified',r.check_in_time?new Date(r.check_in_time).toLocaleString():null].filter(Boolean).join(' · '));
   }
   async function saveUserEdit(event,user){
     event.preventDefault();
