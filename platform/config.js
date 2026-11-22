@@ -1,7 +1,7 @@
 // config.js - Configuration for NCHSM Student Portal & Lecturer Dashboard
 // This file contains PUBLIC test credentials
 // For production, use GitHub Secrets with GitHub Actions
-
+ 
 // ========== DISABLE CONSOLE LOGS IN PRODUCTION ==========
 (function() {
     // Check if running on localhost or development
