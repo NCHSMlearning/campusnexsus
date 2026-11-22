@@ -1191,13 +1191,18 @@
            ============================================ */
         .toast-container {
             position: fixed;
-            bottom: 20px;
-            right: 20px;
+            top: max(16px, env(safe-area-inset-top));
+            bottom: auto;
+            right: max(16px, env(safe-area-inset-right));
+            left: auto;
             z-index: 9999;
             display: flex;
             flex-direction: column;
             gap: 10px;
-            max-width: 400px;
+            width: min(400px, calc(100vw - 32px));
+            max-width: calc(100vw - 32px);
+            align-items: flex-end;
+            pointer-events: none;
         }
         
         .toast {
