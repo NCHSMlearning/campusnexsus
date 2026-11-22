@@ -132,8 +132,8 @@
       else control='<input id="'+id+'" name="'+key+'" type="'+type+'" value="'+safe(v)+'" '+attrs+'>';
       return '<label class="ia-users-edit-field"><span>'+safe(label)+'</span>'+control+'</label>';
     };
-    const roles=[['student','Student'],['lecturer','Lecturer'],['institution_admin','Institution administrator'],['finance_officer','Finance officer'],['director','Director'],['registrar','Registrar'],['hod','Head of department']];
-    if(u.role&&!roles.some(x=>x[0]===u.role))roles.push([u.role,label(u.role)]);
+    const roles=[['student','Student'],['lecturer','Lecturer']];
+    if(u.role&&!roles.some(x=>x[0]===u.role))roles.push([u.role,label(u.role)+' (current role)']);
     const statusOptions=[['approved','Approved'],['blocked','Blocked'],['inactive','Inactive']];
     const profileFields=[
       ['full_name','Full name','text'],['email','Email address','email'],['phone','Phone number','tel'],['alt_phone','Alternative phone','tel'],
@@ -171,9 +171,10 @@
     html+=field('status','Account status','select',statusValue,statusOptions);
     html+=field('login_enabled','Login access','select',u.login_enabled===false?'false':'true',[['true','Enabled'],['false','Disabled']]);
     html+='</div><p class="ia-users-edit-hint">Blocked or inactive accounts should have login disabled. Approving an account enables login unless you explicitly switch it off.</p></section>';
-    html+='<div class="ia-users-edit-actions"><button type="submit" class="ia-users-save-btn">Save all changes</button><button type="button" class="ia-users-cancel-btn" id="iaUsersEditCancel">Cancel</button></div><p id="iaUsersEditFeedback" role="status"></p></form>';
+    html+='<div class="ia-users-edit-actions"><button type="submit" class="ia-users-save-btn">Save all changes</button><button type="button" class="ia-users-cancel-btn" id="iaUsersEditCancel">Cancel</button></div><div class="ia-users-password-reset"><button type="button" id="iaUsersSendReset">Send password reset link</button><span>Uses the secure Supabase recovery flow; no password is stored in this form.</span></div><p id="iaUsersEditFeedback" role="status"></p></form>';
     body.innerHTML=html;
     $('iaUsersEditCancel').addEventListener('click',()=>showDetails(u));
+    $('iaUsersSendReset').addEventListener('click',async()=>{const b=$('iaUsersSendReset');b.disabled=true;b.textContent='Sending…';try{const client=state.api?.db||window.CampusInstitutionAdmin?.db;if(!u.email)throw new Error('This account has no email address.');const {error}=await client.auth.resetPasswordForEmail(u.email);if(error)throw error;b.textContent='Reset link sent';}catch(err){b.disabled=false;b.textContent='Send password reset link';feedback.textContent=err.message||'Unable to send password reset link.';feedback.className='error';}});
     $('iaEdit_status').addEventListener('change',e=>{
       if(e.target.value==='blocked'||e.target.value==='inactive')$('iaEdit_login_enabled').value='false';
       else if(e.target.value==='approved')$('iaEdit_login_enabled').value='true';
