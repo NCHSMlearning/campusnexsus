@@ -93,7 +93,10 @@ form.addEventListener('submit',async e=>{
    // Carry the role verification into this tab so the dashboard does not
    // repeat profile/membership reads that may be blocked by dashboard RLS.
    const matchedMembership=(memberships||[]).find(m=>String(m.institution_id)===String(selectedInstitution.id));
-   sessionStorage.setItem('campusNexusExamAdminAuth',JSON.stringify({user_id:data.user.id,role:isPlatformAdmin?'superadmin':'institution_admin',institution_id:isInstitutionAdmin?(matchedMembership?.institution_id||profile.institution_id||selectedInstitution.id):(profile.institution_id||null),verified_at:Date.now()}));
+   const adminVerification={user_id:data.user.id,role:isPlatformAdmin?'superadmin':'institution_admin',institution_id:isInstitutionAdmin?(matchedMembership?.institution_id||profile.institution_id||selectedInstitution.id):(profile.institution_id||null),verified_at:Date.now()};
+   // Keep the verified hand-off available if the browser opens /adminexams/ in a fresh tab.
+   sessionStorage.setItem('campusNexusExamAdminAuth',JSON.stringify(adminVerification));
+   localStorage.setItem('campusNexusExamAdminAuth',JSON.stringify(adminVerification));
    show('Administrator verified. Opening the examination dashboard…','info');
    location.replace('/adminexams/');
    return;
