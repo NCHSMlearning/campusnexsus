@@ -456,40 +456,25 @@ document.addEventListener('DOMContentLoaded', async function() {
         // 10. Resolve lecturer ID for all modules
         // ==========================================
         const userId = profile.user_id;
-        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(userId));
-
-        if (!isUUID) {
-            console.log('🔍 Non-UUID user ID detected:', userId);
-
-            try {
-                const { data: staff } = await window.lecturerDB.supabase
-                    .from('staff_records')
-                    .select('id, first_name, other_names')
-                    .eq('id', userId)
-                    .maybeSingle();
-
-                if (staff) {
-                    console.log('✅ Found staff record with ID:', staff.id);
-                    window.CORRECT_LECTURER_ID = staff.id;
-                } else {
-                    const { data: staffByEmail } = await window.lecturerDB.supabase
-                        .from('staff_records')
-                        .select('id, first_name, other_names')
-                        .eq('email', profile.email)
-                        .maybeSingle();
-
-                    if (staffByEmail) {
-                        console.log('✅ Found staff record by email:', staffByEmail.id);
-                        window.CORRECT_LECTURER_ID = staffByEmail.id;
-                    }
-                }
-            } catch (e) {
-                console.warn('Could not find staff record:', e.message);
+        window.CORRECT_LECTURER_ID = null;
+        try {
+            const supabase = window.lecturerDB?.supabase;
+            if (!supabase) throw new Error('Supabase client is unavailable.');
+            const { data: authData, error: authError } = await supabase.auth.getUser();
+            if (authError) throw authError;
+            const authId = authData?.user?.id;
+            if (!authId || String(authId) !== String(userId)) throw new Error('Lecturer profile does not match the authenticated session.');
+            const { data: identity, error: identityError } = await supabase.rpc('current_lecturer_staff_assignment_identity');
+            if (identityError) throw identityError;
+            if (!identity?.id || String(identity.id) !== String(authId) || !identity.assignment_id) {
+                throw new Error('Lecturer assignment mapping is missing or ambiguous. Ask the institution administrator to reconcile your assignments.');
             }
-        } else {
-            window.CORRECT_LECTURER_ID = userId;
+            window.CORRECT_LECTURER_ID = String(identity.assignment_id);
+            console.log('[Lecturer Main] Verified lecturer assignment key resolved.');
+        } catch (identityError) {
+            console.error('[Lecturer Main] Lecturer assignment identity could not be verified:', identityError);
+            window.CORRECT_LECTURER_ID = null;
         }
-
         console.log('🔑 Lecturer ID for modules:', window.CORRECT_LECTURER_ID);
 
         // ==========================================
