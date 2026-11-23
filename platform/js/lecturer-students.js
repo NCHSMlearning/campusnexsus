@@ -202,139 +202,87 @@ const LecturerStudents = {
     
     // ─── LOAD ASSIGNED UNITS ───
     async loadAssignedUnits() {
-        try {
-            const supabase = window.lecturerDB?.supabase;
-            if (!supabase) return;
-            
-            const profile = window.lecturerDB?.getCurrentUserProfile();
-            if (!profile) return;
-            
-            const lecturerId = this.lecturerAssignmentId || profile.user_id;
-            const program = this.currentProgram || profile.program || profile.department || 'KRCHN';
-            
-            const { data: assignments, error } = await supabase
-                .from('lecturer_subject_assignments')
-                .select('subject_name, subject_code, block, program, academic_year')
-                .eq('lecturer_id', lecturerId)
-                .eq('program', program);
-            
-            if (error) {
-                console.error('Error loading assigned units:', error);
-                return;
-            }
-            
-            this.assignedUnits = assignments || [];
-            console.log(`📚 Loaded ${this.assignedUnits.length} assigned units (${this.getProgramTypeLabel()})`);
-            
-        } catch (error) {
-            console.error('Failed to load assigned units:', error);
-        }
+        const supabase = window.lecturerDB?.supabase;
+        if (!supabase) throw new Error('Supabase client is unavailable.');
+        const lecturerId = String(this.lecturerAssignmentId || await this.resolveLecturerId() || '');
+        if (!lecturerId) throw new Error('Lecturer assignment identity is unavailable.');
+        const norm = value => String(value || '').trim().toLowerCase();
+        const { data, error } = await supabase.from('lecturer_subject_assignments')
+            .select('lecturer_id, subject_name, subject_code, block, program, academic_year')
+            .eq('lecturer_id', lecturerId);
+        if (error) throw error;
+        const program = norm(this.currentProgram);
+        this.assignedUnits = (data || []).filter(row => !program || norm(row.program) === program);
+        console.log('[Lecturer Students] Assigned units loaded:', this.assignedUnits.length);
     },
-    
+
     // ─── LOAD STUDENTS ───
     async loadStudents() {
         try {
-            const profile = window.lecturerDB?.getCurrentUserProfile();
-            const program = this.currentProgram || profile?.program || profile?.department || 'KRCHN';
-            
             const supabase = window.lecturerDB?.supabase;
-            if (!supabase) {
-                console.warn('Supabase not available');
-                return;
-            }
-            
-            // ✅ FIX: Check if this is a TVET lecturer
-            // TVET lecturers should see ALL TVET students, not just one program
-            const isTVETLecturer = this.isTVET || 
-                                   profile?.department === 'TVET' || 
-                                   profile?.program_type === 'TVET' ||
-                                   ['CPOTT', 'DPOTT', 'TVET', 'CCH', 'DCH', 'DHRIT'].includes(program) ||
-                                   program === 'TVET';
-            
-            console.log(`🔍 Lecturer type: ${isTVETLecturer ? 'TVET' : 'Nursing'}`);
-            console.log(`🔍 Lecturer program: ${program}`);
-            
-            let query = supabase
-                .from('consolidated_user_profiles_table')
-                .select('*')
-                .eq('role', 'student')
-                .in('status', ['active', 'approved'])
-                .order('full_name', { ascending: true });
-            
-            if (isTVETLecturer) {
-                // ✅ TVET Lecturer: Show ALL TVET students (any program in TVET)
-                query = query.eq('program_type', 'TVET');
-                console.log('📚 TVET Lecturer: Showing ALL TVET students');
-            } else {
-                // Nursing Lecturer: Show only their specific program
-                query = query.eq('program', program);
-                console.log(`📚 Nursing Lecturer: Showing ${program} students`);
-            }
-            
-            const { data: students, error } = await query;
-            
-            if (error) {
-                console.error('Error loading students:', error);
-                return;
-            }
-            
-            this.students = students || [];
-            
-            // Add block display for TVET
-            this.students.forEach(s => {
-                s.block_display = this.getBlockDisplay(s.block);
-            });
-            
-            // Get student registrations for assigned units
-            if (this.assignedUnits.length > 0) {
-                const unitNames = this.assignedUnits.map(u => u.subject_name);
-                const blocks = [...new Set(this.assignedUnits.map(u => u.block))];
-                
-                const { data: registrations, error: regError } = await supabase
-                    .from('student_unit_registrations')
-                    .select('student_id, unit_name, block, status')
-                    .eq('program', program)
-                    .eq('status', 'approved')
-                    .in('block', blocks)
-                    .in('unit_name', unitNames);
-                
-                if (!regError && registrations) {
-                    const registeredStudentIds = new Set(registrations.map(r => r.student_id));
-                    this.students.forEach(s => {
-                        s.isRegistered = registeredStudentIds.has(s.user_id);
-                        s.enrolledUnits = registrations
-                            .filter(r => r.student_id === s.user_id)
-                            .map(r => r.unit_name);
-                    });
+            if (!supabase) throw new Error('Supabase client is unavailable.');
+            if (!this.lecturerAssignmentId) await this.resolveLecturerId();
+            const norm = value => String(value || '').trim().toLowerCase().replace(/\s+/g, ' ');
+            const program = String(this.currentProgram || '').trim();
+            const units = Array.isArray(this.assignedUnits) ? this.assignedUnits : [];
+            const renderEmpty = () => {
+                this.students = []; this.filteredStudents = [];
+                this.populateFilters(); this.renderTable(); this.updateStats(); this.updateProgramBadge();
+            };
+            if (!units.length) { renderEmpty(); console.info('[Lecturer Students] No assigned units; roster intentionally empty.'); return; }
+            const fetchAll = async build => {
+                const rows = [];
+                for (let from = 0; ; from += 1000) {
+                    const { data, error } = await build().range(from, from + 999);
+                    if (error) throw error;
+                    rows.push(...(data || []));
+                    if (!data || data.length < 1000) break;
                 }
-            }
-            
-            // Get risk data
+                return rows;
+            };
+            const registrations = await fetchAll(() => supabase.from('student_unit_registrations')
+                .select('student_id, admission_number, unit_code, unit_name, block, program, status')
+                .ilike('program', program).in('status', ['approved', 'completed']));
+            const matched = registrations.filter(row => row.student_id && units.some(unit => {
+                if (norm(unit.block) !== norm(row.block)) return false;
+                const codeMatch = norm(unit.subject_code) && norm(row.unit_code) && norm(unit.subject_code) === norm(row.unit_code);
+                return Boolean(codeMatch || norm(unit.subject_name) === norm(row.unit_name));
+            }));
+            const uniqueRegs = new Map();
+            matched.forEach(row => {
+                const key = [String(row.student_id), norm(row.unit_code || row.unit_name), norm(row.block)].join('|');
+                if (!uniqueRegs.has(key)) uniqueRegs.set(key, row);
+            });
+            const rosterRows = [...uniqueRegs.values()];
+            const studentIds = [...new Set(rosterRows.map(row => String(row.student_id).trim()).filter(Boolean))];
+            if (!studentIds.length) { this.assignedEnrollmentKeys = new Set(); renderEmpty(); return; }
+            const profiles = await fetchAll(() => supabase.from('consolidated_user_profiles_table')
+                .select('user_id, student_id, admission_number, full_name, email, phone, gender, program, block, intake_year, status')
+                .eq('role', 'student').in('user_id', studentIds));
+            const profileMap = new Map((profiles || []).map(row => [String(row.user_id), row]));
+            const roster = new Map(); this.assignedEnrollmentKeys = new Set();
+            rosterRows.forEach(reg => {
+                const id = String(reg.student_id).trim();
+                const profile = profileMap.get(id) || { user_id: id, student_id: reg.admission_number || '', admission_number: reg.admission_number || '', full_name: 'Student profile unavailable', program, block: reg.block || '', status: 'Unknown' };
+                if (!roster.has(id)) roster.set(id, { ...profile, units_enrolled: [], enrolled_blocks: [], isRegistered: true });
+                const student = roster.get(id), unitName = String(reg.unit_name || '').trim(), block = String(reg.block || '').trim();
+                if (unitName && !student.units_enrolled.includes(unitName)) student.units_enrolled.push(unitName);
+                if (block && !student.enrolled_blocks.includes(block)) student.enrolled_blocks.push(block);
+                [id, profile.student_id, profile.admission_number, reg.admission_number].filter(Boolean).forEach(value => this.assignedEnrollmentKeys.add(String(value).trim() + '|' + norm(reg.unit_name) + '|' + norm(reg.block)));
+            });
+            this.students = [...roster.values()].map(student => ({ ...student, unit_count: student.units_enrolled.length, block_display: this.getBlockDisplay(student.block || student.enrolled_blocks[0]) }))
+                .sort((a, b) => String(a.full_name || '').localeCompare(String(b.full_name || '')));
             await this.loadRiskData();
-            
             this.filteredStudents = [...this.students];
-            
-            this.populateFilters();
-            this.renderTable();
-            this.updateStats();
-            this.updateProgramBadge();
-            
-            // Update badge
-            const badge = document.getElementById('studentCountBadge');
-            if (badge) badge.textContent = this.students.length;
-            const badge2 = document.getElementById('studentCountBadge2');
-            if (badge2) badge2.textContent = this.students.length;
-            
-            console.log(`✅ Loaded ${this.students.length} students (${this.getProgramTypeLabel()})`);
-            
+            this.populateFilters(); this.renderTable(); this.updateStats(); this.updateProgramBadge();
+            console.log('[Lecturer Students] Assigned roster loaded:', { students: this.students.length, registrations: rosterRows.length, units: units.length, program });
         } catch (error) {
-            console.error('Failed to load students:', error);
-            if (window.LecturerUI) {
-                window.LecturerUI.showNotification('Failed to load students: ' + error.message, 'error');
-            }
+            console.error('[Lecturer Students] Failed to load assigned student roster:', error);
+            if (window.LecturerUI) window.LecturerUI.showNotification('Failed to load assigned students: ' + error.message, 'error');
+            throw error;
         }
     },
-    
+
     // ─── LOAD RISK DATA ───
     async loadRiskData() {
         try {
@@ -600,7 +548,7 @@ const LecturerStudents = {
         const total = this.students.length;
         const filtered = this.filteredStudents.length;
         const atRisk = this.students.filter(s => (s.riskLevel || 'low') === 'high').length;
-        const active = this.students.filter(s => (s.status || 'Active') === 'Active' || s.status === 'approved').length;
+        const active = this.students.filter(s => ['active', 'approved'].includes(String(s.status || 'active').trim().toLowerCase())).length;
         const probation = this.students.filter(s => (s.status || '') === 'Probation').length;
         const programs = [...new Set(this.students.map(s => s.program).filter(Boolean))];
         const typeLabel = this.getProgramTypeLabel();
