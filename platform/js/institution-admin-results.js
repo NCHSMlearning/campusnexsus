@@ -172,7 +172,7 @@
       const patch=action==="approve"
         ?{approval_status:"approved",approved_by:api.user.id,approved_at:new Date().toISOString(),rejection_reason:null}
         :{approval_status:"rejected",rejection_reason:reason.trim(),approved_by:api.user.id,approved_at:new Date().toISOString()};
-      const {data,error}=await db().from("student_marks").update(patch).in("id",ids).eq("institution_id",tenant()).eq("published",false).select("id");
+      const {data,error}=await db().from("student_marks").update(patch).in("id",ids).eq("institution_id",tenant()).eq("approval_status","pending").eq("published",false).select("id");
       if(error)throw error;
       if((data||[]).length!==ids.length)throw new Error("Only "+(data||[]).length+" of "+ids.length+" records were updated. Refresh and review the remaining records.");
       await audit("institution_admin_bulk_"+action+"_marks",null,"Institution administrator bulk "+action+" of "+ids.length+" marks.");
