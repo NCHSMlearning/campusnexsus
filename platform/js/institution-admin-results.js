@@ -127,6 +127,28 @@
     } catch(e) { notify("Unable to "+action+" marks: "+e.message,true); }
     finally {busy=false;}
   }
+  async function bulkApproval(action) {
+    if(busy)return;
+    const pending=filtered("iaMASearch").filter(r=>statusOf(r)==="pending"&&!r.published);
+    if(!pending.length){notify("There are no pending marks matching the current search.",true);return;}
+    if(!confirm(action==="approve"?"Approve all "+pending.length+" pending marks for this institution?":"Reject all "+pending.length+" pending marks for this institution?"))return;
+    let reason="";
+    if(action==="reject"){reason=prompt("Enter a reason for rejecting these marks:")||"";if(!reason.trim())return;}
+    busy=true;
+    try{
+      const ids=pending.map(r=>r.id);
+      const patch=action==="approve"
+        ?{approval_status:"approved",approved_by:api.user.id,approved_at:new Date().toISOString(),rejection_reason:null}
+        :{approval_status:"rejected",rejection_reason:reason.trim(),approved_by:api.user.id,approved_at:new Date().toISOString()};
+      const {data,error}=await db().from("student_marks").update(patch).in("id",ids).eq("institution_id",tenant()).eq("published",false).select("id");
+      if(error)throw error;
+      if((data||[]).length!==ids.length)throw new Error("Only "+(data||[]).length+" of "+ids.length+" records were updated. Refresh and review the remaining records.");
+      await audit("institution_admin_bulk_"+action+"_marks",null,"Institution administrator bulk "+action+" of "+ids.length+" marks.");
+      notify(ids.length+" marks "+(action==="approve"?"approved.":"rejected."));
+      await loadRecords();
+    }catch(e){notify("Bulk "+action+" failed: "+e.message,true);}
+    finally{busy=false;}
+  }
   async function loadControl() {
     const host=$("iaEntryControlContent");if(!host)return;
     const {data,error}=await db().from("institution_mark_entry_controls").select("id,institution_id,is_open,reason,updated_by,updated_at").eq("institution_id",tenant()).maybeSingle();
@@ -155,6 +177,8 @@
   }
   function bind() {
     ["iaMESearch","iaMASearch","iaPMSearch"].forEach(id=>$(id)?.addEventListener("input",paint));
+    $("iaApproveAllPending")?.addEventListener("click",()=>bulkApproval("approve"));
+    $("iaRejectAllPending")?.addEventListener("click",()=>bulkApproval("reject"));
     document.querySelectorAll("[data-marks-refresh]").forEach(b=>b.addEventListener("click",()=>load(b.dataset.marksRefresh==="control"?"entry-control":"marks")));
     document.addEventListener("click",e=>{
       const action=e.target.closest("[data-mark-action]");
