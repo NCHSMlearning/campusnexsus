@@ -110,10 +110,11 @@ const LecturerCourses = {
 
             const { data: staff, error } = await supabase.rpc('current_lecturer_staff_assignment_identity');
             if (error) throw error;
-            if (!staff?.id) throw new Error('No active institution-linked lecturer account identity was returned.');
+            if (!staff?.id || String(staff.id) !== String(user.id)) throw new Error('No active institution-linked lecturer account identity was returned.');
 
+            const profile = window.lecturerDB?.getCurrentUserProfile?.() || {};
             this.lecturerAssignmentId = String(staff.id).trim();
-            this.currentProgram = String(staff.program || this.currentProgram || 'KRCHN').trim();
+            this.currentProgram = String(window.CURRENT_PROGRAM || profile.program || staff.program || 'KRCHN').trim();
             this.isTVET = this.currentProgram.toUpperCase() !== 'KRCHN';
             window.CORRECT_LECTURER_ID = this.lecturerAssignmentId;
             console.log('[Lecturer Courses] Own assignment identity resolved securely.');
