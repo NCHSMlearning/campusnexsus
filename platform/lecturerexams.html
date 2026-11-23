@@ -2025,11 +2025,12 @@ window.viewLecturerStudentProgress = async function(studentId, studentName, exam
                 const comparedCorrect = options.some(([letter, value]) =>
                     optionKeyMatches(selected, letter, value) && optionKeyMatches(correct, letter, value)
                 );
-                const isCorrect = isAnswered && (
-                    explicitCorrect || (!explicitWrong && (comparedCorrect || (hasNumericMarks && Number.isFinite(numericMarks) && numericMarks > 0)))
-                );
+                const isMcq = String(q.question_type || 'mcq').toLowerCase() === 'mcq' && options.length > 0;
+                const isCorrect = isAnswered && (isMcq ? comparedCorrect : explicitCorrect || (!explicitWrong && hasNumericMarks && Number.isFinite(numericMarks) && numericMarks > 0));
                 const selectedOption = options.find(([letter, value]) => optionKeyMatches(selected, letter, value));
                 const correctOption = options.find(([letter, value]) => optionKeyMatches(correct, letter, value));
+                const questionMarks = Number(q.marks ?? 1) || 1;
+                const awardedMarks = isMcq ? (isCorrect ? questionMarks : 0) : (hasNumericMarks && Number.isFinite(numericMarks) ? numericMarks : 0);
                 return {
                     number: q.question_number ?? index + 1,
                     text: q.question_text || q.question || ('Question ' + (index + 1)),
@@ -2038,8 +2039,8 @@ window.viewLecturerStudentProgress = async function(studentId, studentName, exam
                     correctText: correctOption ? correctOption[0] + '. ' + correctOption[1] : correct,
                     isAnswered,
                     isCorrect,
-                    marks: row?.marks ?? row?.marks_obtained ?? 0,
-                    totalMarks: q.marks ?? 1
+                    marks: awardedMarks,
+                    totalMarks: questionMarks
                 };
             });
 
@@ -2047,6 +2048,8 @@ window.viewLecturerStudentProgress = async function(studentId, studentName, exam
             const correctCount = reviewRows.filter(q => q.isCorrect).length;
             const wrongCount = reviewRows.filter(q => q.isAnswered && !q.isCorrect).length;
             const unansweredCount = Math.max(0, reviewRows.length - answeredCount);
+            const earnedScore = reviewRows.reduce((sum, q) => sum + Number(q.marks || 0), 0);
+            const possibleScore = reviewRows.reduce((sum, q) => sum + Number(q.totalMarks || 0), 0);
             const attemptLabel = latestAttempt
                 ? 'Attempt #' + Number(latestAttempt.attempt_number || 1) + (latestAttempt.is_retake ? ' · Retake' : '')
                 : (attemptId ? 'Latest saved attempt' : 'Legacy result records');
@@ -2065,6 +2068,7 @@ window.viewLecturerStudentProgress = async function(studentId, studentName, exam
                         <div style="background:#fff;padding:10px;border-radius:8px;text-align:center;"><strong style="font-size:1.3rem;color:#b91c1c;">${wrongCount}</strong><div style="font-size:.7rem;color:#64748B;">Incorrect</div></div>
                         <div style="background:#fff;padding:10px;border-radius:8px;text-align:center;"><strong style="font-size:1.3rem;color:#d97706;">${unansweredCount}</strong><div style="font-size:.7rem;color:#64748B;">Unanswered</div></div>
                     </div>
+                    <div style="margin-top:12px;padding:12px;background:#fff;border-radius:8px;display:flex;justify-content:space-between;align-items:center;"><strong style="color:#0f172a;">Calculated question score</strong><strong style="font-size:1.2rem;color:#0A3D62;">${earnedScore} / ${possibleScore}</strong></div>
                 </div>
                 <div style="max-height:52vh;overflow:auto;border:1px solid #E2E8F0;border-radius:10px;">
                 <table style="width:100%;min-width:700px;border-collapse:collapse;font-size:.82rem;">
