@@ -32,23 +32,23 @@ const LecturerQuestions = {
     /**
      * Resolve the correct lecturer ID
      */
-    resolveLecturerId: function() {
+    resolveLecturerId: async function() {
         try {
             const client = this.getSupabase();
+            if (!client) throw new Error('Supabase client is unavailable.');
+            // The authenticated Supabase user UUID is the canonical owner value
+            // used by exams.created_by and exam_questions.lecturer_id.
+            const { data, error } = await client.auth.getSession();
+            if (error) throw error;
+            const authId = data?.session?.user?.id;
+            if (!authId) throw new Error('Authenticated lecturer UUID is unavailable. Please sign in again.');
+            this.lecturerUuid = authId;
             const profile = window.lecturerDB?.getCurrentUserProfile?.() || {};
-            const session = (() => { try { return JSON.parse(localStorage.getItem('staffSession') || '{}'); } catch (_) { return {}; } })();
-            this.lecturerUuid = profile.user_id || profile.auth_user_id || session.user_id || session.auth_user_id || null;
-            if (!this.lecturerUuid && client?.auth?.getSession) {
-                return client.auth.getSession().then(({ data, error }) => {
-                    if (error) throw error;
-                    this.lecturerUuid = data?.session?.user?.id || null;
-                    if (!this.lecturerUuid) throw new Error('Authenticated lecturer UUID is unavailable.');
-                    return this.lecturerUuid;
-                }).catch(error => { console.error('[Lecturer Questions] Auth identity unavailable:', error); return null; });
-            }
-            return this.lecturerUuid;
+            this.lecturerAssignmentId = window.CORRECT_LECTURER_ID || profile.staff_id || profile.id || authId;
+            return authId;
         } catch (error) {
-            console.error('Error resolving lecturer ID:', error);
+            console.error('[Lecturer Questions] Error resolving authenticated lecturer:', error);
+            this.lecturerUuid = null;
             return null;
         }
     },
@@ -88,7 +88,7 @@ const LecturerQuestions = {
             console.log('📚 Loading exams created by lecturer...');
             
             if (!this.lecturerUuid) {
-                this.resolveLecturerId();
+                await this.resolveLecturerId();
             }
             
             const sb = this.getSupabase();
@@ -310,7 +310,7 @@ const LecturerQuestions = {
 
         let html = '';
         questions.forEach((q, index) => {
-            const isMcq = q.question_type === 'mcq' || q.question_type === 'multiple_choice';
+            const isMcq = q.question_type === 'mcq' || q.question_type === 'mcq';
             const type = isMcq ? 'Multiple Choice' : 'Essay';
             const questionText = q.question_text.length > 60 ? q.question_text.substring(0, 60) + '...' : q.question_text;
 
@@ -546,8 +546,16 @@ const LecturerQuestions = {
         }
 
         // Get lecturer data
-        const lecturerData = this.getLecturerData();
-        const lecturerId = this.lecturerUuid || lecturerData.staff_id || lecturerData.id || lecturerData.user_id;
+        await this.resolveLecturerId();
+        const lecturerId = this.lecturerUuid;
+        if (!lecturerId) {
+            if (window.showToast) window.showToast('❌ Your authenticated lecturer account could not be verified. Please sign in again.', 'error');
+            return;
+        }
+        if (!examId || !Number.isFinite(examId)) {
+            if (window.showToast) window.showToast('⚠️ Please select a valid exam.', 'warning');
+            return;
+        }
 
         // Get next question number
         let nextNumber = 1;
@@ -587,15 +595,19 @@ const LecturerQuestions = {
         try {
             const sb = this.getSupabase();
             if (!sb) throw new Error('Supabase not available');
+            await this.verifyExamOwnership(examId);
 
             let result;
             if (id) {
-                // Update existing - check ownership first
-                const { data: existing } = await sb
+                // Verify the existing question belongs to this lecturer and selected exam.
+                const { data: existing, error: existingError } = await sb
                     .from('exam_questions')
-                    .select('status')
+                    .select('id, exam_id, lecturer_id, status')
                     .eq('id', id)
+                    .eq('exam_id', examId)
+                    .eq('lecturer_id', lecturerId)
                     .single();
+                if (existingError || !existing) throw new Error('Access denied. You can only edit your own questions.');
 
                 const newStatus = existing?.status === 'rejected' ? 'pending' : existing?.status;
                 
@@ -642,13 +654,16 @@ const LecturerQuestions = {
         if (!confirm('Are you sure you want to delete this question?')) return;
 
         try {
+            await this.resolveLecturerId();
+            if (!this.lecturerUuid) throw new Error('Lecturer session not found. Please login again.');
             const sb = this.getSupabase();
             if (!sb) throw new Error('Supabase not available');
 
             const { error } = await sb
                 .from('exam_questions')
                 .delete()
-                .eq('id', questionId);
+                .eq('id', questionId)
+                .eq('lecturer_id', this.lecturerUuid);
 
             if (error) throw error;
 
@@ -718,6 +733,8 @@ const LecturerQuestions = {
         if (!confirm('Resubmit this question for admin approval?')) return;
 
         try {
+            await this.resolveLecturerId();
+            if (!this.lecturerUuid) throw new Error('Lecturer session not found. Please login again.');
             const sb = this.getSupabase();
             if (!sb) throw new Error('Supabase not available');
 
@@ -729,7 +746,8 @@ const LecturerQuestions = {
                     resubmitted_at: new Date().toISOString(),
                     updated_at: new Date().toISOString()
                 })
-                .eq('id', questionId);
+                .eq('id', questionId)
+                .eq('lecturer_id', this.lecturerUuid);
 
             if (error) throw error;
 
@@ -762,7 +780,7 @@ const LecturerQuestions = {
         const sb = this.getSupabase();
         if (!sb) throw new Error('Supabase not available');
 
-        if (!this.lecturerUuid) this.resolveLecturerId();
+        if (!this.lecturerUuid) await this.resolveLecturerId();
         if (!this.lecturerUuid) throw new Error('Lecturer session not found. Please login again.');
 
         const { data, error } = await sb
@@ -874,8 +892,10 @@ const LecturerQuestions = {
     normalizeBulkType: function(value, hasOptions) {
         const v = String(value || '').trim().toLowerCase().replace(/[-_ ]/g, '');
         if (v === 'essay' || v === 'written' || v === 'writtenanswer' || v === 'subjective' || v === 'shortanswer') return 'essay';
-        if (v === 'mcq' || v === 'multiplechoice' || v === 'multiplechoicequestion') return 'multiple_choice';
-        return hasOptions ? 'multiple_choice' : 'essay';
+        if (v === 'mcq' || v === 'multiplechoice' || v === 'multiplechoicequestion') return 'mcq';
+        if (v === 'shortanswer' || v === 'short') return 'short_answer';
+        if (v === 'fillblank' || v === 'fillintheblank') return 'fill_blank';
+        return hasOptions ? 'mcq' : 'essay';
     },
 
     normalizeCorrectAnswer: function(value) {
@@ -1012,7 +1032,7 @@ const LecturerQuestions = {
 
         let html = `<div style="margin-bottom:10px;padding:10px;background:#f0fdf4;border-radius:8px;color:#166534;font-size:13px;"><strong>${questions.length}</strong> questions detected. Review the preview before uploading.</div>`;
         questions.forEach((q, i) => {
-            const mcq = q.question_type === 'multiple_choice';
+            const mcq = q.question_type === 'mcq';
             html += `<div style="border:1px solid #e2e8f0;border-radius:10px;padding:12px;margin-bottom:10px;background:#fff;">
                 <div style="font-weight:700;color:#0A3D62;margin-bottom:6px;">${i + 1}. ${this.esc(q.question_text)}</div>
                 ${mcq ? `<div style="font-size:12px;color:#475569;line-height:1.6;">
@@ -1039,7 +1059,7 @@ const LecturerQuestions = {
             const errors = [];
             questions.forEach((q, i) => {
                 if (!q.question_text) errors.push(`Question ${i + 1}: missing question text`);
-                if (q.question_type === 'multiple_choice') {
+                if (q.question_type === 'mcq') {
                     if (!q.option_a || !q.option_b) errors.push(`Question ${i + 1}: MCQ requires at least options A and B`);
                     if (!q.correct_answer || !/^[ABCD]$/.test(q.correct_answer)) errors.push(`Question ${i + 1}: valid Correct Answer A-D is required`);
                 }
@@ -1188,7 +1208,7 @@ const LecturerQuestions = {
             const questions = this.parseTabularRows(rows);
             const errors = [];
             questions.forEach((q, i) => {
-                if (q.question_type === 'multiple_choice') {
+                if (q.question_type === 'mcq') {
                     if (!q.option_a || !q.option_b) errors.push(`Question ${i + 1}: MCQ requires options A and B`);
                     if (!/^[ABCD]$/.test(q.correct_answer || '')) errors.push(`Question ${i + 1}: Correct Answer must be A, B, C or D`);
                 }
