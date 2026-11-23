@@ -2702,7 +2702,7 @@ executeLogin: async function(identifier, password) {
             superadmin: '/platform/superadmin/',
             institution_admin: '/platform/institution-admin',
             student: '/platform/student.html#dashboard',
-            lecturer: 'lecturer.html',
+            lecturer: '/platform/lecturer.html',
             hod: 'admin.html',
             nursing_hod: 'admin.html',
             tvet_hod: 'admin.html'
@@ -2725,7 +2725,7 @@ executeLogin: async function(identifier, password) {
                 const isRoleDashboard = (
                     (role === 'student' && (path === '/student.html' || path === '/student' || path === '/platform/student' || path === '/platform/student.html')) ||
                     ((role === 'admin' || hodRoles.includes(role)) && (path === '/admin.html' || path === '/admin')) ||
-                    (role === 'lecturer' && (path === '/lecturer.html' || path === '/lecturer')) ||
+                    (role === 'lecturer' && (path === '/lecturer.html' || path === '/lecturer' || path === '/platform/lecturer.html')) ||
                     (role === 'superadmin' && (
                         path === '/superadmin.html' || path === '/superadmin' ||
                         path === '/platform/superadmin' || path === '/platform/superadmin/'
