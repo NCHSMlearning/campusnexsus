@@ -5,7 +5,7 @@
  const db=()=>state.db||(state.db=window.sb||window.supabaseClient||window.supabase||window.client||null);
  const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
  const fmt=v=>v?new Date(v).toLocaleString("en-KE",{dateStyle:"medium",timeStyle:"short"}):"—";
- const today=()=>new Date().toISOString().slice(0,10);
+ const today=()=>new Intl.DateTimeFormat("en-CA",{timeZone:"Africa/Nairobi",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
  function note(msg,bad=false){let el=$("saAttendanceNotice");if(!el){el=document.createElement("div");el.id="saAttendanceNotice";el.style.cssText="padding:10px 14px;border-radius:8px;margin:0 0 14px";$("attendance")?.prepend(el);}if(el){el.textContent=msg;el.style.background=bad?"#fff0ef":"#eaf8f2";el.style.color=bad?"#a12b2b":"#16634a";}}
  function matches(r){const q=($("attendance_search")?.value||"").trim().toLowerCase(),p=($("attendance_program_filter")?.value||"all").toLowerCase(),t=($("attendance_type_filter")?.value||"all").toLowerCase(),s=($("attendance_status_filter")?.value||"all").toLowerCase();return (!q||[r.student_name,r.student_id,r.registration_number,r.program,r.target_name,r.location_address,r.institution_id].some(v=>String(v??"").toLowerCase().includes(q)))&&(p==="all"||String(r.program||"").toLowerCase().includes(p==="krchn"?"krchn":p))&&(t==="all"||String(r.session_type||r.location_type||"").toLowerCase()===t)&&(s==="all"||(s==="verified"?r.is_verified===true||String(r.attendance_status||"").toLowerCase()==="present":r.is_verified!==true&&String(r.attendance_status||"").toLowerCase()!=="present"));}
  function render(){
