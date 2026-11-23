@@ -18,7 +18,56 @@ async function createExam(e){e.preventDefault();if(S.busy)return;var total=Numbe
 async function loadExams(){var box=$('lebList');box.textContent='Loading your examinations…';try{var res=await S.db.from('exams').select('*').eq('institution_id',S.institution).order('created_at',{ascending:false}).limit(1000);if(res.error)throw res.error;S.exams=(res.data||[]).filter(function(x){return S.owners.includes(String(x.created_by||''))||S.owners.includes(String(x.lecturer_id||''))||S.owners.includes(String(x.created_by_user_id||''))});if(!S.exams.length){box.innerHTML='<p class="leb-muted">You have not created any examinations yet. Select “Create exam / CAT” to begin.</p>';return}box.innerHTML='<table class="leb-table"><thead><tr><th>Examination</th><th>Programme / Block</th><th>Schedule</th><th>Approval</th><th>Actions</th></tr></thead><tbody>'+S.exams.map(function(x){return '<tr><td><b>'+esc(x.title||x.exam_name||'Untitled')+'</b><div class="leb-muted">'+esc(x.exam_type||'Assessment')+' · '+esc(x.course_code||'No unit code')+'</div></td><td>'+esc(x.target_program||x.program_type||'—')+'<div class="leb-muted">'+esc(x.block_term||x.block||'—')+'</div></td><td>'+esc(x.exam_date||'—')+'<div class="leb-muted">'+esc(x.exam_start_time||'')+' · '+esc(x.duration_minutes||'—')+' min</div></td><td>'+esc(x.approval_status||x.status||'pending')+'</td><td><button class="leb-btn" data-qexam="'+esc(x.id)+'">Manage questions</button></td></tr>'}).join('')+'</tbody></table>';box.querySelectorAll('[data-qexam]').forEach(function(b){b.onclick=function(){var ex=S.exams.find(function(x){return String(x.id)===b.dataset.qexam});if(ex)openQuestions(ex)}})}catch(err){box.textContent='Unable to load your exams: '+err.message}}
 function openQuestions(ex){S.exam=ex;$('lebExamName').textContent=ex.title||ex.exam_name||'';$('lebQuestionModal').classList.add('open')}
 function toggleOptions(){var show=$('lebKind').value==='mcq';['lebA','lebB','lebC','lebD','lebAnswer'].forEach(function(id){$(id).closest('label').style.display=show?'flex':'none'})}
-function parse(src){var lines=String(src||'').replace(/\\r/g,'').split('\\n'),parts=[],cur=[],start=/^\\s*(?:Q(?:uestion)?\\s*)?\\d{1,3}\\s*[\\).:-]\\s+/i;lines.forEach(function(line){if(start.test(line)&&cur.some(function(x){return x.trim()})){parts.push(cur.join('\\n'));cur=[]}cur.push(line)});if(cur.length)parts.push(cur.join('\\n'));var out=[];parts.forEach(function(part){var stem=[],o={},ans=null,marks=1,hasOptions=false;part.split('\\n').map(function(x){return x.trim()}).filter(Boolean).forEach(function(line){var m=line.match(/^([A-D])\\s*[\\).:-]\\s*(.+)$/i),a=line.match(/^(?:correct\\s*)?answer\\s*[:=-]\\s*([A-D])\\b/i),mk=line.match(/^\\[?\\s*(\\d+(?:\\.\\d+)?)\\s*(?:marks?|pts?)\\s*\\]?$/i);if(m){o[m[1].toUpperCase()]=m[2];hasOptions=true}else if(a)ans=a[1].toUpperCase();else if(mk)marks=+mk[1];else stem.push(line.replace(/^(?:Q(?:uestion)?\\s*)?\\d{1,3}\\s*[\\).:-]\\s*/i,''))});var text=stem.join(' ').trim();if(text){var keys=['A','B','C','D'],found=keys.filter(function(k){return !!o[k]}),errors=[];if(hasOptions&&found.length!==4)errors.push('Incomplete MCQ: provide options A, B, C and D.');if(hasOptions&&found.length===4&&!ans)errors.push('Missing answer key: add Answer: A, B, C or D.');if(ans&&(!hasOptions||!o[ans]))errors.push('The answer key does not match an available option.');out.push({question_text:text,question_type:hasOptions?'mcq':'short_answer',marks:Math.max(1,Math.round(marks)),option_a:o.A||'',option_b:o.B||'',option_c:o.C||'',option_d:o.D||'',correct_answer:ans||'',validation_errors:errors})}});return out}
+function parse(src){
+ var lines=String(src||'').replace(/\r\n?/g,'\n').split('\n');
+ var parts=[],cur=[];
+ var start=/^\s*(?:Q(?:uestion)?\s*)?\d{1,3}\s*[).:-]\s+/i;
+ lines.forEach(function(line){
+  if(start.test(line)&&cur.some(function(x){return x.trim()})){parts.push(cur.join('\n'));cur=[]}
+  cur.push(line);
+ });
+ if(cur.length)parts.push(cur.join('\n'));
+ var out=[];
+ parts.forEach(function(part){
+  var stem=[],options={},answer=null,marks=1,hasOptions=false;
+  part.split('\n').map(function(x){return x.trim()}).filter(Boolean).forEach(function(line,index){
+   var option=line.match(/^([A-D])\s*[).:-]\s*(.*)$/i);
+   var key=line.match(/^(?:correct\s*)?answer\s*[:=-]\s*([A-D])\b/i);
+   var mark=line.match(/^\[?\s*(\d+(?:\.\d+)?)\s*(?:marks?|pts?)\s*\]?$/i);
+   if(option){
+    hasOptions=true;
+    options[option[1].toUpperCase()]=option[2].trim();
+   }else if(key){answer=key[1].toUpperCase()}
+   else if(mark){marks=Number(mark[1])}
+   else{
+    var clean=line;
+    if(index===0)clean=clean.replace(/^(?:Q(?:uestion)?\s*)?\d{1,3}\s*[).:-]\s*/i,'');
+    if(clean)stem.push(clean);
+   }
+  });
+  var question=stem.join(' ').trim();
+  if(!question)return;
+  var keys=['A','B','C','D'],present=keys.filter(function(k){return !!options[k]});
+  var isMcq=hasOptions||!!answer,errors=[];
+  if(isMcq){
+   keys.forEach(function(k){if(!options[k])errors.push('Missing option '+k+'. Add options A, B, C and D.')});
+   if(!answer)errors.push('Missing answer key. Add Answer: A, B, C or D.');
+   else if(!options[answer])errors.push('The answer key does not match an available option.');
+  }
+  out.push({
+   question_text:question,
+   question_type:isMcq?'mcq':'short_answer',
+   marks:Number.isFinite(marks)&&marks>0?marks:1,
+   option_a:options.A||'',
+   option_b:options.B||'',
+   option_c:options.C||'',
+   option_d:options.D||'',
+   correct_answer:answer||'',
+   validation_errors:errors
+  });
+ });
+ return out;
+}
 function preview(id,qs){var el=$(id);el.hidden=false;var invalid=qs.filter(function(q){return q.validation_errors&&q.validation_errors.length});el.innerHTML=qs.length?'<p class="leb-muted"><b>'+qs.length+' question(s) extracted.</b> '+(invalid.length?'<span style="color:#b91c1c;font-weight:700">'+invalid.length+' need correction before saving.</span>':'All detected questions passed format checks.')+'</p>'+qs.map(function(q,i){return '<div class="leb-q" style="'+(q.validation_errors&&q.validation_errors.length?'border:1px solid #fecaca;background:#fff7f7;border-radius:8px;margin:7px 0':'')+'"><b>'+(i+1)+'. '+esc(q.question_text)+'</b><small>'+esc(q.question_type)+' · '+q.marks+' mark(s)'+(q.correct_answer?' · Answer: '+esc(q.correct_answer):'')+'</small>'+(q.question_type==='mcq'?'<small>A. '+esc(q.option_a||'MISSING')+' · B. '+esc(q.option_b||'MISSING')+' · C. '+esc(q.option_c||'MISSING')+' · D. '+esc(q.option_d||'MISSING')+'</small>':'')+(q.validation_errors&&q.validation_errors.length?'<small style="color:#b91c1c;font-weight:700">'+q.validation_errors.map(esc).join(' ')+'</small>':'')+'</div>'}).join(''):'<p class="leb-muted">No numbered questions detected. Check the format and try again.</p>'}
 async function manualSave(e){e.preventDefault();var type=$('lebKind').value,q={question_text:$('lebStem').value.trim(),question_type:type,marks:+$('lebMarks').value||1,option_a:$('lebA').value.trim()||null,option_b:$('lebB').value.trim()||null,option_c:$('lebC').value.trim()||null,option_d:$('lebD').value.trim()||null,correct_answer:type==='mcq'?$('lebAnswer').value.trim():''};if(!q.question_text)return say('Enter a question.','error');if(type==='mcq'&&(!q.option_a||!q.option_b||!q.option_c||!q.option_d||!q.correct_answer))return say('MCQs require four options and the correct answer.','error');await saveBatch([q],$('lebManualSave'));$('lebStem').value=''}
 async function nextNumber(){var r=await S.db.from('exam_questions').select('question_number').eq('exam_id',S.exam.id).order('question_number',{ascending:false}).limit(1);if(r.error)throw r.error;return +(r.data&&r.data[0]&&r.data[0].question_number||0)+1}
