@@ -197,7 +197,7 @@ function bind(){
  const searchable=[...document.querySelectorAll("#iaNav [data-view]")];
  const aliases={
   overview:"home dashboard summary",students:"learners enrolment admissions register",
-  staff:"lecturers teachers employees personnel",academic:"program courses curriculum units",
+  staff:"lecturers teachers employees personnel",academic:"curriculum programme courses units", "unit-catalog":"curriculum unit catalogue units", "unit-registration":"curriculum unit registration approvals students", programs:"curriculum programmes intakes academic structure blocks semesters terms",
   exams:"exam examination assessment test paper","marks-entry":"marks grades scores results capture",
   "marks-approval":"approve marks verify grades","entry-control":"lock unlock marks entry",
   "published-marks":"released marks results grades",attendance:"register presence absent sessions",
