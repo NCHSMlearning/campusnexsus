@@ -2602,11 +2602,23 @@ class DashboardModule {
             if (ringEl) { ringEl.style.strokeDasharray = '251.2'; ringEl.style.strokeDashoffset = '251.2'; }
             return;
         }
-        const cleanBlock = block.replace(/^block\s*/i, '').trim();
-        if (shortEl) shortEl.textContent = cleanBlock;
-        if (labelEl) labelEl.textContent = `Block ${cleanBlock}`;
-        if (this.elements?.currentBlock) this.elements.currentBlock.textContent = `Block ${cleanBlock}`;
-        if (ringEl) { ringEl.style.strokeDasharray = '251.2'; ringEl.style.strokeDashoffset = '0'; }
+        const renderPeriod = () => {
+            const structure = this.academicStructure || window.currentAcademicStructure || {};
+            const cleanPeriod = block.replace(/^(block|semester|term)\s*/i, '').trim();
+            const label = structure.singular || 'Block';
+            if (shortEl) shortEl.textContent = cleanPeriod;
+            if (labelEl) labelEl.textContent = label + ' ' + cleanPeriod;
+            if (this.elements?.currentBlock) this.elements.currentBlock.textContent = label + ' ' + cleanPeriod;
+            if (ringEl) { ringEl.style.strokeDasharray = '251.2'; ringEl.style.strokeDashoffset = '0'; }
+        };
+        renderPeriod();
+        const client = window.sb || window.supabaseClient || window.db?.supabase;
+        if (!this.academicStructure && !this._academicStructurePromise && window.CampusAcademicStructure && client && profile.institution_id && profile.program) {
+            this._academicStructurePromise = window.CampusAcademicStructure.resolve(client, profile.institution_id, profile.program)
+                .then(structure => { this.academicStructure = structure; window.currentAcademicStructure = structure; renderPeriod(); })
+                .catch(error => console.warn('[Student Dashboard] Academic structure lookup failed:', error.message))
+                .finally(() => { this._academicStructurePromise = null; });
+        }
     }
 
     updateUIFromMetrics() {
