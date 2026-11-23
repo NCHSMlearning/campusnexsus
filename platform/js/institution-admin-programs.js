@@ -25,6 +25,7 @@ async function loadAllPrograms(){
  try {
   const {data,error}=await programQuery().select("*").eq("institution_id",tenant()).order("program_code");
   if(error)throw error; programs=data||[];
+  await syncLegacyAcademicStructure(programs);
   await renderProgramsTable(programs); updateProgramStats(programs); populateProgramSelectors(programs);
   await updateProgramTotals(); return programs;
  } catch(error){console.error("[Institution programmes]",error);empty("programs-table-body",10,"Unable to load programmes: "+error.message);notify("Unable to load programmes: "+error.message,"error");return [];}
@@ -80,17 +81,51 @@ async function createProgram(){
    if(check)throw check;if(duplicate)throw new Error('Programme code "'+code+'" already exists in this institution.');
    payload.institution_id=tenant();payload.created_at=new Date().toISOString();
    const {data,error}=await programQuery().insert(payload).select("id,category").single();if(error)throw error;
-   notify("Programme created successfully.","success");await autoCreateBlocks(data.id,data.category);
+   notify("Programme created successfully. Add its actual curriculum blocks and intakes below; no assumed template blocks were added.","success");
   }
   resetProgramForm();await loadAllPrograms();
  }catch(error){notify("Unable to save programme: "+error.message,"error");}
 }
-async function autoCreateBlocks(programId,category){
- const isTVET=category==="TVET";
- const blocks=isTVET?[["Introductory",0,12],["Term 1",1,14],["Term 2",2,14],["Term 3",3,14],["Term 4",4,14],["Term 5",5,14],["Term 6",6,14],["Final",7,12]]:[["Introductory",0,15],["Block 1",1,18],["Block 2",2,18],["Block 3",3,18],["Block 4",4,18],["Block 5",5,18],["Final",6,15]];
- const payload=blocks.map(([block_name,block_sequence,credit_hours])=>({institution_id:tenant(),program_id:programId,block_name,block_sequence,credit_hours,status:"active",created_at:new Date().toISOString(),updated_at:new Date().toISOString()}));
- const {error}=await db().from(TABLES.blocks).insert(payload);if(error)throw error;
+async function syncLegacyAcademicStructure(rows){
+ // The live platform still has historical units_catalog/profile records. Import
+ // their existing blocks/intakes into the canonical programme tables only when
+ // that programme has no canonical structure yet. Never overwrite admin edits.
+ for(const p of rows){
+  try{
+   const [{data:existingBlocks,error:blockRead},{data:legacyUnits,error:unitRead}]=await Promise.all([
+    db().from(TABLES.blocks).select("id").eq("program_id",p.id).eq("institution_id",tenant()).limit(1),
+    db().from("units_catalog").select("block,block_order").eq("program",p.program_code).eq("institution_id",tenant()).eq("status","active").limit(2000)
+   ]);
+   if(blockRead)throw blockRead;if(unitRead)throw unitRead;
+   if(!existingBlocks?.length&&legacyUnits?.length){
+    const unique=new Map();
+    legacyUnits.forEach(u=>{const name=String(u.block||"").trim();if(name&&!unique.has(name))unique.set(name,Number.isFinite(Number(u.block_order))?Number(u.block_order):null);});
+    const names=[...unique.keys()].sort((a,b)=>{const ao=unique.get(a),bo=unique.get(b);return ao!==null&&bo!==null?ao-bo:a.localeCompare(b,undefined,{numeric:true});});
+    if(names.length){
+     const now=new Date().toISOString();
+     const payload=names.map((block_name,index)=>({institution_id:tenant(),program_id:p.id,block_name,block_sequence:unique.get(block_name)??index+1,credit_hours:0,status:"active",description:"Imported from the institution's existing unit catalogue",created_at:now,updated_at:now}));
+     const {error}=await db().from(TABLES.blocks).insert(payload);if(error)throw error;
+    }
+   }
+   const [{data:existingIntakes,error:intakeRead},{data:profiles,error:profileRead}]=await Promise.all([
+    db().from(TABLES.intakes).select("id").eq("program_id",p.id).eq("institution_id",tenant()).limit(1),
+    db().from("consolidated_user_profiles_table").select("intake_year,intake_month").eq("program",p.program_code).eq("institution_id",tenant()).eq("role","student").limit(3000)
+   ]);
+   if(intakeRead)throw intakeRead;if(profileRead)throw profileRead;
+   if(!existingIntakes?.length&&profiles?.length){
+    const seen=new Set(),now=new Date().toISOString(),payload=[];
+    profiles.forEach(profile=>{
+     const year=String(profile.intake_year||"").match(/(?:19|20)\d{2}/)?.[0];if(!year)return;
+     const month=String(profile.intake_month||"").trim();
+     const key=year+"|"+month.toLowerCase();if(seen.has(key))return;seen.add(key);
+     payload.push({institution_id:tenant(),program_id:p.id,intake_name:month||("Intake "+year),intake_month:month||null,intake_year:Number(year),status:"active",created_at:now,updated_at:now});
+    });
+    if(payload.length){const {error}=await db().from(TABLES.intakes).insert(payload);if(error)throw error;}
+   }
+  }catch(error){console.warn("[Institution programmes] Legacy academic structure sync skipped for "+p.program_code,error.message||error);}
+ }
 }
+
 function resetProgramForm(){
  const form=$("add-program-form");form?.reset();if(form){form.dataset.editId="";form.onsubmit=e=>{e.preventDefault();createProgram();};}
  const btn=form?.querySelector('button[type="submit"]');if(btn){btn.innerHTML='<i class="fas fa-save"></i> Create Program';btn.style.background="#4C1D95";}
@@ -154,8 +189,8 @@ async function deleteBlock(id){
  catch(error){notify("Unable to delete block: "+error.message,"error");}
 }
 async function populateCourseSelector(){
- const {data,error}=await db().from(TABLES.courses).select("id,course_name,unit_code,code").eq("institution_id",tenant()).order("course_name");if(error)throw error;
- const select=$("mapping_course_select");if(select){select.innerHTML='<option value="">-- Select Course --</option>';(data||[]).forEach(c=>{const o=document.createElement("option");o.value=c.id;o.textContent=(c.course_name||"Course")+" ("+(c.unit_code||c.code||"N/A")+")";select.append(o);});}
+ const {data,error}=await db().from("units_catalog").select("id,unit_name,unit_code,program,block").eq("institution_id",tenant()).eq("status","active").order("unit_name").limit(5000);if(error)throw error;
+ const select=$("mapping_course_select");if(select){select.innerHTML='<option value="">-- Select Unit / Course --</option>';(data||[]).forEach(u=>{const o=document.createElement("option");o.value=String(u.id);o.textContent=(u.unit_code||"UNIT")+" · "+u.unit_name+" — "+u.program+" / "+u.block;select.append(o);});}
 }
 async function populateBlockSelector(programId){
  await ownProgram(programId);const {data,error}=await db().from(TABLES.blocks).select("block_name").eq("program_id",programId).eq("institution_id",tenant()).eq("status","active").order("block_sequence");if(error)throw error;
@@ -163,25 +198,29 @@ async function populateBlockSelector(programId){
 }
 async function loadProgramMappings(){
  const id=$("mapping_program_select")?.value,host=$("program-mappings-container");if(!id){host.innerHTML='<p style="text-align:center;padding:20px;color:#64748b">Select a program to view its course mappings.</p>';return;}
- try{await ownProgram(id);const {data,error}=await db().from(TABLES.mappings).select("*,course:courses(id,course_name,unit_code,code,institution_id)").eq("program_id",id).order("created_at",{ascending:false});if(error)throw error;
- const rows=(data||[]).filter(m=>m.course?.institution_id===tenant());if(!rows.length){host.innerHTML='<p style="text-align:center;padding:20px;color:#64748b">No courses mapped to this program.</p>';return;}
- host.innerHTML='<table class="data-table" style="width:100%"><thead><tr><th>Course</th><th>Unit Code</th><th>Block</th><th>Type</th><th>Actions</th></tr></thead><tbody>'+rows.map(m=>'<tr><td>'+esc(m.course?.course_name||"Unknown")+'</td><td>'+esc(m.course?.unit_code||m.course?.code||"-")+'</td><td>'+esc(m.block_name||"Any")+'</td><td>'+ (m.is_core?"Core":"Elective")+'</td><td><button class="btn-sm btn-delete" data-delete-mapping="'+esc(m.id)+'" data-program-id="'+esc(id)+'"><i class="fas fa-trash"></i></button></td></tr>').join("")+'</tbody></table>';
+ try{const program=await ownProgram(id);const {data,error}=await db().from(TABLES.mappings).select("id,program_id,course_id,unit_catalog_id,block_name,is_core,course:courses(id,course_name,unit_code,code,institution_id),unit:units_catalog(id,unit_name,unit_code,program,block,institution_id)").eq("program_id",id).order("created_at",{ascending:false});if(error)throw error;
+ const rows=(data||[]).filter(m=>m.unit?.institution_id===tenant()&&String(m.unit?.program||"").toUpperCase()===String(program.program_code).toUpperCase());if(!rows.length){host.innerHTML='<p style="text-align:center;padding:20px;color:#64748b">No curriculum units mapped to this programme yet.</p>';return;}
+ host.innerHTML='<table class="data-table" style="width:100%"><thead><tr><th>Unit / Course</th><th>Unit Code</th><th>Block</th><th>Type</th><th>Actions</th></tr></thead><tbody>'+rows.map(m=>'<tr><td>'+esc(m.unit?.unit_name||m.course?.course_name||"Unknown")+'</td><td>'+esc(m.unit?.unit_code||m.course?.unit_code||m.course?.code||"-")+'</td><td>'+esc(m.block_name||m.unit?.block||"Any")+'</td><td>'+(m.is_core?"Core":"Elective")+'</td><td><button class="btn-sm btn-delete" data-delete-mapping="'+esc(m.id)+'" data-program-id="'+esc(id)+'"><i class="fas fa-trash"></i></button></td></tr>').join("")+'</tbody></table>';
  }catch(error){notify("Unable to load programme mappings: "+error.message,"error");}
 }
 async function addProgramCourseMapping(){
- const programId=$("mapping_program_select")?.value,courseId=$("mapping_course_select")?.value,blockName=$("mapping_block_select")?.value||null,isCore=$("mapping_is_core")?.value==="true";
- if(!programId||!courseId){notify("Please select a program and a course.","error");return;}
+ const programId=$("mapping_program_select")?.value,unitId=Number($("mapping_course_select")?.value),blockName=$("mapping_block_select")?.value||null,isCore=$("mapping_is_core")?.value==="true";
+ if(!programId||!Number.isInteger(unitId)||unitId<=0){notify("Please select a programme and a curriculum unit.","error");return;}
  try{
-  await ownProgram(programId);
-  const {data:course,error:courseError}=await db().from(TABLES.courses).select("id,institution_id").eq("id",courseId).eq("institution_id",tenant()).maybeSingle();if(courseError)throw courseError;if(!course)throw new Error("The selected course does not belong to this institution.");
-  const {data:duplicate,error:check}=await db().from(TABLES.mappings).select("id").eq("program_id",programId).eq("course_id",courseId).maybeSingle();if(check)throw check;if(duplicate)throw new Error("This course is already mapped to this programme.");
-  const {error}=await db().from(TABLES.mappings).insert({program_id:programId,course_id:courseId,block_name:blockName,is_core:isCore,created_at:new Date().toISOString(),updated_at:new Date().toISOString()});if(error)throw error;
-  notify("Course mapped to programme successfully.","success");await loadProgramMappings();
- }catch(error){notify("Unable to map course: "+error.message,"error");}
+  const program=await ownProgram(programId);
+  const {data:unit,error:unitError}=await db().from("units_catalog").select("id,unit_name,unit_code,program,block,institution_id,credits").eq("id",unitId).eq("institution_id",tenant()).maybeSingle();if(unitError)throw unitError;if(!unit)throw new Error("The selected unit does not belong to this institution.");
+  if(String(unit.program||"").trim().toUpperCase()!==String(program.program_code||"").trim().toUpperCase())throw new Error("This unit belongs to "+unit.program+", not "+program.program_code+".");
+  const {data:duplicate,error:check}=await db().from(TABLES.mappings).select("id").eq("program_id",programId).eq("unit_catalog_id",unitId).maybeSingle();if(check)throw check;if(duplicate)throw new Error("This unit is already mapped to this programme.");
+  let course=null;
+  const {data:found,error:findError}=await db().from(TABLES.courses).select("id").eq("institution_id",tenant()).or("unit_code.eq."+unit.unit_code+",code.eq."+unit.unit_code).limit(1).maybeSingle();if(findError)throw findError;course=found;
+  if(!course){const {data:created,error:createError}=await db().from(TABLES.courses).insert({institution_id:tenant(),course_name:unit.unit_name,name:unit.unit_name,unit_code:unit.unit_code,code:unit.unit_code,target_program:unit.program,target_semester:unit.block,block:unit.block,status:"Active",created_at:new Date().toISOString()}).select("id").single();if(createError)throw createError;course=created;}
+  const {error}=await db().from(TABLES.mappings).insert({program_id:programId,course_id:course.id,unit_catalog_id:unitId,block_name:blockName||unit.block,is_core:isCore,created_at:new Date().toISOString(),updated_at:new Date().toISOString()});if(error)throw error;
+  notify("Curriculum unit mapped successfully. The unit is now linked to the programme structure.","success");await loadProgramMappings();
+ }catch(error){notify("Unable to map curriculum unit: "+error.message,"error");}
 }
 async function deleteMapping(id){
- if(!confirm("Remove this course mapping?"))return;
- try{const {data,error:readError}=await db().from(TABLES.mappings).select("id,program_id,course_id").eq("id",id).maybeSingle();if(readError)throw readError;if(!data)throw new Error("Mapping not found.");await ownProgram(data.program_id);const {data:course,error:courseError}=await db().from(TABLES.courses).select("id").eq("id",data.course_id).eq("institution_id",tenant()).maybeSingle();if(courseError)throw courseError;if(!course)throw new Error("The mapped course is outside this institution.");const {error}=await db().from(TABLES.mappings).delete().eq("id",id).eq("program_id",data.program_id);if(error)throw error;await loadProgramMappings();}
+ if(!confirm("Remove this curriculum unit mapping?"))return;
+ try{const {data,error:readError}=await db().from(TABLES.mappings).select("id,program_id,course_id,unit_catalog_id").eq("id",id).maybeSingle();if(readError)throw readError;if(!data)throw new Error("Mapping not found.");await ownProgram(data.program_id);if(data.unit_catalog_id){const {data:unit,error}=await db().from("units_catalog").select("id").eq("id",data.unit_catalog_id).eq("institution_id",tenant()).maybeSingle();if(error)throw error;if(!unit)throw new Error("The mapped unit is outside this institution.");}const {error}=await db().from(TABLES.mappings).delete().eq("id",id).eq("program_id",data.program_id);if(error)throw error;await loadProgramMappings();}
  catch(error){notify("Unable to remove mapping: "+error.message,"error");}
 }
 function showProgramIntakes(){$("intake_program_select")?.scrollIntoView({behavior:"smooth"});}
