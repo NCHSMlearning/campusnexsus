@@ -67,9 +67,10 @@
    for(let i=0;i<studentIds.length;i+=150){
     const batch=studentIds.slice(i,i+150);
     const p=await db().from("consolidated_user_profiles_table").select("user_id,student_id,admission_number,full_name,program,institution_id").eq("institution_id",tenant()).eq("role","student").in("user_id",batch).limit(1000);
-    if(p.error)throw p.error;profiles.push(...(p.data||[]));
+    if(p.error)console.warn("[Institution marks capture] Student profile lookup unavailable:",p.error.message);else profiles.push(...(p.data||[]));
    }
    const byKey=profileIndex(profiles);
+   const missingIdentityCount=matching.filter(reg=>{const p=byKey.get(String(reg.student_id))||{};return !String(reg.admission_number||p.admission_number||p.student_id||"").trim();}).length;
    const {data:marks,error:markError}=await db().from("student_marks").select("id,student_id,admission_number,student_name,program,block,subject_name,academic_year,assessment_type,cat1_score,cat2_score,exam_score,final_score,grade,approval_status,published,retake_status,retake_score,institution_id").eq("institution_id",tenant()).eq("program",program).eq("block",block).eq("subject_name",unit).eq("academic_year",String(year)).order("created_at",{ascending:true}).limit(5000);
    if(markError)throw markError;
    const byMarkKey=new Map();(marks||[]).forEach(m=>[m.student_id,m.admission_number].filter(Boolean).forEach(k=>byMarkKey.set(String(k),m)));
@@ -87,7 +88,7 @@
     rows=(marks||[]).map(m=>({...m,student_name:m.student_name||"Student"}));
    }
    renderRows();
-   say(rows.length+" students loaded from this institution's approved registrations. "+rows.filter(r=>r.published).length+" already published (locked).");
+   say(rows.length+" students loaded from this institution's approved registrations. "+rows.filter(r=>r.published).length+" already published (locked)."+(missingIdentityCount?" "+missingIdentityCount+" registration(s) skipped because admission/profile details are missing.":""));
   }catch(e){console.error("[Institution marks capture]",e);say("Marks could not be loaded: "+e.message,true);}
   finally{loading=false;}
  }
