@@ -68,6 +68,7 @@
     fill("iaMABlockFilter",records.filter(r=>statusOf(r)==="pending").map(r=>r.block),"All blocks / terms");
     fill("iaPMYear",records.map(r=>r.academic_year),"All academic years");
     fill("iaPMProgram",records.map(r=>r.program),"All programmes");
+    fill("iaPMBlock",records.map(r=>r.block),"All blocks / terms");
     const pmProgram=$("iaPMProgram");if(pmProgram&&!Array.from(pmProgram.options).some(o=>o.value==="TVET")){const option=document.createElement("option");option.value="TVET";option.textContent="TVET programmes";pmProgram.add(option);}
   }
   function exportRegisterCsv() {
@@ -86,9 +87,9 @@
     const mePassed=meScored.filter(x=>x.score>=passThreshold(x.row)).length;
     const meAverage=meScored.length?meScored.reduce((a,x)=>a+x.score,0)/meScored.length:0;
     const meUnits=new Set(meRows.map(r=>r.subject_name).filter(Boolean));
-    const pmYear=$("iaPMYear")?.value||"all",pmProgram=$("iaPMProgram")?.value||"all";
-    const pmBase=published.filter(r=>matches(r,"iaPMSearch")&&(pmYear==="all"||String(r.academic_year||"")===pmYear)&&(pmProgram==="all"||String(r.program||"").toLowerCase()===pmProgram.toLowerCase()||(pmProgram==="TVET"&&String(r.program||"").trim().toUpperCase()!=="KRCHN")));
-    const readyRows=allApproved.filter(r=>matches(r,"iaPMSearch")&&(pmYear==="all"||String(r.academic_year||"")===pmYear)&&(pmProgram==="all"||String(r.program||"").toLowerCase()===pmProgram.toLowerCase()||(pmProgram==="TVET"&&String(r.program||"").trim().toUpperCase()!=="KRCHN")));
+    const pmYear=$("iaPMYear")?.value||"all",pmProgram=$("iaPMProgram")?.value||"all",pmBlock=$("iaPMBlock")?.value||"all";
+    const pmBase=published.filter(r=>matches(r,"iaPMSearch")&&(pmYear==="all"||String(r.academic_year||"")===pmYear)&&(pmBlock==="all"||String(r.block||"")===pmBlock)&&(pmProgram==="all"||String(r.program||"").toLowerCase()===pmProgram.toLowerCase()||(pmProgram==="TVET"&&String(r.program||"").trim().toUpperCase()!=="KRCHN")));
+    const readyRows=allApproved.filter(r=>matches(r,"iaPMSearch")&&(pmYear==="all"||String(r.academic_year||"")===pmYear)&&(pmBlock==="all"||String(r.block||"")===pmBlock)&&(pmProgram==="all"||String(r.program||"").toLowerCase()===pmProgram.toLowerCase()||(pmProgram==="TVET"&&String(r.program||"").trim().toUpperCase()!=="KRCHN")));
     const pmScored=pmBase.map(r=>({row:r,score:Number(r.retake_status&&Number.isFinite(Number(r.retake_score))?r.retake_score:r.final_score)})).filter(x=>Number.isFinite(x.score));
     const pmPassed=pmScored.filter(x=>x.score>=passThreshold(x.row)).length;
     const pmRetakes=pmBase.filter(isRetake).length;
@@ -140,8 +141,8 @@
     });
   }
   function exportPublishedCsv() {
-    const year=$("iaPMYear")?.value||"all",program=$("iaPMProgram")?.value||"all";
-    const data=records.filter(r=>!!r.published&&matches(r,"iaPMSearch")&&(year==="all"||String(r.academic_year||"")===year)&&(program==="all"||String(r.program||"").toLowerCase()===program.toLowerCase()||(program==="TVET"&&String(r.program||"").toUpperCase()!=="KRCHN")));
+    const year=$("iaPMYear")?.value||"all",program=$("iaPMProgram")?.value||"all",block=$("iaPMBlock")?.value||"all";
+    const data=records.filter(r=>!!r.published&&matches(r,"iaPMSearch")&&(year==="all"||String(r.academic_year||"")===year)&&(block==="all"||String(r.block||"")===block)&&(program==="all"||String(r.program||"").toLowerCase()===program.toLowerCase()||(program==="TVET"&&String(r.program||"").trim().toUpperCase()!=="KRCHN")));
     if(!data.length){notify("No published results match the current filters.",true);return;}
     const cols=["student_name","admission_number","program","block","subject_name","academic_year","final_score","retake_status","retake_score","final_grade","published_at"];
     const csv=[cols.join(","),...data.map(row=>cols.map(key=>'"'+String(row[key]??"").replace(/"/g,'""')+'"').join(","))].join("\\n");
@@ -210,6 +211,24 @@
     }catch(e){notify("Bulk "+action+" failed: "+e.message,true);}
     finally{busy=false;}
   }
+  async function bulkPublishFiltered() {
+    if(busy)return;
+    const year=$("iaPMYear")?.value||"all",program=$("iaPMProgram")?.value||"all",block=$("iaPMBlock")?.value||"all";
+    const ready=records.filter(r=>statusOf(r)==="approved"&&!r.published&&matches(r,"iaPMSearch")&&(year==="all"||String(r.academic_year||"")===year)&&(block==="all"||String(r.block||"")===block)&&(program==="all"||String(r.program||"").toLowerCase()===program.toLowerCase()||(program==="TVET"&&String(r.program||"").trim().toUpperCase()!=="KRCHN")));
+    if(!ready.length){notify("There are no approved unpublished marks matching these filters.",true);return;}
+    if(!confirm("Publish all "+ready.length+" approved results matching the current institution filters?"))return;
+    busy=true;
+    try{
+      const ids=ready.map(r=>r.id),publishedAt=new Date().toISOString();
+      const {data,error}=await db().from("student_marks").update({published:true,published_at:publishedAt,published_by:api.user.id}).in("id",ids).eq("institution_id",tenant()).eq("approval_status","approved").eq("published",false).select("id");
+      if(error)throw error;
+      if((data||[]).length!==ids.length)throw new Error("Only "+(data||[]).length+" of "+ids.length+" results were published. Refresh and review the remaining records.");
+      await audit("institution_admin_bulk_publish_marks",null,"Institution administrator published "+ids.length+" approved marks.");
+      notify(ids.length+" approved results published.");
+      await loadRecords();
+    }catch(e){notify("Bulk publication failed: "+e.message,true);}
+    finally{busy=false;}
+  }
   async function loadControl() {
     const host=$("iaEntryControlContent");if(!host)return;
     const {data,error}=await db().from("institution_mark_entry_controls").select("id,institution_id,is_open,reason,updated_by,updated_at").eq("institution_id",tenant()).maybeSingle();
@@ -240,10 +259,11 @@
     ["iaMESearch","iaMASearch","iaPMSearch","iaMEYearFilter","iaMEProgramFilter","iaMEBlockFilter","iaMASubjectFilter","iaMABlockFilter"].forEach(id=>$(id)?.addEventListener("input",paint));
     ["iaMEYearFilter","iaMEProgramFilter","iaMEBlockFilter","iaMASubjectFilter","iaMABlockFilter"].forEach(id=>$(id)?.addEventListener("change",paint));
     $("iaMEExport")?.addEventListener("click",exportRegisterCsv);
-    ["iaPMSearch","iaPMYear","iaPMProgram"].forEach(id=>$(id)?.addEventListener(id==="iaPMSearch"?"input":"change",paint));
+    ["iaPMSearch","iaPMYear","iaPMProgram","iaPMBlock"].forEach(id=>$(id)?.addEventListener(id==="iaPMSearch"?"input":"change",paint));
     document.querySelectorAll("[data-pm-program]").forEach(button=>button.addEventListener("click",()=>{const v=button.dataset.pmProgram||"all";if($("iaPMProgram"))$("iaPMProgram").value=v;paint();}));
     $("iaPMExport")?.addEventListener("click",exportPublishedCsv);
     $("iaPMPrint")?.addEventListener("click",()=>window.print());
+    $("iaPMPublishFiltered")?.addEventListener("click",bulkPublishFiltered);
     $("iaApproveAllPending")?.addEventListener("click",()=>bulkApproval("approve"));
     $("iaRejectAllPending")?.addEventListener("click",()=>bulkApproval("reject"));
     document.querySelectorAll("[data-marks-refresh]").forEach(b=>b.addEventListener("click",()=>load(b.dataset.marksRefresh==="control"?"entry-control":"marks")));
