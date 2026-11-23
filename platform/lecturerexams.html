@@ -676,7 +676,9 @@
     const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_5Cg5FFudf03UnmOXGNGMHQ_uK9S-uQX';
     const ZERO_QUESTION_ID = '00000000-0000-0000-0000-000000000000';
 
-    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+    // Reuse the configured examination client so the dedicated
+    // campus-nexus-exam-auth session from Exam Login remains available to RLS.
+    const sb = window.sb || window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
     window.sb = sb;
 
     // ============================================================
