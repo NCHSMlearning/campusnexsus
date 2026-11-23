@@ -2126,7 +2126,8 @@ body.dark-theme #loginButton,body.dark-theme .login-button{background:linear-gra
     </div>
 
     <!-- ===== MAIN SECURITY SCRIPT ===== -->
-    <script src="login-script.js?v=20261123-lecturer-redirect-fix-v1"></script>
+    <script src="/platform/js/institution-login-gate.js?v=20261123-school-code-gate-v1"></script>
+<script src="login-script.js?v=20261123-lecturer-redirect-fix-v1"></script>
 <div id="nchsmAuthLoading" aria-hidden="true" role="status">
   <div class="nchsm-loading-card">
     <div class="nchsm-loading-logo"><img src="/images/campus-nexus-original-logo.webp?v=1" alt="Campus Nexus"></div>
@@ -2162,11 +2163,10 @@ body.dark-theme #loginButton,body.dark-theme .login-button{background:linear-gra
 
 
 
-<!-- School-code selection is optional before authentication. The authenticated
-     Campus Nexus profile and server-verified role determine the destination.
-     If a school_code is supplied by an institution link, login-script.js validates
-     that context after authentication; platform Super Admins remain cross-institution. -->
-<script src="/platform/js/institution-login-branding.js?v=20261123-tenant-branding-v3" defer></script>
+<!-- Mandatory school-code gate verifies the institution before revealing the login form.
+     The authenticated Campus Nexus profile and server-verified role still determine
+     the destination; the school code only scopes the institution context. -->
+<script src="/platform/js/institution-login-branding.js?v=20261123-tenant-branding-v4" defer></script>
 <script id="campus-nexus-preserve-registration-code">
 (function () {
   const link = document.getElementById('campus-nexus-signup-link');
