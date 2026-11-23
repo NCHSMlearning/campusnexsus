@@ -61,6 +61,7 @@
     fill("iaMABlockFilter",records.filter(r=>statusOf(r)==="pending").map(r=>r.block),"All blocks / terms");
     fill("iaPMYear",records.filter(r=>!!r.published).map(r=>r.academic_year),"All academic years");
     fill("iaPMProgram",records.filter(r=>!!r.published).map(r=>r.program),"All programmes");
+    const pmProgram=$("iaPMProgram");if(pmProgram&&!Array.from(pmProgram.options).some(o=>o.value==="TVET")){const option=document.createElement("option");option.value="TVET";option.textContent="TVET programmes";pmProgram.add(option);}
   }
   function exportRegisterCsv() {
     const rows=filtered("iaMESearch");if(!rows.length){notify("No marks records to export.",true);return;}
