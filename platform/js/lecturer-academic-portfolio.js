@@ -98,7 +98,7 @@ const AcademicPortfolio = {
             const { data: assignments, error } = await supabase
                 .from('lecturer_subject_assignments')
                 .select('id, subject_name, subject_code, block, program, academic_year, lecturer_id')
-                .ilike('lecturer_name', `%${fullName}%`);
+                .eq('lecturer_id', String(this.lecturerId));
             
             if (error) {
                 console.error('❌ Error loading assigned units:', error);
