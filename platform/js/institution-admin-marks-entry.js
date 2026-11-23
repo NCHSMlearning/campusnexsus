@@ -5,7 +5,7 @@
 (() => {
  "use strict";
  const $=id=>document.getElementById(id);
- let api=null,units=[],rows=[],loading=false,saving=false,page=1,pageSize=30;
+ let api=null,units=[],rows=[],loading=false,saving=false,page=1,pageSize=30,academicStructure=null;
  const db=()=>{if(!api?.db||!api?.institutionId||!api?.user?.id)throw new Error("Your institution administrator session is not ready.");return api.db;};
  const tenant=()=>api.institutionId;
  const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -37,21 +37,25 @@
    // reconciled to a programme row; prefer the canonical programme table.
    const codes=[...(catalog.data||[]).map(x=>x.program_code),...(legacy.data||[]).map(x=>x.program)];
    fill("iaMEProgramSelect",codes,"Select programme");
-   say("Choose a programme, block, unit and academic year.");
+   say("Choose a programme, academic period, unit and academic year.");
   }catch(e){say("Programmes could not be loaded: "+e.message,true);}
   finally{loading=false;}
  }
  async function loadBlocks(){
   const program=$("iaMEProgramSelect")?.value||"";
-  fill("iaMEBlockSelect",[],"Select block");fill("iaMEUnitSelect",[],"Select unit");units=[];
+  fill("iaMEBlockSelect",[],"Select academic period");fill("iaMEUnitSelect",[],"Select unit");units=[];academicStructure=null;
   if(!program)return;
   try{
-   const {data:programRow,error:programError}=await db().from("programs").select("id").eq("program_code",program).eq("institution_id",tenant()).maybeSingle();if(programError)throw programError;
-   let blockNames=[];
-   if(programRow?.id){const canonical=await db().from("program_blocks").select("block_name").eq("program_id",programRow.id).eq("institution_id",tenant()).eq("status","active").order("block_sequence");if(canonical.error)throw canonical.error;blockNames=(canonical.data||[]).map(x=>x.block_name);}
-   if(!blockNames.length){const legacy=await db().from("units_catalog").select("block").eq("program",program).eq("institution_id",tenant()).eq("status","active").limit(5000);if(legacy.error)throw legacy.error;blockNames=(legacy.data||[]).map(x=>x.block);}
-   fill("iaMEBlockSelect",blockNames,"Select block");
-  }catch(e){say("Blocks could not be loaded: "+e.message,true);}
+   if(window.CampusAcademicStructure)academicStructure=await window.CampusAcademicStructure.resolve(db(),tenant(),program);
+   const {data:programRow,error:programError}=await db().from("programs").select("id,structure_type").eq("program_code",program).eq("institution_id",tenant()).maybeSingle();if(programError)throw programError;
+   let periodNames=academicStructure?.periods?.map(x=>x.name)||[];
+   if(!periodNames.length&&programRow?.id){const canonical=await db().from("program_blocks").select("block_name").eq("program_id",programRow.id).eq("institution_id",tenant()).eq("status","active").order("block_sequence");if(canonical.error)throw canonical.error;periodNames=(canonical.data||[]).map(x=>x.block_name);}
+   if(!periodNames.length){const legacy=await db().from("units_catalog").select("block").eq("program",program).eq("institution_id",tenant()).eq("status","active").limit(5000);if(legacy.error)throw legacy.error;periodNames=(legacy.data||[]).map(x=>x.block);}
+   const type=academicStructure?.type||programRow?.structure_type||"Block",singular=type.toLowerCase();
+   const select=$("iaMEBlockSelect");if(select){select.setAttribute("aria-label","Marks entry "+singular);select.setAttribute("data-academic-structure",type);}
+   fill("iaMEBlockSelect",periodNames,"Select "+singular);
+   say("Choose a programme, "+singular+", unit and academic year.");
+  }catch(e){say("Academic periods could not be loaded: "+e.message,true);}
  }
  async function loadUnits(){
   const program=$("iaMEProgramSelect")?.value||"",block=$("iaMEBlockSelect")?.value||"";
@@ -72,7 +76,7 @@
  async function loadStudents(){
   if(loading)return;
   const program=$("iaMEProgramSelect")?.value||"",block=$("iaMEBlockSelect")?.value||"",unit=$("iaMEUnitSelect")?.value||"",year=$("iaMEYearSelect")?.value||"";
-  if(!program||!block||!unit||!year){say("Select programme, block, unit and academic year first.",true);return;}
+  if(!program||!block||!unit||!year){say("Select programme, academic period, unit and academic year first.",true);return;}
   loading=true;rows=[];page=1;renderRows();say("Loading approved registrations and existing marks…");
   try{
    const registrationResult=await db().from("student_unit_registrations").select("*").eq("institution_id",tenant()).eq("program",program).eq("block",block).eq("academic_year",Number(year)).eq("status","approved").limit(5000);
