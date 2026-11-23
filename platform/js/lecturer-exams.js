@@ -1662,11 +1662,12 @@ const FROM_ADDRESS =
                     ]) || 100
                 );
 
-                const passMark = Number(
-                    this.value([
-                        'exam_pass_mark'
-                    ]) || 50
+                // The form accepts a percentage; exams store pass_mark in
+                // the same absolute mark scale as marks_out_of.
+                const passMarkPercent = Number(
+                    this.value(['exam_pass_mark']) || 50
                 );
+                const passMark = Math.round((marksOutOf * passMarkPercent / 100) * 100) / 100;
 
                 const minFeeBalance = Number(
                     this.value([
@@ -1706,10 +1707,8 @@ const FROM_ADDRESS =
                     missing.push('Marks Out Of');
                 }
 
-                if (passMark < 0 || passMark > marksOutOf) {
-                    throw new Error(
-                        'Pass Mark must be between 0 and Marks Out Of.'
-                    );
+                if (!Number.isFinite(passMarkPercent) || passMarkPercent < 0 || passMarkPercent > 100) {
+                    throw new Error('Pass Mark (%) must be between 0 and 100.');
                 }
 
                 if (missing.length) {
