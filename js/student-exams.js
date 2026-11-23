@@ -70,7 +70,25 @@ function examState(exam){
  if(['published','active','open','available'].includes(status))return 'open';
  return 'open';
 }
-function onlineHref(exam){const raw=val(exam.exam_link,exam.online_link,'');if(!raw)return '';try{const url=new URL(raw,location.origin);return ['http:','https:'].includes(url.protocol)?url.href:''}catch(_){return ''}}
+// Build the same launch URL contract used by the legacy NCHSM examination portal.
+ // The URL stored by the lecturer/admin remains the destination; the exam and
+ // signed-in student identifiers are appended without replacing existing query parameters.
+ // exam.js independently verifies Supabase Auth and never trusts user_id for identity.
+function onlineHref(exam){
+ const raw=val(exam.exam_link,exam.online_link,'');
+ if(!raw||!exam?.id)return '';
+ try{
+  const url=new URL(raw,location.origin);
+  if(!['http:','https:'].includes(url.protocol))return '';
+  url.searchParams.set('exam_id',String(exam.id));
+  if(state.user?.id)url.searchParams.set('user_id',String(state.user.id));
+  // Only carry a retake/continuation request when the server/admin workflow
+  // explicitly marks this record as an authorized continuation.
+  if(exam.retake_authorized===true||exam.allow_retake===true)url.searchParams.set('retake','true');
+  else url.searchParams.delete('retake');
+  return url.href;
+ }catch(_){return ''}
+}
 function dateLabel(exam){const d=startsAt(exam);return d?d.toLocaleString('en-KE',{timeZone:'Africa/Nairobi',dateStyle:'medium',timeStyle:'short'})+' EAT':'Schedule to be confirmed'}
 let examCountdownTicker=null;
 function countdownText(target){
