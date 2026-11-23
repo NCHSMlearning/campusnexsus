@@ -73,7 +73,7 @@ window.APP_CONFIG = {
 if (typeof supabase !== 'undefined') {
     try {
         // Create the Supabase client
-        const isExamAdminDashboard = /^\/adminexams(?:\/|$)/i.test(window.location.pathname || '');
+        const isExamDashboard = /^\/(?:adminexams|lecturerexams)(?:\/|$)/i.test(window.location.pathname || '') || /^\/platform\/lecturerexams(?:\.html)?$/i.test(window.location.pathname || '');
         const supabaseClient = supabase.createClient(
             window.APP_CONFIG.SUPABASE_URL,
             window.APP_CONFIG.SUPABASE_PUBLISHABLE_KEY,
@@ -114,7 +114,7 @@ if (typeof window.sb === 'undefined') {
     try {
         // Try to create the client again
         if (typeof supabase !== 'undefined') {
-            const isExamAdminDashboard = /^\/adminexams(?:\/|$)/i.test(window.location.pathname || '');
+            const isExamDashboard = /^\/(?:adminexams|lecturerexams)(?:\/|$)/i.test(window.location.pathname || '') || /^\/platform\/lecturerexams(?:\.html)?$/i.test(window.location.pathname || '');
             window.sb = supabase.createClient(
                 window.APP_CONFIG.SUPABASE_URL,
                 window.APP_CONFIG.SUPABASE_PUBLISHABLE_KEY,
@@ -186,7 +186,7 @@ if (typeof module !== 'undefined' && module.exports) {
     // The examination administrator dashboard has its own dedicated role/session
     // verification. Do not run the legacy global session-shutdown probe here:
     // it can invalidate a valid exam login during the dashboard handoff.
-    if (/^\/adminexams(?:\/|$)/i.test(window.location.pathname || '')) return;
+    if (/^\/(?:adminexams|lecturerexams)(?:\/|$)/i.test(window.location.pathname || '') || /^\/platform\/lecturerexams(?:\.html)?$/i.test(window.location.pathname || '')) return;
     const client = window.sb || window.supabaseClient;
     if (!client || !client.auth || window.__NCHSM_SESSION_SHUTDOWN_CHECK__) return;
     window.__NCHSM_SESSION_SHUTDOWN_CHECK__ = true;
