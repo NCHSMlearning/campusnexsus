@@ -19,6 +19,7 @@ const LecturerCourses = {
     lecturerAssignmentId: null,
     isTVET: false,
     currentProgram: 'KRCHN',
+    academicStructure: null,
     
     // ============================================
     // PROGRAM TYPE DETECTION
@@ -34,6 +35,16 @@ const LecturerCourses = {
     getBlockDisplay(blockValue) {
         if (!blockValue) return 'N/A';
         
+        const structureType = this.academicStructure?.type;
+        if (structureType) {
+            if (structureType === 'Block' && this.getProgramType() === 'TVET') {
+                const match = blockValue.match(/^Y(\\d)T(\\d)$/);
+                if (match) return `Year ${parseInt(match[1])} ${['','First','Second','Third'][parseInt(match[2])] || match[2]} Term`;
+            }
+            if (new RegExp('^' + structureType + '\\\\s', 'i').test(blockValue)) return blockValue;
+            if (blockValue === 'Introductory' || blockValue === 'Final') return blockValue + ' ' + structureType;
+            return structureType + ' ' + blockValue;
+        }
         const programType = this.getProgramType();
         if (programType === 'TVET') {
             // TVET: Y1T1 → Year 1 Term 1
@@ -90,6 +101,7 @@ const LecturerCourses = {
         console.log(`📚 Program Type: ${this.getProgramTypeLabel()}`);
         
         await this.resolveLecturerId();
+        await this.loadAcademicStructure();
         await this.loadCourses();
         this.populateFilters();
         this.setupEventListeners();
@@ -122,6 +134,28 @@ const LecturerCourses = {
         } catch (error) {
             console.error('[Lecturer Courses] Identity resolution failed:', error);
             this.lecturerAssignmentId = null;
+            return null;
+        }
+    },
+
+    async loadAcademicStructure() {
+        try {
+            const supabase = window.lecturerDB?.supabase;
+            const profile = window.lecturerDB?.getCurrentUserProfile?.() || {};
+            if (!supabase || !profile.institution_id || !this.currentProgram || !window.CampusAcademicStructure) return null;
+            this.academicStructure = await window.CampusAcademicStructure.resolve(
+                supabase, profile.institution_id, this.currentProgram
+            );
+            document.querySelectorAll('[data-academic-period-label]').forEach(el => {
+                el.textContent = el.dataset.academicPeriodLabel === 'plural'
+                    ? this.academicStructure.plural : this.academicStructure.singular;
+            });
+            const filter = document.getElementById('academicPeriodFilter');
+            if (filter) filter.setAttribute('aria-label', 'Filter by ' + this.academicStructure.singular);
+            return this.academicStructure;
+        } catch (error) {
+            console.warn('[Lecturer Courses] Institution academic structure lookup failed:', error);
+            this.academicStructure = null;
             return null;
         }
     },
@@ -321,10 +355,10 @@ const LecturerCourses = {
         }
         
         // ✅ Populate blocks with display names
-        const blocks = [...new Set(this.courses.map(c => c.block).filter(Boolean))];
+        const blocks = [...new Set([...(this.academicStructure?.periods || []).map(p => p.name), ...this.courses.map(c => c.block)].filter(Boolean))];
         const blockFilter = document.getElementById('academicPeriodFilter');
         if (blockFilter) {
-            blockFilter.innerHTML = '<option value="">All Blocks</option>';
+            blockFilter.innerHTML = '<option value="">All ' + (this.academicStructure?.plural || 'Blocks') + '</option>';
             blocks.forEach(b => {
                 const displayName = this.getBlockDisplay(b);
                 blockFilter.innerHTML += `<option value="${b}">${displayName}</option>`;
