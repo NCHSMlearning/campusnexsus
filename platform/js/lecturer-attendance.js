@@ -209,32 +209,23 @@ const LecturerAttendance = {
     async resolveLecturerId() {
         try {
             const supabase = window.lecturerDB?.supabase;
-            if (!supabase) return;
-            const profile = window.lecturerDB?.getCurrentUserProfile();
-            if (!profile) return;
-
-            const authId = profile.user_id;
-            const fullName = profile.full_name;
+            if (!supabase) throw new Error('Supabase client is unavailable.');
+            const { data: authData, error: authError } = await supabase.auth.getUser();
+            if (authError) throw authError;
+            const authId = authData?.user?.id;
+            if (!authId) throw new Error('Authenticated lecturer session is unavailable.');
+            const { data: identity, error } = await supabase.rpc('current_lecturer_staff_assignment_identity');
+            if (error) throw error;
+            if (!identity?.id) throw new Error('Active lecturer account identity is unavailable.');
             this.lecturerUuid = authId;
-
-            const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(authId));
-            if (!isUUID && authId) { this.lecturerAssignmentId = authId; return; }
-
-            const { data: assignments } = await supabase
-                .from('lecturer_subject_assignments')
-                .select('lecturer_id, lecturer_name')
-                .ilike('lecturer_name', `%${fullName}%`);
-
-            if (assignments?.length > 0) {
-                const textId = assignments.find(a => a.lecturer_id && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(a.lecturer_id)));
-                this.lecturerAssignmentId = textId ? textId.lecturer_id : assignments[0].lecturer_id;
-                return;
-            }
-            this.lecturerAssignmentId = authId;
+            this.lecturerAssignmentId = String(identity.id);
+            this.currentProgram = identity.program || this.currentProgram || 'KRCHN';
+            return this.lecturerAssignmentId;
         } catch (error) {
-            console.error('❌ resolveLecturerId:', error);
+            console.error('[Lecturer Attendance] Secure identity resolution failed:', error);
             this.lecturerAssignmentId = null;
             this.lecturerUuid = null;
+            return null;
         }
     },
 
