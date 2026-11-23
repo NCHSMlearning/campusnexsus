@@ -79,7 +79,7 @@
      ["iaPMCount",published.length],["iaPMStudents",new Set(published.map(r=>r.admission_number||r.student_id).filter(Boolean)).size],["iaPMUnits",new Set(published.map(r=>r.subject_name).filter(Boolean)).size]
     ].forEach(([id,value])=>{if($(id))$(id).textContent=Number(value).toLocaleString("en-KE");});
     const all=filtered("iaMESearch");renderRegister(all);
-    renderApproval(pending.filter(r=>matches(r,"iaMASearch")));
+    renderApproval(filtered("iaMASearch").filter(r=>statusOf(r)==="pending"&&!r.published));
     renderPublishQueue(approved);
     renderPublished(published.filter(r=>matches(r,"iaPMSearch")));
   }
