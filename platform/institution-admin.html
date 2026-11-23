@@ -10,7 +10,8 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <script src="/platform/js/institution-admin.js?v=20261123-institution-branding-v3" defer></script><script src="/platform/js/academic-structure.js?v=20261123-tenant-structure-v1" defer></script>
 
-<script src="/platform/js/institution-admin-programs.js?v=20261123-structure-type-v3" defer></script>
+<script src="/platform/js/institution-admin-programs.js?v=20261124-curriculum-menu-v4" defer></script>
+<script src="/platform/js/institution-admin-curriculum.js?v=20261124-tenant-curriculum-v1" defer></script>
 <script src="/platform/js/institution-admin-modules.js?v=20261121-14" defer></script>
 <script src="/platform/js/institution-admin-results.js?v=20261123-results-parity-v13" defer></script>
 <script src="/platform/js/institution-admin-marks-entry.js?v=20261123-tenant-structure-v1" defer></script>
@@ -22,32 +23,32 @@
 <script src="/platform/js/institution-admin-users.js?v=20261123-tenant-structure-v1" defer></script>
 <script src="/code-protection.js?v=20261121-global-v4" defer></script>
 <style id="ia-canonical-program-styles">
-#view-academic #programs{max-width:100%;overflow:hidden}
-#view-academic #programs h2,#view-academic #programs h3{color:#102a43}
-#view-academic #programs .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:16px;margin:20px 0}
-#view-academic #programs .card{background:#fff;border:1px solid #e5eaf0;border-radius:14px;padding:18px;box-shadow:0 4px 16px rgba(15,23,42,.05)}
-#view-academic #programs .card h3{font-size:14px;margin:0 0 8px}
-#view-academic #programs .data{font-size:30px;font-weight:800;margin:8px 0}
-#view-academic #programs .minor-data{font-size:12px;color:#64748b;margin:0}
-#view-academic #programs .filter-bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:20px 0}
-#view-academic #programs .filter-bar input{flex:1;min-width:180px}
-#view-academic #programs input,#view-academic #programs select,#view-academic #programs textarea{max-width:100%;box-sizing:border-box}
-#view-academic #programs .table-responsive{width:100%;overflow-x:auto;border:1px solid #e5eaf0;border-radius:12px}
-#view-academic #programs table{min-width:850px;width:100%;border-collapse:collapse;background:#fff}
-#view-academic #programs th,#view-academic #programs td{padding:11px 12px;border-bottom:1px solid #edf1f5;text-align:left;white-space:nowrap}
-#view-academic #programs th{background:#f4f7fb;color:#334155;font-size:12px}
-#view-academic #programs .program-badge,#view-academic #programs .badge{display:inline-flex;align-items:center;padding:4px 9px;border-radius:999px;font-size:11px;font-weight:700}
-#view-academic #programs .program-badge-active,#view-academic #programs .badge-success{background:#dcfce7;color:#166534}
-#view-academic #programs .program-badge-inactive,#view-academic #programs .badge-warning{background:#fef3c7;color:#92400e}
-#view-academic #programs .program-badge-archived{background:#e2e8f0;color:#475569}
-#view-academic #programs .program-badge-krchn{background:#dbeafe;color:#1d4ed8}
-#view-academic #programs .program-badge-tvet{background:#ede9fe;color:#6d28d9}
-#view-academic #programs .badge-info{background:#e0f2fe;color:#075985}
-#view-academic #programs .btn-sm{border:0;border-radius:7px;padding:7px 10px;cursor:pointer}
-#view-academic #programs .btn-edit{background:#dbeafe;color:#1d4ed8}
-#view-academic #programs .btn-delete{background:#fee2e2;color:#b91c1c}
-#view-academic #programs .btn-action{border-radius:8px}
-@media(max-width:640px){#view-academic #programs .cards{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}#view-academic #programs .card{padding:12px}#view-academic #programs .data{font-size:24px}#view-academic #programs form>div{grid-template-columns:1fr!important}}
+#view-programs #programs{max-width:100%;overflow:hidden}
+#view-programs #programs h2,#view-programs #programs h3{color:#102a43}
+#view-programs #programs .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:16px;margin:20px 0}
+#view-programs #programs .card{background:#fff;border:1px solid #e5eaf0;border-radius:14px;padding:18px;box-shadow:0 4px 16px rgba(15,23,42,.05)}
+#view-programs #programs .card h3{font-size:14px;margin:0 0 8px}
+#view-programs #programs .data{font-size:30px;font-weight:800;margin:8px 0}
+#view-programs #programs .minor-data{font-size:12px;color:#64748b;margin:0}
+#view-programs #programs .filter-bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:20px 0}
+#view-programs #programs .filter-bar input{flex:1;min-width:180px}
+#view-programs #programs input,#view-programs #programs select,#view-programs #programs textarea{max-width:100%;box-sizing:border-box}
+#view-programs #programs .table-responsive{width:100%;overflow-x:auto;border:1px solid #e5eaf0;border-radius:12px}
+#view-programs #programs table{min-width:850px;width:100%;border-collapse:collapse;background:#fff}
+#view-programs #programs th,#view-programs #programs td{padding:11px 12px;border-bottom:1px solid #edf1f5;text-align:left;white-space:nowrap}
+#view-programs #programs th{background:#f4f7fb;color:#334155;font-size:12px}
+#view-programs #programs .program-badge,#view-programs #programs .badge{display:inline-flex;align-items:center;padding:4px 9px;border-radius:999px;font-size:11px;font-weight:700}
+#view-programs #programs .program-badge-active,#view-programs #programs .badge-success{background:#dcfce7;color:#166534}
+#view-programs #programs .program-badge-inactive,#view-programs #programs .badge-warning{background:#fef3c7;color:#92400e}
+#view-programs #programs .program-badge-archived{background:#e2e8f0;color:#475569}
+#view-programs #programs .program-badge-krchn{background:#dbeafe;color:#1d4ed8}
+#view-programs #programs .program-badge-tvet{background:#ede9fe;color:#6d28d9}
+#view-programs #programs .badge-info{background:#e0f2fe;color:#075985}
+#view-programs #programs .btn-sm{border:0;border-radius:7px;padding:7px 10px;cursor:pointer}
+#view-programs #programs .btn-edit{background:#dbeafe;color:#1d4ed8}
+#view-programs #programs .btn-delete{background:#fee2e2;color:#b91c1c}
+#view-programs #programs .btn-action{border-radius:8px}
+@media(max-width:640px){#view-programs #programs .cards{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}#view-programs #programs .card{padding:12px}#view-programs #programs .data{font-size:24px}#view-programs #programs form>div{grid-template-columns:1fr!important}}
 </style>
 
 <style id="ia-results-parity-styles">@media print{
@@ -83,7 +84,10 @@
   <div class="ia-nav-label">ACADEMICS</div>
   <button class="ia-nav-item" data-view="students" data-module="student_management"><i class="fa-solid fa-user-graduate"></i><span>Students</span><em id="iaStudentNavCount">—</em></button>
   <button class="ia-nav-item" data-view="staff" data-module="lecturer_portal"><i class="fa-solid fa-chalkboard-user"></i><span>Staff & lecturers</span></button>
-  <button class="ia-nav-item" data-view="academic" data-module="academic_management"><i class="fa-solid fa-book-open"></i><span>Academic programmes</span></button>
+  <div class="ia-nav-label">CURRICULUM</div>
+  <button class="ia-nav-item ia-nav-subitem" data-view="unit-catalog" data-module="academic_management"><i class="fa-solid fa-book-open"></i><span>📚 Unit Catalog</span><em>TVET + KRCHN</em></button>
+  <button class="ia-nav-item ia-nav-subitem" data-view="unit-registration" data-module="academic_management"><i class="fa-solid fa-clipboard-list"></i><span>📋 Unit Registration</span><em>Approvals</em></button>
+  <button class="ia-nav-item ia-nav-subitem" data-view="programs" data-module="academic_management"><i class="fa-solid fa-sitemap"></i><span>🗂️ Programs</span><em>Both</em></button>
   <button class="ia-nav-item" data-view="exams" data-module="admin_exams"><i class="fa-solid fa-file-circle-check"></i><span>Examinations</span></button>
   <div class="ia-nav-label">RESULTS & ASSESSMENT</div>
   <button class="ia-nav-item" data-view="marks-entry" data-module="marks_entry"><i class="fa-solid fa-pen-to-square"></i><span>Marks entry</span></button>
@@ -272,7 +276,20 @@
 </section>
 <section class="ia-view" id="view-students"><div class="ia-page-heading"><div><span class="ia-eyebrow">ACADEMIC RECORDS</span><h1>Students</h1><p>Student profiles registered under this institution.</p></div></div><div class="ia-toolbar"><input id="iaStudentSearch" type="search" placeholder="Search name, email or admission number"><span id="iaStudentCount" class="ia-count"></span></div><div class="ia-panel ia-table-panel"><div class="ia-table-scroll"><table><thead><tr><th>Student</th><th>Admission number</th><th>Programme</th><th>Academic period</th><th>Status</th></tr></thead><tbody id="iaStudents"><tr><td colspan="5" class="ia-empty">Loading…</td></tr></tbody></table></div></div></section>
 <section class="ia-view" id="view-staff"><div class="ia-page-heading"><div><span class="ia-eyebrow">PEOPLE & RESOURCES</span><h1>Staff & lecturers</h1><p>Teaching and institutional staff linked to your institution.</p></div></div><div class="ia-toolbar"><input id="iaStaffSearch" type="search" placeholder="Search staff name, email or department"><span id="iaStaffCount" class="ia-count"></span></div><div class="ia-panel ia-table-panel"><div class="ia-table-scroll"><table><thead><tr><th>Name</th><th>Email</th><th>Department</th><th>Staff ID</th><th>Status</th></tr></thead><tbody id="iaStaff"><tr><td colspan="5" class="ia-empty">Loading…</td></tr></tbody></table></div></div></section>
-<section class="ia-view" id="view-academic">
+<section class="ia-view" id="view-unit-catalog">
+ <div class="ia-page-heading"><div><span class="ia-eyebrow">CURRICULUM · INSTITUTION WORKSPACE</span><h1>Unit Catalog</h1><p>Browse this institution’s academic units across KRCHN and TVET programmes. Programme ownership and academic periods follow your institution settings.</p></div><button class="ia-secondary-btn" id="iaUnitCatalogRefresh"><i class="fa-solid fa-rotate"></i> Refresh</button></div>
+ <div class="ia-panel ia-table-panel">
+  <div class="ia-panel-head"><div><h2>Academic unit catalogue</h2><p>Read-only catalogue view. Unit creation and curriculum structure are managed through programme settings.</p></div><input id="iaUnitCatalogSearch" type="search" placeholder="Search code, unit, programme…"><select id="iaUnitCatalogProgram"><option value="">All programmes</option></select></div>
+  <div class="ia-table-scroll"><table><thead><tr><th>Unit code</th><th>Unit name</th><th>Programme</th><th>Academic period</th><th>Credits</th><th>Status</th></tr></thead><tbody id="iaUnitCatalogRows"><tr><td colspan="6" class="ia-empty">Loading unit catalogue…</td></tr></tbody></table></div>
+ </div>
+</section>
+<section class="ia-view" id="view-unit-registration">
+ <div class="ia-page-heading"><div><span class="ia-eyebrow">CURRICULUM · INSTITUTION WORKSPACE</span><h1>Unit Registration</h1><p>Review and process student unit registrations for this institution only.</p></div><button class="ia-secondary-btn" id="iaUnitRegistrationRefresh"><i class="fa-solid fa-rotate"></i> Refresh</button></div>
+ <div class="ia-stat-grid ia-report-grid"><article class="ia-stat-card"><small>Total registrations</small><strong id="iaRegTotal">—</strong></article><article class="ia-stat-card"><small>Pending review</small><strong id="iaRegPending">—</strong></article><article class="ia-stat-card"><small>Approved</small><strong id="iaRegApproved">—</strong></article><article class="ia-stat-card"><small>Rejected</small><strong id="iaRegRejected">—</strong></article></div>
+ <div class="ia-panel ia-table-panel"><div class="ia-panel-head"><div><h2>Student unit registrations & approvals</h2><p>Approve or reject pending registrations belonging to your institution.</p></div><input id="iaUnitRegistrationSearch" type="search" placeholder="Search student, unit, programme…"><select id="iaUnitRegistrationStatus"><option value="">All statuses</option><option value="pending">Pending</option><option value="approved">Approved</option><option value="rejected">Rejected</option></select></div>
+ <div class="ia-table-scroll"><table><thead><tr><th>Student</th><th>Unit</th><th>Unit code</th><th>Programme</th><th>Academic period</th><th>Submitted</th><th>Status</th><th>Action</th></tr></thead><tbody id="iaUnitRegistrationRows"><tr><td colspan="8" class="ia-empty">Loading registrations…</td></tr></tbody></table></div></div>
+</section>
+<section class="ia-view" id="view-programs">
 <section id="programs" class="tab-content">
     <h2><i class="fas fa-sitemap"></i> Program Management</h2>
     <p>Define and manage all academic programmes offered by your institution. Programmes serve as the foundation for courses, units and student enrolment.</p>
