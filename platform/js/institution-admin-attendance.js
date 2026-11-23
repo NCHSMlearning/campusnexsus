@@ -19,15 +19,26 @@
  async function load(){
   api=window.CampusInstitutionAdmin;if(!api?.institutionId)return;
   try{message("Loading institution attendance…");
-   const st=await db().from("students").select("id,admission_number,full_name").eq("institution_id",api.institutionId).limit(10000);if(st.error)throw st.error;students=st.data||[];
+   const st=await db().from("students").select("id,admission_number,full_name,course").eq("institution_id",api.institutionId).limit(10000);if(st.error)throw st.error;students=st.data||[];
+   const studentSelect=$("iaAttStudent");if(studentSelect){const previous=studentSelect.value;studentSelect.innerHTML='<option value="">Select student</option>'+students.map(x=>'<option value="'+esc(x.id)+'">'+esc(x.full_name||x.admission_number||x.id)+' · '+esc(x.admission_number||"")+'</option>').join("");if(students.some(x=>String(x.id)===previous))studentSelect.value=previous;}
    const admissions=[...new Set(students.map(x=>x.admission_number).filter(Boolean))];
    if(!admissions.length){records=[];render();message("No registered students were found for this institution.");return;}
    let logs=[];for(let i=0;i<admissions.length;i+=150){const batch=admissions.slice(i,i+150);const r=await db().from("geo_attendance_logs").select("*").in("student_id",batch).order("check_in_time",{ascending:false}).limit(5000);if(r.error)throw r.error;logs.push(...(r.data||[]));}
-   records=logs.sort((a,b)=>new Date(b.check_in_time||b.created_at||0)-new Date(a.check_in_time||a.created_at||0));render();message("Loaded "+records.length+" geo-attendance records for "+(api.institution?.name||"this institution")+".");
+   const manual=await db().from("attendance").select("id,student_id,date,timestamp,course_or_rotation,status,marked_by,institution_id").eq("institution_id",api.institutionId).order("timestamp",{ascending:false}).limit(5000);if(manual.error)console.warn("[Institution attendance] Manual attendance history unavailable:",manual.error.message);
+   const byId=new Map(students.map(x=>[String(x.id),x]));const manualRows=(manual.data||[]).map(x=>{const st=byId.get(String(x.student_id))||{};return{id:"manual-"+x.id,student_name:st.full_name||st.admission_number||x.student_id,student_id:st.admission_number||x.student_id,registration_number:st.admission_number||"",program:st.course||"",session_type:"Manual",location_type:"manual",target_name:x.course_or_rotation||"Manual check-in",check_in_time:x.timestamp||x.date,attendance_status:x.status||"Present",is_verified:String(x.status||"").toLowerCase()==="present",_manual:true};});
+   records=[...logs,...manualRows].sort((a,b)=>new Date(b.check_in_time||b.created_at||0)-new Date(a.check_in_time||a.created_at||0));render();message("Loaded "+records.length+" geo and manual attendance records for "+(api.institution?.name||"this institution")+".");
   }catch(e){console.error("[Institution attendance]",e);message("Attendance could not be loaded: "+e.message,true);}
  }
  function exportCsv(){const rows=filtered();if(!rows.length){message("No attendance records to export.",true);return;}const cols=["student_name","student_id","program","session_type","target_name","check_in_time","attendance_status","is_verified","distance_meters"];const csv=[cols.join(","),...rows.map(r=>cols.map(k=>'"'+String(r[k]??"").replace(/"/g,'""')+'"').join(","))].join("\n");const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="Institution_Attendance.csv";a.click();URL.revokeObjectURL(a.href);}
- function init(){["iaAttendanceSearch","iaAttendanceStatus","iaAttendanceType"].forEach(id=>$(id)?.addEventListener(id==="iaAttendanceSearch"?"input":"change",render));$("iaAttendanceRefresh")?.addEventListener("click",load);$("iaAttendanceExport")?.addEventListener("click",exportCsv);document.addEventListener("click",e=>{if(e.target.closest('#iaNav [data-view="attendance"]'))setTimeout(load,100);});api=window.CampusInstitutionAdmin;if(api?.institutionId&&$("view-attendance")?.classList.contains("active"))load();}
+ async function recordManual(event){
+  event.preventDefault();if(!api?.user?.id)return;
+  const studentId=$("iaAttStudent")?.value;if(!studentId){message("Select a student first.",true);return;}
+  const dateValue=$("iaAttDate")?.value||day(),timeValue=$("iaAttTime")?.value||"12:00";
+  const session=$("iaAttSession")?.value||"classroom",target=$("iaAttTarget")?.value.trim()||"";
+  const payload={institution_id:api.institutionId,student_id:studentId,date:dateValue,timestamp:new Date(dateValue+"T"+timeValue+":00").toISOString(),course_or_rotation:[session,target].filter(Boolean).join(" · "),status:"Present",marked_by:api.user.id};
+  try{const {error}=await db().from("attendance").insert(payload);if(error)throw error;message("Manual attendance recorded.");$("iaManualAttendanceForm")?.reset();if($("iaAttDate"))$("iaAttDate").value=day();await load();}catch(e){message("Manual attendance could not be recorded: "+e.message,true);}
+ }
+ function init(){["iaAttendanceSearch","iaAttendanceStatus","iaAttendanceType"].forEach(id=>$(id)?.addEventListener(id==="iaAttendanceSearch"?"input":"change",render));$("iaAttendanceRefresh")?.addEventListener("click",load);$("iaAttendanceExport")?.addEventListener("click",exportCsv);document.addEventListener("click",e=>{if(e.target.closest('#iaNav [data-view="attendance"]'))setTimeout(load,100);});$("iaManualAttendanceForm")?.addEventListener("submit",recordManual);if($("iaAttDate"))$("iaAttDate").value=day();api=window.CampusInstitutionAdmin;if(api?.institutionId&&$("view-attendance")?.classList.contains("active"))load();}
  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init,{once:true});else init();
  window.InstitutionAdminAttendance={refresh:load,export:exportCsv};
 })();
