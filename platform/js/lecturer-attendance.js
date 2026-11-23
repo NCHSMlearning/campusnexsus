@@ -235,36 +235,25 @@ const LecturerAttendance = {
     async loadAssignedUnits() {
         try {
             const supabase = window.lecturerDB?.supabase;
-            if (!supabase) return;
-            const profile = window.lecturerDB?.getCurrentUserProfile();
-            if (!profile) return;
-
-            const lecturerId = this.lecturerAssignmentId || profile.user_id;
-            const program = this.currentProgram || profile.program || 'KRCHN';
-
-            const { data: assignments, error } = await supabase
-                .from('lecturer_subject_assignments')
+            if (!supabase) throw new Error('Supabase client is unavailable.');
+            const lecturerId = String(this.lecturerAssignmentId || await this.resolveLecturerId() || '');
+            if (!lecturerId) throw new Error('Authenticated lecturer assignment identity is unavailable.');
+            const profile = window.lecturerDB?.getCurrentUserProfile?.() || {};
+            const program = String(this.currentProgram || profile.program || window.CURRENT_PROGRAM || 'KRCHN').trim();
+            const { data, error } = await supabase.from('lecturer_subject_assignments')
                 .select('subject_name, subject_code, block, program, academic_year')
-                .eq('lecturer_id', String(lecturerId))
-                .eq('program', program);
-
-            if (error) { console.error('❌ loadAssignedUnits:', error); return; }
-
-            this.assignedUnits = assignments || [];
-
-            // Keep the lecturer's assigned block(s) available to every
-            // session/roster operation. Sessions created before target_block
-            // was introduced can still resolve their block from this table.
-            this.assignedBlocks = [...new Set(this.assignedUnits.map(u => String(u.block || '').trim()).filter(Boolean))];
-
+                .eq('lecturer_id', lecturerId);
+            if (error) throw error;
+            const norm = value => String(value || '').trim().toLowerCase();
+            this.assignedUnits = (data || []).filter(unit => norm(unit.program) === norm(program));
+            this.assignedBlocks = [...new Set(this.assignedUnits.map(unit => String(unit.block || '').trim()).filter(Boolean))];
             this.populateUnitSelectors();
             this.populateUnitFilter();
             this.updateProgramBadge();
-
-            console.log('📚 Assigned units:', this.assignedUnits);
-            console.log('📚 Assigned blocks:', this.assignedBlocks);
+            console.log('[Lecturer Attendance] Assigned units and blocks loaded:', this.assignedUnits.length, this.assignedBlocks.length);
         } catch (error) {
-            console.error('❌ loadAssignedUnits fail:', error);
+            console.error('[Lecturer Attendance] Failed to load assigned units:', error);
+            this.assignedUnits = []; this.assignedBlocks = [];
         }
     },
 
