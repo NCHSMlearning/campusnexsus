@@ -658,15 +658,21 @@ if (window.location.pathname.endsWith('.html')) {
     // AUTH
     // ============================================================
     function checkAuth() {
-        const session = localStorage.getItem('adminSession') || localStorage.getItem('userProfile');
-        if (!session) { window.location.href = 'login.html'; return false; }
+        const session = sessionStorage.getItem('campusNexusExamLecturerAuth')
+            || localStorage.getItem('campusNexusExamLecturerAuth')
+            || localStorage.getItem('adminSession')
+            || localStorage.getItem('userProfile');
+        if (!session) { window.location.replace('/examlogin.html'); return false; }
         try {
             const data = JSON.parse(session);
             lecturerSessionData = data;
-            const role = (data.role || data.user_role || '').toLowerCase();
-            if (!['lecturer','instructor','teacher','admin','superadmin','administrator'].includes(role)) {
-                window.location.href = 'login.html';
+            const role = String(data.role || data.user_role || '').toLowerCase();
+            if (!['lecturer','instructor','teacher'].includes(role)) {
+                window.location.replace('/examlogin.html');
                 return false;
+            }
+            if (data.institution_id && localStorage.getItem('campusNexusExamLecturerAuth')) {
+                localStorage.setItem('currentUserId', data.user_id || data.id || '');
             }
             const name = data.name || data.full_name || 'Lecturer';
             const email = data.email || 'lecturer@nchsm.ac.ke';
@@ -690,9 +696,10 @@ if (window.location.pathname.endsWith('.html')) {
             localStorage.removeItem('adminSession');
             localStorage.removeItem('userProfile');
             localStorage.removeItem('lecturerSession');
-            sessionStorage.clear();
+            localStorage.removeItem('campusNexusExamLecturerAuth');
+            sessionStorage.removeItem('campusNexusExamLecturerAuth');
         } catch (e) { console.warn('Session cleanup warning:', e); }
-        window.location.replace('https://nchsm.co.ke/adminlogin');
+        window.location.replace('/examlogin.html');
     }
 
     // ============================================================
