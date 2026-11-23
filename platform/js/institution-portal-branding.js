@@ -47,7 +47,7 @@
     if (/\/superadmin(?:login)?\.html$|\/platform\/superadmin/.test(path)) return "Platform";
     if (/exam_dashboard/.test(path)) return "Student Examination";
     if (/lecturerexams|\/lecturer(?:\.html)?$/.test(path)) return "Lecturer";
-    if (/\/admin(?:\.html)?$|\/source\/admin(?:exams)?\.html$/.test(path)) return "Administrator";
+    if (/institution-admin|\/admin(?:\.html)?$|\/source\/admin(?:exams)?\.html$/.test(path)) return "Administrator";
     if (/exam|examination/.test(path)) return "Examinations";
     if (/student/.test(path)) return "Student";
     return "Institution";
@@ -75,8 +75,8 @@
     const title = identity + " " + roleLabel;
     const primary = safeColor(institution.primary_color, "#082f49");
     const secondary = safeColor(institution.secondary_color, "#0f766e");
-    const colors = Array.isArray(institution.brand_colors) ? institution.brand_colors : [];
-    const gold = safeColor(colors[2], "#d4a017");
+    const colors = institution.brand_colors && typeof institution.brand_colors === "object" ? institution.brand_colors : [];
+    const gold = safeColor(Array.isArray(colors) ? colors[2] : (colors.gold || colors.accent || colors.tertiary), "#d4a017");
     const logo = institution.logo_url && /^https:\/\//i.test(institution.logo_url)
       ? institution.logo_url : fallbackLogo(name, primary, secondary);
 
