@@ -52,6 +52,7 @@ const AppState = {
     listenersAttached: false,
     isNavigating: false,
     fullscreenMonitoringAttached: false,
+    focusMonitoringAttached: false,
     fullscreenLockActive: false,
     fullscreenOverlay: null,
     fullscreenWarningInterval: null,
@@ -1884,6 +1885,8 @@ async function initExam() {
 
             AppState.isExamActive = true;
             AppState.examStarted = true;
+            setupFullscreenMonitoring();
+            if (!isExamFullscreen()) lockExamForFullscreenExit();
 
             console.log(`📝 Active Attempt: #${AppState.attemptNumber} (${AppState.attemptId})`);
             console.log(`📝 Scoring maps ready:`, {
@@ -2588,99 +2591,88 @@ function updateQuestionTimer() {
 // TIMER
 // ============================================================
 function startTimer(seconds) {
-    // Prevent duplicate countdowns when a recovered exam re-enters the timer setup.
     if (AppState.timerInterval) {
         clearInterval(AppState.timerInterval);
         AppState.timerInterval = null;
     }
+
     const timerEl = document.getElementById('timer');
     const timerDisplayHeader = document.getElementById('timerDisplayHeader');
     const timerProgressBar = document.getElementById('timerProgressBar');
-    
-    if (!timerEl) return;
+    if (!timerEl && !timerDisplayHeader) {
+        console.error('Exam timer elements are missing from exam.html.');
+        showToast('The exam timer could not be displayed. Please contact the invigilator.', 'error', 7000);
+        return;
+    }
 
     const totalSeconds = Math.max(1, Number(seconds || 0));
-    let remaining = Math.max(0, Number(seconds || 0));
-    AppState.remainingSeconds = remaining;
+    const deadline = Date.now() + totalSeconds * 1000;
+    AppState.remainingSeconds = totalSeconds;
+    AppState.timerWarningShown = false;
+    let autoSubmitStarted = false;
 
-    AppState.timerInterval = setInterval(() => {
-        seconds = remaining;
+    // Render immediately so the countdown is visible as soon as the first
+    // question appears; calculate from a deadline to avoid timer drift.
+    const renderTimer = () => {
+        const remaining = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
         AppState.remainingSeconds = remaining;
         const timeString = formatTime(remaining);
+
         if (timerEl) timerEl.textContent = timeString;
         if (timerDisplayHeader) {
             timerDisplayHeader.textContent = timeString;
-            timerDisplayHeader.style.setProperty('color', '#0A3D62', 'important');
-            timerDisplayHeader.style.setProperty('background', '#EAF4FF', 'important');
-            timerDisplayHeader.style.setProperty('border', '2px solid #0A3D62', 'important');
+            timerDisplayHeader.style.setProperty('display', 'inline-flex', 'important');
+            timerDisplayHeader.style.setProperty('visibility', 'visible', 'important');
+            timerDisplayHeader.style.setProperty('opacity', '1', 'important');
+            timerDisplayHeader.style.setProperty('color', remaining <= 60 ? '#991B1B' : remaining <= 300 ? '#92400E' : '#0A3D62', 'important');
+            timerDisplayHeader.style.setProperty('background', remaining <= 60 ? '#FEE2E2' : remaining <= 300 ? '#FEF3C7' : '#EAF4FF', 'important');
+            timerDisplayHeader.style.setProperty('border', '2px solid ' + (remaining <= 60 ? '#DC2626' : remaining <= 300 ? '#D97706' : '#0A3D62'), 'important');
             timerDisplayHeader.style.setProperty('font-weight', '800', 'important');
             timerDisplayHeader.style.setProperty('text-shadow', 'none', 'important');
         }
-        
+
         if (timerProgressBar) {
-            const progress = (remaining / totalSeconds) * 100;
-            timerProgressBar.style.width = progress + '%';
-            
-            if (remaining <= 60) {
-                timerProgressBar.style.background = 'linear-gradient(90deg, #ef4444, #dc2626)';
-                if (timerEl) timerEl.style.color = '#ef4444';
-                if (timerDisplayHeader) {
-                    timerDisplayHeader.style.setProperty('color', '#991B1B', 'important');
-                    timerDisplayHeader.style.setProperty('background', '#FEE2E2', 'important');
-                    timerDisplayHeader.style.setProperty('border-color', '#DC2626', 'important');
-                }
-            } else if (seconds <= 300) {
-                timerProgressBar.style.background = 'linear-gradient(90deg, #f59e0b, #d97706)';
-                if (timerEl) timerEl.style.color = '#f59e0b';
-                if (timerDisplayHeader) {
-                    timerDisplayHeader.style.setProperty('color', '#92400E', 'important');
-                    timerDisplayHeader.style.setProperty('background', '#FEF3C7', 'important');
-                    timerDisplayHeader.style.setProperty('border-color', '#D97706', 'important');
-                }
-            } else {
-                timerProgressBar.style.background = 'linear-gradient(90deg, #10b981, #059669)';
-                if (timerEl) timerEl.style.color = 'white';
-                if (timerDisplayHeader) {
-                    timerDisplayHeader.style.setProperty('color', '#0A3D62', 'important');
-                    timerDisplayHeader.style.setProperty('background', '#EAF4FF', 'important');
-                    timerDisplayHeader.style.setProperty('border-color', '#0A3D62', 'important');
-                }
-            }
+            timerProgressBar.style.width = ((remaining / totalSeconds) * 100) + '%';
+            timerProgressBar.style.background = remaining <= 60
+                ? 'linear-gradient(90deg, #ef4444, #dc2626)'
+                : remaining <= 300
+                    ? 'linear-gradient(90deg, #f59e0b, #d97706)'
+                    : 'linear-gradient(90deg, #10b981, #059669)';
         }
 
-        if (remaining <= 60 && seconds > 0 && !AppState.timerWarningShown) {
+        if (remaining <= 60 && remaining > 0 && !AppState.timerWarningShown) {
             AppState.timerWarningShown = true;
-            showToast('⚠️ 1 minute remaining! Your exam will auto-submit.', 'warning');
+            showToast('⚠️ 1 minute remaining! Your exam will auto-submit.', 'warning', 5000);
         }
 
-        if (remaining <= 0) {
+        if (remaining <= 0 && !autoSubmitStarted) {
+            autoSubmitStarted = true;
             clearInterval(AppState.timerInterval);
+            AppState.timerInterval = null;
             if (timerEl) timerEl.textContent = '00:00';
             if (timerDisplayHeader) timerDisplayHeader.textContent = '00:00';
             if (timerProgressBar) timerProgressBar.style.width = '0%';
-            
+
             logProctoringEvent('exam_auto_submitted', 'Exam was automatically submitted when timer reached 0', 'info');
-            
             if (DOM.examContainer) {
                 DOM.examContainer.innerHTML = `
-                    <div style="text-align:center; padding:40px;">
+                    <div style="text-align:center;padding:40px;">
                         <div style="font-size:4rem;">⏰</div>
                         <h2 style="color:#0A3D62;">Time's Up!</h2>
                         <p style="color:#64748b;">Your exam time has ended. Your answers are being submitted automatically.</p>
-                        <div style="margin-top:12px; color:#0A3D62;">⏳ Submitting...</div>
-                    </div>
-                `;
+                        <div style="margin-top:12px;color:#0A3D62;">⏳ Submitting...</div>
+                    </div>`;
             }
             if (DOM.prevBtn) DOM.prevBtn.disabled = true;
             if (DOM.nextBtn) DOM.nextBtn.disabled = true;
             if (DOM.submitBtn) DOM.submitBtn.disabled = true;
-            
             captureSnapshot();
-            setTimeout(() => executeSubmissionWithLoading(), 2000);
+            setTimeout(() => executeSubmissionWithLoading(), 1000);
         }
+    };
 
-        remaining--;
-    }, 1000);
+    renderTimer();
+    AppState.timerInterval = setInterval(renderTimer, 250);
 }
 
 // ============================================================
@@ -3546,12 +3538,20 @@ async function enterSecureFullscreen() {
 }
 
 function setupFullscreenMonitoring() {
-    if (AppState.fullscreenMonitoringAttached) return;
-    AppState.fullscreenMonitoringAttached = true;
-
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
-    document.addEventListener('msfullscreenchange', handleFullscreenChange);
+    if (!AppState.fullscreenMonitoringAttached) {
+        AppState.fullscreenMonitoringAttached = true;
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+        document.addEventListener('msfullscreenchange', handleFullscreenChange);
+    }
+    if (!AppState.focusMonitoringAttached) {
+        AppState.focusMonitoringAttached = true;
+        window.addEventListener('blur', handleWindowBlur, true);
+        window.addEventListener('focus', handleWindowFocus, true);
+        document.addEventListener('visibilitychange', handleVisibilityChange, true);
+        window.addEventListener('pagehide', handleWindowBlur, true);
+        window.addEventListener('pageshow', handleWindowFocus, true);
+    }
     handleFullscreenChange();
 }
 
@@ -3696,6 +3696,11 @@ function handleWindowBlur() {
     if (!AppState.isExamActive || AppState.isExamPaused || AppState.isSubmitting) return;
     AppState.blurCount = (AppState.blurCount || 0) + 1;
     AppState.pendingFocusReturnNotice = true;
+    const now = Date.now();
+    if (!AppState.lastFocusWarningAt || now - AppState.lastFocusWarningAt > CONFIG.VIOLATION_COOLDOWN) {
+        AppState.lastFocusWarningAt = now;
+        showToast('⚠️ Keep the examination window active. Do not minimize or switch away from the exam.', 'warning', 5000);
+    }
     console.info('ℹ️ Exam window lost focus; awaiting visibility state.');
     logProctoringEvent(
         'window_blur',
