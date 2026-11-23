@@ -28,9 +28,15 @@
  async function loadPrograms(){
   if(loading)return;loading=true;
   try{
-   const {data,error}=await db().from("units_catalog").select("program").eq("status","active").or("institution_id.is.null,institution_id.eq."+tenant()).limit(5000);
-   if(error)throw error;
-   fill("iaMEProgramSelect",(data||[]).map(x=>x.program),"Select programme");
+   const [catalog,legacy]=await Promise.all([
+    db().from("programs").select("program_code,program_name,status").eq("institution_id",tenant()).eq("status","active").order("program_code"),
+    db().from("units_catalog").select("program").eq("institution_id",tenant()).eq("status","active").limit(5000)
+   ]);
+   if(catalog.error)throw catalog.error;if(legacy.error)throw legacy.error;
+   // Keep legacy programme codes visible until every existing catalogue has been
+   // reconciled to a programme row; prefer the canonical programme table.
+   const codes=[...(catalog.data||[]).map(x=>x.program_code),...(legacy.data||[]).map(x=>x.program)];
+   fill("iaMEProgramSelect",codes,"Select programme");
    say("Choose a programme, block, unit and academic year.");
   }catch(e){say("Programmes could not be loaded: "+e.message,true);}
   finally{loading=false;}
@@ -39,15 +45,27 @@
   const program=$("iaMEProgramSelect")?.value||"";
   fill("iaMEBlockSelect",[],"Select block");fill("iaMEUnitSelect",[],"Select unit");units=[];
   if(!program)return;
-  try{const {data,error}=await db().from("units_catalog").select("block").eq("program",program).eq("status","active").or("institution_id.is.null,institution_id.eq."+tenant()).limit(5000);if(error)throw error;fill("iaMEBlockSelect",(data||[]).map(x=>x.block),"Select block");}
-  catch(e){say("Blocks could not be loaded: "+e.message,true);}
+  try{
+   const {data:programRow,error:programError}=await db().from("programs").select("id").eq("program_code",program).eq("institution_id",tenant()).maybeSingle();if(programError)throw programError;
+   let blockNames=[];
+   if(programRow?.id){const canonical=await db().from("program_blocks").select("block_name").eq("program_id",programRow.id).eq("institution_id",tenant()).eq("status","active").order("block_sequence");if(canonical.error)throw canonical.error;blockNames=(canonical.data||[]).map(x=>x.block_name);}
+   if(!blockNames.length){const legacy=await db().from("units_catalog").select("block").eq("program",program).eq("institution_id",tenant()).eq("status","active").limit(5000);if(legacy.error)throw legacy.error;blockNames=(legacy.data||[]).map(x=>x.block);}
+   fill("iaMEBlockSelect",blockNames,"Select block");
+  }catch(e){say("Blocks could not be loaded: "+e.message,true);}
  }
  async function loadUnits(){
   const program=$("iaMEProgramSelect")?.value||"",block=$("iaMEBlockSelect")?.value||"";
   fill("iaMEUnitSelect",[],"Select unit");units=[];
   if(!program||!block)return;
-  try{const {data,error}=await db().from("units_catalog").select("unit_code,unit_name,assessment_type,program,block").eq("program",program).eq("block",block).eq("status","active").or("institution_id.is.null,institution_id.eq."+tenant()).order("unit_name",{ascending:true}).limit(1000);if(error)throw error;units=data||[];const el=$("iaMEUnitSelect");el.replaceChildren();option(el,"","Select unit");units.forEach(u=>option(el,u.unit_name,(u.unit_code?u.unit_code+" · ":"")+u.unit_name));if(units.length===1)el.value=units[0].unit_name;syncAssessmentType();}
-  catch(e){say("Units could not be loaded: "+e.message,true);}
+  try{
+   const {data:programRow,error:programError}=await db().from("programs").select("id").eq("program_code",program).eq("institution_id",tenant()).maybeSingle();if(programError)throw programError;
+   let mappedIds=[];
+   if(programRow?.id){const mapped=await db().from("program_courses").select("unit_catalog_id,block_name").eq("program_id",programRow.id).not("unit_catalog_id","is",null);if(mapped.error)throw mapped.error;mappedIds=(mapped.data||[]).filter(x=>!x.block_name||x.block_name===block).map(x=>x.unit_catalog_id).filter(Boolean);}
+   let query=db().from("units_catalog").select("id,unit_code,unit_name,assessment_type,program,block").eq("program",program).eq("block",block).eq("status","active").eq("institution_id",tenant()).order("unit_name",{ascending:true}).limit(1000);
+   if(mappedIds.length)query=query.in("id",mappedIds);
+   const {data,error}=await query;if(error)throw error;units=data||[];
+   const el=$("iaMEUnitSelect");el.replaceChildren();option(el,"","Select unit");units.forEach(u=>option(el,u.unit_name,(u.unit_code?u.unit_code+" · ":"")+u.unit_name));if(units.length===1)el.value=units[0].unit_name;syncAssessmentType();
+  }catch(e){say("Units could not be loaded: "+e.message,true);}
  }
  function syncAssessmentType(){const unit=units.find(u=>u.unit_name===($("iaMEUnitSelect")?.value||""));const el=$("iaMEAssessmentType");if(!el)return;if(unit?.assessment_type&&[...el.options].some(o=>o.value===unit.assessment_type)){el.value=unit.assessment_type;el.disabled=true;}else el.disabled=false;}
  function profileIndex(profiles){const m=new Map();profiles.forEach(p=>[p.user_id,p.student_id,p.admission_number].filter(Boolean).forEach(k=>m.set(String(k),p)));return m;}
