@@ -12,6 +12,7 @@
 <script src="/platform/js/institution-admin-programs.js?v=20261121-shared-superadmin-source1" defer></script>
 <script src="/platform/js/institution-admin-modules.js?v=20261121-14" defer></script>
 <script src="/platform/js/institution-admin-results.js?v=20261123-results-parity-v9" defer></script>
+<script src="/platform/js/institution-admin-marks-entry.js?v=20261123-capture-v1" defer></script>
 <script src="/platform/js/institution-admin-analytics.js?v=20261123-analytics-v5" defer></script>
 <script src="/platform/js/institution-admin-attendance.js?v=20261123-attendance-v6" defer></script>
 <script src="/platform/js/institution-admin-activity.js?v=20261122-activity-v1" defer></script>
@@ -48,7 +49,13 @@
 @media(max-width:640px){#view-academic #programs .cards{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}#view-academic #programs .card{padding:12px}#view-academic #programs .data{font-size:24px}#view-academic #programs form>div{grid-template-columns:1fr!important}}
 </style>
 
-<style id="ia-results-parity-styles">
+<style id="ia-results-parity-styles">#view-marks-entry .ia-me-capture .ia-filter-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+#view-marks-entry .ia-me-capture .ia-filter-row>*{flex:1 1 150px;min-width:140px}
+#view-marks-entry .ia-me-capture table{min-width:850px}
+#view-marks-entry .ia-me-capture input[type=number]{width:86px;min-width:70px}
+#view-marks-entry .ia-me-capture .ia-score-input{width:76px;min-height:36px;padding:6px 8px}
+@media(max-width:640px){#view-marks-entry .ia-me-capture .ia-filter-row>*{flex:1 1 100%;width:100%}#view-marks-entry .ia-me-capture .ia-page-actions button{width:100%}}
+
 #view-published-marks .ia-stat-grid{grid-template-columns:repeat(auto-fit,minmax(145px,1fr))}#view-published-marks .ia-stat-card{border-top:3px solid #0f766e}#view-published-marks .ia-stat-card strong{font-variant-numeric:tabular-nums}#view-published-marks .ia-pm-quick{min-height:36px}@media(max-width:640px){#view-published-marks .ia-panel-head{align-items:flex-start;flex-direction:column}#view-published-marks .ia-page-actions{width:100%;flex-wrap:wrap}#view-published-marks .ia-pm-quick{flex:1}}
 @media print{body *{visibility:hidden!important}#iaPublishedPrintArea,#iaPublishedPrintArea *{visibility:visible!important}#iaPublishedPrintArea{position:absolute;inset:0;width:100%;border:0!important;box-shadow:none!important}#iaPublishedPrintArea .ia-panel-head{display:block}#iaPublishedPrintArea table{width:100%;font-size:10pt}}
 </style>
@@ -540,6 +547,20 @@
 <section class="ia-view" id="view-marks-entry">
  <div class="ia-page-heading"><div><span class="ia-eyebrow">ASSESSMENT MANAGEMENT</span><h1>Marks entry</h1><p>Review this institution’s marks register and open the examination centre for authorised mark capture.</p></div><a class="ia-primary-btn" href="/adminexams/"><i class="fa-solid fa-arrow-up-right-from-square"></i> Open examination centre</a><button class="ia-secondary-btn" data-marks-refresh="entry"><i class="fa-solid fa-rotate"></i> Refresh</button></div>
  <div class="ia-stat-grid ia-report-grid"><article class="ia-stat-card"><small>Total students</small><strong id="iaMEStudents">—</strong></article><article class="ia-stat-card"><small>Total units</small><strong id="iaMEUnits">—</strong></article><article class="ia-stat-card"><small>Pass rate</small><strong id="iaMEPassRate">—</strong></article><article class="ia-stat-card"><small>Class average</small><strong id="iaMEAverage">—</strong></article><article class="ia-stat-card"><small>At risk</small><strong id="iaMEAtRisk">—</strong></article><article class="ia-stat-card"><small>Published</small><strong id="iaMEPublished">—</strong></article></div>
+ <div class="ia-panel ia-me-capture">
+  <div class="ia-panel-head"><div><h2>Marks capture workspace</h2><p>Enter CAT and examination scores for approved unit registrations. Saving submits marks for approval; it never publishes results.</p></div><span class="ia-count">Institution-scoped entry</span></div>
+  <div class="ia-filter-row">
+   <select id="iaMEProgramSelect" class="ia-module-search" aria-label="Marks entry programme"><option value="">Select programme</option></select>
+   <select id="iaMEBlockSelect" class="ia-module-search" aria-label="Marks entry block"><option value="">Select block</option></select>
+   <select id="iaMEUnitSelect" class="ia-module-search" aria-label="Marks entry unit"><option value="">Select unit</option></select>
+   <select id="iaMEYearSelect" class="ia-module-search" aria-label="Marks entry academic year"><option value="">Select academic year</option><option>2023</option><option>2024</option><option>2025</option><option>2026</option><option>2027</option><option>2028</option><option>2029</option><option>2030</option></select>
+   <select id="iaMEAssessmentType" class="ia-module-search" aria-label="Assessment type"><option value="full">Full assessment</option><option value="single_cat">Single CAT</option><option value="exam_only">Exam only</option><option value="cats_only">CATs only</option><option value="cat_only">CAT only</option></select>
+   <button type="button" class="ia-primary-btn" id="iaMELoadStudents"><i class="fa-solid fa-users-viewfinder"></i> Load registered students</button>
+  </div>
+  <div id="iaMECaptureNotice" class="ia-notice" aria-live="polite">Select programme, block, unit and academic year to load approved registrations.</div>
+  <div class="ia-table-scroll"><table><thead><tr><th>Student</th><th>Admission no.</th><th>CAT 1 / 30</th><th>CAT 2 / 30</th><th>Exam</th><th>Final score</th><th>Grade</th><th>Workflow</th></tr></thead><tbody id="iaMEEditorRows"><tr><td colspan="8" class="ia-empty">No students loaded.</td></tr></tbody></table></div>
+  <div class="ia-page-actions" style="justify-content:flex-end;margin-top:14px"><button type="button" class="ia-primary-btn" id="iaMESaveCapture" disabled><i class="fa-solid fa-floppy-disk"></i> Save marks & submit for approval</button></div>
+ </div>
  <div class="ia-panel"><div class="ia-panel-head"><div><h2>Marks register filters</h2><p>Filter the institution marks register by academic year, programme and block.</p></div></div><div class="ia-filter-row"><select id="iaMEYearFilter" class="ia-module-search"><option value="all">All academic years</option></select><select id="iaMEProgramFilter" class="ia-module-search"><option value="all">All programmes</option></select><select id="iaMEBlockFilter" class="ia-module-search"><option value="all">All blocks / terms</option></select><input id="iaMESearch" class="ia-module-search" type="search" placeholder="Search student, admission no., unit…"></div></div>
  <div class="ia-panel ia-table-panel"><div class="ia-panel-head"><div><h2>Institution marks register</h2><p>Saved assessment records for this institution. Mark capture remains in the authorised examination centre.</p></div><div class="ia-panel-actions"><button class="ia-secondary-btn" id="iaMEExport" type="button"><i class="fa-solid fa-download"></i> Export CSV</button></div></div><div class="ia-table-scroll"><table><thead><tr><th>Student</th><th>Admission no.</th><th>Programme</th><th>Block</th><th>Unit</th><th>Year</th><th>CAT 1</th><th>CAT 2</th><th>Exam</th><th>Final</th><th>Grade</th><th>Status</th></tr></thead><tbody id="iaMarksEntryRows"><tr><td colspan="12" class="ia-empty">Loading marks…</td></tr></tbody></table></div></div>
 </section>
