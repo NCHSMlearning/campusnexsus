@@ -744,11 +744,11 @@ const LecturerDashboard = {
             // scoped SECURITY DEFINER RPC instead of requiring HR module access.
             const { data: staff, error: identityError } = await supabase.rpc('current_lecturer_staff_assignment_identity');
             if (identityError) throw identityError;
-            if (!staff?.id || String(staff.id) !== String(user.id)) throw new Error('No active institution-linked lecturer account matches this session. Ask the institution administrator to verify the account and membership.');
+            if (!staff?.id || String(staff.id) !== String(user.id) || !staff.assignment_id) throw new Error('Your lecturer account has no unique assignment mapping. Ask the institution administrator to reconcile your lecturer assignments.');
 
             const profile = window.lecturerDB?.getCurrentUserProfile?.() || {};
             this.lecturerUuid = user.id;
-            this.lecturerAssignmentId = String(staff.id).trim();
+            this.lecturerAssignmentId = String(staff.assignment_id).trim();
             this.currentProgram = String(window.CURRENT_PROGRAM || profile.program || staff.program || this.currentProgram || 'KRCHN').trim();
             if (this.currentProgram) {
                 this.isTVET = this.currentProgram.toUpperCase() !== 'KRCHN';
