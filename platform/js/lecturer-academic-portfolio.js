@@ -62,9 +62,11 @@ const AcademicPortfolio = {
             if (!authId) throw new Error('Authenticated lecturer session is unavailable.');
             const { data: identity, error } = await supabase.rpc('current_lecturer_staff_assignment_identity');
             if (error) throw error;
-            if (!identity?.id) throw new Error('Active lecturer account identity is unavailable.');
+            if (!identity?.id || String(identity.id) !== String(authId) || !identity.assignment_id) throw new Error('Lecturer assignment mapping is missing or ambiguous.');
+            const profile = window.lecturerDB?.getCurrentUserProfile?.() || {};
             this.lecturerUuid = authId;
-            this.lecturerId = String(identity.id);
+            this.lecturerId = String(identity.assignment_id);
+            this.currentProgram = String(window.CURRENT_PROGRAM || profile.program || identity.program || 'KRCHN').trim();
             await this.loadAssignedUnits();
             return this.lecturerId;
         } catch (error) {
@@ -106,10 +108,9 @@ const AcademicPortfolio = {
                 return;
             }
             
-            // Filter to KRCHN program
-            const krchnUnits = assignments?.filter(u => u.program === 'KRCHN') || [];
-            const allUnits = assignments || [];
-            this.assignedUnits = krchnUnits.length > 0 ? krchnUnits : allUnits;
+            // Show only the units assigned to this lecturer in their active programme.
+            const program = String(this.currentProgram || window.CURRENT_PROGRAM || profile.program || 'KRCHN').trim().toLowerCase();
+            this.assignedUnits = (assignments || []).filter(unit => String(unit.program || '').trim().toLowerCase() === program);
             
             console.log(`📚 Loaded ${this.assignedUnits.length} assigned units:`, 
                 this.assignedUnits.map(u => `${u.subject_name} (${u.lecturer_id})`));
