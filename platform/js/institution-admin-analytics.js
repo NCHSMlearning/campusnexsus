@@ -6,7 +6,7 @@
  const $=id=>document.getElementById(id);let api=null,rows=[],students=[],charts={};
  const db=()=>{if(!api?.db||!api?.institutionId)throw new Error("Institution session is not ready.");return api.db;};
  const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
- const score=r=>{const status=String(r.retake_status||"").trim().toUpperCase();if(["PASS","PASSED","COMPETENT","COMPETENT/PASS"].includes(status)){const n=Number(r.retake_score??r.retake_final_score);if(Number.isFinite(n))return n;}const raw=r.final_score;if(raw===null||raw===undefined||raw==="")return null;const n=Number(raw);return Number.isFinite(n)?n:null;};
+ const score=r=>{const status=String(r.retake_status||"").trim().toUpperCase();if(["PASS","PASSED","COMPETENT","COMPETENT/PASS"].includes(status)){const n=Number(r.retake_score);if(Number.isFinite(n))return n;}const raw=r.final_score;if(raw===null||raw===undefined||raw==="")return null;const n=Number(raw);return Number.isFinite(n)?n:null;};
  function notice(msg,bad=false){const host=$("iaAnalyticsNotice");if(host){host.textContent=msg;host.style.color=bad?"#a12b2b":"#16634a";}}
  function populate(id,values,label){const el=$(id);if(!el)return;const old=el.value,opts=[...new Set(values.map(v=>String(v??"").trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));el.innerHTML='<option value="all">'+label+'</option>'+opts.map(v=>'<option value="'+esc(v)+'">'+esc(v)+'</option>').join("");if(opts.includes(old))el.value=old;}
  function filtered(){const p=$("iaAnalyticsProgram")?.value||"all",y=$("iaAnalyticsYear")?.value||"all",b=$("iaAnalyticsBlock")?.value||"all",intake=$("iaAnalyticsIntake")?.value||"all";
@@ -29,7 +29,7 @@
  }
  async function load(){try{api=window.CampusInstitutionAdmin;if(!api?.institutionId)return;notice("Loading institution academic analytics…");
   const [marks,profileRows]=await Promise.all([
-   db().from("student_marks").select("id,student_id,admission_number,program,block,subject_name,final_score,grade,final_grade,approval_status,published,academic_year,retake_status,retake_score,retake_final_score,created_at").eq("institution_id",api.institutionId).order("created_at",{ascending:false}).limit(10000),
+   db().from("student_marks").select("id,student_id,admission_number,program,block,subject_name,final_score,grade,final_grade,approval_status,published,academic_year,retake_status,retake_score,created_at").eq("institution_id",api.institutionId).order("created_at",{ascending:false}).limit(10000),
    db().from("consolidated_user_profiles_table").select("id,student_id,admission_number,program,intake_year,intake_month").eq("institution_id",api.institutionId).eq("role","student").limit(10000)
   ]);
   if(marks.error)throw marks.error;rows=marks.data||[];students=profileRows.error?[]:(profileRows.data||[]);
