@@ -87,9 +87,17 @@
       if(!found?.institution_id||!found?.school_code)throw new Error("That school code was not recognised or the institution is inactive. Check the code with your school.");
       selected=found;const name=String(found.institution_name||"Your Institution");
       $("cnGateName").textContent=name;$("cnGateCodeLabel").textContent="School code: "+found.school_code;
-      const logo=$("cnGateLogo");logo.replaceChildren();
-      if(found.logo_url&&/^https:\/\//i.test(found.logo_url)){const img=document.createElement("img");img.src=found.logo_url;img.alt=name+" logo";logo.append(img);$("cnGateMark").replaceChildren(img.cloneNode(true));}
-      else{const initials=name.split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]).join("").toUpperCase()||"IN";const mark=document.createElement("span");mark.className="monogram";mark.textContent=initials;mark.style.cssText="display:grid;place-items:center;background:#0b4965;color:#fff;font-weight:800";logo.append(mark);$("cnGateMark").textContent=initials;}
+      const logo=$("cnGateLogo");
+      if(!logo) throw new Error("The institution confirmation panel could not be loaded. Refresh the page and try again.");
+      logo.replaceChildren();
+      if(found.logo_url&&/^https:\/\//i.test(found.logo_url)){
+        const img=document.createElement("img");img.src=found.logo_url;img.alt=name+" logo";logo.append(img);
+      } else {
+        const initials=name.split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]).join("").toUpperCase()||"IN";
+        const mark=document.createElement("span");mark.className="monogram";mark.textContent=initials;
+        mark.style.cssText="display:grid;place-items:center;background:#0b4965;color:#fff;font-weight:800";
+        logo.append(mark);
+      }
       const primary=/^#[0-9a-f]{3,8}$/i.test(found.primary_color||"")?found.primary_color:"#0b4965";
       const secondary=/^#[0-9a-f]{3,8}$/i.test(found.secondary_color||"")?found.secondary_color:"#0f766e";
       document.documentElement.style.setProperty("--nchsm-navy",primary);document.documentElement.style.setProperty("--institution-primary",primary);document.documentElement.style.setProperty("--institution-secondary",secondary);
