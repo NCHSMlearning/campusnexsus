@@ -24,45 +24,22 @@
     return [unit.subject_code, unit.subject_name].filter(Boolean).join(' · ');
   }
   async function resolveAssignments() {
-    const profile = state.profile;
-    const authId = profile?.user_id || profile?.id;
-    const fullName = String(profile?.full_name || profile?.name || '').trim();
-    if (!authId && !fullName) throw new Error('Your lecturer login profile could not be identified. Please sign out and sign in again.');
-
-    const columns = 'id, lecturer_id, lecturer_name, program, block, subject_name, subject_code, academic_year';
-    const lookups = [];
-    if (fullName) {
-      // Exact indexed match first; avoid a leading-wildcard scan on every page visit.
-      lookups.push(state.sb.from('lecturer_subject_assignments').select(columns).eq('lecturer_name', fullName));
-    } else lookups.push(Promise.resolve({ data: [], error: null }));
-    if (authId) {
-      lookups.push(state.sb.from('lecturer_subject_assignments').select(columns).eq('lecturer_id', String(authId)));
-    } else lookups.push(Promise.resolve({ data: [], error: null }));
-
-    const [byNameResult, byIdResult] = await Promise.all(lookups);
-    if (byNameResult.error) throw byNameResult.error;
-    if (byIdResult.error) throw byIdResult.error;
-
-    let byName = byNameResult.data || [];
-    // Legacy assignments sometimes contain inconsistent spacing/capitalization.
-    // Use the slower partial match only if the exact indexed lookup found nothing.
-    if (!byName.length && fullName) {
-      const safeName = fullName.replace(/[%_,]/g, ' ').replace(/\s+/g, ' ').trim();
-      const fallback = await state.sb.from('lecturer_subject_assignments')
-        .select(columns).ilike('lecturer_name', '%' + safeName + '%');
-      if (fallback.error) throw fallback.error;
-      byName = fallback.data || [];
-      const exactName = byName.filter(a => String(a.lecturer_name || '').trim().toLowerCase() === fullName.toLowerCase());
-      if (exactName.length) byName = exactName;
-      const nonStaff = byName.filter(a => !String(a.lecturer_id || '').toUpperCase().startsWith('STAFF'));
-      if (nonStaff.length) byName = nonStaff;
+    const { data: authData, error: authError } = await state.sb.auth.getUser();
+    if (authError) throw authError;
+    const authId = authData?.user?.id;
+    if (!authId) throw new Error('Your lecturer login session has expired. Sign in again.');
+    const { data: identity, error: identityError } = await state.sb.rpc('current_lecturer_staff_assignment_identity');
+    if (identityError) throw identityError;
+    if (!identity?.id) throw new Error('Your active lecturer account could not be resolved.');
+    const { data, error } = await state.sb.from('lecturer_subject_assignments')
+      .select('id, lecturer_id, lecturer_name, program, block, subject_name, subject_code, academic_year')
+      .eq('lecturer_id', String(identity.id));
+    if (error) throw error;
+    state.assignments = data || [];
+    state.lecturerId = String(identity.id);
+    if (!state.assignments.length) {
+      console.info('[Lecturer NurseIQ] No units are assigned to this lecturer yet.');
     }
-
-    const assignments = [...new Map([...byName, ...(byIdResult.data || [])].map(a => [a.id, a])).values()];
-    if (!assignments.length) throw new Error('No assigned units were found for this lecturer account.');
-
-    state.assignments = assignments;
-    state.lecturerId = assignments[0].lecturer_id;
   }
 
   async function loadUnits() {
