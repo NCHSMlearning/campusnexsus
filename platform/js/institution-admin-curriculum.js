@@ -62,6 +62,7 @@
   $("iaUnitRegistrationStatus")?.addEventListener("change",renderRegistrations);
   document.addEventListener("click",e=>{const b=e.target.closest("[data-unit-reg-action]");if(!b)return;b.disabled=true;decideRegistration(b.dataset.unitRegId,b.dataset.unitRegAction).catch(err=>notify("Unable to update registration: "+err.message,"error")).finally(()=>{b.disabled=false;});});
   window.addEventListener("campusnexus:institution-change",()=>{loadCatalog();loadRegistrations();});
+  window.addEventListener("campusnexus:curriculum-refresh",loadCatalog);
  }
  function start(){api=window.CampusInstitutionAdmin;if(!api?.db||!api?.institutionId){setTimeout(start,120);return;}bind();loadCatalog();loadRegistrations();}
  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",start,{once:true});else start();
