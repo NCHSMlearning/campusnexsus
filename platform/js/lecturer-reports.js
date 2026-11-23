@@ -151,159 +151,35 @@
 
         _identityCache.promise = (async () => {
             const supabase = db();
+            if (!supabase) throw new Error('Reports could not connect to the lecturer database.');
+            const { data: authData, error: authError } = await supabase.auth.getUser();
+            if (authError) throw authError;
+            const user = authData?.user;
+            if (!user?.id) throw new Error('Lecturer sign-in session is unavailable.');
 
-            /* 1. Already populated by the marks module */
-            const lecturer = window.me_currentLecturer || {};
-            // Only staff.id (or CORRECT_LECTURER_ID) is a staff-record key.
-            // profile.id is commonly an auth/profile UUID and must not be treated
-            // as lecturer_subject_assignments.lecturer_id.
-            if (lecturer?.staff?.id || window.CORRECT_LECTURER_ID) {
-                _identityCache.authUuid =
-                    window.currentUser?.id ||
-                    lecturer?.profile?.user_id ||
-                    null;
-                _identityCache.staffId =
-                    lecturer?.staff?.id ||
-                    window.CORRECT_LECTURER_ID ||
-                    null;
-                _identityCache.email =
-                    lecturer?.staff?.email ||
-                    lecturer?.profile?.email ||
-                    currentLecturerEmailSync();
-                _identityCache.name =
-                    lecturer?.staff?.full_name ||
-                    lecturer?.profile?.full_name ||
-                    null;
-                _identityCache.resolved = true;
-                console.log('📋 [Reports] identity from me_currentLecturer:', {
-                    staffId: _identityCache.staffId,
-                    authUuid: _identityCache.authUuid
-                });
-                return _identityCache;
+            const { data: identity, error } = await supabase.rpc('current_lecturer_staff_assignment_identity');
+            if (error) throw error;
+            if (!identity?.id || String(identity.id) !== String(user.id)) {
+                throw new Error('Active lecturer identity could not be verified.');
             }
 
-            /* 1b. lecturer-main.js already resolved it globally */
-            if (window.CORRECT_LECTURER_ID) {
-                _identityCache.staffId = String(window.CORRECT_LECTURER_ID);
-                _identityCache.authUuid = window.currentUser?.id || null;
-                _identityCache.email = currentLecturerEmailSync();
-                _identityCache.resolved = true;
-                console.log('📋 [Reports] identity from CORRECT_LECTURER_ID:', {
-                    staffId: _identityCache.staffId,
-                    authUuid: _identityCache.authUuid
-                });
-                return _identityCache;
-            }
-
-            /* 2. Auth user + email */
-            let authUuid = window.currentUser?.id || null;
-            let email = currentLecturerEmailSync();
-
-            if (supabase) {
-                try {
-                    const { data: { user } } = await supabase.auth.getUser();
-                    if (user) {
-                        authUuid = authUuid || user.id || null;
-                        email = email || user.email || null;
-                    }
-                } catch (e) {
-                    console.warn('[Reports] auth.getUser failed:', e?.message);
-                }
-            }
-
-            _identityCache.authUuid = authUuid;
-            _identityCache.email = email;
-
-            /* 3. Look up staff record by email */
-            if (supabase && email) {
-                try {
-                    const { data: staff, error: staffError } = await supabase
-                        .from('staff_records')
-                        .select('id, first_name, other_names, email, program, department')
-                        .eq('email', email)
-                        .maybeSingle();
-
-                    if (!staffError && staff?.id) {
-                        _identityCache.staffId = staff.id;
-                        _identityCache.name =
-                            [staff.first_name, staff.other_names]
-                                .filter(Boolean).join(' ').trim() ||
-                            _identityCache.name;
-
-                        window.CORRECT_LECTURER_ID = staff.id;
-                    }
-                } catch (e) {
-                    console.warn('[Reports] staff lookup failed:', e?.message);
-                }
-            }
-
-            /* 4. Fallback: profile table → then by name */
-            if (!_identityCache.staffId && supabase && authUuid) {
-                try {
-                    const { data: profile } = await supabase
-                        .from('consolidated_user_profiles_table')
-                        .select('full_name, program, department')
-                        .eq('user_id', authUuid)
-                        .maybeSingle();
-
-                    if (profile?.full_name) {
-                        _identityCache.name =
-                            _identityCache.name || profile.full_name;
-
-                        const parts = String(profile.full_name).trim().split(/\s+/);
-                        const first = parts[0];
-                        if (first) {
-                            const { data: matches } = await supabase
-                                .from('staff_records')
-                                .select('id, first_name, other_names')
-                                .ilike('first_name', `%${first}%`)
-                                .limit(5);
-
-                            if (matches?.length) {
-                                const full = String(profile.full_name).toLowerCase();
-                                const exact = matches.find(m => {
-                                    const candidate = [m.first_name, m.other_names]
-                                        .filter(Boolean).join(' ').toLowerCase();
-                                    return candidate === full;
-                                });
-                                _identityCache.staffId = (exact || matches[0]).id;
-                                window.CORRECT_LECTURER_ID = _identityCache.staffId;
-                            }
-                        }
-                    }
-                } catch (e) {
-                    console.warn('[Reports] profile fallback failed:', e?.message);
-                }
-            }
-
+            _identityCache.authUuid = user.id;
+            _identityCache.staffId = String(identity.id);
+            _identityCache.email = user.email || currentLecturerEmailSync();
+            _identityCache.name = window.lecturerDB?.getCurrentUserProfile?.()?.full_name || user.user_metadata?.full_name || '';
+            _identityCache.program = identity.program || '';
             _identityCache.resolved = true;
-
-            console.log('📋 [Reports] identity resolved:', {
-                staffId: _identityCache.staffId,
-                authUuid: _identityCache.authUuid,
-                email: _identityCache.email
-            });
-
+            window.CORRECT_LECTURER_ID = String(identity.id);
             return _identityCache;
-        })();
-
+        })().catch(error => {
+            _identityCache.resolved = false;
+            _identityCache.staffId = null;
+            console.error('[Reports] secure lecturer identity resolution failed:', error);
+            throw error;
+        }).finally(() => {
+            _identityCache.promise = null;
+        });
         return _identityCache.promise;
-    }
-
-    function currentLecturerId() {
-        return currentLecturerIdSync();
-    }
-
-    function currentLecturerEmail() {
-        return currentLecturerEmailSync();
-    }
-
-    function currentAcademicYear() {
-        return (
-            document.getElementById('me_year_select')?.value ||
-            window.me_currentYear ||
-            new Date().getFullYear().toString()
-        );
     }
 
     /* ============================================================
@@ -436,136 +312,23 @@
             throw new Error('Your lecturer/staff ID is not ready. Reopen Reports after the lecturer portal finishes loading.');
         }
 
-        // Reuse the exact canonical assignment ID already resolved by Sessions
-        // when that module has completed initialization.
         const sessionsId = String(window.LecturerSessions?.lecturerAssignmentId || '').trim();
-        if (sessionsId) lecturerId = sessionsId;
+        if (sessionsId && sessionsId !== lecturerId) {
+            console.warn('[Reports] Ignoring mismatched Sessions identity; authenticated account UUID remains canonical.');
+        }
 
         const key = `assignments:${lecturerId}`;
-        // Never permanently cache an empty assignment result; identity can still
-        // be resolving or may have used the auth UUID rather than staff-record ID.
-        if (Array.isArray(LecturerReports._cache[key]) && LecturerReports._cache[key].length > 0) {
+        if (Array.isArray(LecturerReports._cache[key])) {
             return LecturerReports._cache[key];
         }
 
-        const fetchAssignments = async id => {
-            const result = await supabase
-                .from('lecturer_subject_assignments')
-                .select('subject_name, subject_code, block, program, academic_year, lecturer_id, lecturer_name')
-                .eq('lecturer_id', String(id));
-            if (result.error) throw result.error;
-            return (result.data || []).filter(a => a.subject_name || a.subject_code);
-        };
+        const { data: rowsData, error: assignmentError } = await supabase
+            .from('lecturer_subject_assignments')
+            .select('subject_name, subject_code, block, program, academic_year, lecturer_id, lecturer_name')
+            .eq('lecturer_id', lecturerId);
+        if (assignmentError) throw assignmentError;
+        const rows = (rowsData || []).filter(a => a.subject_name || a.subject_code);
 
-        // Prefer the canonical staff-record foreign key. The broad lecturer_name
-        // ILIKE query is only a legacy fallback because it can scan the full table
-        // and time out on larger institution datasets.
-        let rows = [];
-        try {
-            rows = await fetchAssignments(lecturerId);
-        } catch (error) {
-            console.error('LecturerReports: assignment query by lecturer ID failed', error);
-        }
-
-        if (!rows.length) {
-            const sessionProfile = (() => {
-                try { return window.lecturerDB?.getCurrentUserProfile?.() || null; }
-                catch (_) { return null; }
-            })();
-            const sessionName = String(sessionProfile?.full_name || '').trim();
-            const sessionProgram = String(window.LecturerSessions?.currentProgram || sessionProfile?.program || '').trim();
-            if (sessionName) {
-                const { data: nameRows, error: nameError } = await supabase
-                    .from('lecturer_subject_assignments')
-                    .select('subject_name, subject_code, block, program, academic_year, lecturer_id, lecturer_name')
-                    .ilike('lecturer_name', `%${sessionName}%`)
-                    .limit(250);
-                if (nameError) {
-                    console.error('[Reports] Legacy lecturer_name fallback failed:', nameError);
-                } else {
-                    const allNameRows = (nameRows || []).filter(a => a.subject_name || a.subject_code);
-                    const programRows = sessionProgram
-                        ? allNameRows.filter(a => String(a.program || '').toLowerCase() === sessionProgram.toLowerCase())
-                        : [];
-                    rows = programRows.length ? programRows : allNameRows;
-                    if (rows.length) {
-                        const ids = [...new Set(rows.map(a => String(a.lecturer_id || '')).filter(Boolean))];
-                        if (ids.length === 1) lecturerId = ids[0];
-                    }
-                }
-            }
-        }
-
-        // Resolve the canonical staff row by email when the first ID returns no
-        // assignments, then retry by staff primary key and the Sessions module's
-        // lecturer_name matching strategy. This handles older assignment rows.
-        const email = String(identity?.email || currentLecturerEmailSync() || '').trim();
-        const liveProfile = (() => {
-            try { return window.lecturerDB?.getCurrentUserProfile?.() || {}; }
-            catch (_) { return {}; }
-        })();
-        let fullName = String(identity?.name || window.me_currentLecturer?.staff?.full_name ||
-            window.me_currentLecturer?.profile?.full_name || liveProfile.full_name ||
-            liveProfile.name || liveProfile.display_name || '').trim();
-        let canonicalId = '';
-
-        if (!rows.length && email) {
-            try {
-                const { data: staff, error: staffError } = await supabase
-                    .from('staff_records')
-                    .select('id, email, first_name, other_names')
-                    .ilike('email', email)
-                    .maybeSingle();
-                if (staffError) throw staffError;
-                if (staff?.id) {
-                    canonicalId = String(staff.id);
-                    fullName = [staff.first_name, staff.other_names].filter(Boolean).join(' ').trim() || fullName;
-                    if (canonicalId !== lecturerId) rows = await fetchAssignments(canonicalId);
-                    if (rows.length) {
-                        lecturerId = canonicalId;
-                        window.CORRECT_LECTURER_ID = canonicalId;
-                        _identityCache.staffId = canonicalId;
-                        _identityCache.email = staff.email || email;
-                        _identityCache.name = fullName;
-                    }
-                }
-            } catch (fallbackError) {
-                console.warn('[Reports] staff-record fallback failed:', fallbackError?.message || fallbackError);
-            }
-        }
-
-        if (!rows.length && fullName) {
-            try {
-                // Match the Sessions module's proven lookup strategy: resolve
-                // assignments by the lecturer's name, then use the assignment FK.
-                const escapedName = fullName.replace(/[%_]/g, ' ').trim();
-                const { data: namedRows, error: nameError } = await supabase
-                    .from('lecturer_subject_assignments')
-                    .select('subject_name, subject_code, block, program, academic_year, lecturer_id, lecturer_name')
-                    .ilike('lecturer_name', `%${escapedName}%`);
-                if (nameError) throw nameError;
-                rows = (namedRows || []).filter(a => a.subject_name || a.subject_code);
-                if (rows.length) {
-                    const matchedIds = [...new Set(rows.map(a => String(a.lecturer_id || '')).filter(Boolean))];
-                    if (matchedIds.length === 1) {
-                        lecturerId = matchedIds[0];
-                        window.CORRECT_LECTURER_ID = lecturerId;
-                        _identityCache.staffId = lecturerId;
-                    }
-                    console.info('[Reports] recovered assigned units using Sessions-compatible lecturer-name lookup', {
-                        name: fullName, count: rows.length, lecturerId
-                    });
-                }
-            } catch (nameFallbackError) {
-                console.warn('[Reports] lecturer-name fallback failed:', nameFallbackError?.message || nameFallbackError);
-            }
-        }
-
-        if (!rows.length) {
-            console.warn('[Reports] no assignments found by current ID, email-linked staff ID, or lecturer name', {
-                lecturerId, email, fullName
-            });
-        }
         LecturerReports._cache[`assignments:${lecturerId}`] = rows;
         console.log(`📚 [Reports] loaded ${rows.length} assigned unit(s) for lecturer ${lecturerId}`);
         return rows;
