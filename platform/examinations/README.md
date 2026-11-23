@@ -10,8 +10,9 @@ The active page uses the shared Digital Campus Supabase authentication project a
 
 Current implemented workflows:
 - Institution-scoped examination list and dashboard metrics
-- Create examination drafts with programme, block, date, duration, total marks and pass mark
-- Submit new examinations in `pending` approval state; they are not automatically published
+- Institution administrators create examinations with approval already granted; exams remain unpublished until the administrator explicitly publishes them
+- Lecturer-created examinations remain pending until an institution administrator or platform superadmin approves or rejects them
+- Dedicated Exam approvals tab and approval queue with approve/reject actions; approval is separate from publication
 - View and add MCQ questions to an institution's examinations
 - Review institution-scoped proctoring events
 - Review examination attendance
