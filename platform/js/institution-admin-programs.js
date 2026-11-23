@@ -99,7 +99,7 @@ async function syncLegacyAcademicStructure(rows){
    if(blockRead)throw blockRead;if(unitRead)throw unitRead;
    if(!existingBlocks?.length&&legacyUnits?.length){
     const unique=new Map();
-    legacyUnits.forEach(u=>{const name=String(u.block||"").trim();if(name&&!unique.has(name))unique.set(name,Number.isFinite(Number(u.block_order))?Number(u.block_order):null);});
+    legacyUnits.forEach(u=>{const name=String(u.block||"").trim();if(name&&!unique.has(name))unique.set(name,u.block_order!==null&&u.block_order!==undefined&&Number.isFinite(Number(u.block_order))?Number(u.block_order):null);});
     const names=[...unique.keys()].sort((a,b)=>{const ao=unique.get(a),bo=unique.get(b);return ao!==null&&bo!==null?ao-bo:a.localeCompare(b,undefined,{numeric:true});});
     if(names.length){
      const now=new Date().toISOString();
@@ -199,7 +199,7 @@ async function populateBlockSelector(programId){
 async function loadProgramMappings(){
  const id=$("mapping_program_select")?.value,host=$("program-mappings-container");if(!id){host.innerHTML='<p style="text-align:center;padding:20px;color:#64748b">Select a program to view its course mappings.</p>';return;}
  try{const program=await ownProgram(id);const {data,error}=await db().from(TABLES.mappings).select("id,program_id,course_id,unit_catalog_id,block_name,is_core,course:courses(id,course_name,unit_code,code,institution_id),unit:units_catalog(id,unit_name,unit_code,program,block,institution_id)").eq("program_id",id).order("created_at",{ascending:false});if(error)throw error;
- const rows=(data||[]).filter(m=>m.unit?.institution_id===tenant()&&String(m.unit?.program||"").toUpperCase()===String(program.program_code).toUpperCase());if(!rows.length){host.innerHTML='<p style="text-align:center;padding:20px;color:#64748b">No curriculum units mapped to this programme yet.</p>';return;}
+ const rows=(data||[]).filter(m=>(m.unit?.institution_id===tenant()&&String(m.unit?.program||"").toUpperCase()===String(program.program_code).toUpperCase())||(!m.unit_catalog_id&&m.course?.institution_id===tenant()));if(!rows.length){host.innerHTML='<p style="text-align:center;padding:20px;color:#64748b">No curriculum units mapped to this programme yet.</p>';return;}
  host.innerHTML='<table class="data-table" style="width:100%"><thead><tr><th>Unit / Course</th><th>Unit Code</th><th>Block</th><th>Type</th><th>Actions</th></tr></thead><tbody>'+rows.map(m=>'<tr><td>'+esc(m.unit?.unit_name||m.course?.course_name||"Unknown")+'</td><td>'+esc(m.unit?.unit_code||m.course?.unit_code||m.course?.code||"-")+'</td><td>'+esc(m.block_name||m.unit?.block||"Any")+'</td><td>'+(m.is_core?"Core":"Elective")+'</td><td><button class="btn-sm btn-delete" data-delete-mapping="'+esc(m.id)+'" data-program-id="'+esc(id)+'"><i class="fas fa-trash"></i></button></td></tr>').join("")+'</tbody></table>';
  }catch(error){notify("Unable to load programme mappings: "+error.message,"error");}
 }
