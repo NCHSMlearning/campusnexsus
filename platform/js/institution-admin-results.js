@@ -27,7 +27,17 @@
   const dateLabel = value => value ? new Date(value).toLocaleString("en-KE",{dateStyle:"medium",timeStyle:"short"}) : "—";
   const filtered = inputId => {
     const q=($(inputId)?.value||"").trim().toLowerCase();
-    return records.filter(r=>[r.student_name,r.admission_number,r.program,r.block,r.subject_name,r.academic_year,r.grade,r.approval_status].some(v=>String(v??"").toLowerCase().includes(q)));
+    const year=inputId==="iaMESearch"?$("iaMEYearFilter")?.value:"all";
+    const program=inputId==="iaMESearch"?$("iaMEProgramFilter")?.value:"all";
+    const block=inputId==="iaMESearch"?$("iaMEBlockFilter")?.value:(inputId==="iaMASearch"?$("iaMABlockFilter")?.value:"all");
+    const subject=inputId==="iaMASearch"?$("iaMASubjectFilter")?.value:"all";
+    return records.filter(r=>
+      (!q||[r.student_name,r.admission_number,r.program,r.block,r.subject_name,r.academic_year,r.grade,r.approval_status].some(v=>String(v??"").toLowerCase().includes(q))) &&
+      (year==="all"||String(r.academic_year||"")===year) &&
+      (program==="all"||String(r.program||"").toLowerCase()===program.toLowerCase()) &&
+      (block==="all"||String(r.block||"")===block) &&
+      (subject==="all"||String(r.subject_name||"")===subject)
+    );
   };
   async function audit(action,row,description) {
     try { await db().rpc("log_marks_security_event",{p_action:action,p_target_table:"student_marks",p_target_id:row?.id||null,p_description:description||action,p_status:"success",p_details:{institution_id:tenant(),page_path:location.pathname}}); }
@@ -39,14 +49,32 @@
       .eq("institution_id",tenant()).order("created_at",{ascending:false}).limit(5000);
     if(error)throw error;
     records=data||[];
+    populateFilters();
     paint();
+  }
+  function populateFilters() {
+    const fill=(id,values,label)=>{const el=$(id);if(!el)return;const old=el.value;const opts=[...new Set(values.map(v=>String(v||"").trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));el.innerHTML='<option value="all">'+label+'</option>'+opts.map(v=>'<option value="'+v.replace(/&/g,"&amp;").replace(/"/g,"&quot;")+'">'+v.replace(/&/g,"&amp;").replace(/</g,"&lt;")+'</option>').join("");if(opts.includes(old))el.value=old;};
+    fill("iaMEYearFilter",records.map(r=>r.academic_year),"All academic years");
+    fill("iaMEProgramFilter",records.map(r=>r.program),"All programmes");
+    fill("iaMEBlockFilter",records.map(r=>r.block),"All blocks / terms");
+    fill("iaMASubjectFilter",records.filter(r=>statusOf(r)==="pending").map(r=>r.subject_name),"All units");
+    fill("iaMABlockFilter",records.filter(r=>statusOf(r)==="pending").map(r=>r.block),"All blocks / terms");
+  }
+  function exportRegisterCsv() {
+    const rows=filtered("iaMESearch");if(!rows.length){notify("No marks records to export.",true);return;}
+    const cols=["student_name","admission_number","program","block","subject_name","academic_year","cat1_score","cat2_score","exam_score","final_score","final_grade","approval_status","published"];
+    const csv=[cols.join(","),...rows.map(r=>cols.map(k=>'"'+String(r[k]??"").replace(/"/g,'""')+'"').join(","))].join("\\n");
+    const url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));const a=document.createElement("a");a.href=url;a.download="Institution_Marks_Register.csv";a.click();URL.revokeObjectURL(url);
   }
   function paint() {
     const pending=records.filter(r=>statusOf(r)==="pending"&&!r.published);
     const approved=records.filter(r=>statusOf(r)==="approved"&&!r.published);
     const published=records.filter(r=>!!r.published);
     const units=new Set(records.map(r=>r.subject_name).filter(Boolean));
-    [["iaMECount",records.length],["iaMEPending",pending.length],["iaMEApproved",records.filter(r=>statusOf(r)==="approved").length],["iaMEPublished",published.length],
+    const scored=records.map(r=>Number(r.final_score)).filter(Number.isFinite);
+    const average=scored.length?scored.reduce((a,b)=>a+b,0)/scored.length:0;
+    const passCount=scored.filter(v=>v>=60).length;
+    [["iaMEAverage",scored.length?average.toFixed(1)+"%":"—"],["iaMEPassRate",scored.length?(passCount/scored.length*100).toFixed(1)+"%":"—"],["iaMECount",records.length],["iaMEPending",pending.length],["iaMEApproved",records.filter(r=>statusOf(r)==="approved").length],["iaMEPublished",published.length],
      ["iaMAPending",pending.length],["iaMAApproved",records.filter(r=>statusOf(r)==="approved").length],["iaMARejected",records.filter(r=>statusOf(r)==="rejected").length],["iaMAUnits",units.size],
      ["iaPMCount",published.length],["iaPMStudents",new Set(published.map(r=>r.admission_number||r.student_id).filter(Boolean)).size],["iaPMUnits",new Set(published.map(r=>r.subject_name).filter(Boolean)).size]
     ].forEach(([id,value])=>{if($(id))$(id).textContent=Number(value).toLocaleString("en-KE");});
@@ -180,7 +208,9 @@
     catch(e) { console.error("[Institution results]",e);notify("Unable to load "+view+": "+e.message,true); }
   }
   function bind() {
-    ["iaMESearch","iaMASearch","iaPMSearch"].forEach(id=>$(id)?.addEventListener("input",paint));
+    ["iaMESearch","iaMASearch","iaPMSearch","iaMEYearFilter","iaMEProgramFilter","iaMEBlockFilter","iaMASubjectFilter","iaMABlockFilter"].forEach(id=>$(id)?.addEventListener("input",paint));
+    ["iaMEYearFilter","iaMEProgramFilter","iaMEBlockFilter","iaMASubjectFilter","iaMABlockFilter"].forEach(id=>$(id)?.addEventListener("change",paint));
+    $("iaMEExport")?.addEventListener("click",exportRegisterCsv);
     $("iaApproveAllPending")?.addEventListener("click",()=>bulkApproval("approve"));
     $("iaRejectAllPending")?.addEventListener("click",()=>bulkApproval("reject"));
     document.querySelectorAll("[data-marks-refresh]").forEach(b=>b.addEventListener("click",()=>load(b.dataset.marksRefresh==="control"?"entry-control":"marks")));
