@@ -286,4 +286,5 @@
     if(initial==="view-marks-entry"||initial==="view-marks-approval"||initial==="view-published-marks"||initial==="view-entry-control")load(initial.replace("view-",""));
   }
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",wait,{once:true});else wait();
+  window.InstitutionAdminResults={refresh:()=>loadRecords(),load:loadRecords};
 })();
