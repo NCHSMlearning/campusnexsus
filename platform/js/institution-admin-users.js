@@ -51,7 +51,7 @@
     $('iaUsersPendingCount').textContent=pending.length;
     const nav=$('iaUsersNavCount'); if(nav)nav.textContent=pending.length||all.length;
     populateFilter('iaUsersProgramFilter',all.map(u=>u.program||u.department),'All programmes');
-    populateFilter('iaUsersBlockFilter',all.map(blockOf),'All blocks / years');
+    populateFilter('iaUsersBlockFilter',all.map(blockOf),'All academic periods / years');
   }
   function cell(tr,value){
     const td=document.createElement('td'); td.textContent=val(value); tr.append(td); return td;
@@ -172,7 +172,7 @@
     const sections=[
       ['Personal information',[['Full name',u.full_name],['Email address',u.email],['Phone',u.phone],['Alternative phone',u.alt_phone],['Gender',u.gender],['Date of birth',u.date_of_birth],['National ID',u.national_id],['Address',u.address],['Profile photo',u.profile_photo_url?'Uploaded':'Not uploaded']]],
       ['Guardian / parent information',[['Guardian name',u.guardian_name],['Guardian phone',u.guardian_phone],['Parent email',u.parent_email],['Parent address',u.parent_address]]],
-      ['Academic & employment information',[['Role',u.role],['Role ID',u.role_id],['Student ID',u.student_id],['Admission number',u.admission_number],['Staff ID',u.staff_id],['Programme',u.program],['Programme type',u.program_type],['Department',u.department],['Intake month',u.intake_month],['Intake year',u.intake_year],['Admission year',u.admission_year],['Admission date',u.admission_date],['Current block',u.current_block||u.block],['Year of study',u.year_of_study],['Block progress',u.block_progress],['Employment date',u.employment_date],['Qualifications',u.qualifications],['Specialization',u.specialization],['Professional bio',u.professional_bio]]],
+      ['Academic & employment information',[['Role',u.role],['Role ID',u.role_id],['Student ID',u.student_id],['Admission number',u.admission_number],['Staff ID',u.staff_id],['Programme',u.program],['Programme type',u.program_type],['Department',u.department],['Intake month',u.intake_month],['Intake year',u.intake_year],['Admission year',u.admission_year],['Admission date',u.admission_date],['Current academic period',u.current_block||u.block],['Year of study',u.year_of_study],['Academic period progress',u.block_progress],['Employment date',u.employment_date],['Qualifications',u.qualifications],['Specialization',u.specialization],['Professional bio',u.professional_bio]]],
       ['Documents',[['KCSE document status',u.doc_kcse],['ID document status',u.doc_id],['Passport / ID document URL',u.passport_url]]],
       ['Account status & access',[['Account status',u.status],['Login access',u.login_enabled===false?'Disabled':'Enabled'],['Username',u.username],['Last login',date(u.last_login)],['Last activity',date(u.last_activity)],['Login count',u.login_count],['Two-factor authentication',u.two_factor_enabled?'Enabled':'Disabled'],['Registered',date(u.created_at)],['Last updated',date(u.updated_at)],['User ID',u.user_id],['Profile ID',u.id],['Institution ID',u.institution_id]]]
     ];
