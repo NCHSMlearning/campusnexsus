@@ -216,10 +216,12 @@ const LecturerAttendance = {
             if (!authId) throw new Error('Authenticated lecturer session is unavailable.');
             const { data: identity, error } = await supabase.rpc('current_lecturer_staff_assignment_identity');
             if (error) throw error;
-            if (!identity?.id) throw new Error('Active lecturer account identity is unavailable.');
+            if (!identity?.id || String(identity.id) !== String(authId)) throw new Error('Active lecturer account identity is unavailable.');
+            const profile = window.lecturerDB?.getCurrentUserProfile?.() || {};
             this.lecturerUuid = authId;
             this.lecturerAssignmentId = String(identity.id);
-            this.currentProgram = identity.program || this.currentProgram || 'KRCHN';
+            this.currentProgram = String(window.CURRENT_PROGRAM || profile.program || identity.program || 'KRCHN').trim();
+            this.isTVET = this.currentProgram.toUpperCase() !== 'KRCHN';
             return this.lecturerAssignmentId;
         } catch (error) {
             console.error('[Lecturer Attendance] Secure identity resolution failed:', error);
