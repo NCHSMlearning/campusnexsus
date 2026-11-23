@@ -82,7 +82,7 @@
     const approvalRows=filtered("iaMASearch").filter(r=>statusOf(r)==="pending"&&!r.published);
     const allPending=records.filter(r=>statusOf(r)==="pending"&&!r.published);
     const allApproved=records.filter(r=>statusOf(r)==="approved"&&!r.published);
-    const published=records.filter(r=>!!r.published);
+    const published=records.filter(r=>r.published===true&&statusOf(r)==="approved");
     const meScored=meRows.map(r=>({row:r,score:Number(r.final_score)})).filter(x=>Number.isFinite(x.score));
     const mePassed=meScored.filter(x=>x.score>=passThreshold(x.row)).length;
     const meAverage=meScored.length?meScored.reduce((a,x)=>a+x.score,0)/meScored.length:0;
@@ -90,7 +90,7 @@
     const pmYear=$("iaPMYear")?.value||"all",pmProgram=$("iaPMProgram")?.value||"all",pmBlock=$("iaPMBlock")?.value||"all";
     const pmBase=published.filter(r=>matches(r,"iaPMSearch")&&(pmYear==="all"||String(r.academic_year||"")===pmYear)&&(pmBlock==="all"||String(r.block||"")===pmBlock)&&(pmProgram==="all"||String(r.program||"").toLowerCase()===pmProgram.toLowerCase()||(pmProgram==="TVET"&&String(r.program||"").trim().toUpperCase()!=="KRCHN")));
     const readyRows=allApproved.filter(r=>matches(r,"iaPMSearch")&&(pmYear==="all"||String(r.academic_year||"")===pmYear)&&(pmBlock==="all"||String(r.block||"")===pmBlock)&&(pmProgram==="all"||String(r.program||"").toLowerCase()===pmProgram.toLowerCase()||(pmProgram==="TVET"&&String(r.program||"").trim().toUpperCase()!=="KRCHN")));
-    const pmScored=pmBase.map(r=>({row:r,score:Number(r.retake_status&&Number.isFinite(Number(r.retake_score))?r.retake_score:r.final_score)})).filter(x=>Number.isFinite(x.score));
+    const pmScored=pmBase.map(r=>{const retake=String(r.retake_status||"").trim().toUpperCase();const useRetake=["PASS","PASSED","COMPETENT","COMPETENT/PASS"].includes(retake)&&r.retake_score!==null&&r.retake_score!==undefined&&r.retake_score!=="";return{row:r,score:Number(useRetake?r.retake_score:r.final_score)};}).filter(x=>Number.isFinite(x.score));
     const pmPassed=pmScored.filter(x=>x.score>=passThreshold(x.row)).length;
     const pmRetakes=pmBase.filter(isRetake).length;
     const approvedTotal=records.filter(r=>statusOf(r)==="approved").length;
@@ -142,7 +142,7 @@
   }
   function exportPublishedCsv() {
     const year=$("iaPMYear")?.value||"all",program=$("iaPMProgram")?.value||"all",block=$("iaPMBlock")?.value||"all";
-    const data=records.filter(r=>!!r.published&&matches(r,"iaPMSearch")&&(year==="all"||String(r.academic_year||"")===year)&&(block==="all"||String(r.block||"")===block)&&(program==="all"||String(r.program||"").toLowerCase()===program.toLowerCase()||(program==="TVET"&&String(r.program||"").trim().toUpperCase()!=="KRCHN")));
+    const data=records.filter(r=>r.published===true&&statusOf(r)==="approved"&&matches(r,"iaPMSearch")&&(year==="all"||String(r.academic_year||"")===year)&&(block==="all"||String(r.block||"")===block)&&(program==="all"||String(r.program||"").toLowerCase()===program.toLowerCase()||(program==="TVET"&&String(r.program||"").trim().toUpperCase()!=="KRCHN")));
     if(!data.length){notify("No published results match the current filters.",true);return;}
     const cols=["student_name","admission_number","program","block","subject_name","academic_year","final_score","retake_status","retake_score","final_grade","published_at"];
     const csv=[cols.join(","),...data.map(row=>cols.map(key=>'"'+String(row[key]??"").replace(/"/g,'""')+'"').join(","))].join("\\n");
