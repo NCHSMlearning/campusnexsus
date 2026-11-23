@@ -60,7 +60,7 @@
   try{
    const {data:programRow,error:programError}=await db().from("programs").select("id").eq("program_code",program).eq("institution_id",tenant()).maybeSingle();if(programError)throw programError;
    let mappedIds=[];
-   if(programRow?.id){const mapped=await db().from("program_courses").select("unit_catalog_id,block_name").eq("program_id",programRow.id).not("unit_catalog_id","is",null);if(mapped.error)throw mapped.error;mappedIds=(mapped.data||[]).filter(x=>!x.block_name||x.block_name===block).map(x=>x.unit_catalog_id).filter(Boolean);}
+   if(programRow?.id){const mapped=await db().from("program_courses").select("unit_catalog_id,block_name").eq("program_id",programRow.id).not("unit_catalog_id","is",null);if(mapped.error)throw mapped.error;mappedIds=(mapped.data||[]).filter(x=>!x.block_name||x.block_name===block).map(x=>x.unit_catalog_id).filter(Boolean);if((mapped.data||[]).length&&!mappedIds.length){units=[];const el=$("iaMEUnitSelect");if(el){el.replaceChildren();option(el,"","No units mapped to this block");}return;}}
    let query=db().from("units_catalog").select("id,unit_code,unit_name,assessment_type,program,block").eq("program",program).eq("block",block).eq("status","active").eq("institution_id",tenant()).order("unit_name",{ascending:true}).limit(1000);
    if(mappedIds.length)query=query.in("id",mappedIds);
    const {data,error}=await query;if(error)throw error;units=data||[];
