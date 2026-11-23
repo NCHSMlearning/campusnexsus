@@ -37,7 +37,7 @@ const LecturerCalendar = {
             const supabase = window.lecturerDB?.supabase;
             if (!supabase) throw new Error('Supabase client is unavailable.');
             const { data: authData, error: authError } = await supabase.auth.getUser();
-            if (error = authError) throw error;
+            if (authError) throw authError;
             const authId = authData?.user?.id;
             if (!authId) throw new Error('Authenticated lecturer session is unavailable.');
             const { data: identity, error: identityError } = await supabase.rpc('current_lecturer_staff_assignment_identity');
