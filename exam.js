@@ -3103,7 +3103,7 @@ async function executeSubmissionWithLoading() {
     } catch (error) {
         console.error('❌ Submission error:', error);
         if (DOM.submissionProgress) DOM.submissionProgress.classList.remove('active');
-        showToast('❌ Error submitting exam. Please try again or contact support.', 'error');
+        showToast('❌ Submission failed: ' + (error && error.message ? error.message : 'Please try again or contact the academic office.'), 'error', 9000);
 
         if (DOM.submitBtn) {
             DOM.submitBtn.disabled = false;
@@ -4534,14 +4534,15 @@ class SecureFaceProctor {
         if (!detections || detections.length === 0) return;
         
         detections.forEach((det) => {
-            const box = det.box;
+            const box = det && (det.box || det.detection?.box);
+            if (!box || !Number.isFinite(Number(box.x)) || !Number.isFinite(Number(box.y)) ||
+                !Number.isFinite(Number(box.width)) || !Number.isFinite(Number(box.height))) return;
             const color = detections.length === 1 ? '#16A34A' : '#DC2626';
-            
             ctx.strokeStyle = color;
             ctx.lineWidth = 2;
             ctx.shadowColor = color;
             ctx.shadowBlur = 10;
-            ctx.strokeRect(box.x * 0.5, box.y * 0.5, box.width * 0.5, box.height * 0.5);
+            ctx.strokeRect(Number(box.x) * 0.5, Number(box.y) * 0.5, Number(box.width) * 0.5, Number(box.height) * 0.5);
             ctx.shadowBlur = 0;
         });
     }
