@@ -7,7 +7,7 @@
  const db=()=>{if(!api?.db||!api?.institutionId)throw new Error("Institution session is not ready.");return api.db;};
  const esc=v=>String(v??"—").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
  const date=v=>v?new Date(v).toLocaleString("en-KE",{dateStyle:"medium",timeStyle:"short"}):"—";
- const day=()=>new Date().toISOString().slice(0,10);
+ const day=()=>new Intl.DateTimeFormat("en-CA",{timeZone:"Africa/Nairobi",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
  function message(v,bad=false){const el=$("iaAttendanceNotice");if(el){el.textContent=v;el.style.color=bad?"#a12b2b":"#16634a";}}
  function filtered(){const q=($("iaAttendanceSearch")?.value||"").toLowerCase().trim(),st=$("iaAttendanceStatus")?.value||"all",type=$("iaAttendanceType")?.value||"all";return records.filter(r=>(!q||[r.student_name,r.student_id,r.registration_number,r.program,r.target_name,r.session_type].some(v=>String(v??"").toLowerCase().includes(q)))&&(st==="all"||(st==="verified"?(r.is_verified===true||String(r.attendance_status).toLowerCase()==="present"):(r.is_verified!==true&&String(r.attendance_status).toLowerCase()!=="present")))&&(type==="all"||String(r.session_type||r.location_type||"").toLowerCase()===type));}
  function render(){
