@@ -27,10 +27,11 @@
         },
         
         getBlockLabel: function(programCode) {
-            return this.isTVET(programCode) ? 'Term' : 'Block';
+            return window.currentAcademicStructure?.singular || (this.isTVET(programCode) ? 'Term' : 'Block');
         },
         
         getBlockOptions: function(programCode) {
+            if (window.currentAcademicStructure?.periods?.length) return window.currentAcademicStructure.periods.map(x => x.name);
             if (this.isTVET(programCode)) {
                 return ['Introductory', 'Term 1', 'Term 2', 'Term 3', 'Term 4', 'Term 5', 'Term 6', 'Final'];
             }
@@ -808,17 +809,28 @@
         const filter = document.getElementById('my_marks_block_filter');
         if (!filter) return;
         
-        const isTVET = PROGRAM.isTVET(program);
-        const label = isTVET ? 'Terms' : 'Blocks';
-        const options = PROGRAM.getBlockOptions(program);
-        
-        filter.innerHTML = `<option value="all">All ${label}</option>`;
-        options.forEach(opt => {
-            const option = document.createElement('option');
-            option.value = opt;
-            option.textContent = opt;
-            filter.appendChild(option);
-        });
+        const buildOptions = structure => {
+            const isTVET = PROGRAM.isTVET(program);
+            const label = structure?.plural || (isTVET ? 'Terms' : 'Blocks');
+            const options = structure?.periods?.length
+                ? structure.periods.map(x => x.name)
+                : PROGRAM.getBlockOptions(program);
+            filter.innerHTML = `<option value="all">All ${label}</option>`;
+            options.forEach(opt => {
+                const option = document.createElement('option');
+                option.value = opt;
+                option.textContent = opt;
+                filter.appendChild(option);
+            });
+        };
+        buildOptions(window.currentAcademicStructure || null);
+        const profile = window.currentUserProfile || window.db?.currentUserProfile || {};
+        const client = window.sb || window.supabaseClient || window.db?.supabase;
+        if (!window.currentAcademicStructure && window.CampusAcademicStructure && client && profile.institution_id && program) {
+            window.CampusAcademicStructure.resolve(client, profile.institution_id, program)
+                .then(structure => { window.currentAcademicStructure = structure; buildOptions(structure); })
+                .catch(error => console.warn('[Academic Reports] Academic period lookup failed:', error.message));
+        }
     }
 
     // ============================================================
