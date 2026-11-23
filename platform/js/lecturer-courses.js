@@ -103,27 +103,20 @@ const LecturerCourses = {
         try {
             const supabase = window.lecturerDB?.supabase;
             if (!supabase) throw new Error('Supabase client is unavailable.');
+            const { data: authData, error: authError } = await supabase.auth.getUser();
+            if (authError) throw authError;
+            const user = authData?.user;
+            if (!user?.id) throw new Error('Authenticated lecturer session is unavailable.');
 
-            const profile = window.lecturerDB?.getCurrentUserProfile() || {};
-            let email = String(profile.email || profile.email_address || window.currentUser?.email || '').trim();
-            if (!email && supabase.auth?.getUser) {
-                const { data: { user }, error } = await supabase.auth.getUser();
-                if (error) throw error;
-                email = String(user?.email || '').trim();
-            }
-            if (!email) throw new Error('Could not resolve authenticated lecturer email.');
-
-            const { data: staff, error } = await supabase
-                .from('staff_records')
-                .select('id, first_name, other_names, email')
-                .ilike('email', email)
-                .maybeSingle();
+            const { data: staff, error } = await supabase.rpc('current_lecturer_staff_assignment_identity');
             if (error) throw error;
-            if (!staff?.id) throw new Error('No staff record found for this lecturer email.');
+            if (!staff?.id) throw new Error('No active institution-linked lecturer assignment identity was returned.');
 
-            this.lecturerAssignmentId = String(staff.id);
-            window.CORRECT_LECTURER_ID = String(staff.id);
-            console.log('[Lecturer Courses] Assignment ID resolved from staff_records:', this.lecturerAssignmentId);
+            this.lecturerAssignmentId = String(staff.id).trim();
+            this.currentProgram = String(staff.program || this.currentProgram || 'KRCHN').trim();
+            this.isTVET = this.currentProgram.toUpperCase() !== 'KRCHN';
+            window.CORRECT_LECTURER_ID = this.lecturerAssignmentId;
+            console.log('[Lecturer Courses] Own assignment identity resolved securely.');
             return this.lecturerAssignmentId;
         } catch (error) {
             console.error('[Lecturer Courses] Identity resolution failed:', error);
