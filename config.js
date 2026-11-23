@@ -84,7 +84,7 @@ if (typeof supabase !== 'undefined') {
                     detectSessionInUrl: true,
                     // Exam Login uses this exact key. Reuse it on the admin
                     // dashboard so the authenticated session survives the handoff.
-                    ...(isExamAdminDashboard ? { storageKey: 'campus-nexus-exam-auth' } : {})
+                    ...(isExamDashboard ? { storageKey: 'campus-nexus-exam-auth' } : {})
                 }
             }
         );
@@ -118,7 +118,7 @@ if (typeof window.sb === 'undefined') {
             window.sb = supabase.createClient(
                 window.APP_CONFIG.SUPABASE_URL,
                 window.APP_CONFIG.SUPABASE_PUBLISHABLE_KEY,
-                isExamAdminDashboard ? { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, storageKey: 'campus-nexus-exam-auth' } } : undefined
+                isExamDashboard ? { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, storageKey: 'campus-nexus-exam-auth' } } : undefined
             );
             console.log('✅ Fallback Supabase client created');
         } else {
