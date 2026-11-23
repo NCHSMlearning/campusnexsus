@@ -61,7 +61,7 @@
  }
  function exportCsv(){const rows=filtered();if(!rows.length){message("No attendance records to export.",true);return;}const cols=["student_name","student_id","registration_number","program","session_type","target_name","check_in_time","attendance_status","is_verified","distance_meters","accuracy_m","latitude","longitude","institution_id"];const csv=[cols.join(","),...rows.map(r=>cols.map(k=>'"'+String(r[k]??"").replace(/"/g,'""')+'"').join(","))].join("\n");const a=document.createElement("a");const url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));a.href=url;a.download="Institution_Attendance.csv";a.click();URL.revokeObjectURL(url);}
  function resetFilters(){["iaAttendanceSearch","iaAttendanceProgram","iaAttendanceStatus","iaAttendanceType"].forEach((id,i)=>{const el=$(id);if(el)el.value=i===0?"":"all";});render();}
- function printAttendance(){window.print();}
+ function printAttendance(){document.body.classList.add("ia-print-attendance");const cleanup=()=>document.body.classList.remove("ia-print-attendance");window.addEventListener("afterprint",cleanup,{once:true});window.print();setTimeout(cleanup,5000);}
  async function recordManual(event){
   event.preventDefault();if(!api?.user?.id)return;
   const studentId=$("iaAttStudent")?.value;if(!studentId){message("Select a student first.",true);return;}
