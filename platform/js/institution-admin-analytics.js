@@ -25,7 +25,7 @@
   const draw=(id,key,data,type="bar")=>{const el=$(id);if(!el)return;if(charts[key])charts[key].destroy();charts[key]=new Chart(el,{type,data:{labels:Object.keys(data),datasets:[{label:key==="grades"?"Marks by grade":key==="blocks"?"Marks by block":"Marks",data:Object.values(data),borderWidth:1}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:type==="doughnut",position:"bottom"}},scales:type==="doughnut"?{}:{y:{beginAtZero:true,ticks:{precision:0}}}}});};
   draw("iaAnalyticsGradeChart","grades",gradeCounts,"doughnut");draw("iaAnalyticsBlockChart","blocks",blockCounts);draw("iaAnalyticsProgramChart","programs",programCounts);
   const body=$("iaAnalyticsUnitRows");if(body){const ranked=Object.entries(unitScores).map(([unit,s])=>({unit,count:s.length,average:s.reduce((a,b)=>a+b,0)/s.length})).sort((a,b)=>b.average-a.average).slice(0,20);body.innerHTML=ranked.length?ranked.map(x=>"<tr><td>"+esc(x.unit)+"</td><td>"+x.count+"</td><td>"+x.average.toFixed(1)+"%</td></tr>").join(""):'<tr><td colspan="3" class="ia-empty">No scored unit marks available.</td></tr>';}
-  const stamp=$("iaAnalyticsUpdated");if(stamp)stamp.textContent=records.length+" records · refreshed just now";
+  const stamp=$("iaMarksAnalyticsUpdated");if(stamp)stamp.textContent=records.length+" records · refreshed just now";
  }
  async function load(){try{api=window.CampusInstitutionAdmin;if(!api?.institutionId)return;notice("Loading institution academic analytics…");
   const [marks,profileRows]=await Promise.all([
