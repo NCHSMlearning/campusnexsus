@@ -64,7 +64,7 @@ async function boot(){
   $("userName").textContent=(profile.full_name||authUser.email||"Administrator")+(platformSuperadmin?" · Superadmin":"");
   if(allInstitutionsView){$("institutionName").textContent="All institutions";$("markProgram").value="Select an institution";$("markBlock").placeholder="Choose an institution first";}
   else $("markProgram").value=profile.program||"";
-  showApp();$("markYear").value=new Date().getFullYear();
+  showApp();if(new URLSearchParams(window.location.search).get("view")==="approvals")switchView("approvals");$("markYear").value=new Date().getFullYear();
   if(institution) await loadExamFormOptions(); else { $("examProgram").innerHTML='<option value="">Select an institution from the filter first</option>'; $("examProgram").disabled=true; $("examBlock").innerHTML='<option value="">Select an institution first</option>'; $("newExamBtn").title="Choose a specific institution before creating an examination"; }
   refreshAll().catch(error=>notice("Some examination data could not be loaded: "+(error.message||"Unknown error"),true));
   Promise.all([withTimeout(loadMarkStudents(),"Student list"),withTimeout(loadMarkUnits(),"Unit list")]).catch(error=>notice("Marks-entry lists could not be loaded: "+(error.message||"Unknown error"),true));
