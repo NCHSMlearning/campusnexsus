@@ -11,30 +11,63 @@
     const css = document.createElement("style");
     css.id = "cnSchoolGateStyles";
     css.textContent = `
-      #cnSchoolGate{position:fixed;inset:0;z-index:2147483000;display:grid;place-items:center;padding:18px;background:linear-gradient(135deg,#092b49f2,#0f766eeF);backdrop-filter:blur(10px);font-family:Inter,system-ui,sans-serif}
-      #cnSchoolGate *{box-sizing:border-box}#cnSchoolGate .card{width:min(100%,420px);padding:clamp(22px,5vw,32px);border-radius:22px;background:#fff;box-shadow:0 28px 90px #00142666;text-align:center}
-      #cnSchoolGate .mark{width:64px;height:64px;margin:0 auto 18px;border-radius:17px;display:grid;place-items:center;background:#0b4965;color:#fff;font-size:19px;font-weight:850;overflow:hidden}
-      #cnSchoolGate .mark img{width:100%;height:100%;padding:7px;object-fit:contain;background:#fff}
-      #cnSchoolGate h1{margin:0 0 9px;color:#102a43;font-size:clamp(21px,5vw,26px);font-weight:800}
-      #cnSchoolGate .intro{margin:0 0 23px;color:#64748b;font-size:13px;line-height:1.65}
-      #cnSchoolGate label{display:block;margin:0 0 8px;text-align:left;color:#334e68;font-size:12px;font-weight:750}
-      #cnSchoolGate input{width:100%;height:52px;padding:0 15px;border:1px solid #cbd5e1;border-radius:11px;color:#102a43;font:700 19px Inter,system-ui,sans-serif;letter-spacing:.18em;text-align:center;outline:none}
-      #cnSchoolGate input:focus{border-color:#0f8b8d;box-shadow:0 0 0 4px #0f8b8d20}
-      #cnSchoolGate button{width:100%;min-height:49px;margin-top:14px;border:0;border-radius:11px;background:#0f766e;color:#fff;font:750 13px Inter,system-ui,sans-serif;cursor:pointer}
-      #cnSchoolGate button:disabled{opacity:.6;cursor:wait}
-      #cnSchoolGate .status{min-height:20px;margin:12px 0 0;color:#64748b;font-size:12px;line-height:1.5}
+      #cnSchoolGate{position:fixed;inset:0;z-index:2147483000;display:grid;place-items:center;overflow:auto;padding:28px 22px;background:linear-gradient(115deg,rgba(5,20,65,.30),rgba(45,15,105,.20)),url("/images/campus-header.jpg") center/cover no-repeat;font-family:Inter,system-ui,sans-serif}
+      #cnSchoolGate:before{content:"";position:absolute;inset:0;background:linear-gradient(130deg,rgba(36,77,170,.14),rgba(116,40,210,.20));backdrop-filter:blur(5px)}
+      #cnSchoolGate *{box-sizing:border-box}
+      #cnSchoolGate .shell{position:relative;z-index:1;width:min(100%,1000px);display:flex;flex-direction:column;align-items:center}
+      #cnSchoolGate .brand{display:flex;align-items:center;justify-content:center;gap:15px;margin:0 0 28px;color:#102d79;text-shadow:0 1px 16px #fff9}
+      #cnSchoolGate .brand img{width:76px;height:76px;object-fit:contain;filter:drop-shadow(0 5px 12px #182b6a33)}
+      #cnSchoolGate .brand-name{font-size:clamp(25px,4vw,40px);font-weight:850;letter-spacing:-1.5px;line-height:1}
+      #cnSchoolGate .brand-name span{color:#7118c9}
+      #cnSchoolGate .brand small{display:block;margin-top:7px;font-size:10px;letter-spacing:3px;font-weight:750;text-transform:uppercase;color:#243d77}
+      #cnSchoolGate .layout{width:100%;display:grid;grid-template-columns:minmax(0,1fr) 230px;gap:20px;align-items:center}
+      #cnSchoolGate .card{width:100%;padding:clamp(26px,5vw,54px);border:1px solid rgba(255,255,255,.8);border-radius:34px;background:linear-gradient(135deg,rgba(255,255,255,.78),rgba(255,255,255,.57));box-shadow:0 24px 80px rgba(16,35,100,.25),inset 0 1px 0 #fff;backdrop-filter:blur(24px);text-align:center}
+      #cnSchoolGate h1{margin:0 0 9px;color:#0b1c43;font-size:clamp(27px,4.2vw,43px);font-weight:850;letter-spacing:-1.4px}
+      #cnSchoolGate h1 span{color:#5620bd}
+      #cnSchoolGate .intro{margin:0 0 34px;color:#385078;font-size:clamp(14px,2vw,19px)}
+      #cnSchoolGate label{display:block;position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+      #cnSchoolGate .entry{display:flex;align-items:center;gap:15px;width:100%;height:66px;padding:0 22px;border:2px solid #6c38ed;border-radius:22px;background:rgba(255,255,255,.65);box-shadow:0 0 0 4px rgba(117,75,246,.08),0 8px 28px rgba(83,53,196,.13)}
+      #cnSchoolGate .entry .building{font-size:25px;color:#142e7a}
+      #cnSchoolGate .entry input{width:100%;height:100%;min-width:0;border:0;outline:0;background:transparent;color:#12234b;font:650 18px Inter,system-ui,sans-serif;letter-spacing:.12em}
+      #cnSchoolGate .entry input::placeholder{color:#64769b;letter-spacing:0;font-weight:500}
+      #cnSchoolGate button{width:100%;min-height:62px;margin-top:24px;border:0;border-radius:20px;background:linear-gradient(100deg,#078cf3 0%,#3336e8 50%,#a000e8 100%);color:#fff;font:800 19px Inter,system-ui,sans-serif;cursor:pointer;box-shadow:0 10px 26px rgba(80,47,220,.28);transition:transform .2s,filter .2s}
+      #cnSchoolGate button:hover{transform:translateY(-2px);filter:brightness(1.06)}
+      #cnSchoolGate button:disabled{opacity:.72;cursor:wait;transform:none}
+      #cnSchoolGate .status{min-height:20px;margin:13px 0 0;color:#465b80;font-size:12px;line-height:1.5}
       #cnSchoolGate .status.error{color:#b42318}
-      #cnSchoolGate .school{display:none;align-items:center;gap:12px;margin-top:18px;padding:13px;border:1px solid #dce7ef;border-radius:13px;text-align:left;background:#f8fafc}
-      #cnSchoolGate .school.show{display:flex}#cnSchoolGate .school img,#cnSchoolGate .school .monogram{width:48px;height:48px;flex:0 0 48px;border-radius:10px;object-fit:contain;background:#fff;padding:4px}
-      #cnSchoolGate .school strong{display:block;color:#102a43;font-size:13px;line-height:1.35}#cnSchoolGate .school small{display:block;margin-top:4px;color:#64748b;font-size:10px}
-      #cnSchoolGate .continue{display:none;background:#102a43}#cnSchoolGate .continue.show{display:block}
-      @media(max-width:480px){#cnSchoolGate{padding:14px}#cnSchoolGate .card{border-radius:18px}}
+      #cnSchoolGate .school{display:none;align-items:center;gap:12px;margin-top:18px;padding:13px;border:1px solid #dce7ef;border-radius:13px;text-align:left;background:rgba(255,255,255,.7)}
+      #cnSchoolGate .school.show{display:flex}
+      #cnSchoolGate .school img,#cnSchoolGate .school .monogram{width:48px;height:48px;flex:0 0 48px;border-radius:10px;object-fit:contain;background:#fff;padding:4px}
+      #cnSchoolGate .school strong{display:block;color:#102a43;font-size:13px;line-height:1.35}
+      #cnSchoolGate .school small{display:block;margin-top:4px;color:#64748b;font-size:10px}
+      #cnSchoolGate .continue{display:none}
+      #cnSchoolGate .continue.show{display:block}
+      #cnSchoolGate .roles{display:grid;grid-template-columns:repeat(4,1fr);margin-top:34px;padding-top:26px;border-top:1px solid rgba(70,88,145,.18)}
+      #cnSchoolGate .role{padding:0 8px;color:#182e79;font-size:12px;font-weight:700}
+      #cnSchoolGate .role+.role{border-left:1px solid rgba(70,88,145,.2)}
+      #cnSchoolGate .role b{display:block;margin-bottom:8px;font-size:24px;font-weight:500}
+      #cnSchoolGate .loader{padding:25px 18px;border:1px solid rgba(255,255,255,.9);border-radius:25px;background:linear-gradient(145deg,rgba(255,255,255,.82),rgba(255,255,255,.58));box-shadow:0 15px 45px rgba(20,25,95,.2),0 0 24px rgba(173,85,255,.22);backdrop-filter:blur(20px);text-align:center;color:#14234b}
+      #cnSchoolGate .loader-mark{font-size:35px;margin-bottom:12px}
+      #cnSchoolGate .loader strong{display:block;font-size:14px}
+      #cnSchoolGate .spinner{width:48px;height:48px;margin:17px auto 10px;border:6px solid rgba(116,79,226,.2);border-top-color:#165bea;border-right-color:#a02be7;border-radius:50%;animation:cnGateSpin .85s linear infinite}
+      #cnSchoolGate .loader small{color:#596a8e}
+      #cnSchoolGate .loader .loader-copy{font-size:12px;color:#596a8e;margin-top:5px}
+      #cnSchoolGate .loader.busy{animation:cnGatePulse 1.8s ease-in-out infinite}
+      #cnSchoolGate .powered{margin:27px 0 0;color:#10254c;font-size:14px;text-shadow:0 1px 12px #fff}
+      #cnSchoolGate .powered strong{font-weight:850}
+      @keyframes cnGateSpin{to{transform:rotate(360deg)}}
+      @keyframes cnGatePulse{50%{box-shadow:0 15px 50px rgba(20,25,95,.25),0 0 34px rgba(173,85,255,.42)}}
+      @media(max-width:700px){#cnSchoolGate{padding:18px 14px}#cnSchoolGate .brand{margin-bottom:22px}#cnSchoolGate .brand img{width:58px;height:58px}#cnSchoolGate .layout{grid-template-columns:1fr}#cnSchoolGate .loader{display:none}#cnSchoolGate .card{border-radius:25px;padding:28px 20px}#cnSchoolGate .roles{margin-top:26px;padding-top:20px}#cnSchoolGate .role{font-size:10px;padding:0 3px}#cnSchoolGate .role b{font-size:21px}}
+      @media(prefers-reduced-motion:reduce){#cnSchoolGate .spinner{animation:none}#cnSchoolGate .loader.busy{animation:none}}
     `;
     document.head.append(css);
     const gate = document.createElement("section");
     gate.id = "cnSchoolGate";
     gate.setAttribute("role","dialog");gate.setAttribute("aria-modal","true");gate.setAttribute("aria-labelledby","cnGateTitle");
-    gate.innerHTML = '<div class="card"><div class="mark" id="cnGateMark">CN</div><h1 id="cnGateTitle">Welcome to Campus Nexus</h1><form id="cnGateForm" novalidate><label for="cnGateCode">Institution school code</label><input id="cnGateCode" name="school_code" type="text" inputmode="numeric" autocomplete="organization" maxlength="3" pattern="[0-9]{3}" placeholder="School code" required><button id="cnGateVerify" type="submit">Continue</button></form><div class="school" id="cnGateSchool"><div id="cnGateLogo"></div><div><strong id="cnGateName"></strong><small id="cnGateCodeLabel"></small></div></div><p class="status" id="cnGateStatus" role="status" aria-live="polite"></p><button type="button" class="continue" id="cnGateContinue">Continue to sign in</button></div>';
+    gate.innerHTML = '<div class="shell"><div class="brand"><img src="/images/campus-nexus-original-logo.webp?v=1" alt="Campus Nexus"><div><div class="brand-name">Campus <span>Nexus</span></div><small>Academic Management Platform</small></div></div><div class="layout"><div class="card"><h1 id="cnGateTitle">Welcome to <span>Campus Nexus</span></h1><p class="intro">Login to your institutional portal</p><form id="cnGateForm" novalidate><label for="cnGateCode">Institution code</label><div class="entry"><span class="building" aria-hidden="true">⌂</span><input id="cnGateCode" name="school_code" type="text" inputmode="numeric" autocomplete="off" maxlength="3" pattern="[0-9]{3}" placeholder="Enter your institution code" required></div><button id="cnGateVerify" type="submit">Continue <span aria-hidden="true">→</span></button></form><div class="school" id="cnGateSchool"><div id="cnGateLogo"></div><div><strong id="cnGateName"></strong><small id="cnGateCodeLabel"></small></div></div><p class="status" id="cnGateStatus" role="status" aria-live="polite"></p><button type="button" class="continue" id="cnGateContinue">Continue to sign in →</button><div class="roles"><div class="role"><b>♧</b>Students</div><div class="role"><b>♙</b>Lecturers</div><div class="role"><b>⚙</b>Administrators</div><div class="role"><b>▥</b>Institutions</div></div></div><aside class="loader" id="cnGateLoader"><div class="loader-mark">🎓</div><strong id="cnGateLoaderTitle">Your campus, one secure portal</strong><div class="spinner"></div><small id="cnGateLoaderText">Ready when you are</small><div class="loader-copy">Protected institutional access</div></aside></div><div class="powered">Powered by <strong>Campus Nexus</strong></div></div>';
+    document.body.append(gate);document.body.style.overflow="hidden";
+    $("cnGateCode").addEventListener("input",()=>{$("cnGateCode").value=$("cnGateCode").value.replace(/\\D/g,"").slice(0,3);selected=null;$("cnGateSchool").classList.remove("show");$("cnGateContinue").classList.remove("show");say("");});
+    $("cnGateForm").addEventListener("submit",verify);$("cnGateContinue").addEventListener("click",continueLogin);
     document.body.append(gate);document.body.style.overflow="hidden";
     $("cnGateCode").addEventListener("input",()=>{$("cnGateCode").value=$("cnGateCode").value.replace(/\D/g,"").slice(0,3);selected=null;$("cnGateSchool").classList.remove("show");$("cnGateContinue").classList.remove("show");say("");});
     $("cnGateForm").addEventListener("submit",verify);$("cnGateContinue").addEventListener("click",continueLogin);
@@ -61,8 +94,8 @@
       const secondary=/^#[0-9a-f]{3,8}$/i.test(found.secondary_color||"")?found.secondary_color:"#0f766e";
       document.documentElement.style.setProperty("--nchsm-navy",primary);document.documentElement.style.setProperty("--institution-primary",primary);document.documentElement.style.setProperty("--institution-secondary",secondary);
       $("cnSchoolGate").style.background="linear-gradient(135deg,"+primary+"ed,"+secondary+"e8)";
-      $("cnGateSchool").classList.add("show");$("cnGateContinue").classList.add("show");button.textContent="Verified";say("");
-    }catch(error){selected=null;$("cnGateSchool").classList.remove("show");$("cnGateContinue").classList.remove("show");button.textContent="Verify school";say(error?.message||"School code verification failed.",true);}
+      $("cnGateSchool").classList.add("show");$("cnGateContinue").classList.add("show");button.textContent="Verified";$("cnGateLoader").classList.remove("busy");$("cnGateLoaderTitle").textContent="Institution verified";$("cnGateLoaderText").textContent="Your secure sign-in is ready.";say("");
+    }catch(error){selected=null;$("cnGateSchool").classList.remove("show");$("cnGateContinue").classList.remove("show");button.textContent="Continue →";$("cnGateLoader").classList.remove("busy");$("cnGateLoaderTitle").textContent="Ready when you are";$("cnGateLoaderText").textContent="Check the code and try again.";say(error?.message||"School code verification failed.",true);}
     finally{busy=false;button.disabled=false;}
   }
   function continueLogin(){
