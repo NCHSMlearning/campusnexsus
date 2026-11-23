@@ -71,7 +71,7 @@
    }
    const byKey=profileIndex(profiles);
    const missingIdentityCount=matching.filter(reg=>{const p=byKey.get(String(reg.student_id))||{};return !String(reg.admission_number||p.admission_number||p.student_id||"").trim();}).length;
-   const {data:marks,error:markError}=await db().from("student_marks").select("id,student_id,admission_number,student_name,program,block,subject_name,academic_year,assessment_type,cat1_score,cat2_score,exam_score,final_score,grade,approval_status,published,retake_status,retake_score,institution_id").eq("institution_id",tenant()).eq("program",program).eq("block",block).eq("subject_name",unit).eq("academic_year",String(year)).order("created_at",{ascending:true}).limit(5000);
+   const {data:marks,error:markError}=await db().from("student_marks").select("id,student_id,admission_number,student_name,program,block,subject_name,academic_year,assessment_type,cat1_score,cat2_score,exam_score,final_score,grade,approval_status,published,retake_status,retake_score,retake_count,retake_date,final_grade,final_status,institution_id").eq("institution_id",tenant()).eq("program",program).eq("block",block).eq("subject_name",unit).eq("academic_year",String(year)).order("created_at",{ascending:true}).limit(5000);
    if(markError)throw markError;
    const byMarkKey=new Map();(marks||[]).forEach(m=>[m.student_id,m.admission_number].filter(Boolean).forEach(k=>byMarkKey.set(String(k),m)));
    const built=matching.map(reg=>{
@@ -95,7 +95,7 @@
  function renderRows(){
   const body=$("iaMEEditorRows"),save=$("iaMESaveCapture");if(!body)return;
   body.replaceChildren();
-  if(!rows.length){const tr=document.createElement("tr"),td=document.createElement("td");td.colSpan=8;td.className="ia-empty";td.textContent="No students loaded.";tr.append(td);body.append(tr);if(save)save.disabled=true;return;}
+  if(!rows.length){const tr=document.createElement("tr"),td=document.createElement("td");td.colSpan=10;td.className="ia-empty";td.textContent="No students loaded.";tr.append(td);body.append(tr);if(save)save.disabled=true;return;}
   rows.forEach((r,index)=>{
    const tr=document.createElement("tr");tr.dataset.index=String(index);
    const td=(v)=>{const el=document.createElement("td");el.textContent=String(v??"—");tr.append(el);return el;};
@@ -103,6 +103,11 @@
    ["cat1_score","cat2_score","exam_score"].forEach((key,j)=>{const cell=td("");const input=document.createElement("input");input.type="number";input.min="0";input.max=j===2?"100":"30";input.step="0.1";input.className="ia-score-input";input.value=String(r[key]??0);input.disabled=!!r.published;input.dataset.score=key;input.addEventListener("input",()=>updatePreview(index));cell.append(input);});
    const total=td(r.final_score??"—");total.dataset.final="1";
    const grade=td(r.grade||"—");grade.dataset.grade="1";
+   const retakeStatusCell=td("");const retakeStatus=document.createElement("select");retakeStatus.className="ia-score-input";retakeStatus.dataset.retakeStatus="1";retakeStatus.disabled=!!r.published;
+   [["","No retake"],["pending","Pending"],["passed","Passed"],["failed","Failed"],["competent","Competent"],["not_required","Not required"]].forEach(([v,label])=>option(retakeStatus,v,label));
+   const currentRetake=String(r.retake_status||"").toLowerCase();if(currentRetake&&![...retakeStatus.options].some(o=>o.value===currentRetake))option(retakeStatus,currentRetake,currentRetake);
+   retakeStatus.value=currentRetake;retakeStatus.addEventListener("change",()=>updatePreview(index));retakeStatusCell.append(retakeStatus);
+   const retakeScoreCell=td("");const retakeScore=document.createElement("input");retakeScore.type="number";retakeScore.min="0";retakeScore.max="100";retakeScore.step="0.1";retakeScore.className="ia-score-input";retakeScore.dataset.retakeScore="1";retakeScore.value=r.retake_score??"";retakeScore.disabled=!!r.published;retakeScore.addEventListener("input",()=>updatePreview(index));retakeScoreCell.append(retakeScore);
    const status=td(r.published?"Published":r.approval_status||"Draft");status.dataset.workflow="1";
    if(r.published)tr.style.opacity=".65";
    body.append(tr);
@@ -114,8 +119,13 @@
   const vals={};tr.querySelectorAll("[data-score]").forEach(input=>vals[input.dataset.score]=Math.max(0,Number(input.value)||0));
   const type=$("iaMEAssessmentType")?.value||row.assessment_type||"full",total=calculate(vals.cat1_score,vals.cat2_score,vals.exam_score,type,row.program);
   row.cat1_score=vals.cat1_score;row.cat2_score=vals.cat2_score;row.exam_score=vals.exam_score;row.assessment_type=type;row.final_score=total;row.grade=gradeFor(total,row.program);
-  tr.querySelector('[data-final]').textContent=total.toFixed(1)+"%";tr.querySelector('[data-grade]').textContent=row.grade;
+  row.retake_status=tr.querySelector("[data-retake-status]")?.value||"";const retakeValue=tr.querySelector("[data-retake-score]")?.value??"";row.retake_score=retakeValue===""?null:Math.max(0,Math.min(100,Number(retakeValue)||0));
+  const passedRetake=["pass","passed","competent","competent/pass"].includes(String(row.retake_status).toLowerCase());
+  row.final_grade=passedRetake&&row.retake_score!==null?gradeFor(row.retake_score,row.program):row.grade;
+  row.final_status=passedRetake&&row.retake_score!==null?(row.retake_score>=passThreshold(row.program)?"PASS":"FAIL"):(String(row.retake_status).toLowerCase()==="failed"?"FAIL":row.final_status||"");
+  tr.querySelector('[data-final]').textContent=total.toFixed(1)+"%";tr.querySelector('[data-grade]').textContent=row.final_grade||row.grade;
  }
+ function exportCaptureCsv(){if(!rows.length){say("Load students before exporting marks.",true);return;}const cols=["student_name","admission_number","program","block","subject_name","academic_year","assessment_type","cat1_score","cat2_score","exam_score","final_score","grade","retake_status","retake_score","final_grade","final_status","approval_status","published"];const csv=[cols.join(","),...rows.map(r=>cols.map(k=>'"'+String(r[k]??"").replace(/"/g,'""')+'"').join(","))].join("\n");const url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));const a=document.createElement("a");a.href=url;a.download="Institution_Marks_Capture.csv";a.click();URL.revokeObjectURL(url);}
  async function saveMarks(){
   if(saving)return;const editable=rows.filter(r=>!r.published);if(!editable.length){say("There are no editable marks to save.",true);return;}
   if(!confirm("Save "+editable.length+" marks and submit them for approval? They will remain unpublished."))return;
@@ -126,7 +136,8 @@
     const batch=editable.slice(i,i+8);
     const outcomes=await Promise.all(batch.map(async r=>{
      const total=calculate(r.cat1_score,r.cat2_score,r.exam_score,type,r.program),grade=gradeFor(total,r.program);
-     const patch={student_name:r.student_name,program:r.program,block:r.block,subject_name:r.subject_name,academic_year:r.academic_year,assessment_type:type,cat1_score:Number(r.cat1_score)||0,cat2_score:Number(r.cat2_score)||0,exam_score:Number(r.exam_score)||0,final_score:total,grade,approval_status:"pending",approved_by:null,approved_at:null,rejection_reason:null,published:false,published_at:null,published_by:null,graded_by:api.user.id,submitted_at:now,updated_at:now};
+     const retakeStatus=String(r.retake_status||"").trim().toLowerCase(),retakeScore=r.retake_score===null||r.retake_score===undefined||r.retake_score===""?null:Number(r.retake_score),passedRetake=["pass","passed","competent","competent/pass"].includes(retakeStatus);
+     const patch={student_name:r.student_name,program:r.program,block:r.block,subject_name:r.subject_name,academic_year:r.academic_year,assessment_type:type,cat1_score:Number(r.cat1_score)||0,cat2_score:Number(r.cat2_score)||0,exam_score:Number(r.exam_score)||0,final_score:total,grade,retake_status:retakeStatus||null,retake_score:retakeScore,retake_count:Number(r.retake_count)||((retakeStatus&&retakeStatus!=="not_required")?1:0),retake_date:retakeStatus&&retakeStatus!=="not_required"?(r.retake_date||now):r.retake_date||null,final_grade:passedRetake&&retakeScore!==null?gradeFor(retakeScore,r.program):(r.final_grade||grade),final_status:passedRetake&&retakeScore!==null?(retakeScore>=passThreshold(r.program)?"PASS":"FAIL"):(retakeStatus==="failed"?"FAIL":r.final_status||null),approval_status:"pending",approved_by:null,approved_at:null,rejection_reason:null,published:false,published_at:null,published_by:null,graded_by:api.user.id,submitted_by:api.user.id,submitted_at:now,updated_at:now};
      try{
       let result;
       if(r.id)result=await db().from("student_marks").update(patch).eq("id",r.id).eq("institution_id",tenant()).eq("published",false).select("id").maybeSingle();
@@ -147,11 +158,11 @@
   $("iaMEBlockSelect")?.addEventListener("change",loadUnits);
   $("iaMEUnitSelect")?.addEventListener("change",syncAssessmentType);
   $("iaMELoadStudents")?.addEventListener("click",loadStudents);
-  $("iaMESaveCapture")?.addEventListener("click",saveMarks);
+  $("iaMESaveCapture")?.addEventListener("click",saveMarks);$("iaMEExportCapture")?.addEventListener("click",exportCaptureCsv);
   $("iaMEAssessmentType")?.addEventListener("change",()=>rows.forEach((r,i)=>updatePreview(i)));
   document.addEventListener("click",e=>{if(e.target.closest('#iaNav [data-view="marks-entry"]')){if(!$("iaMEProgramSelect")?.options?.length||$("iaMEProgramSelect")?.options?.length<=1)loadPrograms();}});
  }
  function wait(){api=window.CampusInstitutionAdmin;if(!api?.db||!api?.institutionId||!api?.user){setTimeout(wait,150);return;}bind();loadPrograms();}
  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",wait,{once:true});else wait();
- window.InstitutionAdminMarksEntry={load:loadStudents,refresh:loadPrograms,save:saveMarks};
+ window.InstitutionAdminMarksEntry={load:loadStudents,refresh:loadPrograms,save:saveMarks,export:exportCaptureCsv};
 })();
