@@ -216,10 +216,10 @@ const LecturerAttendance = {
             if (!authId) throw new Error('Authenticated lecturer session is unavailable.');
             const { data: identity, error } = await supabase.rpc('current_lecturer_staff_assignment_identity');
             if (error) throw error;
-            if (!identity?.id || String(identity.id) !== String(authId)) throw new Error('Active lecturer account identity is unavailable.');
+            if (!identity?.id || String(identity.id) !== String(authId) || !identity.assignment_id) throw new Error('Your lecturer account has no unique assignment mapping. Ask the institution administrator to reconcile your lecturer assignments.');
             const profile = window.lecturerDB?.getCurrentUserProfile?.() || {};
             this.lecturerUuid = authId;
-            this.lecturerAssignmentId = String(identity.id);
+            this.lecturerAssignmentId = String(identity.assignment_id);
             this.currentProgram = String(window.CURRENT_PROGRAM || profile.program || identity.program || 'KRCHN').trim();
             this.isTVET = this.currentProgram.toUpperCase() !== 'KRCHN';
             return this.lecturerAssignmentId;
