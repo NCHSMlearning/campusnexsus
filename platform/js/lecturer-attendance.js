@@ -48,6 +48,16 @@ const LecturerAttendance = {
 
     getBlockDisplay(blockValue) {
         if (!blockValue) return 'N/A';
+        const structureType = this.academicStructure?.type;
+        if (structureType) {
+            if (structureType === 'Block' && this.getProgramType() === 'TVET') {
+                const match = blockValue.match(/^Y(\d)T(\d)$/);
+                if (match) return `Year ${parseInt(match[1])} ${['','First','Second','Third'][parseInt(match[2])] || match[2]} Term`;
+            }
+            if (new RegExp('^' + structureType + '\\s', 'i').test(blockValue)) return blockValue;
+            if (blockValue === 'Introductory' || blockValue === 'Final') return blockValue + ' ' + structureType;
+            return structureType + ' ' + blockValue;
+        }
         const programType = this.getProgramType();
         if (programType === 'TVET') {
             const match = blockValue.match(/^Y(\d)T(\d)$/);
@@ -84,6 +94,12 @@ const LecturerAttendance = {
 
         try {
             await this.resolveLecturerId();
+            const lecturerProfile = window.lecturerDB?.getCurrentUserProfile?.() || {};
+            const attendanceClient = window.lecturerDB?.supabase;
+            if (window.CampusAcademicStructure && attendanceClient && lecturerProfile.institution_id && this.currentProgram) {
+                try { this.academicStructure = await window.CampusAcademicStructure.resolve(attendanceClient, lecturerProfile.institution_id, this.currentProgram); }
+                catch (structureError) { console.warn('[Lecturer Attendance] Academic structure lookup failed:', structureError.message); }
+            }
             await this.loadAssignedUnits();
             await this.loadClinicalLocationsForFilter();
             await this.loadAttendanceSessions();
