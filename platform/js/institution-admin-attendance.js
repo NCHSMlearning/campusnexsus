@@ -20,7 +20,7 @@
  async function load(){
   api=window.CampusInstitutionAdmin;if(!api?.institutionId)return;
   try{message("Loading institution attendance…");
-   const st=await db().from("students").select("id,user_id,admission_number,full_name,course").eq("institution_id",api.institutionId).limit(10000);if(st.error)throw st.error;
+   const st=await db().from("students").select("id,user_id,admission_number,full_name,course").eq("institution_id",api.institutionId).limit(10000);if(st.error)console.warn("[Institution attendance] Student table unavailable; falling back to institution profiles:",st.error.message);
    const studentRows=st.data||[];
    // The live NCHSM tenant stores its learner directory in consolidated profiles;
    // keep students-table rows when present and add any missing profile-backed users.
