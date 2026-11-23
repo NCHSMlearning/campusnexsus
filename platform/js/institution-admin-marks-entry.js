@@ -27,7 +27,7 @@
  async function loadPrograms(){
   if(loading)return;loading=true;
   try{
-   const {data,error}=await db().from("units_catalog").select("program").eq("status","active").limit(5000);
+   const {data,error}=await db().from("units_catalog").select("program").eq("status","active").or("institution_id.is.null,institution_id.eq."+tenant()).limit(5000);
    if(error)throw error;
    fill("iaMEProgramSelect",(data||[]).map(x=>x.program),"Select programme");
    say("Choose a programme, block, unit and academic year.");
@@ -38,14 +38,14 @@
   const program=$("iaMEProgramSelect")?.value||"";
   fill("iaMEBlockSelect",[],"Select block");fill("iaMEUnitSelect",[],"Select unit");units=[];
   if(!program)return;
-  try{const {data,error}=await db().from("units_catalog").select("block").eq("program",program).eq("status","active").limit(5000);if(error)throw error;fill("iaMEBlockSelect",(data||[]).map(x=>x.block),"Select block");}
+  try{const {data,error}=await db().from("units_catalog").select("block").eq("program",program).eq("status","active").or("institution_id.is.null,institution_id.eq."+tenant()).limit(5000);if(error)throw error;fill("iaMEBlockSelect",(data||[]).map(x=>x.block),"Select block");}
   catch(e){say("Blocks could not be loaded: "+e.message,true);}
  }
  async function loadUnits(){
   const program=$("iaMEProgramSelect")?.value||"",block=$("iaMEBlockSelect")?.value||"";
   fill("iaMEUnitSelect",[],"Select unit");units=[];
   if(!program||!block)return;
-  try{const {data,error}=await db().from("units_catalog").select("unit_code,unit_name,assessment_type,program,block").eq("program",program).eq("block",block).eq("status","active").order("unit_name",{ascending:true}).limit(1000);if(error)throw error;units=data||[];const el=$("iaMEUnitSelect");el.replaceChildren();option(el,"","Select unit");units.forEach(u=>option(el,u.unit_name,(u.unit_code?u.unit_code+" · ":"")+u.unit_name));if(units.length===1)el.value=units[0].unit_name;syncAssessmentType();}
+  try{const {data,error}=await db().from("units_catalog").select("unit_code,unit_name,assessment_type,program,block").eq("program",program).eq("block",block).eq("status","active").or("institution_id.is.null,institution_id.eq."+tenant()).order("unit_name",{ascending:true}).limit(1000);if(error)throw error;units=data||[];const el=$("iaMEUnitSelect");el.replaceChildren();option(el,"","Select unit");units.forEach(u=>option(el,u.unit_name,(u.unit_code?u.unit_code+" · ":"")+u.unit_name));if(units.length===1)el.value=units[0].unit_name;syncAssessmentType();}
   catch(e){say("Units could not be loaded: "+e.message,true);}
  }
  function syncAssessmentType(){const unit=units.find(u=>u.unit_name===($("iaMEUnitSelect")?.value||""));const el=$("iaMEAssessmentType");if(!el)return;if(unit?.assessment_type&&[...el.options].some(o=>o.value===unit.assessment_type)){el.value=unit.assessment_type;el.disabled=true;}else el.disabled=false;}
@@ -67,12 +67,12 @@
     if(p.error)throw p.error;profiles.push(...(p.data||[]));
    }
    const byKey=profileIndex(profiles);
-   const {data:marks,error:markError}=await db().from("student_marks").select("id,student_id,admission_number,student_name,program,block,subject_name,academic_year,assessment_type,cat1_score,cat2_score,exam_score,final_score,grade,approval_status,published,retake_status,retake_score,institution_id").eq("institution_id",tenant()).eq("program",program).eq("block",block).eq("subject_name",unit).eq("academic_year",Number(year)).order("created_at",{ascending:true}).limit(5000);
+   const {data:marks,error:markError}=await db().from("student_marks").select("id,student_id,admission_number,student_name,program,block,subject_name,academic_year,assessment_type,cat1_score,cat2_score,exam_score,final_score,grade,approval_status,published,retake_status,retake_score,institution_id").eq("institution_id",tenant()).eq("program",program).eq("block",block).eq("subject_name",unit).eq("academic_year",String(year)).order("created_at",{ascending:true}).limit(5000);
    if(markError)throw markError;
    const byMarkKey=new Map();(marks||[]).forEach(m=>[m.student_id,m.admission_number].filter(Boolean).forEach(k=>byMarkKey.set(String(k),m)));
    const built=matching.map(reg=>{
     const p=byKey.get(String(reg.student_id))||{};
-    const admission=String(p.admission_number||p.student_id||"").trim();
+    const admission=String(reg.admission_number||p.admission_number||p.student_id||"").trim();
     if(!admission)return null;
     const existing=byMarkKey.get(admission)||byMarkKey.get(String(reg.student_id))||null;
     return {id:existing?.id||null,student_id:existing?.student_id||reg.student_id,admission_number:existing?.admission_number||admission,student_name:existing?.student_name||p.full_name||"Student",program,block,subject_name:unit,academic_year:Number(year),assessment_type:existing?.assessment_type||$("iaMEAssessmentType")?.value||"full",cat1_score:existing?.cat1_score??0,cat2_score:existing?.cat2_score??0,exam_score:existing?.exam_score??0,final_score:existing?.final_score??0,grade:existing?.grade||"",approval_status:existing?.approval_status||"draft",published:existing?.published===true};
