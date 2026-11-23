@@ -59,6 +59,8 @@
     fill("iaMEBlockFilter",records.map(r=>r.block),"All blocks / terms");
     fill("iaMASubjectFilter",records.filter(r=>statusOf(r)==="pending").map(r=>r.subject_name),"All units");
     fill("iaMABlockFilter",records.filter(r=>statusOf(r)==="pending").map(r=>r.block),"All blocks / terms");
+    fill("iaPMYear",records.filter(r=>!!r.published).map(r=>r.academic_year),"All academic years");
+    fill("iaPMProgram",records.filter(r=>!!r.published).map(r=>r.program),"All programmes");
   }
   function exportRegisterCsv() {
     const rows=filtered("iaMESearch");if(!rows.length){notify("No marks records to export.",true);return;}
@@ -72,16 +74,22 @@
     const published=records.filter(r=>!!r.published);
     const units=new Set(records.map(r=>r.subject_name).filter(Boolean));
     const scored=records.map(r=>Number(r.final_score)).filter(Number.isFinite);
+    const pmScored=published.map(r=>Number(r.final_score)).filter(Number.isFinite);
+    const pmPassed=pmScored.filter(v=>v>=60).length;
+    const retakes=records.filter(r=>String(r.retake_status||"").trim() && !["","none","not_required","false"].includes(String(r.retake_status).toLowerCase())).length;
     const average=scored.length?scored.reduce((a,b)=>a+b,0)/scored.length:0;
     const passCount=scored.filter(v=>v>=60).length;
     [["iaMEAverage",scored.length?average.toFixed(1)+"%":"—"],["iaMEPassRate",scored.length?(passCount/scored.length*100).toFixed(1)+"%":"—"],["iaMECount",records.length],["iaMEPending",pending.length],["iaMEApproved",records.filter(r=>statusOf(r)==="approved").length],["iaMEPublished",published.length],
      ["iaMAPending",pending.length],["iaMAApproved",records.filter(r=>statusOf(r)==="approved").length],["iaMARejected",records.filter(r=>statusOf(r)==="rejected").length],["iaMAUnits",units.size],
-     ["iaPMCount",published.length],["iaPMStudents",new Set(published.map(r=>r.admission_number||r.student_id).filter(Boolean)).size],["iaPMUnits",new Set(published.map(r=>r.subject_name).filter(Boolean)).size]
+     ["iaPMCount",published.length],["iaPMStudents",new Set(published.map(r=>r.admission_number||r.student_id).filter(Boolean)).size],["iaPMUnits",new Set(published.map(r=>r.subject_name).filter(Boolean)).size],
+     ["iaPMTotalMarks",records.length],["iaPMPassed",pmPassed],["iaPMFailed",pmScored.length-pmPassed],["iaPMUnpublished",approved.length],["iaPMRetakes",retakes]
     ].forEach(([id,value])=>{if($(id))$(id).textContent=Number(value).toLocaleString("en-KE");});
     const all=filtered("iaMESearch");renderRegister(all);
     renderApproval(filtered("iaMASearch").filter(r=>statusOf(r)==="pending"&&!r.published));
     renderPublishQueue(approved);
-    renderPublished(published.filter(r=>matches(r,"iaPMSearch")));
+    const pmYear=$("iaPMYear")?.value||"all",pmProgram=$("iaPMProgram")?.value||"all";
+    const pmRows=published.filter(r=>matches(r,"iaPMSearch")&&(pmYear==="all"||String(r.academic_year||"")===pmYear)&&(pmProgram==="all"||String(r.program||"").toLowerCase()===pmProgram.toLowerCase()||(pmProgram==="TVET"&&String(r.program||"").toUpperCase()!=="KRCHN")));
+    renderPublished(pmRows);
   }
   function matches(row,inputId) {
     const q=($(inputId)?.value||"").trim().toLowerCase();
@@ -117,6 +125,14 @@
       const td=document.createElement("td"),button=document.createElement("button");
       button.type="button";button.className="ia-primary-btn";button.textContent="Publish";button.dataset.markAction="publish";button.dataset.id=r.id;td.append(button);tr.append(td);body.append(tr);
     });
+  }
+  function exportPublishedCsv() {
+    const year=$("iaPMYear")?.value||"all",program=$("iaPMProgram")?.value||"all";
+    const data=records.filter(r=>!!r.published&&matches(r,"iaPMSearch")&&(year==="all"||String(r.academic_year||"")===year)&&(program==="all"||String(r.program||"").toLowerCase()===program.toLowerCase()||(program==="TVET"&&String(r.program||"").toUpperCase()!=="KRCHN")));
+    if(!data.length){notify("No published results match the current filters.",true);return;}
+    const cols=["student_name","admission_number","program","block","subject_name","academic_year","final_score","final_grade","published_at"];
+    const csv=[cols.join(","),...data.map(row=>cols.map(key=>'"'+String(row[key]??"").replace(/"/g,'""')+'"').join(","))].join("\\n");
+    const url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));const a=document.createElement("a");a.href=url;a.download="Institution_Published_Marks.csv";a.click();URL.revokeObjectURL(url);
   }
   function renderPublished(rows) {
     const body=$("iaPublishedMarksRows");if(!body)return;
@@ -211,6 +227,10 @@
     ["iaMESearch","iaMASearch","iaPMSearch","iaMEYearFilter","iaMEProgramFilter","iaMEBlockFilter","iaMASubjectFilter","iaMABlockFilter"].forEach(id=>$(id)?.addEventListener("input",paint));
     ["iaMEYearFilter","iaMEProgramFilter","iaMEBlockFilter","iaMASubjectFilter","iaMABlockFilter"].forEach(id=>$(id)?.addEventListener("change",paint));
     $("iaMEExport")?.addEventListener("click",exportRegisterCsv);
+    ["iaPMSearch","iaPMYear","iaPMProgram"].forEach(id=>$(id)?.addEventListener(id==="iaPMSearch"?"input":"change",paint));
+    document.querySelectorAll("[data-pm-program]").forEach(button=>button.addEventListener("click",()=>{const v=button.dataset.pmProgram||"all";if($("iaPMProgram"))$("iaPMProgram").value=v;paint();}));
+    $("iaPMExport")?.addEventListener("click",exportPublishedCsv);
+    $("iaPMPrint")?.addEventListener("click",()=>window.print());
     $("iaApproveAllPending")?.addEventListener("click",()=>bulkApproval("approve"));
     $("iaRejectAllPending")?.addEventListener("click",()=>bulkApproval("reject"));
     document.querySelectorAll("[data-marks-refresh]").forEach(b=>b.addEventListener("click",()=>load(b.dataset.marksRefresh==="control"?"entry-control":"marks")));
