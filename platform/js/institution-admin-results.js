@@ -34,8 +34,8 @@
   const dateLabel = value => value ? new Date(value).toLocaleString("en-KE",{dateStyle:"medium",timeStyle:"short"}) : "—";
   const filtered = inputId => {
     const q=($(inputId)?.value||"").trim().toLowerCase();
-    const year=inputId==="iaMESearch"?$("iaMEYearFilter")?.value:"all";
-    const program=inputId==="iaMESearch"?$("iaMEProgramFilter")?.value:"all";
+    const year=inputId==="iaMESearch"?$("iaMEYearFilter")?.value:(inputId==="iaMASearch"?$("iaMAYearFilter")?.value:"all");
+    const program=inputId==="iaMESearch"?$("iaMEProgramFilter")?.value:(inputId==="iaMASearch"?$("iaMAProgramFilter")?.value:"all");
     const block=inputId==="iaMESearch"?$("iaMEBlockFilter")?.value:(inputId==="iaMASearch"?$("iaMABlockFilter")?.value:"all");
     const subject=inputId==="iaMASearch"?$("iaMASubjectFilter")?.value:"all";
     return records.filter(r=>
@@ -66,6 +66,8 @@
     fill("iaMEBlockFilter",records.map(r=>r.block),"All blocks / terms");
     fill("iaMASubjectFilter",records.filter(r=>statusOf(r)==="pending").map(r=>r.subject_name),"All units");
     fill("iaMABlockFilter",records.filter(r=>statusOf(r)==="pending").map(r=>r.block),"All blocks / terms");
+    fill("iaMAYearFilter",records.filter(r=>statusOf(r)==="pending").map(r=>r.academic_year),"All academic years");
+    fill("iaMAProgramFilter",records.filter(r=>statusOf(r)==="pending").map(r=>r.program),"All programmes");
     fill("iaPMYear",records.map(r=>r.academic_year),"All academic years");
     fill("iaPMProgram",records.map(r=>r.program),"All programmes");
     fill("iaPMBlock",records.map(r=>r.block),"All blocks / terms");
@@ -76,6 +78,13 @@
     const cols=["student_name","admission_number","program","block","subject_name","academic_year","cat1_score","cat2_score","exam_score","final_score","final_grade","approval_status","published"];
     const csv=[cols.join(","),...rows.map(r=>cols.map(k=>'"'+String(r[k]??"").replace(/"/g,'""')+'"').join(","))].join("\\n");
     const url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));const a=document.createElement("a");a.href=url;a.download="Institution_Marks_Register.csv";a.click();URL.revokeObjectURL(url);
+  }
+  function exportApprovalCsv() {
+    const data=filtered("iaMASearch").filter(r=>statusOf(r)==="pending"&&!r.published);
+    if(!data.length){notify("No pending marks match the approval filters.",true);return;}
+    const cols=["student_name","admission_number","program","block","subject_name","academic_year","cat1_score","cat2_score","exam_score","final_score","grade","submitted_at"];
+    const csv=[cols.join(","),...data.map(r=>cols.map(k=>'"'+String(r[k]??"").replace(/"/g,'""')+'"').join(","))].join("\n");
+    const url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));const a=document.createElement("a");a.href=url;a.download="Institution_Marks_Approval_Queue.csv";a.click();URL.revokeObjectURL(url);
   }
   function paint() {
     const meRows=filtered("iaMESearch");
@@ -256,9 +265,10 @@
     catch(e) { console.error("[Institution results]",e);notify("Unable to load "+view+": "+e.message,true); }
   }
   function bind() {
-    ["iaMESearch","iaMASearch","iaPMSearch","iaMEYearFilter","iaMEProgramFilter","iaMEBlockFilter","iaMASubjectFilter","iaMABlockFilter"].forEach(id=>$(id)?.addEventListener("input",paint));
-    ["iaMEYearFilter","iaMEProgramFilter","iaMEBlockFilter","iaMASubjectFilter","iaMABlockFilter"].forEach(id=>$(id)?.addEventListener("change",paint));
+    ["iaMESearch","iaMASearch","iaPMSearch","iaMEYearFilter","iaMEProgramFilter","iaMEBlockFilter","iaMASubjectFilter","iaMABlockFilter","iaMAYearFilter","iaMAProgramFilter"].forEach(id=>$(id)?.addEventListener("input",paint));
+    ["iaMEYearFilter","iaMEProgramFilter","iaMEBlockFilter","iaMASubjectFilter","iaMABlockFilter","iaMAYearFilter","iaMAProgramFilter"].forEach(id=>$(id)?.addEventListener("change",paint));
     $("iaMEExport")?.addEventListener("click",exportRegisterCsv);
+    $("iaMAExport")?.addEventListener("click",exportApprovalCsv);
     ["iaPMSearch","iaPMYear","iaPMProgram","iaPMBlock"].forEach(id=>$(id)?.addEventListener(id==="iaPMSearch"?"input":"change",paint));
     document.querySelectorAll("[data-pm-program]").forEach(button=>button.addEventListener("click",()=>{const v=button.dataset.pmProgram||"all";if($("iaPMProgram"))$("iaPMProgram").value=v;paint();}));
     $("iaPMExport")?.addEventListener("click",exportPublishedCsv);
