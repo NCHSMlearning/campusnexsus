@@ -73,7 +73,7 @@ async function createProgram(){
  const code=$("program_code").value.trim().toUpperCase(),name=$("program_name").value.trim();
  if(!code||!name){notify("Program Code and Name are required!","error");return;}
  const editId=form.dataset.editId;
- const payload={program_code:code,program_name:name,category:$("program_category").value,program_type:$("program_type").value,duration_months:parseInt($("program_duration").value)||0,total_credits:parseInt($("program_credits").value)||0,description:$("program_description").value.trim(),status:$("program_status").value,updated_at:new Date().toISOString()};
+ const payload={program_code:code,program_name:name,category:$("program_category").value,program_type:$("program_type").value,structure_type:$("program_structure_type")?.value||"Block",duration_months:parseInt($("program_duration").value)||0,total_credits:parseInt($("program_credits").value)||0,description:$("program_description").value.trim(),status:$("program_status").value,updated_at:new Date().toISOString()};
  try{
   if(editId){const {error}=await programQuery().update(payload).eq("id",editId).eq("institution_id",tenant());if(error)throw error;notify("Programme updated successfully.","success");}
   else {
@@ -132,7 +132,7 @@ function resetProgramForm(){
 }
 async function editProgram(id){
  try{const {data,error}=await programQuery().select("*").eq("id",id).eq("institution_id",tenant()).single();if(error)throw error;
-  $("program_code").value=data.program_code||"";$("program_name").value=data.program_name||"";$("program_category").value=data.category||"KRCHN";$("program_type").value=data.program_type||"diploma";$("program_duration").value=data.duration_months||"";$("program_credits").value=data.total_credits||"";$("program_description").value=data.description||"";$("program_status").value=data.status||"active";
+  $("program_code").value=data.program_code||"";$("program_name").value=data.program_name||"";$("program_category").value=data.category||"KRCHN";$("program_type").value=data.program_type||"diploma";$("program_structure_type").value=data.structure_type||"Block";$("program_duration").value=data.duration_months||"";$("program_credits").value=data.total_credits||"";$("program_description").value=data.description||"";$("program_status").value=data.status||"active";
   const form=$("add-program-form");form.dataset.editId=id;const btn=form.querySelector('button[type="submit"]');btn.innerHTML='<i class="fas fa-save"></i> Update Program';btn.style.background="#f59e0b";window.scrollTo({top:0,behavior:"smooth"});
  }catch(error){notify("Unable to load programme: "+error.message,"error");}
 }
@@ -170,17 +170,17 @@ async function deleteIntake(id){
  try{const {data,error:readError}=await db().from(TABLES.intakes).select("id,program_id").eq("id",id).eq("institution_id",tenant()).maybeSingle();if(readError)throw readError;if(!data)throw new Error("Intake not found in this institution.");const {error}=await db().from(TABLES.intakes).delete().eq("id",id).eq("institution_id",tenant());if(error)throw error;await loadIntakesForProgram(data.program_id);await updateProgramTotals();}
  catch(error){notify("Unable to delete intake: "+error.message,"error");}
 }
-async function loadProgramBlocks(){const id=$("block_program_select")?.value;if(!id){empty("program-blocks-container",1,"Select a program to view its blocks.");return;}await loadBlocksForProgram(id);}
+async function loadProgramBlocks(){const id=$("block_program_select")?.value;if(!id){empty("program-blocks-container",1,"Select a program to view its academic structure.");return;}await loadBlocksForProgram(id);}
 async function loadBlocksForProgram(id){
- await ownProgram(id);const {data,error}=await db().from(TABLES.blocks).select("*").eq("program_id",id).eq("institution_id",tenant()).order("block_sequence",{ascending:true});if(error)throw error;
- const host=$("program-blocks-container");if(!data?.length){host.innerHTML='<p style="text-align:center;padding:20px;color:#64748b">No blocks defined for this program.</p>';return;}
- host.innerHTML='<table class="data-table" style="width:100%"><thead><tr><th>#</th><th>Block Name</th><th>Sequence</th><th>Credit Hours</th><th>Status</th><th>Actions</th></tr></thead><tbody>'+data.map((b,i)=>'<tr><td>'+(i+1)+'</td><td><strong>'+esc(b.block_name)+'</strong></td><td>'+esc(b.block_sequence)+'</td><td>'+esc(b.credit_hours||"-")+'</td><td>'+esc(b.status||"active")+'</td><td><button class="btn-sm btn-delete" data-delete-block="'+esc(b.id)+'"><i class="fas fa-trash"></i></button></td></tr>').join("")+'</tbody></table>';
+ const program=await ownProgram(id);const {data,error}=await db().from(TABLES.blocks).select("*").eq("program_id",id).eq("institution_id",tenant()).order("block_sequence",{ascending:true});if(error)throw error;
+ const host=$("program-blocks-container"),label=program.structure_type||"Block";if(!data?.length){host.innerHTML='<p style="text-align:center;padding:20px;color:#64748b">No '+esc(label.toLowerCase())+' entries defined for this programme.</p>';return;}
+ host.innerHTML='<table class="data-table" style="width:100%"><thead><tr><th>#</th><th>'+esc(label)+' Name</th><th>Sequence</th><th>Credit Hours</th><th>Status</th><th>Actions</th></tr></thead><tbody>'+data.map((b,i)=>'<tr><td>'+(i+1)+'</td><td><strong>'+esc(b.block_name)+'</strong></td><td>'+esc(b.block_sequence)+'</td><td>'+esc(b.credit_hours||"-")+'</td><td>'+esc(b.status||"active")+'</td><td><button class="btn-sm btn-delete" data-delete-block="'+esc(b.id)+'"><i class="fas fa-trash"></i></button></td></tr>').join("")+'</tbody></table>';
  if($("totalBlocksCount"))$("totalBlocksCount").textContent=data.length;
 }
 async function addProgramBlock(){
  const id=$("block_program_select")?.value,name=$("block_name").value.trim(),sequence=parseInt($("block_sequence").value)||0,hours=parseInt($("block_credit_hours").value)||0;
- if(!id){notify("Please select a program first.","error");return;}if(!name){notify("Please enter a block name.","error");return;}
- try{await ownProgram(id);const payload={institution_id:tenant(),program_id:id,block_name:name,block_sequence:sequence,credit_hours:hours,status:"active",created_at:new Date().toISOString(),updated_at:new Date().toISOString()};const {error}=await db().from(TABLES.blocks).insert(payload);if(error)throw error;$("block_name").value="";$("block_sequence").value="";$("block_credit_hours").value="";notify("Block added successfully.","success");await loadProgramBlocks();await updateProgramTotals();}
+ if(!id){notify("Please select a program first.","error");return;}if(!name){notify("Please enter a structure name.","error");return;}
+ try{const program=await ownProgram(id);const label=program.structure_type||"Block";const payload={institution_id:tenant(),program_id:id,block_name:name,block_sequence:sequence,credit_hours:hours,status:"active",created_at:new Date().toISOString(),updated_at:new Date().toISOString()};const {error}=await db().from(TABLES.blocks).insert(payload);if(error)throw error;$("block_name").value="";$("block_sequence").value="";$("block_credit_hours").value="";notify(label+" added successfully.","success");await loadProgramBlocks();await updateProgramTotals();}
  catch(error){notify("Unable to add block: "+error.message,"error");}
 }
 async function deleteBlock(id){
