@@ -20,16 +20,21 @@
  async function load(){
   api=window.CampusInstitutionAdmin;if(!api?.institutionId)return;
   try{message("Loading institution attendance…");
-   const st=await db().from("students").select("id,admission_number,full_name,course").eq("institution_id",api.institutionId).limit(10000);if(st.error)throw st.error;students=st.data||[];
-   const studentSelect=$("iaAttStudent");if(studentSelect){const previous=studentSelect.value;studentSelect.innerHTML='<option value="">Select student</option>'+students.map(x=>'<option value="'+esc(x.id)+'">'+esc(x.full_name||x.admission_number||x.id)+' · '+esc(x.admission_number||"")+'</option>').join("");if(students.some(x=>String(x.id)===previous))studentSelect.value=previous;}
-   // Geo logs may identify a learner by students.id, admission number,
-   // consolidated profile user_id or profile student_id. Resolve all aliases
-   // from institution-scoped source records before querying geo logs.
+   const st=await db().from("students").select("id,user_id,admission_number,full_name,course").eq("institution_id",api.institutionId).limit(10000);if(st.error)throw st.error;
+   const studentRows=st.data||[];
+   // The live NCHSM tenant stores its learner directory in consolidated profiles;
+   // keep students-table rows when present and add any missing profile-backed users.
    const profileResult=await db().from("consolidated_user_profiles_table").select("user_id,student_id,admission_number,full_name,program,institution_id").eq("institution_id",api.institutionId).eq("role","student").limit(10000);
    if(profileResult.error)console.warn("[Institution attendance] Profile aliases unavailable:",profileResult.error.message);
    const profiles=profileResult.data||[];
-   const studentKeys=[...new Set([...students.flatMap(x=>[x.id,x.admission_number]),...profiles.flatMap(x=>[x.student_id,x.admission_number])].filter(Boolean).map(String))];
-   const userIds=[...new Set([...students.map(x=>x.id),...profiles.map(x=>x.user_id)].filter(Boolean).map(String))];
+   students=studentRows.slice();
+   const knownStudents=new Set(students.flatMap(x=>[x.id,x.user_id,x.admission_number]).filter(Boolean).map(String));
+   profiles.forEach(p=>{const key=String(p.user_id||p.student_id||p.admission_number||"");if(key&&!knownStudents.has(key)){students.push({id:p.user_id||p.student_id,user_id:p.user_id,admission_number:p.admission_number||p.student_id,full_name:p.full_name,course:p.program});knownStudents.add(key);}});
+   const studentSelect=$("iaAttStudent");if(studentSelect){const previous=studentSelect.value;studentSelect.replaceChildren();const placeholder=document.createElement("option");placeholder.value="";placeholder.textContent="Select student";studentSelect.append(placeholder);students.forEach(x=>{const o=document.createElement("option");o.value=String(x.user_id||x.id);o.textContent=(x.full_name||x.admission_number||x.id)+" · "+(x.admission_number||"");studentSelect.append(o);});if(students.some(x=>String(x.user_id||x.id)===previous))studentSelect.value=previous;}
+   // Geo logs may identify a learner by auth user ID, student row ID,
+   // admission number or profile student ID. Resolve all aliases first.
+   const studentKeys=[...new Set([...students.flatMap(x=>[x.id,x.user_id,x.admission_number]),...profiles.flatMap(x=>[x.student_id,x.admission_number])].filter(Boolean).map(String))];
+   const userIds=[...new Set([...students.flatMap(x=>[x.id,x.user_id]),...profiles.map(x=>x.user_id)].filter(Boolean).map(String))];
    let logs=[];
    for(let i=0;i<studentKeys.length;i+=150){
     const batch=studentKeys.slice(i,i+150);
@@ -46,7 +51,7 @@
    const manual=await db().from("attendance").select("id,student_id,date,timestamp,course_or_rotation,status,marked_by,institution_id").eq("institution_id",api.institutionId).order("timestamp",{ascending:false}).limit(5000);
    if(manual.error)console.warn("[Institution attendance] Manual attendance history unavailable:",manual.error.message);
    const byStudentKey=new Map(),profileByKey=new Map();
-   students.forEach(x=>{[x.id,x.admission_number].filter(Boolean).forEach(k=>byStudentKey.set(String(k),x));});
+   students.forEach(x=>{[x.id,x.user_id,x.admission_number].filter(Boolean).forEach(k=>byStudentKey.set(String(k),x));});
    profiles.forEach(p=>{[p.user_id,p.student_id,p.admission_number].filter(Boolean).forEach(k=>profileByKey.set(String(k),p));});
    const enrichedLogs=[...new Map(logs.map(x=>[String(x.id||x.student_id)+":"+String(x.check_in_time||x.created_at||""),x])).values()].map(x=>{const st=byStudentKey.get(String(x.student_id||x.user_id))||{},p=profileByKey.get(String(x.student_id||x.user_id))||{};return{...x,student_name:x.student_name||st.full_name||p.full_name||x.student_id,registration_number:x.registration_number||st.admission_number||p.admission_number||x.student_id,program:x.program||st.course||p.program||""};});
    const manualRows=(manual.data||[]).map(x=>{const st=byStudentKey.get(String(x.student_id))||{},p=profileByKey.get(String(x.student_id))||{};return{id:"manual-"+x.id,student_name:st.full_name||p.full_name||st.admission_number||x.student_id,student_id:st.admission_number||p.admission_number||x.student_id,registration_number:st.admission_number||p.admission_number||"",program:st.course||p.program||"",session_type:"Manual",location_type:"manual",target_name:x.course_or_rotation||"Manual check-in",check_in_time:x.timestamp||x.date,attendance_status:x.status||"Present",is_verified:String(x.status||"").toLowerCase()==="present",institution_id:api.institutionId,_manual:true};});
