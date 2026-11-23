@@ -227,6 +227,7 @@ async function addUnitToProgram(){
   if($("iaNewUnitCredits"))$("iaNewUnitCredits").value="3";if($("iaNewUnitHours"))$("iaNewUnitHours").value="0";
   setMessage("Added "+code+" to "+program.program_name+" · "+period+".");
   notify("Unit added to "+program.program_name+" successfully.","success");
+  window.dispatchEvent(new Event("campusnexus:curriculum-refresh"));
   await Promise.all([loadProgramMappings(),populateCourseSelector()]);
  }catch(error){setMessage(error.message,true);notify("Unable to add unit to programme: "+error.message,"error");}
  finally{if(button)button.disabled=false;}
