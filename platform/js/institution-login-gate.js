@@ -11,8 +11,9 @@
     const css = document.createElement("style");
     css.id = "cnSchoolGateStyles";
     css.textContent = `
-      #cnSchoolGate{position:fixed;inset:0;z-index:2147483000;display:grid;place-items:center;overflow:auto;padding:28px 22px;background:linear-gradient(115deg,rgba(5,20,65,.30),rgba(45,15,105,.20)),url("/images/campus-header.jpg") center/cover no-repeat;font-family:Inter,system-ui,sans-serif}
-      #cnSchoolGate:before{content:"";position:absolute;inset:0;background:linear-gradient(130deg,rgba(36,77,170,.14),rgba(116,40,210,.20));backdrop-filter:blur(5px)}
+      #cnSchoolGate{position:fixed;inset:0;z-index:2147483000;display:grid;place-items:center;overflow:auto;padding:28px 22px;background:radial-gradient(ellipse at 16% 18%,rgba(0,191,255,.38),transparent 34%),radial-gradient(ellipse at 84% 82%,rgba(179,54,255,.34),transparent 38%),radial-gradient(ellipse at 50% 48%,#254fca 0%,#142b83 48%,#07163f 100%);font-family:Inter,system-ui,sans-serif}
+      #cnSchoolGate:before{content:"";position:absolute;inset:0;background:linear-gradient(135deg,rgba(13,28,91,.16),rgba(99,45,198,.18));backdrop-filter:blur(2px);pointer-events:none}
+      #cnSchoolGate:after{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;background-image:url("/images/campus-nexus-original-logo.webp?v=1");background-repeat:no-repeat;background-position:center;background-size:min(76vw,680px) auto;opacity:.105;filter:drop-shadow(0 12px 35px rgba(0,0,0,.16))}
       #cnSchoolGate *{box-sizing:border-box}
       #cnSchoolGate .shell{position:relative;z-index:1;width:min(100%,1000px);display:flex;flex-direction:column;align-items:center}
       #cnSchoolGate .brand{display:flex;align-items:center;justify-content:center;gap:15px;margin:0 0 28px;color:#102d79;text-shadow:0 1px 16px #fff9}
