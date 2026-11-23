@@ -55,79 +55,26 @@ const AcademicPortfolio = {
     async resolveLecturerId() {
         try {
             const supabase = window.lecturerDB?.supabase;
-            if (!supabase) {
-                console.warn('Supabase not available');
-                return;
-            }
-            
-            const profile = window.lecturerDB?.getCurrentUserProfile();
-            if (!profile) {
-                console.warn('No lecturer profile found');
-                return;
-            }
-            
-            const authId = profile.user_id;
-            const fullName = profile.full_name;
-            
-            console.log('🔍 Auth ID (UUID):', authId);
-            console.log('🔍 Lecturer name:', fullName);
-            
-            // Store UUID
+            if (!supabase) throw new Error('Supabase client is unavailable.');
+            const { data: authData, error: authError } = await supabase.auth.getUser();
+            if (authError) throw authError;
+            const authId = authData?.user?.id;
+            if (!authId) throw new Error('Authenticated lecturer session is unavailable.');
+            const { data: identity, error } = await supabase.rpc('current_lecturer_staff_assignment_identity');
+            if (error) throw error;
+            if (!identity?.id) throw new Error('Active lecturer account identity is unavailable.');
             this.lecturerUuid = authId;
-            
-            // Find all lecturer IDs by name
-            const { data: assignments, error: assignError } = await supabase
-                .from('lecturer_subject_assignments')
-                .select('lecturer_id, lecturer_name')
-                .ilike('lecturer_name', `%${fullName}%`);
-            
-            if (!assignError && assignments && assignments.length > 0) {
-                console.log('📋 Found lecturer assignments by name:', assignments);
-                
-                // Try to find STAFF ID first (non-UUID)
-                const staffId = assignments.find(a => {
-                    const id = a.lecturer_id;
-                    return id && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(id));
-                });
-                
-                if (staffId) {
-                    this.lecturerId = staffId.lecturer_id;
-                    console.log('✅ Found STAFF ID:', this.lecturerId);
-                } else {
-                    this.lecturerId = assignments[0].lecturer_id;
-                    console.log('⚠️ Using first match ID:', this.lecturerId);
-                }
-                
-                // Also try STAFF102 directly if not found
-                if (!this.lecturerId || this.lecturerId === authId) {
-                    const { data: staffCheck } = await supabase
-                        .from('lecturer_subject_assignments')
-                        .select('lecturer_id')
-                        .eq('lecturer_id', 'STAFF102')
-                        .limit(1);
-                    
-                    if (staffCheck && staffCheck.length > 0) {
-                        this.lecturerId = 'STAFF102';
-                        console.log('✅ Found STAFF102 directly:', this.lecturerId);
-                    }
-                }
-                
-                // Load assigned units
-                await this.loadAssignedUnits();
-                return;
-            }
-            
-            // Fallback to auth ID
-            this.lecturerId = authId;
-            console.log('⚠️ Falling back to auth ID:', this.lecturerId);
-            
+            this.lecturerId = String(identity.id);
+            await this.loadAssignedUnits();
+            return this.lecturerId;
         } catch (error) {
-            console.error('Error resolving lecturer ID:', error);
+            console.error('[Academic Portfolio] Secure lecturer identity resolution failed:', error);
             this.lecturerId = null;
             this.lecturerUuid = null;
+            throw error;
         }
     },
-    
+
     // ============================================================
     // LOAD ASSIGNED UNITS
     // ============================================================
