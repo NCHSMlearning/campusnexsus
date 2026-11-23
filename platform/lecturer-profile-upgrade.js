@@ -195,9 +195,19 @@
       if (!result.data) throw new Error('No staff profile record was found.');
       window.lecturerDB.currentUserProfile = result.data;
       if (window.LecturerProfile) window.LecturerProfile.profile = result.data;
-      await Promise.all([loadPrivateDetails(), loadDocuments()]);
+      const loadResults = await Promise.allSettled([loadPrivateDetails(), loadDocuments()]);
       render(result.data);
-      status('Your profile and document list have been refreshed.', 'success');
+      const privateFailure = loadResults[0].status === 'rejected';
+      const documentsFailure = loadResults[1].status === 'rejected';
+      if (privateFailure) {
+        console.error('[Lecturer Profile] Secure private details unavailable:', loadResults[0].reason);
+        status('Your basic profile loaded, but encrypted personal details are unavailable because the profile encryption key is not configured. No private data was exposed or saved. Please ask the system administrator to restore the secure profile key.', 'error');
+      } else if (documentsFailure) {
+        console.error('[Lecturer Profile] Document list unavailable:', loadResults[1].reason);
+        status('Your profile loaded, but the secure document list could not be retrieved. Please refresh or contact the administrator.', 'error');
+      } else {
+        status('Your profile and document list have been refreshed.', 'success');
+      }
     } catch (e) {
       console.error('[Lecturer Profile] Refresh failed', e);
       status('Could not refresh your profile: ' + e.message, 'error');
@@ -434,10 +444,18 @@
     const p = profile(), c = db(), root = $('profile-content');
     if (!p || !p.user_id || !c || !root) return;
     try {
-      await Promise.all([loadPrivateDetails(), loadDocuments()]);
+      const loadResults = await Promise.allSettled([loadPrivateDetails(), loadDocuments()]);
       window.LecturerProfile.profile = p;
       ready = render(p);
-      if (ready) console.log('[Lecturer Profile] Secure staff profile vault initialised.');
+      if (loadResults[0].status === 'rejected') {
+        console.error('[Lecturer Profile] Secure private details unavailable:', loadResults[0].reason);
+        if (ready) status('Your basic profile loaded, but encrypted personal details are unavailable because the profile encryption key is not configured. No private data was exposed or saved. Please ask the system administrator to restore the secure profile key.', 'error');
+      }
+      if (loadResults[1].status === 'rejected') {
+        console.error('[Lecturer Profile] Secure document list unavailable:', loadResults[1].reason);
+        if (ready && loadResults[0].status !== 'rejected') status('Your profile loaded, but the secure document list could not be retrieved. Please refresh or contact the administrator.', 'error');
+      }
+      if (ready) console.log('[Lecturer Profile] Staff profile workspace initialised; secure data status recorded.');
     } catch (err) {
       console.error('[Lecturer Profile] Initial load failed', err);
       root.innerHTML = '<div class="lp-shell"><div class="lp-status" data-kind="error">Your secure profile could not be loaded: ' + esc(err.message) + '. Please refresh or contact the administrator.</div></div>';
