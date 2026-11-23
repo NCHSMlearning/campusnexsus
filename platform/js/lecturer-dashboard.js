@@ -727,8 +727,8 @@ const LecturerDashboard = {
     },
 
     // ─── RESOLVE LECTURER ID ───
-    // lecturer_subject_assignments.lecturer_id references staff_records.id,
-    // not auth.uid() and not consolidated_user_profiles_table.staff_id.
+    // Institution Admin assigns lecturer_subject_assignments.lecturer_id using the
+    // lecturer's authenticated user UUID (lecturers.user_id / profile.user_id).
     async resolveLecturerId() {
         try {
             const supabase = this.getSupabaseClient();
@@ -744,7 +744,7 @@ const LecturerDashboard = {
             // scoped SECURITY DEFINER RPC instead of requiring HR module access.
             const { data: staff, error: identityError } = await supabase.rpc('current_lecturer_staff_assignment_identity');
             if (identityError) throw identityError;
-            if (!staff?.id) throw new Error('No active institution-linked lecturer staff record matches this account. Ask the institution administrator to verify the lecturer record and membership.');
+            if (!staff?.id) throw new Error('No active institution-linked lecturer account matches this session. Ask the institution administrator to verify the account and membership.');
 
             this.lecturerUuid = user.id;
             this.lecturerAssignmentId = String(staff.id).trim();
@@ -757,7 +757,7 @@ const LecturerDashboard = {
             }
 
             window.CORRECT_LECTURER_ID = this.lecturerAssignmentId;
-            console.log('[Lecturer Dashboard] Resolved own staff-record assignment ID through secure RPC:', {
+            console.log('[Lecturer Dashboard] Resolved own authenticated assignment ID through secure RPC:', {
                 program: this.currentProgram,
                 lecturerIdResolved: Boolean(this.lecturerAssignmentId)
             });
