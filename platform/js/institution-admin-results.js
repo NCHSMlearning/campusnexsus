@@ -79,7 +79,7 @@
     const retakes=records.filter(r=>String(r.retake_status||"").trim() && !["","none","not_required","false"].includes(String(r.retake_status).toLowerCase())).length;
     const average=scored.length?scored.reduce((a,b)=>a+b,0)/scored.length:0;
     const passCount=scored.filter(v=>v>=60).length;
-    [["iaMEAverage",scored.length?average.toFixed(1)+"%":"—"],["iaMEPassRate",scored.length?(passCount/scored.length*100).toFixed(1)+"%":"—"],["iaMECount",records.length],["iaMEPending",pending.length],["iaMEApproved",records.filter(r=>statusOf(r)==="approved").length],["iaMEPublished",published.length],
+    [["iaMEAverage",scored.length?average.toFixed(1)+"%":"—"],["iaMEPassRate",scored.length?(passCount/scored.length*100).toFixed(1)+"%":"—"],["iaMEStudents",new Set(records.map(r=>r.admission_number||r.student_id).filter(Boolean)).size],["iaMEUnits",units.size],["iaMEAtRisk",scored.filter(v=>v<60).length],["iaMECount",records.length],["iaMEPending",pending.length],["iaMEApproved",records.filter(r=>statusOf(r)==="approved").length],["iaMEPublished",published.length],
      ["iaMAPending",pending.length],["iaMAApproved",records.filter(r=>statusOf(r)==="approved").length],["iaMARejected",records.filter(r=>statusOf(r)==="rejected").length],["iaMAUnits",units.size],
      ["iaPMCount",published.length],["iaPMStudents",new Set(published.map(r=>r.admission_number||r.student_id).filter(Boolean)).size],["iaPMUnits",new Set(published.map(r=>r.subject_name).filter(Boolean)).size],
      ["iaPMTotalMarks",records.length],["iaPMPassed",pmPassed],["iaPMFailed",pmScored.length-pmPassed],["iaPMUnpublished",approved.length],["iaPMRetakes",retakes]
