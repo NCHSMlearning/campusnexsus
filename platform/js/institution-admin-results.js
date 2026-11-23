@@ -119,8 +119,12 @@
     } else return;
     busy=true;
     try {
-      const {error}=await db().from("student_marks").update(patch).eq("id",row.id).eq("institution_id",tenant());
+      let updateQuery=db().from("student_marks").update(patch).eq("id",row.id).eq("institution_id",tenant());
+      if(action==="approve"||action==="reject")updateQuery=updateQuery.eq("approval_status","pending").eq("published",false);
+      if(action==="publish")updateQuery=updateQuery.eq("approval_status","approved").eq("published",false);
+      const {data:updated,error}=await updateQuery.select("id").maybeSingle();
       if(error)throw error;
+      if(!updated)throw new Error("No record was updated. It may have changed already or your institution permissions do not allow this action.");
       await audit(action==="approve"?"institution_admin_approve_marks":action==="reject"?"institution_admin_reject_marks":"institution_admin_publish_marks",row,"Institution administrator "+action+"d marks.");
       notify(action==="approve"?"Marks approved.":action==="reject"?"Marks rejected.":"Result published.");
       await loadRecords();
