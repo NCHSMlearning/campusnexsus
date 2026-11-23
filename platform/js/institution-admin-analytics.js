@@ -29,6 +29,8 @@
   const body=$("iaAnalyticsUnitRows");if(body){const ranked=Object.entries(unitScores).map(([unit,s])=>({unit,count:s.length,average:s.reduce((a,b)=>a+b,0)/s.length})).sort((a,b)=>b.average-a.average).slice(0,20);body.innerHTML=ranked.length?ranked.map(x=>"<tr><td>"+esc(x.unit)+"</td><td>"+x.count+"</td><td>"+x.average.toFixed(1)+"%</td></tr>").join(""):'<tr><td colspan="3" class="ia-empty">No scored unit marks available.</td></tr>';}
   const stamp=$("iaMarksAnalyticsUpdated");if(stamp)stamp.textContent=records.length+" records · refreshed just now";
  }
+ function exportCsv(){const data=filtered();if(!data.length){notice("No academic marks match the current analytics filters.",true);return;}const cols=["student_id","admission_number","program","academic_year","block","subject_name","final_score","retake_status","retake_score","grade","final_grade","approval_status","published"];const csv=[cols.join(","),...data.map(r=>{const values={...r,analytics_score:score(r),analytics_grade:gradeFor(r,score(r)),analytics_status:score(r)===null?"PENDING":score(r)>=passThreshold(r)?"PASS":"FAIL"};return cols.map(k=>'"'+String(values[k]??"").replace(/"/g,'""')+'"').join(",");})].join("\n");const url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));const a=document.createElement("a");a.href=url;a.download="Institution_Academic_Analytics.csv";a.click();URL.revokeObjectURL(url);}
+ function printReport(){window.print();}
  async function load(){try{api=window.CampusInstitutionAdmin;if(!api?.institutionId)return;notice("Loading institution academic analytics…");
   const [marks,profileRows]=await Promise.all([
    db().from("student_marks").select("id,student_id,admission_number,program,block,subject_name,final_score,grade,final_grade,approval_status,published,academic_year,retake_status,retake_score,created_at").eq("institution_id",api.institutionId).order("created_at",{ascending:false}).limit(10000),
@@ -39,7 +41,7 @@
   const intakes=students.map(s=>s.intake_year&&s.intake_month?String(s.intake_year)+"-"+String(s.intake_month).toLowerCase():null).filter(Boolean);populate("iaAnalyticsIntake",intakes,"All intakes");
   paint();notice("Analytics loaded for "+(api.institution?.name||"this institution")+".");
  }catch(e){console.error("[Institution analytics]",e);notice("Analytics could not be loaded: "+e.message,true);}}
- function init(){["iaAnalyticsProgram","iaAnalyticsYear","iaAnalyticsIntake","iaAnalyticsBlock"].forEach(id=>$(id)?.addEventListener("change",paint));document.addEventListener("click",e=>{const nav=e.target.closest('#iaNav [data-view="reports"]');if(nav)setTimeout(load,100);});$("iaAnalyticsRefresh")?.addEventListener("click",load);api=window.CampusInstitutionAdmin;if(api?.institutionId&&$("view-reports")?.classList.contains("active"))load();}
+ function init(){["iaAnalyticsProgram","iaAnalyticsYear","iaAnalyticsIntake","iaAnalyticsBlock"].forEach(id=>$(id)?.addEventListener("change",paint));document.addEventListener("click",e=>{const nav=e.target.closest('#iaNav [data-view="reports"]');if(nav)setTimeout(load,100);});$("iaAnalyticsRefresh")?.addEventListener("click",load);$("iaAnalyticsExport")?.addEventListener("click",exportCsv);$("iaAnalyticsPrint")?.addEventListener("click",printReport);api=window.CampusInstitutionAdmin;if(api?.institutionId&&$("view-reports")?.classList.contains("active"))load();}
  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init,{once:true});else init();
- window.InstitutionAdminAnalytics={refresh:load};
+ window.InstitutionAdminAnalytics={refresh:load,export:exportCsv,print:printReport};
 })();
