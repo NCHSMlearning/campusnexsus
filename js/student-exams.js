@@ -190,12 +190,12 @@ function examAttemptState(exam){
  if(resetAuthorized)return 'retake_authorized';
  const submitted=!!attempt?.submitted_at||['submitted','completed','graded','released','pending_review'].includes(norm(attempt?.status));
  if(!submitted)return examState(exam);
- const released=summary.released===true||summary.published===true||['released','published'].includes(norm(summary.result_status));
+ const released=summary.is_released===true||summary.released===true||summary.published===true||['released','published'].includes(norm(summary.result_status));
  return released?'released':'pending_release';
 }
 function showStudentExamResult(examId){
  const exam=state.exams.find(e=>String(e.id)===String(examId)),result=state.examResults[String(examId)]||{},attempt=result.attempt,summary=result.summary||{};
- if(!attempt?.id||!(summary.released===true||summary.published===true||['released','published'].includes(norm(summary.result_status)))){notify('Your result is not yet released by the administrator.');return;}
+ if(!attempt?.id||!(summary.is_released===true||summary.released===true||summary.published===true||['released','published'].includes(norm(summary.result_status)))){notify('Your result is not yet released by the administrator.');return;}
  let modal=document.getElementById('student-exam-result-modal');
  if(!modal){modal=document.createElement('div');modal.id='student-exam-result-modal';modal.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(15,23,42,.68);display:flex;align-items:center;justify-content:center;padding:16px;';modal.innerHTML='<section style="background:#fff;width:min(100%,1000px);max-height:90vh;overflow:auto;border-radius:14px;padding:20px;"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px;"><h2 id="student-result-title" style="margin:0;color:#0f172a;">Examination result</h2><button type="button" id="student-result-close" style="border:0;background:#e2e8f0;border-radius:8px;padding:9px 12px;cursor:pointer;">Close</button></div><div id="student-result-content" style="margin-top:16px;">Loading result details…</div></section>';document.body.appendChild(modal);modal.addEventListener('click',e=>{if(e.target===modal)modal.remove();});modal.querySelector('#student-result-close').addEventListener('click',()=>modal.remove());}
  const content=modal.querySelector('#student-result-content'),title=modal.querySelector('#student-result-title');title.textContent=val(exam?.title,exam?.exam_name,'Examination')+' · Released result';content.textContent='Loading your detailed result…';
@@ -284,15 +284,18 @@ async function loadExams(){
   state.exams=(data||[]).filter(e=>eligible(e,state.profile));
   const examIds=state.exams.map(e=>e.id);state.examResults={};
   if(examIds.length){
-   const [attemptsResult,summaryResult]=await Promise.all([
+   const [attemptsResult,summaryResult,releasedResult]=await Promise.all([
     state.client.from('exam_attempts').select('id,exam_id,attempt_number,status,started_at,submitted_at,updated_at').eq('student_id',state.user.id).in('exam_id',examIds).order('attempt_number',{ascending:false}),
-    state.client.from('exam_grades').select('exam_id,attempt_id,marks,total_score,score,total_marks,percentage,result_status,released,published,allow_retake,retake_unlocked,released_at,published_at,updated_at,question_id').eq('student_id',state.user.id).in('exam_id',examIds).eq('question_id','00000000-0000-0000-0000-000000000000').order('updated_at',{ascending:false})
+    state.client.from('exam_grades').select('id,exam_id,attempt_id,marks,total_score,score,total_marks,percentage,result_status,released,published,allow_retake,retake_unlocked,released_at,published_at,updated_at,question_id').eq('student_id',state.user.id).in('exam_id',examIds).eq('question_id','00000000-0000-0000-0000-000000000000').order('updated_at',{ascending:false}),
+    state.client.from('released_exam_results').select('result_id,exam_id,released_at').eq('student_id',String(state.user.id)).in('exam_id',examIds)
    ]);
    if(attemptsResult.error)console.warn('Student exam attempt status lookup:',attemptsResult.error.message);
    if(summaryResult.error)console.warn('Student exam release status lookup:',summaryResult.error.message);
+   if(releasedResult.error)console.warn('Student released-result lookup:',releasedResult.error.message);
+   const releasedIds=new Set((releasedResult.data||[]).map(r=>String(r.result_id)));
    state.history=attemptsResult.data||[];const latestAttempts={},latestSummaries={};
+   (summaryResult.data||[]).forEach(g=>{if(releasedIds.has(String(g.id)))g.is_released=true;const k=String(g.exam_id);if(!latestSummaries[k]||new Date(g.updated_at||0)>new Date(latestSummaries[k].updated_at||0))latestSummaries[k]=g;});
    state.history.forEach(a=>{const k=String(a.exam_id);if(!latestAttempts[k]||Number(a.attempt_number||1)>Number(latestAttempts[k].attempt_number||1))latestAttempts[k]=a;});
-   (summaryResult.data||[]).forEach(g=>{const k=String(g.exam_id);if(!latestSummaries[k]||new Date(g.updated_at||0)>new Date(latestSummaries[k].updated_at||0))latestSummaries[k]=g;});
    Object.keys(latestAttempts).forEach(k=>{state.examResults[k]={attempt:latestAttempts[k],summary:latestSummaries[k]||null};});
    Object.keys(latestSummaries).forEach(k=>{if(!state.examResults[k])state.examResults[k]={attempt:null,summary:latestSummaries[k]};});
   }else{state.history=[];}
