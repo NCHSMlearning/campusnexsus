@@ -89,6 +89,7 @@
                 <div class="menu-label">Monitoring</div>
                 <ul class="sidebar-menu">
                     <li><a data-tab="liveStudents" onclick="switchTab('liveStudents')"><i class="fas fa-eye"></i> Live Students <span class="badge-sidebar success" id="liveBadge">0</span></a></li>
+                    <li><a data-tab="liveCameraFeed" onclick="switchTab('liveCameraFeed')"><i class="fas fa-video"></i> Live Camera Feed <span class="badge-sidebar warning" id="lecturerCameraBadge">0</span></a></li>
                 </ul>
             </div>
             <div class="menu-section">
@@ -538,6 +539,47 @@
             </div>
         </section>
 
+        <section id="liveCameraFeed" class="tab-content">
+            <div style="background:linear-gradient(135deg,#1e1b4b,#312e81);border-radius:16px;padding:20px 24px;margin-bottom:18px;color:#fff;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;">
+                <div><h2 style="margin:0;font-weight:800;"><i class="fas fa-video" style="color:#FDB913;"></i> Live Camera Feed</h2>
+                <p style="margin:5px 0 0;color:#e2e8f0;font-size:13px;">Camera snapshots, live exam activity and proctoring evidence for your institution and programme</p></div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <button type="button" onclick="loadLecturerLiveCameraFeed()" style="border:1px solid #ffffff55;background:#ffffff20;color:#fff;border-radius:8px;padding:9px 14px;font-weight:700;cursor:pointer;"><i class="fas fa-sync"></i> Refresh</button>
+                    <span style="padding:9px 12px;border-radius:8px;background:#ffffff20;font-size:12px;"><i class="fas fa-circle" style="color:#4ade80;font-size:9px;"></i> Auto-refresh every 15 seconds</span>
+                </div>
+            </div>
+            <div id="lecturerCameraFeedStats" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px;">
+                <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:12px 16px;min-width:130px;"><strong id="lecturerCameraLiveCount" style="display:block;font-size:22px;color:#0f2942;">0</strong><small style="color:#64748b;">Live exam sessions</small></div>
+                <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:12px 16px;min-width:130px;"><strong id="lecturerCameraSnapshotCount" style="display:block;font-size:22px;color:#047857;">0</strong><small style="color:#64748b;">With camera snapshot</small></div>
+                <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:12px 16px;min-width:130px;"><strong id="lecturerCameraAlertCount" style="display:block;font-size:22px;color:#b45309;">0</strong><small style="color:#64748b;">Recent alerts</small></div>
+            </div>
+            <div id="lecturerCameraFeedLoading" style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:36px;text-align:center;color:#64748b;"><i class="fas fa-spinner fa-spin"></i> Loading live camera sessions…</div>
+            <div id="lecturerCameraFeedGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;"></div>
+            <div id="lecturerCameraFeedEmpty" hidden style="background:#fff;border:1px dashed #cbd5e1;border-radius:12px;padding:34px;text-align:center;color:#64748b;"><i class="fas fa-video-slash" style="font-size:28px;display:block;margin-bottom:10px;"></i>No active examination sessions are currently available for camera monitoring.</div>
+        </section>
+
+        <div id="lecturerCameraModal" role="dialog" aria-modal="true" aria-label="Student live camera and proctoring evidence" style="display:none;position:fixed;inset:0;z-index:20000;background:rgba(2,6,23,.86);padding:18px;align-items:center;justify-content:center;">
+            <div style="width:min(980px,100%);max-height:94vh;overflow:auto;background:#fff;border-radius:16px;box-shadow:0 25px 70px rgba(0,0,0,.35);">
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:16px 20px;background:#0b2942;color:#fff;">
+                    <div><strong><i class="fas fa-video"></i> Student Camera Feed</strong><div style="font-size:12px;color:#cbd5e1;margin-top:4px;"><span id="lecturerCameraModalStudent"></span> · <span id="lecturerCameraModalExam"></span></div></div>
+                    <button type="button" onclick="closeLecturerCameraView()" aria-label="Close camera viewer" style="background:transparent;border:0;color:#fff;font-size:25px;cursor:pointer;">&times;</button>
+                </div>
+                <div style="padding:18px;">
+                    <div id="lecturerCameraModalStatus" role="status" style="font-size:12px;color:#64748b;margin-bottom:12px;">Connecting…</div>
+                    <img id="lecturerCameraModalImage" alt="Latest student examination camera snapshot" hidden style="display:block;width:100%;max-height:520px;object-fit:contain;background:#0f172a;border-radius:10px;">
+                    <div id="lecturerCameraModalNoImage" style="min-height:220px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;background:#0f172a;color:#cbd5e1;border-radius:10px;"><i class="fas fa-camera-slash" style="font-size:34px;"></i><span>No camera snapshot available yet</span></div>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;margin:14px 0;">
+                        <button type="button" onclick="refreshLecturerCameraView()" style="border:0;border-radius:8px;padding:9px 14px;background:#0b3552;color:#fff;font-weight:700;cursor:pointer;"><i class="fas fa-sync"></i> Refresh now</button>
+                        <button type="button" onclick="requestLecturerCameraSnapshot()" style="border:0;border-radius:8px;padding:9px 14px;background:#d4a017;color:#10243a;font-weight:700;cursor:pointer;"><i class="fas fa-camera"></i> Request snapshot</button>
+                    </div>
+                    <h4 style="margin:16px 0 8px;color:#10243a;">Recent snapshots</h4>
+                    <div id="lecturerCameraModalGallery" style="display:flex;gap:10px;overflow-x:auto;padding:4px 0 12px;"></div>
+                    <h4 style="margin:16px 0 8px;color:#10243a;">Recent proctoring alerts</h4>
+                    <div id="lecturerCameraModalAlerts" style="max-height:180px;overflow:auto;">Loading…</div>
+                </div>
+            </div>
+        </div>
+
         <section id="profile" class="tab-content">
             <div style="background: linear-gradient(135deg, #1e3a5f, #0A3D62); border-radius: 16px; padding: 20px 25px; margin-bottom: 20px; box-shadow: 0 4px 20px rgba(10,61,98,0.3);">
                 <div>
@@ -649,7 +691,11 @@
     const itemsPerPage = 10;
     let lecturerId = null;
     let lecturerProgram = null;   // lecturer's program/department
+    let lecturerInstitutionId = null;
     let lecturerSessionData = null;
+    let lecturerCameraStudent = null;
+    let lecturerCameraExam = null;
+    let lecturerCameraRefreshTimer = null;
     const lecturerOwnerIds = new Set();
 // Keep the canonical .html route. Rewriting this page to an extensionless URL
 // can trigger hosting fallback responses and break stable dashboard navigation.
@@ -680,6 +726,7 @@
             lecturerId = data.user_id || data.id || data.staff_id || data.auth_user_id || data.profile_id;
             [data.user_id, data.id, data.staff_id, data.auth_user_id, data.profile_id].filter(Boolean).forEach(v => lecturerOwnerIds.add(String(v).trim().toLowerCase()));
             lecturerProgram = data.program || data.department || data.course || null;
+            lecturerInstitutionId = data.institution_id || null;
 
             document.querySelectorAll('#adminName, #lecturerName, #profileName').forEach(el => { if (el) el.textContent = name; });
             document.querySelectorAll('#adminEmail, #profileEmail').forEach(el => { if (el) el.textContent = email; });
@@ -722,6 +769,7 @@
             results: ['Results', 'View student results', 'fa-graduation-cap'],
             attendance: ['Attendance', 'Track student attendance', 'fa-clipboard-check'],
             liveStudents: ['Live Students', 'Students currently taking exams', 'fa-eye'],
+            liveCameraFeed: ['Live Camera Feed', 'Monitor camera snapshots and proctoring activity', 'fa-video'],
             profile: ['Profile', 'Your profile information', 'fa-user-circle'],
             security: ['Security', 'Security settings', 'fa-shield-alt']
         };
@@ -734,6 +782,7 @@
         if (tab === 'results') loadResults();
         if (tab === 'attendance') loadAttendance();
         if (tab === 'liveStudents') loadLiveStudents();
+        if (tab === 'liveCameraFeed') loadLecturerLiveCameraFeed();
 
         if (window.innerWidth <= 768) {
             document.getElementById('sidebar').classList.remove('open');
@@ -1495,7 +1544,8 @@
         loading.textContent = 'Checking live exam activity...';
 
         try {
-            let examQuery = sb.from('exams').select('id, exam_name, target_program').order('id', { ascending: false });
+            if (!lecturerInstitutionId) throw new Error('Your lecturer account is not linked to an institution. Please sign in again.');
+            let examQuery = sb.from('exams').select('id, exam_name, target_program, institution_id').eq('institution_id', lecturerInstitutionId).order('id', { ascending: false });
             if (lecturerProgram) examQuery = examQuery.eq('target_program', lecturerProgram);
 
             const { data: exams, error: examsError } = await examQuery;
@@ -1587,6 +1637,207 @@
             tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:#b91c1c;">Live student data could not be loaded. Please refresh or contact the administrator.</td></tr>';
         }
     }
+    // ============================================================
+    // LECTURER LIVE CAMERA FEED — institution + programme scoped
+    // The exam page uploads periodic snapshots; this is not a continuous
+    // WebRTC stream. Refreshes show the latest available student snapshot.
+    // ============================================================
+    function lecturerCameraEscape(value) {
+        return String(value == null ? '' : value).replace(/[&<>"']/g, ch => ({
+            '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+        }[ch]));
+    }
+
+    async function loadLecturerLiveCameraFeed() {
+        const loading = document.getElementById('lecturerCameraFeedLoading');
+        const grid = document.getElementById('lecturerCameraFeedGrid');
+        const empty = document.getElementById('lecturerCameraFeedEmpty');
+        if (!loading || !grid) return;
+        loading.hidden = false;
+        loading.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading live camera sessions…';
+        grid.innerHTML = '';
+        if (!lecturerInstitutionId) {
+            loading.hidden = true;
+            empty.hidden = false;
+            empty.textContent = 'Camera monitoring is unavailable because this lecturer account has no verified institution assignment. Please sign in again.';
+            return;
+        }
+        try {
+            await loadLiveStudents();
+            const sessions = Array.isArray(liveStudentsData) ? liveStudentsData : [];
+            const liveCount = document.getElementById('lecturerCameraLiveCount');
+            const snapshotCount = document.getElementById('lecturerCameraSnapshotCount');
+            const alertCount = document.getElementById('lecturerCameraAlertCount');
+            const badge = document.getElementById('lecturerCameraBadge');
+            if (liveCount) liveCount.textContent = sessions.length;
+            if (badge) badge.textContent = sessions.length;
+            if (!sessions.length) {
+                if (snapshotCount) snapshotCount.textContent = '0';
+                if (alertCount) alertCount.textContent = '0';
+                loading.hidden = true;
+                empty.hidden = false;
+                return;
+            }
+            const examIds = [...new Set(sessions.map(s => Number(s.exam_id)).filter(Number.isFinite))];
+            const studentIds = [...new Set(sessions.map(s => String(s.student_id)))];
+            const [snapshotsResult, alertsResult] = await Promise.all([
+                sb.from('exam_proctoring_logs')
+                    .select('id,student_id,exam_id,snapshot_url,screenshot_data,timestamp,event_type')
+                    .in('exam_id', examIds)
+                    .in('student_id', studentIds)
+                    .not('snapshot_url', 'is', null)
+                    .gte('timestamp', new Date(Date.now() - 10 * 60 * 1000).toISOString())
+                    .order('timestamp', { ascending: false })
+                    .limit(250),
+                sb.from('exam_proctoring_logs')
+                    .select('student_id,exam_id,event_type,timestamp')
+                    .in('exam_id', examIds)
+                    .in('student_id', studentIds)
+                    .in('event_type', ['multiple_faces_detected','face_missing','tab_switched'])
+                    .gte('timestamp', new Date(Date.now() - 10 * 60 * 1000).toISOString())
+                    .order('timestamp', { ascending: false })
+                    .limit(250)
+            ]);
+            if (snapshotsResult.error) throw snapshotsResult.error;
+            if (alertsResult.error) throw alertsResult.error;
+            const latestSnapshot = new Map();
+            (snapshotsResult.data || []).forEach(row => {
+                const key = String(row.student_id) + ':' + String(row.exam_id);
+                if (!latestSnapshot.has(key)) latestSnapshot.set(key, row);
+            });
+            const alertMap = new Map();
+            (alertsResult.data || []).forEach(row => {
+                const key = String(row.student_id) + ':' + String(row.exam_id);
+                alertMap.set(key, (alertMap.get(key) || 0) + 1);
+            });
+            if (snapshotCount) snapshotCount.textContent = latestSnapshot.size;
+            if (alertCount) alertCount.textContent = (alertsResult.data || []).length;
+            empty.hidden = true;
+            grid.innerHTML = sessions.map(row => {
+                const key = String(row.student_id) + ':' + String(row.exam_id);
+                const snap = latestSnapshot.get(key);
+                const student = row.student || {};
+                const name = student.full_name || ('Student ' + String(row.student_id).slice(0,8));
+                const examName = row.exam_name || 'Examination';
+                const progress = Number(row.total_questions) > 0
+                    ? Math.round(Number(row.answered_count || 0) / Number(row.total_questions) * 100) : 0;
+                const alertTotal = alertMap.get(key) || 0;
+                const image = snap && (snap.snapshot_url || snap.screenshot_data);
+                const safeImage = image && (/^https:\/\//i.test(image) || /^data:image\/(?:jpeg|png|webp);base64,/i.test(image)) ? image : '';
+                const imageMarkup = safeImage
+                    ? '<img src="' + lecturerCameraEscape(safeImage) + '" alt="Latest camera snapshot for ' + lecturerCameraEscape(name) + '" style="width:100%;height:190px;object-fit:cover;background:#0f172a;">'
+                    : '<div style="height:190px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;background:#0f172a;color:#cbd5e1;"><i class="fas fa-camera-slash" style="font-size:30px;"></i><span>No recent camera snapshot</span></div>';
+                return '<article style="background:#fff;border:1px solid #dbe4ee;border-radius:14px;overflow:hidden;box-shadow:0 4px 14px rgba(15,23,42,.05);">' +
+                    '<div style="position:relative;">' + imageMarkup +
+                    '<span style="position:absolute;top:10px;left:10px;background:#065f46;color:#fff;padding:4px 8px;border-radius:20px;font-size:11px;"><i class="fas fa-circle" style="font-size:7px;"></i> LIVE SESSION</span>' +
+                    (alertTotal ? '<span style="position:absolute;top:10px;right:10px;background:#b91c1c;color:#fff;padding:4px 8px;border-radius:20px;font-size:11px;">' + alertTotal + ' alerts</span>' : '') +
+                    '</div><div style="padding:14px;"><strong style="display:block;color:#10243a;">' + lecturerCameraEscape(name) + '</strong>' +
+                    '<div style="font-size:12px;color:#64748b;margin:4px 0 10px;">' + lecturerCameraEscape(examName) + ' · ' + progress + '% completed</div>' +
+                    '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:11px;color:#64748b;margin-bottom:12px;">' +
+                    '<span>' + (snap ? 'Snapshot: ' + lecturerCameraEscape(new Date(snap.timestamp).toLocaleTimeString('en-KE')) : 'Awaiting first snapshot') + '</span>' +
+                    '<span>' + (alertTotal ? 'Review alerts' : 'No recent alerts') + '</span></div>' +
+                    '<button type="button" onclick="openLecturerCameraView(' + JSON.stringify(String(row.student_id)) + ',' + Number(row.exam_id) + ',' + JSON.stringify(name) + ',' + JSON.stringify(examName) + ')" style="width:100%;padding:9px 12px;border:0;border-radius:8px;background:#0b3552;color:#fff;font-weight:700;cursor:pointer;"><i class="fas fa-video"></i> View camera &amp; evidence</button></div></article>';
+            }).join('');
+            loading.hidden = true;
+        } catch (error) {
+            console.error('Lecturer live camera feed failed:', error);
+            loading.hidden = false;
+            loading.textContent = 'Unable to load camera monitoring. ' + (error.message || 'Please try again.');
+            if (empty) empty.hidden = true;
+        }
+    }
+
+    window.openLecturerCameraView = async function(studentId, examId, studentName, examName) {
+        lecturerCameraStudent = String(studentId);
+        lecturerCameraExam = Number(examId);
+        const modal = document.getElementById('lecturerCameraModal');
+        document.getElementById('lecturerCameraModalStudent').textContent = studentName;
+        document.getElementById('lecturerCameraModalExam').textContent = examName;
+        document.getElementById('lecturerCameraModalStatus').textContent = 'Connecting…';
+        document.getElementById('lecturerCameraModalImage').hidden = true;
+        document.getElementById('lecturerCameraModalNoImage').hidden = false;
+        document.getElementById('lecturerCameraModalAlerts').textContent = 'Loading recent proctoring alerts…';
+        document.getElementById('lecturerCameraModalGallery').innerHTML = '';
+        modal.style.display = 'flex';
+        await refreshLecturerCameraView();
+        if (lecturerCameraRefreshTimer) clearInterval(lecturerCameraRefreshTimer);
+        lecturerCameraRefreshTimer = setInterval(refreshLecturerCameraView, 10000);
+    };
+
+    async function refreshLecturerCameraView() {
+        if (!lecturerCameraStudent || !lecturerCameraExam) return;
+        const sid = lecturerCameraStudent, eid = lecturerCameraExam;
+        try {
+            const [snapshotsResult, alertsResult] = await Promise.all([
+                sb.from('exam_proctoring_logs').select('id,snapshot_url,screenshot_data,timestamp,event_type')
+                    .eq('student_id', sid).eq('exam_id', eid).not('snapshot_url','is',null)
+                    .order('timestamp',{ascending:false}).limit(20),
+                sb.from('exam_proctoring_logs').select('event_type,timestamp,severity,details')
+                    .eq('student_id', sid).eq('exam_id', eid)
+                    .in('event_type',['multiple_faces_detected','face_missing','tab_switched'])
+                    .order('timestamp',{ascending:false}).limit(10)
+            ]);
+            if (snapshotsResult.error) throw snapshotsResult.error;
+            if (alertsResult.error) throw alertsResult.error;
+            const snapshots = snapshotsResult.data || [];
+            const latest = snapshots[0];
+            const img = document.getElementById('lecturerCameraModalImage');
+            const noImage = document.getElementById('lecturerCameraModalNoImage');
+            if (latest && (latest.snapshot_url || latest.screenshot_data)) {
+                const src = latest.snapshot_url || latest.screenshot_data;
+                if (/^https:\/\//i.test(src) || /^data:image\/(?:jpeg|png|webp);base64,/i.test(src)) {
+                    img.src = src + (src.startsWith('https://') ? (src.includes('?') ? '&' : '?') + 't=' + Date.now() : '');
+                    img.hidden = false; noImage.hidden = true;
+                    document.getElementById('lecturerCameraModalStatus').textContent = 'Latest snapshot · ' + new Date(latest.timestamp).toLocaleString('en-KE');
+                }
+            } else {
+                img.hidden = true; noImage.hidden = false;
+                document.getElementById('lecturerCameraModalStatus').textContent = 'No camera snapshot received yet';
+            }
+            document.getElementById('lecturerCameraModalGallery').innerHTML = snapshots.map(s => {
+                const src = s.snapshot_url || s.screenshot_data;
+                if (!src || !/^https:\/\//i.test(src) && !/^data:image\//i.test(src)) return '';
+                return '<a href="' + lecturerCameraEscape(src) + '" target="_blank" rel="noopener" style="flex:0 0 110px;color:#334155;text-decoration:none;font-size:10px;">' +
+                    '<img src="' + lecturerCameraEscape(src) + '" alt="Exam snapshot" style="width:110px;height:78px;object-fit:cover;border-radius:7px;background:#0f172a;">' +
+                    '<span style="display:block;margin-top:3px;">' + lecturerCameraEscape(new Date(s.timestamp).toLocaleTimeString('en-KE')) + '</span></a>';
+            }).join('');
+            const alerts = alertsResult.data || [];
+            document.getElementById('lecturerCameraModalAlerts').innerHTML = alerts.length
+                ? alerts.map(a => '<div style="padding:7px 0;border-bottom:1px solid #e2e8f0;font-size:12px;"><strong>' + lecturerCameraEscape(a.event_type) + '</strong><span style="float:right;color:#64748b;">' + lecturerCameraEscape(new Date(a.timestamp).toLocaleString('en-KE')) + '</span></div>').join('')
+                : '<span style="color:#64748b;">No recent proctoring alerts.</span>';
+        } catch (error) {
+            document.getElementById('lecturerCameraModalStatus').textContent = 'Unable to refresh feed: ' + error.message;
+        }
+    }
+
+    window.requestLecturerCameraSnapshot = async function() {
+        if (!lecturerCameraStudent || !lecturerCameraExam) return;
+        try {
+            const { error } = await sb.from('exam_proctoring_logs').insert({
+                student_id: lecturerCameraStudent,
+                exam_id: lecturerCameraExam,
+                event_type: 'snapshot_requested',
+                details: 'Lecturer requested a camera snapshot from the live examination session',
+                timestamp: new Date().toISOString(),
+                severity: 'info'
+            });
+            if (error) throw error;
+            document.getElementById('lecturerCameraModalStatus').textContent = 'Snapshot request sent. Waiting for the next student camera capture…';
+            setTimeout(refreshLecturerCameraView, 3000);
+        } catch (error) {
+            document.getElementById('lecturerCameraModalStatus').textContent = 'Snapshot request failed: ' + error.message;
+        }
+    };
+
+    window.closeLecturerCameraView = function() {
+        const modal = document.getElementById('lecturerCameraModal');
+        if (modal) modal.style.display = 'none';
+        if (lecturerCameraRefreshTimer) clearInterval(lecturerCameraRefreshTimer);
+        lecturerCameraRefreshTimer = null;
+        lecturerCameraStudent = null;
+        lecturerCameraExam = null;
+    };
+
     // ============================================================
     // RESET STUDENT EXAM
     // ============================================================
@@ -2202,9 +2453,9 @@ window.viewLecturerStudentProgress = async function(studentId, studentName, exam
         if (!window.nchsmLiveStudentsRefreshTimer) {
             window.nchsmLiveStudentsRefreshTimer = setInterval(() => {
                 const liveTab = document.getElementById('liveStudents');
-                if (liveTab && liveTab.classList.contains('active')) {
-                    loadLiveStudents();
-                }
+                const cameraTab = document.getElementById('liveCameraFeed');
+                if (liveTab && liveTab.classList.contains('active')) loadLiveStudents();
+                if (cameraTab && cameraTab.classList.contains('active')) loadLecturerLiveCameraFeed();
             }, 15000);
         }
 
