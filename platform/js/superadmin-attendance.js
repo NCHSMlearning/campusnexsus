@@ -16,8 +16,24 @@
  }
  async function load(){
   const client=db();if(!client?.from){note("Supabase client is not ready.",true);return;}
-  try{const {data,error}=await client.from("geo_attendance_logs").select("*").order("check_in_time",{ascending:false}).limit(5000);if(error)throw error;state.rows=data||[];render();note("Attendance refreshed · "+state.rows.length+" records loaded.");}
-  catch(e){console.error("[Super Admin attendance]",e);note("Unable to load attendance records: "+e.message,true);}
+  try{
+   const [geo,manual,students]=await Promise.all([
+    client.from("geo_attendance_logs").select("*").order("check_in_time",{ascending:false}).limit(5000),
+    client.from("attendance").select("id,student_id,date,timestamp,course_or_rotation,status,marked_by,institution_id").order("timestamp",{ascending:false}).limit(5000),
+    client.from("students").select("id,full_name,admission_number,course,institution_id").limit(10000)
+   ]);
+   if(geo.error)throw geo.error;
+   if(manual.error)console.warn("[Super Admin attendance] Manual attendance history unavailable:",manual.error.message);
+   if(students.error)console.warn("[Super Admin attendance] Student directory unavailable:",students.error.message);
+   const directory=students.data||[];
+   const byId=new Map(directory.map(x=>[String(x.id),x]));
+   const options=$("att_student_id");
+   if(options){const oldValue=options.value;options.innerHTML='<option value="">-- Select Student --</option>'+directory.map(x=>'<option value="'+esc(x.id)+'" data-institution="'+esc(x.institution_id||"")+'">'+esc(x.full_name||x.admission_number||x.id)+' · '+esc(x.admission_number||"")+'</option>').join("");if(directory.some(x=>String(x.id)===oldValue))options.value=oldValue;}
+   const geoRows=geo.data||[];
+   const manualRows=(manual.data||[]).map(x=>{const student=byId.get(String(x.student_id))||{};return{id:"manual-"+x.id,student_name:student.full_name||student.admission_number||x.student_id,student_id:student.admission_number||x.student_id,program:student.course||"",session_type:"Manual",target_name:x.course_or_rotation||"Manual check-in",check_in_time:x.timestamp||x.date,attendance_status:x.status||"Present",is_verified:String(x.status||"").toLowerCase()==="present",institution_id:x.institution_id||student.institution_id||"",verification_source:"Manual attendance",_manual:true};});
+   state.rows=[...geoRows,...manualRows].sort((a,b)=>new Date(b.check_in_time||b.created_at||0)-new Date(a.check_in_time||a.created_at||0));
+   render();note("Attendance refreshed · "+state.rows.length+" geo and manual records loaded.");
+  }catch(e){console.error("[Super Admin attendance]",e);note("Unable to load attendance records: "+e.message,true);}
  }
  function exportRows(rows,name){if(!rows.length){note("There are no records to export.",true);return;}const cols=["student_name","student_id","registration_number","program","session_type","target_name","check_in_time","attendance_status","is_verified","distance_meters","accuracy_m","latitude","longitude","institution_id"];const csv=[cols.join(","),...rows.map(r=>cols.map(k=>'"'+String(r[k]??"").replace(/"/g,'""')+'"').join(","))].join("\n");const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));a.download=name;a.click();URL.revokeObjectURL(a.href);}
  function init(){
@@ -27,7 +43,18 @@
   window.filterAttendance=render;window.resetAttendanceFilters=()=>{["attendance_search","attendance_program_filter","attendance_type_filter","attendance_status_filter"].forEach((id,i)=>{const el=$(id);if(el)el.value=i===0?"":"all";});render();};
   window.adminCheckIn=()=>note("Administrator self check-in is not available from the student geo-attendance register. Use your staff attendance workflow.",true);
   document.querySelectorAll('[data-tab="attendance"]').forEach(el=>el.addEventListener("click",()=>setTimeout(load,120)));
-  const form=$("manual-attendance-form");form?.addEventListener("submit",e=>{e.preventDefault();note("Manual attendance creation is disabled until the institution's approved manual-attendance schema and audit workflow are confirmed.",true);});
+  const form=$("manual-attendance-form");form?.addEventListener("submit",async e=>{
+   e.preventDefault();const studentId=$("att_student_id")?.value;if(!studentId){note("Select a student first.",true);return;}
+   const studentOption=$("att_student_id").selectedOptions[0],institutionId=studentOption?.dataset.institution||null;
+   const dateValue=$("att_date")?.value||today(),timeValue=$("att_time")?.value||"12:00";
+   const session=$("att_session_type")?.value||"classroom",department=$("att_department")?.value||"",locationValue=$("att_location")?.value||"";
+   const courseLabel=[department,session,locationValue].filter(Boolean).join(" · ");
+   try{const auth=await db().auth.getUser();if(auth.error)throw auth.error;
+    const payload={student_id:studentId,date:dateValue,timestamp:new Date(dateValue+"T"+timeValue+":00").toISOString(),course_or_rotation:courseLabel,status:"Present",marked_by:auth.data?.user?.id||null,institution_id:institutionId};
+    const {error}=await db().from("attendance").insert(payload);if(error)throw error;
+    note("Manual attendance recorded successfully.");form.reset();if($("att_date"))$("att_date").value=today();await load();
+   }catch(err){note("Manual attendance could not be recorded: "+err.message,true);}
+  });
   if($("attendance")?.classList.contains("active"))load();
  }
  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init,{once:true});else init();
