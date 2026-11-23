@@ -159,17 +159,17 @@
 
             const { data: identity, error } = await supabase.rpc('current_lecturer_staff_assignment_identity');
             if (error) throw error;
-            if (!identity?.id || String(identity.id) !== String(user.id)) {
-                throw new Error('Active lecturer identity could not be verified.');
+            if (!identity?.id || String(identity.id) !== String(user.id) || !identity.assignment_id) {
+                throw new Error('Lecturer assignment mapping is missing or ambiguous. Ask the institution administrator to reconcile your assignments.');
             }
 
             _identityCache.authUuid = user.id;
-            _identityCache.staffId = String(identity.id);
+            _identityCache.staffId = String(identity.assignment_id);
             _identityCache.email = user.email || currentLecturerEmailSync();
             _identityCache.name = window.lecturerDB?.getCurrentUserProfile?.()?.full_name || user.user_metadata?.full_name || '';
             _identityCache.program = identity.program || '';
             _identityCache.resolved = true;
-            window.CORRECT_LECTURER_ID = String(identity.id);
+            window.CORRECT_LECTURER_ID = String(identity.assignment_id);
             return _identityCache;
         })().catch(error => {
             _identityCache.resolved = false;
