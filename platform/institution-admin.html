@@ -339,6 +339,15 @@
             
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px;">
                 <div>
+                    <label style="font-weight: 600; font-size: 13px; display: block; margin-bottom: 4px;">Academic Structure *</label>
+                    <select id="program_structure_type" required style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd; font-size: 14px;">
+                        <option value="Block">Blocks</option>
+                        <option value="Semester">Semesters</option>
+                        <option value="Term">Terms</option>
+                    </select>
+                    <small style="color:#64748b;">Choose how this programme divides its academic periods.</small>
+                </div>
+                <div>
                     <label style="font-weight: 600; font-size: 13px; display: block; margin-bottom: 4px;">Duration (Months)</label>
                     <input type="number" id="program_duration" placeholder="e.g., 24" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd; font-size: 14px;">
                 </div>
@@ -469,8 +478,8 @@
     
     <!-- ====== BLOCK MANAGEMENT ====== -->
     <div style="margin-top: 35px; border-top: 2px solid #e5e7eb; padding-top: 25px;">
-        <h3><i class="fas fa-layer-group"></i> Program Block Structure</h3>
-        <p style="color: #6b7280; font-size: 13px;">Define the curriculum blocks/semesters for each program.</p>
+        <h3><i class="fas fa-layer-group"></i> Program Academic Structure</h3>
+        <p id="program-structure-help" style="color: #6b7280; font-size: 13px;">Define the blocks, semesters or terms configured for the selected programme.</p>
         
         <div style="background: #f8f9fa; padding: 20px; border-radius: 12px; margin: 15px 0;">
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; align-items: end;">
@@ -481,8 +490,8 @@
                     </select>
                 </div>
                 <div>
-                    <label style="font-weight: 600; font-size: 13px; display: block; margin-bottom: 4px;">Block Name</label>
-                    <input type="text" id="block_name" placeholder="e.g., Block 3" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd;">
+                    <label style="font-weight: 600; font-size: 13px; display: block; margin-bottom: 4px;">Structure Name</label>
+                    <input type="text" id="block_name" placeholder="e.g., Block 3 / Semester 1 / Term 1" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd;">
                 </div>
                 <div>
                     <label style="font-weight: 600; font-size: 13px; display: block; margin-bottom: 4px;">Sequence</label>
