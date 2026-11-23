@@ -110,7 +110,7 @@ const LecturerCourses = {
 
             const { data: staff, error } = await supabase.rpc('current_lecturer_staff_assignment_identity');
             if (error) throw error;
-            if (!staff?.id) throw new Error('No active institution-linked lecturer assignment identity was returned.');
+            if (!staff?.id) throw new Error('No active institution-linked lecturer account identity was returned.');
 
             this.lecturerAssignmentId = String(staff.id).trim();
             this.currentProgram = String(staff.program || this.currentProgram || 'KRCHN').trim();
@@ -158,7 +158,7 @@ const LecturerCourses = {
             let units = [];
             const program = this.currentProgram || profile.program || 'KRCHN';
 
-            // Read only assignments linked to this lecturer's staff_records.id.
+            // Read only assignments linked to this lecturer's authenticated user UUID.
             const { data: assignmentRows, error: assignmentError } = await supabase
                 .from('lecturer_subject_assignments')
                 .select('id, lecturer_id, lecturer_name, subject_name, subject_code, block, program, academic_year')
