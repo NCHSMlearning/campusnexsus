@@ -18,15 +18,22 @@
     const name = institution.institution_name || "Your Institution";
     const schoolCode = String(institution.school_code || code).trim();
     const identity = schoolCode ? name + " (" + schoolCode + ")" : name;
-    const primary = institution.primary_color || institution.brand_colors?.[0] || "#082f49";
-    const secondary = institution.secondary_color || institution.brand_colors?.[1] || "#0f766e";
-    const gold = institution.brand_colors?.[2] || "#d4a017";
+    const palette = institution.brand_colors && typeof institution.brand_colors === "object" ? institution.brand_colors : [];
+    const normalizeColor = (value, fallback) => {
+      if (typeof value !== "string") return fallback;
+      if (/^#[0-9a-f]{3}$/i.test(value)) return "#" + value.slice(1).split("").map(ch => ch + ch).join("");
+      return /^#[0-9a-f]{6}$/i.test(value) ? value : fallback;
+    };
+    const primary = normalizeColor(institution.primary_color || (Array.isArray(palette) ? palette[0] : palette.primary), "#082f49");
+    const secondary = normalizeColor(institution.secondary_color || (Array.isArray(palette) ? palette[1] : palette.secondary), "#0f766e");
+    const gold = normalizeColor(Array.isArray(palette) ? palette[2] : (palette.gold || palette.accent || palette.tertiary), "#d4a017");
 
     document.documentElement.style.setProperty("--nchsm-navy", primary);
     document.documentElement.style.setProperty("--nchsm-teal", secondary);
     document.documentElement.style.setProperty("--nchsm-gold", gold);
     document.documentElement.style.setProperty("--institution-primary", primary);
     document.documentElement.style.setProperty("--institution-secondary", secondary);
+    document.documentElement.style.setProperty("--institution-gold", gold);
     document.documentElement.dataset.institutionLogin = "true";
     document.documentElement.dataset.institutionName = name;
     document.documentElement.dataset.institutionId = institution.institution_id;
