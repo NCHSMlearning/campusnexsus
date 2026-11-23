@@ -56,9 +56,12 @@
   if(!program||!block||!unit||!year){say("Select programme, block, unit and academic year first.",true);return;}
   loading=true;rows=[];renderRows();say("Loading approved registrations and existing marks…");
   try{
-   const {data:registrations,error:regError}=await db().from("student_unit_registrations").select("*").eq("institution_id",tenant()).eq("program",program).eq("block",block).eq("academic_year",Number(year)).eq("status","approved").limit(5000);
-   if(regError)throw regError;
-   const matching=(registrations||[]).filter(r=>String(r.unit_code||"")===String(units.find(u=>u.unit_name===unit)?.unit_code||"")||String(r.unit_name||"")===unit);
+   const registrationResult=await db().from("student_unit_registrations").select("*").eq("institution_id",tenant()).eq("program",program).eq("block",block).eq("academic_year",Number(year)).eq("status","approved").limit(5000);
+   // If the academic-management entitlement hides registrations, retain a safe
+   // marks-only fallback so existing institution marks can still be reviewed.
+   if(registrationResult.error)console.warn("[Institution marks capture] Registration lookup unavailable; using saved institution marks:",registrationResult.error.message);
+   const registrations=registrationResult.error?[]:(registrationResult.data||[]);
+   const matching=registrations.filter(r=>String(r.unit_code||"")===String(units.find(u=>u.unit_name===unit)?.unit_code||"")||String(r.unit_name||"")===unit);
    const studentIds=[...new Set(matching.map(r=>r.student_id).filter(Boolean).map(String))];
    let profiles=[];
    for(let i=0;i<studentIds.length;i+=150){
