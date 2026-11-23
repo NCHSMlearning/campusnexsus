@@ -70,8 +70,45 @@ function applyIdentity(){
  setText("iaSettingsName",name);setText("iaSettingsType",i.institution_type||"Institution");
  setText("setCode",code||"—");setText("setAdminEmail",i.admin_email||"—");setText("setContactEmail",i.contact_email||"—");setText("setPhone",i.contact_phone||"—");setText("setWebsite",i.website_url||"—");setText("setStatus",statusLabel(i.status));
  const logo=i.logo_url&&/^https:\/\//i.test(i.logo_url)?i.logo_url:"";
- ["iaLogo","iaProfileLogo","iaSettingsLogo"].forEach(id=>{const el=$(id);if(!el)return;if(logo){const img=document.createElement("img");img.src=logo;img.alt=name+" logo";el.replaceChildren(img);}else el.textContent=initials(name);});
- const topLogo=$("iaTopInstitutionLogo");if(topLogo){if(logo){const img=document.createElement("img");img.src=logo;img.alt=name+" logo";topLogo.replaceChildren(img);}else topLogo.textContent=initials(name);}
+ const validColor=(value,fallback)=>typeof value==="string"&&/^#[0-9a-f]{3,8}$/i.test(value)?value:fallback;
+ const palette=Array.isArray(i.brand_colors)?i.brand_colors:[];
+ const primary=validColor(i.primary_color,"#0c1445");
+ const secondary=validColor(i.secondary_color,"#0f766e");
+ const gold=validColor(palette[2]||i.accent_color,"#fdb913");
+ const root=document.documentElement;
+ root.dataset.institutionId=String(i.id||"");
+ root.dataset.institutionName=name;
+ root.dataset.institutionCode=code;
+ root.style.setProperty("--navy",primary);
+ root.style.setProperty("--teal",secondary);
+ root.style.setProperty("--gold",gold);
+ root.style.setProperty("--ia-super-navy",primary);
+ root.style.setProperty("--ia-super-indigo",secondary);
+ root.style.setProperty("--ia-super-gold",gold);
+ let brandStyle=$("iaInstitutionBrandTheme");
+ if(!brandStyle){brandStyle=document.createElement("style");brandStyle.id="iaInstitutionBrandTheme";document.head.append(brandStyle);}
+ brandStyle.textContent=[
+  ".ia-sidebar{background:linear-gradient(145deg,"+primary+" 0%,"+secondary+" 100%)!important}",
+  ".ia-nav-item.active{border-color:"+gold+"55!important;box-shadow:inset 3px 0 "+gold+"!important}",
+  ".ia-nav-item i,.ia-support i{color:"+gold+"!important}",
+  ".ia-logo,.ia-brand-mark,.ia-profile-logo,.ia-avatar{background:"+primary+"!important;color:#fff!important}",
+  ".ia-primary-btn{background:"+secondary+"!important}",
+  ".ia-welcome{background:linear-gradient(120deg,"+primary+" 0%,"+secondary+" 100%)!important}",
+  ".ia-eyebrow{color:"+secondary+"!important}",
+  ".ia-welcome .ia-eyebrow{color:#fff!important}",
+  ".ia-status{border-color:"+gold+"55}",
+  ".ia-boot{background:linear-gradient(135deg,"+primary+","+secondary+")!important}",
+  ".ia-boot .ia-brand-mark{background:"+gold+"!important;color:"+primary+"!important}",
+  ".ia-tenant small,.ia-brand small{color:#fff!important}"
+ ].join("\n");
+ const setImage=(el,alt)=>{if(!el)return;if(logo){const img=document.createElement("img");img.src=logo;img.alt=alt;img.loading="eager";img.referrerPolicy="no-referrer";img.onerror=()=>{el.textContent=initials(name);};el.replaceChildren(img);}else el.textContent=initials(name);};
+ ["iaLogo","iaProfileLogo","iaSettingsLogo","iaSettingsBrandLogo","iaBootLogo"].forEach(id=>setImage($(id),name+" logo"));
+ const topLogo=$("iaTopInstitutionLogo");setImage(topLogo,name+" logo");
+ const bootTitle=$("iaBootTitle");if(bootTitle)bootTitle.textContent=name;
+ const bootMark=$("iaBoot")?.querySelector(".ia-brand-mark");if(bootMark&&!logo)bootMark.textContent=initials(name);
+ const footer=document.querySelector(".ia-footer");if(footer)footer.textContent=name+" · Powered by Campus Nexus";
+ let favicon=document.querySelector('link[rel="icon"]');if(!favicon){favicon=document.createElement("link");favicon.rel="icon";document.head.append(favicon);}if(logo)favicon.href=logo;
+ const themeMeta=document.querySelector('meta[name="theme-color"]');if(themeMeta)themeMeta.content=primary;
  const list=$("iaModuleList");if(list){list.replaceChildren();const keys=[...state.modules].filter(k=>MODULES[k]);if(!keys.length){const s=document.createElement("p");s.className="ia-empty";s.textContent="No module entitlements were returned.";list.append(s);}keys.forEach(k=>{const row=document.createElement("div");row.className="ia-module-row";const ic=document.createElement("i");ic.className="fa-solid fa-circle-check";const label=document.createElement("b");label.textContent=MODULES[k];const stateEl=document.createElement("span");stateEl.className="ia-module-state";stateEl.textContent="Enabled";row.append(ic,label,stateEl);list.append(row);});}
  document.querySelectorAll("[data-module]").forEach(el=>{const key=el.dataset.module;const allowed=key==="administrator_portal"||state.modules.has(key)||(key==="admin_exams"&&state.modules.has("examinations"));el.hidden=!allowed;});
 }
