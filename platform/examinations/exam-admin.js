@@ -253,7 +253,13 @@ async function saveExam(event){
  const date=$("examDate").value,time=$("examTime").value;if(!date||!time){notice("Select the examination date and start time.",true);return}
  const linkValue=$("examLink").value.trim();let examLink=null;if(linkValue){try{const parsed=new URL(linkValue);if(!["http:","https:"].includes(parsed.protocol))throw new Error();examLink=parsed.href;}catch(_){notice("Enter a valid online exam project URL beginning with https:// or http://.",true);return;}}
  // Store the selected schedule as an explicit Kenya-time instant (UTC+03:00), independent of device timezone.
- const start=date+"T"+time+":00+03:00";const endDate=new Date(start);endDate.setMinutes(endDate.getMinutes()+duration);const end=endDate.toISOString();
+ // Persist the exact wall-clock time selected by the administrator as Kenya-local
+ // timestamps without an offset. The student portal interprets these as UTC+3.
+ const start=date+"T"+time+":00";
+ const [year,month,day]=date.split("-").map(Number),[hour,minute]=time.split(":").map(Number);
+ const endDate=new Date(Date.UTC(year,month-1,day,hour,minute)+duration*60000);
+ const pad=n=>String(n).padStart(2,"0");
+ const end=endDate.getUTCFullYear()+"-"+pad(endDate.getUTCMonth()+1)+"-"+pad(endDate.getUTCDate())+"T"+pad(endDate.getUTCHours())+":"+pad(endDate.getUTCMinutes())+":00";
  const title=$("examTitle").value.trim();
  const payload={institution_id:institution.id,title,exam_name:title,exam_type:$("examType").value,exam_basis:"ordinary",program_type:$("examProgram").value.trim(),target_program:$("examProgram").value.trim(),intake_year:Number($("examIntake").value)||null,intake_month:$("examIntakeMonth").value||null,block:$("examBlock").value.trim()||null,block_term:$("examBlock").value.trim()||null,course_code:$("courseCode").value.trim()||null,exam_date:date,exam_start_time:time,start_time:start,end_time:end,duration_minutes:duration,total_marks:total,marks_out_of:total,pass_mark:pass,instructions:$("examInstructions").value.trim()||null,exam_link:examLink,online_link:examLink,status:"draft",approval_status:"approved",approved_by:authUser.id,approved_at:new Date().toISOString(),is_published:false,is_active:true,created_by:authUser.id,created_by_actor:authUser.id};
  const button=$("saveExamBtn");button.disabled=true;button.textContent="Saving…";
@@ -290,7 +296,13 @@ async function saveEditedExam(event){
  const date=$("editExamDate").value,time=$("editExamTime").value;
  if(!date||!time||!Number.isFinite(duration)||duration<1||duration>600||!Number.isFinite(total)||total<1||pass<0||pass>total){notice("Check the date, start time, duration and marks. Pass mark cannot exceed total marks.",true);return;}
  const linkValue=$("editExamLink").value.trim();let examLink=null;if(linkValue){try{const parsed=new URL(linkValue);if(!["http:","https:"].includes(parsed.protocol))throw new Error();examLink=parsed.href;}catch(_){notice("Enter a valid online exam project URL beginning with https:// or http://.",true);return;}}
- const start=date+"T"+time+":00+03:00",endDate=new Date(start);endDate.setMinutes(endDate.getMinutes()+duration);const end=endDate.toISOString();
+ // Persist the exact wall-clock time selected by the administrator as Kenya-local
+ // timestamps without an offset. The student portal interprets these as UTC+3.
+ const start=date+"T"+time+":00";
+ const [year,month,day]=date.split("-").map(Number),[hour,minute]=time.split(":").map(Number);
+ const endDate=new Date(Date.UTC(year,month-1,day,hour,minute)+duration*60000);
+ const pad=n=>String(n).padStart(2,"0");
+ const end=endDate.getUTCFullYear()+"-"+pad(endDate.getUTCMonth()+1)+"-"+pad(endDate.getUTCDate())+"T"+pad(endDate.getUTCHours())+":"+pad(endDate.getUTCMinutes())+":00";
  const title=$("editExamTitle").value.trim(),program=$("editExamProgram").value.trim();
  if(!title||!program){notice("Examination title and programme are required.",true);return;}
  const payload={title,exam_name:title,exam_type:$("editExamType").value,program_type:program,target_program:program,block:$("editExamBlock").value.trim()||null,block_term:$("editExamBlock").value.trim()||null,intake_year:Number($("editExamIntake").value)||null,intake_month:$("editExamIntakeMonth").value||null,course_code:$("editCourseCode").value.trim()||null,exam_date:date,exam_start_time:time,start_time:start,end_time:end,duration_minutes:duration,total_marks:total,marks_out_of:total,pass_mark:pass,instructions:$("editExamInstructions").value.trim()||null,exam_link:examLink,online_link:examLink,updated_at:new Date().toISOString()};
