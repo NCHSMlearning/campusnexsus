@@ -697,36 +697,36 @@ async loadAvailableUnits(supabase) {
         
         async loadBlocks(supabase) {
             try {
-                let query = supabase
-                    .from('units_catalog')
-                    .select('block')
-                    .eq('status', 'active');
-                
-                if (this.programCode) {
-                    query = query.eq('program', this.isTVETStudent ? this.programCode : 'KRCHN');
+                const profile = this.userProfile || window.currentUserProfile || window.db?.currentUserProfile || {};
+                const institutionId = profile.institution_id;
+                const programCode = String(profile.program || this.programCode || '').trim();
+                let structure = null;
+                if (window.CampusAcademicStructure && institutionId && programCode) {
+                    structure = await window.CampusAcademicStructure.resolve(supabase, institutionId, programCode);
                 }
-                
-                const { data, error } = await query;
-                if (error) throw error;
-                
-                let blocks = [...new Set(data.map(u => u.block))];
-                blocks.sort();
-                
-                let options = '<option value="">All Blocks</option>';
-                blocks.forEach(block => {
-                    options += `<option value="${this.escapeHtml(block)}">${this.escapeHtml(block)}</option>`;
+                let blocks = (structure?.periods || []).map(x => x.name);
+                if (!blocks.length) {
+                    let query = supabase.from('units_catalog').select('block').eq('status', 'active');
+                    if (institutionId) query = query.eq('institution_id', institutionId);
+                    if (programCode) query = query.eq('program', programCode);
+                    const { data, error } = await query;
+                    if (error) throw error;
+                    blocks = (data || []).map(u => u.block).filter(Boolean);
+                }
+                blocks = [...new Set(blocks.map(String))].sort((a,b) => a.localeCompare(b,undefined,{numeric:true}));
+                const periodType = structure?.type || (this.isTVETStudent ? 'Term' : 'Block');
+                let options = '<option value="">All ' + (structure?.plural || (periodType === 'Term' ? 'Terms' : periodType === 'Semester' ? 'Semesters' : 'Blocks')) + '</option>';
+                blocks.forEach(period => {
+                    options += `<option value="${this.escapeHtml(period)}">${this.escapeHtml(period)}</option>`;
                 });
-                
                 if (this.blockFilter) {
                     this.blockFilter.innerHTML = options;
-                    const userBlock = this.userProfile?.block;
-                    if (userBlock && blocks.includes(userBlock)) {
-                        this.blockFilter.value = userBlock;
-                    }
+                    this.blockFilter.setAttribute('aria-label', 'Filter by ' + periodType.toLowerCase());
+                    const userBlock = profile.current_block || profile.block || profile.term;
+                    if (userBlock && blocks.includes(userBlock)) this.blockFilter.value = userBlock;
                 }
-                
             } catch (error) {
-                console.error('Error loading blocks:', error);
+                console.error('Error loading academic periods:', error);
             }
         }
 // ============================================================
