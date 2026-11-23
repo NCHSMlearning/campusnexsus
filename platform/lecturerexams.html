@@ -12,8 +12,26 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <!-- These shared stylesheets live at the repository root, not under /platform/.
          Absolute paths prevent the browser from requesting /platform/css/... (404). -->
-    <link rel="stylesheet" href="/css/admindashboard.css?v=20261123-lecturer-style-fix-v1" />
-    <link rel="stylesheet" href="/css/lecturer-exams-modern.css?v=20261123-lecturer-style-fix-v1" />
+    <link rel="stylesheet" href="/platform/examinations/source/css/admindashboard.css?v=20261123-admin-layout-v3" />
+    <link rel="stylesheet" href="/css/lecturer-exams-modern.css?v=20261123-lecturer-style-fix-v2" />
+    <link rel="stylesheet" href="/platform/examinations/source/css/admin-exams-modern.css?v=20261123-admin-command-centre-v1" />
+    <style id="lecturer-admin-dashboard-parity">
+      .sidebar-header .brand-text h2{font-family:Manrope,Inter,sans-serif!important;font-size:18px!important;line-height:1.1!important;color:#fff!important}
+      .sidebar-header .brand-text>small{display:block!important;color:#c7d8e8!important;font-size:10px!important;margin-top:5px}
+      .command-topbar .command-brand-copy h1{font-size:21px!important}
+      .command-topbar .command-brand-copy p{font-size:11px!important}
+      .command-topbar .lecturer-command-date{display:inline-flex;align-items:center;gap:7px;color:#e5eef7;font-size:11px;white-space:nowrap}
+      .command-topbar .admin-profile .admin-name{color:#fff!important}
+      .command-topbar .admin-profile .admin-email{color:#c9d9e8!important}
+      .lecturer-dashboard-hero{position:relative;display:flex;align-items:center;gap:14px;min-height:78px;padding:13px 18px;margin:0 0 16px;border:1px solid #dbeafa;border-radius:16px;background:linear-gradient(100deg,#dceeff 0%,#edf6ff 58%,#d9eafa 100%);box-shadow:0 4px 14px rgba(35,88,130,.045)}
+      .lecturer-dashboard-hero h2{margin:0 0 4px;color:#12395c;font-size:18px;font-weight:800}
+      .lecturer-dashboard-hero p{margin:0;color:#58738e;font-size:11px}
+      .lecturer-hero-icon{display:grid;place-items:center;flex:0 0 44px;width:44px;height:44px;border-radius:13px;background:#0b4774;color:#f5bd3d;font-size:20px}
+      .lecturer-hero-tag{margin-left:auto;padding:7px 10px;border:1px solid #c6dced;border-radius:999px;background:#fff;color:#315b7d;font-size:10px;font-weight:800;white-space:nowrap}
+      #dashboardStats{grid-template-columns:repeat(4,minmax(0,1fr))}
+      @media(max-width:1000px){#dashboardStats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+      @media(max-width:560px){.lecturer-dashboard-hero{align-items:flex-start;padding:12px;gap:9px}.lecturer-hero-icon{width:36px;height:36px;flex-basis:36px;font-size:16px}.lecturer-dashboard-hero h2{font-size:15px}.lecturer-hero-tag{display:none}.command-topbar .lecturer-command-date{display:none}}
+    </style>
 
     <style>
         /* ---------- Stats Cards ---------- */
@@ -68,7 +86,7 @@
     <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 
     <div class="sidebar" id="sidebar">
-        <div class="sidebar-header"><div class="sidebar-brand"><div class="brand-crest"><img src="/images/Logo_NCHSM.png" alt="NCHSM crest"></div><div class="brand-text"><h2>NCHSM <span>Exam Portal</span></h2><small>Lecturer Workspace</small></div></div></div>
+        <div class="sidebar-header"><div class="sidebar-brand"><div class="brand-crest"><img src="/favicon.svg" alt="Campus Nexus"></div><div class="brand-text"><h2>Campus Nexus</h2><small>Lecturer Examination Workspace</small></div></div></div>
 
         <div class="sidebar-scroll">
             <div class="menu-section">
@@ -115,11 +133,11 @@
 
     <div class="main-content">
 
-        <div class="top-header lecturer-command-topbar">
-            <div class="lecturer-command-brand">
+        <div class="top-header command-topbar">
+            <div class="command-brand">
                 <span id="pageTitle" hidden>Overview</span><span id="pageSubtitle" hidden>Welcome to your lecturer dashboard</span>
-                <div class="lecturer-command-cap"><i class="fas fa-graduation-cap"></i></div>
-                <div><h1>Lecturer Examinations</h1><p>Lecturer workspace · examinations, results and student monitoring</p></div>
+                <div class="command-cap"><i class="fas fa-graduation-cap"></i></div>
+                <div class="command-brand-copy"><h1>Lecturer Command Centre</h1><p>Manage your assessments, results and student monitoring</p></div>
             </div>
             <div class="header-actions">
                 <button class="mobile-toggle" onclick="toggleSidebar()" aria-label="Open navigation"><i class="fas fa-bars"></i></button>
