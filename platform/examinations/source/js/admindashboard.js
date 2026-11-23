@@ -8439,6 +8439,16 @@ window.publishApprovedAssessment = async function(examId) {
         }
 
         await loadExamFormOptions(exam?.target_program || exam?.program_type || exam?.program || '', exam?.intake_year || exam?.intake || '', exam?.block_term || exam?.block || exam?.term || '');
+        const programmeSelect = byId('examProgram');
+        if (programmeSelect && !programmeSelect.dataset.academicCatalogBound) {
+            programmeSelect.dataset.academicCatalogBound = 'true';
+            programmeSelect.addEventListener('change', () => {
+                if (byId('examBlock')) byId('examBlock').value = '';
+                if (byId('examIntakeYear')) byId('examIntakeYear').value = '';
+                if (byId('examIntakeMonth')) byId('examIntakeMonth').value = '';
+                loadExamFormOptions(programmeSelect.value, '', '');
+            });
+        }
         // Preserve existing values even when their legacy value is not in the current dropdown list.
         const ensureOption = (id, value) => {
             const select=byId(id); if(!select || value===undefined || value===null || value==='') return;
