@@ -180,15 +180,15 @@ const LecturerAttendance = {
         const emoji = this.getProgramEmoji();
         const threshold = this.getPassingThreshold();
 
-        const programDisplay = document.getElementById('programDisplayName');
-        if (programDisplay) programDisplay.textContent = `${this.currentProgram} (${typeLabel})`;
+        document.querySelectorAll('[id="programDisplayName"]').forEach(element => {
+            element.textContent = `${this.currentProgram} (${typeLabel})`;
+        });
 
-        const programTypeBadge = document.getElementById('programTypeBadge');
-        if (programTypeBadge) {
-            programTypeBadge.textContent = typeLabel;
-            programTypeBadge.style.background = this.isTVET ? 'rgba(139,92,246,0.3)' : 'rgba(76,29,149,0.3)';
-            programTypeBadge.style.color = this.isTVET ? '#7c3aed' : '#1e40af';
-        }
+        document.querySelectorAll('[id="programTypeBadge"]').forEach(element => {
+            element.textContent = typeLabel;
+            element.style.background = this.isTVET ? 'rgba(139,92,246,0.3)' : 'rgba(76,29,149,0.3)';
+            element.style.color = this.isTVET ? '#7c3aed' : '#1e40af';
+        });
 
         const blockDisplay = document.getElementById('currentBlockDisplay');
         if (blockDisplay) {
