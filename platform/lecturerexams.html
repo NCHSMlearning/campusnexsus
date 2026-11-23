@@ -13,7 +13,7 @@
     <!-- These shared stylesheets live at the repository root, not under /platform/.
          Absolute paths prevent the browser from requesting /platform/css/... (404). -->
     <link rel="stylesheet" href="/platform/examinations/source/css/admindashboard.css?v=20261123-admin-layout-v3" />
-    <link rel="stylesheet" href="/css/lecturer-exams-modern.css?v=20261123-lecturer-style-fix-v2" />
+    <link rel="stylesheet" href="/css/lecturer-exams-modern.css?v=20261123-lecturer-style-fix-v3" />
     <link rel="stylesheet" href="/platform/examinations/source/css/admin-exams-modern.css?v=20261123-admin-command-centre-v1" />
     <style id="lecturer-admin-dashboard-parity">
       .sidebar-header .brand-text h2{font-family:Manrope,Inter,sans-serif!important;font-size:18px!important;line-height:1.1!important;color:#fff!important}
@@ -80,7 +80,7 @@
     </style>
 <script src="/platform/js/campus-nexus-module-access.js?v=20261120-entitlements-v3" defer></script>
 <script src="/code-protection.js?v=20261121-global-v4" defer></script>
-</head>
+<style id="lecturer-mobile-navigation-fix">@media(max-width:1000px){body{overflow-x:hidden}.sidebar{position:fixed!important;top:0!important;left:0!important;bottom:0!important;height:100dvh!important;width:min(280px,86vw)!important;max-width:86vw!important;transform:translateX(-105%)!important;transition:transform .24s ease!important;z-index:1005!important;overflow:hidden!important}.sidebar.open{transform:translateX(0)!important}.sidebar-scroll{overflow-y:auto!important;overscroll-behavior:contain!important}.sidebar-overlay{display:none!important;position:fixed!important;inset:0!important;background:rgba(2,14,28,.56)!important;z-index:1000!important}.sidebar-overlay.active{display:block!important}.main-content{margin-left:0!important;width:100%!important;max-width:100%!important;min-width:0!important}.command-topbar .mobile-toggle{display:inline-flex!important;align-items:center!important;justify-content:center!important;flex:0 0 40px!important;width:40px!important;height:40px!important;min-width:40px!important;visibility:visible!important;opacity:1!important;z-index:1010!important}}@media(max-width:600px){.command-topbar{display:flex!important;flex-direction:row!important;align-items:center!important;gap:8px!important;min-height:68px!important}.command-brand{min-width:0!important;flex:1 1 auto!important}.command-brand-copy h1{white-space:normal!important;font-size:clamp(14px,4vw,17px)!important}.command-brand-copy p{display:none!important}.command-topbar .header-actions{display:flex!important;width:auto!important;flex:0 0 auto!important;gap:8px!important}.command-topbar .admin-profile,.command-topbar .lecturer-command-date{display:none!important}}</style></head>
 <body>
 
     <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
@@ -782,6 +782,10 @@
         document.querySelector(`.sidebar-menu a[data-tab="${tab}"]`)?.classList.add('active');
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
         document.getElementById(tab).classList.add('active');
+        if (window.matchMedia && window.matchMedia('(max-width: 1000px)').matches) {
+            document.getElementById('sidebar')?.classList.remove('open');
+            document.getElementById('sidebarOverlay')?.classList.remove('active');
+        }
 
         const titles = {
             dashboard: ['Overview', 'Welcome to your lecturer dashboard', 'fa-th-large'],
