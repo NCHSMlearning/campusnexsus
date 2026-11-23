@@ -201,7 +201,7 @@
       const documentsFailure = loadResults[1].status === 'rejected';
       if (privateFailure) {
         console.error('[Lecturer Profile] Secure private details unavailable:', loadResults[0].reason);
-        status('Your basic profile loaded, but encrypted personal details are unavailable because the profile encryption key is not configured. No private data was exposed or saved. Please ask the system administrator to restore the secure profile key.', 'error');
+        status('Your basic profile loaded, but encrypted personal details could not be retrieved. No private data was exposed or saved. Please refresh or contact the system administrator.', 'error');
       } else if (documentsFailure) {
         console.error('[Lecturer Profile] Document list unavailable:', loadResults[1].reason);
         status('Your profile loaded, but the secure document list could not be retrieved. Please refresh or contact the administrator.', 'error');
