@@ -941,7 +941,8 @@
 
         const examTimestamp = exam => {
             const raw = exam.exam_date || exam.updated_at || exam.created_at;
-            const time = raw ? new Date(raw).getTime() : NaN;
+            const dateOnly = /^\\d{4}-\\d{2}-\\d{2}$/.test(String(raw || ''));
+            const time = raw ? new Date(dateOnly ? String(raw) + 'T12:00:00+03:00' : raw).getTime() : NaN;
             return Number.isFinite(time) ? time : Number(exam.id || 0);
         };
         filtered.sort((a, b) => {
@@ -1094,7 +1095,19 @@
         saveButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
         if (feedback) feedback.textContent = 'Saving your changes…';
         try {
-            const link = document.getElementById('lecturerEditLink').value.trim() || null;
+            const rawLink = document.getElementById('lecturerEditLink').value.trim();
+            let link = null;
+            if (rawLink) {
+                let parsed;
+                try { parsed = new URL(rawLink); } catch (_) { throw new Error('Enter a valid online exam project URL beginning with https:// or http://.'); }
+                if (!['https:', 'http:'].includes(parsed.protocol)) throw new Error('Online exam project links must use https:// or http://.');
+                link = parsed.href;
+            }
+            const examDate = document.getElementById('lecturerEditDate').value;
+            const examTime = document.getElementById('lecturerEditTime').value || '09:00';
+            const scheduledStart = new Date(examDate + 'T' + examTime.slice(0, 5) + ':00+03:00');
+            if (Number.isNaN(scheduledStart.getTime())) throw new Error('Enter a valid exam date and Kenya start time.');
+            const scheduledEnd = new Date(scheduledStart.getTime() + duration * 60000);
             const changes = {
                 exam_name: title,
                 title,
@@ -1106,8 +1119,10 @@
                 intake_year: Number(document.getElementById('lecturerEditIntake').value) || null,
                 block: document.getElementById('lecturerEditBlock').value.trim() || null,
                 block_term: document.getElementById('lecturerEditBlock').value.trim() || null,
-                exam_date: document.getElementById('lecturerEditDate').value,
-                exam_start_time: document.getElementById('lecturerEditTime').value || null,
+                exam_date: examDate,
+                exam_start_time: examTime,
+                start_time: scheduledStart.toISOString(),
+                end_time: scheduledEnd.toISOString(),
                 duration_minutes: duration,
                 total_marks: totalMarks,
                 marks_out_of: totalMarks,
@@ -1124,8 +1139,9 @@
             if (error) throw error;
             if (!data) throw new Error('No exam was updated. The database did not return the saved record; check ownership and exam update permissions.');
             if (String(data.exam_date || '') !== String(changes.exam_date || '') ||
-                String((data.exam_start_time || '').slice(0,5)) !== String((changes.exam_start_time || '').slice(0,5))) {
-                throw new Error('The database did not retain the new exam date and time. Please retry or contact the platform administrator.');
+                String((data.exam_start_time || '').slice(0,5)) !== String((changes.exam_start_time || '').slice(0,5)) ||
+                String(data.exam_link || data.online_link || '') !== String(link || '')) {
+                throw new Error('The database did not retain the new exam date, Kenya start time or project link. Please retry or contact the platform administrator.');
             }
             Object.assign(exam, data);
             displayExams();
@@ -2515,7 +2531,7 @@ window.viewLecturerStudentProgress = async function(studentId, studentName, exam
 <script src="/js/nchsm-mobile-enhancements.js?v=7" defer></script>
 <script src="/js/lecturer-exams-access-audit.js?v=20261112-1" defer></script>
 
-<script>(function(){function updateLecturerClock(){const n=new Date();const e=document.getElementById('lecturerCommandDate');if(e)e.textContent=new Intl.DateTimeFormat('en-KE',{weekday:'short',day:'2-digit',month:'short',year:'numeric'}).format(n);}updateLecturerClock();})();</script>
+<script>(function(){function updateLecturerClock(){const n=new Date();const e=document.getElementById('lecturerCommandDate');if(e)e.textContent=new Intl.DateTimeFormat('en-KE',{timeZone:'Africa/Nairobi',weekday:'short',day:'2-digit',month:'short',year:'numeric'}).format(n);}updateLecturerClock();})();</script>
 
 <script src="/platform/js/institution-portal-branding.js?v=20261123-verified-exam-branding-v9" defer></script>
 </body>
