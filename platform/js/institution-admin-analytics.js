@@ -8,7 +8,7 @@
  const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
  const score=r=>{const status=String(r.retake_status||"").trim().toUpperCase();if(["PASS","PASSED","COMPETENT","COMPETENT/PASS"].includes(status)){const n=Number(r.retake_score);if(Number.isFinite(n))return n;}const raw=r.final_score;if(raw===null||raw===undefined||raw==="")return null;const n=Number(raw);return Number.isFinite(n)?n:null;};
  const passThreshold=r=>String(r.program||"").trim().toUpperCase()==="KRCHN"?60:50;
- const gradeFor=(r,n)=>n===null?"PENDING":n>=75?"A":n>=65?"B":n>=passThreshold(r)?"C":"FAIL";
+ const gradeFor=(r,n)=>{if(n===null)return "PENDING";if(passThreshold(r)===50){if(n>=80)return "A";if(n>=65)return "B";if(n>=50)return "C";return "E";}if(n>=75)return "A";if(n>=65)return "B";if(n>=60)return "C";return "D";};
  function notice(msg,bad=false){const host=$("iaAnalyticsNotice");if(host){host.textContent=msg;host.style.color=bad?"#a12b2b":"#16634a";}}
  function populate(id,values,label){const el=$(id);if(!el)return;const old=el.value,opts=[...new Set(values.map(v=>String(v??"").trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));el.innerHTML='<option value="all">'+label+'</option>'+opts.map(v=>'<option value="'+esc(v)+'">'+esc(v)+'</option>').join("");if(opts.includes(old))el.value=old;}
  function filtered(){const p=$("iaAnalyticsProgram")?.value||"all",y=$("iaAnalyticsYear")?.value||"all",b=$("iaAnalyticsBlock")?.value||"all",intake=$("iaAnalyticsIntake")?.value||"all";
@@ -34,7 +34,7 @@
   drawSeries("iaAnalyticsSubjectChart","subjects",unitRank.map(x=>x.unit),[{label:"Average score (%)",data:unitRank.map(x=>Number(x.average.toFixed(1)))}]);
   draw("iaAnalyticsGenderChart","gender",genderCounts,"doughnut");
   draw("iaAnalyticsAssessmentChart","assessment",assessmentCounts,"doughnut");
-  const assessmentLabels=Object.keys(gradeByAssessment),gradeLabels=["A","B","C","FAIL","PENDING"];
+  const assessmentLabels=Object.keys(gradeByAssessment),gradeLabels=["A","B","C","D","E","PENDING"];
   drawSeries("iaAnalyticsGradeByAssessmentChart","gradeByAssessment",assessmentLabels,gradeLabels.map(g=>({label:g,data:assessmentLabels.map(t=>gradeByAssessment[t]?.[g]||0)})),"bar",true);
   drawSeries("iaAnalyticsUnitChart","unitRanking",unitRank.map(x=>x.unit),[{label:"Mark records",data:unitRank.map(x=>x.count)}]);
   const body=$("iaAnalyticsUnitRows");if(body){const ranked=Object.entries(unitScores).map(([unit,s])=>({unit,count:s.length,average:s.reduce((a,b)=>a+b,0)/s.length})).sort((a,b)=>b.average-a.average).slice(0,20);body.innerHTML=ranked.length?ranked.map(x=>"<tr><td>"+esc(x.unit)+"</td><td>"+x.count+"</td><td>"+x.average.toFixed(1)+"%</td></tr>").join(""):'<tr><td colspan="3" class="ia-empty">No scored unit marks available.</td></tr>';}
