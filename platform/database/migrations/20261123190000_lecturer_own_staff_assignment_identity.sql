@@ -27,7 +27,6 @@ AS $$
   WHERE auth.uid() IS NOT NULL
     AND lower(trim(coalesce(sr.email, ''))) = lower(trim(coalesce(auth.jwt() ->> 'email', '')))
     AND lower(trim(coalesce(sr.designation, ''))) IN ('lecturer', 'senior lecturer')
-  ORDER BY sr.created_at DESC NULLS LAST
   LIMIT 1;
 $$;
 
