@@ -6,7 +6,7 @@
     <title>Lecturer Examinations | Campus Nexus</title>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="/config.js?v=20261122-campusnexus-anon-v3"></script>
+    <script src="/config.js?v=20261123-lecturer-exam-auth-v2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
@@ -649,11 +649,8 @@
     let lecturerProgram = null;   // lecturer's program/department
     let lecturerSessionData = null;
     const lecturerOwnerIds = new Set();
-// Hides the .html extension in the URL  
-if (window.location.pathname.endsWith('.html')) {
-    const cleanPath = window.location.pathname.replace(/\.html$/, '');
-    window.history.replaceState({}, '', cleanPath);
-}
+// Keep the canonical .html route. Rewriting this page to an extensionless URL
+// can trigger hosting fallback responses and break stable dashboard navigation.
     // ============================================================
     // AUTH
     // ============================================================
@@ -688,7 +685,7 @@ if (window.location.pathname.endsWith('.html')) {
 
             console.log('👤 Lecturer:', lecturerId, '| Program:', lecturerProgram);
             return true;
-        } catch (e) { window.location.href = 'login.html'; return false; }
+        } catch (e) { console.error('Lecturer exam authentication handoff failed:', e); window.location.replace('/examlogin.html'); return false; }
     }
 
     function logout() {
