@@ -5,7 +5,7 @@
 (() => {
  "use strict";
  const $=id=>document.getElementById(id);
- let api=null,units=[],rows=[],loading=false,saving=false;
+ let api=null,units=[],rows=[],loading=false,saving=false,page=1,pageSize=30;
  const db=()=>{if(!api?.db||!api?.institutionId||!api?.user?.id)throw new Error("Your institution administrator session is not ready.");return api.db;};
  const tenant=()=>api.institutionId;
  const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -55,7 +55,7 @@
   if(loading)return;
   const program=$("iaMEProgramSelect")?.value||"",block=$("iaMEBlockSelect")?.value||"",unit=$("iaMEUnitSelect")?.value||"",year=$("iaMEYearSelect")?.value||"";
   if(!program||!block||!unit||!year){say("Select programme, block, unit and academic year first.",true);return;}
-  loading=true;rows=[];renderRows();say("Loading approved registrations and existing marks…");
+  loading=true;rows=[];page=1;renderRows();say("Loading approved registrations and existing marks…");
   try{
    const registrationResult=await db().from("student_unit_registrations").select("*").eq("institution_id",tenant()).eq("program",program).eq("block",block).eq("academic_year",Number(year)).eq("status","approved").limit(5000);
    // If the academic-management entitlement hides registrations, retain a safe
@@ -96,14 +96,19 @@
  function renderRows(){
   const body=$("iaMEEditorRows"),save=$("iaMESaveCapture");if(!body)return;
   body.replaceChildren();
-  if(!rows.length){const tr=document.createElement("tr"),td=document.createElement("td");td.colSpan=10;td.className="ia-empty";td.textContent="No students loaded.";tr.append(td);body.append(tr);if(save)save.disabled=true;return;}
-  rows.forEach((r,index)=>{
+  const q=($("iaMECaptureSearch")?.value||"").trim().toLowerCase();
+  const filtered=rows.map((r,index)=>({r,index})).filter(({r})=>!q||[r.student_name,r.admission_number,r.program,r.block,r.subject_name].some(v=>String(v??"").toLowerCase().includes(q)));
+  const pages=Math.max(1,Math.ceil(filtered.length/pageSize));page=Math.min(page,pages);
+  const info=$("iaMEPageInfo");if(info)info.textContent="Page "+page+" of "+pages+" · "+filtered.length+" students";
+  const prev=$("iaMEPrevPage"),next=$("iaMENextPage");if(prev)prev.disabled=page<=1;if(next)next.disabled=page>=pages;
+  if(!rows.length||!filtered.length){const tr=document.createElement("tr"),td=document.createElement("td");td.colSpan=10;td.className="ia-empty";td.textContent=!rows.length?"No students loaded.":"No students match this search.";tr.append(td);body.append(tr);if(save)save.disabled=!rows.some(r=>!r.published);return;}
+  filtered.slice((page-1)*pageSize,page*pageSize).forEach(({r,index})=>{
    const tr=document.createElement("tr");tr.dataset.index=String(index);
    const td=(v)=>{const el=document.createElement("td");el.textContent=String(v??"—");tr.append(el);return el;};
    td(r.student_name);td(r.admission_number);
    ["cat1_score","cat2_score","exam_score"].forEach((key,j)=>{const cell=td("");const input=document.createElement("input");input.type="number";input.min="0";input.max=j===2?"100":"30";input.step="0.1";input.className="ia-score-input";input.value=String(r[key]??0);input.disabled=!!r.published;input.dataset.score=key;input.addEventListener("input",()=>updatePreview(index));cell.append(input);});
    const total=td(r.final_score??"—");total.dataset.final="1";
-   const grade=td(r.grade||"—");grade.dataset.grade="1";
+   const grade=td(r.final_grade||r.grade||"—");grade.dataset.grade="1";
    const retakeStatusCell=td("");const retakeStatus=document.createElement("select");retakeStatus.className="ia-score-input";retakeStatus.dataset.retakeStatus="1";retakeStatus.disabled=!!r.published;
    [["","No retake"],["pending","Pending"],["passed","Passed"],["failed","Failed"],["competent","Competent"],["not_required","Not required"]].forEach(([v,label])=>option(retakeStatus,v,label));
    const currentRetake=String(r.retake_status||"").toLowerCase();if(currentRetake&&![...retakeStatus.options].some(o=>o.value===currentRetake))option(retakeStatus,currentRetake,currentRetake);
@@ -159,7 +164,7 @@
   $("iaMEBlockSelect")?.addEventListener("change",loadUnits);
   $("iaMEUnitSelect")?.addEventListener("change",syncAssessmentType);
   $("iaMELoadStudents")?.addEventListener("click",loadStudents);
-  $("iaMESaveCapture")?.addEventListener("click",saveMarks);$("iaMEExportCapture")?.addEventListener("click",exportCaptureCsv);
+  $("iaMESaveCapture")?.addEventListener("click",saveMarks);$("iaMEExportCapture")?.addEventListener("click",exportCaptureCsv);$("iaMECaptureSearch")?.addEventListener("input",()=>{page=1;renderRows();});$("iaMEPrevPage")?.addEventListener("click",()=>{page=Math.max(1,page-1);renderRows();});$("iaMENextPage")?.addEventListener("click",()=>{page++;renderRows();});
   $("iaMEAssessmentType")?.addEventListener("change",()=>rows.forEach((r,i)=>updatePreview(i)));
   document.addEventListener("click",e=>{if(e.target.closest('#iaNav [data-view="marks-entry"]')){if(!$("iaMEProgramSelect")?.options?.length||$("iaMEProgramSelect")?.options?.length<=1)loadPrograms();}});
  }
