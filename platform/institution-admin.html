@@ -12,7 +12,7 @@
 <script src="/platform/js/institution-admin-programs.js?v=20261121-shared-superadmin-source1" defer></script>
 <script src="/platform/js/institution-admin-modules.js?v=20261121-14" defer></script>
 <script src="/platform/js/institution-admin-results.js?v=20261123-results-parity-v12" defer></script>
-<script src="/platform/js/institution-admin-marks-entry.js?v=20261123-capture-v7" defer></script>
+<script src="/platform/js/institution-admin-marks-entry.js?v=20261123-capture-v8" defer></script>
 <script src="/platform/js/institution-admin-analytics.js?v=20261123-analytics-v10" defer></script>
 <script src="/platform/js/institution-admin-attendance.js?v=20261123-attendance-v12" defer></script>
 <script src="/platform/js/institution-admin-activity.js?v=20261122-activity-v1" defer></script>
@@ -563,10 +563,12 @@
    <select id="iaMEUnitSelect" class="ia-module-search" aria-label="Marks entry unit"><option value="">Select unit</option></select>
    <select id="iaMEYearSelect" class="ia-module-search" aria-label="Marks entry academic year"><option value="">Select academic year</option><option>2023</option><option>2024</option><option>2025</option><option>2026</option><option>2027</option><option>2028</option><option>2029</option><option>2030</option></select>
    <select id="iaMEAssessmentType" class="ia-module-search" aria-label="Assessment type"><option value="full">Full assessment</option><option value="single_cat">Single CAT</option><option value="exam_only">Exam only</option><option value="nck">NCK assessment</option></select>
+   <input id="iaMECaptureSearch" class="ia-module-search" type="search" placeholder="Search loaded students…">
    <button type="button" class="ia-primary-btn" id="iaMELoadStudents"><i class="fa-solid fa-users-viewfinder"></i> Load registered students</button>
   </div>
   <div id="iaMECaptureNotice" class="ia-notice" aria-live="polite">Select programme, block, unit and academic year to load approved registrations.</div>
   <div class="ia-table-scroll"><table><thead><tr><th>Student</th><th>Admission no.</th><th>CAT 1 / 30</th><th>CAT 2 / 30</th><th>Exam</th><th>Final score</th><th>Grade</th><th>Retake status</th><th>Retake score</th><th>Workflow</th></tr></thead><tbody id="iaMEEditorRows"><tr><td colspan="10" class="ia-empty">No students loaded.</td></tr></tbody></table></div>
+  <div class="ia-page-actions" style="justify-content:center;margin-top:10px"><button type="button" class="ia-secondary-btn" id="iaMEPrevPage">Previous</button><span id="iaMEPageInfo" class="ia-count">Page 1 of 1</span><button type="button" class="ia-secondary-btn" id="iaMENextPage">Next</button></div>
   <div class="ia-page-actions" style="justify-content:flex-end;margin-top:14px"><button type="button" class="ia-primary-btn" id="iaMESaveCapture" disabled><i class="fa-solid fa-floppy-disk"></i> Save marks & submit for approval</button></div>
  </div>
  <div class="ia-panel"><div class="ia-panel-head"><div><h2>Marks register filters</h2><p>Filter the institution marks register by academic year, programme and block.</p></div></div><div class="ia-filter-row"><select id="iaMEYearFilter" class="ia-module-search"><option value="all">All academic years</option></select><select id="iaMEProgramFilter" class="ia-module-search"><option value="all">All programmes</option></select><select id="iaMEBlockFilter" class="ia-module-search"><option value="all">All blocks / terms</option></select><input id="iaMESearch" class="ia-module-search" type="search" placeholder="Search student, admission no., unit…"></div></div>
