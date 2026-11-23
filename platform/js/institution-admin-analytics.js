@@ -12,7 +12,7 @@
  function notice(msg,bad=false){const host=$("iaAnalyticsNotice");if(host){host.textContent=msg;host.style.color=bad?"#a12b2b":"#16634a";}}
  function populate(id,values,label){const el=$(id);if(!el)return;const old=el.value,opts=[...new Set(values.map(v=>String(v??"").trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));el.innerHTML='<option value="all">'+label+'</option>'+opts.map(v=>'<option value="'+esc(v)+'">'+esc(v)+'</option>').join("");if(opts.includes(old))el.value=old;}
  function filtered(){const p=$("iaAnalyticsProgram")?.value||"all",y=$("iaAnalyticsYear")?.value||"all",b=$("iaAnalyticsBlock")?.value||"all",intake=$("iaAnalyticsIntake")?.value||"all";
-  const cohort=intake==="all"?null:new Set(students.filter(s=>String(s.intake_year||"")+"-"+String(s.intake_month||"").toLowerCase()===intake).flatMap(s=>[s.id,s.student_id,s.admission_number].filter(Boolean).map(String)));
+  const cohort=intake==="all"?null:new Set(students.filter(s=>String(s.intake_year||"")+"-"+String(s.intake_month||"").toLowerCase()===intake).flatMap(s=>[s.id,s.user_id,s.student_id,s.admission_number].filter(Boolean).map(String)));
   return rows.filter(r=>(p==="all"||(p==="tvet"?String(r.program||"").toUpperCase()!=="KRCHN":String(r.program||"").toLowerCase()===p.toLowerCase()))&&(y==="all"||String(r.academic_year||"")===y)&&(b==="all"||String(r.block||"")===b)&&(!cohort||[r.student_id,r.admission_number].filter(Boolean).some(v=>cohort.has(String(v)))));
  }
  function paint(){
@@ -34,7 +34,7 @@
  async function load(){try{api=window.CampusInstitutionAdmin;if(!api?.institutionId)return;notice("Loading institution academic analytics…");
   const [marks,profileRows]=await Promise.all([
    db().from("student_marks").select("id,student_id,admission_number,program,block,subject_name,final_score,grade,final_grade,approval_status,published,academic_year,retake_status,retake_score,created_at").eq("institution_id",api.institutionId).order("created_at",{ascending:false}).limit(10000),
-   db().from("consolidated_user_profiles_table").select("id,student_id,admission_number,program,intake_year,intake_month").eq("institution_id",api.institutionId).eq("role","student").limit(10000)
+   db().from("consolidated_user_profiles_table").select("id,user_id,student_id,admission_number,program,intake_year,intake_month").eq("institution_id",api.institutionId).eq("role","student").limit(10000)
   ]);
   if(marks.error)throw marks.error;rows=marks.data||[];students=profileRows.error?[]:(profileRows.data||[]);
   populate("iaAnalyticsProgram",rows.map(r=>r.program),"All programmes");populate("iaAnalyticsYear",rows.map(r=>r.academic_year),"All academic years");populate("iaAnalyticsBlock",rows.map(r=>r.block),"All blocks / terms");
