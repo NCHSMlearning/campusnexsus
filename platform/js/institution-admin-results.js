@@ -103,9 +103,11 @@
     const pmPassed=pmScored.filter(x=>x.score>=passThreshold(x.row)).length;
     const pmRetakes=pmBase.filter(isRetake).length;
     const approvedTotal=records.filter(r=>statusOf(r)==="approved").length;
+    const today=new Date().toISOString().slice(0,10);
+    const approvedToday=records.filter(r=>statusOf(r)==="approved"&&String(r.approved_at||"").slice(0,10)===today).length;
     const rejectedTotal=records.filter(r=>statusOf(r)==="rejected").length;
     [["iaMEAverage",meScored.length?meAverage.toFixed(1)+"%":"—"],["iaMEPassRate",meScored.length?(mePassed/meScored.length*100).toFixed(1)+"%":"—"],["iaMEStudents",new Set(meRows.map(r=>r.admission_number||r.student_id).filter(Boolean)).size],["iaMEUnits",meUnits.size],["iaMEAtRisk",meScored.length-mePassed],["iaMECount",meRows.length],["iaMEPending",allPending.length],["iaMEApproved",approvedTotal],["iaMEPublished",published.length],
-     ["iaMAPending",allPending.length],["iaMAApproved",approvedTotal],["iaMARejected",rejectedTotal],["iaMAUnits",new Set(approvalRows.map(r=>r.subject_name).filter(Boolean)).size],
+     ["iaMAPending",allPending.length],["iaMAApproved",approvedToday],["iaMARejected",rejectedTotal],["iaMAUnits",new Set(approvalRows.map(r=>r.subject_name).filter(Boolean)).size],
      ["iaPMCount",pmBase.length],["iaPMStudents",new Set(pmBase.map(r=>r.admission_number||r.student_id).filter(Boolean)).size],["iaPMUnits",new Set(pmBase.map(r=>r.subject_name).filter(Boolean)).size],
      ["iaPMTotalMarks",pmBase.length],["iaPMPassed",pmPassed],["iaPMFailed",pmScored.length-pmPassed],["iaPMUnpublished",readyRows.length],["iaPMRetakes",pmRetakes]
     ].forEach(([id,value])=>{if($(id))$(id).textContent=typeof value==="number"?value.toLocaleString("en-KE"):value;});
