@@ -71,6 +71,10 @@
     const url=new URL(location.href);url.searchParams.set("school_code",code);url.searchParams.delete("institution_code");history.replaceState({},document.title,url.pathname+url.search+url.hash);
     $("cnSchoolGate").remove();document.querySelector("#cnSchoolGate + style")?.remove();$("cnSchoolGate")?.remove();$("cnSchoolGate")?.style&&($("cnSchoolGate").style.display="none");document.body.style.overflow="";
     const field=$("email");if(field)setTimeout(()=>field.focus(),80);
+    const branding = document.createElement("script");
+    branding.src = "/platform/js/institution-login-branding.js?v=20261123-tenant-branding-v4";
+    branding.async = true;
+    document.head.appendChild(branding);
     dispatchEvent(new CustomEvent("campusnexus:school-selected",{detail:{institutionId:selected.institution_id,schoolCode:code}}));
   }
   function init(){
