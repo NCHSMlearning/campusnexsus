@@ -700,7 +700,7 @@ const LecturerDashboard = {
             badge.style.border = this.isTVET ? '1px solid #8b5cf6' : '1px solid #4C1D95';
         }
 
-        document.querySelectorAll('[id="programDisplayName"]').forEach(element => {
+        document.querySelectorAll('[id="programDisplayName"], [data-program-display-name]').forEach(element => {
             element.textContent = `${program} (${typeLabel})`;
         });
 
