@@ -287,91 +287,66 @@ const LecturerStudents = {
     async loadRiskData() {
         try {
             const supabase = window.lecturerDB?.supabase;
-            if (!supabase) return;
-            
-            const studentIds = this.students.map(s => s.user_id);
-            if (studentIds.length === 0) return;
-            
-            // Get attendance data
-            const { data: attendance } = await supabase
-                .from('geo_attendance_logs')
-                .select('student_id, attendance_status')
-                .in('student_id', studentIds);
-            
-            // Get marks data
-            const { data: marks } = await supabase
-                .from('student_marks')
-                .select('student_id, final_score')
-                .in('student_id', studentIds);
-            
-            // Calculate risk for each student
+            if (!supabase || !this.students.length) return;
+            const studentIds = [...new Set(this.students.map(student => String(student.user_id || '').trim()).filter(Boolean))];
+            const unitNames = [...new Set((this.assignedUnits || []).map(unit => String(unit.subject_name || '').trim()).filter(Boolean))];
+            const program = String(this.currentProgram || '').trim();
+            if (!studentIds.length || !unitNames.length) return;
+            const [attendanceResult, marksResult] = await Promise.all([
+                supabase.from('geo_attendance_logs').select('student_id, unit_name, block, program, attendance_status, status')
+                    .in('student_id', studentIds).in('unit_name', unitNames).ilike('program', program),
+                supabase.from('student_marks').select('student_id, subject_name, block, program, final_score')
+                    .in('student_id', studentIds).in('subject_name', unitNames).ilike('program', program)
+            ]);
+            if (attendanceResult.error) console.warn('[Lecturer Students] Attendance risk data unavailable:', attendanceResult.error.message);
+            if (marksResult.error) console.warn('[Lecturer Students] Marks risk data unavailable:', marksResult.error.message);
+            const attendance = attendanceResult.data || [], marks = marksResult.data || [];
+            const norm = value => String(value || '').trim().toLowerCase();
             const threshold = this.isTVET ? 50 : 60;
-            
             this.students.forEach(student => {
-                const studentAttendance = attendance?.filter(a => a.student_id === student.user_id) || [];
-                const studentMarks = marks?.filter(m => m.student_id === student.user_id) || [];
-                
-                const absences = studentAttendance.filter(a => 
-                    a.attendance_status === 'Absent' || a.attendance_status === 'absent'
-                ).length;
-                
-                const avgScore = studentMarks.length > 0 
-                    ? studentMarks.reduce((sum, m) => sum + (m.final_score || 0), 0) / studentMarks.length
-                    : 0;
-                
-                // Risk score calculation
-                let riskScore = 0;
-                riskScore += Math.min(absences * 10, 50);
-                riskScore += Math.max((100 - avgScore) * 0.3, 0);
-                
-                student.absences = absences;
-                student.avgScore = Math.round(avgScore);
+                const studentAttendance = attendance.filter(row => String(row.student_id) === String(student.user_id) &&
+                    (student.enrolled_blocks || []).some(block => norm(block) === norm(row.block)));
+                const studentMarks = marks.filter(row => String(row.student_id) === String(student.user_id) &&
+                    (student.enrolled_blocks || []).some(block => norm(block) === norm(row.block)));
+                const absences = studentAttendance.filter(row => ['absent', 'missed'].includes(norm(row.attendance_status || row.status))).length;
+                const scores = studentMarks.map(row => Number(row.final_score)).filter(Number.isFinite);
+                const avgScore = scores.length ? scores.reduce((sum, score) => sum + score, 0) / scores.length : 0;
+                const riskScore = Math.min(absences * 10, 50) + Math.max((100 - avgScore) * 0.3, 0);
+                student.absences = absences; student.avgScore = Math.round(avgScore);
                 student.riskScore = Math.round(riskScore);
                 student.riskLevel = riskScore > 50 ? 'high' : (riskScore > 25 ? 'medium' : 'low');
-                student.isPassing = avgScore >= threshold;
-                student.passingThreshold = threshold;
+                student.isPassing = avgScore >= threshold; student.passingThreshold = threshold;
             });
-            
-        } catch (error) {
-            console.error('Failed to load risk data:', error);
-        }
+        } catch (error) { console.error('Failed to load assigned-unit risk data:', error); }
     },
-    
+
     // ─── LOAD UPLOADS ───
     async loadUploads() {
         try {
             const supabase = window.lecturerDB?.supabase;
             if (!supabase) return;
-
-            // DRMS is the shared document register. Map its records into the
-            // legacy shape used by the lecturer modal to avoid a second file list.
-            const { data: documents, error } = await supabase
-                .from('drms_documents')
+            const userIds = [...new Set((this.students || []).map(student => String(student.user_id || '').trim()).filter(Boolean))];
+            const documentIds = [...new Set((this.students || []).flatMap(student => [student.user_id, student.student_id, student.admission_number].filter(Boolean).map(String)))];
+            if (!userIds.length) { this.uploads = []; this.updateUploadStats(); return; }
+            const { data: documents, error } = await supabase.from('drms_documents')
                 .select('id, student_id, title, category, description, file_name, file_url, file_path, file_size, uploaded_by, uploaded_by_name, created_at, status')
-                .order('created_at', { ascending: false });
-
+                .in('student_id', documentIds).order('created_at', { ascending: false });
             if (error) {
-                console.error('Error loading DRMS documents:', error);
-                // Keep the existing list usable if the DRMS table/policy is not
-                // available in this environment.
-                const legacy = await supabase.from('student_uploads').select('*').order('uploaded_at', { ascending: false });
-                if (legacy.error) {
-                    console.error('Error loading legacy uploads:', legacy.error);
-                    return;
-                }
+                console.warn('[Lecturer Students] DRMS documents unavailable; using scoped legacy uploads:', error.message);
+                const legacy = await supabase.from('student_uploads').select('*')
+                    .in('student_id', userIds).order('uploaded_at', { ascending: false });
+                if (legacy.error) throw legacy.error;
                 this.uploads = legacy.data || [];
             } else {
-                this.uploads = (documents || []).map(doc => ({
-                    ...doc,
+                this.uploads = (documents || []).map(doc => ({ ...doc,
                     file_name: doc.file_name || doc.title || 'Student document',
-                    file_type: doc.category || '',
-                    status: doc.status || 'Available',
-                    storage_url: doc.file_url || null
+                    file_type: doc.category || '', status: doc.status || 'Available', storage_url: doc.file_url || null
                 }));
             }
             this.updateUploadStats();
         } catch (error) {
-            console.error('Failed to load student documents:', error);
+            console.error('Failed to load assigned-student documents:', error);
+            this.uploads = []; this.updateUploadStats();
         }
     },
 
