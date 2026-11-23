@@ -538,7 +538,24 @@
         <h3><i class="fas fa-link"></i> Program-Course Mapping</h3>
         <p style="color: #6b7280; font-size: 13px;">Assign courses to programs and optionally to specific blocks.</p>
         
-        <div style="background: #f8f9fa; padding: 20px; border-radius: 12px; margin: 15px 0;">
+        <div id="iaAddProgramUnitPanel" style="background:#f0fdfa;border:1px solid #99f6e4;padding:18px;border-radius:12px;margin:16px 0 20px">
+ <h4 style="margin:0 0 6px;color:#0f766e"><i class="fas fa-circle-plus"></i> Add a new unit to a programme</h4>
+ <p style="margin:0 0 14px;color:#475569;font-size:13px">Choose the programme, enter the unit details and assign it to one of that programme’s configured academic periods. The unit will be added to the institution catalogue and linked to the programme.</p>
+ <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;align-items:end">
+  <div><label for="iaNewUnitProgram" style="display:block;font-size:12px;font-weight:700;margin-bottom:5px">Programme *</label><select id="iaNewUnitProgram" required style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:8px"><option value="">Select programme</option></select></div>
+  <div><label for="iaNewUnitCode" style="display:block;font-size:12px;font-weight:700;margin-bottom:5px">Unit code *</label><input id="iaNewUnitCode" maxlength="40" required placeholder="e.g. NUR101" style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:8px"></div>
+  <div><label for="iaNewUnitName" style="display:block;font-size:12px;font-weight:700;margin-bottom:5px">Unit name *</label><input id="iaNewUnitName" maxlength="180" required placeholder="Enter unit name" style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:8px"></div>
+  <div><label for="iaNewUnitPeriod" id="iaNewUnitPeriodLabel" style="display:block;font-size:12px;font-weight:700;margin-bottom:5px">Academic period *</label><select id="iaNewUnitPeriod" required style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:8px"><option value="">Select programme first</option></select></div>
+  <div><label for="iaNewUnitType" style="display:block;font-size:12px;font-weight:700;margin-bottom:5px">Unit type</label><select id="iaNewUnitType" style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:8px"><option value="Core">Core</option><option value="Elective">Elective</option></select></div>
+  <div><label for="iaNewUnitCredits" style="display:block;font-size:12px;font-weight:700;margin-bottom:5px">Credits</label><input id="iaNewUnitCredits" type="number" min="0" step="1" value="3" style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:8px"></div>
+  <div><label for="iaNewUnitHours" style="display:block;font-size:12px;font-weight:700;margin-bottom:5px">Contact hours</label><input id="iaNewUnitHours" type="number" min="0" step="1" value="0" style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:8px"></div>
+  <div><label for="iaNewUnitPrerequisites" style="display:block;font-size:12px;font-weight:700;margin-bottom:5px">Prerequisites</label><input id="iaNewUnitPrerequisites" placeholder="Optional" style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:8px"></div>
+ </div>
+ <div style="margin-top:12px"><label for="iaNewUnitDescription" style="display:block;font-size:12px;font-weight:700;margin-bottom:5px">Description</label><textarea id="iaNewUnitDescription" rows="2" placeholder="Optional unit description" style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:8px;resize:vertical"></textarea></div>
+ <div style="display:flex;justify-content:flex-end;margin-top:14px"><button type="button" id="iaCreateProgramUnit" class="btn-action" style="background:#0f766e;padding:11px 20px;border:0;border-radius:8px;color:white;font-weight:700"><i class="fas fa-plus"></i> Add Unit to Programme</button></div>
+ <p id="iaNewUnitFeedback" role="status" aria-live="polite" style="margin:10px 0 0;font-size:12px;color:#475569"></p>
+</div>
+<div style="background: #f8f9fa; padding: 20px; border-radius: 12px; margin: 15px 0;">
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; align-items: end;">
                 <div>
                     <label style="font-weight: 600; font-size: 13px; display: block; margin-bottom: 4px;">Program</label>
