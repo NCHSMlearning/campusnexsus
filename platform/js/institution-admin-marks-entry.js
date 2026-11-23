@@ -12,7 +12,7 @@
  const say=(message,bad=false)=>{const el=$("iaMECaptureNotice");if(el){el.textContent=message;el.style.color=bad?"#a12b2b":"#16634a";}};
  const isTVET=program=>String(program||"").trim().toUpperCase()!=="KRCHN";
  const passThreshold=program=>isTVET(program)?50:60;
- const gradeFor=(score,program)=>{const n=Number(score);if(!Number.isFinite(n))return "PENDING";if(n>=75)return "A";if(n>=65)return "B";if(isTVET(program))return n>=50?"C":"FAIL";return n>=60?"C":"D";};
+ const gradeFor=(score,program)=>{const n=Number(score);if(!Number.isFinite(n))return "PENDING";if(isTVET(program)){if(n>=80)return "A";if(n>=65)return "B";if(n>=50)return "C";return "E";}if(n>=75)return "A";if(n>=65)return "B";if(n>=60)return "C";return "D";};
  function calculate(cat1,cat2,exam,type,program){
   const c1=Math.min(Math.max(Number(cat1)||0,0),30),c2=Math.min(Math.max(Number(cat2)||0,0),30),e=Math.min(Math.max(Number(exam)||0,0),100);
   let total=0;
