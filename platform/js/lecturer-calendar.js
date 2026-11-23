@@ -16,10 +16,13 @@ const LecturerCalendar = {
     currentView: 'month',
     lecturerAssignmentId: null,
     lecturerUuid: null,
+    currentProgram: null,
+    assignedUnits: [],
     
     async init() {
         console.log('📅 Initializing Lecturer Calendar...');
         await this.resolveLecturerId();
+        await this.loadAssignedUnits();
         await this.loadEvents();
         await this.loadBlockTimetable();
         this.renderBlockTimetablePanel();
@@ -42,9 +45,11 @@ const LecturerCalendar = {
             if (!authId) throw new Error('Authenticated lecturer session is unavailable.');
             const { data: identity, error: identityError } = await supabase.rpc('current_lecturer_staff_assignment_identity');
             if (identityError) throw identityError;
-            if (!identity?.id) throw new Error('Active lecturer account identity is unavailable.');
+            if (!identity?.id || String(identity.id) !== String(authId) || !identity.assignment_id) throw new Error('Lecturer assignment mapping is missing or ambiguous.');
+            const profile = window.lecturerDB?.getCurrentUserProfile?.() || {};
             this.lecturerUuid = authId;
-            this.lecturerAssignmentId = String(identity.id);
+            this.lecturerAssignmentId = String(identity.assignment_id);
+            this.currentProgram = String(window.CURRENT_PROGRAM || profile.program || identity.program || 'KRCHN').trim();
             return this.lecturerAssignmentId;
         } catch (error) {
             console.error('[Lecturer Calendar] Secure lecturer identity resolution failed:', error);
@@ -54,6 +59,17 @@ const LecturerCalendar = {
         }
     },
 
+    async loadAssignedUnits() {
+        const supabase = window.lecturerDB?.supabase;
+        if (!supabase || !this.lecturerAssignmentId) return;
+        const { data, error } = await supabase.from('lecturer_subject_assignments')
+            .select('subject_name, subject_code, block, program, academic_year')
+            .eq('lecturer_id', this.lecturerAssignmentId);
+        if (error) throw error;
+        const norm = value => String(value || '').trim().toLowerCase();
+        this.assignedUnits = (data || []).filter(row => norm(row.program) === norm(this.currentProgram));
+        console.log('[Lecturer Calendar] Assigned units loaded:', this.assignedUnits.length);
+    },
     async loadEvents() {
         try {
             const profile = window.lecturerDB?.getCurrentUserProfile();
@@ -63,7 +79,7 @@ const LecturerCalendar = {
                 return;
             }
             
-            const program = profile.program || profile.department || 'KRCHN';
+            const program = this.currentProgram || window.CURRENT_PROGRAM || profile.program || 'KRCHN';
             const supabase = window.lecturerDB?.supabase;
             
             if (!supabase) {
@@ -82,7 +98,8 @@ const LecturerCalendar = {
             const { data: sessions, error: sessionsError } = await supabase
                 .from('scheduled_sessions')
                 .select('*')
-                .eq('target_program', program);
+                .eq('target_program', program)
+                .or(`lecturer_id.eq.${this.lecturerUuid},lecturer_staff_id.eq.${this.lecturerAssignmentId},created_by.eq.${this.lecturerUuid}`);
             
             if (sessionsError) {
                 console.error('Error loading sessions:', sessionsError);
@@ -115,7 +132,8 @@ const LecturerCalendar = {
             const { data: exams, error: examsError } = await supabase
                 .from('exams')
                 .select('*')
-                .eq('target_program', program);
+                .eq('target_program', program)
+                .eq('created_by', this.lecturerUuid);
             
             if (examsError) {
                 console.error('Error loading exams:', examsError);
@@ -201,10 +219,16 @@ const LecturerCalendar = {
             const { data, error } = await supabase.from('timetables').select('*');
             if (error) throw error;
             const profile = window.lecturerDB?.getCurrentUserProfile?.() || {};
-            const program = String(profile.program || profile.department || '').trim().toLowerCase();
+            const program = String(this.currentProgram || window.CURRENT_PROGRAM || profile.program || '').trim().toLowerCase();
+            const norm = value => String(value || '').trim().toLowerCase();
             this.timetableRows = (data || []).filter(row => {
-                const rowProgram = String(row.program || row.target_program || row.department || '').trim().toLowerCase();
-                return !program || !rowProgram || rowProgram === program;
+                const rowProgram = norm(row.program || row.target_program || row.department);
+                if (program && rowProgram && rowProgram !== program) return false;
+                return (this.assignedUnits || []).some(unit =>
+                    norm(unit.block) === norm(row.block) &&
+                    (norm(unit.subject_name) === norm(row.course_name || row.unit_name || row.subject_name) ||
+                     (norm(unit.subject_code) && norm(unit.subject_code) === norm(row.unit_code || row.subject_code)))
+                );
             });
         } catch (error) {
             console.error('[Lecturer timetable] Failed to load:', error);
