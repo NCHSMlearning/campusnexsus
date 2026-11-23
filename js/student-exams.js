@@ -1,6 +1,6 @@
  (function(){
 'use strict';
-const state={client:null,user:null,profile:null,exams:[],announcements:[],history:[],examResults:{},dashboardStats:null,marks:[],supportTickets:[],academicSummary:null};
+const state={client:null,user:null,profile:null,exams:[],announcements:[],history:[],examResults:{},resultRealtimeChannel:null,dashboardStats:null,marks:[],supportTickets:[],academicSummary:null};
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const val=(...xs)=>xs.find(x=>x!==undefined&&x!==null&&String(x).trim()!=='');
@@ -338,6 +338,20 @@ async function submitSupport(event){
  catch(e){feedback.textContent=e.message||'Could not submit your request. Please try again.';}
  finally{btn.disabled=false;}
 }
+function subscribeStudentResultUpdates(){
+ if(!state.client||!state.user?.id||state.resultRealtimeChannel)return;
+ const studentId=String(state.user.id);
+ state.resultRealtimeChannel=state.client.channel('student-exam-results-'+studentId)
+  .on('postgres_changes',{event:'*',schema:'public',table:'released_exam_results',filter:'student_id=eq.'+studentId},async()=>{
+   await loadExams().catch(e=>console.warn('Could not refresh released exam status:',e));
+   await loadAcademicSummary().catch(e=>console.warn('Could not refresh published GPA metrics:',e));
+   renderTimetable();renderDashboard();
+  })
+  .on('postgres_changes',{event:'*',schema:'public',table:'student_marks',filter:'student_id=eq.'+studentId},()=>{
+   loadAcademicSummary().catch(e=>console.warn('Could not refresh academic metrics:',e));
+  })
+  .subscribe(status=>{if(status==='CHANNEL_ERROR'||status==='TIMED_OUT')console.warn('Student result live updates are temporarily unavailable:',status);});
+}
 async function init(){
  // Use the already-persisted Supabase client directly. Do not run the
  // legacy database bootstrap here; it can delay page startup unnecessarily.
@@ -396,6 +410,7 @@ async function init(){
  await loadDashboardStats().catch(e=>{console.warn('Dashboard statistics RPC unavailable; using student-visible records.',e);});
  await loadAcademicSummary().catch(e=>{console.warn('Published academic summary unavailable:',e);const n=$('gpa-trend');if(n)n.innerHTML='<p class="chart-empty">Academic summary is temporarily unavailable.</p>';});
  await loadExams().catch(e=>{console.error('Student examination list failed:',e);$('exam-panel').innerHTML='<div class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><p>Examination list could not be loaded. Your dashboard statistics are shown where available.</p></div>';});
+ subscribeStudentResultUpdates();
  renderTimetable();renderDashboard();
  loadAnnouncements().catch(e=>{$('announcements-panel').innerHTML='<div class="empty-state"><p>Announcements are temporarily unavailable.</p></div>';console.warn(e)});
  loadHistory().catch(e=>{$('history-panel').innerHTML='<div class="empty-state"><p>Examination history is temporarily unavailable.</p></div>';console.warn(e)});
