@@ -295,9 +295,9 @@ async resolveLecturerAssignmentId(profile) {
         if (!authId) throw new Error('Authenticated lecturer session is unavailable.');
         const { data: identity, error } = await supabase.rpc('current_lecturer_staff_assignment_identity');
         if (error) throw error;
-        if (!identity?.id || String(identity.id) !== String(authId)) throw new Error('Active lecturer identity could not be verified.');
-        this.lecturerAssignmentId = String(identity.id);
-        this.resolvedLecturerId = String(identity.id);
+        if (!identity?.id || String(identity.id) !== String(authId) || !identity.assignment_id) throw new Error('Lecturer assignment mapping is missing or ambiguous.');
+        this.lecturerAssignmentId = String(identity.assignment_id);
+        this.resolvedLecturerId = String(identity.assignment_id);
         this.lecturerIdIsValid = true;
         this.lecturerUuid = authId;
         return this.lecturerAssignmentId;
