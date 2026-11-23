@@ -80,7 +80,7 @@
     const admission=String(reg.admission_number||p.admission_number||p.student_id||"").trim();
     if(!admission)return null;
     const existing=byMarkKey.get(admission)||byMarkKey.get(String(reg.student_id))||null;
-    return {id:existing?.id||null,student_id:existing?.student_id||reg.student_id,admission_number:existing?.admission_number||admission,student_name:existing?.student_name||p.full_name||"Student",program,block,subject_name:unit,academic_year:Number(year),assessment_type:existing?.assessment_type||$("iaMEAssessmentType")?.value||"full",cat1_score:existing?.cat1_score??0,cat2_score:existing?.cat2_score??0,exam_score:existing?.exam_score??0,final_score:existing?.final_score??0,grade:existing?.grade||"",approval_status:existing?.approval_status||"draft",published:existing?.published===true};
+    return {id:existing?.id||null,student_id:existing?.student_id||reg.student_id,admission_number:existing?.admission_number||admission,student_name:existing?.student_name||p.full_name||"Student",program,block,subject_name:unit,academic_year:Number(year),assessment_type:existing?.assessment_type||$("iaMEAssessmentType")?.value||"full",cat1_score:existing?.cat1_score??0,cat2_score:existing?.cat2_score??0,exam_score:existing?.exam_score??0,final_score:existing?.final_score??0,grade:existing?.grade||"",retake_status:existing?.retake_status||"",retake_score:existing?.retake_score??null,retake_count:existing?.retake_count??0,retake_date:existing?.retake_date||null,final_grade:existing?.final_grade||"",final_status:existing?.final_status||"",approval_status:existing?.approval_status||"draft",published:existing?.published===true};
    }).filter(Boolean);
    rows=built;
    if(!rows.length){
