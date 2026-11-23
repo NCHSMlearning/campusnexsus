@@ -287,80 +287,22 @@ this.loadFromSession();
 
 async resolveLecturerAssignmentId(profile) {
     const supabase = window.lecturerDB?.supabase;
-    const authId = profile?.user_id || profile?.id || null;
-    const fullName = String(profile?.full_name || profile?.name || '').trim();
-
-    // resources.uploaded_by is UUID. Never allow placeholders such as
-    // "lecturer-fallback" to reach a Supabase UUID filter.
-    const isUUID = (value) => {
-        if (!value) return false;
-        return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value).trim());
-    };
-
-    const setId = (value, source) => {
-        const id = String(value || '').trim();
-        if (!isUUID(id)) return false;
-        this.lecturerAssignmentId = id;
-        this.resolvedLecturerId = id;
-        this.lecturerIdIsValid = true;
-        console.log(`✅ Resources using ${source} lecturer ID:`, id);
-        return true;
-    };
-
-    // Auth UUID is always a safe fallback for a UUID column.
-    if (!supabase) {
-        if (setId(authId, 'Auth')) return authId;
-        this.lecturerAssignmentId = null;
-        this.resolvedLecturerId = null;
-        this.lecturerIdIsValid = false;
-        return null;
-    }
-
     try {
-        // 1. Prefer an exact assignment row for the auth UUID.
-        if (isUUID(authId)) {
-            const { data: exactRows, error: exactError } = await supabase
-                .from('lecturer_subject_assignments')
-                .select('lecturer_id, lecturer_name')
-                .eq('lecturer_id', String(authId))
-                .limit(20);
-
-            if (!exactError && exactRows?.length) {
-                const row = exactRows.find(r => isUUID(r?.lecturer_id));
-                if (row && setId(row.lecturer_id, 'exact assignment')) return row.lecturer_id;
-            }
-        }
-
-        // 2. Resolve by lecturer name and prefer a UUID/non-STAFF assignment.
-        if (fullName) {
-            const { data: nameRows, error: nameError } = await supabase
-                .from('lecturer_subject_assignments')
-                .select('lecturer_id, lecturer_name')
-                .ilike('lecturer_name', `%${fullName}%`)
-                .limit(100);
-
-            if (!nameError && nameRows?.length) {
-                const uuidRows = nameRows.filter(r => isUUID(r?.lecturer_id));
-                const nonStaff = uuidRows.find(r => !String(r.lecturer_id).toUpperCase().startsWith('STAFF'));
-                const row = nonStaff || uuidRows[0];
-
-                if (row && setId(row.lecturer_id, nonStaff ? 'non-STAFF assignment' : 'assignment')) {
-                    return row.lecturer_id;
-                }
-            }
-        }
-
-        // 3. Safe fallback: Auth UUID only. Never use "lecturer-fallback".
-        if (setId(authId, 'Auth fallback')) return authId;
-
-        this.lecturerAssignmentId = null;
-        this.resolvedLecturerId = null;
-        this.lecturerIdIsValid = false;
-        console.warn('⚠️ No valid UUID lecturer ID could be resolved. Resources query will be skipped.');
-        return null;
+        if (!supabase) throw new Error('Supabase client is unavailable.');
+        const { data: authData, error: authError } = await supabase.auth.getUser();
+        if (authError) throw authError;
+        const authId = authData?.user?.id;
+        if (!authId) throw new Error('Authenticated lecturer session is unavailable.');
+        const { data: identity, error } = await supabase.rpc('current_lecturer_staff_assignment_identity');
+        if (error) throw error;
+        if (!identity?.id || String(identity.id) !== String(authId)) throw new Error('Active lecturer identity could not be verified.');
+        this.lecturerAssignmentId = String(identity.id);
+        this.resolvedLecturerId = String(identity.id);
+        this.lecturerIdIsValid = true;
+        this.lecturerUuid = authId;
+        return this.lecturerAssignmentId;
     } catch (error) {
-        console.error('❌ Failed to resolve lecturer assignment ID:', error);
-        if (setId(authId, 'Auth fallback after resolver error')) return authId;
+        console.error('[Lecturer Resources] Secure identity resolution failed:', error);
         this.lecturerAssignmentId = null;
         this.resolvedLecturerId = null;
         this.lecturerIdIsValid = false;
