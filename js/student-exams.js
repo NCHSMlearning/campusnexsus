@@ -236,7 +236,7 @@ function renderDashboard(){
  const stats=state.dashboardStats||{},completed=state.history.filter(a=>!!a.submitted_at||['submitted','completed','graded','released'].includes(norm(a.status))).length,totalCount=Math.max(Number(stats.total||0),state.exams.length);
  const upcoming=counts.upcoming,open=counts.open,closed=counts.closed+counts.pending_release+counts.released;
  $('stat-total').textContent=totalCount;$('stat-upcoming').textContent=upcoming;$('stat-open').textContent=open;$('stat-completed').textContent=completed;
- $('tab-upcoming-count').textContent=counts.upcoming;$('tab-open-count').textContent=counts.open;$('tab-closed-count').textContent=counts.closed;$('tab-all-count').textContent=state.exams.length;
+ $('tab-upcoming-count').textContent=counts.upcoming;$('tab-open-count').textContent=counts.open;$('tab-closed-count').textContent=counts.closed+counts.pending_release+counts.released;$('tab-all-count').textContent=state.exams.length;
  document.querySelectorAll('[data-exam-filter]').forEach(b=>b.classList.toggle('active',b.dataset.examFilter===dashboardExamFilter));
  const filtered=state.exams.map(exam=>({exam,status:examAttemptState(exam)})).filter(x=>dashboardExamFilter==='all'||(dashboardExamFilter==='closed'?['closed','pending_release','released'].includes(x.status):x.status===dashboardExamFilter)).sort((a,b)=>(startsAt(a.exam)?.getTime()||0)-(startsAt(b.exam)?.getTime()||0));
  $('dashboard-exams').innerHTML=filtered.length?filtered.map(x=>dashboardExamCard(x.exam,x.status)).join(''):'<div class="dashboard-empty"><i class="fa-regular fa-calendar-xmark"></i><b>No examinations in this category</b><span>Try another examination tab or check back later.</span></div>';
