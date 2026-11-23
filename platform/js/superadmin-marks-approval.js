@@ -7,7 +7,7 @@
   const state={db:null,rows:[],filtered:[],busy:false};
   const safe=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
   const db=()=>state.db||(state.db=window.sb||window.supabaseClient||window.supabase||window.client||null);
-  const status=r=>String(r.approval_status||"pending").toLowerCase();
+  const status=r=>String(r.approval_status||(r.published?"published":"draft")).toLowerCase();
   const note=(msg,bad=false)=>{const host=$("marksApprovalTableContainer");if(host){const n=$("saApprovalNotice")||document.createElement("div");n.id="saApprovalNotice";n.className="ia-notice";n.textContent=msg;n.style.cssText="padding:10px 14px;margin:0 0 12px;border-radius:8px;background:"+(bad?"#fff0ef":"#eaf8f2")+";color:"+(bad?"#a12b2b":"#16634a");if(!n.parentNode)host.prepend(n);}};
   const date=v=>v?new Date(v).toLocaleString("en-KE",{dateStyle:"medium",timeStyle:"short"}):"—";
   async function audit(action,row,description){try{await db().rpc("log_marks_security_event",{p_action:action,p_target_table:"student_marks",p_target_id:row?.id||null,p_description:description,p_status:"success",p_details:{institution_id:row?.institution_id||null,page_path:location.pathname}});}catch(e){console.warn("[Super Admin marks approval] audit:",e.message);}}
