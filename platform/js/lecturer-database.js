@@ -9,6 +9,7 @@ class LecturerDatabase {
     constructor() {
         this.supabase = null;
         this.currentUserId = null;
+        this.currentLecturerAssignmentId = null;
         this.currentUserProfile = null;
         this.isInitialized = false;
         this.initializationPromise = null;
@@ -126,7 +127,14 @@ class LecturerDatabase {
             
             this.currentUserId = session.user.id;
             console.log('✅ Lecturer authenticated:', this.currentUserId);
-            
+            const { data: identity, error: identityError } = await this.supabase.rpc('current_lecturer_staff_assignment_identity');
+            if (identityError) throw identityError;
+            if (identity?.id && String(identity.id) === String(this.currentUserId) && identity.assignment_id) {
+                this.currentLecturerAssignmentId = String(identity.assignment_id);
+            } else {
+                this.currentLecturerAssignmentId = null;
+                console.warn('[Lecturer Database] No unique lecturer assignment mapping; assignment-scoped data will remain empty.');
+            }
             await this.loadLecturerProfile();
             
             return true;
@@ -192,40 +200,54 @@ class LecturerDatabase {
     
     // Get students by program
     async getStudents(program) {
-        if (this.cachedData.students.length > 0) {
-            return this.cachedData.students;
-        }
-        
+        if (this.cachedData.students.length > 0) return this.cachedData.students;
         try {
-            const { data, error } = await this.supabase
-                .from('consolidated_user_profiles_table')
-                .select('*')
-                .eq('role', 'student')
-                .eq('program', program)
-                .order('full_name', { ascending: true });
-            
-            if (error) throw error;
-            
-            this.cachedData.students = data || [];
+            const lecturerId = this.currentLecturerAssignmentId;
+            if (!lecturerId) return [];
+            const assignments = await this.getAssignedUnits(lecturerId);
+            const norm = value => String(value || '').trim().toLowerCase();
+            const targetProgram = String(program || this.currentUserProfile?.program || '').trim();
+            const units = (assignments || []).filter(row => !targetProgram || norm(row.program) === norm(targetProgram));
+            if (!units.length) return [];
+            const registrations = [];
+            for (let from = 0; ; from += 1000) {
+                const { data, error } = await this.supabase.from('student_unit_registrations')
+                    .select('student_id, unit_code, unit_name, block, program, status')
+                    .ilike('program', targetProgram).in('status', ['approved', 'completed'])
+                    .range(from, from + 999);
+                if (error) throw error;
+                registrations.push(...(data || []));
+                if (!data || data.length < 1000) break;
+            }
+            const ids = [...new Set(registrations.filter(reg => units.some(unit =>
+                norm(unit.block) === norm(reg.block) &&
+                ((norm(unit.subject_code) && norm(unit.subject_code) === norm(reg.unit_code)) || norm(unit.subject_name) === norm(reg.unit_name))
+            )).map(reg => String(reg.student_id || '').trim()).filter(Boolean))];
+            const students = [];
+            for (let i = 0; i < ids.length; i += 500) {
+                const { data, error } = await this.supabase.from('consolidated_user_profiles_table')
+                    .select('*').eq('role', 'student').in('user_id', ids.slice(i, i + 500));
+                if (error) throw error;
+                students.push(...(data || []));
+            }
+            this.cachedData.students = students.sort((a,b)=>String(a.full_name||'').localeCompare(String(b.full_name||'')));
             return this.cachedData.students;
-            
-        } catch (error) {
-            console.error('Failed to get students:', error);
-            return [];
-        }
+        } catch (error) { console.error('Failed to get assigned students:', error); return []; }
     }
-    
     // Get units assigned to lecturer (from lecturer_subject_assignments)
-    async getAssignedUnits(lecturerId) {
+    async getAssignedUnits(lecturerId = null) {
         if (this.cachedData.assignments.length > 0) {
             return this.cachedData.assignments;
         }
         
         try {
+            const resolvedId = !lecturerId || String(lecturerId) === String(this.currentUserId)
+                ? this.currentLecturerAssignmentId : String(lecturerId);
+            if (!resolvedId) return [];
             const { data, error } = await this.supabase
                 .from('lecturer_subject_assignments')
                 .select('*')
-                .eq('lecturer_id', lecturerId)
+                .eq('lecturer_id', resolvedId)
                 .order('academic_year', { ascending: false });
             
             if (error) throw error;
