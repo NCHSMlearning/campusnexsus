@@ -397,8 +397,7 @@ const LecturerQuestions = {
      */
     refresh: function() {
         console.log('🔄 Refreshing questions...');
-        this.resolveLecturerId();
-        this.loadExams();
+        this.init();
         if (window.showToast) {
             window.showToast('✅ Questions refreshed', 'success');
         }
@@ -891,9 +890,10 @@ const LecturerQuestions = {
 
     normalizeBulkType: function(value, hasOptions) {
         const v = String(value || '').trim().toLowerCase().replace(/[-_ ]/g, '');
-        if (v === 'essay' || v === 'written' || v === 'writtenanswer' || v === 'subjective' || v === 'shortanswer') return 'essay';
-        if (v === 'mcq' || v === 'multiplechoice' || v === 'multiplechoicequestion') return 'mcq';
         if (v === 'shortanswer' || v === 'short') return 'short_answer';
+        if (v === 'fillblank' || v === 'fillintheblank') return 'fill_blank';
+        if (v === 'essay' || v === 'written' || v === 'writtenanswer' || v === 'subjective') return 'essay';
+        if (v === 'mcq' || v === 'multiplechoice' || v === 'multiplechoicequestion') return 'mcq';
         if (v === 'fillblank' || v === 'fillintheblank') return 'fill_blank';
         return hasOptions ? 'mcq' : 'essay';
     },
@@ -1142,9 +1142,8 @@ const LecturerQuestions = {
         try {
             await this.verifyExamOwnership(examId);
             const sb = this.getSupabase();
-            const lecturerData = this.getLecturerData();
-            const lecturerId = this.lecturerUuid || lecturerData.staff_id || lecturerData.id || lecturerData.user_id;
-            if (!lecturerId) throw new Error('Lecturer identity not found. Please login again.');
+            const lecturerId = this.lecturerUuid;
+            if (!lecturerId) throw new Error('Authenticated lecturer identity not found. Please login again.');
 
             const startNumber = await this.getNextQuestionNumber(sb, examId);
             const rows = this.buildBulkRows(this.bulkParsedQuestions, examId, startNumber, lecturerId);
@@ -1257,9 +1256,8 @@ const LecturerQuestions = {
         try {
             await this.verifyExamOwnership(examId);
             const sb = this.getSupabase();
-            const lecturerData = this.getLecturerData();
-            const lecturerId = this.lecturerUuid || lecturerData.staff_id || lecturerData.id || lecturerData.user_id;
-            if (!lecturerId) throw new Error('Lecturer identity not found.');
+            const lecturerId = this.lecturerUuid;
+            if (!lecturerId) throw new Error('Authenticated lecturer identity not found.');
             const startNumber = await this.getNextQuestionNumber(sb, examId);
             const rows = this.buildBulkRows(this.bulkFileQuestions, examId, startNumber, lecturerId);
             await this.insertBulkRows(sb, rows);
