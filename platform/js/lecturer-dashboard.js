@@ -734,27 +734,20 @@ const LecturerDashboard = {
             const supabase = this.getSupabaseClient();
             if (!supabase) throw new Error('Supabase client is unavailable.');
 
-            const profile = window.lecturerDB?.getCurrentUserProfile() || {};
-            let email = String(profile.email || profile.email_address || window.currentUser?.email || '').trim();
+            const auth = await supabase.auth.getUser();
+            if (auth.error) throw auth.error;
+            const user = auth.data?.user;
+            if (!user?.id || !user.email) throw new Error('The authenticated lecturer identity is incomplete.');
 
-            if (!email && supabase.auth?.getUser) {
-                const { data: { user }, error } = await supabase.auth.getUser();
-                if (error) throw error;
-                email = String(user?.email || '').trim();
-            }
-            if (!email) throw new Error('Could not resolve the authenticated lecturer email.');
+            // staff_records is protected by the Human Resources module entitlement.
+            // Resolve only this lecturer's own assignment identity through a narrowly
+            // scoped SECURITY DEFINER RPC instead of requiring HR module access.
+            const { data: staff, error: identityError } = await supabase.rpc('current_lecturer_staff_assignment_identity');
+            if (identityError) throw identityError;
+            if (!staff?.id) throw new Error('No active institution-linked lecturer staff record matches this account. Ask the institution administrator to verify the lecturer record and membership.');
 
-            const { data: staff, error: staffError } = await supabase
-                .from('staff_records')
-                .select('id, first_name, other_names, email, program, department')
-                .ilike('email', email)
-                .maybeSingle();
-
-            if (staffError) throw staffError;
-            if (!staff?.id) throw new Error('No staff record matches the signed-in lecturer email.');
-
-            this.lecturerUuid = window.currentUser?.id || profile.user_id || this.lecturerUuid || null;
-            this.lecturerAssignmentId = String(staff.id);
+            this.lecturerUuid = user.id;
+            this.lecturerAssignmentId = String(staff.id).trim();
             if (staff.program) {
                 this.currentProgram = String(staff.program).trim();
                 this.isTVET = this.currentProgram.toUpperCase() !== 'KRCHN';
@@ -762,8 +755,12 @@ const LecturerDashboard = {
                 this.currentProgram = 'KRCHN';
                 this.isTVET = false;
             }
-            window.CORRECT_LECTURER_ID = String(staff.id);
-            console.log('[Lecturer Dashboard] Resolved staff-record assignment ID:', this.lecturerAssignmentId);
+
+            window.CORRECT_LECTURER_ID = this.lecturerAssignmentId;
+            console.log('[Lecturer Dashboard] Resolved own staff-record assignment ID through secure RPC:', {
+                program: this.currentProgram,
+                lecturerIdResolved: Boolean(this.lecturerAssignmentId)
+            });
             return this.lecturerAssignmentId;
         } catch (error) {
             console.error('[Lecturer Dashboard] Lecturer identity resolution failed:', error);
