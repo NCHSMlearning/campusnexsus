@@ -22,10 +22,11 @@ const LecturerQuestions = {
     /**
      * Initialize the question bank
      */
-    init: function() {
+    init: async function() {
         console.log('📝 LecturerQuestions initialized');
-        this.resolveLecturerId();
-        this.loadExams();
+        const module = window.LecturerQuestions || this;
+        await module.resolveLecturerId();
+        await module.loadExams();
     },
 
     /**
@@ -33,20 +34,22 @@ const LecturerQuestions = {
      */
     resolveLecturerId: function() {
         try {
-            const profile = window.lecturerDB?.getCurrentUserProfile();
-            if (profile) {
-                this.lecturerUuid = profile.user_id;
-                console.log('👤 Lecturer UUID:', this.lecturerUuid);
-            } else {
-                const session = localStorage.getItem('staffSession');
-                if (session) {
-                    const data = JSON.parse(session);
-                    this.lecturerUuid = data.user_id || data.id;
-                    console.log('👤 Lecturer UUID (from session):', this.lecturerUuid);
-                }
+            const client = this.getSupabase();
+            const profile = window.lecturerDB?.getCurrentUserProfile?.() || {};
+            const session = (() => { try { return JSON.parse(localStorage.getItem('staffSession') || '{}'); } catch (_) { return {}; } })();
+            this.lecturerUuid = profile.user_id || profile.auth_user_id || session.user_id || session.auth_user_id || null;
+            if (!this.lecturerUuid && client?.auth?.getSession) {
+                return client.auth.getSession().then(({ data, error }) => {
+                    if (error) throw error;
+                    this.lecturerUuid = data?.session?.user?.id || null;
+                    if (!this.lecturerUuid) throw new Error('Authenticated lecturer UUID is unavailable.');
+                    return this.lecturerUuid;
+                }).catch(error => { console.error('[Lecturer Questions] Auth identity unavailable:', error); return null; });
             }
+            return this.lecturerUuid;
         } catch (error) {
             console.error('Error resolving lecturer ID:', error);
+            return null;
         }
     },
 
