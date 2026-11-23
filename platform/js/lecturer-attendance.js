@@ -1076,64 +1076,66 @@ const LecturerAttendance = {
         if (rateBadge) rateBadge.textContent = `${rate}% (Class: ${total} students)`;
     },
 
+    async getAssignedStudentRoster(options = {}) {
+        const supabase = window.lecturerDB?.supabase;
+        if (!supabase) throw new Error('Supabase client is unavailable.');
+        const norm = value => String(value || '').trim().toLowerCase();
+        const program = String(options.program || this.currentProgram || window.CURRENT_PROGRAM || 'KRCHN').trim();
+        const block = String(options.block || '').trim();
+        const unitName = String(options.unitName || '').trim();
+        const intake = String(options.intake || '').trim();
+        let units = (this.assignedUnits || []).filter(unit => norm(unit.program) === norm(program));
+        if (block) units = units.filter(unit => norm(unit.block) === norm(block));
+        if (unitName) units = units.filter(unit => norm(unit.subject_name) === norm(unitName) || norm(unit.subject_code) === norm(unitName));
+        if (!units.length) return [];
+        const registrations = [];
+        for (let from = 0; ; from += 1000) {
+            const { data, error } = await supabase.from('student_unit_registrations')
+                .select('student_id, admission_number, unit_code, unit_name, block, program, status, intake_year')
+                .ilike('program', program).in('status', ['approved', 'completed'])
+                .range(from, from + 999);
+            if (error) throw error;
+            registrations.push(...(data || []));
+            if (!data || data.length < 1000) break;
+        }
+        const matched = registrations.filter(reg => {
+            if (!reg.student_id || (intake && String(reg.intake_year || '') !== intake)) return false;
+            return units.some(unit => norm(unit.block) === norm(reg.block) &&
+                ((norm(unit.subject_code) && norm(unit.subject_code) === norm(reg.unit_code)) || norm(unit.subject_name) === norm(reg.unit_name)));
+        });
+        const ids = [...new Set(matched.map(reg => String(reg.student_id).trim()).filter(Boolean))];
+        const profiles = [];
+        for (let i = 0; i < ids.length; i += 500) {
+            const { data, error } = await supabase.from('consolidated_user_profiles_table')
+                .select('user_id, full_name, student_id, admission_number, program, block, intake_year, email, phone')
+                .eq('role', 'student').in('user_id', ids.slice(i, i + 500));
+            if (error) throw error;
+            profiles.push(...(data || []));
+        }
+        const profileMap = new Map(profiles.map(student => [String(student.user_id), student]));
+        return ids.map(id => profileMap.get(id) || { user_id: id, student_id: matched.find(row => String(row.student_id) === id)?.admission_number || '', full_name: 'Student profile unavailable', program, block });
+    },
     // ============================================================
     // LOAD PROGRAM INFO
     // ============================================================
     async loadProgramInfo() {
         try {
-            const profile = window.lecturerDB?.getCurrentUserProfile();
-            const program = this.currentProgram || profile?.program || profile?.department;
-            if (!program) return;
-            const supabase = window.lecturerDB?.supabase;
-            if (!supabase) return;
-
-            const { count: studentCount } = await supabase
-                .from('consolidated_user_profiles_table')
-                .select('*', { count: 'exact', head: true })
-                .eq('program', program)
-                .in('role', ['student', 'Student']);
-
-            const blocks = [...new Set(this.assignedUnits.map(u => String(u.block || '').trim()).filter(Boolean))];
-            const currentBlockRaw = blocks.length > 0 ? blocks[0] : null;
-            const currentBlock = currentBlockRaw ? this.getBlockDisplay(currentBlockRaw) : 'N/A';
-
-            let classCount = 0;
-            if (currentBlockRaw) {
-                const result = await supabase
-                    .from('consolidated_user_profiles_table')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('program', program)
-                    .eq('block', currentBlockRaw)
-                    .in('role', ['student', 'Student', 'STUDENT']);
-                if (!result.error) classCount = Number(result.count || 0);
-                else console.warn('⚠️ Block roster count failed:', result.error.message);
-            } else {
-                classCount = Number(studentCount || 0);
-            }
-
+            const profile = window.lecturerDB?.getCurrentUserProfile?.() || {};
+            const program = String(this.currentProgram || window.CURRENT_PROGRAM || profile.program || 'KRCHN').trim();
+            const blocks = [...new Set((this.assignedUnits || []).filter(unit => String(unit.program || '').trim().toLowerCase() === program.toLowerCase()).map(unit => String(unit.block || '').trim()).filter(Boolean))];
+            const currentBlockRaw = blocks[0] || null;
+            const roster = await this.getAssignedStudentRoster({ program, block: currentBlockRaw });
+            const classCount = roster.length;
             this.currentAssignedBlock = currentBlockRaw;
             this.classStudentCount = classCount;
-
+            const currentBlock = currentBlockRaw ? this.getBlockDisplay(currentBlockRaw) : 'N/A';
             const programDisplay = window.LecturerUtils?.getProgramDisplayName?.(program) || program;
             const typeLabel = this.getProgramTypeLabel();
             const emoji = this.getProgramEmoji();
-
-            const displayMap = {
-                'programDisplayName': `${emoji} ${programDisplay}`,
-                'programTypeBadge': typeLabel,
-                'currentBlockDisplay': currentBlock,
-                'studentCountDisplay': classCount + ' Students'
-            };
-
-            for (const [id, value] of Object.entries(displayMap)) {
-                const el = document.getElementById(id);
-                if (el) el.textContent = value;
-            }
-        } catch (error) {
-            console.error('❌ loadProgramInfo:', error);
-        }
+            const displayMap = { programDisplayName: `${emoji} ${programDisplay}`, programTypeBadge: typeLabel, currentBlockDisplay: currentBlock, studentCountDisplay: classCount + ' Students' };
+            for (const [id, value] of Object.entries(displayMap)) { const el = document.getElementById(id); if (el) el.textContent = value; }
+        } catch (error) { console.error('❌ loadProgramInfo:', error); }
     },
-
     // ============================================================
     // MAP
     // ============================================================
@@ -1585,33 +1587,19 @@ const LecturerAttendance = {
 
     async populateStudentSelect() {
         try {
-            const profile = window.lecturerDB?.getCurrentUserProfile();
-            const program = this.currentProgram || profile?.program;
-            const supabase = window.lecturerDB?.supabase;
-            if (!supabase || !program) return;
-
-            const { data: students } = await supabase
-                .from('consolidated_user_profiles_table')
-                .select('user_id, full_name, student_id, block')
-                .eq('program', program)
-                .in('role', ['student', 'Student'])
-                .order('full_name');
-
+            const students = await this.getAssignedStudentRoster();
             const select = document.getElementById('attStudentId');
-            if (select && students) {
+            if (select) {
                 select.innerHTML = `<option value="">-- Select ${this.getProgramTypeLabel()} Student --</option>`;
-                students.forEach(s => {
+                students.forEach(student => {
                     const option = document.createElement('option');
-                    option.value = s.user_id;
-                    option.textContent = `${s.full_name} (${s.student_id || 'N/A'})`;
+                    option.value = student.user_id;
+                    option.textContent = `${student.full_name || 'N/A'} (${student.student_id || student.admission_number || 'N/A'})`;
                     select.appendChild(option);
                 });
             }
-        } catch (error) {
-            console.error('❌ populateStudentSelect:', error);
-        }
+        } catch (error) { console.error('[Lecturer Attendance] Assigned student selector failed:', error); }
     },
-
     // ============================================================
     // APPLY / RESET FILTERS — DATE RANGE COMPATIBLE
     // Handles __CLINICAL_ONLY__ special case
@@ -2549,41 +2537,19 @@ const LecturerAttendance = {
     },
 
     async getSessionRoster(session) {
-        const supabase = window.lecturerDB?.supabase;
-        if (!supabase || !session?.id) return [];
-
+        if (!session?.id) return [];
         const program = session.target_program || session.program || this.currentProgram || 'KRCHN';
-        const block = this.getAssignedBlockForUnit(
-            session.unit_name || session.course_name || session.session_title || session.title,
-            session.target_block || session.block_term || session.block
-        );
-        const intake = session.intake_year;
-
-        let query = supabase
-            .from('consolidated_user_profiles_table')
-            .select('user_id, full_name, student_id, program, block, intake_year, role')
-            .in('role', ['student', 'Student', 'STUDENT'])
-            .eq('program', program);
-
-        if (block) query = query.eq('block', block);
-        if (intake !== null && intake !== undefined && String(intake) !== '') {
-            query = query.eq('intake_year', String(intake));
-        }
-
-        const { data, error } = await query.order('full_name', { ascending: true });
-        if (error) throw error;
-
-        return (data || []).map(student => ({
-            user_id: student.user_id,
-            name: student.full_name || 'Unknown Student',
-            registration_number: student.student_id || student.user_id,
-            student_id: student.student_id || student.user_id,
-            program: student.program || program,
-            block: student.block || block || null,
-            intake_year: student.intake_year || intake || null
+        const unitName = session.unit_name || session.course_name || session.session_title || session.title;
+        const block = this.getAssignedBlockForUnit(unitName, session.target_block || session.block_term || session.block);
+        const roster = await this.getAssignedStudentRoster({ program, unitName, block, intake: session.intake_year });
+        return roster.map(student => ({
+            user_id: student.user_id, name: student.full_name || 'Unknown Student',
+            registration_number: student.student_id || student.admission_number || student.user_id,
+            student_id: student.student_id || student.admission_number || student.user_id,
+            program: student.program || program, block: student.block || block || null,
+            intake_year: student.intake_year || session.intake_year || null
         }));
     },
-
     async getSessionAttendanceRegister(session, finalize = false) {
         const supabase = window.lecturerDB?.supabase;
         if (!supabase || !session?.id) {
