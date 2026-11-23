@@ -59,21 +59,28 @@ function parseKenyaDateTime(value){
  const parsed=new Date(raw);return Number.isNaN(parsed.getTime())?null:parsed;
 }
 function startsAt(exam){
+ // The admin form's date + time fields are the canonical schedule entered
+ // in Kenya time. Prefer them over legacy start_time values that may have
+ // been converted to UTC before being stored in a timestamp-without-zone column.
+ const date=val(exam.exam_date,exam.start_date);
+ const time=val(exam.exam_start_time);
+ if(date&&time){
+  const localTime=String(time).slice(0,5);
+  const fromAdmin=parseKenyaDateTime(String(date).slice(0,10)+'T'+localTime+':00+03:00');
+  if(fromAdmin)return fromAdmin;
+ }
  const primary=val(exam.start_time,exam.scheduled_at);
  if(primary){const parsed=parseKenyaDateTime(primary);if(parsed)return parsed;}
- const date=val(exam.exam_date,exam.start_date);
- if(!date)return null;
- const time=String(val(exam.exam_start_time,'00:00')).slice(0,5);
- return parseKenyaDateTime(String(date).slice(0,10)+'T'+time+':00+03:00');
+ return null;
 }
 function examState(exam){
  const status=norm(exam.status);
  if(['closed','expired','completed','cancelled'].includes(status))return 'closed';
  const start=startsAt(exam),duration=Number(exam.duration_minutes)||40;
  const now=Date.now();
- const explicitEnd=val(exam.end_time);
- const endAt=explicitEnd?new Date(explicitEnd):null;
- if(start){const end=endAt&&!Number.isNaN(endAt.getTime())?endAt.getTime():start.getTime()+duration*60000;if(now<start.getTime())return 'upcoming';if(now<=end)return 'open';return 'closed'}
+ // Duration is authoritative for the student countdown/window. Older end_time
+ // values may be UTC-naive database timestamps and can differ by three hours.
+ if(start){const end=start.getTime()+duration*60000;if(now<start.getTime())return 'upcoming';if(now<=end)return 'open';return 'closed'}
  if(['upcoming','scheduled','pending'].includes(status))return 'upcoming';
  if(['published','active','open','available'].includes(status))return 'open';
  return 'open';
