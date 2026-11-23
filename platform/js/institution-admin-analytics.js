@@ -7,6 +7,8 @@
  const db=()=>{if(!api?.db||!api?.institutionId)throw new Error("Institution session is not ready.");return api.db;};
  const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
  const score=r=>{const status=String(r.retake_status||"").trim().toUpperCase();if(["PASS","PASSED","COMPETENT","COMPETENT/PASS"].includes(status)){const n=Number(r.retake_score);if(Number.isFinite(n))return n;}const raw=r.final_score;if(raw===null||raw===undefined||raw==="")return null;const n=Number(raw);return Number.isFinite(n)?n:null;};
+ const passThreshold=r=>String(r.program||"").trim().toUpperCase()==="KRCHN"?60:50;
+ const gradeFor=(r,n)=>n===null?"PENDING":n>=75?"A":n>=65?"B":n>=passThreshold(r)?"C":"FAIL";
  function notice(msg,bad=false){const host=$("iaAnalyticsNotice");if(host){host.textContent=msg;host.style.color=bad?"#a12b2b":"#16634a";}}
  function populate(id,values,label){const el=$(id);if(!el)return;const old=el.value,opts=[...new Set(values.map(v=>String(v??"").trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));el.innerHTML='<option value="all">'+label+'</option>'+opts.map(v=>'<option value="'+esc(v)+'">'+esc(v)+'</option>').join("");if(opts.includes(old))el.value=old;}
  function filtered(){const p=$("iaAnalyticsProgram")?.value||"all",y=$("iaAnalyticsYear")?.value||"all",b=$("iaAnalyticsBlock")?.value||"all",intake=$("iaAnalyticsIntake")?.value||"all";
@@ -14,14 +16,14 @@
   return rows.filter(r=>(p==="all"||(p==="tvet"?String(r.program||"").toUpperCase()!=="KRCHN":String(r.program||"").toLowerCase()===p.toLowerCase()))&&(y==="all"||String(r.academic_year||"")===y)&&(b==="all"||String(r.block||"")===b)&&(!cohort||[r.student_id,r.admission_number].filter(Boolean).some(v=>cohort.has(String(v)))));
  }
  function paint(){
-  const records=filtered(),scored=records.map(score).filter(v=>v!==null),passed=scored.filter(v=>v>=60).length,failed=scored.filter(v=>v<60).length;
+  const records=filtered(),scored=records.map(r=>({row:r,value:score(r)})).filter(x=>x.value!==null),passed=scored.filter(x=>x.value>=passThreshold(x.row)).length,failed=scored.length-passed;
   const approved=records.filter(r=>String(r.approval_status||"").toLowerCase()==="approved"),pending=records.filter(r=>String(r.approval_status||"").toLowerCase()==="pending"),published=records.filter(r=>r.published===true);
   const avg=scored.length?scored.reduce((a,b)=>a+b,0)/scored.length:0,studentsCount=new Set(records.map(r=>r.admission_number||r.student_id).filter(Boolean)).size,unitsCount=new Set(records.map(r=>r.subject_name).filter(Boolean)).size;
   const values=[["iaAnalyticsMarks",records.length],["iaAnalyticsStudents",studentsCount],["iaAnalyticsUnits",unitsCount],["iaAnalyticsAverage",scored.length?avg.toFixed(1)+"%":"—"],["iaAnalyticsPassRate",scored.length?(passed/scored.length*100).toFixed(1)+"%":"—"],["iaAnalyticsAtRisk",failed],["iaAnalyticsPending",pending.length],["iaAnalyticsPublished",published.length]];
   values.forEach(([id,v])=>{if($(id))$(id).textContent=typeof v==="number"?v.toLocaleString("en-KE"):v;});
   if(!window.Chart){notice("Charts could not load. Summary figures are still available.",true);return;}
   const gradeCounts={},blockCounts={},programCounts={},unitScores={};
-  records.forEach(r=>{const n=score(r),grade=n===null?"PENDING":n>=75?"A":n>=65?"B":n>=60?"C":"FAIL",block=r.block||"Not specified",program=r.program||"Unspecified",unit=r.subject_name||"Unspecified";gradeCounts[grade]=(gradeCounts[grade]||0)+1;blockCounts[block]=(blockCounts[block]||0)+1;programCounts[program]=(programCounts[program]||0)+1;if(n!==null)(unitScores[unit]??=[]).push(n);});
+  records.forEach(r=>{const n=score(r),grade=gradeFor(r,n),block=r.block||"Not specified",program=r.program||"Unspecified",unit=r.subject_name||"Unspecified";gradeCounts[grade]=(gradeCounts[grade]||0)+1;blockCounts[block]=(blockCounts[block]||0)+1;programCounts[program]=(programCounts[program]||0)+1;if(n!==null)(unitScores[unit]??=[]).push(n);});
   const draw=(id,key,data,type="bar")=>{const el=$(id);if(!el)return;if(charts[key])charts[key].destroy();charts[key]=new Chart(el,{type,data:{labels:Object.keys(data),datasets:[{label:key==="grades"?"Marks by grade":key==="blocks"?"Marks by block":"Marks",data:Object.values(data),borderWidth:1}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:type==="doughnut",position:"bottom"}},scales:type==="doughnut"?{}:{y:{beginAtZero:true,ticks:{precision:0}}}}});};
   draw("iaAnalyticsGradeChart","grades",gradeCounts,"doughnut");draw("iaAnalyticsBlockChart","blocks",blockCounts);draw("iaAnalyticsProgramChart","programs",programCounts);
   const body=$("iaAnalyticsUnitRows");if(body){const ranked=Object.entries(unitScores).map(([unit,s])=>({unit,count:s.length,average:s.reduce((a,b)=>a+b,0)/s.length})).sort((a,b)=>b.average-a.average).slice(0,20);body.innerHTML=ranked.length?ranked.map(x=>"<tr><td>"+esc(x.unit)+"</td><td>"+x.count+"</td><td>"+x.average.toFixed(1)+"%</td></tr>").join(""):'<tr><td colspan="3" class="ia-empty">No scored unit marks available.</td></tr>';}
