@@ -744,12 +744,13 @@ const LecturerDashboard = {
             // scoped SECURITY DEFINER RPC instead of requiring HR module access.
             const { data: staff, error: identityError } = await supabase.rpc('current_lecturer_staff_assignment_identity');
             if (identityError) throw identityError;
-            if (!staff?.id) throw new Error('No active institution-linked lecturer account matches this session. Ask the institution administrator to verify the account and membership.');
+            if (!staff?.id || String(staff.id) !== String(user.id)) throw new Error('No active institution-linked lecturer account matches this session. Ask the institution administrator to verify the account and membership.');
 
+            const profile = window.lecturerDB?.getCurrentUserProfile?.() || {};
             this.lecturerUuid = user.id;
             this.lecturerAssignmentId = String(staff.id).trim();
-            if (staff.program) {
-                this.currentProgram = String(staff.program).trim();
+            this.currentProgram = String(window.CURRENT_PROGRAM || profile.program || staff.program || this.currentProgram || 'KRCHN').trim();
+            if (this.currentProgram) {
                 this.isTVET = this.currentProgram.toUpperCase() !== 'KRCHN';
             } else if (String(staff.department || '').toLowerCase().includes('nursing')) {
                 this.currentProgram = 'KRCHN';
