@@ -551,36 +551,50 @@ const FROM_ADDRESS =
             const existing = el.value;
             const sb = this.sb();
             const program = this.value(['exam_program', 'examProgram']) || this.profile()?.program || this.profile()?.department || '';
-            let blocks = [];
+            let periods = [], structure = null, hasCanonicalProgram = false;
             try {
                 if (sb && program && this.institutionId) {
                     const { data: programRow, error: programError } = await sb.from('programs')
-                        .select('id').eq('program_code', program).eq('institution_id', this.institutionId).maybeSingle();
+                        .select('id,structure_type').eq('program_code', program).eq('institution_id', this.institutionId).maybeSingle();
                     if (programError) throw programError;
-                    if (programRow?.id) {
+                    hasCanonicalProgram = !!programRow?.id;
+                    if (window.CampusAcademicStructure && hasCanonicalProgram) {
+                        structure = await window.CampusAcademicStructure.resolve(sb, this.institutionId, program);
+                    }
+                    if (structure?.periods?.length) {
+                        periods = structure.periods.map(x => x.name);
+                    } else if (programRow?.id) {
                         const { data, error } = await sb.from('program_blocks').select('block_name')
                             .eq('program_id', programRow.id).eq('institution_id', this.institutionId)
                             .eq('status', 'active').order('block_sequence');
                         if (error) throw error;
-                        blocks = (data || []).map(x => x.block_name).filter(Boolean);
+                        periods = (data || []).map(x => x.block_name).filter(Boolean);
                     }
-                    if (!blocks.length) {
+                    if (!periods.length) {
                         const { data, error } = await sb.from('units_catalog').select('block')
                             .eq('institution_id', this.institutionId).eq('program', program)
                             .eq('status', 'active').limit(3000);
                         if (error) throw error;
-                        blocks = (data || []).map(x => x.block).filter(Boolean);
+                        periods = (data || []).map(x => x.block).filter(Boolean);
                     }
+                    const type = structure?.type || programRow?.structure_type || 'Block';
+                    const singular = type.toLowerCase();
+                    const label = this.$('exam_block_label');
+                    const hint = this.$('exam_block_hint');
+                    if (label) label.textContent = type;
+                    if (hint) hint.textContent = 'Select a programme ' + singular + ' from its institution curriculum.';
+                    el.setAttribute('aria-label', type);
                 }
             } catch (error) {
-                console.warn('[Lecturer exams] Canonical block lookup failed; using curriculum fallback:', error.message);
+                console.warn('[Lecturer exams] Institution academic period lookup failed:', error.message);
             }
-            if (!blocks.length) blocks = STATIC_BLOCKS;
-            blocks = [...new Set(blocks.map(String))].sort((a,b) => a.localeCompare(b, undefined, {numeric:true}));
-            el.innerHTML = '<option value="">-- Select --</option>' + blocks.map(b =>
+            if (!periods.length && !hasCanonicalProgram) periods = STATIC_BLOCKS;
+            periods = [...new Set(periods.map(String))].sort((a,b) => a.localeCompare(b, undefined, {numeric:true}));
+            const type = structure?.type || 'Block';
+            el.innerHTML = '<option value="">' + (periods.length ? '-- Select ' + type.toLowerCase() + ' --' : 'No academic periods configured') + '</option>' + periods.map(b =>
                 '<option value="' + this.esc(b) + '">' + this.esc(b) + '</option>'
             ).join('');
-            if (existing && !blocks.includes(existing)) el.add(new Option(existing, existing));
+            if (existing && !periods.includes(existing)) el.add(new Option(existing, existing));
             if (existing) el.value = existing;
         },
 
