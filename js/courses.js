@@ -24,6 +24,7 @@
             this.userBlock = null;
             this.userTerm = null;
             this.isTVETStudent = false;
+            this.academicStructure = null;
             
             // DOM elements
             this.cacheElements();
@@ -158,6 +159,15 @@
                 const programFromProfile = this.userProfile.program || 'KRCHN';
                 this.intakeYear = this.userProfile.intake_year || 2025;
                 this.programCode = programFromProfile;
+                const academicClient = window.sb || window.supabaseClient || window.db?.supabase;
+                if (window.CampusAcademicStructure && academicClient && this.userProfile.institution_id) {
+                    window.CampusAcademicStructure.resolve(academicClient, this.userProfile.institution_id, programFromProfile)
+                        .then(structure => {
+                            this.academicStructure = structure;
+                            if (this.loaded) this.applyFilterAndDisplay();
+                        })
+                        .catch(error => console.warn('[Student Courses] Academic structure lookup failed:', error.message));
+                }
                 
                 const tvetPrograms = ['DPOTT', 'DCH', 'DHRIT', 'DSL', 'DSW', 'DCJS', 'DHSS', 'DICT', 'DME',
                                       'CPOTT', 'CCH', 'CHRIT', 'CPC', 'CSL', 'CSW', 'CCJS', 'CAG', 'CHSS', 'CICT',
@@ -576,7 +586,7 @@
             
             let unitsToShow = this.approvedUnits;
             
-            const blockTermLabel = this.isTVETStudent ? 'Term' : 'Block';
+            const blockTermLabel = this.academicStructure?.singular || (this.isTVETStudent ? 'Term' : 'Block');
             const blockTermValue = this.isTVETStudent ? this.userTerm : this.userBlock;
             
             let html = '';
