@@ -110,10 +110,10 @@ const LecturerCourses = {
 
             const { data: staff, error } = await supabase.rpc('current_lecturer_staff_assignment_identity');
             if (error) throw error;
-            if (!staff?.id || String(staff.id) !== String(user.id)) throw new Error('No active institution-linked lecturer account identity was returned.');
+            if (!staff?.id || String(staff.id) !== String(user.id) || !staff.assignment_id) throw new Error('Your lecturer account has no unique assignment mapping. Ask the institution administrator to reconcile your lecturer assignments.');
 
             const profile = window.lecturerDB?.getCurrentUserProfile?.() || {};
-            this.lecturerAssignmentId = String(staff.id).trim();
+            this.lecturerAssignmentId = String(staff.assignment_id).trim();
             this.currentProgram = String(window.CURRENT_PROGRAM || profile.program || staff.program || 'KRCHN').trim();
             this.isTVET = this.currentProgram.toUpperCase() !== 'KRCHN';
             window.CORRECT_LECTURER_ID = this.lecturerAssignmentId;
