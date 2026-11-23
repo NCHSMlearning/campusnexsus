@@ -180,7 +180,7 @@ const LecturerAttendance = {
         const emoji = this.getProgramEmoji();
         const threshold = this.getPassingThreshold();
 
-        document.querySelectorAll('[id="programDisplayName"]').forEach(element => {
+        document.querySelectorAll('[id="programDisplayName"], [data-program-display-name]').forEach(element => {
             element.textContent = `${this.currentProgram} (${typeLabel})`;
         });
 
