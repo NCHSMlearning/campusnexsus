@@ -29,7 +29,7 @@ const CONFIG = {
     INACTIVITY_TIMEOUT: 30 * 60 * 1000,
     MULTIPLE_FACES_TIMEOUT: 45,
     FULLSCREEN_EXIT_TIMEOUT: 10,
-    STUDENT_DASHBOARD_URL: '/student',
+    STUDENT_DASHBOARD_URL: '/studentexams.html',
     STUDENT_LOGIN_URL: '/examlogin',
     VIOLATION_COOLDOWN: 5000,
     EXAM_SESSION_KEY: 'exam_session',
