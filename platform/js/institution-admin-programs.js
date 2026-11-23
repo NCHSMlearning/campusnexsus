@@ -17,7 +17,7 @@ const db = () => { if(!api?.db || !api?.institutionId) throw new Error("Institut
 const tenant = () => { if(!api?.institutionId) throw new Error("Your active institution could not be verified."); return api.institutionId; };
 const programQuery = () => db().from(TABLES.programs);
 const ownProgram = async id => {
- const {data,error}=await programQuery().select("id,program_code,category").eq("id",id).eq("institution_id",tenant()).maybeSingle();
+ const {data,error}=await programQuery().select("id,program_code,program_name,category,structure_type").eq("id",id).eq("institution_id",tenant()).maybeSingle();
  if(error) throw error; if(!data) throw new Error("This programme does not belong to your institution."); return data;
 };
 const empty = (id,cols,message) => {const body=$(id);if(body)body.innerHTML='<tr><td colspan="'+cols+'" style="padding:28px;text-align:center;color:#64748b">'+esc(message)+'</td></tr>';};
@@ -61,7 +61,7 @@ async function updateProgramTotals(){
  if($("totalBlocksCount"))$("totalBlocksCount").textContent=b.count||0;
 }
 function populateProgramSelectors(rows){
- ["intake_program_select","block_program_select","mapping_program_select"].forEach(id=>{
+ ["intake_program_select","block_program_select","mapping_program_select","iaNewUnitProgram"].forEach(id=>{
   const select=$(id);if(!select)return;const current=select.value;
   select.innerHTML='<option value="">-- Select Program --</option>';
   rows.forEach(p=>{const opt=document.createElement("option");opt.value=p.id;opt.textContent=p.program_code+" - "+p.program_name;select.append(opt);});
@@ -192,6 +192,45 @@ async function populateCourseSelector(){
  const {data,error}=await db().from("units_catalog").select("id,unit_name,unit_code,program,block").eq("institution_id",tenant()).eq("status","active").order("unit_name").limit(5000);if(error)throw error;
  const select=$("mapping_course_select");if(select){select.innerHTML='<option value="">-- Select Unit / Course --</option>';(data||[]).forEach(u=>{const o=document.createElement("option");o.value=String(u.id);o.textContent=(u.unit_code||"UNIT")+" · "+u.unit_name+" — "+u.program+" / "+u.block;select.append(o);});}
 }
+async function populateNewUnitPeriods(programId){
+ const select=$("iaNewUnitPeriod"),label=$("iaNewUnitPeriodLabel");if(!select)return;
+ if(!programId){select.innerHTML='<option value="">Select programme first</option>';return;}
+ const program=await ownProgram(programId),structure=program.structure_type||"Block";
+ if(label)label.textContent=structure+" *";
+ const {data,error}=await db().from(TABLES.blocks).select("block_name,block_sequence").eq("program_id",programId).eq("institution_id",tenant()).eq("status","active").order("block_sequence",{ascending:true});
+ if(error)throw error;
+ select.innerHTML='<option value="">Select '+esc(structure.toLowerCase())+'</option>';
+ (data||[]).forEach(item=>{const opt=document.createElement("option");opt.value=item.block_name;opt.textContent=item.block_name;select.append(opt);});
+ if(!data?.length)select.innerHTML='<option value="">No '+esc(structure.toLowerCase())+' configured — add one in Programme Structure</option>';
+}
+async function addUnitToProgram(){
+ const programId=$("iaNewUnitProgram")?.value,code=$("iaNewUnitCode")?.value.trim().toUpperCase(),name=$("iaNewUnitName")?.value.trim(),period=$("iaNewUnitPeriod")?.value,type=$("iaNewUnitType")?.value||"Core";
+ const feedback=$("iaNewUnitFeedback"),button=$("iaCreateProgramUnit");
+ const setMessage=(message,error=false)=>{if(feedback){feedback.textContent=message;feedback.style.color=error?"#b91c1c":"#475569";}};
+ if(!programId||!code||!name||!period){setMessage("Select a programme and its academic period, then enter the unit code and name.",true);return;}
+ if(!/^[A-Z0-9][A-Z0-9._/-]{1,39}$/.test(code)){setMessage("Use a valid unit code (letters, numbers, dots, slashes or hyphens).",true);return;}
+ if(button)button.disabled=true;
+ try{
+  const program=await ownProgram(programId),now=new Date().toISOString();
+  const {data:existing,error:dupError}=await db().from("units_catalog").select("id").eq("institution_id",tenant()).ilike("unit_code",code).maybeSingle();
+  if(dupError)throw dupError;if(existing)throw new Error("Unit code "+code+" already exists in this institution.");
+  const payload={institution_id:tenant(),unit_code:code,unit_name:name,program:program.program_code,block:period,unit_type:type,credits:Math.max(0,parseInt($("iaNewUnitCredits")?.value,10)||0),hours:Math.max(0,parseInt($("iaNewUnitHours")?.value,10)||0),prerequisites:$("iaNewUnitPrerequisites")?.value.trim()||null,description:$("iaNewUnitDescription")?.value.trim()||null,status:"active",created_at:now,updated_at:now};
+  const {data:unit,error:unitError}=await db().from("units_catalog").insert(payload).select("id,unit_code,unit_name,program,block,credits,institution_id").single();
+  if(unitError)throw unitError;
+  try{
+   const {data:course,error:courseError}=await db().from(TABLES.courses).insert({institution_id:tenant(),course_name:name,name,unit_code:code,code,target_program:program.program_code,target_semester:period,block:period,status:"Active",created_at:now}).select("id").single();
+   if(courseError)throw courseError;
+   const {error:mappingError}=await db().from(TABLES.mappings).insert({program_id:programId,course_id:course.id,unit_catalog_id:unit.id,block_name:period,is_core:type.toLowerCase()!=="elective",created_at:now,updated_at:now});
+   if(mappingError)throw mappingError;
+  }catch(linkError){throw new Error("Unit was saved to the institution catalogue, but programme linking failed: "+linkError.message+". Refresh the programme mapping and link the saved unit.");}
+  ["iaNewUnitCode","iaNewUnitName","iaNewUnitPrerequisites","iaNewUnitDescription"].forEach(id=>{if($(id))$(id).value="";});
+  if($("iaNewUnitCredits"))$("iaNewUnitCredits").value="3";if($("iaNewUnitHours"))$("iaNewUnitHours").value="0";
+  setMessage("Added "+code+" to "+program.program_name+" · "+period+".");
+  notify("Unit added to "+program.program_name+" successfully.","success");
+  await Promise.all([loadProgramMappings(),populateCourseSelector()]);
+ }catch(error){setMessage(error.message,true);notify("Unable to add unit to programme: "+error.message,"error");}
+ finally{if(button)button.disabled=false;}
+}
 async function populateBlockSelector(programId){
  await ownProgram(programId);const {data,error}=await db().from(TABLES.blocks).select("block_name").eq("program_id",programId).eq("institution_id",tenant()).eq("status","active").order("block_sequence");if(error)throw error;
  const select=$("mapping_block_select");if(select){select.innerHTML='<option value="">-- Any Block --</option>';(data||[]).forEach(b=>{const o=document.createElement("option");o.value=b.block_name;o.textContent=b.block_name;select.append(o);});}
@@ -229,7 +268,9 @@ function bind(){
  ["program_search","program_category_filter","program_type_filter","program_status_filter"].forEach(id=>$(id)?.addEventListener(id==="program_search"?"input":"change",filterProgramsTable));
  $("intake_program_select")?.addEventListener("change",()=>loadProgramIntakes().catch(e=>notify(e.message,"error")));
  $("block_program_select")?.addEventListener("change",()=>loadProgramBlocks().catch(e=>notify(e.message,"error")));
- $("mapping_program_select")?.addEventListener("change",async()=>{try{await loadProgramMappings();await populateBlockSelector($("mapping_program_select").value);}catch(e){notify(e.message,"error");}});
+ $("mapping_program_select")?.addEventListener("change",async()=>{try{const id=$("mapping_program_select").value;await loadProgramMappings();await populateBlockSelector(id);if($("iaNewUnitProgram"))$("iaNewUnitProgram").value=id;await populateNewUnitPeriods(id);}catch(e){notify(e.message,"error");}});
+ $("iaNewUnitProgram")?.addEventListener("change",async()=>{try{const id=$("iaNewUnitProgram").value;if($("mapping_program_select"))$("mapping_program_select").value=id;await populateNewUnitPeriods(id);if(id){await populateBlockSelector(id);await loadProgramMappings();}}catch(e){notify("Unable to load programme periods: "+e.message,"error");}});
+ $("iaCreateProgramUnit")?.addEventListener("click",addUnitToProgram);
  document.addEventListener("click",async e=>{
   const edit=e.target.closest("[data-edit-program]");if(edit){await editProgram(edit.dataset.editProgram);return;}
   const del=e.target.closest("[data-delete-program]");if(del){await deleteProgram(del.dataset.deleteProgram);return;}
@@ -265,6 +306,8 @@ window.addProgramBlock=addProgramBlock;
 window.deleteBlock=deleteBlock;
 window.loadProgramMappings=loadProgramMappings;
 window.addProgramCourseMapping=addProgramCourseMapping;
+window.addUnitToProgram=addUnitToProgram;
+window.populateNewUnitPeriods=populateNewUnitPeriods;
 window.deleteMapping=deleteMapping;
 window.populateCourseSelector=populateCourseSelector;
 window.populateBlockSelector=populateBlockSelector;
