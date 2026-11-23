@@ -545,24 +545,42 @@ const FROM_ADDRESS =
             if (existing) el.value = existing;
         },
 
-        populateBlocks() {
-            const el = this.firstEl([
-                'exam_block_term',
-                'examBlockTerm'
-            ]);
-
+        async populateBlocks() {
+            const el = this.firstEl(['exam_block_term', 'examBlockTerm']);
             if (!el) return;
-
             const existing = el.value;
-
-            el.innerHTML =
-                '<option value="">-- Select --</option>' +
-                STATIC_BLOCKS.map(b =>
-                    '<option value="' + this.esc(b) + '">' +
-                    this.esc(b) +
-                    '</option>'
-                ).join('');
-
+            const sb = this.sb();
+            const program = this.value(['exam_program', 'examProgram']) || this.profile()?.program || this.profile()?.department || '';
+            let blocks = [];
+            try {
+                if (sb && program && this.institutionId) {
+                    const { data: programRow, error: programError } = await sb.from('programs')
+                        .select('id').eq('program_code', program).eq('institution_id', this.institutionId).maybeSingle();
+                    if (programError) throw programError;
+                    if (programRow?.id) {
+                        const { data, error } = await sb.from('program_blocks').select('block_name')
+                            .eq('program_id', programRow.id).eq('institution_id', this.institutionId)
+                            .eq('status', 'active').order('block_sequence');
+                        if (error) throw error;
+                        blocks = (data || []).map(x => x.block_name).filter(Boolean);
+                    }
+                    if (!blocks.length) {
+                        const { data, error } = await sb.from('units_catalog').select('block')
+                            .eq('institution_id', this.institutionId).eq('program', program)
+                            .eq('status', 'active').limit(3000);
+                        if (error) throw error;
+                        blocks = (data || []).map(x => x.block).filter(Boolean);
+                    }
+                }
+            } catch (error) {
+                console.warn('[Lecturer exams] Canonical block lookup failed; using curriculum fallback:', error.message);
+            }
+            if (!blocks.length) blocks = STATIC_BLOCKS;
+            blocks = [...new Set(blocks.map(String))].sort((a,b) => a.localeCompare(b, undefined, {numeric:true}));
+            el.innerHTML = '<option value="">-- Select --</option>' + blocks.map(b =>
+                '<option value="' + this.esc(b) + '">' + this.esc(b) + '</option>'
+            ).join('');
+            if (existing && !blocks.includes(existing)) el.add(new Option(existing, existing));
             if (existing) el.value = existing;
         },
 
@@ -573,6 +591,7 @@ const FROM_ADDRESS =
             const intakeMonth = this.$('exam_intake_month');
 
             const onFilterChange = async () => {
+                if (program && program === document.activeElement) await this.populateBlocks();
                 await this.loadClasses();
                 const input = this.$('createCourseSearchInput');
                 this.searchCourses(input ? input.value : '');
@@ -608,6 +627,22 @@ const FROM_ADDRESS =
                 if (error) throw error;
 
                 this.courses = data || [];
+                const selectedProgram = this.value(['exam_program', 'examProgram']) || this.profile()?.program || this.profile()?.department || '';
+                if (selectedProgram) {
+                    const { data: programRow, error: programError } = await sb.from('programs')
+                        .select('id').eq('program_code', selectedProgram).eq('institution_id', this.institutionId).maybeSingle();
+                    if (programError) throw programError;
+                    if (programRow?.id) {
+                        const { data: mappings, error: mappingError } = await sb.from('program_courses')
+                            .select('unit_catalog_id,block_name').eq('program_id', programRow.id)
+                            .not('unit_catalog_id', 'is', null);
+                        if (mappingError) throw mappingError;
+                        if ((mappings || []).length) {
+                            const mappedIds = new Set(mappings.map(x => Number(x.unit_catalog_id)).filter(Number.isFinite));
+                            this.courses = this.courses.filter(unit => mappedIds.has(Number(unit.id)));
+                        }
+                    }
+                }
 
                 const byProgram = {};
                 this.courses.forEach(c => {
