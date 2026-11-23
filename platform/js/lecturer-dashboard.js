@@ -815,151 +815,71 @@ const LecturerDashboard = {
         try {
             const supabase = this.getSupabaseClient();
             if (!supabase) throw new Error('Supabase client is unavailable.');
-
-            const program = this.getCurrentProgram();
-            const normalize = value => String(value || '').trim().toLowerCase();
-            const assignedUnitKeys = new Set(this.assignedUnits.map(unit =>
-                normalize(unit.subject_name) + '|' + normalize(unit.block)
-            ).filter(key => key !== '|'));
-
-            // A lecturer with no assigned units must not be shown the whole programme.
-            if (assignedUnitKeys.size === 0) {
-                if (!this._assignedUnitsLoaded) return;
-                this.assignedStudents = [];
-                this._assignedStudentsLoaded = true;
-                this.totalAssignedEnrollments = 0;
-                this.assignedEnrollmentKeys = new Set();
-                this.metrics.totalStudents = 0;
-                this.updateMetricCards();
-                return;
+            const program = String(this.getCurrentProgram() || '').trim();
+            const norm = value => String(value || '').trim().toLowerCase().replace(/\s+/g, ' ');
+            const units = Array.isArray(this.assignedUnits) ? this.assignedUnits : [];
+            if (!this._assignedUnitsLoaded) throw new Error('Assigned units have not finished loading.');
+            if (!units.length) {
+                this.assignedStudents = []; this.assignedEnrollmentKeys = new Set(); this.totalAssignedEnrollments = 0;
+                this._assignedStudentsLoaded = true; this.metrics.totalStudents = 0; this.updateMetricCards(); return;
             }
-
-            const unitNames = [...new Set(this.assignedUnits
-                .map(unit => String(unit.subject_name || '').trim())
-                .filter(Boolean))];
-
-            const { data: registrationRows, error: enrollError } = await supabase
-                .from('student_unit_registrations')
-                .select('student_id, unit_name, block, status, program')
-                .in('unit_name', unitNames)
-                .eq('program', program)
-                .in('status', ['approved', 'completed']);
-
-            if (enrollError) throw enrollError;
-
-            // Match both unit AND block: the same unit can be taught in several blocks.
-            const enrollments = (registrationRows || []).filter(enrollment =>
-                assignedUnitKeys.has(normalize(enrollment.unit_name) + '|' + normalize(enrollment.block))
-            );
+            // PostgREST defaults to 1,000 rows. Paginate registrations to avoid silently undercounting.
+            const fetchAll = async build => {
+                const rows = [];
+                for (let from = 0; ; from += 1000) {
+                    const { data, error } = await build().range(from, from + 999);
+                    if (error) throw error;
+                    rows.push(...(data || []));
+                    if (!data || data.length < 1000) break;
+                }
+                return rows;
+            };
+            const registrationRows = await fetchAll(() => supabase.from('student_unit_registrations')
+                .select('student_id, admission_number, unit_code, unit_name, block, status, program')
+                .ilike('program', program).in('status', ['approved', 'completed']));
+            const matchesUnit = row => units.some(unit => {
+                if (norm(unit.block) !== norm(row.block)) return false;
+                const codeMatch = norm(unit.subject_code) && norm(row.unit_code) && norm(unit.subject_code) === norm(row.unit_code);
+                return Boolean(codeMatch || norm(unit.subject_name) === norm(row.unit_name));
+            });
+            const deduped = new Map();
+            registrationRows.filter(row => row.student_id && matchesUnit(row)).forEach(row => {
+                const key = [String(row.student_id), norm(row.unit_code || row.unit_name), norm(row.block)].join('|');
+                if (!deduped.has(key)) deduped.set(key, row);
+            });
+            const enrollments = [...deduped.values()];
             this.totalAssignedEnrollments = enrollments.length;
-            // Keep exact student + unit + block membership for every downstream dashboard query.
-            this.assignedEnrollmentKeys = new Set(enrollments.map(enrollment =>
-                String(enrollment.student_id || '').trim() + '|' + normalize(enrollment.unit_name) + '|' + normalize(enrollment.block)
-            ));
-
-            const studentIds = [...new Set(enrollments
-                .map(enrollment => String(enrollment.student_id || '').trim())
-                .filter(Boolean))];
-
-            if (studentIds.length === 0) {
-                this.assignedStudents = [];
-                this._assignedStudentsLoaded = true;
-                this.metrics.totalStudents = 0;
-                this.updateMetricCards();
-                console.log('No approved registrations found for lecturer-assigned units/blocks.');
-                return;
-            }
-
-            // student_unit_registrations.student_id is UUID and maps directly
-            // to consolidated_user_profiles_table.user_id (also UUID).
-            // Do not query the legacy varchar student_id column with UUID values.
-            const { data: studentProfiles, error: profileError } = await supabase
-                .from('consolidated_user_profiles_table')
-                .select('user_id, student_id, admission_number, full_name, program, block, intake_year, email, phone, gender')
-                .in('user_id', studentIds)
-                .eq('role', 'student')
-                .eq('program', program);
-
-            if (profileError) throw profileError;
-
-            const profileMap = new Map();
-            (studentProfiles || []).forEach(student => {
-                if (student.user_id) profileMap.set(String(student.user_id), student);
-            });
-
-            const enrollmentMap = new Map();
-            enrollments.forEach(enrollment => {
-                const id = String(enrollment.student_id || '').trim();
-                const student = profileMap.get(id);
-                if (!student) return;
-
-                const canonicalId = String(student.user_id || student.student_id || id);
-                if (!enrollmentMap.has(canonicalId)) enrollmentMap.set(canonicalId, new Set());
-                enrollmentMap.get(canonicalId).add(String(enrollment.unit_name || '').trim());
-            });
-
-            this.assignedStudents = [...enrollmentMap.entries()]
-                .map(([id, units]) => {
-                    const student = profileMap.get(id);
-                    return student ? {
-                        ...student,
-                        units_enrolled: [...units],
-                        unit_count: units.size
-                    } : null;
-                })
-                .filter(Boolean)
-                .sort((a, b) => String(a.full_name || '').localeCompare(String(b.full_name || '')));
-            // Legacy marks may carry the admission number instead of the Auth UUID.
-            // Keep both identifiers mapped to the same registered unit/block pair.
+            const studentIds = [...new Set(enrollments.map(row => String(row.student_id).trim()).filter(Boolean))];
             this.assignedEnrollmentKeys = new Set();
-            enrollments.forEach(enrollment => {
-                const id=String(enrollment.student_id||'').trim();
-                const student=profileMap.get(id);
-                const unitKey=normalize(enrollment.unit_name)+'|'+normalize(enrollment.block);
-                [id,student?.student_id,student?.admission_number].filter(Boolean).forEach(identifier=>{
-                    this.assignedEnrollmentKeys.add(String(identifier).trim()+'|'+unitKey);
-                });
+            if (!studentIds.length) {
+                this.assignedStudents = []; this._assignedStudentsLoaded = true; this.metrics.totalStudents = 0; this.updateMetricCards(); return;
+            }
+            const profiles = await fetchAll(() => supabase.from('consolidated_user_profiles_table')
+                .select('user_id, student_id, admission_number, full_name, program, block, intake_year, email, phone, gender, status')
+                .in('user_id', studentIds).eq('role', 'student'));
+            const profileMap = new Map((profiles || []).map(student => [String(student.user_id), student]));
+            const roster = new Map();
+            enrollments.forEach(reg => {
+                const id = String(reg.student_id).trim();
+                const profile = profileMap.get(id) || { user_id: id, student_id: reg.admission_number || '', admission_number: reg.admission_number || '', full_name: 'Student profile unavailable', program, block: reg.block || '', status: 'unknown' };
+                if (!roster.has(id)) roster.set(id, { ...profile, units_enrolled: [], enrolled_blocks: [], unit_count: 0 });
+                const student = roster.get(id), unitName = String(reg.unit_name || '').trim(), block = String(reg.block || '').trim();
+                if (unitName && !student.units_enrolled.includes(unitName)) student.units_enrolled.push(unitName);
+                if (block && !student.enrolled_blocks.includes(block)) student.enrolled_blocks.push(block);
+                [id, profile.student_id, profile.admission_number, reg.admission_number].filter(Boolean).forEach(value => this.assignedEnrollmentKeys.add(String(value).trim() + '|' + norm(reg.unit_name) + '|' + norm(reg.block)));
             });
-
-            // One student is counted once, even when enrolled in several assigned units.
+            this.assignedStudents = [...roster.values()].map(student => ({ ...student, unit_count: student.units_enrolled.length }))
+                .sort((a, b) => String(a.full_name || '').localeCompare(String(b.full_name || '')));
             this._assignedStudentsLoaded = true;
             this.metrics.totalStudents = this.assignedStudents.length;
             this.updateMetricCards();
-            console.log(`👨‍🎓 Loaded ${this.assignedStudents.length} unique assigned students for program ${program}`);
+            console.log('[Lecturer Dashboard] Complete assigned roster loaded:', { students: this.assignedStudents.length, registrations: enrollments.length, units: units.length, program });
         } catch (error) {
-            console.error('Failed to load assigned students; retaining last valid snapshot:', error);
+            console.error('[Lecturer Dashboard] Assigned student roster failed; previous count retained:', error);
             this._assignedStudentsLoaded = false;
-            // Keep the last valid student list/count visible while permissions or
-            // connectivity recover. A query failure is never presented as zero.
             if (!this.assignedStudents.length) this.metrics.totalStudents = null;
             this.updateMetricCards();
         }
-    },
-
-    // A mark can be keyed by Auth UUID or by the student's admission number.
-    isMarkForAssignedRegistration(mark) {
-        // Match the same key format used when assignedEnrollmentKeys are built.
-        // Do not strip Roman numerals here: doing so made units such as
-        // "Clinical Pharmacology II" fail to match their own registrations.
-        const norm = value => String(value || '').trim().toLowerCase();
-        const unitKey = norm(mark?.subject_name) + '|' + norm(mark?.block);
-        const identifiers = [mark?.student_id, mark?.admission_number]
-            .map(value => String(value || '').trim()).filter(Boolean);
-        const registered = this.assignedEnrollmentKeys || new Set();
-        return identifiers.some(id => registered.has(id + '|' + unitKey));
-    },
-
-    getAssignedStudentIdentifierMap() {
-        const identifiers = new Map();
-        (this.assignedStudents || []).forEach(student => {
-            const userId=String(student.user_id||'').trim();
-            if(!userId)return;
-            [student.user_id,student.student_id,student.admission_number].forEach(value=>{
-                const key=String(value||'').trim();
-                if(key)identifiers.set(key,userId);
-            });
-        });
-        return identifiers;
     },
 
     // ─── LOAD METRICS ───
