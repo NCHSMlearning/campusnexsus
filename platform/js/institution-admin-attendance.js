@@ -28,11 +28,17 @@
    const profileResult=await db().from("consolidated_user_profiles_table").select("user_id,student_id,admission_number,full_name,program,institution_id").eq("institution_id",api.institutionId).eq("role","student").limit(10000);
    if(profileResult.error)console.warn("[Institution attendance] Profile aliases unavailable:",profileResult.error.message);
    const profiles=profileResult.data||[];
-   const studentKeys=[...new Set([...students.flatMap(x=>[x.id,x.admission_number]),...profiles.flatMap(x=>[x.user_id,x.student_id,x.admission_number])].filter(Boolean).map(String))];
+   const studentKeys=[...new Set([...students.flatMap(x=>[x.id,x.admission_number]),...profiles.flatMap(x=>[x.student_id,x.admission_number])].filter(Boolean).map(String))];
+   const userIds=[...new Set([...students.map(x=>x.id),...profiles.map(x=>x.user_id)].filter(Boolean).map(String))];
    let logs=[];
    for(let i=0;i<studentKeys.length;i+=150){
     const batch=studentKeys.slice(i,i+150);
-    const r=await db().from("geo_attendance_logs").select("*").in("student_id",batch).order("check_in_time",{ascending:false}).limit(5000);
+    const r=await db().from("geo_attendance_logs").select("*").in("student_id",batch).eq("institution_id",api.institutionId).order("check_in_time",{ascending:false}).limit(5000);
+    if(r.error)throw r.error;logs.push(...(r.data||[]));
+   }
+   for(let i=0;i<userIds.length;i+=150){
+    const batch=userIds.slice(i,i+150);
+    const r=await db().from("geo_attendance_logs").select("*").in("user_id",batch).eq("institution_id",api.institutionId).order("check_in_time",{ascending:false}).limit(5000);
     if(r.error)throw r.error;logs.push(...(r.data||[]));
    }
    // Always query the institution_id-scoped manual attendance table, even when
@@ -42,7 +48,7 @@
    const byStudentKey=new Map(),profileByKey=new Map();
    students.forEach(x=>{[x.id,x.admission_number].filter(Boolean).forEach(k=>byStudentKey.set(String(k),x));});
    profiles.forEach(p=>{[p.user_id,p.student_id,p.admission_number].filter(Boolean).forEach(k=>profileByKey.set(String(k),p));});
-   const enrichedLogs=[...new Map(logs.map(x=>[String(x.id||x.student_id)+":"+String(x.check_in_time||x.created_at||""),x])).values()].map(x=>{const st=byStudentKey.get(String(x.student_id))||{},p=profileByKey.get(String(x.student_id))||{};return{...x,student_name:x.student_name||st.full_name||p.full_name||x.student_id,registration_number:x.registration_number||st.admission_number||p.admission_number||x.student_id,program:x.program||st.course||p.program||""};});
+   const enrichedLogs=[...new Map(logs.map(x=>[String(x.id||x.student_id)+":"+String(x.check_in_time||x.created_at||""),x])).values()].map(x=>{const st=byStudentKey.get(String(x.student_id||x.user_id))||{},p=profileByKey.get(String(x.student_id||x.user_id))||{};return{...x,student_name:x.student_name||st.full_name||p.full_name||x.student_id,registration_number:x.registration_number||st.admission_number||p.admission_number||x.student_id,program:x.program||st.course||p.program||""};});
    const manualRows=(manual.data||[]).map(x=>{const st=byStudentKey.get(String(x.student_id))||{},p=profileByKey.get(String(x.student_id))||{};return{id:"manual-"+x.id,student_name:st.full_name||p.full_name||st.admission_number||x.student_id,student_id:st.admission_number||p.admission_number||x.student_id,registration_number:st.admission_number||p.admission_number||"",program:st.course||p.program||"",session_type:"Manual",location_type:"manual",target_name:x.course_or_rotation||"Manual check-in",check_in_time:x.timestamp||x.date,attendance_status:x.status||"Present",is_verified:String(x.status||"").toLowerCase()==="present",institution_id:api.institutionId,_manual:true};});
    records=[...enrichedLogs,...manualRows].sort((a,b)=>new Date(b.check_in_time||b.created_at||0)-new Date(a.check_in_time||a.created_at||0));
    render();message("Loaded "+records.length+" geo and manual attendance records for "+(api.institution?.name||"this institution")+".");
