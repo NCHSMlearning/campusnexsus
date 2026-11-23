@@ -49,7 +49,15 @@
 @media(max-width:640px){#view-academic #programs .cards{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}#view-academic #programs .card{padding:12px}#view-academic #programs .data{font-size:24px}#view-academic #programs form>div{grid-template-columns:1fr!important}}
 </style>
 
-<style id="ia-results-parity-styles">#view-marks-entry .ia-me-capture .ia-filter-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+<style id="ia-results-parity-styles">@media print{
+ body.ia-print-attendance *,body.ia-print-reports *{visibility:hidden!important}
+ body.ia-print-attendance #view-attendance,body.ia-print-attendance #view-attendance *,
+ body.ia-print-reports #view-reports,body.ia-print-reports #view-reports *{visibility:visible!important}
+ body.ia-print-attendance #view-attendance,body.ia-print-reports #view-reports{display:block!important;position:absolute!important;left:0!important;top:0!important;width:100%!important;max-width:none!important}
+ body.ia-print-attendance #iaSidebar,body.ia-print-reports #iaSidebar,
+ body.ia-print-attendance .ia-page-heading button,body.ia-print-reports .ia-page-heading button{display:none!important}
+ body.ia-print-attendance .ia-panel,body.ia-print-reports .ia-panel{break-inside:avoid}
+}#view-marks-entry .ia-me-capture .ia-filter-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 #view-marks-entry .ia-me-capture .ia-filter-row>*{flex:1 1 150px;min-width:140px}
 #view-marks-entry .ia-me-capture table{min-width:850px}
 #view-marks-entry .ia-me-capture input[type=number]{width:86px;min-width:70px}
