@@ -434,18 +434,27 @@
     setOptions('iaEdit_intake_year',yearOptions.map(value=>({value,label:value})),u.intake_year,'Select intake year');
     setOptions('iaEdit_admission_year',yearOptions.map(value=>({value,label:value})),u.admission_year,'Select admission year');
     setOptions('iaEdit_year_of_study',['Year 1','Year 2','Year 3','Year 4'].map(value=>({value,label:value})),u.year_of_study,'Select year of study');
-    const updateAcademicChoices=(preferred)=>{
-      const code=String(programme?.value||'').trim().toUpperCase();
-      const tvet=code==='TVET'||(!['DCHN','KCHN'].includes(code)&&String($('iaEdit_program_type')?.value||u.program_type||'').toUpperCase()==='TVET');
-      const levels=tvet?['Term 1','Term 2','Term 3']:['Block 1','Block 2','Block 3','Block 4','Block 5','Block 6'];
-      const options=levels.map(value=>({value,label:value}));
+    const updateAcademicChoices=async(preferred)=>{
+      const code=String(programme?.value||'').trim();
       const selected=preferred??(block?.value||currentBlock?.value||u.current_block||u.block||'');
-      setOptions('iaEdit_block',options,selected,'Select '+(tvet?'term':'block'));
-      setOptions('iaEdit_current_block',options,selected,'Select current '+(tvet?'term':'block'));
+      let structure=null,levels=[];
+      const client=state.api?.db||window.CampusInstitutionAdmin?.db;
+      const institutionId=state.api?.institutionId||window.CampusInstitutionAdmin?.institutionId;
+      try{
+        if(client&&institutionId&&code&&window.CampusAcademicStructure){
+          structure=await window.CampusAcademicStructure.resolve(client,institutionId,code,{refresh:true});
+          levels=(structure.periods||[]).map(x=>x.name);
+        }
+      }catch(error){console.warn('[Institution users] Programme period lookup failed:',error.message);}
+      const type=structure?.type||(String($('iaEdit_program_type')?.value||u.program_type||'').toUpperCase()==='TVET'?'Term':'Block');
+      if(!structure)levels=type==='Term'?['Term 1','Term 2','Term 3']:['Block 1','Block 2','Block 3','Block 4','Block 5','Block 6'];
+      const options=levels.map(value=>({value,label:value}));
+      setOptions('iaEdit_block',options,selected,'Select '+type.toLowerCase());
+      setOptions('iaEdit_current_block',options,selected,'Select current '+type.toLowerCase());
       const blockLabel=block?.closest('.ia-users-edit-field')?.querySelector('span');
       const currentLabel=currentBlock?.closest('.ia-users-edit-field')?.querySelector('span');
-      if(blockLabel)blockLabel.textContent=tvet?'Term':'Block';
-      if(currentLabel)currentLabel.textContent=tvet?'Current term':'Current block';
+      if(blockLabel)blockLabel.textContent=type;
+      if(currentLabel)currentLabel.textContent='Current '+type.toLowerCase();
     };
     block?.addEventListener('change',()=>{if(currentBlock)currentBlock.value=block.value;});
     currentBlock?.addEventListener('change',()=>{if(block)block.value=currentBlock.value;});
