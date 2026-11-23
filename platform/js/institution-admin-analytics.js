@@ -36,7 +36,7 @@
   draw("iaAnalyticsAssessmentChart","assessment",assessmentCounts,"doughnut");
   const assessmentLabels=Object.keys(gradeByAssessment),gradeLabels=["A","B","C","FAIL","PENDING"];
   drawSeries("iaAnalyticsGradeByAssessmentChart","gradeByAssessment",assessmentLabels,gradeLabels.map(g=>({label:g,data:assessmentLabels.map(t=>gradeByAssessment[t]?.[g]||0)})),"bar",true);
-  drawSeries("iaAnalyticsUnitChart","unitRanking",unitRank.map(x=>x.unit),[{label:"Average score (%)",data:unitRank.map(x=>Number(x.average.toFixed(1)))}]);
+  drawSeries("iaAnalyticsUnitChart","unitRanking",unitRank.map(x=>x.unit),[{label:"Mark records",data:unitRank.map(x=>x.count)}]);
   const body=$("iaAnalyticsUnitRows");if(body){const ranked=Object.entries(unitScores).map(([unit,s])=>({unit,count:s.length,average:s.reduce((a,b)=>a+b,0)/s.length})).sort((a,b)=>b.average-a.average).slice(0,20);body.innerHTML=ranked.length?ranked.map(x=>"<tr><td>"+esc(x.unit)+"</td><td>"+x.count+"</td><td>"+x.average.toFixed(1)+"%</td></tr>").join(""):'<tr><td colspan="3" class="ia-empty">No scored unit marks available.</td></tr>';}
   const stamp=$("iaMarksAnalyticsUpdated");if(stamp)stamp.textContent=records.length+" records · refreshed just now";
  }
@@ -44,7 +44,7 @@
  function printReport(){window.print();}
  async function load(){try{api=window.CampusInstitutionAdmin;if(!api?.institutionId)return;notice("Loading institution academic analytics…");
   const [marks,profileRows]=await Promise.all([
-   db().from("student_marks").select("id,student_id,admission_number,program,block,subject_name,final_score,grade,final_grade,approval_status,published,academic_year,retake_status,retake_score,created_at").eq("institution_id",api.institutionId).order("created_at",{ascending:false}).limit(10000),
+   db().from("student_marks").select("id,student_id,admission_number,program,block,subject_name,assessment_type,final_score,grade,final_grade,approval_status,published,academic_year,retake_status,retake_score,created_at").eq("institution_id",api.institutionId).order("created_at",{ascending:false}).limit(10000),
    db().from("consolidated_user_profiles_table").select("id,user_id,student_id,admission_number,program,intake_year,intake_month,gender").eq("institution_id",api.institutionId).eq("role","student").limit(10000)
   ]);
   if(marks.error)throw marks.error;rows=marks.data||[];students=profileRows.error?[]:(profileRows.data||[]);
