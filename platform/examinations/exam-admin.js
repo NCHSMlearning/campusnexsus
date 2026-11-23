@@ -251,10 +251,11 @@ async function saveExam(event){
  event.preventDefault();if(!requireInstitution())return;const total=Number($("totalMarks").value),pass=Number($("passMark").value),duration=Number($("examDuration").value);
  if(pass>total){notice("Pass mark cannot exceed total marks.",true);return}
  const date=$("examDate").value,time=$("examTime").value;if(!date||!time){notice("Select the examination date and start time.",true);return}
- const start=date+"T"+time+":00";const endDate=new Date(start);endDate.setMinutes(endDate.getMinutes()+duration);
- const pad=n=>String(n).padStart(2,"0");const end=endDate.getFullYear()+"-"+pad(endDate.getMonth()+1)+"-"+pad(endDate.getDate())+"T"+pad(endDate.getHours())+":"+pad(endDate.getMinutes())+":00";
+ const linkValue=$("examLink").value.trim();let examLink=null;if(linkValue){try{const parsed=new URL(linkValue);if(!["http:","https:"].includes(parsed.protocol))throw new Error();examLink=parsed.href;}catch(_){notice("Enter a valid online exam project URL beginning with https:// or http://.",true);return;}}
+ // Store the selected schedule as an explicit Kenya-time instant (UTC+03:00), independent of device timezone.
+ const start=date+"T"+time+":00+03:00";const endDate=new Date(start);endDate.setMinutes(endDate.getMinutes()+duration);const end=endDate.toISOString();
  const title=$("examTitle").value.trim();
- const payload={institution_id:institution.id,title,exam_name:title,exam_type:$("examType").value,exam_basis:"ordinary",program_type:$("examProgram").value.trim(),target_program:$("examProgram").value.trim(),intake_year:Number($("examIntake").value)||null,intake_month:$("examIntakeMonth").value||null,block:$("examBlock").value.trim()||null,block_term:$("examBlock").value.trim()||null,course_code:$("courseCode").value.trim()||null,exam_date:date,exam_start_time:time,start_time:start,end_time:end,duration_minutes:duration,total_marks:total,marks_out_of:total,pass_mark:pass,instructions:$("examInstructions").value.trim()||null,status:"draft",approval_status:"approved",approved_by:authUser.id,approved_at:new Date().toISOString(),is_published:false,is_active:true,created_by:authUser.id,created_by_actor:authUser.id};
+ const payload={institution_id:institution.id,title,exam_name:title,exam_type:$("examType").value,exam_basis:"ordinary",program_type:$("examProgram").value.trim(),target_program:$("examProgram").value.trim(),intake_year:Number($("examIntake").value)||null,intake_month:$("examIntakeMonth").value||null,block:$("examBlock").value.trim()||null,block_term:$("examBlock").value.trim()||null,course_code:$("courseCode").value.trim()||null,exam_date:date,exam_start_time:time,start_time:start,end_time:end,duration_minutes:duration,total_marks:total,marks_out_of:total,pass_mark:pass,instructions:$("examInstructions").value.trim()||null,exam_link:examLink,online_link:examLink,status:"draft",approval_status:"approved",approved_by:authUser.id,approved_at:new Date().toISOString(),is_published:false,is_active:true,created_by:authUser.id,created_by_actor:authUser.id};
  const button=$("saveExamBtn");button.disabled=true;button.textContent="Saving…";
  try{const {data,error}=await sb.from("exams").insert(payload).select("id").single();if(error)throw error;closeExamModal();$("examForm").reset();$("examDuration").value=60;$("totalMarks").value=100;$("passMark").value=60;notice("Examination created and automatically approved. It remains unpublished until you publish it. Reference #"+data.id);await loadExams();switchView("exams")}
  catch(error){notice(error.message||"Unable to save examination.",true)}
@@ -277,6 +278,7 @@ function openEditExam(id){
  $("editTotalMarks").value=exam.total_marks??exam.marks_out_of??100;
  $("editPassMark").value=exam.pass_mark??60;
  $("editExamInstructions").value=exam.instructions||"";
+ $("editExamLink").value=exam.exam_link||exam.online_link||"";
  $("editExamModal").hidden=false;document.body.classList.add("modal-open");
 }
 function closeEditExamModal(){$("editExamModal").hidden=true;document.body.classList.remove("modal-open");}
@@ -287,12 +289,11 @@ async function saveEditedExam(event){
  const total=Number($("editTotalMarks").value),pass=Number($("editPassMark").value),duration=Number($("editExamDuration").value);
  const date=$("editExamDate").value,time=$("editExamTime").value;
  if(!date||!time||!Number.isFinite(duration)||duration<1||duration>600||!Number.isFinite(total)||total<1||pass<0||pass>total){notice("Check the date, start time, duration and marks. Pass mark cannot exceed total marks.",true);return;}
- const start=date+"T"+time+":00",endDate=new Date(start);endDate.setMinutes(endDate.getMinutes()+duration);
- const pad=n=>String(n).padStart(2,"0");
- const end=endDate.getFullYear()+"-"+pad(endDate.getMonth()+1)+"-"+pad(endDate.getDate())+"T"+pad(endDate.getHours())+":"+pad(endDate.getMinutes())+":00";
+ const linkValue=$("editExamLink").value.trim();let examLink=null;if(linkValue){try{const parsed=new URL(linkValue);if(!["http:","https:"].includes(parsed.protocol))throw new Error();examLink=parsed.href;}catch(_){notice("Enter a valid online exam project URL beginning with https:// or http://.",true);return;}}
+ const start=date+"T"+time+":00+03:00",endDate=new Date(start);endDate.setMinutes(endDate.getMinutes()+duration);const end=endDate.toISOString();
  const title=$("editExamTitle").value.trim(),program=$("editExamProgram").value.trim();
  if(!title||!program){notice("Examination title and programme are required.",true);return;}
- const payload={title,exam_name:title,exam_type:$("editExamType").value,program_type:program,target_program:program,block:$("editExamBlock").value.trim()||null,block_term:$("editExamBlock").value.trim()||null,intake_year:Number($("editExamIntake").value)||null,intake_month:$("editExamIntakeMonth").value||null,course_code:$("editCourseCode").value.trim()||null,exam_date:date,exam_start_time:time,start_time:start,end_time:end,duration_minutes:duration,total_marks:total,marks_out_of:total,pass_mark:pass,instructions:$("editExamInstructions").value.trim()||null,updated_at:new Date().toISOString()};
+ const payload={title,exam_name:title,exam_type:$("editExamType").value,program_type:program,target_program:program,block:$("editExamBlock").value.trim()||null,block_term:$("editExamBlock").value.trim()||null,intake_year:Number($("editExamIntake").value)||null,intake_month:$("editExamIntakeMonth").value||null,course_code:$("editCourseCode").value.trim()||null,exam_date:date,exam_start_time:time,start_time:start,end_time:end,duration_minutes:duration,total_marks:total,marks_out_of:total,pass_mark:pass,instructions:$("editExamInstructions").value.trim()||null,exam_link:examLink,online_link:examLink,updated_at:new Date().toISOString()};
  const button=$("editExamSaveBtn"),label=button.textContent;button.disabled=true;button.textContent="Saving changes…";
  try{
   const {data,error}=await sb.from("exams").update(payload).eq("id",id).eq("institution_id",institution.id).select("id,exam_date,exam_start_time,duration_minutes,title").single();
