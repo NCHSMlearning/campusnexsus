@@ -118,7 +118,7 @@ async function syncLegacyAcademicStructure(rows){
      const year=String(profile.intake_year||"").match(/(?:19|20)\d{2}/)?.[0];if(!year)return;
      const month=String(profile.intake_month||"").trim();
      const key=year+"|"+month.toLowerCase();if(seen.has(key))return;seen.add(key);
-     payload.push({institution_id:tenant(),program_id:p.id,intake_name:month||("Intake "+year),intake_month:month||null,intake_year:Number(year),status:"active",created_at:now,updated_at:now});
+     payload.push({institution_id:tenant(),program_id:p.id,intake_name:month?(month+" "+year):("Intake "+year),intake_month:month||null,intake_year:Number(year),status:"active",created_at:now,updated_at:now});
     });
     if(payload.length){const {error}=await db().from(TABLES.intakes).insert(payload);if(error)throw error;}
    }
