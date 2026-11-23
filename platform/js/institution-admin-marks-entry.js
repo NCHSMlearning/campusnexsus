@@ -11,6 +11,7 @@
  const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
  const say=(message,bad=false)=>{const el=$("iaMECaptureNotice");if(el){el.textContent=message;el.style.color=bad?"#a12b2b":"#16634a";}};
  const isTVET=program=>String(program||"").trim().toUpperCase()!=="KRCHN";
+ const passThreshold=program=>isTVET(program)?50:60;
  const gradeFor=(score,program)=>{const n=Number(score);if(!Number.isFinite(n))return "PENDING";if(n>=75)return "A";if(n>=65)return "B";if(isTVET(program))return n>=50?"C":"FAIL";return n>=60?"C":"D";};
  function calculate(cat1,cat2,exam,type,program){
   const c1=Math.min(Math.max(Number(cat1)||0,0),30),c2=Math.min(Math.max(Number(cat2)||0,0),30),e=Math.min(Math.max(Number(exam)||0,0),100);
@@ -110,7 +111,7 @@
    const retakeScoreCell=td("");const retakeScore=document.createElement("input");retakeScore.type="number";retakeScore.min="0";retakeScore.max="100";retakeScore.step="0.1";retakeScore.className="ia-score-input";retakeScore.dataset.retakeScore="1";retakeScore.value=r.retake_score??"";retakeScore.disabled=!!r.published;retakeScore.addEventListener("input",()=>updatePreview(index));retakeScoreCell.append(retakeScore);
    const status=td(r.published?"Published":r.approval_status||"Draft");status.dataset.workflow="1";
    if(r.published)tr.style.opacity=".65";
-   body.append(tr);
+   body.append(tr);updatePreview(index);
   });
   if(save)save.disabled=!rows.some(r=>!r.published);
  }
