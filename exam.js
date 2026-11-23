@@ -3427,10 +3427,10 @@ function showCompletionCertificate() {
                         </div>
                         <div style="background:white; padding:10px; border-radius:8px;">
                             <div style="font-size:0.7rem; color:#94a3b8;">Status</div>
-                            <div style="font-size:1.2rem; font-weight:700; color:#f59e0b;">⏳ Pending Review</div>
+                            <div style="font-size:1.2rem; font-weight:700; color:#f59e0b;">⏳ Submitted · Pending Admin Release</div>
                         </div>
                     </div>
-                    <p style="color:#64748b; font-size:0.85rem; margin-top:12px;">Your results will be available after the exam is reviewed by the admin.</p>
+                    <p style="color:#64748b; font-size:0.85rem; margin-top:12px;">Your submission has been recorded. Return to your dashboard to track the release. Your score and detailed answer review will become available after admin release.</p>
                 </div>
                 <div style="margin:12px 0; font-size:0.9rem; color:#94a3b8;">Redirecting in <span id="countdown-number" style="font-weight:700; color:#0A3D62;">5</span> seconds...</div>
                 <a href="${CONFIG.STUDENT_DASHBOARD_URL}" style="display:inline-block; background:#0A3D62; color:white; padding:12px 28px; border-radius:30px; text-decoration:none; font-weight:600;">📊 Go to Dashboard Now</a>
@@ -3444,6 +3444,7 @@ function showCompletionCertificate() {
     if (progress) progress.style.display = 'none';
     if (DOM.examTimer) DOM.examTimer.style.display = 'none';
 
+    const dashboardLink = DOM.examContainer?.querySelector('a[href="' + CONFIG.STUDENT_DASHBOARD_URL + '"]');
     let countdown = 5;
     const redirectInterval = setInterval(() => {
         countdown--;
@@ -3451,9 +3452,14 @@ function showCompletionCertificate() {
         if (el) el.textContent = countdown;
         if (countdown <= 0) {
             clearInterval(redirectInterval);
-            window.location.href = CONFIG.STUDENT_DASHBOARD_URL;
+            window.location.replace(CONFIG.STUDENT_DASHBOARD_URL);
         }
     }, 1000);
+    dashboardLink?.addEventListener('click', event => {
+        event.preventDefault();
+        clearInterval(redirectInterval);
+        window.location.replace(CONFIG.STUDENT_DASHBOARD_URL);
+    }, { once: true });
 }
 
 // ============================================================
