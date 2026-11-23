@@ -12067,6 +12067,29 @@ async function initializeApp() {
         window.app = window.app || {};
         window.app.user = authenticatedStudentProfile;
 
+        // Resolve academic period terminology from this student's own institution
+        // and programme. This never uses another tenant's programme settings.
+        try {
+            if (window.CampusAcademicStructure && authenticatedStudentProfile.institution_id && authenticatedStudentProfile.program) {
+                window.currentAcademicStructure = await window.CampusAcademicStructure.resolve(
+                    studentSupabase,
+                    authenticatedStudentProfile.institution_id,
+                    authenticatedStudentProfile.program
+                );
+                const structure = window.currentAcademicStructure;
+                const metricLabel = document.getElementById('dashboard-current-block-label');
+                if (metricLabel) metricLabel.textContent = structure.singular;
+                document.querySelectorAll('[data-academic-period-label]').forEach(el => {
+                    el.textContent = el.dataset.academicPeriodLabel === 'plural' ? structure.plural : structure.singular;
+                });
+                document.querySelectorAll('[data-academic-period-all]').forEach(el => {
+                    el.textContent = 'All ' + structure.pluralLower;
+                });
+            }
+        } catch (structureError) {
+            console.warn('[Student Portal] Institution academic structure lookup unavailable; retaining legacy labels.', structureError);
+        }
+
         const studentRole = String(authenticatedStudentProfile?.role || '').trim().toLowerCase();
         const studentStatus = String(authenticatedStudentProfile?.status || '').trim().toLowerCase();
         const isApprovedStudent = studentRole === 'student'
@@ -12368,7 +12391,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const label = document.getElementById('dashboard-current-block-label');
         const ring = document.getElementById('nd-ring-current-block');
         if (short) short.textContent = value;
-        if (label) label.textContent = 'Block ' + value.replace(/^block\s*/i, '');
+        const structure = window.currentAcademicStructure || {};
+        if (label) label.textContent = (structure.singular || 'Block') + ' ' + value.replace(/^(block|semester|term)\s*/i, '');
         if (ring) { ring.style.strokeDasharray = '251.2'; ring.style.strokeDashoffset = '0'; }
     }
     document.addEventListener('appReady', update);
