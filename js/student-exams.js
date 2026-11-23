@@ -345,10 +345,12 @@ function subscribeStudentResultUpdates(){
   .on('postgres_changes',{event:'*',schema:'public',table:'released_exam_results',filter:'student_id=eq.'+studentId},async()=>{
    await loadExams().catch(e=>console.warn('Could not refresh released exam status:',e));
    await loadAcademicSummary().catch(e=>console.warn('Could not refresh published GPA metrics:',e));
+   await loadDashboardStats().catch(e=>console.warn('Could not refresh student dashboard metrics:',e));
    renderTimetable();renderDashboard();
   })
   .on('postgres_changes',{event:'*',schema:'public',table:'student_marks',filter:'student_id=eq.'+studentId},()=>{
    loadAcademicSummary().catch(e=>console.warn('Could not refresh academic metrics:',e));
+   loadDashboardStats().catch(e=>console.warn('Could not refresh student dashboard metrics:',e));
   })
   .subscribe(status=>{if(status==='CHANNEL_ERROR'||status==='TIMED_OUT')console.warn('Student result live updates are temporarily unavailable:',status);});
 }
