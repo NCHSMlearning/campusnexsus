@@ -111,95 +111,23 @@ const LecturerStudents = {
     
     // ─── RESOLVE LECTURER ID ───
     async resolveLecturerId() {
-        try {
-            const supabase = window.lecturerDB?.supabase;
-            if (!supabase) {
-                console.warn('Supabase not available');
-                return;
-            }
-            
-            const profile = window.lecturerDB?.getCurrentUserProfile();
-            if (!profile) {
-                console.warn('No lecturer profile found');
-                return;
-            }
-            
-            const authId = profile.user_id;
-            const fullName = profile.full_name;
-            
-            console.log('🔍 Auth ID:', authId);
-            console.log('🔍 Lecturer name:', fullName);
-            
-            // Try to find by name in lecturer_subject_assignments
-            const { data, error } = await supabase
-                .from('lecturer_subject_assignments')
-                .select('lecturer_id, lecturer_name')
-                .eq('lecturer_name', fullName)
-                .limit(1);
-            
-            if (!error && data && data.length > 0) {
-                this.lecturerAssignmentId = data[0].lecturer_id;
-                console.log('✅ Found lecturer ID by name:', this.lecturerAssignmentId);
-                return;
-            }
-            
-            // Try partial name match with scoring
-            const nameParts = fullName.toLowerCase().split(' ');
-            const { data: allLecturers, error: allError } = await supabase
-                .from('lecturer_subject_assignments')
-                .select('lecturer_id, lecturer_name')
-                .order('created_at', { ascending: false });
-            
-            if (!allError && allLecturers && allLecturers.length > 0) {
-                let bestMatch = null;
-                let bestScore = -1;
-                
-                for (const lecturer of allLecturers) {
-                    const lecturerName = lecturer.lecturer_name || '';
-                    const lecturerId = lecturer.lecturer_id;
-                    let score = 0;
-                    
-                    const lecturerNameLower = lecturerName.toLowerCase();
-                    for (const part of nameParts) {
-                        if (part.length > 1 && lecturerNameLower.includes(part)) {
-                            score += 5;
-                        }
-                    }
-                    
-                    if (lecturerNameLower === fullName.toLowerCase()) {
-                        score += 20;
-                    }
-                    
-                    if (!lecturerId.toString().startsWith('STAFF')) {
-                        score += 50;
-                    }
-                    
-                    if (lecturerId.toString().includes('-')) {
-                        score += 30;
-                    }
-                    
-                    if (score > bestScore) {
-                        bestScore = score;
-                        bestMatch = lecturerId;
-                    }
-                }
-                
-                if (bestMatch) {
-                    this.lecturerAssignmentId = bestMatch;
-                    console.log(`✅ Selected lecturer ID with score ${bestScore}:`, this.lecturerAssignmentId);
-                    return;
-                }
-            }
-            
-            this.lecturerAssignmentId = authId;
-            console.log('⚠️ Falling back to auth ID:', this.lecturerAssignmentId);
-            
-        } catch (error) {
-            console.error('Error resolving lecturer ID:', error);
-            this.lecturerAssignmentId = null;
-        }
+        const supabase = window.lecturerDB?.supabase;
+        if (!supabase) throw new Error('Supabase client is unavailable.');
+        const { data: authData, error: authError } = await supabase.auth.getUser();
+        if (authError) throw authError;
+        const authId = authData?.user?.id;
+        if (!authId) throw new Error('Authenticated lecturer session is unavailable.');
+        const { data: identity, error } = await supabase.rpc('current_lecturer_staff_assignment_identity');
+        if (error) throw error;
+        if (!identity?.id || String(identity.id) !== String(authId)) throw new Error('The lecturer account could not be verified against the institution.');
+        const profile = window.lecturerDB?.getCurrentUserProfile?.() || {};
+        this.lecturerUuid = authId;
+        this.lecturerAssignmentId = String(identity.id);
+        this.currentProgram = String(window.CURRENT_PROGRAM || profile.program || identity.program || 'KRCHN').trim();
+        this.isTVET = String(window.CURRENT_PROGRAM_TYPE || profile.program_type || '').toUpperCase() === 'TVET' || this.currentProgram.toUpperCase() !== 'KRCHN';
+        return this.lecturerAssignmentId;
     },
-    
+
     // ─── LOAD ASSIGNED UNITS ───
     async loadAssignedUnits() {
         const supabase = window.lecturerDB?.supabase;
