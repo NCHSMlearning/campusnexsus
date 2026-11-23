@@ -973,6 +973,16 @@ const FROM_ADDRESS =
             const el = this.$('student_notify_count');
             if (!el) return;
             const target = this.$('exam_notify_target')?.value || 'all';
+            const intake = this.value(['exam_intake', 'examIntake']);
+            const block = this.value(['exam_block_term', 'examBlockTerm']);
+            if ((target === 'all' || target === 'intake') && !intake) {
+                el.innerHTML = '<i class="fas fa-info-circle"></i> Select an intake year to count recipients.';
+                return;
+            }
+            if ((target === 'all' || target === 'block') && !block) {
+                el.innerHTML = '<i class="fas fa-info-circle"></i> Select a block/term to count recipients.';
+                return;
+            }
             el.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Counting…';
             try {
                 const students = await this.getNotificationStudents(target);
