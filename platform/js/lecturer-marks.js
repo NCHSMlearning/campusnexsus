@@ -744,204 +744,95 @@ async function getLecturerAssignedUnits(lecturerId, block = null) {
 // ============================================================
 
 async function loadLecturerByEmail(email) {
-    console.log('📧 Loading lecturer by email:', email);
-    
-    try {
-        const supabase = getSupabase();
-        if (!supabase) return null;
-        
-        const { data: profile, error: profileError } = await supabase
-            .from('consolidated_user_profiles_table')
-            .select('*')
-            .eq('email', email)
-            .maybeSingle();
-        
-        if (!profileError && profile) {
-            me_currentLecturer = { profile, staff: null };
-            me_currentProgram = profile.program || 'KRCHN';
-            console.log('✅ Lecturer loaded from profile:', profile);
-            updateLecturerUI(profile);
-            me_assignedUnits = await getLecturerAssignedUnits(String(profile.id));
-            return profile;
-        }
-        
-        const { data: staff, error: staffError } = await supabase
-            .from('staff_records')
-            .select('*')
-            .eq('email', email)
-            .maybeSingle();
-        
-        if (!staffError && staff) {
-            me_currentLecturer = { profile: null, staff };
-            me_currentProgram = staff.program || 'KRCHN';
-            console.log('✅ Lecturer loaded from staff_records:', staff);
-            updateLecturerUI(staff);
-            me_assignedUnits = await getLecturerAssignedUnits(String(staff.id));
-            return staff;
-        }
-        
-        console.error('❌ Lecturer not found for email:', email);
-        return null;
-        
-    } catch (error) {
-        console.error('❌ Error loading lecturer:', error);
-        return null;
+    const supabase = getSupabase();
+    if (!supabase) throw new Error('Database not available.');
+    const { data: authData, error: authError } = await supabase.auth.getUser();
+    if (authError) throw authError;
+    const user = authData?.user;
+    if (!user?.id || (email && String(user.email || '').toLowerCase() !== String(email).toLowerCase())) {
+        throw new Error('A valid authenticated lecturer session is required.');
     }
+    const { data: identity, error: identityError } = await supabase.rpc('current_lecturer_staff_assignment_identity');
+    if (identityError) throw identityError;
+    if (!identity?.id || String(identity.id) !== String(user.id)) throw new Error('Lecturer institution identity could not be verified.');
+    const { data: profile, error: profileError } = await supabase.from('consolidated_user_profiles_table')
+        .select('*').eq('user_id', user.id).eq('role', 'lecturer').maybeSingle();
+    if (profileError) throw profileError;
+    if (!profile) throw new Error('Lecturer profile was not found for the authenticated account.');
+    me_currentLecturer = { profile, staff: null, authId: user.id };
+    me_currentProgram = profile.program || identity.program || 'KRCHN';
+    me_assignedUnits = await getLecturerAssignedUnits(user.id);
+    updateLecturerUI({ ...profile, program: me_currentProgram });
+    return profile;
 }
+
 
 // ============================================================
 // DETECT LECTURER PROGRAM
 // ============================================================
 
 async function detectLecturerProgram() {
-    console.log('🔍 Detecting lecturer program...');
-    
+    console.log('[Lecturer Marks] Resolving authenticated lecturer and assigned programme...');
     updateLoadingProgress(10, 1, 'Checking authentication...');
-    
     try {
         const supabase = getSupabase();
-        if (!supabase) {
-            throw new Error('Database not available');
+        if (!supabase) throw new Error('Database not available.');
+        const { data: authData, error: authError } = await supabase.auth.getUser();
+        if (authError) throw authError;
+        const user = authData?.user;
+        if (!user?.id) throw new Error('Authenticated lecturer session is unavailable.');
+        updateLoadingProgress(25, 1, 'Verifying lecturer account...');
+        const { data: identity, error: identityError } = await supabase.rpc('current_lecturer_staff_assignment_identity');
+        if (identityError) throw identityError;
+        if (!identity?.id || String(identity.id) !== String(user.id)) throw new Error('Your lecturer account is not linked to an active institution.');
+        const { data: profile, error: profileError } = await supabase.from('consolidated_user_profiles_table')
+            .select('*').eq('user_id', user.id).eq('role', 'lecturer').maybeSingle();
+        if (profileError) throw profileError;
+        if (!profile) throw new Error('Lecturer profile could not be loaded.');
+        let programCode = String(identity.program || profile.program || '').trim();
+        if (!programCode) {
+            const { data: assignmentRows, error: assignmentError } = await supabase.from('lecturer_subject_assignments')
+                .select('program').eq('lecturer_id', user.id);
+            if (assignmentError) throw assignmentError;
+            const programs = [...new Set((assignmentRows || []).map(row => String(row.program || '').trim()).filter(Boolean))];
+            if (programs.length === 1) programCode = programs[0];
+            else if (programs.length > 1 && window.CURRENT_PROGRAM) programCode = String(window.CURRENT_PROGRAM);
+            else if (programs.length > 1) throw new Error('Multiple assigned programmes found. Ask the institution administrator to confirm your primary programme.');
+            else programCode = 'KRCHN';
         }
-        
-        let session = null;
-        try {
-            session = JSON.parse(localStorage.getItem('lecturerSession') || sessionStorage.getItem('lecturerSession') || '{}');
-        } catch (e) {
-            console.warn('No session found');
-        }
-        
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
-        if (userError) {
-            console.error('❌ Auth error:', userError);
-            if (session && session.email) {
-                return await loadLecturerByEmail(session.email);
-            }
-            throw userError;
-        }
-        
-        const userEmail = session?.email || user?.email;
-        
-        if (!userEmail) {
-            console.error('❌ No email found');
-            return null;
-        }
-        
-        updateLoadingProgress(25, 1, 'Loading lecturer profile...');
-        
-        let profile = null;
-        let staff = null;
-        
-        const { data: profileData, error: profileError } = await supabase
-            .from('consolidated_user_profiles_table')
-            .select('*')
-            .eq('email', userEmail)
-            .maybeSingle();
-        
-        if (!profileError && profileData) {
-            profile = profileData;
-            console.log('📋 Found profile:', profileData);
-        }
-        
-        const { data: staffData, error: staffError } = await supabase
-            .from('staff_records')
-            .select('*')
-            .eq('email', userEmail)
-            .maybeSingle();
-        
-        if (!staffError && staffData) {
-            staff = staffData;
-            console.log('📋 Found staff record:', staffData);
-        }
-        
-        let programCode = 'KRCHN';
-        let programName = 'KRCHN Nursing';
-        let isTVET = false;
-        let departmentName = 'Nursing';
-        
-        if (staff) {
-            if (staff.program) {
-                programCode = staff.program;
-                isTVET = programCode !== 'KRCHN';
-                programName = isTVET ? 'TVET' : 'KRCHN Nursing';
-            }
-            if (staff.department) {
-                departmentName = staff.department;
-            }
-        } else if (profile) {
-            if (profile.program) {
-                programCode = profile.program;
-                isTVET = programCode !== 'KRCHN';
-                programName = isTVET ? 'TVET' : 'KRCHN Nursing';
-            }
-            if (profile.department) {
-                departmentName = profile.department;
-            }
-        }
-        
-        console.log(`📊 Program detected: ${programCode} - ${programName}`);
-        
-        // ✅ Store program type globally
+        const isTVETProgram = programCode.toUpperCase() !== 'KRCHN';
+        const departmentName = profile.department || (isTVETProgram ? 'TVET Department' : 'School of Nursing');
+        const programName = isTVETProgram ? 'TVET' : 'KRCHN Nursing';
         window.CURRENT_PROGRAM = programCode;
-        window.CURRENT_PROGRAM_TYPE = isTVET ? 'TVET' : 'KRCHN';
-        window.IS_TVET = isTVET;
-        
+        window.CURRENT_PROGRAM_TYPE = isTVETProgram ? 'TVET' : 'KRCHN';
+        window.IS_TVET = isTVETProgram;
+        me_currentProgram = programCode;
+        me_currentLecturer = { profile, staff: null, authId: user.id };
         updateLoadingProgress(40, 2, 'Loading assigned units...');
-        
+        me_assignedUnits = await getLecturerAssignedUnits(user.id);
         const programNameEl = document.getElementById('lecturerProgramName');
         const programTypeEl = document.getElementById('lecturerProgramType');
         const unitCountEl = document.getElementById('lecturerUnitCount');
         const programSelect = document.getElementById('me_program_select');
-        
-        if (programNameEl) {
-            const typeEmoji = isTVET ? '🔧' : '🎓';
-            programNameEl.textContent = `${typeEmoji} ${programName} - ${departmentName}`;
-        }
-        
-        if (programTypeEl) {
-            programTypeEl.textContent = isTVET ? '🔧 TVET' : '🎓 Nursing';
-        }
-        
-        let assignedCount = 0;
-        const lecturerId = staff?.id || profile?.id;
-        if (lecturerId) {
-            me_assignedUnits = await getLecturerAssignedUnits(String(lecturerId));
-            assignedCount = me_assignedUnits.length;
-            console.log('📋 Assigned units:', assignedCount);
-        }
-        
-        if (unitCountEl) {
-            unitCountEl.textContent = assignedCount || '0';
-        }
-        
+        if (programNameEl) programNameEl.textContent = `${isTVETProgram ? '🔧' : '🎓'} ${programName} - ${departmentName}`;
+        if (programTypeEl) programTypeEl.textContent = isTVETProgram ? '🔧 TVET' : '🎓 Nursing';
+        if (unitCountEl) unitCountEl.textContent = me_assignedUnits.length;
         if (programSelect) {
-            const displayName = isTVET ? `${programCode} (TVET)` : `${programCode} Nursing`;
-            programSelect.innerHTML = `<option value="${programCode}">${displayName}</option>`;
-            programSelect.value = programCode;
-            programSelect.disabled = false;
+            programSelect.innerHTML = `<option value="${programCode}">${isTVETProgram ? `${programCode} (TVET)` : `${programCode} Nursing`}</option>`;
+            programSelect.value = programCode; programSelect.disabled = false;
         }
-        
-        me_currentLecturer = { profile, staff };
-        me_currentProgram = programCode;
-        
-        // ✅ Update grading reference display
         updateGradingReferenceDisplay();
-        
-        console.log('✅ Lecturer program detection complete');
-        return staff || profile;
-        
+        console.log('[Lecturer Marks] Verified assignment scope:', { programme: programCode, units: me_assignedUnits.length });
+        return profile;
     } catch (error) {
-        console.error('❌ Error detecting lecturer program:', error);
-        
-        const programNameEl = document.getElementById('lecturerProgramName');
-        if (programNameEl) {
-            programNameEl.textContent = '⚠️ Error loading profile. Please refresh or contact admin.';
-        }
-        
+        console.error('[Lecturer Marks] Lecturer identity/program resolution failed:', error);
+        const el = document.getElementById('lecturerProgramName');
+        if (el) el.textContent = '⚠️ Lecturer profile could not be verified. Please refresh or contact admin.';
         showNotification('Error loading lecturer profile: ' + error.message, 'error');
         return null;
     }
 }
+
 
 // ============================================================
 // UPDATE GRADING REFERENCE DISPLAY
