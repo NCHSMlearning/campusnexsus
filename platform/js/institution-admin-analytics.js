@@ -17,7 +17,7 @@
  }
  function paint(){
   const records=filtered(),scored=records.map(r=>({row:r,value:score(r)})).filter(x=>x.value!==null),passed=scored.filter(x=>x.value>=passThreshold(x.row)).length,failed=scored.length-passed;
-  const approved=records.filter(r=>String(r.approval_status||"").toLowerCase()==="approved"),pending=records.filter(r=>String(r.approval_status||"").toLowerCase()==="pending"),published=records.filter(r=>r.published===true);
+  const approved=records.filter(r=>String(r.approval_status||"").toLowerCase()==="approved"),pending=records.filter(r=>String(r.approval_status||"").toLowerCase()==="pending"),published=records.filter(r=>r.published===true&&String(r.approval_status||"").toLowerCase()==="approved");
   const avg=scored.length?scored.reduce((a,b)=>a+b,0)/scored.length:0,studentsCount=new Set(records.map(r=>r.admission_number||r.student_id).filter(Boolean)).size,unitsCount=new Set(records.map(r=>r.subject_name).filter(Boolean)).size;
   const values=[["iaAnalyticsMarks",records.length],["iaAnalyticsStudents",studentsCount],["iaAnalyticsUnits",unitsCount],["iaAnalyticsAverage",scored.length?avg.toFixed(1)+"%":"—"],["iaAnalyticsPassRate",scored.length?(passed/scored.length*100).toFixed(1)+"%":"—"],["iaAnalyticsAtRisk",failed],["iaAnalyticsPending",pending.length],["iaAnalyticsPublished",published.length]];
   values.forEach(([id,v])=>{if($(id))$(id).textContent=typeof v==="number"?v.toLocaleString("en-KE"):v;});
