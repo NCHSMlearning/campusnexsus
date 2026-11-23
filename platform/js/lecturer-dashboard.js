@@ -680,11 +680,10 @@ const LecturerDashboard = {
             }
         }
 
-        const thresholdDisplay = document.getElementById('passingThresholdDisplay');
-        if (thresholdDisplay) {
-            const threshold = this.getPassingThreshold();
-            thresholdDisplay.textContent = `Passing: ≥${threshold}%`;
-        }
+        const threshold = this.getPassingThreshold();
+        document.querySelectorAll('[id="passingThresholdDisplay"]').forEach(element => {
+            element.textContent = `Passing: ≥${threshold}%`;
+        });
     },
 
     // ─── UPDATE PROGRAM BADGE ───
@@ -701,10 +700,9 @@ const LecturerDashboard = {
             badge.style.border = this.isTVET ? '1px solid #8b5cf6' : '1px solid #4C1D95';
         }
 
-        const programDisplay = document.getElementById('programDisplayName');
-        if (programDisplay) {
-            programDisplay.textContent = `${program} (${typeLabel})`;
-        }
+        document.querySelectorAll('[id="programDisplayName"]').forEach(element => {
+            element.textContent = `${program} (${typeLabel})`;
+        });
 
         const subtitle = document.getElementById('programSubtitle');
         if (subtitle) {
@@ -717,11 +715,10 @@ const LecturerDashboard = {
             programBadge.style.background = this.isTVET ? '#8b5cf6' : '#4C1D95';
         }
 
-        const programTypeBadge = document.getElementById('programTypeBadge');
-        if (programTypeBadge) {
-            programTypeBadge.textContent = typeLabel;
-            programTypeBadge.style.background = this.isTVET ? 'rgba(139,92,246,0.3)' : 'rgba(76,29,149,0.3)';
-        }
+        document.querySelectorAll('[id="programTypeBadge"]').forEach(element => {
+            element.textContent = typeLabel;
+            element.style.background = this.isTVET ? 'rgba(139,92,246,0.3)' : 'rgba(76,29,149,0.3)';
+        });
 
         window.lecturerProgram = program;
         window.IS_TVET = this.isTVET;
@@ -1599,7 +1596,7 @@ const LecturerDashboard = {
 
         const welcomeHeader = document.getElementById('welcomeHeader');
         const welcomeBannerText = document.getElementById('welcomeBannerText');
-        const studentCountDisplay = document.getElementById('studentCountDisplay');
+        const studentCountDisplays = document.querySelectorAll('[id="studentCountDisplay"]');
         const unitCountDisplay = document.getElementById('unitCountDisplay');
 
         if (welcomeHeader) {
@@ -1615,9 +1612,9 @@ const LecturerDashboard = {
                 `${emoji} Welcome back! You have ${totalUnits} assigned units with ${totalStudents} students. ${riskMsg} (${typeLabel} - Passing: ≥${threshold}%)`;
         }
 
-        if (studentCountDisplay) {
-            studentCountDisplay.textContent = this.assignedStudents.length || 0;
-        }
+        studentCountDisplays.forEach(element => {
+            element.textContent = this.assignedStudents.length || 0;
+        });
         if (unitCountDisplay) {
             unitCountDisplay.textContent = this.assignedUnits.length || 0;
         }
