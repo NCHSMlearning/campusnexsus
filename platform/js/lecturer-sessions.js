@@ -233,59 +233,25 @@ const LecturerSessions = {
     async loadAssignedUnits() {
         try {
             const supabase = window.lecturerDB?.supabase;
-            if (!supabase) return;
-
-            const profile = window.lecturerDB?.getCurrentUserProfile();
-            if (!profile) return;
-
-            const fullName = profile.full_name;
-            const program = this.currentProgram || profile.program || 'KRCHN';
-
-            console.log(`🔍 Loading assigned units for lecturer: ${fullName} (${this.getProgramTypeLabel()})`);
-
-            const { data: assignments, error } = await supabase
-                .from('lecturer_subject_assignments')
+            if (!supabase) throw new Error('Supabase client is unavailable.');
+            const lecturerId = String(this.lecturerAssignmentId || await this.resolveLecturerId() || '');
+            if (!lecturerId) throw new Error('Authenticated lecturer assignment identity is unavailable.');
+            const profile = window.lecturerDB?.getCurrentUserProfile?.() || {};
+            const program = String(this.currentProgram || profile.program || window.CURRENT_PROGRAM || 'KRCHN').trim();
+            const { data, error } = await supabase.from('lecturer_subject_assignments')
                 .select('subject_name, subject_code, block, program, academic_year, lecturer_id')
-                .eq('lecturer_id', String(this.lecturerAssignmentId));
-
-            if (error) {
-                console.error('❌ Error loading assigned units:', error);
-                this.assignedUnits = [];
-                this.populateUnitDropdowns();
-                return;
-            }
-
-            const programUnits = assignments?.filter(u => u.program === program) || [];
-            const allUnits = assignments || [];
-
-            this.assignedUnits = programUnits.length > 0 ? programUnits : allUnits;
-
-            console.log(`📚 Loaded ${this.assignedUnits.length} assigned units for ${program}`);
-
-            const lecturerIds = [...new Set(this.assignedUnits.map(u => u.lecturer_id))];
-            if (lecturerIds.length > 0) {
-                const counts = {};
-                this.assignedUnits.forEach(u => {
-                    counts[u.lecturer_id] = (counts[u.lecturer_id] || 0) + 1;
-                });
-                let maxCount = 0;
-                let primaryId = lecturerIds[0];
-                for (const [id, count] of Object.entries(counts)) {
-                    if (count > maxCount) {
-                        maxCount = count;
-                        primaryId = id;
-                    }
-                }
-                this.lecturerAssignmentId = primaryId;
-                console.log(`✅ Primary lecturer ID set to: ${primaryId} (${maxCount} units)`);
-            }
-
+                .eq('lecturer_id', lecturerId);
+            if (error) throw error;
+            const norm = value => String(value || '').trim().toLowerCase();
+            this.assignedUnits = (data || []).filter(unit => norm(unit.program) === norm(program));
             this.populateUnitDropdowns();
             this.populateBlockDropdown();
-
+            console.log('[Lecturer Sessions] Assigned units loaded:', this.assignedUnits.length, 'for', program);
         } catch (error) {
-            console.error('❌ Failed to load assigned units:', error);
+            console.error('[Lecturer Sessions] Failed to load assigned units:', error);
             this.assignedUnits = [];
+            this.populateUnitDropdowns();
+            this.populateBlockDropdown();
         }
     },
 
