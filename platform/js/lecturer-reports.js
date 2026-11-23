@@ -457,46 +457,43 @@
             return (result.data || []).filter(a => a.subject_name || a.subject_code);
         };
 
-        // Match the proven Sessions module first: it reads the live lecturer
-        // profile and queries lecturer_subject_assignments by lecturer_name.
-        const sessionProfile = (() => {
-            try { return window.lecturerDB?.getCurrentUserProfile?.() || null; }
-            catch (_) { return null; }
-        })();
-        const sessionName = String(sessionProfile?.full_name || '').trim();
-        const sessionProgram = String(window.LecturerSessions?.currentProgram || sessionProfile?.program || '').trim();
+        // Prefer the canonical staff-record foreign key. The broad lecturer_name
+        // ILIKE query is only a legacy fallback because it can scan the full table
+        // and time out on larger institution datasets.
         let rows = [];
-        if (sessionName) {
-            const { data: nameRows, error: nameError } = await supabase
-                .from('lecturer_subject_assignments')
-                .select('subject_name, subject_code, block, program, academic_year, lecturer_id, lecturer_name')
-                .ilike('lecturer_name', `%${sessionName}%`);
-            if (nameError) {
-                console.error('[Reports] Sessions-compatible lecturer_name query failed:', nameError);
-                throw new Error('Could not load assigned units by lecturer name: ' + (nameError.message || 'query failed'));
-            }
-            const allNameRows = (nameRows || []).filter(a => a.subject_name || a.subject_code);
-            const programRows = sessionProgram
-                ? allNameRows.filter(a => String(a.program || '').toLowerCase() === sessionProgram.toLowerCase())
-                : [];
-            rows = programRows.length ? programRows : allNameRows;
-            if (rows.length) {
-                const ids = [...new Set(rows.map(a => String(a.lecturer_id || '')).filter(Boolean))];
-                if (ids.length === 1) lecturerId = ids[0];
-                console.info('[Reports] using Sessions-compatible name lookup', {
-                    lecturerName: sessionName, program: sessionProgram, assignments: rows.length
-                });
-            }
-        }
-
-        if (!rows.length) {
-
         try {
             rows = await fetchAssignments(lecturerId);
         } catch (error) {
-            console.error('LecturerReports: assignment query failed', error);
-            throw new Error('Could not load assigned units: ' + (error.message || 'database query failed'));
+            console.error('LecturerReports: assignment query by lecturer ID failed', error);
         }
+
+        if (!rows.length) {
+            const sessionProfile = (() => {
+                try { return window.lecturerDB?.getCurrentUserProfile?.() || null; }
+                catch (_) { return null; }
+            })();
+            const sessionName = String(sessionProfile?.full_name || '').trim();
+            const sessionProgram = String(window.LecturerSessions?.currentProgram || sessionProfile?.program || '').trim();
+            if (sessionName) {
+                const { data: nameRows, error: nameError } = await supabase
+                    .from('lecturer_subject_assignments')
+                    .select('subject_name, subject_code, block, program, academic_year, lecturer_id, lecturer_name')
+                    .ilike('lecturer_name', `%${sessionName}%`)
+                    .limit(250);
+                if (nameError) {
+                    console.error('[Reports] Legacy lecturer_name fallback failed:', nameError);
+                } else {
+                    const allNameRows = (nameRows || []).filter(a => a.subject_name || a.subject_code);
+                    const programRows = sessionProgram
+                        ? allNameRows.filter(a => String(a.program || '').toLowerCase() === sessionProgram.toLowerCase())
+                        : [];
+                    rows = programRows.length ? programRows : allNameRows;
+                    if (rows.length) {
+                        const ids = [...new Set(rows.map(a => String(a.lecturer_id || '')).filter(Boolean))];
+                        if (ids.length === 1) lecturerId = ids[0];
+                    }
+                }
+            }
         }
 
         // Resolve the canonical staff row by email when the first ID returns no
