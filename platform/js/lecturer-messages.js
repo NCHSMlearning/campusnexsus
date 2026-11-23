@@ -104,16 +104,17 @@ const LecturerMessages = {
             if (!authId) throw new Error('Authenticated lecturer session is unavailable.');
             const { data: identity, error } = await supabase.rpc('current_lecturer_staff_assignment_identity');
             if (error) throw error;
-            if (!identity?.id) throw new Error('Active lecturer account identity is unavailable.');
+            if (!identity?.id || String(identity.id) !== String(authId) || !identity.assignment_id) throw new Error('Lecturer assignment mapping is missing or ambiguous.');
+            const profile = window.lecturerDB?.getCurrentUserProfile?.() || {};
             this.lecturerUuid = authId;
-            this.lecturerAssignmentId = String(identity.id);
-            this.currentProgram = identity.program || this.currentProgram || 'KRCHN';
+            this.lecturerAssignmentId = String(identity.assignment_id);
+            this.currentProgram = String(window.CURRENT_PROGRAM || profile.program || identity.program || 'KRCHN').trim();
+            this.isTVET = this.currentProgram.toUpperCase() !== 'KRCHN';
             return this.lecturerAssignmentId;
         } catch (error) {
             console.error('[Lecturer Messages] Secure identity resolution failed:', error);
-            this.lecturerAssignmentId = null;
-            this.lecturerUuid = null;
-            return null;
+            this.lecturerAssignmentId = null; this.lecturerUuid = null; this.assignedUnits = [];
+            throw error;
         }
     },
 
@@ -121,33 +122,17 @@ const LecturerMessages = {
     // LOAD ASSIGNED UNITS - WITH TVET SUPPORT
     // ============================================
     async loadAssignedUnits() {
-        try {
-            const supabase = window.lecturerDB?.supabase;
-            if (!supabase) return;
-
-            const profile = window.lecturerDB?.getCurrentUserProfile();
-            if (!profile) return;
-
-            const lecturerId = this.lecturerAssignmentId || profile.user_id;
-            const program = this.currentProgram || profile.program || 'KRCHN';
-
-            const { data: assignments, error } = await supabase
-                .from('lecturer_subject_assignments')
-                .select('subject_name, subject_code, block, program, academic_year')
-                .eq('lecturer_id', String(lecturerId))
-                .eq('program', program);
-
-            if (error) {
-                console.error('Error loading assigned units:', error);
-                return;
-            }
-
-            this.assignedUnits = assignments || [];
-            console.log(`📚 Loaded ${this.assignedUnits.length} assigned units (${this.getProgramTypeLabel()})`);
-
-        } catch (error) {
-            console.error('Failed to load assigned units:', error);
-        }
+        const supabase = window.lecturerDB?.supabase;
+        if (!supabase) throw new Error('Supabase client is unavailable.');
+        const lecturerId = String(this.lecturerAssignmentId || await this.resolveLecturerId() || '');
+        if (!lecturerId) throw new Error('Lecturer assignment identity is unavailable.');
+        const norm = value => String(value || '').trim().toLowerCase();
+        const { data, error } = await supabase.from('lecturer_subject_assignments')
+            .select('subject_name, subject_code, block, program, academic_year')
+            .eq('lecturer_id', lecturerId);
+        if (error) throw error;
+        this.assignedUnits = (data || []).filter(row => norm(row.program) === norm(this.currentProgram));
+        console.log('[Lecturer Messages] Assigned units loaded:', this.assignedUnits.length);
     },
 
     // ============================================
@@ -363,50 +348,48 @@ const LecturerMessages = {
     // ============================================
     async loadStudentsForForm() {
         try {
-            const profile = window.lecturerDB?.getCurrentUserProfile();
-            const program = this.currentProgram || profile?.program || profile?.department;
             const supabase = window.lecturerDB?.supabase;
-
-            if (!supabase || !program) return;
-
-            const { data: students, error } = await supabase
-                .from('consolidated_user_profiles_table')
-                .select('user_id, full_name, student_id, block')
-                .eq('program', program)
-                .eq('role', 'student')
-                .order('full_name', { ascending: true });
-
-            if (error) throw error;
-
-            const targetSelect = document.getElementById('msgTarget');
-            const typeLabel = this.getProgramTypeLabel();
-            const emoji = this.getProgramEmoji();
-
-            if (targetSelect && students) {
-                const allOption = targetSelect.querySelector('option[value="all-students"]');
-                targetSelect.innerHTML = '';
-                if (allOption) {
-                    allOption.textContent = `📨 All ${typeLabel} Students`;
-                    targetSelect.appendChild(allOption);
-                }
-
-                students.forEach(s => {
-                    const option = document.createElement('option');
-                    option.value = s.user_id;
-                    const blockDisplay = s.block ? this.getBlockDisplay(s.block) : '';
-                    option.textContent = `${s.full_name || 'N/A'} (${s.student_id || 'N/A'})${blockDisplay ? ' - ' + blockDisplay : ''}`;
-                    if (this.isTVET) {
-                        option.textContent += ' 🔧';
-                    }
-                    targetSelect.appendChild(option);
-                });
-
-                console.log(`👥 Loaded ${students.length} ${typeLabel} students for message form`);
+            if (!supabase || !this.currentProgram) return;
+            if (!this.lecturerAssignmentId) await this.resolveLecturerId();
+            if (!this.assignedUnits.length) await this.loadAssignedUnits();
+            const norm = value => String(value || '').trim().toLowerCase();
+            if (!this.assignedUnits.length) return;
+            const registrations = [];
+            for (let from = 0; ; from += 1000) {
+                const { data, error } = await supabase.from('student_unit_registrations')
+                    .select('student_id, unit_code, unit_name, block, program, status')
+                    .ilike('program', this.currentProgram).in('status', ['approved', 'completed'])
+                    .range(from, from + 999);
+                if (error) throw error;
+                registrations.push(...(data || []));
+                if (!data || data.length < 1000) break;
             }
-
-        } catch (error) {
-            console.error('Failed to load students for form:', error);
-        }
+            const ids = [...new Set(registrations.filter(row => this.assignedUnits.some(unit =>
+                norm(unit.block) === norm(row.block) &&
+                ((norm(unit.subject_code) && norm(unit.subject_code) === norm(row.unit_code)) || norm(unit.subject_name) === norm(row.unit_name))
+            )).map(row => String(row.student_id || '').trim()).filter(Boolean))];
+            let students = [];
+            for (let i = 0; i < ids.length; i += 500) {
+                const { data, error } = await supabase.from('consolidated_user_profiles_table')
+                    .select('user_id, full_name, student_id, admission_number, block')
+                    .eq('role', 'student').in('user_id', ids.slice(i, i + 500));
+                if (error) throw error;
+                students.push(...(data || []));
+            }
+            const targetSelect = document.getElementById('msgTarget');
+            if (!targetSelect) return;
+            const typeLabel = this.getProgramTypeLabel();
+            const allOption = targetSelect.querySelector('option[value="all-students"]');
+            targetSelect.innerHTML = '';
+            if (allOption) { allOption.textContent = `All ${typeLabel} Programme Students`; targetSelect.appendChild(allOption); }
+            students.sort((a,b)=>String(a.full_name||'').localeCompare(String(b.full_name||''))).forEach(student => {
+                const option = document.createElement('option'); option.value = student.user_id;
+                const block = student.block ? this.getBlockDisplay(student.block) : '';
+                option.textContent = `${student.full_name || 'N/A'} (${student.student_id || student.admission_number || 'N/A'})${block ? ' - ' + block : ''}`;
+                targetSelect.appendChild(option);
+            });
+            console.log('[Lecturer Messages] Assigned student recipients loaded:', students.length);
+        } catch (error) { console.error('[Lecturer Messages] Failed to load assigned student recipients:', error); }
     },
 
     // ============================================
