@@ -35,72 +35,25 @@ const LecturerCalendar = {
     async resolveLecturerId() {
         try {
             const supabase = window.lecturerDB?.supabase;
-            if (!supabase) return;
-            
-            const profile = window.lecturerDB?.getCurrentUserProfile();
-            if (!profile) return;
-            
-            const authId = profile.user_id;
-            const fullName = profile.full_name;
-            
-            console.log('🔍 Auth ID (UUID):', authId);
-            console.log('🔍 Lecturer name:', fullName);
-            
-            // Store UUID for calendar
+            if (!supabase) throw new Error('Supabase client is unavailable.');
+            const { data: authData, error: authError } = await supabase.auth.getUser();
+            if (error = authError) throw error;
+            const authId = authData?.user?.id;
+            if (!authId) throw new Error('Authenticated lecturer session is unavailable.');
+            const { data: identity, error: identityError } = await supabase.rpc('current_lecturer_staff_assignment_identity');
+            if (identityError) throw identityError;
+            if (!identity?.id) throw new Error('Active lecturer account identity is unavailable.');
             this.lecturerUuid = authId;
-            
-            const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(authId));
-            
-            if (!isUUID && authId) {
-                this.lecturerAssignmentId = authId;
-                console.log('✅ Using non-UUID auth ID:', this.lecturerAssignmentId);
-                return;
-            }
-            
-            const { data: assignments, error: assignError } = await supabase
-                .from('lecturer_subject_assignments')
-                .select('lecturer_id, lecturer_name')
-                .ilike('lecturer_name', `%${fullName}%`);
-            
-            if (!assignError && assignments && assignments.length > 0) {
-                const textId = assignments.find(a => {
-                    const id = a.lecturer_id;
-                    return id && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(id));
-                });
-                
-                if (textId) {
-                    this.lecturerAssignmentId = textId.lecturer_id;
-                    console.log('✅ Found non-UUID ID:', this.lecturerAssignmentId);
-                    return;
-                }
-                
-                this.lecturerAssignmentId = assignments[0].lecturer_id;
-                console.log('⚠️ Using first match ID:', this.lecturerAssignmentId);
-                return;
-            }
-            
-            const nameParts = fullName.split(' ');
-            const { data: staff, error: staffError } = await supabase
-                .from('staff_records')
-                .select('id, first_name, other_names')
-                .ilike('first_name', `%${nameParts[0]}%`);
-            
-            if (!staffError && staff && staff.length > 0) {
-                this.lecturerAssignmentId = staff[0].id;
-                console.log('✅ Found lecturer ID from staff_records:', this.lecturerAssignmentId);
-                return;
-            }
-            
-            this.lecturerAssignmentId = authId;
-            console.log('⚠️ Falling back to auth ID:', this.lecturerAssignmentId);
-            
+            this.lecturerAssignmentId = String(identity.id);
+            return this.lecturerAssignmentId;
         } catch (error) {
-            console.error('Error resolving lecturer ID:', error);
+            console.error('[Lecturer Calendar] Secure lecturer identity resolution failed:', error);
             this.lecturerAssignmentId = null;
             this.lecturerUuid = null;
+            return null;
         }
     },
-    
+
     async loadEvents() {
         try {
             const profile = window.lecturerDB?.getCurrentUserProfile();
