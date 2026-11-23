@@ -272,66 +272,33 @@ const LecturerCourses = {
     // ============================================
     async loadStudentCounts() {
         const supabase = window.lecturerDB?.supabase;
-        if (!supabase) {
-            console.warn('[Lecturer Courses] Supabase unavailable; registration counts were not loaded.');
-            this.courses.forEach(course => { course.student_count = 0; });
-            return;
-        }
-
-        const normalize = value => String(value || '').trim().toLowerCase().replace(/\\s+/g, ' ');
-        const countStatuses = ['approved', 'completed'];
-
-        // Counts come only from student_unit_registrations. Count unique student IDs
-        // so duplicate registration rows never inflate the unit's student total.
-        await Promise.all(this.courses.map(async course => {
-            try {
-                const unitProgram = course.target_program || this.currentProgram ||
-                    window.lecturerDB?.getCurrentUserProfile()?.program || 'KRCHN';
-                const unitCode = String(course.unit_code || '').trim();
-                const unitName = String(course.course_name || '').trim();
-                let query = supabase.from('student_unit_registrations')
+        if (!supabase) { console.warn('[Lecturer Courses] Supabase unavailable; student counts cannot be refreshed.'); return; }
+        const norm = value => String(value || '').trim().toLowerCase().replace(/\s+/g, ' ');
+        const programs = [...new Set((this.courses || []).map(course => String(course.target_program || this.currentProgram || '').trim()).filter(Boolean))];
+        const registrations = [];
+        for (const program of programs) {
+            for (let from = 0; ; from += 1000) {
+                const { data, error } = await supabase.from('student_unit_registrations')
                     .select('student_id, unit_code, unit_name, program, block, status')
-                    .ilike('program', unitProgram)
-                    .in('status', countStatuses);
-
-                if (unitCode && unitCode !== 'Code unavailable' && unitCode !== 'N/A') {
-                    query = query.ilike('unit_code', unitCode);
-                } else if (unitName && unitName !== 'Unnamed Unit') {
-                    query = query.ilike('unit_name', unitName);
-                } else {
-                    course.student_count = 0;
-                    return;
-                }
-
-                const { data, error } = await query;
-                if (error) throw error;
-
-                const expectedCode = normalize(unitCode);
-                const expectedName = normalize(unitName);
-                const expectedBlock = normalize(course.block);
-                const matched = (data || []).filter(row => {
-                    const sameUnit = expectedCode && expectedCode !== 'code unavailable' && expectedCode !== 'n/a'
-                        ? normalize(row.unit_code) === expectedCode
-                        : normalize(row.unit_name) === expectedName;
-                    const sameBlock = !expectedBlock || expectedBlock === 'n/a' ||
-                        normalize(row.block) === expectedBlock;
-                    return sameUnit && sameBlock && row.student_id;
-                });
-
-                course.student_count = new Set(matched.map(row => String(row.student_id))).size;
-            } catch (error) {
-                console.error('[Lecturer Courses] Unit registration count failed:', {
-                    unit: course.course_name,
-                    code: course.unit_code,
-                    error: error.message
-                });
-                // Never substitute the programme-wide student total; that would
-                // incorrectly attribute every programme student to this unit.
-                course.student_count = 0;
+                    .ilike('program', program).in('status', ['approved', 'completed'])
+                    .range(from, from + 999);
+                if (error) { console.error('[Lecturer Courses] Registration counts failed for programme:', program, error); break; }
+                registrations.push(...(data || []));
+                if (!data || data.length < 1000) break;
             }
-        }));
-
-        console.log('📊 Unit student totals loaded from student_unit_registrations.');
+        }
+        (this.courses || []).forEach(course => {
+            const program = norm(course.target_program || this.currentProgram);
+            const code = norm(course.unit_code), name = norm(course.course_name), block = norm(course.block);
+            const matched = registrations.filter(row => {
+                if (norm(row.program) !== program || (block && block !== 'n/a' && norm(row.block) !== block)) return false;
+                const codeMatch = code && code !== 'code unavailable' && code !== 'n/a' && norm(row.unit_code) === code;
+                const nameMatch = name && name !== 'unnamed unit' && norm(row.unit_name) === name;
+                return Boolean(codeMatch || nameMatch);
+            });
+            course.student_count = new Set(matched.map(row => String(row.student_id || '').trim()).filter(Boolean)).size;
+        });
+        console.log('[Lecturer Courses] Unit student counts refreshed from all approved/completed registrations:', registrations.length);
     },
 
     // ============================================
