@@ -700,6 +700,7 @@ async loadAvailableUnits(supabase) {
                 const profile = this.userProfile || window.currentUserProfile || window.db?.currentUserProfile || {};
                 const institutionId = profile.institution_id;
                 const programCode = String(profile.program || this.programCode || '').trim();
+                if (!institutionId || !programCode) throw new Error('Institution and programme are required to load your academic periods.');
                 let structure = null;
                 if (window.CampusAcademicStructure && institutionId && programCode) {
                     structure = await window.CampusAcademicStructure.resolve(supabase, institutionId, programCode);
