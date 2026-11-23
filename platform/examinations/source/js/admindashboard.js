@@ -8280,9 +8280,11 @@ window.publishApprovedAssessment = async function(examId) {
         }
     }
 };
-    async function loadExamFormOptions(selectedProgram = '', selectedIntake = '') {
+    async function loadExamFormOptions(selectedProgram = '', selectedIntake = '', selectedBlock = '') {
         const program = document.getElementById('examProgram');
         const intake = document.getElementById('examIntakeYear');
+        const block = document.getElementById('examBlock');
+        const intakeMonth = document.getElementById('examIntakeMonth');
         if (!program || !intake) return;
         program.innerHTML = '<option value="">Loading programmes…</option>';
         intake.innerHTML = '<option value="">Loading intakes…</option>';
@@ -8303,25 +8305,82 @@ window.publishApprovedAssessment = async function(examId) {
             }
             if (!institutionId) throw new Error('Your account is not linked to an institution.');
             window.cnAdminExamInstitutionId = institutionId;
-            let query = sb.from('consolidated_user_profiles_table')
-                .select('program,intake_year').not('program', 'is', null);
-            query = query.eq('institution_id', institutionId);
-            const students = await query;
-            if (students.error) throw students.error;
-            const programs = [...new Set((students.data || []).map(x => String(x.program || '').trim()).filter(Boolean))].sort();
-            const years = [...new Set((students.data || []).map(x => String(x.intake_year || '').trim()).filter(Boolean))].sort((x,y)=>Number(y)-Number(x));
+
+            const [catalogResult, studentsResult] = await Promise.all([
+                sb.from('programs').select('id,program_code,program_name,status')
+                    .eq('institution_id', institutionId).eq('status', 'active').order('program_code'),
+                sb.from('consolidated_user_profiles_table').select('program,intake_year,intake_month')
+                    .eq('institution_id', institutionId).eq('role', 'student').not('program', 'is', null)
+            ]);
+            if (catalogResult.error) throw catalogResult.error;
+            if (studentsResult.error) throw studentsResult.error;
+            const catalogPrograms = catalogResult.data || [];
+            const students = studentsResult.data || [];
+            const programs = [...new Set([
+                ...catalogPrograms.map(x => String(x.program_code || '').trim()),
+                ...students.map(x => String(x.program || '').trim())
+            ].filter(Boolean))].sort();
             program.innerHTML = '<option value="">Select programme</option>' +
                 programs.map(v => '<option value="' + escapeAdminHtml(v) + '">' + escapeAdminHtml(v) + '</option>').join('');
             if (selectedProgram && !programs.includes(String(selectedProgram))) {
                 program.insertAdjacentHTML('beforeend','<option value="' + escapeAdminHtml(selectedProgram) + '">' + escapeAdminHtml(selectedProgram) + '</option>');
             }
             program.value = selectedProgram || '';
+
+            const selectedProgramRow = catalogPrograms.find(x => String(x.program_code) === String(program.value));
+            let intakeRows = [];
+            let blockNames = [];
+            if (selectedProgramRow?.id) {
+                const [canonicalIntakes, canonicalBlocks] = await Promise.all([
+                    sb.from('program_intakes').select('intake_year,intake_month,intake_name,status')
+                        .eq('program_id', selectedProgramRow.id).eq('institution_id', institutionId),
+                    sb.from('program_blocks').select('block_name,block_sequence,status')
+                        .eq('program_id', selectedProgramRow.id).eq('institution_id', institutionId)
+                        .eq('status', 'active').order('block_sequence')
+                ]);
+                if (canonicalIntakes.error) throw canonicalIntakes.error;
+                if (canonicalBlocks.error) throw canonicalBlocks.error;
+                intakeRows = canonicalIntakes.data || [];
+                blockNames = (canonicalBlocks.data || []).map(x => x.block_name).filter(Boolean);
+            }
+
+            const legacyRows = students.filter(x => !program.value || String(x.program || '').trim() === String(program.value));
+            const years = [...new Set([
+                ...intakeRows.map(x => String(x.intake_year || '').trim()),
+                ...legacyRows.map(x => String(x.intake_year || '').trim())
+            ].filter(Boolean))].sort((a,b) => Number(b)-Number(a));
             intake.innerHTML = '<option value="">Select intake year</option>' +
                 years.map(v => '<option value="' + escapeAdminHtml(v) + '">' + escapeAdminHtml(v) + '</option>').join('');
             if (selectedIntake && !years.includes(String(selectedIntake))) {
                 intake.insertAdjacentHTML('beforeend','<option value="' + escapeAdminHtml(selectedIntake) + '">' + escapeAdminHtml(selectedIntake) + '</option>');
             }
             intake.value = selectedIntake || '';
+
+            if (!blockNames.length && program.value) {
+                const legacyBlocks = await sb.from('units_catalog').select('block')
+                    .eq('institution_id', institutionId).eq('program', program.value).eq('status', 'active').limit(3000);
+                if (legacyBlocks.error) throw legacyBlocks.error;
+                blockNames = (legacyBlocks.data || []).map(x => x.block).filter(Boolean);
+            }
+            if (block) {
+                const oldBlock = selectedBlock || block.value;
+                const uniqueBlocks = [...new Set(blockNames.map(String))].sort((a,b) => a.localeCompare(b, undefined, {numeric:true}));
+                block.innerHTML = '<option value="">Select block / term</option>' +
+                    uniqueBlocks.map(v => '<option value="' + escapeAdminHtml(v) + '">' + escapeAdminHtml(v) + '</option>').join('');
+                if (oldBlock && !uniqueBlocks.includes(String(oldBlock))) block.add(new Option(String(oldBlock), String(oldBlock)));
+                block.value = oldBlock || '';
+            }
+            if (intakeMonth) {
+                const months = [...new Set([
+                    ...intakeRows.map(x => String(x.intake_month || '').trim()),
+                    ...legacyRows.map(x => String(x.intake_month || '').trim())
+                ].filter(Boolean))];
+                months.forEach(month => {
+                    if (![...intakeMonth.options].some(option => option.value.toLowerCase() === month.toLowerCase())) {
+                        intakeMonth.add(new Option(month, month));
+                    }
+                });
+            }
         } catch (error) {
             console.error('Unable to load institution exam options:', error);
             program.innerHTML = '<option value="">Unable to load programmes</option>';
@@ -8379,7 +8438,7 @@ window.publishApprovedAssessment = async function(examId) {
             set('examMinFee', exam.min_fee_balance ?? 0);
         }
 
-        await loadExamFormOptions(exam?.target_program || exam?.program_type || exam?.program || '', exam?.intake_year || exam?.intake || '');
+        await loadExamFormOptions(exam?.target_program || exam?.program_type || exam?.program || '', exam?.intake_year || exam?.intake || '', exam?.block_term || exam?.block || exam?.term || '');
         // Preserve existing values even when their legacy value is not in the current dropdown list.
         const ensureOption = (id, value) => {
             const select=byId(id); if(!select || value===undefined || value===null || value==='') return;
