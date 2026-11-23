@@ -55,8 +55,8 @@ function showStudentPortalBootError(title, message) {
     panel.querySelector('#student-portal-boot-title').textContent = title || 'Student Portal could not start';
     panel.querySelector('#student-portal-boot-message').textContent = message || 'An unexpected startup error occurred.';
     const returnTo = window.location.pathname + window.location.search + window.location.hash;
-    const safeReturnTo = returnTo && returnTo.startsWith('/') && !returnTo.startsWith('//') ? returnTo : '/student/';
-    panel.querySelector('#student-portal-boot-login').href = '/login.html?redirect=' + encodeURIComponent(safeReturnTo);
+    const safeReturnTo = returnTo && returnTo.startsWith('/') && !returnTo.startsWith('//') ? returnTo : '/platform/student.html#dashboard';
+    panel.querySelector('#student-portal-boot-login').href = '/platform/login.html?redirect=' + encodeURIComponent(safeReturnTo);
     panel.style.display = 'flex';
 }
 
@@ -116,7 +116,7 @@ async function initializeApp() {
             const safeReturnTo = returnTo && returnTo.startsWith('/') && !returnTo.startsWith('//')
                 ? returnTo
                 : '/student';
-            const loginUrl = '/login.html?redirect=' + encodeURIComponent(safeReturnTo);
+            const loginUrl = '/platform/login.html?redirect=' + encodeURIComponent(safeReturnTo);
             window.location.replace(loginUrl);
             return;
         }
