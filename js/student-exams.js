@@ -51,12 +51,20 @@ function eligible(exam,p){
  const notDraft=!['draft','cancelled','rejected'].includes(norm(exam.status));
  return approved&&notDraft&&programOk&&intakeOk&&matchesBlock(exam,p);
 }
+function parseKenyaDateTime(value){
+ if(!value)return null;
+ let raw=String(value).trim();
+ // A timestamp without an offset represents Kenya local time, not browser-local time.
+ if(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?$/.test(raw))raw+='+03:00';
+ const parsed=new Date(raw);return Number.isNaN(parsed.getTime())?null:parsed;
+}
 function startsAt(exam){
- const date=val(exam.start_time,exam.exam_date,exam.start_date,exam.scheduled_at);
+ const primary=val(exam.start_time,exam.scheduled_at);
+ if(primary){const parsed=parseKenyaDateTime(primary);if(parsed)return parsed;}
+ const date=val(exam.exam_date,exam.start_date);
  if(!date)return null;
- const time=val(exam.exam_start_time);
- if(time&&/^\d{1,2}:\d{2}/.test(String(time))&&!String(date).includes('T'))return new Date(String(date).slice(0,10)+'T'+String(time).slice(0,5)+':00+03:00');
- const d=new Date(date);return Number.isNaN(d.getTime())?null:d;
+ const time=String(val(exam.exam_start_time,'00:00')).slice(0,5);
+ return parseKenyaDateTime(String(date).slice(0,10)+'T'+time+':00+03:00');
 }
 function examState(exam){
  const status=norm(exam.status);
@@ -89,7 +97,7 @@ function onlineHref(exam){
   return url.href;
  }catch(_){return ''}
 }
-function dateLabel(exam){const d=startsAt(exam);return d?d.toLocaleString('en-KE',{timeZone:'Africa/Nairobi',dateStyle:'medium',timeStyle:'short'})+' EAT':'Schedule to be confirmed'}
+function dateLabel(exam){const d=startsAt(exam);return d?d.toLocaleString('en-KE',{timeZone:'Africa/Nairobi',dateStyle:'medium',timeStyle:'short'})+' Kenya time (UTC+3)':'Schedule to be confirmed'}
 let examCountdownTicker=null;
 function countdownText(target){
  const left=Math.max(0,Number(target)-Date.now());
@@ -174,7 +182,7 @@ function dashboardExamCard(exam,status){
  const action=isOnline&&status==='open'?'<a class="dashboard-exam-action online-action" href="'+esc(link)+'" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-circle-play"></i> Enter Online Exam</a>':isOnline&&status==='upcoming'?'<button class="dashboard-exam-action locked-action" disabled><i class="fa-solid fa-lock"></i> Opens at '+esc(start?start.toLocaleTimeString('en-KE',{hour:'2-digit',minute:'2-digit',timeZone:'Africa/Nairobi'}):'scheduled time')+'</button>':status==='closed'?'<div class="dashboard-exam-closed"><i class="fa-solid fa-circle-check"></i><span><b>Examination closed</b><small>This examination is no longer available.</small></span></div>':'';
  const countdown=status==='upcoming'&&start?'<div class="dashboard-countdown"><span>Starts in:</span><div class="countdown-units"><b class="exam-countdown" data-start="'+start.getTime()+'">'+countdownText(start.getTime())+'</b></div></div>':'';
  const mode=isOnline?'<span class="exam-type-chip chip-online"><i class="fa-solid fa-shield-halved"></i> Online Exam</span>':'<span class="exam-type-chip chip-physical"><i class="fa-solid fa-clipboard-check"></i> Physical Exam</span>';
- return '<article class="dashboard-exam-card '+(isOnline?'online-card':'physical-card')+' '+(status==='upcoming'?'is-upcoming':'')+'"><div class="dashboard-exam-illustration"><i class="'+(isOnline?'fa-solid fa-laptop':'fa-solid fa-building-columns')+'"></i></div><div class="dashboard-exam-main"><div class="dashboard-exam-heading"><h3>'+esc(title)+'</h3>'+mode+'<span class="status '+badge+'">'+label+'</span></div><p class="dashboard-exam-unit">'+esc(unit)+'</p><div class="dashboard-exam-meta"><span><i class="fa-regular fa-calendar"></i>'+esc(dateLabel(exam))+'</span><span><i class="fa-regular fa-clock"></i>'+esc(start?start.toLocaleTimeString('en-KE',{hour:'2-digit',minute:'2-digit',timeZone:'Africa/Nairobi'}):'Time TBA')+' EAT</span><span><i class="fa-regular fa-hourglass-half"></i> '+esc((Number(exam.duration_minutes)||40)+' minutes')+'</span><span><i class="fa-solid fa-layer-group"></i> '+esc(val(exam.block_term,exam.block,exam.term,'All blocks'))+'</span></div>'+countdown+action+'</div></article>';
+ return '<article class="dashboard-exam-card '+(isOnline?'online-card':'physical-card')+' '+(status==='upcoming'?'is-upcoming':'')+'"><div class="dashboard-exam-illustration"><i class="'+(isOnline?'fa-solid fa-laptop':'fa-solid fa-building-columns')+'"></i></div><div class="dashboard-exam-main"><div class="dashboard-exam-heading"><h3>'+esc(title)+'</h3>'+mode+'<span class="status '+badge+'">'+label+'</span></div><p class="dashboard-exam-unit">'+esc(unit)+'</p><div class="dashboard-exam-meta"><span><i class="fa-regular fa-calendar"></i>'+esc(dateLabel(exam))+'</span><span><i class="fa-regular fa-clock"></i>'+esc(start?start.toLocaleTimeString('en-KE',{hour:'2-digit',minute:'2-digit',timeZone:'Africa/Nairobi'}):'Time TBA')+' Kenya time (UTC+3)</span><span><i class="fa-regular fa-hourglass-half"></i> '+esc((Number(exam.duration_minutes)||40)+' minutes')+'</span><span><i class="fa-solid fa-layer-group"></i> '+esc(val(exam.block_term,exam.block,exam.term,'All blocks'))+'</span></div>'+countdown+action+'</div></article>';
 }
 function renderDashboardCalendar(){
  const host=$('dashboard-calendar');if(!host)return;
@@ -201,7 +209,7 @@ function renderDashboard(){
  const total=Math.max(totalCount,1),done=closed,percent=Math.round(done/total*100);
  $('status-chart').innerHTML='<div class="progress-donut" style="--progress:'+percent+'%"><div><b>'+percent+'%</b><small>Completed</small></div></div><div class="progress-legend"><span><i class="legend-dot done"></i>Completed <b>'+done+' ('+Math.round(done/total*100)+'%)</b></span><span><i class="legend-dot waiting"></i>Upcoming <b>'+upcoming+' ('+Math.round(upcoming/total*100)+'%)</b></span><span><i class="legend-dot ready"></i>Available Now <b>'+open+' ('+Math.round(open/total*100)+'%)</b></span></div>';
  const activity=[...state.history].sort((a,b)=>new Date(b.submitted_at||b.started_at||0)-new Date(a.submitted_at||a.started_at||0)).slice(0,4);
- $('activity-chart').innerHTML=activity.length?'<div class="dashboard-activity-list">'+activity.map(a=>{const submitted=!!a.submitted_at,exam=state.exams.find(x=>String(x.id)===String(a.exam_id)),title=val(a.exam_title,a.title,exam?.title,exam?.exam_name,'Examination'),when=a.submitted_at||a.started_at;return '<div class="dashboard-activity-row"><span class="activity-icon '+(submitted?'submitted':'scheduled')+'"><i class="'+(submitted?'fa-solid fa-check':'fa-regular fa-calendar-check')+'"></i></span><span class="activity-copy"><b>'+esc(title)+(submitted?' – Attempt submitted':' – Attempt started')+'</b><small>'+esc(when?new Date(when).toLocaleString('en-KE',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',timeZone:'Africa/Nairobi'}):'Recent activity')+' EAT</small></span></div>';}).join('')+'</div>':'<div class="dashboard-empty compact"><i class="fa-solid fa-clock-rotate-left"></i><b>No recent activity yet</b><span>Your submitted examination attempts will appear here.</span></div>';
+ $('activity-chart').innerHTML=activity.length?'<div class="dashboard-activity-list">'+activity.map(a=>{const submitted=!!a.submitted_at,exam=state.exams.find(x=>String(x.id)===String(a.exam_id)),title=val(a.exam_title,a.title,exam?.title,exam?.exam_name,'Examination'),when=a.submitted_at||a.started_at;return '<div class="dashboard-activity-row"><span class="activity-icon '+(submitted?'submitted':'scheduled')+'"><i class="'+(submitted?'fa-solid fa-check':'fa-regular fa-calendar-check')+'"></i></span><span class="activity-copy"><b>'+esc(title)+(submitted?' – Attempt submitted':' – Attempt started')+'</b><small>'+esc(when?new Date(when).toLocaleString('en-KE',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',timeZone:'Africa/Nairobi'}):'Recent activity')+' Kenya time (UTC+3)</small></span></div>';}).join('')+'</div>':'<div class="dashboard-empty compact"><i class="fa-solid fa-clock-rotate-left"></i><b>No recent activity yet</b><span>Your submitted examination attempts will appear here.</span></div>';
  renderDashboardCalendar();
 }
 function render(){
