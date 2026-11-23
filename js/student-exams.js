@@ -186,14 +186,16 @@ function dashboardExamCard(exam,status){
 }
 function renderDashboardCalendar(){
  const host=$('dashboard-calendar');if(!host)return;
- const base=new Date();base.setDate(1);base.setMonth(base.getMonth()+dashboardCalendarOffset);
- const year=base.getFullYear(),month=base.getMonth(),today=new Date();
- $('calendar-month-label').textContent=base.toLocaleDateString('en-KE',{month:'long',year:'numeric'});
- const firstDay=new Date(year,month,1).getDay(),daysInMonth=new Date(year,month+1,0).getDate(),events={};
- state.exams.forEach(exam=>{const start=startsAt(exam);if(!start)return;const key=start.getFullYear()+'-'+start.getMonth()+'-'+start.getDate(),status=examState(exam);events[key]=status==='closed'?'completed':status;});
+ const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Nairobi',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()).reduce((out,p)=>{if(p.type!=='literal')out[p.type]=p.value;return out;},{});
+ const currentYear=Number(parts.year),currentMonth=Number(parts.month)-1,todayDay=Number(parts.day);
+ const base=new Date(Date.UTC(currentYear,currentMonth+dashboardCalendarOffset,1,12));
+ const year=base.getUTCFullYear(),month=base.getUTCMonth();
+ $('calendar-month-label').textContent=new Intl.DateTimeFormat('en-KE',{timeZone:'Africa/Nairobi',month:'long',year:'numeric'}).format(base);
+ const firstDay=new Date(Date.UTC(year,month,1)).getUTCDay(),daysInMonth=new Date(Date.UTC(year,month+1,0)).getUTCDate(),events={};
+ state.exams.forEach(exam=>{const start=startsAt(exam);if(!start)return;const localParts=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Nairobi',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(start).reduce((out,p)=>{if(p.type!=='literal')out[p.type]=p.value;return out;},{});const key=Number(localParts.year)+'-'+(Number(localParts.month)-1)+'-'+Number(localParts.day),status=examState(exam);events[key]=status==='closed'?'completed':status;});
  let cells='<div class="calendar-weekdays">'+['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(x=>'<span>'+x+'</span>').join('')+'</div><div class="calendar-days">';
  const offset=(firstDay+6)%7;for(let i=0;i<offset;i++)cells+='<span class="calendar-day empty"></span>';
- for(let d=1;d<=daysInMonth;d++){const status=events[year+'-'+month+'-'+d]||'',isToday=d===today.getDate()&&month===today.getMonth()&&year===today.getFullYear();cells+='<span class="calendar-day '+(status?'has-'+status:'')+(isToday?' is-today':'')+'">'+d+'</span>';}
+ for(let d=1;d<=daysInMonth;d++){const status=events[year+'-'+month+'-'+d]||'',isToday=d===todayDay&&month===currentMonth&&year===currentYear;cells+='<span class="calendar-day '+(status?'has-'+status:'')+(isToday?' is-today':'')+'">'+d+'</span>';}
  const total=offset+daysInMonth;for(let i=total;i%7!==0;i++)cells+='<span class="calendar-day empty"></span>';
  host.innerHTML=cells+'</div>';
 }
