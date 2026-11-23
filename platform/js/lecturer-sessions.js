@@ -76,6 +76,16 @@ const LecturerSessions = {
     getBlockDisplay(blockValue) {
         if (!blockValue) return 'N/A';
 
+        const structureType = this.academicStructure?.type;
+        if (structureType) {
+            if (structureType === 'Block' && this.getProgramType() === 'TVET') {
+                const match = blockValue.match(/^Y(\d)T(\d)$/);
+                if (match) return `Year ${parseInt(match[1])} ${['','First','Second','Third'][parseInt(match[2])] || match[2]} Term`;
+            }
+            if (new RegExp('^' + structureType + '\\s', 'i').test(blockValue)) return blockValue;
+            if (blockValue === 'Introductory' || blockValue === 'Final') return blockValue + ' ' + structureType;
+            return structureType + ' ' + blockValue;
+        }
         const programType = this.getProgramType();
         if (programType === 'TVET') {
             const match = blockValue.match(/^Y(\d)T(\d)$/);
@@ -239,6 +249,14 @@ const LecturerSessions = {
             if (!lecturerId) throw new Error('Authenticated lecturer assignment identity is unavailable.');
             const profile = window.lecturerDB?.getCurrentUserProfile?.() || {};
             const program = String(this.currentProgram || profile.program || window.CURRENT_PROGRAM || 'KRCHN').trim();
+            try {
+                if (window.CampusAcademicStructure && profile.institution_id) {
+                    this.academicStructure = await window.CampusAcademicStructure.resolve(supabase, profile.institution_id, program);
+                }
+            } catch (structureError) {
+                console.warn('[Lecturer Sessions] Institution academic structure lookup failed:', structureError.message);
+                this.academicStructure = null;
+            }
             const { data, error } = await supabase.from('lecturer_subject_assignments')
                 .select('subject_name, subject_code, block, program, academic_year, lecturer_id')
                 .eq('lecturer_id', lecturerId);
@@ -305,7 +323,7 @@ const LecturerSessions = {
 
         const label = document.getElementById('blockFilterLabel');
         if (label) {
-            const blockType = this.isTVET ? 'Term' : 'Block';
+            const blockType = this.academicStructure?.singular || (this.isTVET ? 'Term' : 'Block');
             label.innerHTML = `<i class="fas fa-layer-group" style="color: #4C1D95; width: 18px;"></i> ${blockType}`;
         }
     },
@@ -1334,7 +1352,7 @@ const LecturerSessions = {
 
         const blockLabel = document.getElementById('sessionBlockLabel');
         if (blockLabel) {
-            blockLabel.innerHTML = `<i class="fas fa-layer-group" style="color: #4C1D95; width: 18px;"></i> ${this.isTVET ? 'Term' : 'Block'} *`;
+            blockLabel.innerHTML = `<i class="fas fa-layer-group" style="color: #4C1D95; width: 18px;"></i> ${this.academicStructure?.singular || (this.isTVET ? 'Term' : 'Block')} *`;
         }
 
         this.populateUnitDropdowns();
