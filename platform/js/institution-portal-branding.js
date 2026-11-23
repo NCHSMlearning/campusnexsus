@@ -230,14 +230,32 @@
     const user = auth.data && auth.data.user;
     if (auth.error || !user) return;
 
+    // Exam Login performs the institution/role verification before routing to
+    // the dedicated dashboards. Reuse that verified hand-off if profile lookup
+    // is delayed or its RLS policy differs from the normal portal.
+    let handoff = null;
+    try {
+      const raw = sessionStorage.getItem("campusNexusExamLecturerAuth")
+        || localStorage.getItem("campusNexusExamLecturerAuth")
+        || sessionStorage.getItem("campusNexusExamAdminAuth")
+        || localStorage.getItem("campusNexusExamAdminAuth");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && String(parsed.user_id || "") === String(user.id)
+          && parsed.institution_id && parsed.institution_name) handoff = parsed;
+      }
+    } catch (_) {}
+
+    let profile = {};
     const profileResult = await client.from("consolidated_user_profiles_table")
       .select("institution_id,role,status").eq("user_id", user.id).maybeSingle();
-    if (profileResult.error) throw profileResult.error;
-    const profile = profileResult.data || {};
-    const role = String(profile.role || "").toLowerCase();
+    if (!profileResult.error) profile = profileResult.data || {};
+    else if (!handoff) throw profileResult.error;
+
+    const role = String(profile.role || handoff?.role || "").toLowerCase();
     if (["superadmin", "super_admin", "platform_super_admin"].includes(role)) return;
 
-    let institutionId = profile.institution_id || null;
+    let institutionId = profile.institution_id || handoff?.institution_id || null;
     if (!institutionId) {
       const memberships = await client.from("institution_users")
         .select("institution_id,role,status").eq("user_id", user.id).eq("status", "active");
