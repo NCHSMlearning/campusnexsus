@@ -1896,7 +1896,17 @@ window.viewLecturerStudentProgress = async function(studentId, studentName, exam
         const modal = document.getElementById('lecturerProgressModal');
         const safe = value => String(value == null ? '' : value).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
         const sentinel = '00000000-0000-0000-0000-000000000000';
-        const answerValue = row => row?.selected_answer ?? row?.student_answer ?? row?.answer ?? row?.response ?? '';
+        const answerValue = row => {
+            // Some exam writers populate more than one legacy answer field.
+            // Prefer the first NON-EMPTY value so an empty selected_answer does
+            // not hide a valid student_answer/answer/response.
+            const candidates = [
+                row?.selected_answer, row?.student_answer, row?.answer,
+                row?.response, row?.answer_text, row?.selected_option,
+                row?.answer_value
+            ];
+            return candidates.find(value => value !== null && value !== undefined && String(value).trim() !== '') ?? '';
+        };
         const normalize = value => String(value ?? '').trim().toUpperCase().replace(/[()\s.\-_:]/g, '');
         const optionKeyMatches = (value, letter, optionText) => {
             const v = normalize(value);
@@ -1958,8 +1968,30 @@ window.viewLecturerStudentProgress = async function(studentId, studentName, exam
                 .eq('exam_id', numericExamId)
                 .neq('question_id', sentinel);
             if (attemptId) answersQuery = answersQuery.eq('attempt_id', attemptId);
-            const { data: answerRows, error: answersError } = await answersQuery.order('updated_at', { ascending: false });
+            let { data: answerRows, error: answersError } = await answersQuery.order('updated_at', { ascending: false });
             if (answersError) throw new Error('Could not load saved student answers: ' + answersError.message);
+
+            // Recovery path: if the attempt lookup returned an id that has no
+            // visible question rows (for example, a stale attempt pointer), read
+            // this student's rows for the exam and isolate the newest attempt.
+            // Never combine answers across retakes.
+            if ((!answerRows || !answerRows.length) && attemptId) {
+                const { data: fallbackRows, error: fallbackError } = await sb.from('exam_grades')
+                    .select('*')
+                    .eq('student_id', String(studentId))
+                    .eq('exam_id', numericExamId)
+                    .neq('question_id', sentinel)
+                    .order('updated_at', { ascending: false });
+                if (fallbackError) {
+                    console.warn('Fallback answer lookup failed:', fallbackError);
+                } else if (fallbackRows?.length) {
+                    const newestQuestionAttemptId = fallbackRows.find(row => row.attempt_id)?.attempt_id || null;
+                    answerRows = newestQuestionAttemptId
+                        ? fallbackRows.filter(row => String(row.attempt_id) === String(newestQuestionAttemptId))
+                        : fallbackRows;
+                    if (newestQuestionAttemptId) attemptId = newestQuestionAttemptId;
+                }
+            }
 
             let gradeRows = answerRows || [];
             // Legacy rows may have no attempt_id. In that case, avoid mixing attempts:
