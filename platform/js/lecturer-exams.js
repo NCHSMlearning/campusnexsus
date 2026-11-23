@@ -196,14 +196,47 @@ const FROM_ADDRESS =
                 .test(String(v || '').trim());
         },
 
+        // All examination dates and times are interpreted in Kenya (Africa/Nairobi, UTC+3).
+        kenyaDateInput(days = 0) {
+            const parts = new Intl.DateTimeFormat('en-CA', {
+                timeZone: 'Africa/Nairobi', year: 'numeric', month: '2-digit', day: '2-digit'
+            }).formatToParts(new Date()).reduce((out, part) => {
+                if (part.type !== 'literal') out[part.type] = part.value;
+                return out;
+            }, {});
+            const date = new Date(Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day) + days, 12));
+            return date.getUTCFullYear() + '-' + String(date.getUTCMonth() + 1).padStart(2, '0') + '-' + String(date.getUTCDate()).padStart(2, '0');
+        },
+
+        kenyaSchedule(date, time, duration) {
+            if (!date || !time) return { start: null, end: null };
+            const localStart = new Date(String(date).slice(0, 10) + 'T' + String(time).slice(0, 5) + ':00+03:00');
+            if (Number.isNaN(localStart.getTime())) throw new Error('Enter a valid examination date and Kenya start time.');
+            const localEnd = new Date(localStart.getTime() + Number(duration || 0) * 60000);
+            return { start: localStart.toISOString(), end: localEnd.toISOString() };
+        },
+
+        normalizeExamLink(value) {
+            const raw = String(value || '').trim();
+            if (!raw) return null;
+            let parsed;
+            try { parsed = new URL(raw); } catch (_) {
+                throw new Error('Enter a valid online examination project URL beginning with https:// or http://.');
+            }
+            if (!['https:', 'http:'].includes(parsed.protocol)) {
+                throw new Error('Online examination links must use https:// or http://.');
+            }
+            return parsed.href;
+        },
+
         fmtDate(value) {
             if (!value) return 'N/A';
             try {
-                return new Date(value).toLocaleDateString('en-GB', {
-                    day: 'numeric',
-                    month: 'short',
-                    year: 'numeric'
-                });
+                const raw = String(value).slice(0, 10);
+                const date = new Date(raw + 'T12:00:00+03:00');
+                return new Intl.DateTimeFormat('en-KE', {
+                    timeZone: 'Africa/Nairobi', day: 'numeric', month: 'short', year: 'numeric'
+                }).format(date);
             } catch (_) {
                 return value;
             }
@@ -467,9 +500,7 @@ const FROM_ADDRESS =
             const dateEl = this.firstEl(['exam_date', 'examDate']);
 
             if (dateEl && !dateEl.value) {
-                const d = new Date();
-                d.setDate(d.getDate() + 7);
-                dateEl.value = d.toISOString().split('T')[0];
+                dateEl.value = this.kenyaDateInput(7);
             }
 
             const duration = this.firstEl([
@@ -1277,7 +1308,7 @@ const FROM_ADDRESS =
 
                 const time =
                     ex.exam_start_time
-                        ? ' ' + this.esc(ex.exam_start_time)
+                        ? ' ' + this.esc(ex.exam_start_time) + ' Kenya time (UTC+3)'
                         : '';
 
                 const approval =
@@ -1685,11 +1716,10 @@ const FROM_ADDRESS =
                     ]) || 0
                 );
 
-                const link =
-                    this.value([
-                        'exam_link',
-                        'examLink'
-                    ]).trim() || null;
+                const link = this.normalizeExamLink(this.value([
+                    'exam_link',
+                    'examLink'
+                ]));
 
                 const venue =
                     this.value([
@@ -1742,6 +1772,7 @@ const FROM_ADDRESS =
 
                 const normalizedStatus =
                     this.normalizeStatus(status);
+                const schedule = this.kenyaSchedule(date, startTime, duration);
 
                 const assignedClasses = selectedClasses
                     .map(c => c.name || c.id)
@@ -1756,6 +1787,8 @@ const FROM_ADDRESS =
                     exam_basis: basis,
                     exam_date: date,
                     exam_start_time: startTime,
+                    start_time: schedule.start,
+                    end_time: schedule.end,
                     marks_entry_deadline: deadline,
                     duration_minutes: duration,
                     target_program: program,
@@ -2174,7 +2207,7 @@ const FROM_ADDRESS =
                 const marksOutOf = Number(this.value(['exam_out_of']) || 100);
                 const passMark = Number(this.value(['exam_pass_mark']) || 50);
                 const minFeeBalance = Number(this.value(['exam_min_fee']) || 0);
-                const link = this.value(['exam_link', 'examLink']).trim() || null;
+                const link = this.normalizeExamLink(this.value(['exam_link', 'examLink']));
                 const venue = this.value(['exam_venue', 'examVenue']).trim() || null;
                 const selectedClasses = this.selectedClasses();
 
@@ -2204,6 +2237,8 @@ const FROM_ADDRESS =
                     throw new Error('Lecturer account could not be resolved.');
                 }
 
+                const schedule = this.kenyaSchedule(date, startTime, duration);
+
                 const existing = this.exams.find(x =>
                     String(x.id) === String(this.editingExamId)
                 );
@@ -2227,6 +2262,8 @@ const FROM_ADDRESS =
                     exam_basis: basis,
                     exam_date: date,
                     exam_start_time: startTime,
+                    start_time: schedule.start,
+                    end_time: schedule.end,
                     marks_entry_deadline: deadline,
                     duration_minutes: duration,
                     target_program: program,
@@ -2587,6 +2624,7 @@ const FROM_ADDRESS =
                     ).toLocaleDateString(
                         'en-KE',
                         {
+                            timeZone: 'Africa/Nairobi',
                             weekday: 'long',
                             year: 'numeric',
                             month: 'long',
