@@ -754,14 +754,14 @@ async function loadLecturerByEmail(email) {
     }
     const { data: identity, error: identityError } = await supabase.rpc('current_lecturer_staff_assignment_identity');
     if (identityError) throw identityError;
-    if (!identity?.id || String(identity.id) !== String(user.id)) throw new Error('Lecturer institution identity could not be verified.');
+    if (!identity?.id || String(identity.id) !== String(user.id) || !identity.assignment_id) throw new Error('Lecturer assignment mapping is missing or ambiguous. Ask the institution administrator to reconcile your lecturer assignments.');
     const { data: profile, error: profileError } = await supabase.from('consolidated_user_profiles_table')
         .select('*').eq('user_id', user.id).eq('role', 'lecturer').maybeSingle();
     if (profileError) throw profileError;
     if (!profile) throw new Error('Lecturer profile was not found for the authenticated account.');
     me_currentLecturer = { profile, staff: null, authId: user.id };
     me_currentProgram = profile.program || identity.program || 'KRCHN';
-    me_assignedUnits = await getLecturerAssignedUnits(user.id);
+    me_assignedUnits = await getLecturerAssignedUnits(String(identity.assignment_id));
     updateLecturerUI({ ...profile, program: me_currentProgram });
     return profile;
 }
@@ -784,7 +784,7 @@ async function detectLecturerProgram() {
         updateLoadingProgress(25, 1, 'Verifying lecturer account...');
         const { data: identity, error: identityError } = await supabase.rpc('current_lecturer_staff_assignment_identity');
         if (identityError) throw identityError;
-        if (!identity?.id || String(identity.id) !== String(user.id)) throw new Error('Your lecturer account is not linked to an active institution.');
+        if (!identity?.id || String(identity.id) !== String(user.id) || !identity.assignment_id) throw new Error('Your lecturer account has no unique assignment mapping. Ask the institution administrator to reconcile your lecturer assignments.');
         const { data: profile, error: profileError } = await supabase.from('consolidated_user_profiles_table')
             .select('*').eq('user_id', user.id).eq('role', 'lecturer').maybeSingle();
         if (profileError) throw profileError;
@@ -809,7 +809,7 @@ async function detectLecturerProgram() {
         me_currentProgram = programCode;
         me_currentLecturer = { profile, staff: null, authId: user.id };
         updateLoadingProgress(40, 2, 'Loading assigned units...');
-        me_assignedUnits = await getLecturerAssignedUnits(user.id);
+        me_assignedUnits = await getLecturerAssignedUnits(String(identity.assignment_id));
         const programNameEl = document.getElementById('lecturerProgramName');
         const programTypeEl = document.getElementById('lecturerProgramType');
         const unitCountEl = document.getElementById('lecturerUnitCount');
