@@ -1870,11 +1870,11 @@ class Database {
         const supabase = this.supabase || window.supabaseClient || window.examSupabase;
         let bucket = profilePhotoPath ? 'user-documents' : 'passports';
         let objectPath = String(photoValue);
-        const storageMatch = objectPath.match(/\\/storage\\/v1\\/object\\/(?:public|sign)\\/([^/]+)\\/(.+?)(?:\\?.*)?$/);
+        const storageMatch = objectPath.match(/\/storage\/v1\/object\/(?:public|sign)\/([^/]+)\/(.+?)(?:\?.*)?$/);
         if (storageMatch) {
             bucket = decodeURIComponent(storageMatch[1]);
             objectPath = decodeURIComponent(storageMatch[2]);
-        } else if (/^https?:\\/\\//i.test(objectPath)) {
+        } else if (/^https?:\/\//i.test(objectPath)) {
             return objectPath;
         } else if (objectPath.startsWith('user-documents/')) {
             bucket = 'user-documents';
