@@ -2195,7 +2195,7 @@ window.viewLecturerStudentProgress = async function(studentId, studentName, exam
                     text: q.question_text || q.question || ('Question ' + (index + 1)),
                     options,
                     selectedText: selectedOption ? selectedOption[0] + '. ' + selectedOption[1] : selected,
-                    correctText: correctOption ? correctOption[0] + '. ' + correctOption[1] : correct,
+                    correctText: isMcq ? (correctOption ? correctOption[0] + '. ' + correctOption[1] : correct) : (q.marking_key || 'No lecturer marking key supplied'),
                     isAnswered,
                     isCorrect,
                     marks: awardedMarks,
@@ -2233,7 +2233,7 @@ window.viewLecturerStudentProgress = async function(studentId, studentName, exam
                 <table style="width:100%;min-width:700px;border-collapse:collapse;font-size:.82rem;">
                     <thead style="position:sticky;top:0;background:#F1F5F9;z-index:1;"><tr>
                         <th style="padding:10px;text-align:left;">Q#</th><th style="padding:10px;text-align:left;">Question & options</th>
-                        <th style="padding:10px;text-align:left;">Student answer</th><th style="padding:10px;text-align:left;">Correct answer</th>
+                        <th style="padding:10px;text-align:left;">Student answer</th><th style="padding:10px;text-align:left;">Marking key / correct answer</th>
                         <th style="padding:10px;text-align:center;">Marks</th><th style="padding:10px;text-align:center;">Status</th>
                     </tr></thead><tbody>`;
 
