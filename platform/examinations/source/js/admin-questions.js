@@ -293,13 +293,13 @@ async function editQuestion(questionId) {
         document.getElementById('questionModalTitle').textContent = 'Edit Question';
         document.getElementById('questionId').value = data.id;
         document.getElementById('questionExamId').value = data.exam_id;
-        document.getElementById('questionType').value = (data.question_type === 'mcq' || data.question_type === 'multiple_choice') ? 'multiple_choice' : 'essay';
+        document.getElementById('questionType').value = (data.question_type === 'mcq' || data.question_type === 'multiple_choice') ? 'multiple_choice' : (data.question_type === 'short_answer' ? 'short_answer' : 'essay');
         document.getElementById('questionText').value = data.question_text || '';
         document.getElementById('optionA').value = data.option_a || '';
         document.getElementById('optionB').value = data.option_b || '';
         document.getElementById('optionC').value = data.option_c || '';
         document.getElementById('optionD').value = data.option_d || '';
-        document.getElementById('correctAnswer').value = data.correct_answer || '';
+        document.getElementById('correctAnswer').value = data.correct_answer || '';\n        const markingKeyInput = document.getElementById('questionMarkingKey');\n        if (markingKeyInput) markingKeyInput.value = data.marking_key || '';\n        const maxCharsInput = document.getElementById('maxChars');\n        if (maxCharsInput) maxCharsInput.value = data.max_chars || data.max_characters || 5000;
         document.getElementById('questionMarks').value = data.marks || 1;
         document.getElementById('maxChars').value = data.max_characters || 5000;
 
@@ -322,7 +322,7 @@ function toggleQuestionType() {
     const essayOptions = document.getElementById('essayOptions');
     const correctAnswerLabel = document.getElementById('correctAnswerLabel');
 
-    if (type.value === 'essay' || type.value === 'short_answer' || type.value === 'written') {
+    if (['essay','short_answer','written'].includes(type.value)) {
         // Short Answer / Essay mode
         if (mcqOptions) mcqOptions.style.display = 'none';
         if (essayOptions) essayOptions.style.display = 'block';
@@ -420,7 +420,7 @@ async function saveQuestion(e) {
         questionData.option_c = null;
         questionData.option_d = null;
         questionData.correct_answer = null;
-        questionData.max_characters = maxChars || 5000;
+        questionData.max_chars = maxChars || 5000;
     }
 
     try {
