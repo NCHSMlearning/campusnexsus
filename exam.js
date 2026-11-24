@@ -2001,14 +2001,15 @@ function renderQuestion(index) {
     // TEXT / ESSAY INPUT
     // ============================================================
     else {
-        const maxChars = q.max_characters || 5000;
+        const isShortAnswer = String(questionType).toLowerCase() === 'short_answer';
+        const maxChars = q.max_chars || q.max_characters || 5000;
         const currentChars = savedAnswer ? savedAnswer.length : 0;
         const wordCount = savedAnswer ? savedAnswer.trim().split(/\s+/).length : 0;
 
         questionHtml = `
             <div style="font-size:1.05rem; font-weight:500; color:#1e293b; line-height:1.7; padding-bottom:10px;">
                 <strong>Q${AppState.currentIndex + 1}:</strong> ${q.question_text}
-                <span style="font-size:0.7rem; color:#94a3b8; font-weight:400; margin-left:8px;">(Written Answer)</span>
+                <span style="font-size:0.7rem; color:#94a3b8; font-weight:400; margin-left:8px;">(${isShortAnswer ? 'Short Answer' : 'Long Answer / Essay'})</span>
             </div>
             <div style="font-size:0.8rem; color:#94a3b8; margin:10px 0 14px; display:flex; align-items:center; gap:6px;">
                 ⏱️ Time on this question: <span id="q-timer" style="font-weight:600; color:#64748b;">0:00</span>
