@@ -1036,8 +1036,7 @@ Correct Answer: ${data.correct_answer || 'N/A'}`;
             }
 
             if (questionLines.length) {
-                q.question_text = [q.question_text, ...questionLines.filter(x => x !== q.question_text)].filter(Boolean).join('
-').trim();
+                q.question_text = [q.question_text, ...questionLines.filter(x => x !== q.question_text)].filter(Boolean).join('\n').trim();
             }
 
             const hasOptions = !!(q.option_a || q.option_b);
@@ -1353,8 +1352,7 @@ Correct Answer: ${data.correct_answer || 'N/A'}`;
         const csv = [
             headers.join(','),
             ...data.map(row => headers.map(h => `"${(row[h] || '').replace(/"/g, '""')}"`).join(','))
-        ].join('
-');
+        ].join('\n');
 
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
