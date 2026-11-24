@@ -156,7 +156,8 @@
     };
     const isMobileInstallBrowser = /android|iphone|ipad|ipod/i.test(navigator.userAgent);
     const installLabel = function () {
-      const institutionName = String(window.CURRENT_INSTITUTION?.name || '').trim();
+      const institution = window.CURRENT_INSTITUTION || {};
+      const institutionName = String(institution.short_code || institution.name || '').trim();
       return institutionName ? 'Install ' + institutionName + ' Portal' : 'Install Campus Nexus';
     };
     const setInstallLabel = function () {
