@@ -55,7 +55,7 @@ The current client does **not** install or change Windows policies, kill process
 
 ## Integration contract
 
-The client opens the existing `/exam.html` route so the current exam engine, institution detection, Supabase authentication and submission pipeline remain authoritative. A small on-screen badge identifies the CN-SEB mode. The preload bridge exposes only:
+The student examination cards now route the Open Exam action through `/secure-exam-browser.html`. That page explains the Windows app download and launches the installed client with the `campusnexus-seb://` protocol. The app accepts only HTTPS exam URLs on `campusnexus.co.ke/exam.html`, then opens the existing exam engine so institution detection, Supabase authentication and submission remain authoritative. Students may use the browser fallback only where their institution permits it. A small on-screen badge identifies the CN-SEB mode. The preload bridge exposes only:
 
 - `CNSEB.getDeviceInfo()`
 - `CNSEB.requestExit()`
