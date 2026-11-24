@@ -2661,7 +2661,9 @@ function startTimer(seconds) {
     const totalSeconds = Math.max(1, Number(seconds || 0));
     const deadline = Date.now() + totalSeconds * 1000;
     AppState.remainingSeconds = totalSeconds;
-    AppState.timerWarningShown = false;
+    // Each threshold is announced once, even if the browser timer renders
+    // multiple times during the same second.
+    const timerWarningsShown = new Set();
     let autoSubmitStarted = false;
 
     // Render immediately so the countdown is visible as soon as the first
@@ -2693,9 +2695,17 @@ function startTimer(seconds) {
                     : 'linear-gradient(90deg, #10b981, #059669)';
         }
 
-        if (remaining <= 60 && remaining > 0 && !AppState.timerWarningShown) {
-            AppState.timerWarningShown = true;
-            showToast('⚠️ 1 minute remaining! Your exam will auto-submit.', 'warning', 5000);
+        const warningThresholds = [
+            { seconds: 300, message: '⚠️ 5 minutes remaining. Please review your answers. Your exam will submit automatically when time expires.' },
+            { seconds: 180, message: '⚠️ 3 minutes remaining. Complete any unanswered questions. Your exam will submit automatically at 00:00.' },
+            { seconds: 60, message: '🚨 1 minute remaining! Final warning: your exam will submit automatically when the timer reaches 00:00.' }
+        ];
+        for (const warning of warningThresholds) {
+            if (remaining <= warning.seconds && remaining > 0 && !timerWarningsShown.has(warning.seconds)) {
+                timerWarningsShown.add(warning.seconds);
+                logProctoringEvent('exam_timer_warning', `Student was shown the ${warning.seconds / 60}-minute remaining warning.`, 'info');
+                showToast(warning.message, 'warning', 8000);
+            }
         }
 
         if (remaining <= 0 && !autoSubmitStarted) {
