@@ -421,3 +421,88 @@ body .main-content .tab-content button{max-width:100%}
   body #dashboard #dashboardStats .stat-card .number{font-size:18px!important}
   body #dashboard .quick-action-btn{font-size:9px!important}
 }
+
+
+/* ULTRA-MODERN LECTURER ANALYTICS */
+body #dashboard #dashboardStats.lecturer-analytics-stats{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:13px!important}
+body #dashboard #dashboardStats.lecturer-analytics-stats .stat-card{
+ position:relative!important;isolation:isolate;overflow:hidden!important;min-height:112px!important;
+ align-items:flex-start!important;gap:13px!important;padding:17px!important;
+ border:1px solid #e2eaf2!important;border-radius:17px!important;
+ background:linear-gradient(145deg,#fff 0%,#f9fbfe 100%)!important;
+ box-shadow:0 7px 20px rgba(16,43,72,.055)!important
+}
+body #dashboard #dashboardStats.lecturer-analytics-stats .stat-card:after{
+ content:"";position:absolute;z-index:-1;width:105px;height:105px;right:-47px;bottom:-54px;
+ border-radius:50%;background:rgba(13,105,149,.045)
+}
+body #dashboard #dashboardStats.lecturer-analytics-stats .stat-card .icon{
+ width:43px!important;height:43px!important;flex:0 0 43px!important;
+ display:grid!important;place-items:center!important;border-radius:13px!important;
+ background:#eaf3fb!important;color:#0d5d8b!important;font-size:17px!important
+}
+body #dashboard #dashboardStats.lecturer-analytics-stats .stat-card .icon.green{background:#e7f8f0!important;color:#079568!important}
+body #dashboard #dashboardStats.lecturer-analytics-stats .stat-card .icon.purple{background:#f0ebff!important;color:#7654c8!important}
+body #dashboard #dashboardStats.lecturer-analytics-stats .stat-card .icon.yellow{background:#fff6df!important;color:#bd8310!important}
+body #dashboard #dashboardStats.lecturer-analytics-stats .stat-card .icon.teal{background:#e4f8f6!important;color:#078b82!important}
+body #dashboard #dashboardStats.lecturer-analytics-stats .stat-card .icon.orange{background:#fff0e5!important;color:#d66a20!important}
+body #dashboard #dashboardStats.lecturer-analytics-stats .stat-card .icon.indigo{background:#e9edff!important;color:#4f5fc6!important}
+body #dashboard #dashboardStats.lecturer-analytics-stats .stat-card .icon.rose{background:#ffedf2!important;color:#cc4d77!important}
+body #dashboard #dashboardStats.lecturer-analytics-stats .stat-card .number{font-size:27px!important;line-height:1.05!important;font-weight:850!important;letter-spacing:-.045em!important}
+body #dashboard #dashboardStats.lecturer-analytics-stats .stat-card .label{margin-top:5px!important;font-size:9px!important;font-weight:800!important;letter-spacing:.065em!important;text-transform:uppercase!important;color:#536b82!important}
+body #dashboard #dashboardStats.lecturer-analytics-stats .stat-card small{display:block!important;margin-top:5px!important;color:#91a1b2!important;font-size:9px!important;line-height:1.3!important}
+body #dashboard .lecturer-analytics-panels{display:grid!important;grid-template-columns:1fr 1fr!important;gap:14px!important;margin:0 0 16px!important}
+body #dashboard .lecturer-analytics-panel{
+ min-width:0!important;padding:20px!important;border:1px solid #e0e9f2!important;border-radius:17px!important;
+ background:#fff!important;box-shadow:0 7px 22px rgba(15,39,64,.05)!important
+}
+body #dashboard .lecturer-analytics-panel-heading{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:12px!important;margin-bottom:17px!important}
+body #dashboard .lecturer-analytics-panel-heading>i{width:38px;height:38px;display:grid;place-items:center;border-radius:12px;background:#edf5fb;color:#12618e;font-size:16px}
+body #dashboard .lecturer-analytics-panel-heading h3{margin:4px 0 0!important;color:#102b48!important;font-size:16px!important;font-weight:800!important;letter-spacing:-.025em}
+body #dashboard .analytics-kicker{font-size:8px!important;font-weight:850!important;letter-spacing:.13em!important;color:#0d8b91!important}
+body #dashboard .analytics-pipeline{display:grid;gap:13px}
+body #dashboard .analytics-pipeline-row{display:grid;gap:7px}
+body #dashboard .analytics-pipeline-meta,body #dashboard .analytics-total-line,body #dashboard .analytics-passrate>div:first-child{display:flex;align-items:center;justify-content:space-between;gap:10px;color:#5c7185;font-size:11px;font-weight:650}
+body #dashboard .analytics-pipeline-meta strong,body #dashboard .analytics-total-line strong{color:#153a59;font-size:12px;font-weight:800}
+body #dashboard .analytics-track{height:7px;overflow:hidden;border-radius:99px;background:#edf2f7}
+body #dashboard .analytics-track>span{display:block;height:100%;border-radius:inherit;transition:width .5s ease}
+body #dashboard .analytics-total-line{padding-top:12px;border-top:1px solid #edf1f5;color:#294b68}
+body #dashboard .analytics-primary-metric{padding:15px;border-radius:13px;background:linear-gradient(110deg,#f0f7fc,#f5fbfb);display:grid;gap:5px}
+body #dashboard .analytics-primary-metric>span{font-size:10px;color:#627b91;font-weight:700}
+body #dashboard .analytics-primary-metric>strong{font-size:31px;line-height:1.05;letter-spacing:-.05em;color:#0b426b;font-weight:850}
+body #dashboard .analytics-primary-metric>small{font-size:9px;color:#8a9bad}
+body #dashboard .analytics-outcome-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0}
+body #dashboard .analytics-outcome-grid>div{display:grid;gap:4px;padding:11px 8px;border:1px solid #edf1f5;border-radius:11px;text-align:center}
+body #dashboard .analytics-outcome-grid strong{font-size:19px;line-height:1;color:#183c5b;font-weight:850}
+body #dashboard .analytics-outcome-grid small{font-size:9px;color:#8192a3}
+body #dashboard .outcome-dot{width:7px;height:7px;margin:0 auto;border-radius:50%;background:#94a3b8}
+body #dashboard .outcome-dot.pass{background:#10b981}
+body #dashboard .outcome-dot.fail{background:#ef6474}
+body #dashboard .outcome-dot.pending{background:#f2b94b}
+body #dashboard .analytics-passrate{display:grid;gap:8px}
+body #dashboard .analytics-passrate strong{font-size:12px;color:#0d806f}
+body #dashboard .analytics-empty{margin:0;padding:15px;color:#91a1b2;text-align:center;font-size:11px}
+body #dashboard .lecturer-recent-exam{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 13px;margin-bottom:7px;border:1px solid #edf1f5;border-radius:11px;background:#fbfdff}
+body #dashboard .lecturer-recent-exam>span:first-child{min-width:0;display:flex;align-items:center;gap:9px;color:#254660;font-size:11px;font-weight:700;overflow-wrap:anywhere}
+body #dashboard .lecturer-recent-exam>span:first-child i{color:#0c7895}
+@media(max-width:1100px){
+ body #dashboard #dashboardStats.lecturer-analytics-stats{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ body #dashboard .lecturer-analytics-panels{grid-template-columns:1fr 1fr!important}
+}
+@media(max-width:640px){
+ body #dashboard #dashboardStats.lecturer-analytics-stats{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}
+ body #dashboard #dashboardStats.lecturer-analytics-stats .stat-card{min-height:91px!important;padding:11px!important;gap:8px!important;border-radius:13px!important}
+ body #dashboard #dashboardStats.lecturer-analytics-stats .stat-card .icon{width:34px!important;height:34px!important;flex-basis:34px!important;font-size:14px!important;border-radius:10px!important}
+ body #dashboard #dashboardStats.lecturer-analytics-stats .stat-card .number{font-size:21px!important}
+ body #dashboard #dashboardStats.lecturer-analytics-stats .stat-card .label{font-size:8px!important;letter-spacing:.025em!important}
+ body #dashboard #dashboardStats.lecturer-analytics-stats .stat-card small{font-size:8px!important}
+ body #dashboard .lecturer-analytics-panels{grid-template-columns:1fr!important;gap:9px!important}
+ body #dashboard .lecturer-analytics-panel{padding:14px!important;border-radius:14px!important}
+ body #dashboard .lecturer-analytics-panel-heading h3{font-size:14px!important}
+ body #dashboard .analytics-primary-metric>strong{font-size:27px}
+ body #dashboard .lecturer-recent-exam{align-items:flex-start;padding:10px}
+}
+@media(max-width:360px){
+ body #dashboard #dashboardStats.lecturer-analytics-stats .stat-card{padding:9px!important;gap:6px!important}
+ body #dashboard #dashboardStats.lecturer-analytics-stats .stat-card .number{font-size:19px!important}
+}
