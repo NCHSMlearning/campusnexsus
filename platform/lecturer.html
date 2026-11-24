@@ -6718,7 +6718,8 @@ Marks: 5" style="width:100%; min-height:520px; box-sizing:border-box; resize:ver
                             </label>
                             <select id="lecQuestionType" required onchange="LecturerQuestions.toggleType()" style="padding: 10px 14px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; background: white; transition: border-color 0.2s;" onfocus="this.style.borderColor='#4C1D95'" onblur="this.style.borderColor='#e2e8f0'">
                                 <option value="mcq">Multiple Choice</option>
-                                <option value="essay">Essay / Written Answer</option>
+                                <option value="short_answer">Short Answer</option>
+                                <option value="essay">Long Answer / Essay</option>
                             </select>
                         </div>
                         <div style="display: flex; flex-direction: column; gap: 5px;">
@@ -6776,6 +6777,8 @@ Marks: 5" style="width:100%; min-height:520px; box-sizing:border-box; resize:ver
 
                     <!-- Essay Options -->
                     <div id="lecEssayOptions" style="display: none; margin-bottom: 15px;">
+                        <label style="font-weight:600;font-size:13px;color:#475569;display:block;margin-bottom:5px;">Lecturer marking key / model answer *</label>
+                        <textarea id="lecMarkingKey" placeholder="Expected points, acceptable alternatives and mark allocation. This key is not shown to students." style="width:100%;min-height:110px;padding:10px 14px;border:2px solid #e2e8f0;border-radius:8px;font:14px/1.5 inherit;margin-bottom:12px;"></textarea>
                         <div style="display: flex; flex-direction: column; gap: 5px;">
                             <label style="font-weight: 600; font-size: 13px; color: #475569;">
                                 <i class="fas fa-text-height"></i> Max Characters
