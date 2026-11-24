@@ -28,7 +28,7 @@ const CONFIG = {
     SAVE_INTERVAL: 10000,
     INACTIVITY_TIMEOUT: 30 * 60 * 1000,
     MULTIPLE_FACES_TIMEOUT: 45,
-    FULLSCREEN_EXIT_TIMEOUT: 10,
+    FULLSCREEN_EXIT_TIMEOUT: 3,
     STUDENT_DASHBOARD_URL: '/studentexam.html',
     STUDENT_LOGIN_URL: '/examlogin',
     VIOLATION_COOLDOWN: 5000,
@@ -3471,7 +3471,7 @@ function startFullscreenExitWarning() {
     if (AppState.fullscreenWarningActive || AppState.isSubmitting || !AppState.isExamActive) return;
 
     AppState.fullscreenWarningActive = true;
-    let remaining = Number(CONFIG.FULLSCREEN_EXIT_TIMEOUT || 10);
+    let remaining = Number(CONFIG.FULLSCREEN_EXIT_TIMEOUT || 3);
 
     if (DOM.fullscreenExitWarning) {
         DOM.fullscreenExitWarning.style.display = 'flex';
@@ -3622,7 +3622,7 @@ function lockExamForFullscreenExit() {
     };
 
     // Absolute deadline prevents background-tab timer throttling from extending grace.
-    const graceSeconds = Math.max(1, Number(CONFIG.FULLSCREEN_EXIT_TIMEOUT) || 10);
+    const graceSeconds = Math.max(1, Number(CONFIG.FULLSCREEN_EXIT_TIMEOUT) || 3);
     AppState.fullscreenExitDeadline = Date.now() + graceSeconds * 1000;
     AppState.fullscreenAutoSubmitTriggered = false;
     const counter = overlay.querySelector('#nchsm-fullscreen-countdown');
