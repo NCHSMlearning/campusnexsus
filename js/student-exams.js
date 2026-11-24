@@ -194,23 +194,58 @@ function examAttemptState(exam){
  return released?'released':'pending_release';
 }
 function showStudentExamResult(examId){
- const exam=state.exams.find(e=>String(e.id)===String(examId)),result=state.examResults[String(examId)]||{},attempt=result.attempt;let summary=result.summary||{};
- if(!attempt?.id||!(summary.is_released===true||summary.released===true||summary.published===true||['released','published'].includes(norm(summary.result_status)))){notify('Your result is not yet released by the administrator.');return;}
+ const exam=state.exams.find(e=>String(e.id)===String(examId)),result=state.examResults[String(examId)]||{},attempt=result.attempt;
+ let summary=result.summary||{};
+ if(!attempt?.id||!(summary.is_released===true||summary.released===true||summary.published===true||['released','published'].includes(norm(summary.result_status)))){
+  notify('Your result is not yet released by the administrator.');return;
+ }
  let modal=document.getElementById('student-exam-result-modal');
- if(!modal){modal=document.createElement('div');modal.id='student-exam-result-modal';modal.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(15,23,42,.68);display:flex;align-items:center;justify-content:center;padding:16px;';modal.innerHTML='<section style="background:#fff;width:min(100%,1000px);max-height:90vh;overflow:auto;border-radius:14px;padding:20px;"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px;"><h2 id="student-result-title" style="margin:0;color:#0f172a;">Examination result</h2><button type="button" id="student-result-close" style="border:0;background:#e2e8f0;border-radius:8px;padding:9px 12px;cursor:pointer;">Close</button></div><div id="student-result-content" style="margin-top:16px;">Loading result details…</div></section>';document.body.appendChild(modal);modal.addEventListener('click',e=>{if(e.target===modal)modal.remove();});modal.querySelector('#student-result-close').addEventListener('click',()=>modal.remove());}
- const content=modal.querySelector('#student-result-content'),title=modal.querySelector('#student-result-title');title.textContent=val(exam?.title,exam?.exam_name,'Examination')+' · Released result';content.textContent='Loading your detailed result…';
- (async()=>{try{
-  const {data:review,error:reviewError}=await state.client.rpc('get_released_exam_attempt_review',{p_exam_id:Number(examId),p_attempt_id:attempt.id});
-  if(reviewError)throw reviewError;
-  summary=review?.summary||summary;
-  const clean=x=>String(x??'').trim().toUpperCase().replace(/[()\\s.\\-_:]/g,'');
-  const match=(v,l,t)=>!!clean(v)&&(clean(v)===clean(l)||clean(v)===clean(t)||clean(v)==='OPTION'+clean(l));
-  const rows=(review?.questions||[]).map((q,i)=>{const selected=val(q.selected_answer,''),correct=val(q.correct_answer,''),options=[['A',q.option_a],['B',q.option_b],['C',q.option_c],['D',q.option_d],['E',q.option_e]].filter(x=>x[1]!=null&&String(x[1]).trim()!==''),selectedOption=options.find(([l,t])=>match(selected,l,t)),correctOption=options.find(([l,t])=>match(correct,l,t)),isAnswered=String(selected??'').trim()!=='',isCorrect=isAnswered&&(options.length?options.some(([l,t])=>match(selected,l,t)&&match(correct,l,t)):clean(selected)===clean(correct)),max=Number(q.marks??1)||1,marks=q.marks_awarded==null?(isCorrect?max:0):Number(q.marks_awarded);return {number:q.question_number??i+1,text:q.question_text||'',selected:selectedOption?selectedOption[0]+'. '+selectedOption[1]:selected,correct:correctOption?correctOption[0]+'. '+correctOption[1]:correct,isAnswered,isCorrect,marks,max,options};});
-  const earned=rows.reduce((n,r)=>n+r.marks,0),possible=rows.reduce((n,r)=>n+r.max,0),score=val(summary.total_score,summary.score,summary.marks,earned),total=val(summary.total_marks,possible);
-  let html='<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;"><div style="background:#eff6ff;padding:14px;border-radius:10px;"><small>Final score</small><h2 style="margin:4px 0;">'+esc(score)+' / '+esc(total)+'</h2></div><div style="background:#f0fdf4;padding:14px;border-radius:10px;"><small>Percentage</small><h2 style="margin:4px 0;">'+esc((allMcq?(Number(total)?(Number(score)/Number(total)*100).toFixed(1):'0.0'):val(summary.percentage,(Number(total)?(Number(score)/Number(total)*100).toFixed(1):'0.0'))))+'%</h2></div><div style="background:#f8fafc;padding:14px;border-radius:10px;"><small>Correct answers</small><h2 style="margin:4px 0;">'+rows.filter(r=>r.isCorrect).length+' / '+rows.length+'</h2></div></div>';
-  html+='<div style="overflow:auto;"><table style="width:100%;min-width:720px;border-collapse:collapse;font-size:14px;"><thead><tr style="background:#f1f5f9;"><th style="padding:10px;text-align:left;">Question</th><th style="padding:10px;text-align:left;">Your answer</th><th style="padding:10px;text-align:left;">Correct answer</th><th style="padding:10px;">Marks</th><th style="padding:10px;">Result</th></tr></thead><tbody>'+rows.map(r=>'<tr style="border-bottom:1px solid #e2e8f0;vertical-align:top;"><td style="padding:12px;"><b>Q'+esc(r.number)+'. '+esc(r.text)+'</b>'+r.options.map(([l,t])=>'<div style="color:#64748b;margin-top:3px;">'+l+'. '+esc(t)+'</div>').join('')+'</td><td style="padding:12px;">'+(r.isAnswered?esc(r.selected):'Not answered')+'</td><td style="padding:12px;">'+esc(r.correct||'—')+'</td><td style="padding:12px;text-align:center;">'+esc(r.marks)+' / '+esc(r.max)+'</td><td style="padding:12px;text-align:center;color:'+(r.isCorrect?'#15803d':'#b91c1c')+';font-weight:700;">'+(r.isCorrect?'Correct':r.isAnswered?'Incorrect':'Unanswered')+'</td></tr>').join('')+'</tbody></table></div>';content.innerHTML=html;
- }catch(error){content.innerHTML='<p style="color:#b91c1c;">Unable to load detailed result: '+esc(error.message||error)+'</p>';}})();
+ if(!modal){
+  modal=document.createElement('div');modal.id='student-exam-result-modal';modal.className='student-result-overlay';
+  modal.innerHTML='<section class="student-result-dialog" role="dialog" aria-modal="true" aria-labelledby="student-result-title"><header class="student-result-header"><div><span class="student-result-eyebrow"><i class="fa-solid fa-graduation-cap"></i> CAMPUS NEXUS · ACADEMIC RESULTS</span><h2 id="student-result-title">Examination result</h2><p id="student-result-subtitle">Your released examination performance</p></div><button type="button" class="student-result-close" id="student-result-close" aria-label="Close result"><i class="fa-solid fa-xmark"></i></button></header><div id="student-result-content" class="student-result-content"><div class="student-result-loading"><span class="spinner"></span><b>Retrieving your result</b><span>We are securely loading your score and answer review.</span></div></div><footer class="student-result-footer"><span><i class="fa-solid fa-shield-halved"></i> Official result released by your institution</span><button type="button" id="student-result-done">Close result</button></footer></section>';
+  document.body.appendChild(modal);
+  const close=()=>modal.remove();
+  modal.addEventListener('click',e=>{if(e.target===modal)close();});
+  modal.querySelector('#student-result-close').addEventListener('click',close);
+  modal.querySelector('#student-result-done').addEventListener('click',close);
+  modal.addEventListener('keydown',e=>{if(e.key==='Escape')close();});
+ }
+ const content=modal.querySelector('#student-result-content'),title=modal.querySelector('#student-result-title'),subtitle=modal.querySelector('#student-result-subtitle');
+ title.textContent=val(exam?.title,exam?.exam_name,'Examination')+' · Released result';
+ subtitle.textContent=val(exam?.course_name,exam?.unit_name,exam?.course_code,'Your examination performance');
+ content.innerHTML='<div class="student-result-loading"><span class="spinner"></span><b>Retrieving your result</b><span>We are securely loading your score and answer review.</span></div>';
+ (async()=>{
+  try{
+   const {data:review,error:reviewError}=await state.client.rpc('get_released_exam_attempt_review',{p_exam_id:Number(examId),p_attempt_id:attempt.id});
+   if(reviewError)throw reviewError;
+   summary=review?.summary||summary;
+   const clean=x=>String(x??'').trim().toUpperCase().replace(/[()\s.\-_:]/g,'');
+   const match=(v,l,t)=>!!clean(v)&&(clean(v)===clean(l)||clean(v)===clean(t)||clean(v)==='OPTION'+clean(l));
+   const rows=(review?.questions||[]).map((q,i)=>{
+    const selected=val(q.selected_answer,''),correct=val(q.correct_answer,'');
+    const options=[['A',q.option_a],['B',q.option_b],['C',q.option_c],['D',q.option_d],['E',q.option_e]].filter(x=>x[1]!=null&&String(x[1]).trim()!=='');
+    const selectedOption=options.find(([l,t])=>match(selected,l,t)),correctOption=options.find(([l,t])=>match(correct,l,t));
+    const isAnswered=String(selected??'').trim()!=='';
+    const isCorrect=isAnswered&&(options.length?options.some(([l,t])=>match(selected,l,t)&&match(correct,l,t)):clean(selected)===clean(correct));
+    const max=Number(q.marks??1)||1,marks=q.marks_awarded==null?(isCorrect?max:0):Number(q.marks_awarded);
+    return {number:q.question_number??i+1,text:q.question_text||'',selected:selectedOption?selectedOption[0]+'. '+selectedOption[1]:selected,correct:correctOption?correctOption[0]+'. '+correctOption[1]:correct,isAnswered,isCorrect,marks,max,options,feedback:q.feedback||q.explanation||''};
+   });
+   const earned=rows.reduce((n,r)=>n+r.marks,0),possible=rows.reduce((n,r)=>n+r.max,0);
+   const score=val(summary.total_score,summary.score,summary.marks,earned),total=val(summary.total_marks,possible);
+   const percentage=val(summary.percentage,(Number(total)?(Number(score)/Number(total)*100).toFixed(1):'0.0'));
+   const correctCount=rows.filter(r=>r.isCorrect).length,answeredCount=rows.filter(r=>r.isAnswered).length;
+   const releasedAt=val(summary.released_at,summary.published_at,summary.updated_at,'');
+   const status=val(summary.grade,summary.result_grade,summary.result_status,'Released');
+   const questionHtml=rows.length?rows.map(r=>'<article class="student-result-question '+(r.isCorrect?'is-correct':r.isAnswered?'is-incorrect':'is-unanswered')+'"><div class="student-result-question-top"><span class="student-result-q-number">QUESTION '+esc(r.number)+'</span><span class="student-result-verdict"><i class="fa-solid '+(r.isCorrect?'fa-circle-check':r.isAnswered?'fa-circle-xmark':'fa-circle-minus')+'"></i> '+(r.isCorrect?'Correct':r.isAnswered?'Incorrect':'Not answered')+'</span></div><h3>'+esc(r.text)+'</h3>'+(r.options.length?'<div class="student-result-options">'+r.options.map(([l,t])=>'<div class="student-result-option '+(match(r.selected,l,t)?'your-choice ':'')+(match(r.correct,l,t)?'correct-choice':'')+'"><b>'+l+'</b><span>'+esc(t)+'</span>'+(match(r.selected,l,t)?'<small>Your answer</small>':'')+(match(r.correct,l,t)?'<i class="fa-solid fa-check"></i>':'')+'</div>').join('')+'</div>':'<div class="student-result-answer-grid"><div><small>Your answer</small><b>'+esc(r.isAnswered?r.selected:'Not answered')+'</b></div><div><small>Correct answer</small><b>'+esc(r.correct||'Not provided')+'</b></div></div>')+'<div class="student-result-question-foot"><span>Marks awarded <b>'+esc(r.marks)+' / '+esc(r.max)+'</b></span>'+(r.feedback?'<span>'+esc(r.feedback)+'</span>':'')+'</div></article>').join(''):'<div class="student-result-empty"><i class="fa-regular fa-clipboard"></i><b>Detailed answer review unavailable</b><span>Your released score is available above, but no question-level review was returned for this examination.</span></div>';
+   content.innerHTML='<section class="student-result-score-hero"><div><span class="student-result-label">FINAL SCORE</span><div class="student-result-score">'+esc(score)+'<small> / '+esc(total)+'</small></div><span class="student-result-grade">'+esc(status)+'</span></div><div class="student-result-percent"><strong>'+esc(percentage)+'%</strong><span>Overall performance</span></div></section><section class="student-result-metrics"><div><span><i class="fa-solid fa-circle-check"></i></span><b>'+correctCount+'</b><small>Correct answers</small></div><div><span><i class="fa-solid fa-pen-to-square"></i></span><b>'+answeredCount+' / '+rows.length+'</b><small>Questions answered</small></div><div><span><i class="fa-solid fa-list-check"></i></span><b>'+rows.length+'</b><small>Total questions</small></div></section><div class="student-result-review-head"><div><h3>Answer review</h3><p>Compare your responses with the correct answers.</p></div><span>'+rows.length+' questions</span></div><div class="student-result-question-list">'+questionHtml+'</div>'+(releasedAt?'<p class="student-result-release-date"><i class="fa-regular fa-calendar-check"></i> Result updated '+esc(new Date(releasedAt).toLocaleString('en-KE',{dateStyle:'medium',timeStyle:'short',timeZone:'Africa/Nairobi'}))+'</p>':'');
+  }catch(error){
+   console.error('Student released result review failed:',error);
+   content.innerHTML='<div class="student-result-error"><span><i class="fa-solid fa-triangle-exclamation"></i></span><h3>We couldn’t load the detailed result</h3><p>'+esc(error?.message||'A temporary problem prevented the answer review from loading.')+'</p><button type="button" id="student-result-retry"><i class="fa-solid fa-rotate-right"></i> Try again</button></div>';
+   content.querySelector('#student-result-retry')?.addEventListener('click',()=>showStudentExamResult(examId));
+  }
+ })();
 }
+
 window.showStudentExamResult=showStudentExamResult;
 function dashboardExamCard(exam,status){
  const title=val(exam.title,exam.exam_name,exam.name,'Examination'),unit=val(exam.course_name,exam.unit_name,exam.subject_name,exam.course?.course_name,'General assessment'),link=onlineHref(exam),start=startsAt(exam),isOnline=!!link;
