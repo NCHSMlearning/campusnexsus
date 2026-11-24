@@ -68,7 +68,7 @@
    let query=db().from("units_catalog").select("id,unit_code,unit_name,assessment_type,program,block").eq("program",program).eq("block",block).eq("status","active").eq("institution_id",tenant()).order("unit_name",{ascending:true}).limit(1000);
    if(mappedIds.length)query=query.in("id",mappedIds);
    const {data,error}=await query;if(error)throw error;units=data||[];
-   const el=$("iaMEUnitSelect");el.replaceChildren();option(el,"","Select unit");units.forEach(u=>option(el,u.unit_name,(u.unit_code?u.unit_code+" · ":"")+u.unit_name));if(units.length===1)el.value=units[0].unit_name;syncAssessmentType();
+   const el=$("iaMEUnitSelect");el.replaceChildren();option(el,"","Select unit");units.forEach(u=>option(el,u.unit_name,(u.unit_code?u.unit_code+" · ":"")+u.unit_name));if(units.length===1){el.value=units[0].unit_name;syncAssessmentType();await loadStudents();}else syncAssessmentType();
   }catch(e){say("Units could not be loaded: "+e.message,true);}
  }
  function syncAssessmentType(){const unit=units.find(u=>u.unit_name===($("iaMEUnitSelect")?.value||""));const el=$("iaMEAssessmentType");if(!el)return;if(unit?.assessment_type&&[...el.options].some(o=>o.value===unit.assessment_type)){el.value=unit.assessment_type;el.disabled=true;}else el.disabled=false;}
@@ -112,7 +112,7 @@
    }
    renderRows();
    say(rows.length+" students loaded from this institution's approved registrations. "+rows.filter(r=>r.published).length+" already published (locked)."+(missingIdentityCount?" "+missingIdentityCount+" registration(s) skipped because admission/profile details are missing.":""));
-  }catch(e){console.error("[Institution marks capture]",e);say("Marks could not be loaded: "+e.message,true);}
+  }catch(e){console.error("[Institution marks capture]",e);say("Marks could not be loaded: "+e.message,true);const host=$("me_marks_container");if(host)host.innerHTML='<div style="padding:32px;text-align:center;color:#991b1b"><i class="fas fa-triangle-exclamation" style="font-size:30px"></i><h3>Unable to load marks</h3><p>'+esc(e.message)+'</p><button type="button" onclick="loadMarksEntry()" style="padding:9px 16px;background:#4C1D95;color:#fff;border:0;border-radius:7px">Retry</button></div>';const dynamic=$("marksEntryDynamicContent");if(dynamic)dynamic.style.display="block";const placeholder=$("marksEntryPlaceholder");if(placeholder)placeholder.style.display="none";}
   finally{loading=false;}
  }
  function renderRows(){
@@ -130,7 +130,7 @@
   const published=rows.filter(r=>r.published).length,scored=rows.filter(r=>Number(r.final_score)>0);
   const average=scored.length?scored.reduce((a,r)=>a+Number(r.final_score||0),0)/scored.length:0;
   const passed=scored.filter(r=>Number(r.final_score)>=passThreshold(program)).length;
-  const stats={"me_total_students":rows.length,"me_total_subjects":units.length,"me_pass_rate":scored.length?Math.round(passed/scored.length*100)+"%":"0%","me_class_avg":average.toFixed(1)+"%","me_at_risk":scored.length-passed,"me_published_count":published};
+  const stats={"me_total_students":scored.length,"me_total_subjects":units.length,"me_pass_rate":scored.length?Math.round(passed/scored.length*100)+"%":"0%","me_class_avg":average.toFixed(1)+"%","me_at_risk":scored.length-passed,"me_published_count":published};
   Object.entries(stats).forEach(([id,value])=>{const el=$(id);if(el)el.textContent=String(value);});
   const selected=$("selectedProgramName");if(selected)selected.textContent=program||"None selected";
   const typeLabel=$("selectedProgramType");if(typeLabel)typeLabel.textContent=program?(nursing?"Nursing programme":"TVET programme"):"None selected";
@@ -204,5 +204,5 @@
  }
  function wait(){api=window.CampusInstitutionAdmin;if(!api?.db||!api?.institutionId||!api?.user){setTimeout(wait,150);return;}bind();loadPrograms();}
  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",wait,{once:true});else wait();
- window.InstitutionAdminMarksEntry={load:loadStudents,refresh:loadPrograms,loadBlocks,loadUnits,save:saveMarks,export:exportCaptureCsv};\n window.loadMEBlocks=loadBlocks;window.loadMEUnits=loadUnits;window.loadMarksEntry=loadStudents;window.saveMarksEntry=saveMarks;window.exportMarksEntry=exportCaptureCsv;window.updateSelectedProgramDisplay=()=>{const p=$("iaMEProgramSelect")?.value||"";const n=$("selectedProgramName");if(n)n.textContent=p||"None selected";const t=$("selectedProgramType");if(t)t.textContent=p?(isTVET(p)?"TVET programme":"Nursing programme"):"None selected";};
+ window.InstitutionAdminMarksEntry={load:loadStudents,refresh:async()=>{if($("iaMEProgramSelect")?.value&&$("iaMEBlockSelect")?.value&&$("iaMEUnitSelect")?.value)return loadStudents();return loadPrograms();},loadBlocks,loadUnits,save:saveMarks,export:exportCaptureCsv};\n window.loadMEBlocks=loadBlocks;window.loadMEUnits=loadUnits;window.loadMarksEntry=loadStudents;window.saveMarksEntry=saveMarks;window.exportMarksEntry=exportCaptureCsv;\n const unavailable=name=>()=>say(name+" is not yet connected to the institution-scoped workflow.",true);\n window.publishCurrentUnitMarks=()=>say("Marks cannot be published from entry. Submit them for approval, then publish approved marks in Marks Approval.");\n window.openStudentPublishModal=unavailable("Student selection");window.showLecturerAssignmentModal=unavailable("Lecturer unit assignment");window.refreshAssignmentHistory=unavailable("Assignment history");window.clearAllAssignments=unavailable("Assignment clearing");window.resetUnitColumns=unavailable("Column reset");window.updateSelectedProgramDisplay=()=>{const p=$("iaMEProgramSelect")?.value||"";const n=$("selectedProgramName");if(n)n.textContent=p||"None selected";const t=$("selectedProgramType");if(t)t.textContent=p?(isTVET(p)?"TVET programme":"Nursing programme"):"None selected";};
 })();
