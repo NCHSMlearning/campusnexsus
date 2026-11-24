@@ -93,6 +93,8 @@
       edit.type='button';edit.className='ia-users-review-btn ia-users-edit-btn';edit.textContent='Edit';edit.addEventListener('click',()=>openEditForm(u));
       if(state.tab==='pending' && ['pending','pending_application','submitted','awaiting_approval'].includes(statusOf(u))){
         const approve=document.createElement('button');approve.type='button';approve.className='ia-users-review-btn ia-users-edit-btn';approve.textContent='Approve';approve.addEventListener('click',()=>approvePendingUser(u,approve));actions.append(approve);
+      } else if(['student','lecturer'].includes(roleOf(u)) && ['approved','active'].includes(statusOf(u))){
+        const resend=document.createElement('button');resend.type='button';resend.className='ia-users-review-btn ia-users-edit-btn';resend.textContent='Send approval email';resend.addEventListener('click',()=>sendApprovalEmail(u,resend));actions.append(resend);
       }
       actions.append(view,edit);tr.append(actions);
       body.append(tr);
@@ -495,6 +497,28 @@
     loadAcademicHistory(u).catch(error=>{const host=$('iaUsersAcademicHistory');if(host)host.textContent=error.message||'Unable to load academic history.';});
     if(typeof dialog.showModal==='function'&&!dialog.open)dialog.showModal();else dialog.setAttribute('open','');
   }
+  async function approvalEmailError(error){
+    let detail=error?.message||'Email service error';
+    try{
+      const response=error?.context;
+      if(response&&typeof response.json==='function'){
+        const payload=await response.clone().json();
+        detail=payload?.error||payload?.message||detail;
+        if(payload?.stage)detail+=' (stage: '+payload.stage+')';
+      }
+    }catch(_){}
+    return detail;
+  }
+  async function sendApprovalEmail(user,button){
+    button.disabled=true;const old=button.textContent;button.textContent='Sending…';
+    try{
+      const {data,error}=await (state.api||window.CampusInstitutionAdmin).db.functions.invoke('registration-approved-email',{body:{user_id:user.user_id}});
+      if(error)throw new Error(await approvalEmailError(error));
+      if(data?.success!==true)throw new Error(data?.error||data?.message||'The email service did not confirm delivery.');
+      message(data.alreadySent?'An approval email was already accepted for this account.':'Approval email accepted for delivery.');
+    }catch(error){console.error('[Institution approval email]',error);message('Account remains approved. Approval email failed: '+(error.message||'Unknown email error'),true);}
+    finally{button.disabled=false;button.textContent=old;}
+  }
   async function approvePendingUser(user,button){
     const api=state.api||window.CampusInstitutionAdmin;
     if(!api?.db||!api?.institutionId){message('Institution administrator session expired. Sign in again.',true);return;}
@@ -508,9 +532,9 @@
         throw new Error(result?.message||'The account approval could not be completed.');
       const {data:emailData,error:emailError}=await api.db.functions.invoke('registration-approved-email',{body:{user_id:user.user_id}});
       await load();
-      if(emailError)message('Account approved successfully, but the approval email could not be sent: '+(emailError.message||'email service error')+'.',true);
-      else if(emailData?.success===false)message('Account approved successfully, but the approval email was not sent: '+(emailData.message||'email service unavailable')+'.',true);
-      else message('Account approved successfully. Approval email notification accepted for delivery.');
+      if(emailError)message('Account approved successfully. Login remains enabled. Approval email failed: '+(await approvalEmailError(emailError))+'. Use “Send approval email” on this approved account to retry.',true);
+      else if(emailData?.success!==true)message('Account approved successfully. Login remains enabled. Approval email failed: '+(emailData?.error||emailData?.message||'email service unavailable')+'.',true);
+      else message('Account approved successfully. Approval email accepted for delivery.');
     }catch(error){console.error('[Institution user approval]',error);message(error.message||'Unable to approve this account.',true);button.disabled=false;button.textContent=oldLabel;}
   }
   async function loadAcademicHistory(user){
