@@ -24,8 +24,16 @@ function paintInstitution(institution){
   const img=document.createElement('img');img.src=institution.logo_url;img.alt=name+' logo';
   img.onerror=()=>{logo.textContent=initials(name)};logo.appendChild(img);
  }else{logo.textContent=initials(name)}
- if(/^#[0-9a-f]{3,8}$/i.test(institution.primary_color||''))document.documentElement.style.setProperty('--navy',institution.primary_color);
- if(/^#[0-9a-f]{3,8}$/i.test(institution.secondary_color||''))document.documentElement.style.setProperty('--teal',institution.secondary_color);
+ const source=institution.brand_colors&&typeof institution.brand_colors==='object'?institution.brand_colors:[];
+ const named=!Array.isArray(source)?source:{};
+ const values=Array.isArray(source)?source:[named.primary,named.secondary,named.accent1||named.accent||named.gold||named.tertiary,named.accent2,named.accent3,named.accent4];
+ const defaults=['#082f49','#0f766e','#d4a017','#2563eb','#7c3aed','#db2777'];
+ const colors=defaults.map((fallback,index)=>{let value=index===0?(institution.primary_color||values[index]):index===1?(institution.secondary_color||values[index]):values[index];if(typeof value!=='string')return fallback;if(/^#[0-9a-f]{3}$/i.test(value))value='#'+value.slice(1).split('').map(ch=>ch+ch).join('');return /^#[0-9a-f]{6}$/i.test(value)?value:fallback;});
+ colors.forEach((color,index)=>document.documentElement.style.setProperty('--cn-institution-color-'+(index+1),color));
+ document.documentElement.style.setProperty('--navy',colors[0]);document.documentElement.style.setProperty('--teal',colors[1]);document.documentElement.style.setProperty('--gold',colors[2]);
+ document.documentElement.style.setProperty('--cn-brand-primary',colors[0]);document.documentElement.style.setProperty('--cn-brand-secondary',colors[1]);document.documentElement.style.setProperty('--cn-brand-accent',colors[2]);document.documentElement.style.setProperty('--cn-brand-accent-2',colors[3]);document.documentElement.style.setProperty('--cn-brand-accent-3',colors[4]);document.documentElement.style.setProperty('--cn-brand-accent-4',colors[5]);
+ let theme=document.getElementById('cn-exam-login-institution-theme');if(!theme){theme=document.createElement('style');theme.id='cn-exam-login-institution-theme';document.head.appendChild(theme);}
+ theme.textContent='.brand-mark{background:linear-gradient(135deg,'+colors[1]+','+colors[0]+')!important;border-color:'+colors[2]+'!important}.submit,#loadSchoolBtn{background:linear-gradient(135deg,'+colors[1]+','+colors[0]+')!important}.card{border-top:4px solid '+colors[2]+'}.field input:focus{border-color:'+colors[2]+'!important;box-shadow:0 0 0 3px '+colors[2]+'22!important}.foot a{color:'+colors[3]+'!important}';
  document.title=name+' Examination Login';
  schoolStatus.textContent='Verified: '+name+'. Your institution is ready. Sign in below.';
  schoolStatus.style.color='#14745f';
