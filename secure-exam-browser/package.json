@@ -9,7 +9,7 @@
     "start:strict": "electron . --strict",
     "dist:win": "electron-builder --win nsis",
     "dist:portable": "electron-builder --win portable",
-    "dist:all": "electron-builder --win nsis portable"
+    "dist:all": "electron-builder --win"
   },
   "devDependencies": {
     "electron": "^35.0.0",
