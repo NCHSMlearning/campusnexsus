@@ -8044,7 +8044,7 @@ function getAssessmentReviewer() {
     let session = {};
     try { session = JSON.parse(raw || '{}'); } catch (_) {}
     const role = String(session.role || session.user_role || '').toLowerCase();
-    if (!['admin','superadmin','super_admin','administrator'].includes(role)) {
+    if (!['admin','superadmin','super_admin','administrator','institution_admin','institutional_admin'].includes(role)) {
         throw new Error('Only an Admin or Super Admin can approve, reject or publish assessments.');
     }
     return session;
@@ -8080,12 +8080,7 @@ window.loadAssessmentApprovals = async function() {
         if (error) throw error;
         const rows = data || [];
         const pending = rows.filter(r => String(r.approval_status || '').toLowerCase() === 'pending');
-        const approved = rows.filter(r => {
-            const state = String(r.status || '').toLowerCase();
-            const isLegacyAlreadyReleased = ['published','active','released','available','completed'].includes(state) || r.released === true;
-            return String(r.approval_status || '').toLowerCase() === 'approved' &&
-                   r.is_published !== true && !isLegacyAlreadyReleased;
-        });
+        const approved = rows.filter(r => String(r.approval_status || '').toLowerCase() === 'approved');
         const rejected = rows.filter(r => String(r.approval_status || '').toLowerCase() === 'rejected');
         const setText = (id,v) => { const el=document.getElementById(id); if(el) el.textContent=String(v); };
         setText('assessmentPendingCount',pending.length); setText('assessmentApprovedCount',approved.length); setText('assessmentRejectedCount',rejected.length);
@@ -8103,7 +8098,9 @@ window.loadAssessmentApprovals = async function() {
             const marks=Number(r.total_marks||r.marks_out_of||0);
             const meta='ID: '+escapeAssessmentText(r.id)+(r.intake_year?' · Intake '+escapeAssessmentText(r.intake_year):'')+(marks?' · '+marks+' marks':'')+(r.duration_minutes?' · '+escapeAssessmentText(r.duration_minutes)+' min':'');
             const decision=assessmentApprovalFilter==='approved'
-                ? '<span style="color:#047857;font-weight:800;">Approved</span><div style="font-size:11px;color:#64748b;margin-top:4px;">Awaiting publication</div>'
+                ? (r.is_published === true
+                    ? '<span style="color:#047857;font-weight:800;">Approved · Published</span>'
+                    : '<span style="color:#047857;font-weight:800;">Approved</span><div style="font-size:11px;color:#64748b;margin-top:4px;">Awaiting publication</div>')
                 : assessmentApprovalFilter==='rejected'
                     ? '<span style="color:#b91c1c;font-weight:800;">Rejected</span><div style="font-size:11px;color:#64748b;margin-top:4px;max-width:220px;">'+escapeAssessmentText(r.rejection_reason||'No reason recorded')+'</div>'
                     : '<span style="color:#b45309;font-weight:800;">Pending review</span>';
@@ -8111,9 +8108,11 @@ window.loadAssessmentApprovals = async function() {
             if (!canReview) {
                 actions='<span style="font-size:11px;color:#64748b;">Administrator review only</span>';
             } else if (assessmentApprovalFilter==='pending') {
-                actions='<button type="button" onclick="approveAssessment('+Number(r.id)+')" style="border:0;border-radius:7px;background:#059669;color:#fff;padding:7px 10px;font-weight:700;cursor:pointer;margin:2px;"><i class="fas fa-check"></i> Approve &amp; Publish</button><button type="button" onclick="rejectAssessment('+Number(r.id)+')" style="border:0;border-radius:7px;background:#dc2626;color:#fff;padding:7px 10px;font-weight:700;cursor:pointer;margin:2px;"><i class="fas fa-times"></i> Reject</button>';
+                actions='<button type="button" onclick="approveAssessment('+Number(r.id)+')" style="border:0;border-radius:7px;background:#059669;color:#fff;padding:7px 10px;font-weight:700;cursor:pointer;margin:2px;"><i class="fas fa-check"></i> Approve</button><button type="button" onclick="rejectAssessment('+Number(r.id)+')" style="border:0;border-radius:7px;background:#dc2626;color:#fff;padding:7px 10px;font-weight:700;cursor:pointer;margin:2px;"><i class="fas fa-times"></i> Reject</button>';
             } else if (assessmentApprovalFilter==='approved') {
-                actions='<button type="button" onclick="publishApprovedAssessment('+Number(r.id)+')" style="border:0;border-radius:7px;background:#0A3D62;color:#fff;padding:7px 10px;font-weight:700;cursor:pointer;margin:2px;"><i class="fas fa-bullhorn"></i> Publish</button>';
+                actions = r.is_published === true
+                    ? '<button type="button" onclick="togglePublish('+Number(r.id)+', \'published\')" style="border:0;border-radius:7px;background:#64748b;color:#fff;padding:7px 10px;font-weight:700;cursor:pointer;margin:2px;"><i class="fas fa-eye-slash"></i> Unpublish</button>'
+                    : '<button type="button" onclick="publishApprovedAssessment('+Number(r.id)+')" style="border:0;border-radius:7px;background:#0A3D62;color:#fff;padding:7px 10px;font-weight:700;cursor:pointer;margin:2px;"><i class="fas fa-bullhorn"></i> Publish</button>';
             } else actions='<span style="font-size:11px;color:#64748b;">Decision recorded</span>';
             return '<tr style="border-top:1px solid #edf2f7;"><td style="padding:12px;vertical-align:top;"><strong>'+name+'</strong><div style="color:#64748b;font-size:11px;margin-top:4px;">'+meta+'</div></td><td style="padding:12px;vertical-align:top;">'+type+'</td><td style="padding:12px;vertical-align:top;">'+course+'</td><td style="padding:12px;vertical-align:top;">'+programme+'<div style="font-size:11px;color:#64748b;margin-top:3px;">'+block+'</div></td><td style="padding:12px;vertical-align:top;white-space:nowrap;">'+escapeAssessmentText(submitted)+'<div style="font-size:10px;color:#64748b;">By: '+escapeAssessmentText(r.created_by||'Unknown')+'</div></td><td style="padding:12px;vertical-align:top;">'+decision+'</td><td style="padding:12px;text-align:center;vertical-align:top;white-space:nowrap;">'+actions+'</td></tr>';
         }).join('');
@@ -8129,22 +8128,25 @@ window.approveAssessment = async function(examId) {
         const {data:authData,error:authError}=await sb.auth.getUser();
         if(authError) throw authError;
         if(!authData?.user?.id) throw new Error('Secure login could not be verified. Please sign in again.');
-        if(!confirm('Approve and publish this CAT/Exam now? Students will be able to access it according to its schedule and exam settings.')) return;
+        if(!confirm('Approve this assessment? It will remain unpublished until you explicitly publish it.')) return;
         const decisionTime = new Date().toISOString();
         const {data,error}=await sb.from('exams').update({
             approval_status:'approved',
             approved_by:authData.user.id,
             approved_at:decisionTime,
             rejection_reason:null,
-            is_published:true,
-            status:'published',
+            is_published:false,
+            status:'draft',
             updated_at:decisionTime
-        }).eq('id',examId).eq('approval_status','pending').select('id');
+        }).eq('id',examId).eq('approval_status','pending').select('id,approval_status,is_published,status');
         if(error) throw error;
-        if(!data?.length) throw new Error('No record updated. It may already have been reviewed or your account lacks permission.');
-        showAssessmentApprovalMessage('Assessment approved and published successfully.');
+        if(!data?.length) throw new Error('No record updated. It may already have been reviewed, or your account lacks permission for this institution.');
+        if(data[0].approval_status !== 'approved' || data[0].is_published !== false || data[0].status !== 'draft') {
+            throw new Error('The database did not return the expected approved-but-unpublished state. Refresh and inspect the assessment.');
+        }
+        showAssessmentApprovalMessage('Assessment approved. It is still unpublished; use Publish when ready.');
         await loadAssessmentApprovals(); await loadAllExams();
-    } catch(error) { console.error(error); showAssessmentApprovalMessage(error.message||'Approval failed.',true); alert(error.message||'Approval failed.'); }
+    } catch(error) { console.error('Assessment approval failed:',error); showAssessmentApprovalMessage(error.message||'Approval failed.',true); alert(error.message||'Approval failed.'); }
 };
 window.rejectAssessment = async function(examId) {
     try {
