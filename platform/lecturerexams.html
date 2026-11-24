@@ -279,7 +279,106 @@
                     <div id="examsLoading" class="loading" style="padding:40px; text-align:center;"><i class="fas fa-spinner fa-spin"></i> Loading exams...</div>
                 </div>
             </div>
-        </section>
+        
+            <style id="lecturer-exams-command-centre-polish">
+              /* Bring the lecturer exam workspace into the same visual language as Admin Exams. */
+              #myExams{color:#10243a}
+              #myExams>.exam-filter-panel{margin-top:0}
+              #myExams>div:first-child{
+                position:relative!important;isolation:isolate;overflow:hidden;
+                min-height:132px!important;padding:25px 28px!important;margin:0 0 18px!important;
+                border:1px solid rgba(255,255,255,.14)!important;border-radius:18px!important;
+                background:linear-gradient(115deg,#071d33 0%,#0b4167 52%,#12618a 100%)!important;
+                box-shadow:0 14px 34px rgba(9,48,78,.18)!important
+              }
+              #myExams>div:first-child:after{
+                content:"";position:absolute;z-index:-1;width:260px;height:260px;right:8%;top:-155px;
+                border:1px solid rgba(255,255,255,.12);border-radius:50%;
+                box-shadow:0 0 0 28px rgba(255,255,255,.035),0 0 0 58px rgba(255,255,255,.025)
+              }
+              #myExams>div:first-child h2{font-size:clamp(20px,2.2vw,26px)!important;letter-spacing:-.035em}
+              #myExams>div:first-child p{font-size:12px!important;line-height:1.6}
+              #myExams>div:first-child span{display:inline-flex;align-items:center;gap:8px;padding:9px 13px!important;border-radius:999px!important;background:rgba(255,255,255,.11)!important;border:1px solid rgba(255,255,255,.2)!important;font-size:11px!important;font-weight:800;backdrop-filter:blur(8px)}
+              #myExams .exam-filter-panel{
+                padding:18px!important;border:1px solid #dce6f0!important;border-radius:16px!important;
+                background:linear-gradient(180deg,#fff 0%,#fbfdff 100%)!important;
+                box-shadow:0 8px 26px rgba(15,35,58,.055)!important
+              }
+              #myExams .exam-filter-stats{gap:10px!important;margin-bottom:16px!important}
+              #myExams .exam-filter-stat{
+                min-height:38px;padding:8px 13px!important;border-radius:10px!important;
+                background:#f4f8fc!important;border:1px solid #e1eaf3!important;
+                color:#53677c!important;font-size:11px!important
+              }
+              #myExams .exam-filter-stat i{font-size:13px}
+              #myExams .exam-filter-stat strong{font-size:14px!important;font-weight:800!important;color:#0b4167!important}
+              #myExams .exam-filter-grid{gap:12px!important}
+              #myExams .exam-filter-field label{font-size:10px!important;letter-spacing:.055em;text-transform:uppercase;color:#64788d!important}
+              #myExams .exam-filter-field input,#myExams .exam-filter-field select{
+                min-height:43px!important;border:1px solid #d7e1eb!important;border-radius:10px!important;
+                background:#fff!important;color:#1e344a!important;font-size:12px!important;
+                transition:border-color .18s,box-shadow .18s
+              }
+              #myExams .exam-filter-field input:focus,#myExams .exam-filter-field select:focus{
+                border-color:#1675a8!important;box-shadow:0 0 0 3px rgba(22,117,168,.12)!important
+              }
+              #myExams .exam-filter-actions{padding-top:13px!important;border-top:1px solid #edf1f5}
+              #myExams #examFilterSummary{font-size:11px!important;font-weight:600;color:#64788d}
+              #myExams .exam-filter-reset{min-height:36px;padding:8px 12px!important;border-radius:9px!important;border-color:#d7e1eb!important;font-size:11px!important}
+              #myExams .exam-filter-reset:hover{background:#edf5fb!important;color:#0b4167!important}
+              #myExams>div:has(>#examsTable){
+                border:1px solid #dce6f0!important;border-radius:16px!important;
+                box-shadow:0 8px 26px rgba(15,35,58,.055)!important
+              }
+              #myExams #examsTable{min-width:760px}
+              #myExams #examsTable thead th{
+                padding:14px 16px!important;background:#f4f8fc!important;
+                color:#52677c!important;font-size:10px!important;font-weight:800!important;
+                text-transform:uppercase;letter-spacing:.065em;border-bottom:1px solid #e1eaf3!important
+              }
+              #myExams #examsTable tbody td{padding:14px 16px!important;border-bottom:1px solid #edf2f7;color:#334b62;font-size:12px}
+              #myExams #examsTable tbody tr{transition:background .16s ease}
+              #myExams #examsTable tbody tr:hover{background:#f5faff!important}
+              #myExams #lebBuilder{
+                margin:0 0 18px!important;padding:0!important;overflow:hidden;
+                border:1px solid #d7e4ef!important;border-radius:17px!important;
+                background:#fff!important;box-shadow:0 10px 30px rgba(15,35,58,.07)!important
+              }
+              #myExams #lebBuilder>div:first-child{
+                padding:20px 22px;background:linear-gradient(110deg,#f2f8fd,#fff);
+                border-bottom:1px solid #e5edf5
+              }
+              #myExams #lebBuilder h3{font-size:16px!important;font-weight:800!important;letter-spacing:-.02em;color:#102f4b!important}
+              #myExams #lebBuilder h3 i{color:#0d6795}
+              #myExams #lebBuilder .leb-muted{font-size:11px!important;color:#6b7f93!important;line-height:1.6}
+              #myExams #lebBuilder .leb-actions{gap:8px}
+              #myExams #lebBuilder .leb-btn{min-height:39px;padding:10px 15px!important;border-radius:9px!important;background:linear-gradient(135deg,#0b4167,#12618a)!important;box-shadow:0 4px 10px rgba(11,65,103,.13);font-size:11px!important}
+              #myExams #lebBuilder .leb-btn.alt{background:#fff!important;color:#31536f!important;border:1px solid #d5e1ec!important;box-shadow:none}
+              #myExams #lebList{padding:0 18px 18px}
+              #myExams #lebList:has(.leb-table){overflow-x:auto}
+              #myExams .leb-table{min-width:680px;border-collapse:separate!important;border-spacing:0!important}
+              #myExams .leb-table th{padding:12px 13px!important;background:#f4f8fc!important;color:#52677c!important;font-size:10px!important;text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid #e1eaf3}
+              #myExams .leb-table td{padding:13px!important;color:#334b62;font-size:11px;border-bottom:1px solid #edf2f7}
+              #myExams .leb-table tbody tr:hover{background:#f7fbff}
+              @media(max-width:900px){
+                #myExams .exam-filter-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+                #myExams>div:first-child{padding:20px!important}
+              }
+              @media(max-width:560px){
+                #myExams>div:first-child{min-height:0!important;padding:17px!important;border-radius:14px!important}
+                #myExams>div:first-child h2{font-size:19px!important}
+                #myExams .exam-filter-panel{padding:13px!important}
+                #myExams .exam-filter-grid{grid-template-columns:1fr!important}
+                #myExams .exam-filter-stats{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))}
+                #myExams .exam-filter-stat{min-width:0;justify-content:space-between}
+                #myExams #lebBuilder>div:first-child{padding:15px!important;align-items:flex-start!important}
+                #myExams #lebBuilder .leb-actions{width:100%}
+                #myExams #lebBuilder .leb-actions button{flex:1}
+                #myExams #lebList{padding:0 12px 12px}
+              }
+              @media(prefers-reduced-motion:reduce){#myExams *{scroll-behavior:auto!important;transition:none!important}}
+            </style>
+</section>
 
 
         <!-- Lecturer exam edit form: opens from the selected table row -->
