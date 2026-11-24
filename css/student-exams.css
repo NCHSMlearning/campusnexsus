@@ -203,3 +203,24 @@
 @media(max-width:680px){.dashboard-welcome{min-height:190px;padding:21px 18px}.dashboard-welcome-main{max-width:100%}.dashboard-welcome h1{font-size:24px;max-width:85%}.dashboard-welcome-main>p{max-width:82%;font-size:10px}.dashboard-hero-art{right:-10%;width:45%;opacity:.25}.dashboard-live{right:15px;top:14px;font-size:8px}.dashboard-quote{display:block;font-size:9px}.dashboard-quote small{display:block;margin-top:6px}.dashboard-stats{gap:8px;margin:12px 0 20px}.stat-card{min-height:93px;padding:12px 10px;gap:8px}.stat-card strong{font-size:21px}.stat-card small{font-size:8px}.dashboard-exams-head{align-items:flex-start}.dashboard-exams-head h2{font-size:17px}.dashboard-view-all{font-size:9px}.dashboard-exam-tabs{gap:6px}.dashboard-exam-tabs button{padding:9px 10px;font-size:9px}.dashboard-exam-card{padding:13px;gap:10px;min-height:0}.dashboard-exam-illustration{width:38px;height:38px;flex-basis:38px;font-size:16px}.dashboard-exam-heading h3{font-size:15px}.dashboard-exam-meta{gap:8px 10px;font-size:8px}.dashboard-countdown{gap:8px;font-size:9px}.dashboard-countdown .exam-countdown{font-size:10px}.dashboard-lower-grid{grid-template-columns:1fr;gap:10px}.calendar-panel{grid-column:auto}.dashboard-panel{min-height:0;padding:15px}.progress-panel .status-chart{justify-content:center}.progress-donut{width:110px;height:110px;flex-basis:110px}.progress-legend{max-width:210px}}
 
 .dashboard-hero-art{pointer-events:none}.dashboard-hero-image{position:relative;z-index:2;width:min(100%,560px);height:auto;max-height:100%;object-fit:contain;filter:drop-shadow(0 13px 16px rgba(14,48,75,.18));transform:translate(5px,3px)}@media(max-width:680px){.dashboard-hero-image{width:155%;max-width:none;opacity:.8;transform:translate(20px,12px)}}
+
+
+/* Student examination sidebar: resilient scrolling, clear active state and mobile drawer. */
+.exam-sidebar{overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#45647e transparent}
+.exam-sidebar::-webkit-scrollbar{width:5px}
+.exam-sidebar::-webkit-scrollbar-thumb{background:#45647e;border-radius:8px}
+.exam-brand{flex:0 0 auto}
+.exam-nav{flex:0 0 auto}
+.exam-nav a{position:relative;min-width:0;gap:12px}
+.exam-nav a span{min-width:0;overflow-wrap:anywhere}
+.exam-nav a:focus-visible,.sidebar-account button:focus-visible,.mobile-toggle:focus-visible{outline:2px solid #f5bd3d;outline-offset:3px}
+.sidebar-help{flex:0 0 auto}
+.sidebar-account{flex:0 0 auto;margin-top:auto;background:linear-gradient(180deg,transparent,#072642 22%)}
+@media(max-width:680px){
+ .exam-sidebar{height:100dvh;padding-top:max(20px,env(safe-area-inset-top));padding-bottom:max(16px,env(safe-area-inset-bottom));z-index:120}
+ .mobile-scrim.show{z-index:110}
+ .exam-header{z-index:80}
+ .exam-nav{gap:5px}
+ .exam-nav a{min-height:48px;font-size:12px}
+ .exam-nav a.active{background:linear-gradient(100deg,#ffffff25,#ffffff0c)}
+}
