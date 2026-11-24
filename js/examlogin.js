@@ -41,19 +41,43 @@ async function loadSchool(){
  const code=schoolCode.value.trim().toUpperCase();
  selectedInstitution=null;
  if(!/^[A-Z0-9_-]{3,30}$/.test(code)){schoolStatus.textContent='Enter a valid school code (letters and numbers).';schoolStatus.style.color='#a52b2b';return}
- loadButton.disabled=true;loadButton.textContent='Loading…';schoolStatus.textContent='Looking up your institution…';
+ loadButton.disabled=true;loadButton.textContent='Connecting…';schoolStatus.textContent='Securely connecting to Campus Nexus…';schoolStatus.style.color='#718096';
  try{
   const client=clientReady();
-  const result=await client.rpc('lookup_exam_institution',{p_school_code:code});
-  if(result.error)throw result.error;
-  const rows=result.data||[];
+  let result;
+  // A transient mobile-network interruption should not immediately fail the
+  // institution lookup. This RPC is read-only, so one bounded retry is safe.
+  for(let attempt=0;attempt<2;attempt++){
+   try{
+    result=await client.rpc('lookup_exam_institution',{p_school_code:code});
+    break;
+   }catch(networkError){
+    const message=String(networkError?.message||networkError||'');
+    const isNetworkFailure=networkError instanceof TypeError || /failed to fetch|networkerror|load failed|fetch failed/i.test(message);
+    if(!isNetworkFailure||attempt===1)throw networkError;
+    schoolStatus.textContent='Connection interrupted. Retrying securely…';
+    await new Promise(resolve=>setTimeout(resolve,850));
+   }
+  }
+  if(result?.error)throw result.error;
+  const rows=result?.data||[];
   if(!rows.length)throw new Error('No institution was found for that school code. Check the code and try again.');
   if(rows.length>1)throw new Error('This code matches more than one institution. Contact Campus Nexus support.');
   const institution=rows[0];
   if(String(institution.status||'').toLowerCase()==='suspended')throw new Error('This institution portal is currently suspended. Contact your institution administrator.');
   paintInstitution(institution);
- }catch(error){schoolStatus.textContent=error.message||'Unable to load institution.';schoolStatus.style.color='#a52b2b';}
- finally{loadButton.disabled=false;loadButton.textContent='Load school'}
+ }catch(error){
+  const detail=String(error?.message||error||'');
+  const networkFailure=error instanceof TypeError || /failed to fetch|networkerror|load failed|fetch failed/i.test(detail);
+  schoolStatus.textContent=networkFailure
+   ? 'Campus Nexus could not be reached. Check your internet connection, disable any data-saving/VPN blocker temporarily, then tap Continue to retry. Your school code is still saved.'
+   : (detail||'Unable to load institution. Please try again.');
+  schoolStatus.style.color='#a52b2b';
+  if(!networkFailure)console.error('[Exam Login] Institution lookup failed:',error);
+ }finally{
+  loadButton.disabled=false;
+  loadButton.textContent='Continue';
+ }
 }
 $('togglePassword').addEventListener('click',()=>{const visible=password.type==='password';password.type=visible?'text':'password';$('togglePassword').textContent=visible?'Hide':'Show'});
 loadButton.addEventListener('click',loadSchool);
