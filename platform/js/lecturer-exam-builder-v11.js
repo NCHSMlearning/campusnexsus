@@ -273,7 +273,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
       document.getElementById('cnSaveWrittenMarks').addEventListener('click', async function () {
         const button = this;
         const fields = [...panel.querySelectorAll('.cn-written-mark:not(:disabled)')];
-        const updates = fields.map(input => ({ input, id: input.dataset.gradeId, value: Number(input.value) }));
+        const updates = fields.map(input => ({ input, id: input.dataset.gradeId, value: Number(input.value), previous: Number(input.defaultValue || 0) }));
         if (updates.some(item => !item.id || !Number.isFinite(item.value) || item.value < 0 || item.value > Number(item.input.max))) {
           toast('Every mark must be between zero and the question maximum. Refresh if an answer row is missing.', 'warning');
           return;
@@ -283,11 +283,24 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
         try {
           for (const item of updates) {
             const result = await db.from('exam_grades')
-              .update({ marks: item.value, updated_at: new Date().toISOString() })
+              .update({ marks: item.value, graded_by: (await db.auth.getUser()).data?.user?.id || null, updated_at: new Date().toISOString() })
               .eq('id', item.id).eq('student_id', String(studentId)).eq('exam_id', numericExamId)
               .eq('attempt_id', attemptId).select('id');
             if (result.error) throw result.error;
             if (!result.data?.length) throw new Error('A mark was not saved. Check lecturer permissions and institution access.');
+          }
+          // Best-effort audit entry preserves who changed marks and the before/after values.
+          try {
+            const actorResult = await db.auth.getUser();
+            const actorId = actorResult.data?.user?.id || null;
+            await db.from('exam_proctoring_logs').insert({
+              student_id: String(studentId), exam_id: numericExamId,
+              event_type: 'written_answer_marks_saved',
+              details: JSON.stringify({ attempt_id: attemptId, lecturer_id: actorId, changes: updates.map(item => ({ grade_id: item.id, previous_marks: item.previous, revised_marks: item.value })) }),
+              severity: 'info', timestamp: new Date().toISOString()
+            });
+          } catch (auditError) {
+            console.warn('Written-answer mark audit entry could not be recorded:', auditError);
           }
           const allQuestions = questionResult.data || [];
           const allAnswersResult = await db.from('exam_grades').select('question_id,marks,attempt_id')
