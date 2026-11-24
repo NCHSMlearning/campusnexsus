@@ -205,6 +205,8 @@
       ".dashboard-hero .eyebrow,.welcome-banner .eyebrow,.dashboard-welcome .dashboard-eyebrow,.hero .hero-tag{color:",gold,"!important}",
       ".sidebar-header,.sidebar-brand,.nchsm-header-brand{border-color:",secondary,"55!important}",
       ".sidebar-header img,.brand-crest img,.nchsm-header-logo,.mobile-header .logo img,.header-content .logo img,.nchsm-loading-logo img{object-fit:contain!important}",
+      "#sidebar .sidebar-header img,#sidebar .brand-crest img{background:#fff!important;padding:5px!important;border:1px solid #e6edf3!important;border-radius:12px!important;box-sizing:border-box!important;mix-blend-mode:normal!important;filter:none!important}",
+      "#sidebar .sidebar-header img[ src ],#sidebar .brand-crest img[ src ]{opacity:1!important;visibility:visible!important}",
       ".sidebar a.active,.sidebar-menu a.active,#sidebar .nav a.active{border-left-color:",gold,"!important}",
       ".nchsm-header-title,.brand-text .cn-institution-brand-name{color:",primary,"!important}",
       ".nchsm-header-subtitle{color:",secondary,"!important}",
