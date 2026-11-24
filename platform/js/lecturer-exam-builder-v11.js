@@ -45,6 +45,7 @@ async function loadLecturerExamOptions(resetDependent){
   var label=$('lebPeriodLabel');if(label)label.textContent=singular.charAt(0).toUpperCase()+singular.slice(1);
   if(block){periods=[...new Set(periods.map(String))].sort(function(a,b){return a.localeCompare(b,undefined,{numeric:true})});block.innerHTML='<option value="">Select '+singular+'</option>'+periods.map(function(x){return '<option value="'+esc(x)+'">'+esc(x)+'</option>'}).join('');if(selectedBlock&&!periods.includes(selectedBlock))block.add(new Option(selectedBlock,selectedBlock));if(selectedBlock)block.value=selectedBlock;block.setAttribute('aria-label',singular);}
   if(!prog.dataset.catalogBound){prog.dataset.catalogBound='1';prog.addEventListener('change',function(){if(year)year.value='';if(block)block.value='';loadLecturerExamOptions(true)})}
+  if(block&&!block.dataset.unitPeriodBound){block.dataset.unitPeriodBound='1';block.addEventListener('change',function(){loadLecturerUnits()})}
   if(!programs.length)prog.innerHTML='<option value="">No programmes found for this institution</option>';
   await loadLecturerUnits();
  }catch(e){console.warn('Institution programme/intake lookup failed',e);prog.innerHTML='<option value="">Unable to load programmes</option>';year.innerHTML='<option value="">Unable to load intake years</option>';if(block)block.innerHTML='<option value="">Unable to load academic periods</option>';say('Could not load programme and academic period options: '+e.message,'error')}
