@@ -3068,22 +3068,55 @@ window.viewStudentProfile = async function(pid) {
                 attemptId = summaries?.[0]?.attempt_id || null;
             }
 
-            let answersQuery = sb.from('exam_grades')
-                .select('*')
-                .eq('student_id', String(studentId))
-                .eq('exam_id', numericExamId)
-                .neq('question_id', sentinel);
-            if (attemptId) answersQuery = answersQuery.eq('attempt_id', attemptId);
-            const { data: answerRows, error: answersError } = await answersQuery.order('updated_at', { ascending: false });
-            if (answersError) throw new Error('Could not load saved student answers: ' + answersError.message);
+            // Fetch question-level grade rows and the legacy answer table together.
+            // The final score may be stored in the sentinel row while per-question
+            // responses live in exam_grades (new flow) or exam_answers (legacy flow).
+            const [gradeAnswerResult, legacyAnswerResult] = await Promise.all([
+                sb.from('exam_grades')
+                    .select('*')
+                    .eq('student_id', String(studentId))
+                    .eq('exam_id', numericExamId)
+                    .neq('question_id', sentinel)
+                    .order('updated_at', { ascending: false }),
+                sb.from('exam_answers')
+                    .select('*')
+                    .eq('student_id', String(studentId))
+                    .eq('exam_id', numericExamId)
+                    .order('updated_at', { ascending: false })
+            ]);
+            if (gradeAnswerResult.error) throw new Error('Could not load per-question grade records: ' + gradeAnswerResult.error.message);
+            if (legacyAnswerResult.error) console.warn('Legacy exam_answers lookup unavailable; continuing with exam_grades:', legacyAnswerResult.error);
 
-            let gradeRows = answerRows || [];
-            // Legacy rows may have no attempt_id. In that case, avoid mixing attempts:
-            // select only rows belonging to the newest available attempt id.
-            if (!attemptId && gradeRows.some(row => row.attempt_id)) {
+            let gradeRows = gradeAnswerResult.data || [];
+            // Keep only this attempt. Older answer records must never be mixed into
+            // a retake or continuation result.
+            if (attemptId) {
+                gradeRows = gradeRows.filter(row => !row.attempt_id || String(row.attempt_id) === String(attemptId));
+            } else if (gradeRows.some(row => row.attempt_id)) {
                 const newestAttemptId = gradeRows.find(row => row.attempt_id)?.attempt_id;
-                gradeRows = gradeRows.filter(row => row.attempt_id === newestAttemptId);
+                gradeRows = gradeRows.filter(row => !row.attempt_id || String(row.attempt_id) === String(newestAttemptId));
                 attemptId = newestAttemptId;
+            }
+
+            // New exam engine saves answers directly on exam_grades. Older exam
+            // sessions may have them in exam_answers, so use that table only when
+            // the current-attempt grade rows do not contain a student's response.
+            const hasGradeAnswers = gradeRows.some(row => {
+                const value = answerValue(row);
+                return value != null && String(value).trim() !== '';
+            });
+            if (!hasGradeAnswers && legacyAnswerResult.data?.length) {
+                const legacyRows = legacyAnswerResult.data;
+                const legacyMap = new Map();
+                legacyRows.forEach(row => {
+                    const key = String(row.question_id);
+                    if (!legacyMap.has(key)) legacyMap.set(key, row);
+                });
+                gradeRows = gradeRows.map(row => {
+                    const legacy = legacyMap.get(String(row.question_id));
+                    return legacy && !answerValue(row) ? { ...row, selected_answer: answerValue(legacy) } : row;
+                });
+                if (!gradeRows.length) gradeRows = legacyRows;
             }
 
             const answerMap = new Map();
@@ -3109,8 +3142,12 @@ window.viewStudentProfile = async function(pid) {
                 const comparedCorrect = options.some(([letter, value]) =>
                     optionKeyMatches(selected, letter, value) && optionKeyMatches(correct, letter, value)
                 );
+                // Prefer the recorded answer comparison. Marks can legitimately be
+                // zero before lecturer marking, so zero alone must not imply incorrect
+                // when the answer key shows that the selected option is correct.
                 const isCorrect = isAnswered && (
-                    explicitCorrect || (!explicitWrong && (comparedCorrect || (hasNumericMarks && Number.isFinite(numericMarks) && numericMarks > 0)))
+                    explicitCorrect || (!explicitWrong && comparedCorrect) ||
+                    (!explicitWrong && !String(correct || '').trim() && hasNumericMarks && Number.isFinite(numericMarks) && numericMarks > 0)
                 );
                 const selectedOption = options.find(([letter, value]) => optionKeyMatches(selected, letter, value));
                 const correctOption = options.find(([letter, value]) => optionKeyMatches(correct, letter, value));
