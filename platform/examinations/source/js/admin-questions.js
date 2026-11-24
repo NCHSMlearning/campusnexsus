@@ -299,9 +299,13 @@ async function editQuestion(questionId) {
         document.getElementById('optionB').value = data.option_b || '';
         document.getElementById('optionC').value = data.option_c || '';
         document.getElementById('optionD').value = data.option_d || '';
-        document.getElementById('correctAnswer').value = data.correct_answer || '';\n        const markingKeyInput = document.getElementById('questionMarkingKey');\n        if (markingKeyInput) markingKeyInput.value = data.marking_key || '';\n        const maxCharsInput = document.getElementById('maxChars');\n        if (maxCharsInput) maxCharsInput.value = data.max_chars || data.max_characters || 5000;
+        document.getElementById('correctAnswer').value = data.correct_answer || '';
+        const markingKeyInput = document.getElementById('questionMarkingKey');
+        if (markingKeyInput) markingKeyInput.value = data.marking_key || '';
+        const maxCharsInput = document.getElementById('maxChars');
+        if (maxCharsInput) maxCharsInput.value = data.max_chars || data.max_characters || 5000;
         document.getElementById('questionMarks').value = data.marks || 1;
-        document.getElementById('maxChars').value = data.max_characters || 5000;
+        document.getElementById('maxChars').value = data.max_chars || data.max_characters || 5000;
 
         toggleQuestionType();
         document.getElementById('questionModal').style.display = 'flex';
@@ -411,15 +415,15 @@ async function saveQuestion(e) {
         questionData.option_c = optionC || null;
         questionData.option_d = optionD || null;
         questionData.correct_answer = correctAnswer || null;
-        questionData.max_characters = null;
+        questionData.max_chars = null;
     } 
     // Short Answer / Essay specific fields
     else if (questionType === 'essay' || questionType === 'short_answer' || questionType === 'written') {
-        questionData.option_a = null;
-        questionData.option_b = null;
+        questionData.option_a = '';
+        questionData.option_b = '';
         questionData.option_c = null;
         questionData.option_d = null;
-        questionData.correct_answer = null;
+        questionData.correct_answer = '';
         questionData.max_chars = maxChars || 5000;
     }
 
@@ -994,26 +998,45 @@ async function viewQuestionDetail(questionId) {
         const isMcq = data.question_type === 'mcq' || data.question_type === 'multiple_choice';
         const examTitle = data.exams?.title || data.exams?.exam_name || 'Exam ' + data.exam_id;
         
-        let details = `📝 Question Details\n\n`;
-        details += `Question: ${data.question_text}\n\n`;
-        details += `Exam: ${examTitle}\n`;
-        details += `Type: ${isMcq ? 'Multiple Choice' : 'Essay'}\n`;
-        details += `Marks: ${data.marks || 1}\n`;
-        details += `Status: ${data.status || 'pending'}\n`;
-        details += `Created By: ${data.created_by || 'Unknown'}\n`;
-        details += `Submitted: ${data.submitted_at ? new Date(data.submitted_at).toLocaleString() : '-'}\n`;
+        let details = `📝 Question Details
+
+`;
+        details += `Question: ${data.question_text}
+
+`;
+        details += `Exam: ${examTitle}
+`;
+        details += `Type: ${isMcq ? 'Multiple Choice' : 'Essay'}
+`;
+        details += `Marks: ${data.marks || 1}
+`;
+        details += `Status: ${data.status || 'pending'}
+`;
+        details += `Created By: ${data.created_by || 'Unknown'}
+`;
+        details += `Submitted: ${data.submitted_at ? new Date(data.submitted_at).toLocaleString() : '-'}
+`;
         
         if (isMcq) {
-            details += `\nOptions:\n`;
-            if (data.option_a) details += `A: ${data.option_a}\n`;
-            if (data.option_b) details += `B: ${data.option_b}\n`;
-            if (data.option_c) details += `C: ${data.option_c}\n`;
-            if (data.option_d) details += `D: ${data.option_d}\n`;
-            details += `\nCorrect Answer: ${data.correct_answer || 'N/A'}`;
+            details += `
+Options:
+`;
+            if (data.option_a) details += `A: ${data.option_a}
+`;
+            if (data.option_b) details += `B: ${data.option_b}
+`;
+            if (data.option_c) details += `C: ${data.option_c}
+`;
+            if (data.option_d) details += `D: ${data.option_d}
+`;
+            details += `
+Correct Answer: ${data.correct_answer || 'N/A'}`;
         }
 
         if (data.rejection_reason) {
-            details += `\n\n❌ Rejection Reason: ${data.rejection_reason}`;
+            details += `
+
+❌ Rejection Reason: ${data.rejection_reason}`;
         }
 
         alert(details);
