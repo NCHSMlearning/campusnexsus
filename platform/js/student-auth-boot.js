@@ -76,18 +76,11 @@ async function initializeApp() {
         // persistent Supabase client; this only restores the Database wrapper.
         async function ensureStudentDatabaseModule() {
             const isDatabase = value => !!value && typeof value.initialize === 'function';
-
-            // Classic-script class declarations are not consistently exposed as
-            // window properties in every browser/webview. Check both the explicit
-            // export and the global lexical binding before attempting recovery.
             const getDatabaseConstructor = () => {
                 if (typeof window.Database === 'function') return window.Database;
-                try {
-                    if (typeof Database === 'function') return Database;
-                } catch (_) {}
+                try { if (typeof Database === 'function') return Database; } catch (_) {}
                 return null;
             };
-
             const ensureInstance = () => {
                 if (isDatabase(window.db)) return window.db;
                 const Constructor = getDatabaseConstructor();
@@ -101,28 +94,71 @@ async function initializeApp() {
             const existing = ensureInstance();
             if (existing) return existing;
 
-            // The normal HTML script is deliberately loaded before this boot
-            // file. If it did not expose the module, retry once from the
-            // canonical root path with a fresh URL to bypass intermediary caches.
-            const source = '/js/database.js';
-            let loadError = null;
-            try {
-                await new Promise((resolve, reject) => {
-                    const script = document.createElement('script');
-                    const timeout = setTimeout(() => reject(new Error('Timed out loading ' + source)), 15000);
-                    script.src = source + '?student_recovery=20261124_v5_' + Date.now();
-                    script.async = false;
-                    script.onload = () => { clearTimeout(timeout); resolve(); };
-                    script.onerror = () => { clearTimeout(timeout); reject(new Error('Browser could not load ' + source + ' (check deployment path or network).')); };
-                    document.head.appendChild(script);
-                });
-            } catch (error) {
-                loadError = error;
-                console.error('[Student Portal] Database module recovery failed:', error);
-            }
+            // Validate HTTP status and content before adding a classic script.
+            // A 404 HTML page can fire script.onload on some mobile browsers;
+            // that previously looked like a successful load while executing
+            // none of database.js and left window.db undefined.
+            const candidates = [
+                '/js/database.js?student_recovery=20261124_v6_' + Date.now(),
+                'https://cdn.jsdelivr.net/gh/NCHSMlearning/campusnexsus@main/js/database.js'
+            ];
+            const failures = [];
 
-            const recovered = ensureInstance();
-            if (recovered) return recovered;
+            for (const source of candidates) {
+                try {
+                    const response = await fetch(source, {
+                        method: 'GET',
+                        cache: 'no-store',
+                        credentials: source.startsWith('/') ? 'same-origin' : 'omit'
+                    });
+                    if (!response.ok) {
+                        throw new Error('HTTP ' + response.status + ' while requesting ' + source);
+                    }
+                    const contentType = String(response.headers.get('content-type') || '').toLowerCase();
+                    const sourceText = await response.text();
+                    if (contentType.includes('text/html') || /^\s*(?:<!doctype html|<html)/i.test(sourceText)) {
+                        throw new Error('The database URL returned an HTML page instead of JavaScript: ' + source);
+                    }
+                    if (!sourceText.includes('class Database') || !sourceText.includes('window.Database = Database')) {
+                        throw new Error('The response is not the expected Campus Nexus database module: ' + source);
+                    }
+
+                    await new Promise((resolve, reject) => {
+                        let settled = false;
+                        const finish = (error) => {
+                            if (settled) return;
+                            settled = true;
+                            clearTimeout(timeout);
+                            window.removeEventListener('error', onScriptError, true);
+                            error ? reject(error) : resolve();
+                        };
+                        const onScriptError = event => {
+                            const filename = String(event.filename || '');
+                            if (filename.includes('database.js')) {
+                                finish(new Error('JavaScript execution error in database.js: ' + (event.message || 'unknown syntax/runtime error')));
+                            }
+                        };
+                        const timeout = setTimeout(() => finish(new Error('Timed out executing database.js from ' + source)), 15000);
+                        window.addEventListener('error', onScriptError, true);
+                        const script = document.createElement('script');
+                        script.src = source;
+                        script.async = false;
+                        script.onload = () => finish();
+                        script.onerror = () => finish(new Error('Browser blocked or failed to execute database.js from ' + source));
+                        document.head.appendChild(script);
+                    });
+
+                    const recovered = ensureInstance();
+                    if (recovered) {
+                        console.info('[Student Portal] Database module loaded from:', source);
+                        return recovered;
+                    }
+                    throw new Error('database.js returned successfully but did not expose window.Database/window.db: ' + source);
+                } catch (error) {
+                    failures.push(error?.message || String(error));
+                    console.error('[Student Portal] Database candidate failed:', source, error);
+                }
+            }
 
             const diagnostics = [
                 'window.db=' + (window.db === null ? 'null' : typeof window.db),
@@ -131,8 +167,7 @@ async function initializeApp() {
             ].join(', ');
             throw new Error(
                 'Student database module could not be initialized. ' +
-                (loadError?.message ? loadError.message + ' ' : '') +
-                diagnostics
+                failures.join(' | ') + ' | ' + diagnostics
             );
         }
 
