@@ -75,32 +75,44 @@ async function initializeApp() {
         // during a slow/mobile page load. The auth client remains the single
         // persistent Supabase client; this only restores the Database wrapper.
         async function ensureStudentDatabaseModule() {
-            if (window.db) return window.db;
+            if (window.db && typeof window.db === 'object') return window.db;
 
-            const existing = document.querySelector('script[src*="/js/database.js"]');
-            const source = existing?.src || (window.location.origin + '/js/database.js?v=20261124-student-db-recovery-v1');
+            // The student portal can be served from either /student or /platform/student.html.
+            // Resolve the database script from the site root and retry once without stale cache.
+            const candidates = [
+                new URL('/js/database.js', window.location.origin).href,
+                new URL('../js/database.js', window.location.href).href
+            ];
+            const uniqueCandidates = [...new Set(candidates)];
+            let lastError = null;
 
-            const loadScript = () => new Promise((resolve, reject) => {
-                const script = document.createElement('script');
-                script.src = source + (source.includes('?') ? '&' : '?') + 'student_recovery=' + Date.now();
-                script.async = true;
-                script.onload = () => resolve();
-                script.onerror = () => reject(new Error('The student database script could not be downloaded.'));
-                document.head.appendChild(script);
-            });
-
-            try {
-                await loadScript();
-            } catch (firstError) {
-                console.error('[Student Portal] Database module recovery attempt failed:', firstError);
+            for (const source of uniqueCandidates) {
+                try {
+                    await new Promise((resolve, reject) => {
+                        const script = document.createElement('script');
+                        script.src = source + (source.includes('?') ? '&' : '?') + 'student_boot=' + Date.now();
+                        script.async = true;
+                        script.onload = () => resolve();
+                        script.onerror = () => reject(new Error('Could not load ' + source));
+                        document.head.appendChild(script);
+                    });
+                    if (window.db && typeof window.db === 'object') return window.db;
+                    if (typeof Database === 'function') {
+                        window.db = new Database();
+                        return window.db;
+                    }
+                    throw new Error('The database script loaded but did not expose its Database instance.');
+                } catch (error) {
+                    lastError = error;
+                    console.error('[Student Portal] Database script load failed:', source, error);
+                }
             }
 
             if (!window.db && typeof Database === 'function') {
                 window.db = new Database();
             }
-
             if (!window.db) {
-                throw new Error('The student database module did not initialize. Check that /js/database.js is loading successfully, then refresh the page.');
+                throw new Error('Student database module could not be loaded. Please refresh the page or contact support.');
             }
             return window.db;
         }
