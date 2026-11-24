@@ -1664,7 +1664,7 @@ body{background:var(--exam-canvas);color:var(--exam-ink)}
             </div>
             
             <!-- Essay Options -->
-            <div id="essayOptions" style="display:none; margin-top: 12px;">
+            <div id="essayOptions" style="display:none; margin-top: 12px;"><label style="display:block;font-weight:600;font-size:11px;color:#475569;margin:8px 0 4px">Marking key / model answer *</label><textarea id="questionMarkingKey" placeholder="Expected points, acceptable alternatives and mark allocation" style="width:100%;min-height:100px;padding:8px 10px;border:1px solid #e2e8f0;border-radius:6px"></textarea>
                 <label style="font-weight: 600; font-size: 11px; color: #475569; display: block; margin-bottom: 2px;">Max Characters</label>
                 <input type="number" id="maxChars" value="5000" min="100" max="50000" style="width: 100%; padding: 6px 10px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 13px;">
             </div>
@@ -2119,7 +2119,8 @@ body{background:var(--exam-canvas);color:var(--exam-ink)}
 
 
     <!-- Main JavaScript -->
-    <script src="/platform/examinations/source/js/admin-questions.js?v=20261122-questions-v2"></script>
+    <script src="/platform/examinations/source/js/admin-questions.js?v=20261124-marking-keys-v1"></script>
+    <script src="/platform/examinations/source/js/admin-question-paste-builder.js?v=20261124-paste-v1"></script>
 
     <script src="/platform/examinations/source/js/admindashboard.js?v=20261122-admin-dashboard-render-v4"></script>
 
