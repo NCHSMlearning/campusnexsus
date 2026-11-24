@@ -54,65 +54,48 @@ async function loadExams(){var box=$('lebList');box.textContent='Loading your ex
 function openQuestions(ex){S.exam=ex;$('lebExamName').textContent=ex.title||ex.exam_name||'';$('lebQuestionModal').classList.add('open')}
 function toggleOptions(){var show=$('lebKind').value==='mcq';['lebA','lebB','lebC','lebD','lebAnswer'].forEach(function(id){$(id).closest('label').style.display=show?'flex':'none'})}
 function parse(src){
- var lines=String(src||'').replace(/\r\n?/g,'\n').split('\n');
- var parts=[],cur=[];
+ var lines=String(src||'').replace(/\r\n?/g,'\n').split('\n'),parts=[],cur=[];
  var start=/^\s*(?:Q(?:uestion)?\s*)?\d{1,3}\s*[).:-]\s+/i;
- lines.forEach(function(line){
-  if(start.test(line)&&cur.some(function(x){return x.trim()})){parts.push(cur.join('\n'));cur=[]}
-  cur.push(line);
- });
+ lines.forEach(function(line){if(start.test(line)&&cur.some(function(x){return x.trim()})){parts.push(cur.join('\n'));cur=[]}cur.push(line)});
  if(cur.length)parts.push(cur.join('\n'));
  var out=[];
  parts.forEach(function(part){
-  var stem=[],options={},answer=null,marks=1,hasOptions=false;
+  var stem=[],options={},answer='',marks=1,keyLines=[],inKey=false,declaredType='';
   part.split('\n').map(function(x){return x.trim()}).filter(Boolean).forEach(function(line,index){
    var option=line.match(/^([A-D])\s*[).:-]\s*(.*)$/i);
-   var key=line.match(/^(?:correct\s*)?answer\s*[:=-]\s*([A-D])\b/i);
-   var mark=line.match(/^\[?\s*(\d+(?:\.\d+)?)\s*(?:marks?|pts?)\s*\]?$/i);
-   if(option){
-    hasOptions=true;
-    options[option[1].toUpperCase()]=option[2].trim();
-   }else if(key){answer=key[1].toUpperCase()}
-   else if(mark){marks=Number(mark[1])}
-   else{
-    var clean=line;
-    if(index===0)clean=clean.replace(/^(?:Q(?:uestion)?\s*)?\d{1,3}\s*[).:-]\s*/i,'');
-    if(clean)stem.push(clean);
-   }
+   var ans=line.match(/^(?:correct\s*)?answer\s*[:=-]\s*(.*)$/i);
+   var key=line.match(/^(?:marking\s*(?:key|scheme)|marking\s*guide|rubric|expected\s*answer|model\s*answer)\s*[:=-]?\s*(.*)$/i);
+   var mark=line.match(/^\[?\s*(\d+)\s*(?:marks?|pts?)\s*\]?$/i);
+   var inline=line.match(/\((\d+)\s*(?:marks?|pts?)\)/i);
+   var type=line.match(/^(?:type|question\s*type)\s*[:=-]\s*(mcq|multiple\s*choice|short\s*answer|essay|long\s*answer|written)\s*$/i);
+   if(key){inKey=true;if(key[1])keyLines.push(key[1])}
+   else if(inKey)keyLines.push(line);
+   else if(option)options[option[1].toUpperCase()]=option[2].trim();
+   else if(ans)answer=ans[1].trim();
+   else if(mark)marks=Number(mark[1]);
+   else if(type)declaredType=type[1].toLowerCase().replace(/\s+/g,'_');
+   else{var clean=line;if(index===0)clean=clean.replace(/^(?:Q(?:uestion)?\s*)?\d{1,3}\s*[).:-]\s*/i,'');if(inline){marks=Number(inline[1]);clean=clean.replace(inline[0],'').trim()}if(clean)stem.push(clean)}
   });
-  var question=stem.join(' ').trim();
-  if(!question)return;
-  var keys=['A','B','C','D'],present=keys.filter(function(k){return !!options[k]});
-  var isMcq=hasOptions||!!answer,errors=[];
-  if(isMcq){
-   keys.forEach(function(k){if(!options[k])errors.push('Missing option '+k+'. Add options A, B, C and D.')});
-   if(!answer)errors.push('Missing answer key. Add Answer: A, B, C or D.');
-   else if(!options[answer])errors.push('The answer key does not match an available option.');
-  }
-  out.push({
-   question_text:question,
-   question_type:isMcq?'mcq':'short_answer',
-   marks:Number.isFinite(marks)&&marks>0?marks:1,
-   option_a:options.A||'',
-   option_b:options.B||'',
-   option_c:options.C||'',
-   option_d:options.D||'',
-   correct_answer:answer||'',
-   validation_errors:errors
-  });
+  var question=stem.join(' ').trim();if(!question)return;
+  var isMcq=!!options.A||!!options.B||!!options.C||!!options.D||/^[A-D]$/i.test(answer);
+  var qt=declaredType==='essay'||declaredType==='long_answer'||declaredType==='written'?'essay':declaredType==='short_answer'?'short_answer':isMcq?'mcq':keyLines.length?'essay':'short_answer';
+  var errors=[];
+  if(qt==='mcq'){['A','B','C','D'].forEach(function(k){if(!options[k])errors.push('Missing option '+k+'.')});if(!answer)errors.push('Missing answer key.');else if(!options[answer.toUpperCase()])errors.push('Answer key must match option A–D.')}
+  if(qt!=='mcq'&&!keyLines.length)errors.push('Add a marking key using “Marking key:” or “Expected answer:”.');
+  out.push({question_text:question,question_type:qt,marks:Math.max(1,Math.round(Number(marks)||1)),option_a:options.A||'',option_b:options.B||'',option_c:options.C||'',option_d:options.D||'',correct_answer:qt==='mcq'?answer.toUpperCase():'',marking_key:keyLines.join('\n').trim(),validation_errors:errors});
  });
  return out;
 }
 function preview(id,qs){var el=$(id);el.hidden=false;var invalid=qs.filter(function(q){return q.validation_errors&&q.validation_errors.length});el.innerHTML=qs.length?'<p class="leb-muted"><b>'+qs.length+' question(s) extracted.</b> '+(invalid.length?'<span style="color:#b91c1c;font-weight:700">'+invalid.length+' need correction before saving.</span>':'All detected questions passed format checks.')+'</p>'+qs.map(function(q,i){return '<div class="leb-q" style="'+(q.validation_errors&&q.validation_errors.length?'border:1px solid #fecaca;background:#fff7f7;border-radius:8px;margin:7px 0':'')+'"><b>'+(i+1)+'. '+esc(q.question_text)+'</b><small>'+esc(q.question_type)+' · '+q.marks+' mark(s)'+(q.correct_answer?' · Answer: '+esc(q.correct_answer):'')+'</small>'+(q.question_type==='mcq'?'<small>A. '+esc(q.option_a||'MISSING')+' · B. '+esc(q.option_b||'MISSING')+' · C. '+esc(q.option_c||'MISSING')+' · D. '+esc(q.option_d||'MISSING')+'</small>':'')+(q.validation_errors&&q.validation_errors.length?'<small style="color:#b91c1c;font-weight:700">'+q.validation_errors.map(esc).join(' ')+'</small>':'')+'</div>'}).join(''):'<p class="leb-muted">No numbered questions detected. Check the format and try again.</p>'}
-async function manualSave(e){e.preventDefault();var type=$('lebKind').value,q={question_text:$('lebStem').value.trim(),question_type:type,marks:+$('lebMarks').value||1,option_a:$('lebA').value.trim()||null,option_b:$('lebB').value.trim()||null,option_c:$('lebC').value.trim()||null,option_d:$('lebD').value.trim()||null,correct_answer:type==='mcq'?$('lebAnswer').value.trim():''};if(!q.question_text)return say('Enter a question.','error');if(type==='mcq'&&(!q.option_a||!q.option_b||!q.option_c||!q.option_d||!q.correct_answer))return say('MCQs require four options and the correct answer.','error');await saveBatch([q],$('lebManualSave'));$('lebStem').value=''}
+async function manualSave(e){e.preventDefault();var type=$('lebKind').value,q={question_text:$('lebStem').value.trim(),question_type:type,marks:+$('lebMarks').value||1,option_a:$('lebA').value.trim()||null,option_b:$('lebB').value.trim()||null,option_c:$('lebC').value.trim()||null,option_d:$('lebD').value.trim()||null,correct_answer:type==='mcq'?$('lebAnswer').value.trim():'',marking_key:type==='mcq'?'':$('lebMarkingKey').value.trim()};if(!q.question_text)return say('Enter a question.','error');if(type==='mcq'&&(!q.option_a||!q.option_b||!q.option_c||!q.option_d||!q.correct_answer))return say('MCQs require four options and the correct answer.','error');if(type!=='mcq'&&!q.marking_key)return say('Add a marking key for written questions.','error');await saveBatch([q],$('lebManualSave'));$('lebStem').value=''}
 async function nextNumber(){var r=await S.db.from('exam_questions').select('question_number').eq('exam_id',S.exam.id).order('question_number',{ascending:false}).limit(1);if(r.error)throw r.error;return +(r.data&&r.data[0]&&r.data[0].question_number||0)+1}
-async function saveBatch(qs,b){if(!S.exam||!qs||!qs.length)return say('Select one of your own exams and add questions first.','error');if(S.busy)return;S.busy=true;var old=b.textContent;b.disabled=true;b.textContent='Saving…';try{var n=await nextNumber(),rows=qs.map(function(q,i){if(!q.question_text)throw Error('A question is empty.');if(q.validation_errors&&q.validation_errors.length)throw Error('Question '+(i+1)+': '+q.validation_errors.join(' '));if(q.question_type==='mcq'&&(!q.option_a||!q.option_b||!q.option_c||!q.option_d||!q.correct_answer))throw Error('Question '+(i+1)+': MCQs require options A–D and a correct answer.');return {exam_id:S.exam.id,question_number:n+i,question_text:q.question_text,question_type:q.question_type||'short_answer',option_a:q.option_a||'',option_b:q.option_b||'',option_c:q.option_c||'',option_d:q.option_d||'',correct_answer:q.correct_answer||'',marks:Number(q.marks)||1,status:'pending',created_by:S.user,lecturer_id:S.user}});var r=await S.db.from('exam_questions').insert(rows);if(r.error)throw r.error;$('lebFeedback').textContent=rows.length+' question(s) submitted for institutional review.';say(rows.length+' question(s) saved to your examination and submitted for review.','success');if(b.id==='lebPasteSave'){$('lebPasteText').value='';$('lebPastePreview').hidden=true;S.paste=[]}if(b.id==='lebFileSave'){$('lebFilePreview').hidden=true;$('lebFileStatus').textContent='Questions saved.';S.file=[]}if(b.id==='lebManualSave')$('lebManualForm').reset()}catch(err){console.error(err);say('Could not save questions: '+err.message,'error');$('lebFeedback').textContent=err.message}finally{S.busy=false;b.disabled=false;b.textContent=old}}
+async function saveBatch(qs,b){if(!S.exam||!qs||!qs.length)return say('Select one of your own exams and add questions first.','error');if(S.busy)return;S.busy=true;var old=b.textContent;b.disabled=true;b.textContent='Saving…';try{var n=await nextNumber(),rows=qs.map(function(q,i){if(!q.question_text)throw Error('A question is empty.');if(q.validation_errors&&q.validation_errors.length)throw Error('Question '+(i+1)+': '+q.validation_errors.join(' '));if(q.question_type==='mcq'&&(!q.option_a||!q.option_b||!q.option_c||!q.option_d||!q.correct_answer))throw Error('Question '+(i+1)+': MCQs require options A–D and a correct answer.');if(q.question_type!=='mcq'&&!String(q.marking_key||'').trim())throw Error('Question '+(i+1)+': add a marking key.');return {exam_id:S.exam.id,question_number:n+i,question_text:q.question_text,question_type:q.question_type||'short_answer',option_a:q.option_a||'',option_b:q.option_b||'',option_c:q.option_c||'',option_d:q.option_d||'',correct_answer:q.correct_answer||'',marking_key:q.marking_key||null,marks:Number(q.marks)||1,status:'pending',created_by:S.user,lecturer_id:S.user}});var r=await S.db.from('exam_questions').insert(rows);if(r.error)throw r.error;$('lebFeedback').textContent=rows.length+' question(s) submitted for institutional review.';say(rows.length+' question(s) saved to your examination and submitted for review.','success');if(b.id==='lebPasteSave'){$('lebPasteText').value='';$('lebPastePreview').hidden=true;S.paste=[]}if(b.id==='lebFileSave'){$('lebFilePreview').hidden=true;$('lebFileStatus').textContent='Questions saved.';S.file=[]}if(b.id==='lebManualSave')$('lebManualForm').reset()}catch(err){console.error(err);say('Could not save questions: '+err.message,'error');$('lebFeedback').textContent=err.message}finally{S.busy=false;b.disabled=false;b.textContent=old}}
 async function loadMyQuestions(){
  var box=$('lebMyQuestionsList'),edit=$('lebQuestionEditArea');
  if(!S.exam||!box)return;
  box.textContent='Loading your saved questions…';if(edit)edit.innerHTML='';
  try{
-  var r=await S.db.from('exam_questions').select('id,exam_id,question_number,question_text,question_type,option_a,option_b,option_c,option_d,correct_answer,marks,status,created_by,lecturer_id,rejection_reason').eq('exam_id',S.exam.id).eq('lecturer_id',S.user).order('question_number',{ascending:true});
+  var r=await S.db.from('exam_questions').select('id,exam_id,question_number,question_text,question_type,option_a,option_b,option_c,option_d,correct_answer,marking_key,marks,status,created_by,lecturer_id,rejection_reason').eq('exam_id',S.exam.id).eq('lecturer_id',S.user).order('question_number',{ascending:true});
   if(r.error)throw r.error;
   var rows=r.data||[];
   if(!rows.length){box.innerHTML='<p class="leb-muted">No saved questions found for this examination yet.</p>';return}
