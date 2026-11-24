@@ -96,12 +96,19 @@ async function initializeApp() {
                         script.onerror = () => reject(new Error('Could not load ' + source));
                         document.head.appendChild(script);
                     });
-                    if (window.db && typeof window.db === 'object') return window.db;
+                    // A different legacy script may leave a plain object in
+                    // window.db. Treat it as usable only when it is the actual
+                    // Database instance with initialize(); otherwise rebuild it.
+                    if (window.db && typeof window.db.initialize === 'function') return window.db;
                     if (typeof window.Database === 'function') {
                         window.db = new window.Database();
-                        return window.db;
+                        if (typeof window.db.initialize === 'function') return window.db;
                     }
-                    throw new Error('The database script loaded but did not expose its Database instance.');
+                    throw new Error(
+                        'The database script loaded, but no usable Database instance was exposed. ' +
+                        'window.db=' + typeof window.db +
+                        ', window.Database=' + typeof window.Database
+                    );
                 } catch (error) {
                     lastError = error;
                     console.error('[Student Portal] Database script load failed:', source, error);
