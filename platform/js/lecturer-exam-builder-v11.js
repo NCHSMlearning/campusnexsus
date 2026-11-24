@@ -28,19 +28,34 @@ async function loadLecturerExamOptions(resetDependent){
   prog.innerHTML='<option value="">Select programme</option>'+programs.map(function(x){return '<option value="'+esc(x)+'">'+esc(x)+'</option>'}).join('');
   if(selected)prog.value=programs.find(function(x){return x.toLowerCase()===String(selected).toLowerCase()})||'';
   var row=catalog.find(function(x){return String(x.program_code)===String(prog.value)}),intakes=[],periods=[],structure=null;
-  if(row){
-   var intakeResult=await S.db.from('program_intakes').select('intake_year,intake_month,intake_name').eq('program_id',row.id).eq('institution_id',S.institution);
-   if(intakeResult.error)throw intakeResult.error;intakes=intakeResult.data||[];
-   if(window.CampusAcademicStructure)structure=await window.CampusAcademicStructure.resolve(S.db,S.institution,prog.value);
-   periods=structure?.periods?.map(function(x){return x.name})||[];
-   if(!periods.length){var periodResult=await S.db.from('program_blocks').select('block_name,block_sequence').eq('program_id',row.id).eq('institution_id',S.institution).eq('status','active').order('block_sequence');if(periodResult.error)throw periodResult.error;periods=(periodResult.data||[]).map(function(x){return x.block_name}).filter(Boolean);}
-  }
-  var matching=students.filter(function(x){return !prog.value||String(x.program||'').trim()===String(prog.value)});
+   if(row){
+    var intakeResult=await S.db.from('program_intakes').select('intake_year,intake_month,intake_name').eq('program_id',row.id).eq('institution_id',S.institution);
+    if(intakeResult.error)throw intakeResult.error;intakes=intakeResult.data||[];
+    // Resolve the configured Block / Semester / Term list without allowing
+    // stale cached metadata or resolver errors to block the form.
+    if(window.CampusAcademicStructure){
+     try{structure=await window.CampusAcademicStructure.resolve(S.db,S.institution,prog.value,{refresh:true});}
+     catch(structureError){console.warn('Academic structure resolver failed; using programme periods directly.',structureError);}
+    }
+    periods=structure?.periods?.map(function(x){return typeof x==='string'?x:x.name}).filter(Boolean)||[];
+    // program_blocks stores Blocks, Semesters and Terms. Include legacy rows
+    // with NULL or differently-cased status values.
+    if(!periods.length){
+     var periodResult=await S.db.from('program_blocks').select('block_name,block_sequence,status').eq('program_id',row.id).eq('institution_id',S.institution).order('block_sequence',{ascending:true});
+     if(periodResult.error)throw periodResult.error;
+     periods=(periodResult.data||[]).filter(function(x){return !x.status||String(x.status).toLowerCase()==='active'}).map(function(x){return x.block_name}).filter(Boolean);
+    }
+   }
+   var matching=students.filter(function(x){return !prog.value||String(x.program||'').trim()===String(prog.value)});
   var years=[...new Set(intakes.map(function(x){return String(x.intake_year||'').trim()}).concat(matching.map(function(x){return String(x.intake_year||'').trim()})).filter(function(x){return /^\\d{4}$/.test(x)}))].sort();
   year.innerHTML='<option value="">Select intake year</option>'+years.map(function(x){return '<option value="'+esc(x)+'">'+esc(x)+'</option>'}).join('');
   if(!years.length){var y=new Date().getFullYear();year.innerHTML+='<option value="'+y+'">'+y+'</option>'}
   if(selectedYear)year.value=selectedYear;else if(years.includes(String(new Date().getFullYear())))year.value=String(new Date().getFullYear());
-  if(!periods.length&&prog.value){var legacy=await S.db.from('units_catalog').select('block').eq('institution_id',S.institution).eq('program',prog.value).eq('status','active').limit(3000);if(legacy.error)throw legacy.error;periods=(legacy.data||[]).map(function(x){return x.block}).filter(Boolean);}
+  if(!periods.length&&prog.value){
+    var legacy=await S.db.from('units_catalog').select('block').eq('institution_id',S.institution).eq('program',prog.value).limit(3000);
+    if(legacy.error)throw legacy.error;
+    periods=(legacy.data||[]).map(function(x){return x.block}).filter(Boolean);
+   }
   var type=structure?.type||row?.structure_type||'Block',singular=type.toLowerCase(),plural=type==='Block'?'Blocks':type==='Semester'?'Semesters':'Terms';
   var label=$('lebPeriodLabel');if(label)label.textContent=singular.charAt(0).toUpperCase()+singular.slice(1);
   if(block){periods=[...new Set(periods.map(String))].sort(function(a,b){return a.localeCompare(b,undefined,{numeric:true})});block.innerHTML='<option value="">Select '+singular+'</option>'+periods.map(function(x){return '<option value="'+esc(x)+'">'+esc(x)+'</option>'}).join('');if(selectedBlock&&!periods.includes(selectedBlock))block.add(new Option(selectedBlock,selectedBlock));if(selectedBlock)block.value=selectedBlock;block.setAttribute('aria-label',singular);}
