@@ -4,7 +4,8 @@
  */
 (() => {
   "use strict";
-  const $ = id => document.getElementById(id);
+  const aliases = {"iaMASearch":"marksApprovalSearch","iaMASubjectFilter":"marksApprovalSubjectFilter","iaMABlockFilter":"marksApprovalBlockFilter"};
+  const $ = id => document.getElementById(id) || document.getElementById(aliases[id] || "");
   let api = null, records = [], control = null, busy = false;
   const escText = value => String(value ?? "—");
   const statusOf = row => String(row.approval_status || (row.published ? "published" : "draft")).toLowerCase();
@@ -298,5 +299,5 @@
     if(initial==="view-marks-entry"||initial==="view-marks-approval"||initial==="view-published-marks"||initial==="view-entry-control")load(initial.replace("view-",""));
   }
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",wait,{once:true});else wait();
-  window.InstitutionAdminResults={refresh:()=>loadRecords(),load:loadRecords};
+  window.InstitutionAdminResults={refresh:()=>loadRecords(),load:loadRecords,approveAll:()=>bulkApproval("approve"),rejectAll:()=>bulkApproval("reject")};
 })();
