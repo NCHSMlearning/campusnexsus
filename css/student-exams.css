@@ -514,3 +514,20 @@ html[data-institution-portal="true"] .primary-btn{
 html[data-institution-portal="true"] #dashboard .dashboard-exam-tabs button.active{box-shadow:0 4px 12px color-mix(in srgb,var(--cn-institution-primary) 22%,transparent)!important}
 
 @media(max-width:700px){.exam-brand{gap:11px;padding:3px 6px 27px}.brand-symbol{width:56px;height:56px;flex-basis:56px}.exam-brand b{font-size:15px;line-height:1.2}.exam-brand small{font-size:9px;letter-spacing:1.1px}}
+
+
+/* Mobile header: keep long institution names from expanding the sticky bar
+   and covering the dashboard content. */
+.exam-header{box-sizing:border-box;min-width:0}
+.header-left{min-width:0;flex:1}
+.header-left>div{min-width:0;max-width:calc(100% - 52px)}
+.header-kicker{display:block;max-width:min(58vw,520px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.35}
+.header-left>div>b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media(max-width:680px){
+ .exam-header{height:61px;min-height:61px;max-height:61px;overflow:hidden;gap:8px}
+ .header-left{gap:9px;min-width:0}
+ .header-left>div{flex:1;max-width:calc(100vw - 112px);overflow:hidden}
+ .header-kicker{max-width:100%;font-size:7px;letter-spacing:.65px;line-height:1.25}
+ .header-left>div>b{font-size:12px;line-height:1.25;margin-top:3px}
+ .header-right{flex:0 0 auto;gap:8px}
+}
