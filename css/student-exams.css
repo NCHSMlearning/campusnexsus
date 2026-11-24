@@ -434,3 +434,81 @@ body{background:#f2f6fa}
 @keyframes studentResultSpin{to{transform:rotate(360deg)}}@keyframes studentResultFade{from{opacity:0}to{opacity:1}}@keyframes studentResultRise{from{transform:translateY(10px);opacity:.7}to{transform:translateY(0);opacity:1}}
 @media(max-width:640px){.student-result-overlay{padding:0;align-items:flex-end}.student-result-dialog{width:100%;max-height:96dvh;border-radius:18px 18px 0 0}.student-result-header{padding:17px 16px}.student-result-content{padding:15px 13px}.student-result-score-hero{padding:18px}.student-result-score{font-size:32px}.student-result-percent strong{font-size:28px}.student-result-metrics{gap:6px}.student-result-metrics>div{grid-template-columns:1fr;justify-items:start;gap:5px;padding:10px}.student-result-metrics>div>span{grid-row:auto;width:30px;height:30px}.student-result-metrics b{font-size:16px}.student-result-metrics small{font-size:9px}.student-result-question{padding:12px}.student-result-footer{padding:11px 14px}.student-result-footer>span{max-width:65%;line-height:1.4}.student-result-answer-grid{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){.student-result-overlay,.student-result-dialog,.student-result-loading .spinner{animation:none}}
+
+/* Tenant theme override for the dedicated student examination centre.
+   Values are populated by get_my_exam_institution in student-exams.js. */
+html[data-institution-portal="true"] .exam-sidebar{
+ background:linear-gradient(180deg,var(--cn-institution-primary),var(--cn-institution-primary) 72%,var(--cn-institution-secondary))!important;
+}
+html[data-institution-portal="true"] .exam-brand .brand-symbol{
+ background:linear-gradient(145deg,var(--cn-institution-color-3),var(--cn-institution-color-4))!important;
+ color:var(--cn-institution-primary)!important;
+}
+html[data-institution-portal="true"] .exam-nav a.active{
+ background:linear-gradient(100deg,color-mix(in srgb,var(--cn-institution-secondary) 48%,transparent),#ffffff0d)!important;
+ box-shadow:inset 4px 0 var(--cn-institution-color-3)!important;
+}
+html[data-institution-portal="true"] .side-label,
+html[data-institution-portal="true"] .exam-nav a:hover{color:var(--cn-institution-color-3)!important}
+html[data-institution-portal="true"] .help-icon{
+ background:color-mix(in srgb,var(--cn-institution-color-3) 20%,transparent)!important;
+ color:var(--cn-institution-color-3)!important;
+}
+html[data-institution-portal="true"] .exam-header{border-bottom-color:color-mix(in srgb,var(--cn-institution-secondary) 35%,white)!important}
+html[data-institution-portal="true"] .header-kicker{color:var(--cn-institution-primary)!important}
+html[data-institution-portal="true"] .header-kicker i{color:var(--cn-institution-color-3)!important}
+html[data-institution-portal="true"] .secure-top{
+ background:color-mix(in srgb,var(--cn-institution-secondary) 10%,white)!important;
+ border-color:color-mix(in srgb,var(--cn-institution-secondary) 35%,white)!important;
+ color:var(--cn-institution-secondary)!important;
+}
+html[data-institution-portal="true"] .header-avatar,
+html[data-institution-portal="true"] .mobile-toggle{
+ background:color-mix(in srgb,var(--cn-institution-color-4) 18%,white)!important;
+ border-color:color-mix(in srgb,var(--cn-institution-color-4) 35%,white)!important;
+ color:var(--cn-institution-primary)!important;
+}
+html[data-institution-portal="true"] #dashboard .dashboard-welcome{
+ background:linear-gradient(112deg,var(--cn-institution-primary) 0%,var(--cn-institution-secondary) 100%)!important;
+ border-color:var(--cn-institution-secondary)!important;
+ box-shadow:0 12px 32px color-mix(in srgb,var(--cn-institution-primary) 18%,transparent)!important;
+ color:#fff!important;
+}
+html[data-institution-portal="true"] #dashboard .dashboard-welcome .dashboard-eyebrow,
+html[data-institution-portal="true"] #dashboard .dashboard-welcome h1,
+html[data-institution-portal="true"] #dashboard .dashboard-welcome h1 #greeting-label,
+html[data-institution-portal="true"] #dashboard .dashboard-welcome-main>p,
+html[data-institution-portal="true"] #dashboard .dashboard-quote,
+html[data-institution-portal="true"] #dashboard .dashboard-quote span,
+html[data-institution-portal="true"] #dashboard .dashboard-quote small{color:#fff!important}
+html[data-institution-portal="true"] #dashboard .dashboard-welcome h1 #welcome-name{
+ color:var(--cn-institution-color-3)!important;
+}
+html[data-institution-portal="true"] #dashboard .dashboard-quote{border-top-color:#ffffff55!important}
+html[data-institution-portal="true"] #dashboard .dashboard-live{
+ background:#ffffff22!important;color:#fff!important;border:1px solid #ffffff55!important;
+}
+html[data-institution-portal="true"] #dashboard .stat-card{
+ border-top:3px solid var(--cn-institution-color-3)!important;
+}
+html[data-institution-portal="true"] #dashboard .stat-total .stat-icon{
+ background:color-mix(in srgb,var(--cn-institution-color-4) 18%,white)!important;color:var(--cn-institution-primary)!important;
+}
+html[data-institution-portal="true"] #dashboard .stat-upcoming .stat-icon{
+ background:color-mix(in srgb,var(--cn-institution-color-3) 22%,white)!important;color:var(--cn-institution-primary)!important;
+}
+html[data-institution-portal="true"] #dashboard .stat-open .stat-icon{
+ background:color-mix(in srgb,var(--cn-institution-secondary) 16%,white)!important;color:var(--cn-institution-secondary)!important;
+}
+html[data-institution-portal="true"] #dashboard .stat-completed .stat-icon{
+ background:color-mix(in srgb,var(--cn-institution-color-5) 18%,white)!important;color:var(--cn-institution-color-5)!important;
+}
+html[data-institution-portal="true"] #dashboard .dashboard-exams-head .dashboard-eyebrow,
+html[data-institution-portal="true"] #dashboard .section-icon,
+html[data-institution-portal="true"] #dashboard .dashboard-panel-icon{color:var(--cn-institution-secondary)!important}
+html[data-institution-portal="true"] #dashboard .dashboard-exam-tabs button.active,
+html[data-institution-portal="true"] #dashboard .dashboard-view-all,
+html[data-institution-portal="true"] .primary-btn{
+ background:var(--cn-institution-primary)!important;border-color:var(--cn-institution-primary)!important;color:#fff!important;
+}
+html[data-institution-portal="true"] #dashboard .dashboard-exam-tabs button.active{box-shadow:0 4px 12px color-mix(in srgb,var(--cn-institution-primary) 22%,transparent)!important}
