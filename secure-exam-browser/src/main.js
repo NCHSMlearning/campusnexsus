@@ -9,9 +9,6 @@ const STRICT = process.argv.includes('--strict');
 let mainWindow;
 let quitting = false;
 
-app.disableHardwareAcceleration?.();
-app.commandLine.appendSwitch('disable-features', 'AutofillServerCommunication');
-
 if (!app.requestSingleInstanceLock()) app.quit();
 app.on('second-instance', () => {
   if (mainWindow) {
@@ -25,6 +22,13 @@ function isTrusted(url) {
     const parsed = new URL(url);
     return parsed.protocol === 'https:' && parsed.hostname === 'campusnexus.co.ke';
   } catch { return false; }
+}
+
+function openSafeExternal(url) {
+  try {
+    const parsed = new URL(url);
+    if (['https:', 'http:'].includes(parsed.protocol)) shell.openExternal(parsed.href);
+  } catch { /* Ignore malformed destinations. */ }
 }
 
 function createWindow() {
@@ -52,16 +56,16 @@ function createWindow() {
     }
   });
 
+  // Exam links cannot create uncontrolled child windows. External help links
+  // are opened in the user's default browser only for ordinary HTTP(S) URLs.
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    if (isTrusted(url)) return { action: 'allow' };
-    shell.openExternal(url);
+    if (!isTrusted(url)) openSafeExternal(url);
     return { action: 'deny' };
   });
 
   mainWindow.webContents.on('will-navigate', (event, url) => {
     if (!isTrusted(url)) event.preventDefault();
   });
-
   mainWindow.webContents.on('will-attach-webview', event => event.preventDefault());
 
   mainWindow.webContents.on('before-input-event', (event, input) => {
@@ -77,9 +81,7 @@ function createWindow() {
 
   mainWindow.webContents.on('render-process-gone', (_event, details) => {
     console.error('[CN-SEB] Renderer process ended:', details.reason);
-    if (!quitting && mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.loadURL(EXAM_URL);
-    }
+    if (!quitting && mainWindow && !mainWindow.isDestroyed()) mainWindow.loadURL(EXAM_URL);
   });
 
   mainWindow.once('ready-to-show', () => {
@@ -104,10 +106,10 @@ app.whenReady().then(() => {
       isTrusted(webContents.getURL());
     callback(allowed);
   });
-  examSession.setPermissionCheckHandler((webContents, permission, requestingOrigin) => {
-    return ['media', 'camera', 'microphone'].includes(permission) &&
-      isTrusted(requestingOrigin || webContents.getURL());
-  });
+  examSession.setPermissionCheckHandler((webContents, permission, requestingOrigin) => (
+    ['media', 'camera', 'microphone'].includes(permission) &&
+    isTrusted(requestingOrigin || webContents.getURL())
+  ));
 
   ipcMain.handle('cnseb:device-info', () => ({
     appVersion: app.getVersion(),
@@ -123,8 +125,12 @@ app.whenReady().then(() => {
   });
 
   createWindow();
-  app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
+  app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+  });
 });
 
 app.on('before-quit', () => { quitting = true; });
-app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') app.quit();
+});
