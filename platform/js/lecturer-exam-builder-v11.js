@@ -181,3 +181,160 @@ async function extractFile(){var f=$('lebFile').files[0];if(!f)return say('Choos
 async function boot(){try{var s=session();S.db=window.sb||window.supabaseClient;if(!S.db)throw Error('Database client unavailable.');var auth=await S.db.auth.getUser().catch(function(){return {data:{user:null}}}),u=auth.data&&auth.data.user;S.user=u&&u.id||s.user_id||s.auth_user_id||s.id||s.profile_id;if(!S.user)throw Error('Could not verify lecturer identity. Sign in again.');S.owners=[S.user,s.user_id,s.auth_user_id,s.id,s.profile_id,s.staff_id].filter(Boolean).map(String);S.institution=s.institution_id||s.institutionId||window.CURRENT_INSTITUTION_ID||window.currentInstitutionId;S.program=s.program||s.department||s.course||'';var p=await S.db.from('consolidated_user_profiles_table').select('user_id,staff_id,institution_id,program,department').eq('user_id',S.user).maybeSingle();if(p.error)console.warn('Lecturer profile lookup warning:',p.error.message);if(p.data){S.institution=p.data.institution_id||S.institution;S.program=S.program||p.data.program||p.data.department||'';S.owners.push(p.data.user_id,p.data.staff_id)}if(!S.institution){var membership=await S.db.from('institution_users').select('institution_id').eq('user_id',S.user).eq('status','active');if(membership.error)throw membership.error;var ids=[...new Set((membership.data||[]).map(function(x){return x.institution_id}).filter(Boolean))];if(ids.length===1)S.institution=ids[0]}S.owners=[...new Set(S.owners.filter(Boolean).map(String))];if(!S.institution)throw Error('Your lecturer account is not linked to an institution.');mount();await loadExams()}catch(err){console.error('Lecturer exam builder boot failed',err);var sec=$('myExams');if(sec){var d=document.createElement('div');d.className='leb-panel';d.textContent='Exam builder unavailable: '+err.message;sec.prepend(d)}}}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
+
+// ============================================================
+// WRITTEN-ANSWER MARKING — lecturer review, save and remark
+// Loaded on lecturerexams.html after the dashboard's progress viewer.
+// Uses the existing exam_grades question rows; does not replace attempts
+// or publish results when a lecturer saves a mark.
+// ============================================================
+(function () {
+  'use strict';
+  if (window.__cnWrittenMarkingInstalled) return;
+  window.__cnWrittenMarkingInstalled = true;
+
+  const getDb = () => window.sb || window.supabaseClient || window.lecturerDB?.supabase || null;
+  const esc = value => String(value == null ? '' : value).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  const written = q => ['short_answer','essay','long_answer','written','text','fill_blank'].includes(String(q.question_type || '').toLowerCase());
+  const toast = (message, type) => {
+    if (typeof window.showToast === 'function') window.showToast(message, type || 'info');
+    else if (typeof window.showNotification === 'function') window.showNotification(message, type || 'info');
+    else alert(message);
+  };
+
+  async function addMarkingPanel(studentId, studentName, examId) {
+    const host = document.getElementById('lecturerProgressContent');
+    const db = getDb();
+    if (!host || !db || !studentId || !examId) return;
+    const panelId = 'cnWrittenMarkingPanel';
+    document.getElementById(panelId)?.remove();
+
+    const panel = document.createElement('section');
+    panel.id = panelId;
+    panel.style.cssText = 'margin-top:16px;padding:16px;border:1px solid #cbd5e1;border-radius:12px;background:#fff;';
+    panel.innerHTML = '<div style="color:#475569;text-align:center;padding:12px;"><i class="fas fa-spinner fa-spin"></i> Loading written-answer marking…</div>';
+    host.appendChild(panel);
+
+    try {
+      const numericExamId = Number(examId);
+      const [attemptResult, questionResult] = await Promise.all([
+        db.from('exam_attempts')
+          .select('id,attempt_number,status,score,percentage,total_marks')
+          .eq('student_id', String(studentId)).eq('exam_id', numericExamId)
+          .order('attempt_number', {ascending:false}).limit(1),
+        db.from('exam_questions').select('id,question_number,question_text,question_type,marks,marking_key')
+          .eq('exam_id', numericExamId).order('question_number', {ascending:true})
+      ]);
+      if (questionResult.error) throw questionResult.error;
+      const attempt = !attemptResult.error ? (attemptResult.data || [])[0] : null;
+      let attemptId = attempt?.id || null;
+      const sentinel = '00000000-0000-0000-0000-000000000000';
+      if (!attemptId) {
+        const summary = await db.from('exam_grades').select('attempt_id')
+          .eq('student_id', String(studentId)).eq('exam_id', numericExamId)
+          .eq('question_id', sentinel).order('updated_at', {ascending:false}).limit(1);
+        if (summary.error) throw summary.error;
+        attemptId = summary.data?.[0]?.attempt_id || null;
+      }
+      if (!attemptId) throw new Error('No submitted attempt could be identified for this student.');
+      const answerQuery = db.from('exam_grades').select('id,question_id,marks,selected_answer,student_answer,answer,response,answer_text,attempt_id')
+        .eq('student_id', String(studentId)).eq('exam_id', numericExamId).eq('attempt_id', attemptId)
+        .neq('question_id', sentinel);
+      const answerResult = await answerQuery;
+      if (answerResult.error) throw answerResult.error;
+      const answers = new Map((answerResult.data || []).map(row => [String(row.question_id), row]));
+      const questions = (questionResult.data || []).filter(written);
+      if (!questions.length) {
+        panel.innerHTML = '<strong style="color:#0f3b5b;">Written-answer marking</strong><p style="color:#64748b;margin:8px 0 0;">This assessment has no short-answer or long-answer questions requiring manual marking.</p>';
+        return;
+      }
+      const answerText = row => [row?.selected_answer,row?.student_answer,row?.answer,row?.response,row?.answer_text]
+        .find(value => value != null && String(value).trim() !== '') ?? '';
+      panel.innerHTML = '<div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px;"><div><h3 style="margin:0;color:#0f3b5b;">Written-answer marking & remarking</h3><p style="margin:4px 0;color:#64748b;font-size:12px;">Review the lecturer key, award marks, and save. Saving does not publish revised results.</p></div><span style="font-size:11px;color:#64748b;">Attempt #' + esc(attempt?.attempt_number || 1) + '</span></div>';
+      questions.forEach((q, index) => {
+        const row = answers.get(String(q.id));
+        const response = answerText(row);
+        const max = Math.max(0, Number(q.marks) || 0);
+        const existing = Number(row?.marks ?? 0);
+        const hasResponse = !!row && String(response).trim() !== '';
+        const card = document.createElement('div');
+        card.style.cssText = 'padding:13px 0;border-top:1px solid #e2e8f0;';
+        card.innerHTML = '<div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap;"><strong style="color:#0f172a;">Q' + esc(q.question_number || index + 1) + ' · ' + esc(q.question_type === 'short_answer' ? 'Short answer' : 'Long answer') + '</strong><strong style="color:#0f3b5b;">Max ' + esc(max) + ' marks</strong></div>' +
+          '<p style="margin:8px 0;color:#334155;white-space:pre-wrap;">' + esc(q.question_text || '') + '</p>' +
+          '<div style="padding:11px;background:#f8fafc;border-radius:8px;margin:8px 0;"><small style="display:block;color:#64748b;font-weight:700;margin-bottom:5px;">STUDENT RESPONSE</small><div style="white-space:pre-wrap;overflow-wrap:anywhere;color:#0f172a;">' + (hasResponse ? esc(response) : '<em style="color:#94a3b8;">No written response recorded</em>') + '</div></div>' +
+          '<div style="padding:10px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;margin:8px 0;"><small style="display:block;color:#92400e;font-weight:700;margin-bottom:5px;">LECTURER MARKING KEY</small><div style="white-space:pre-wrap;color:#78350f;">' + esc(q.marking_key || 'No marking key supplied for this question.') + '</div></div>' +
+          '<div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap;"><label style="display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:700;color:#475569;">Awarded marks<input type="number" class="cn-written-mark" data-question-id="' + esc(q.id) + '" data-grade-id="' + esc(row?.id || '') + '" min="0" max="' + esc(max) + '" step="0.5" value="' + esc(existing) + '" ' + (hasResponse ? '' : 'disabled') + ' style="width:130px;padding:9px;border:1px solid #cbd5e1;border-radius:8px;"></label><span style="font-size:11px;color:#64748b;">' + (hasResponse ? (row?.id ? 'Previously saved mark · editable after grading' : 'Answer row unavailable for marking') : 'No response to mark') + '</span></div>';
+        panel.appendChild(card);
+      });
+      const actions = document.createElement('div');
+      actions.style.cssText = 'display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid #e2e8f0;';
+      actions.innerHTML = '<button type="button" id="cnSaveWrittenMarks" style="padding:10px 15px;border:0;border-radius:8px;background:#0b4774;color:#fff;font-weight:700;cursor:pointer;">Save marks / save remarking</button>';
+      panel.appendChild(actions);
+      document.getElementById('cnSaveWrittenMarks').addEventListener('click', async function () {
+        const button = this;
+        const fields = [...panel.querySelectorAll('.cn-written-mark:not(:disabled)')];
+        const updates = fields.map(input => ({ input, id: input.dataset.gradeId, value: Number(input.value) }));
+        if (updates.some(item => !item.id || !Number.isFinite(item.value) || item.value < 0 || item.value > Number(item.input.max))) {
+          toast('Every mark must be between zero and the question maximum. Refresh if an answer row is missing.', 'warning');
+          return;
+        }
+        if (!updates.length) { toast('There are no submitted written answers available to mark.', 'warning'); return; }
+        button.disabled = true; button.textContent = 'Saving marks…';
+        try {
+          for (const item of updates) {
+            const result = await db.from('exam_grades')
+              .update({ marks: item.value, updated_at: new Date().toISOString() })
+              .eq('id', item.id).eq('student_id', String(studentId)).eq('exam_id', numericExamId)
+              .eq('attempt_id', attemptId).select('id');
+            if (result.error) throw result.error;
+            if (!result.data?.length) throw new Error('A mark was not saved. Check lecturer permissions and institution access.');
+          }
+          const allQuestions = questionResult.data || [];
+          const allAnswersResult = await db.from('exam_grades').select('question_id,marks,attempt_id')
+            .eq('student_id', String(studentId)).eq('exam_id', numericExamId).eq('attempt_id', attemptId)
+            .neq('question_id', sentinel);
+          if (allAnswersResult.error) throw allAnswersResult.error;
+          const answerMap = new Map((allAnswersResult.data || []).map(row => [String(row.question_id), Number(row.marks) || 0]));
+          const totalMarks = allQuestions.reduce((sum, q) => sum + (Number(q.marks) || 0), 0);
+          const score = allQuestions.reduce((sum, q) => sum + (answerMap.get(String(q.id)) || 0), 0);
+          if (attempt?.id) {
+            const attemptUpdate = await db.from('exam_attempts').update({
+              score, percentage: totalMarks ? Number((score / totalMarks * 100).toFixed(2)) : 0,
+              total_marks: totalMarks, updated_at: new Date().toISOString()
+            }).eq('id', attemptId).select('id');
+            if (attemptUpdate.error) console.warn('Question marks saved; attempt summary could not be refreshed:', attemptUpdate.error.message);
+          }
+          toast('Written marks saved. Existing results were not published or released; use the approved results-release workflow when ready.', 'success');
+          await addMarkingPanel(studentId, studentName, examId);
+        } catch (error) {
+          console.error('Written-answer marking save failed:', error);
+          toast('Could not save written marks: ' + (error?.message || error), 'error');
+          button.disabled = false; button.textContent = 'Save marks / save remarking';
+        }
+      });
+    } catch (error) {
+      console.error('Written-answer marking panel failed:', error);
+      panel.innerHTML = '<div style="color:#991b1b;padding:10px;">Unable to load marking workspace: ' + esc(error?.message || error) + '</div>';
+    }
+  }
+
+  function installViewerHook() {
+    const original = window.viewLecturerStudentProgress;
+    if (typeof original !== 'function' || original.__cnWrittenMarkingWrapped) return false;
+    const wrapped = async function (studentId, studentName, examId) {
+      const result = await original.apply(this, arguments);
+      await addMarkingPanel(studentId, studentName, examId);
+      return result;
+    };
+    wrapped.__cnWrittenMarkingWrapped = true;
+    window.viewLecturerStudentProgress = wrapped;
+    return true;
+  }
+  if (!installViewerHook()) {
+    let attempts = 0;
+    const timer = setInterval(() => {
+      attempts++;
+      if (installViewerHook() || attempts >= 30) clearInterval(timer);
+    }, 200);
+  }
+})();
