@@ -111,6 +111,17 @@
     setText("#loading-screen .subtitle", roleLabel);
     setText("[data-institution-name]", name);
     setText("[data-institution-code]", schoolCode);
+    setText("#institution-name", name);
+    setText("#institution-portal-label", "STUDENT PORTAL");
+    setText("#institution-header-name", identity + "  ›  STUDENT EXAMINATION CENTRE");
+    const examLogo = document.getElementById("institution-logo");
+    const examLogoFallback = document.getElementById("institution-logo-fallback");
+    if (examLogo) {
+      examLogo.src = logo;
+      examLogo.alt = name + " logo";
+      examLogo.hidden = false;
+      if (examLogoFallback) examLogoFallback.hidden = true;
+    }
     setText(".nchsm-header-title", name);
     setText(".nchsm-header-subtitle", roleLabel);
     setText(".lecturer-command-brand h1", title);
@@ -216,7 +227,31 @@
       ".btn-primary:hover,.primary-button:hover,.primary-btn:hover,.ia-primary-btn:hover,.submit:hover{filter:brightness(1.08)}",
       ".sidebar-header .cn-institution-school-code{color:#fff!important}",
       ".brand-logo img,.sidebar-logo img,.institution-logo img,#institutionLogo,.header-logo img{object-fit:contain!important}",
-      ".cn-institution-brand-name{font-weight:800;letter-spacing:-.02em}"
+      ".cn-institution-brand-name{font-weight:800;letter-spacing:-.02em}",
+      ".exam-sidebar{background:linear-gradient(180deg,",primary," 0%,",primary," 72%,",secondary," 145%)!important}",
+      ".exam-brand .brand-symbol{background:linear-gradient(145deg,",accent1,",",accent2,")!important;color:",primary,"!important}",
+      ".exam-brand b{color:#fff!important}.exam-brand small{color:rgba(255,255,255,.76)!important}",
+      ".exam-nav a.active{box-shadow:inset 3px 0 ",accent1,"!important;background:linear-gradient(100deg,",secondary,"55,#ffffff0d)!important}",
+      ".side-label,.exam-nav a:hover{color:",accent1,"!important}",
+      ".help-icon{background:",accent1,"25!important;color:",accent1,"!important}",
+      ".exam-header{border-bottom-color:",accent2,"55!important}",
+      ".header-kicker{color:",primary,"!important}.header-kicker i{color:",accent1,"!important}",
+      ".secure-top{background:",secondary,"12!important;border-color:",secondary,"55!important;color:",secondary,"!important}",
+      ".header-avatar,.mobile-toggle{background:",accent2,"22!important;border-color:",accent2,"66!important;color:",primary,"!important}",
+      ".hero{background:linear-gradient(112deg,",primary," 0%,",secondary," 100%)!important}",
+      ".hero-tag,.dashboard-eyebrow{color:",accent1,"!important}",
+      ".hero h1 em,.dashboard-welcome h1 #welcome-name{color:",accent1,"!important}",
+      ".dashboard-live{background:",secondary,"18!important;color:",secondary,"!important}",
+      ".stat-card{border-top:2px solid ",accent1,"!important}",
+      ".stat-total .stat-icon{background:",accent2,"22!important;color:",primary,"!important}",
+      ".stat-upcoming .stat-icon{background:",accent1,"25!important;color:",primary,"!important}",
+      ".stat-open .stat-icon{background:",secondary,"20!important;color:",secondary,"!important}",
+      ".stat-completed .stat-icon{background:",accent3,"25!important;color:",accent3,"!important}",
+      ".dashboard-exam-tabs button.active,.dashboard-view-all,.primary-btn{background:",primary,"!important;border-color:",primary,"!important;color:#fff!important}",
+      ".section-icon,.dashboard-panel-icon{background:",accent2,"25!important;color:",primary,"!important}",
+      ".exam-nav a.active .nav-current{color:",accent1,"!important}",
+      ".exam-brand .brand-symbol img{width:100%;height:100%;object-fit:contain!important;background:#fff;border-radius:inherit}",
+      "@media(max-width:680px){.exam-header{min-height:76px!important;height:auto!important;padding:9px 12px!important;gap:8px!important}.header-left{min-width:0!important;flex:1 1 auto!important;gap:9px!important}.header-left>div{min-width:0!important;max-width:100%!important}.header-kicker{display:block!important;max-width:100%!important;white-space:normal!important;overflow-wrap:anywhere!important;font-size:8px!important;line-height:1.35!important;letter-spacing:.8px!important}.header-left>div>b{font-size:12px!important;margin-top:3px!important}.header-right{flex:0 0 auto!important;gap:6px!important}.secure-top{font-size:0!important;padding:8px!important;width:34px;height:34px;display:grid;place-items:center}.secure-top i{font-size:13px!important;margin:0!important}.header-avatar{width:34px!important;height:34px!important;flex:0 0 34px!important}}";
     ].join("");
 
     document.querySelectorAll("h1,h2,h3,[role=heading]").forEach(el => {
