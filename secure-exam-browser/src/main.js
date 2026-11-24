@@ -16,7 +16,7 @@ function isValidExamUrl(value) {
     const url = new URL(value);
     return url.protocol === 'https:' &&
       url.hostname === 'campusnexus.co.ke' &&
-      url.pathname === '/exam.html';
+      ['/exam.html', '/exam', '/exam/'].includes(url.pathname.toLowerCase());
   } catch { return false; }
 }
 
