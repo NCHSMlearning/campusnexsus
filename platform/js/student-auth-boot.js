@@ -199,6 +199,76 @@ async function initializeApp() {
         window.app = window.app || {};
         window.app.user = authenticatedStudentProfile;
 
+        // Resolve and publish the authenticated student's tenant context in the
+        // same way the working Lecturer portal does. Never infer a tenant from
+        // a browser-wide cached value or from another student's previous session.
+        const studentInstitutionId = String(authenticatedStudentProfile.institution_id || '').trim();
+        if (!studentInstitutionId) {
+            showStudentPortalBootError(
+                'Institution not assigned',
+                'Your student account is not linked to an institution. Please contact your institution administrator.'
+            );
+            return;
+        }
+        window.CURRENT_INSTITUTION_ID = studentInstitutionId;
+        window.currentInstitutionId = studentInstitutionId;
+        window.CURRENT_INSTITUTION = null;
+        window.CURRENT_INSTITUTION_CODE = '';
+        window.currentInstitutionCode = '';
+        window.CURRENT_SCHOOL_CODE = '';
+        window.currentSchoolCode = '';
+
+        try {
+            const { data: institution, error: institutionError } = await studentSupabase
+                .from('institutions')
+                .select('id,name,short_code,school_code,logo_url,primary_color,secondary_color,status')
+                .eq('id', studentInstitutionId)
+                .maybeSingle();
+            if (institutionError) throw institutionError;
+            if (!institution) throw new Error('The institution linked to this student account could not be found.');
+            if (String(institution.status || '').toLowerCase() === 'suspended') {
+                showStudentPortalBootError(
+                    'Institution portal unavailable',
+                    'This institution is currently suspended. Please contact your institution administrator.'
+                );
+                return;
+            }
+
+            const schoolCode = String(institution.school_code || institution.short_code || '').trim();
+            const requestedCode = String(
+                new URLSearchParams(window.location.search).get('school_code') ||
+                new URLSearchParams(window.location.search).get('institution_code') || ''
+            ).trim();
+            if (requestedCode && schoolCode && requestedCode.toLowerCase() !== schoolCode.toLowerCase()) {
+                showStudentPortalBootError(
+                    'Institution code mismatch',
+                    'This student account belongs to ' + (institution.name || 'a different institution') +
+                    ' (' + schoolCode + '). Open the portal using your own institution code.'
+                );
+                return;
+            }
+
+            authenticatedStudentProfile.institution = institution;
+            authenticatedStudentProfile.institution_name = institution.name || '';
+            authenticatedStudentProfile.institution_code = schoolCode;
+            authenticatedStudentProfile.school_code = schoolCode;
+            window.CURRENT_INSTITUTION = institution;
+            window.CURRENT_INSTITUTION_CODE = schoolCode;
+            window.currentInstitutionCode = schoolCode;
+            window.CURRENT_SCHOOL_CODE = schoolCode;
+            window.currentSchoolCode = schoolCode;
+            document.documentElement.dataset.institutionId = studentInstitutionId;
+            if (schoolCode) document.documentElement.dataset.institutionCode = schoolCode;
+            console.info('[Student Portal] Authenticated institution resolved:', institution.name, schoolCode);
+        } catch (institutionError) {
+            console.error('[Student Portal] Could not resolve authenticated institution:', institutionError);
+            showStudentPortalBootError(
+                'Institution could not be verified',
+                institutionError?.message || 'The institution linked to your account could not be verified. Please refresh or contact support.'
+            );
+            return;
+        }
+
         // Resolve academic period terminology from this student's own institution
         // and programme. This never uses another tenant's programme settings.
         try {
