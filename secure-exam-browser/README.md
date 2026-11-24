@@ -2,15 +2,24 @@
 
 Windows desktop client for the existing Campus Nexus examination web application.
 
+## Build outputs
+
+The repository includes a Windows GitHub Actions workflow at `.github/workflows/build-cnseb.yml`. Every push that changes this folder (or a manual workflow dispatch) builds:
+
+- Windows NSIS installer
+- Windows portable executable
+
+The workflow uploads both files as the artifact **campus-nexus-secure-exam-browser-windows**. Download it from the successful run's **Actions → Build Campus Nexus Secure Exam Browser → Artifacts** section. Artifacts are retained for 14 days.
+
 ## Modes
 
-- **Standard monitored mode**: `npm start`. Runs a dedicated app window, limits navigation/popups and exposes a minimal device-information bridge. It does not claim to prevent OS-level app switching.
-- **Strict kiosk mode**: `npm start -- --strict`. Requests Electron kiosk/fullscreen mode and blocks common in-app shortcuts/close requests. This is not, by itself, an operating-system lockdown.
+- **Standard monitored mode**: launches a dedicated app window, limits navigation/popups and exposes a minimal device-information bridge. It does not claim to prevent OS-level app switching.
+- **Strict kiosk mode**: requests Electron kiosk/fullscreen mode and blocks common in-app shortcuts/close requests. This is not, by itself, an operating-system lockdown.
 
 ## Requirements
 
 - Windows 10/11 (64-bit recommended)
-- Node.js 20+ and npm
+- Node.js 20+ and npm (for local development/build)
 - Network access to `https://campusnexus.co.ke`
 - Camera/microphone permission for proctored examinations
 
@@ -25,14 +34,16 @@ npm start
 Strict kiosk preview:
 
 ```powershell
-npm start -- --strict
+npm run start:strict
 ```
 
-Build Windows installer:
+Build both Windows outputs locally:
 
 ```powershell
-npm run dist:win
+npm run dist:all
 ```
+
+The generated files are placed in `secure-exam-browser/dist/`.
 
 ## Security boundary
 
@@ -40,22 +51,23 @@ A normal Windows desktop app cannot safely or reliably terminate arbitrary runni
 
 For institution-owned devices, deploy strict mode only alongside a managed Windows kiosk account and Windows Assigned Access / Shell Launcher configuration. Use App Control for Business (WDAC) or AppLocker to allow-list the approved exam client and required Windows components. Pilot policies on dedicated test devices first; never apply them to personal or staff computers. Maintain an invigilator/admin recovery account and documented exit/recovery process.
 
-The current scaffold does **not** install or change Windows policies, kill processes, disable security tools, or modify the registry. It must not be described as tamper-proof.
+The current client does **not** install or change Windows policies, kill processes, disable security tools, or modify the registry. It must not be described as tamper-proof. Strict mode is a kiosk presentation layer until the institution's managed Windows policy is separately provisioned.
 
 ## Integration contract
 
-The client opens the existing `/exam.html` route so the current exam engine, institution detection, Supabase authentication and submission pipeline remain authoritative. The preload bridge exposes only:
+The client opens the existing `/exam.html` route so the current exam engine, institution detection, Supabase authentication and submission pipeline remain authoritative. A small on-screen badge identifies the CN-SEB mode. The preload bridge exposes only:
 
 - `CNSEB.getDeviceInfo()`
 - `CNSEB.requestExit()`
 - `CNSEB.onExitBlocked(callback)`
 
-No Supabase service-role key or privileged secret belongs in this desktop client. Device registration, exam launch authorization and audit events must be validated by trusted server-side code.
+No Supabase service-role key or privileged secret belongs in this desktop client. Device registration, exam launch authorization and audit events must be validated by trusted server-side code. The client-reported mode is informational and must not be treated as proof of device compliance.
 
-## Next implementation steps
+## Before institutional deployment
 
 1. Add a server-issued, short-lived exam launch ticket bound to user, institution, exam, attempt and device registration.
-2. Add server-side client attestation/session checks; do not trust a client-supplied `strictMode` flag.
-3. Add an institution-controlled managed-device policy deployment package and recovery workflow.
+2. Add server-side client/session checks; do not trust a client-supplied `strictMode` flag.
+3. Add an institution-controlled managed-device policy deployment package and tested recovery workflow.
 4. Test camera permissions, written-answer autosave, timer warnings, automatic submission, offline/network loss, crashes and forced restarts.
 5. Code-sign the Windows installer before distributing it.
+6. Pilot with invigilators and institution IT on dedicated test devices before live examinations.
