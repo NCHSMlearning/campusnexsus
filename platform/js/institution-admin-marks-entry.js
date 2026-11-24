@@ -4,7 +4,7 @@
  */
 (() => {
  "use strict";
- const $=id=>document.getElementById(id);
+ const aliases={"iaMECaptureNotice":"iaMECaptureNotice","iaMEProgramSelect":"me_program_select","iaMEBlockSelect":"me_block_select","iaMEUnitSelect":"me_subject_select","iaMEAssessmentType":"me_assessment_type","iaMEYearSelect":"me_year_select"}; const $=id=>document.getElementById(id)||document.getElementById(aliases[id]||"");
  let api=null,units=[],rows=[],loading=false,saving=false,page=1,pageSize=30,academicStructure=null;
  const db=()=>{if(!api?.db||!api?.institutionId||!api?.user?.id)throw new Error("Your institution administrator session is not ready.");return api.db;};
  const tenant=()=>api.institutionId;
