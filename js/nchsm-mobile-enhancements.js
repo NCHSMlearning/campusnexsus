@@ -176,7 +176,7 @@
     install.removeAttribute('data-pwa-install');
     setInstallLabel();
     install.hidden = isStandalone() || wasInstalled() || !isMobileInstallBrowser;
-    install.style.cssText = 'position:fixed!important;z-index:2147483645!important;left:auto!important;right:max(14px,env(safe-area-inset-right))!important;bottom:max(18px,env(safe-area-inset-bottom))!important;max-width:calc(100vw - 28px);padding:11px 16px;border:0;border-radius:999px;background:#073b5c;color:#fff;font:700 13px system-ui,sans-serif;box-shadow:0 6px 22px rgba(7,35,55,.25);cursor:pointer;white-space:nowrap';
+    install.style.cssText = 'position:fixed!important;z-index:2147483645!important;left:max(14px,env(safe-area-inset-left))!important;right:auto!important;bottom:max(18px,env(safe-area-inset-bottom))!important;max-width:calc(100vw - 28px);padding:11px 16px;border:0;border-radius:999px;background:#073b5c;color:#fff;font:700 13px system-ui,sans-serif;box-shadow:0 6px 22px rgba(7,35,55,.25);cursor:pointer;white-space:nowrap';
     if (!install.isConnected) document.body.appendChild(install);
 
     const institutionLabelObserver = new MutationObserver(function () {
