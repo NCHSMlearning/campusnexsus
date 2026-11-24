@@ -117,7 +117,7 @@ async function loadQuestionsForExam() {
         // Answer keys are intentionally unavailable through direct table SELECT.
         // Use the authenticated staff-only RPC to retrieve the full question bank.
         const { data, error } = await adminQuestionsClient().rpc(
-            'get_exam_questions_for_staff',
+            'get_exam_questions_for_staff_with_key',
             { p_exam_id: parseInt(examId, 10) }
         );
 
