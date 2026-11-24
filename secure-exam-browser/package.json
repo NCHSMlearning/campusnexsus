@@ -38,6 +38,14 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true
-    }
+    },
+    "protocols": [
+      {
+        "name": "Campus Nexus Secure Exam Browser",
+        "schemes": [
+          "campusnexus-seb"
+        ]
+      }
+    ]
   }
 }
