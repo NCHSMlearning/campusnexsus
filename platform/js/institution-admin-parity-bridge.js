@@ -80,6 +80,47 @@
   window.uploadTimetableToSupabase = window.clearTimetableBlock = window.downloadTimetableTemplate =
   window.showUploadMethod = window.addSingleEvent = window.createWeeklySchedule = () =>
     notify("Use the institution timetable records panel to manage schedules. Legacy platform-wide timetable actions are disabled.", true);
+
+  window.filterSMRequests = type => {
+    const prefix = type==="admissions"?"smAdmissions":type==="change-program"?"smChange":type==="readmission"?"smReadmission":"smSessionReport";
+    const bodyId = type==="admissions"?"smAdmissionsBody":type==="change-program"?"smChangeProgramBody":type==="readmission"?"smReadmissionBody":"smSessionReportsBody";
+    const q=(document.getElementById(prefix+"Search")?.value||"").toLowerCase();
+    const status=document.getElementById(prefix+"StatusFilter")?.value||"all";
+    document.getElementById(bodyId)?.querySelectorAll("tr").forEach(tr=>{
+      const text=(tr.innerText||"").toLowerCase();
+      const matchStatus=status==="all"||text.includes(status.toLowerCase());
+      tr.hidden=!(text.includes(q)&&matchStatus);
+    });
+  };
+  window.toggleAllSMCheckboxes = type => {
+    const suffix=type==="admissions"?"Admissions":type==="change-program"?"Change":type==="readmission"?"Readmission":"SessionReports";
+    const master=document.getElementById("smSelectAll"+suffix);
+    const bodyId=type==="admissions"?"smAdmissionsBody":type==="change-program"?"smChangeProgramBody":type==="readmission"?"smReadmissionBody":"smSessionReportsBody";
+    document.getElementById(bodyId)?.querySelectorAll('input[type="checkbox"]').forEach(cb=>{cb.checked=!!master?.checked;});
+  };
+  window.toggleSMRequestFields = () => {
+    const type=document.querySelector('input[name="requestType"]:checked')?.value||"change-program";
+    const current=document.getElementById("smCurrentProgramSection"), previous=document.getElementById("smPreviousProgramSection");
+    if(current)current.hidden=type!=="change-program";
+    if(previous)previous.hidden=type!=="readmission";
+  };
+  window.filterExamsTable = () => {
+    const q=(document.getElementById("exam-search")?.value||"").toLowerCase();
+    const program=(document.getElementById("exam_filter_program")?.value||"").toLowerCase();
+    const status=(document.getElementById("exam_filter_status")?.value||"").toLowerCase();
+    document.getElementById("exams-table-body")?.querySelectorAll("tr").forEach(tr=>{
+      const text=(tr.innerText||"").toLowerCase();
+      tr.hidden=!(text.includes(q)&&(!program||text.includes(program))&&(!status||text.includes(status)));
+    });
+  };
+  window.updateTimetableBlocks = () => notify("Choose a programme, then select a block available in the institution timetable.");
+  window.updateBlockTermOptions = (programId,blockId) => {
+    const program=document.getElementById(programId), block=document.getElementById(blockId);
+    if(!program||!block)return;
+    const existing=[...block.options].filter(o=>o.value);
+    block.replaceChildren(new Option("-- Select Block / Term --",""));
+    existing.forEach(o=>block.add(new Option(o.textContent,o.value)));
+  };
   window.refreshStudentDirectory = () => openTenantView("students");
   // These legacy controls are not allowed to run Super Admin-wide handlers in a tenant session.
   window.openStudentPublishModal = () => notify("Student result publication is managed in the institution's Published Marks module.");
