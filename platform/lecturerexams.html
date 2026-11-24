@@ -937,8 +937,9 @@
         };
         const safeText = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
         try {
+            if (!lecturerInstitutionId) throw new Error('Institution context is missing; refusing to load cross-institution analytics. Please sign in again using your institution code.');
             let q = sb.from('exams').select('id, exam_name, status, created_by, target_program, institution_id').order('id', { ascending: false });
-            if (lecturerInstitutionId) q = q.eq('institution_id', lecturerInstitutionId);
+            q = q.eq('institution_id', lecturerInstitutionId);
             if (lecturerProgram) q = q.eq('target_program', lecturerProgram);
             const { data: exams, error: examsError } = await q;
             if (examsError) throw examsError;
