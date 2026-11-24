@@ -1,6 +1,7 @@
 'use strict';
 
-const { app, BrowserWindow, session, ipcMain, shell, screen } = require('electron');
+const { app, BrowserWindow, session, ipcMain, shell, screen, dialog } = require('electron');
+const { autoUpdater } = require('electron-updater');
 const path = require('node:path');
 
 const EXAM_ORIGIN = 'https://campusnexus.co.ke';
@@ -10,6 +11,7 @@ const PROTOCOL = 'campusnexus-seb:';
 let mainWindow;
 let quitting = false;
 let pendingExamUrl = null;
+let updateNoticeShown = false;
 
 function isValidExamUrl(value) {
   try {
@@ -104,7 +106,9 @@ function createWindow() {
       mainWindow.webContents.send('cnseb:exit-blocked');
     }
   });
-  loadExam(pendingExamUrl || DEFAULT_EXAM_URL);
+  const initialTarget = pendingExamUrl || DEFAULT_EXAM_URL;
+  pendingExamUrl = null;
+  loadExam(initialTarget);
 }
 
 if (!app.requestSingleInstanceLock()) app.quit();
@@ -149,6 +153,35 @@ app.whenReady().then(() => {
     else if (mainWindow) mainWindow.webContents.send('cnseb:exit-blocked');
   });
   createWindow();
+
+  // Updates are downloaded in the background and installed only after the
+  // student exits the app; an active examination is never forcibly restarted.
+  if (app.isPackaged) {
+    autoUpdater.autoDownload = true;
+    autoUpdater.autoInstallOnAppQuit = true;
+    autoUpdater.allowPrerelease = false;
+    autoUpdater.on('error', error => console.error('[CN-SEB] Update check failed:', error.message));
+    autoUpdater.on('update-available', info => console.log('[CN-SEB] Update available:', info.version));
+    autoUpdater.on('update-not-available', info => console.log('[CN-SEB] App is up to date:', info.version));
+    autoUpdater.on('update-downloaded', async info => {
+      console.log('[CN-SEB] Update downloaded; it will install after the app is closed.');
+      if (updateNoticeShown || !mainWindow || mainWindow.isDestroyed()) return;
+      updateNoticeShown = true;
+      await dialog.showMessageBox(mainWindow, {
+        type: 'info',
+        title: 'Campus Nexus update ready',
+        message: 'A new Secure Exam Browser update has been downloaded.',
+        detail: 'It will install automatically after you close the application. Your current examination will not be interrupted.',
+        buttons: ['Continue']
+      });
+    });
+    const checkForUpdates = () => autoUpdater.checkForUpdatesAndNotify().catch(error =>
+      console.error('[CN-SEB] Could not check for updates:', error.message)
+    );
+    setTimeout(checkForUpdates, 15000);
+    setInterval(checkForUpdates, 6 * 60 * 60 * 1000);
+  }
+
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
