@@ -35,13 +35,13 @@ a.btn{min-height:50px;padding:13px 16px;border-radius:12px;text-decoration:none;
   <p class="lead">Campus Nexus recommends using the Secure Exam Browser on a Windows computer for a dedicated examination experience. Install it once, then return here and open your examination.</p>
   <div class="notice"><i class="fa-solid fa-circle-info"></i><div><strong>Before you continue</strong><p>Use a Windows 10/11 computer. Keep your internet connection active and allow camera and microphone access if your examination requires proctoring.</p></div></div>
   <div class="actions">
-   <a class="btn primary" id="download-link" href="https://github.com/NCHSMlearning/campusnexsus/actions/workflows/build-cnseb.yml"><i class="fa-brands fa-windows"></i> Get Windows application</a>
+   <a class="btn primary" id="download-link" href="https://github.com/NCHSMlearning/campusnexsus/releases/download/cnseb-latest/Campus-Nexus-Secure-Exam-Browser-Setup.exe"><i class="fa-brands fa-windows"></i> Download Windows installer</a>
    <a class="btn secondary" id="open-app" href="#"><i class="fa-solid fa-shield-halved"></i> Open in Secure Exam Browser</a>
   </div>
   <div class="mobile-note" id="mobile-note"><i class="fa-solid fa-mobile-screen-button"></i> The desktop application is for Windows. On a phone or tablet, use the browser-based exam option if your institution permits it.</div>
   <div class="steps">
-   <div class="step"><b><span>1</span> Download</b><p>Open the latest successful Windows build under GitHub Actions and download the build artifact ZIP.</p></div>
-   <div class="step"><b><span>2</span> Install</b><p>Extract the ZIP and run the Campus Nexus Secure Exam Browser installer.</p></div>
+   <div class="step"><b><span>1</span> Download</b><p>Download the Windows installer directly here. No GitHub account or artifact ZIP is required.</p></div>
+   <div class="step"><b><span>2</span> Install</b><p>Run the downloaded installer and follow the setup instructions.</p></div>
    <div class="step"><b><span>3</span> Return &amp; open</b><p>Come back to this page and select “Open in Secure Exam Browser”.</p></div>
   </div>
   <p class="small" id="fallback-copy">If the secure application is not installed yet, download and install it first. Your exam link remains available in this session.</p>
@@ -87,7 +87,7 @@ a.btn{min-height:50px;padding:13px 16px;border-radius:12px;text-decoration:none;
    document.getElementById('open-app').addEventListener('click',e=>{e.preventDefault();alert('Campus Nexus Secure Exam Browser currently supports Windows computers only.');});
  }
  document.getElementById('download-link').addEventListener('click',()=>{
-   document.getElementById('fallback-copy').textContent='After downloading the build artifact from GitHub Actions, extract the ZIP, install the application, then return here to open your examination.';
+   document.getElementById('fallback-copy').textContent='After the installer finishes, return here and open your examination.';
  });
 })();
 </script>
