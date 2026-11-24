@@ -202,7 +202,8 @@
  function wait(){api=window.CampusInstitutionAdmin;if(!api?.db||!api?.institutionId||!api?.user){setTimeout(wait,150);return;}bind();loadPrograms();}
  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",wait,{once:true});else wait();
  window.InstitutionAdminMarksEntry={load:loadStudents,refresh:async()=>{if($("iaMEProgramSelect")?.value&&$("iaMEBlockSelect")?.value&&$("iaMEUnitSelect")?.value)return loadStudents();return loadPrograms();},loadBlocks,loadUnits,save:saveMarks,export:exportCaptureCsv};
- window.loadMEBlocks=loadBlocks;window.loadMEUnits=loadUnits;window.loadMarksEntry=loadStudents;window.saveMarksEntry=saveMarks;window.exportMarksEntry=exportCaptureCsv;\n const unavailable=name=>()=>say(name+" is not yet connected to the institution-scoped workflow.",true);
+ window.loadMEBlocks=loadBlocks;window.loadMEUnits=loadUnits;window.loadMarksEntry=loadStudents;window.saveMarksEntry=saveMarks;window.exportMarksEntry=exportCaptureCsv;
+ const unavailable=name=>()=>say(name+" is not yet connected to the institution-scoped workflow.",true);
  window.publishCurrentUnitMarks=()=>say("Marks cannot be published from entry. Submit them for approval, then publish approved marks in Marks Approval.");
  window.openStudentPublishModal=unavailable("Student selection");window.showLecturerAssignmentModal=unavailable("Lecturer unit assignment");window.refreshAssignmentHistory=unavailable("Assignment history");window.clearAllAssignments=unavailable("Assignment clearing");window.resetUnitColumns=unavailable("Column reset");window.updateSelectedProgramDisplay=()=>{const p=$("iaMEProgramSelect")?.value||"";const n=$("selectedProgramName");if(n)n.textContent=p||"None selected";const t=$("selectedProgramType");if(t)t.textContent=p?(isTVET(p)?"TVET programme":"Nursing programme"):"None selected";};
 })();
