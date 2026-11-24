@@ -59,7 +59,7 @@ a.btn{min-height:50px;padding:13px 16px;border-radius:12px;text-decoration:none;
  const resolveExamUrl=value=>{
   try{
    const u=new URL(String(value||'').trim(),location.origin);
-   const host=u.hostname.toLowerCase().replace(/^www\\./,'');
+   const host=u.hostname.toLowerCase().replace(/^www\./,'');
    const allowedPaths=['/exam.html','/exam','/exam/'];
    if(u.protocol!=='https:'||host!=='campusnexus.co.ke'||!allowedPaths.includes(u.pathname.toLowerCase()))return null;
    // Strip fragments and retain exam_id and other server-issued query parameters.
