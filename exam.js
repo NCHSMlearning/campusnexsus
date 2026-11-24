@@ -1169,8 +1169,8 @@ function applyExamInstitutionBranding(institution) {
     const labels = {
         institutionBrandName: name,
         institutionBrandCode: code ? 'SCHOOL CODE ' + code : 'Secure Institutional Examination',
-        examInstitutionName: name + ' Examination',
-        examInstitutionCode: code ? 'School code ' + code + ' • Secure assessment' : 'Secure assessment environment',
+        examInstitutionName: 'EXAMINATION IN PROGRESS',
+        examInstitutionCode: 'Secure assessment environment',
         institutionAssessmentLabel: name.toUpperCase() + ' DIGITAL ASSESSMENT',
         institutionCampusChip: name,
         institutionCampusName: name,
