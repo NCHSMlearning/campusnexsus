@@ -1903,6 +1903,10 @@ class Database {
     }
 }
 
+// Export the constructor explicitly for portal bootstrappers. A top-level class
+// declaration is a global lexical binding, not always a window property.
+window.Database = Database;
+
 // ========== GLOBAL INITIALIZATION ==========
 
 window.db = new Database();
