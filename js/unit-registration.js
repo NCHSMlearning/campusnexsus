@@ -719,8 +719,8 @@ async loadAvailableUnits(supabase) {
         async loadBlocks(supabase) {
             try {
                 const profile = this.userProfile || window.currentUserProfile || window.db?.currentUserProfile || {};
-                const institutionId = profile.institution_id;
-                const programCode = String(profile.program || this.programCode || '').trim();
+                const institutionId = this.getInstitutionId();
+                const programCode = String(profile.program || this.programCode || '').trim().toUpperCase();
                 if (!institutionId || !programCode) throw new Error('Institution and programme are required to load your academic periods.');
                 let structure = null;
                 if (window.CampusAcademicStructure && institutionId && programCode) {
