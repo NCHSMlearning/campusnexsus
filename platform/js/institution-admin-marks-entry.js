@@ -5,7 +5,7 @@
 (() => {
  "use strict";
  const aliases={"iaMECaptureNotice":"iaMECaptureNotice","iaMEProgramSelect":"me_program_select","iaMEBlockSelect":"me_block_select","iaMEUnitSelect":"me_subject_select","iaMEAssessmentType":"me_assessment_type","iaMEYearSelect":"me_year_select"}; const $=id=>document.getElementById(id)||document.getElementById(aliases[id]||"");
- let api=null,units=[],rows=[],loading=false,saving=false,page=1,pageSize=30,academicStructure=null,lastNotice="",lastNoticeBad=false;
+ let api=null,units=[],rows=[],programsLoading=false,marksLoading=false,marksLoadRequest=0,saving=false,page=1,pageSize=30,academicStructure=null,lastNotice="",lastNoticeBad=false;
  const db=()=>{if(!api?.db||!api?.institutionId||!api?.user?.id)throw new Error("Your institution administrator session is not ready.");return api.db;};
  const tenant=()=>api.institutionId;
  const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -26,7 +26,7 @@
  function option(el,value,label){const o=document.createElement("option");o.value=String(value??"");o.textContent=String(label??value??"");el.append(o);}
  function fill(id,values,placeholder){const el=$(id);if(!el)return;const old=el.value;el.replaceChildren();option(el,"",placeholder);[...new Set(values.filter(v=>v!==null&&v!==undefined&&String(v).trim()!=="").map(String))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true})).forEach(v=>option(el,v,v));if([...el.options].some(o=>o.value===old))el.value=old;}
  async function loadPrograms(){
-  if(loading)return;loading=true;
+  if(programsLoading)return;programsLoading=true;
   try{
    const [catalog,legacy]=await Promise.all([
     db().from("programs").select("program_code,program_name,status").eq("institution_id",tenant()).order("program_code"),
@@ -39,7 +39,7 @@
    fill("iaMEProgramSelect",codes,"Select programme");
    say("Choose a programme, academic period, unit and academic year.");
   }catch(e){say("Programmes could not be loaded: "+e.message,true);}
-  finally{loading=false;}
+  finally{programsLoading=false;}
  }
  async function loadBlocks(){
   const program=$("iaMEProgramSelect")?.value||"";
@@ -64,38 +64,47 @@
   try{
    const {data:programRow,error:programError}=await db().from("programs").select("id").eq("program_code",program).eq("institution_id",tenant()).maybeSingle();if(programError)throw programError;
    let mappedIds=[];
-   if(programRow?.id){const mapped=await db().from("program_courses").select("unit_catalog_id,block_name").eq("program_id",programRow.id).not("unit_catalog_id","is",null);if(mapped.error)throw mapped.error;mappedIds=(mapped.data||[]).filter(x=>!x.block_name||x.block_name===block).map(x=>x.unit_catalog_id).filter(Boolean);if((mapped.data||[]).length&&!mappedIds.length){units=[];const el=$("iaMEUnitSelect");if(el){el.replaceChildren();option(el,"","No units mapped to this block");}return;}}
+   if(programRow?.id){const mapped=await db().from("program_courses").select("unit_catalog_id,block_name").eq("program_id",programRow.id).not("unit_catalog_id","is",null);if(mapped.error)throw mapped.error;mappedIds=(mapped.data||[]).filter(x=>!x.block_name||x.block_name===block).map(x=>x.unit_catalog_id).filter(Boolean);// A mapping can use a legacy block label. Do not hide valid catalogue units merely because its block_name differs from the selected label.
+   if((mapped.data||[]).length&&!mappedIds.length)console.warn("[Institution marks capture] No exact program-course block mapping; using institution unit catalogue.");}
    let query=db().from("units_catalog").select("id,unit_code,unit_name,assessment_type,program,block").eq("program",program).eq("block",block).eq("status","active").eq("institution_id",tenant()).order("unit_name",{ascending:true}).limit(1000);
    if(mappedIds.length)query=query.in("id",mappedIds);
    const {data,error}=await query;if(error)throw error;units=data||[];
-   const el=$("iaMEUnitSelect");el.replaceChildren();option(el,"","Select unit");units.forEach(u=>option(el,u.unit_name,(u.unit_code?u.unit_code+" · ":"")+u.unit_name));if(units.length===1){el.value=units[0].unit_name;syncAssessmentType();await loadStudents();}else syncAssessmentType();
+   const el=$("iaMEUnitSelect");el.replaceChildren();option(el,"","Select unit");units.forEach(u=>{const o=document.createElement("option");o.value=u.unit_name;o.textContent=(u.unit_code?u.unit_code+" · ":"")+u.unit_name;o.dataset.code=u.unit_code||"";o.dataset.assessment=u.assessment_type||"full";el.append(o);});if(units.length===1){el.value=units[0].unit_name;syncAssessmentType();await loadStudents();}else syncAssessmentType();
   }catch(e){say("Units could not be loaded: "+e.message,true);}
  }
  function syncAssessmentType(){const unit=units.find(u=>u.unit_name===($("iaMEUnitSelect")?.value||""));const el=$("iaMEAssessmentType");if(!el)return;if(unit?.assessment_type&&[...el.options].some(o=>o.value===unit.assessment_type)){el.value=unit.assessment_type;el.disabled=true;}else el.disabled=false;}
  function profileIndex(profiles){const m=new Map();profiles.forEach(p=>[p.user_id,p.student_id,p.admission_number].filter(Boolean).forEach(k=>m.set(String(k),p)));return m;}
  async function loadStudents(){
-  if(loading)return;
+  const requestId=++marksLoadRequest;
   const program=$("iaMEProgramSelect")?.value||"",block=$("iaMEBlockSelect")?.value||"",unit=$("iaMEUnitSelect")?.value||"",year=$("iaMEYearSelect")?.value||"";
-  if(!program||!block||!unit||!year){say("Select programme, academic period, unit and academic year first.",true);return;}
-  loading=true;rows=[];page=1;renderRows();say("Loading approved registrations and existing marks…");
+  if(!program||!block||!unit||!year){rows=[];renderRows();say("Select programme, academic period, unit and academic year first.",true);return;}
+  marksLoading=true;rows=[];page=1;
+  const dynamic=$("marksEntryDynamicContent"),placeholder=$("marksEntryPlaceholder"),host=$("me_marks_container");
+  if(dynamic)dynamic.style.display="block";if(placeholder)placeholder.style.display="none";
+  if(host)host.innerHTML='<div style="padding:42px 20px;text-align:center;color:#64748b"><i class="fas fa-spinner fa-spin" style="font-size:28px"></i><h3>Loading marks entry</h3><p>Retrieving registered learners and saved marks for '+esc(unit)+'…</p></div>';
+  say("Loading approved registrations and existing marks…");
   try{
    const registrationResult=await db().from("student_unit_registrations").select("*").eq("institution_id",tenant()).eq("program",program).eq("block",block).eq("academic_year",Number(year)).eq("status","approved").limit(5000);
    // If the academic-management entitlement hides registrations, retain a safe
    // marks-only fallback so existing institution marks can still be reviewed.
    if(registrationResult.error)console.warn("[Institution marks capture] Registration lookup unavailable; using saved institution marks:",registrationResult.error.message);
    const registrations=registrationResult.error?[]:(registrationResult.data||[]);
-   const matching=registrations.filter(r=>String(r.unit_code||"")===String(units.find(u=>u.unit_name===unit)?.unit_code||"")||String(r.unit_name||"")===unit);
+   const selectedUnit=units.find(u=>u.unit_name===unit)||{};
+   const targetCode=String(selectedUnit.unit_code||"").trim();
+   const matching=registrations.filter(r=>{const registrationCode=String(r.unit_code||"").trim(),registrationName=String(r.unit_name||"").trim();return targetCode?registrationCode===targetCode||(!registrationCode&&registrationName===unit):registrationName===unit;});
    const studentIds=[...new Set(matching.map(r=>r.student_id).filter(Boolean).map(String))];
    let profiles=[];
    for(let i=0;i<studentIds.length;i+=150){
     const batch=studentIds.slice(i,i+150);
-    const p=await db().from("consolidated_user_profiles_table").select("user_id,student_id,admission_number,full_name,program,institution_id").eq("institution_id",tenant()).eq("role","student").in("user_id",batch).limit(1000);
+    const p=await db().from("consolidated_user_profiles_table").select("user_id,student_id,admission_number,full_name,program,institution_id").eq("institution_id",tenant()).in("user_id",batch).limit(1000);
     if(p.error)console.warn("[Institution marks capture] Student profile lookup unavailable:",p.error.message);else profiles.push(...(p.data||[]));
    }
+   if(requestId!==marksLoadRequest)return;
    const byKey=profileIndex(profiles);
    const missingIdentityCount=matching.filter(reg=>{const p=byKey.get(String(reg.student_id))||{};return !String(reg.admission_number||p.admission_number||p.student_id||"").trim();}).length;
    const {data:marks,error:markError}=await db().from("student_marks").select("id,student_id,admission_number,student_name,program,block,subject_name,academic_year,assessment_type,cat1_score,cat2_score,exam_score,final_score,grade,final_grade,approval_status,published,retake_status,retake_score,created_at").eq("institution_id",tenant()).eq("program",program).eq("block",block).eq("subject_name",unit).eq("academic_year",Number(year)).order("created_at",{ascending:true}).limit(5000);
    if(markError)throw markError;
+   if(requestId!==marksLoadRequest)return;
    const byMarkKey=new Map();(marks||[]).forEach(m=>[m.student_id,m.admission_number].filter(Boolean).forEach(k=>byMarkKey.set(String(k),m)));
    const built=matching.map(reg=>{
     const p=byKey.get(String(reg.student_id))||{};
@@ -110,10 +119,11 @@
     // has since been archived or its approval state has changed.
     rows=(marks||[]).map(m=>({...m,student_name:m.student_name||"Student"}));
    }
+   if(requestId!==marksLoadRequest)return;
    renderRows();
    say(rows.length+" students loaded from this institution's approved registrations. "+rows.filter(r=>r.published).length+" already published (locked)."+(missingIdentityCount?" "+missingIdentityCount+" registration(s) skipped because admission/profile details are missing.":""));
-  }catch(e){console.error("[Institution marks capture]",e);say("Marks could not be loaded: "+e.message,true);const host=$("me_marks_container");if(host)host.innerHTML='<div style="padding:32px;text-align:center;color:#991b1b"><i class="fas fa-triangle-exclamation" style="font-size:30px"></i><h3>Unable to load marks</h3><p>'+esc(e.message)+'</p><button type="button" onclick="loadMarksEntry()" style="padding:9px 16px;background:#4C1D95;color:#fff;border:0;border-radius:7px">Retry</button></div>';const dynamic=$("marksEntryDynamicContent");if(dynamic)dynamic.style.display="block";const placeholder=$("marksEntryPlaceholder");if(placeholder)placeholder.style.display="none";}
-  finally{loading=false;}
+  }catch(e){if(requestId!==marksLoadRequest)return;console.error("[Institution marks capture]",e);say("Marks could not be loaded: "+e.message,true);const host=$("me_marks_container");if(host)host.innerHTML='<div style="padding:32px;text-align:center;color:#991b1b"><i class="fas fa-triangle-exclamation" style="font-size:30px"></i><h3>Unable to load marks</h3><p>'+esc(e.message)+'</p><button type="button" onclick="loadMarksEntry()" style="padding:9px 16px;background:#4C1D95;color:#fff;border:0;border-radius:7px">Retry</button></div>';const dynamic=$("marksEntryDynamicContent");if(dynamic)dynamic.style.display="block";const placeholder=$("marksEntryPlaceholder");if(placeholder)placeholder.style.display="none";}
+  finally{if(requestId===marksLoadRequest)marksLoading=false;}
  }
  function renderRows(){
   const host=$("me_marks_container"),save=$( "iaMESaveCapture");if(!host)return;
