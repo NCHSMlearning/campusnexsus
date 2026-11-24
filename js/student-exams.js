@@ -5,6 +5,10 @@ const $=id=>document.getElementById(id);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const val=(...xs)=>xs.find(x=>x!==undefined&&x!==null&&String(x).trim()!=='');
 const norm=v=>String(v??'').trim().toLowerCase();
+// Bound every dashboard boot/read so a stalled network or RPC cannot leave the
+// student portal spinning forever. The underlying request may finish later;
+// the UI remains usable and the student can retry.
+function withTimeout(task,ms,message){let timer;const work=Promise.resolve().then(()=>typeof task==='function'?task():task);return Promise.race([work,new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error(message||'This request is taking too long. Please retry.')),ms);})]).finally(()=>clearTimeout(timer));}
 // Reuse the persistent Supabase client, never the CDN namespace.
 const client=()=>[window.examSupabase,window.sb,window.supabaseClient,window.db?.supabase].find(c=>c&&typeof c.from==='function'&&typeof c.auth?.getSession==='function')||null;
 function activateModule(id,updateHash=true){
@@ -314,16 +318,16 @@ async function loadExams(){
  $('exam-panel').innerHTML='<div class="loading-state"><span class="spinner"></span><p>Loading examinations assigned to you…</p></div>';
  try {
   const request=state.client.from('exams').select('*').eq('institution_id',state.profile.institution_id).order('exam_date',{ascending:true,nullsFirst:false});
-  const {data,error}=await Promise.race([request,{then:(_,reject)=>setTimeout(()=>reject(new Error('Examination records are taking too long to load. Check your connection and tap Refresh.')),12000)}]);
+  const {data,error}=await withTimeout(request,15000,'Examination records are taking too long to load. Check your connection and tap Refresh.');
   if(error)throw error;
   state.exams=(data||[]).filter(e=>eligible(e,state.profile));
   const examIds=state.exams.map(e=>e.id);state.examResults={};
   if(examIds.length){
-   const [attemptsResult,summaryResult,releasedResult]=await Promise.all([
+   const [attemptsResult,summaryResult,releasedResult]=await withTimeout(Promise.all([
     state.client.from('exam_attempts').select('id,exam_id,attempt_number,status,started_at,submitted_at,updated_at').eq('student_id',state.user.id).in('exam_id',examIds).order('attempt_number',{ascending:false}),
     state.client.from('exam_grades').select('id,exam_id,attempt_id,marks,total_score,score,total_marks,percentage,result_status,released,published,allow_retake,retake_unlocked,released_at,published_at,updated_at,question_id').eq('student_id',state.user.id).in('exam_id',examIds).eq('question_id','00000000-0000-0000-0000-000000000000').order('updated_at',{ascending:false}),
     state.client.from('released_exam_results').select('result_id,exam_id,released_at').eq('student_id',String(state.user.id)).in('exam_id',examIds)
-   ]);
+   ]),15000,'Your examination status is taking too long to load. Tap Refresh to try again.');
    if(attemptsResult.error)console.warn('Student exam attempt status lookup:',attemptsResult.error.message);
    if(summaryResult.error)console.warn('Student exam release status lookup:',summaryResult.error.message);
    if(releasedResult.error)console.warn('Student released-result lookup:',releasedResult.error.message);
@@ -440,9 +444,9 @@ async function init(){
  }
  try {
   if(window.CampusAcademicStructure) {
-   state.academicStructure=await window.CampusAcademicStructure.resolve(
+   state.academicStructure=await withTimeout(()=>window.CampusAcademicStructure.resolve(
     state.client,p.institution_id,val(p.program,p.program_name,p.program_type)
-   );
+   ),8000,'Academic structure lookup timed out.');
    const periodLabel=document.querySelector('#profile .section-head h2');
    document.querySelectorAll('[data-academic-period-label]').forEach(el=>{
     el.textContent=el.dataset.academicPeriodLabel==='plural'?state.academicStructure.plural:state.academicStructure.singular;
@@ -456,7 +460,7 @@ async function init(){
  } catch(structureError) { console.warn('Programme academic structure could not be loaded; using legacy academic labels.',structureError); }
  // Institution branding is optional: never let a branding lookup prevent the exam dashboard from opening.
  try {
-  const institutionResult=await state.client.rpc('get_my_exam_institution');
+  const institutionResult=await withTimeout(()=>state.client.rpc('get_my_exam_institution'),8000,'Institution branding lookup timed out.');
   if(institutionResult.error)throw institutionResult.error;
   const institution=Array.isArray(institutionResult.data)?institutionResult.data[0]:institutionResult.data;
   if(!institution)throw new Error('Your institution profile could not be loaded. Please contact your institution administrator.');
@@ -515,11 +519,11 @@ async function init(){
  setText('student-meta',[val(p.program,p.program_name,'Programme not assigned'),studentBlock(p)!=='General'?studentBlock(p):'',val(p.intake_year,p.intake,'')].filter(Boolean).join(' • '));
  renderStudentProfile();
  renderDailyWelcome();
- await loadDashboardStats().catch(e=>{console.warn('Dashboard statistics RPC unavailable; using student-visible records.',e);});
- await loadAcademicSummary().catch(e=>{console.warn('Published academic summary unavailable:',e);const n=$('gpa-trend');if(n)n.innerHTML='<p class="chart-empty">Academic summary is temporarily unavailable.</p>';});
- await loadExams().catch(e=>{console.error('Student examination list failed:',e);$('exam-panel').innerHTML='<div class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><p>Examination list could not be loaded. Your dashboard statistics are shown where available.</p></div>';});
+ await withTimeout(()=>loadDashboardStats(),10000,'Dashboard statistics timed out.').catch(e=>{console.warn('Dashboard statistics RPC unavailable; using student-visible records.',e);});
+ await withTimeout(()=>loadAcademicSummary(),10000,'Academic summary timed out.').catch(e=>{console.warn('Published academic summary unavailable:',e);const n=$('gpa-trend');if(n)n.innerHTML='<p class="chart-empty">Academic summary is temporarily unavailable.</p>';});
+ await withTimeout(()=>loadExams(),30000,'Examination list timed out.').catch(e=>{console.error('Student examination list failed:',e);$('exam-panel').innerHTML='<div class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><p>Examination list could not be loaded. Your dashboard statistics are shown where available.</p></div>';});
  subscribeStudentResultUpdates();
- await loadStudentTimetable().catch(e=>{console.error('Student timetable load failed:',e);$('timetable-panel').innerHTML='<div class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><p>Your timetable could not be loaded. Please refresh and try again.</p></div>';});renderDashboard();
+ await withTimeout(()=>loadStudentTimetable(),12000,'Timetable load timed out.').catch(e=>{console.error('Student timetable load failed:',e);$('timetable-panel').innerHTML='<div class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><p>Your timetable could not be loaded. Please refresh and try again.</p></div>';});renderDashboard();
  loadAnnouncements().catch(e=>{$('announcements-panel').innerHTML='<div class="empty-state"><p>Announcements are temporarily unavailable.</p></div>';console.warn(e)});
  loadHistory().catch(e=>{$('history-panel').innerHTML='<div class="empty-state"><p>Examination history is temporarily unavailable.</p></div>';console.warn(e)});
  loadSupportTickets().catch(e=>{const n=$('support-ticket-list');if(n)n.innerHTML='<div class="empty-state"><p>Your support tickets are temporarily unavailable.</p></div>';console.warn(e)});
@@ -542,5 +546,7 @@ $('refresh-history').addEventListener('click',()=>loadHistory().catch(e=>notify(
 $('exam-support-form').addEventListener('submit',submitSupport);
 $('search-input').addEventListener('input',render);$('status-filter').addEventListener('change',render);
 $('logout-btn').addEventListener('click',async()=>{const btn=$('logout-btn');if(btn)btn.disabled=true;try{if(state.client){const {error}=await state.client.auth.signOut({scope:'local'});if(error)console.warn('Exam portal sign-out warning:',error.message)}}finally{try{localStorage.removeItem('currentUserId');localStorage.removeItem('studentEmail')}catch(_){}location.replace('/examlogin')}});
-document.addEventListener('DOMContentLoaded',()=>init().catch(e=>{$('exam-panel').innerHTML='<div class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><p>'+esc(e.message||'Unable to load your examinations.')+'</p><button class="secondary-btn" onclick="location.reload()">Try again</button></div>'}));
+let studentExamBootPromise=null;
+function bootStudentExamDashboard(){if(studentExamBootPromise)return studentExamBootPromise;const panel=$('exam-panel');if(panel)panel.innerHTML='<div class="loading-state"><span class="spinner"></span><p>Connecting to your institution…</p></div>';studentExamBootPromise=withTimeout(()=>init(),60000,'The student examination dashboard could not finish loading. Check your connection and tap Try again.').catch(e=>{console.error('[Student Examinations] Dashboard boot failed:',e);if(panel)panel.innerHTML='<div class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><p>'+esc(e.message||'Unable to load your examinations.')+'</p><button class="secondary-btn" id="student-exam-retry" type="button">Try again</button></div>';const retry=$('student-exam-retry');if(retry)retry.addEventListener('click',()=>{studentExamBootPromise=null;bootStudentExamDashboard();});});return studentExamBootPromise;}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bootStudentExamDashboard,{once:true});else bootStudentExamDashboard();
 })();
