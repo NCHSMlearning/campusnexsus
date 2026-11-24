@@ -92,6 +92,7 @@ function applyIdentity(){
   ".ia-nav-item.active{border-color:"+gold+"55!important;box-shadow:inset 3px 0 "+gold+"!important}",
   ".ia-nav-item i,.ia-support i{color:"+gold+"!important}",
   ".ia-logo,.ia-brand-mark,.ia-profile-logo,.ia-avatar{background:"+primary+"!important;color:#fff!important}",
+  ".ia-brand-mark img,.ia-logo img,.ia-profile-logo img,.ia-avatar img,.ia-account-logo img{display:block;width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain;border-radius:inherit}",
   ".ia-primary-btn{background:"+secondary+"!important}",
   ".ia-welcome{background:linear-gradient(120deg,"+primary+" 0%,"+secondary+" 100%)!important}",
   ".ia-eyebrow{color:"+secondary+"!important}",
@@ -101,7 +102,7 @@ function applyIdentity(){
   ".ia-boot .ia-brand-mark{background:"+gold+"!important;color:"+primary+"!important}",
   ".ia-tenant small,.ia-brand small{color:#fff!important}"
  ].join("\n");
- const setImage=(el,alt)=>{if(!el)return;if(logo){const img=document.createElement("img");img.src=logo;img.alt=alt;img.loading="eager";img.referrerPolicy="no-referrer";img.onerror=()=>{el.textContent=initials(name);};el.replaceChildren(img);}else el.textContent=initials(name);};
+ const setImage=(el,alt)=>{if(!el)return;if(logo){const img=document.createElement("img");img.src=logo;img.alt=alt;img.loading="eager";img.referrerPolicy="no-referrer";img.decoding="async";img.style.cssText="display:block;width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain;border-radius:inherit";img.onerror=()=>{el.textContent=initials(name);};el.replaceChildren(img);}else el.textContent=initials(name);};
  ["iaLogo","iaProfileLogo","iaSettingsLogo","iaSettingsBrandLogo","iaBootLogo"].forEach(id=>setImage($(id),name+" logo"));
  const topLogo=$("iaTopInstitutionLogo");setImage(topLogo,name+" logo");
  const bootTitle=$("iaBootTitle");if(bootTitle)bootTitle.textContent=name;
