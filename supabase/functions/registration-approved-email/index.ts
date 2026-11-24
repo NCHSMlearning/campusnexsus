@@ -35,12 +35,16 @@ async function send(to: string, subject: string, htmlContent: string, textConten
   return data?.messageId || null;
 }
 
+let failureStage = "request";
+
 Deno.serve(async (req: Request) => {
   const origin = req.headers.get("origin") || "https://campusnexus.co.ke";
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors(origin) });
   if (req.method !== "POST") return reply({ success:false, error:"Method not allowed" },405,origin);
   try {
+    failureStage = "configuration";
     if (!SUPABASE_URL || !SERVICE || !BREVO || !validEmail(SENDER)) throw new Error("Approval email service is not configured.");
+    failureStage = "authentication";
     const authHeader = req.headers.get("Authorization") || "";
     if (!authHeader.startsWith("Bearer ")) return reply({success:false,error:"Authentication required."},401,origin);
     const admin = createClient(SUPABASE_URL,SERVICE,{auth:{persistSession:false,autoRefreshToken:false}});
@@ -55,32 +59,36 @@ Deno.serve(async (req: Request) => {
     const userId=String(body?.user_id||"").trim();
     if(!uuid.test(userId)) return reply({success:false,error:"A valid approved account is required."},400,origin);
 
+    failureStage = "approved_profile_lookup";
     const {data:profile,error:profileError}=await admin.from("consolidated_user_profiles_table")
       .select("user_id,email,full_name,role,status,login_enabled,student_id,admission_number,staff_id,program,department,intake_year,intake_month,current_block,institution_id")
       .eq("user_id",userId).maybeSingle();
     if(profileError || !profile) return reply({success:false,error:"Approved account could not be found."},404,origin);
     if(!["student","lecturer"].includes(String(profile.role||"").toLowerCase()) ||
-       String(profile.status||"").toLowerCase()!=="approved" || profile.login_enabled!==true || !profile.institution_id) {
+       String(profile.status||"").toLowerCase()!=="approved" || String(profile.login_enabled).toLowerCase()!=="true" || !profile.institution_id) {
       return reply({success:false,error:"The account is not fully approved or login is not enabled."},409,origin);
     }
 
     // The approval RPC transaction creates/activates institution_users before this
     // function is invoked. The profile's approved + login_enabled state is the
     // authoritative recipient gate; do not block delivery on a stale membership read.
+    failureStage = "administrator_authorization";
     if(superadmin!==true) {
       const {data:callerMembership}=await admin.from("institution_users").select("id")
         .eq("user_id",callerId).eq("institution_id",profile.institution_id).eq("role","institution_admin").eq("status","active").maybeSingle();
       if(!callerMembership) return reply({success:false,error:"You are not an active administrator for this institution."},403,origin);
     }
 
+    failureStage = "recipient_lookup";
     const {data:authData,error:authError}=await admin.auth.admin.getUserById(userId);
     const authUser=authData?.user;
     const recipientEmail = validEmail(authUser?.email) ? authUser.email : profile.email;
-    if(authError || !authUser || !validEmail(recipientEmail)) return reply({success:false,error:"The registered email could not be verified in the account profile or authentication record.",stage:"recipient_email"},409,origin);
+    if(!validEmail(recipientEmail)) return reply({success:false,error:"The approved account does not have a valid email address.",stage:"recipient_email"},409,origin);
     const metadata=authUser.app_metadata||{};
     if(metadata.registration_approval_email_sent_at) {
       return reply({success:true,alreadySent:true,recipient:recipientEmail},200,origin);
     }
+    failureStage = "institution_lookup";
     const {data:inst,error:instError}=await admin.from("institutions")
       .select("name,logo_url,primary_color,portal_domain,custom_login_url,website_url,school_code")
       .eq("id",profile.institution_id).maybeSingle();
@@ -134,8 +142,10 @@ Deno.serve(async (req: Request) => {
         </div>
       </div>`;
     const textContent=`Hello ${name}, your ${role} account at ${institution} has been approved. Your login access is enabled. Programme/Department: ${program}. Account number: ${identifier}. Access your portal: ${portalUrl}`;
+    failureStage = "brevo_delivery";
     const messageId=await send(recipientEmail,subject,html,textContent);
-    const {error:markError}=await admin.auth.admin.updateUserById(userId,{app_metadata:{...metadata,registration_approval_email_sent_at:new Date().toISOString()}});
+    failureStage = "delivery_record";
+    const {error:markError}=authUser ? await admin.auth.admin.updateUserById(userId,{app_metadata:{...metadata,registration_approval_email_sent_at:new Date().toISOString()}}) : {error:new Error("Auth user record unavailable after successful email delivery.")};
     const {error:logError}=await admin.from("notification_delivery_logs").upsert({
       institution_id:profile.institution_id,recipient_user_id:userId,recipient_email:recipientEmail,
       notification_type:"registration_approved",entity_type:"registration",entity_id:userId,
@@ -147,7 +157,7 @@ Deno.serve(async (req: Request) => {
     console.log("Approval email accepted by Brevo",{userId,messageId});
     return reply({success:true,recipient:recipientEmail,messageId},200,origin);
   } catch(error) {
-    console.error("Approval email failed:",error instanceof Error?error.message:"Unknown error");
-    return reply({success:false,error:error instanceof Error?error.message:"Unable to send approval email."},500,origin);
+    console.error("Approval email failed:",{stage:failureStage,message:error instanceof Error?error.message:"Unknown error"});
+    return reply({success:false,error:error instanceof Error?error.message:"Unable to send approval email.",stage:failureStage},500,origin);
   }
 });
