@@ -488,8 +488,9 @@ button{cursor:pointer}
   box-shadow:0 3px 16px rgba(6,43,72,.06)
 }
 .exam-brand{display:flex;align-items:center;gap:9px;min-width:0}
-.exam-brand .brand-mark{width:37px;height:37px;border-radius:10px}
-.exam-brand strong{font-size:13px;display:block;color:#092e4e}
+.exam-brand-context{flex:1}
+.exam-context-mark{width:37px;height:37px;border-radius:10px;display:grid;place-items:center;flex:none;background:#eaf5f8;color:#087d91;font-size:16px}
+.exam-brand strong{font-size:12px;letter-spacing:.35px;display:block;color:#092e4e}
 .exam-brand small{display:block;color:var(--muted);font-size:9px;margin-top:2px}
 .exam-top-center{display:flex;align-items:center;gap:9px;min-width:0}
 .exam-title-wrap{min-width:0}
@@ -2170,9 +2171,12 @@ body{
 <section id="examInterface" aria-label="Online examination">
   <div class="exam-shell">
     <header class="exam-topbar">
-      <div class="exam-brand">
-        <div class="brand-mark"><img id="examInstitutionLogo" src="/images/campus-nexus-logo.png" alt="Campus Nexus"></div>
-        <div><strong id="examInstitutionName">Institution Examination</strong><small id="examInstitutionCode">Secure assessment environment</small></div>
+      <div class="exam-brand exam-brand-context" aria-label="Examination status">
+        <div class="exam-context-mark" aria-hidden="true"><i class="fa-solid fa-file-circle-check"></i></div>
+        <div>
+          <strong id="examInstitutionName">EXAMINATION IN PROGRESS</strong>
+          <small id="examInstitutionCode">Secure assessment environment</small>
+        </div>
       </div>
 
       <div class="exam-top-center">
