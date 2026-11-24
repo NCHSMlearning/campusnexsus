@@ -247,3 +247,123 @@
 .student-exam-timetable-list{display:grid;gap:8px}
 .student-tt-empty{padding:18px}
 @media(max-width:680px){.student-timetable-meta span{font-size:10px}.student-timetable-heading h3{font-size:15px}}
+
+
+/* ==========================================================
+   CAMPUS NEXUS — Premium student examination dashboard
+   The dashboard examination-card markup and renderer are
+   intentionally preserved so existing card behaviour stays.
+   ========================================================== */
+:root{--surface:#fff;--surface-soft:#f7fafd;--line-soft:#e5edf4;--ink-strong:#102f4f;--teal-bright:#078b91}
+body{background:#f2f6fa}
+.exam-sidebar{background:linear-gradient(180deg,#061f39 0%,#082f55 54%,#06243f 100%);box-shadow:10px 0 35px rgba(5,31,55,.12)}
+.exam-brand{padding:8px 8px 30px}
+.brand-symbol{border-radius:13px;box-shadow:0 8px 22px rgba(245,189,61,.2)}
+.exam-nav{gap:6px}
+.exam-nav a{min-height:49px;border:1px solid transparent;border-radius:12px;font-size:12px;transition:background .2s,border-color .2s,transform .2s}
+.exam-nav a:hover{background:#ffffff12;border-color:#ffffff12;transform:translateX(2px)}
+.exam-nav a.active{background:linear-gradient(100deg,#078b91,#08747e);border-color:#27b6b0;color:#fff;box-shadow:0 8px 22px #006f792e,inset 0 0 0 1px #ffffff20}
+.exam-nav a.active:before{display:none}
+.sidebar-help{background:linear-gradient(145deg,#ffffff12,#ffffff06);border-color:#ffffff20;border-radius:15px}
+.sidebar-account{border-top-color:#ffffff26}
+.exam-header{height:72px;padding-inline:clamp(20px,3.2vw,48px);box-shadow:0 3px 16px rgba(13,47,76,.035)}
+.header-left>div>b{font-size:14px;letter-spacing:-.2px}
+.header-kicker{font-size:9px}
+.secure-top{background:#eaf8f3;border-color:#d4eee4;color:#167b61}
+.exam-main{max-width:1640px;padding-top:25px}
+#dashboard{display:block}
+#dashboard .dashboard-welcome{min-height:178px;margin:0 0 17px;padding:27px 30px;border:0;border-radius:19px;background:linear-gradient(108deg,#062846 0%,#075274 54%,#07858a 100%);box-shadow:0 15px 34px rgba(6,47,76,.17);color:#fff}
+#dashboard .dashboard-welcome:before{content:"";position:absolute;width:380px;height:380px;right:12%;top:-255px;border:1px solid #ffffff22;border-radius:50%;box-shadow:0 0 0 35px #ffffff08,0 0 0 75px #ffffff05;pointer-events:none}
+#dashboard .dashboard-welcome:after{content:"";position:absolute;width:250px;height:250px;right:4%;bottom:-190px;border:1px solid #ffffff25;border-radius:50%;pointer-events:none}
+#dashboard .dashboard-welcome-main{position:relative;z-index:3;max-width:720px}
+#dashboard .dashboard-welcome .dashboard-eyebrow{color:#ffd36d;letter-spacing:1.8px}
+#dashboard .dashboard-welcome h1,#dashboard .dashboard-welcome h1 #greeting-label{color:#fff;font-size:clamp(26px,2.8vw,36px);letter-spacing:-1.1px}
+#dashboard .dashboard-welcome h1 #welcome-name{color:#ffd36d}
+#dashboard .dashboard-welcome-main>p{color:#d6e8f0;font-size:12px;margin:9px 0 15px}
+#dashboard .dashboard-quote{border-color:#ffffff28}
+#dashboard .dashboard-quote span{color:#e3f1f5}
+#dashboard .dashboard-quote small{color:#b7d4df}
+#dashboard .dashboard-live{position:absolute;right:24px;top:22px;z-index:4;background:#ffffff18;border:1px solid #ffffff30;color:#e5fbf4;backdrop-filter:blur(8px)}
+#dashboard .dashboard-live i{color:#5be0ad}
+#dashboard .dashboard-hero-art{z-index:1;opacity:.92}
+#dashboard .dashboard-hero-image{filter:drop-shadow(0 18px 20px rgba(0,0,0,.25))}
+#dashboard .dashboard-stats{gap:13px;margin:0 0 25px}
+#dashboard .stat-card{min-height:108px;border:1px solid #e3ebf2;border-radius:15px;padding:17px 18px;box-shadow:0 6px 18px rgba(15,48,76,.045)}
+#dashboard .stat-card:hover{transform:translateY(-3px);box-shadow:0 12px 25px rgba(15,48,76,.09)}
+#dashboard .stat-icon{width:45px;height:45px;border-radius:14px;font-size:17px}
+#dashboard .stat-card small{font-size:10px;font-weight:750;color:#6f8295}
+#dashboard .stat-card strong{font-size:27px;color:#102f4f}
+#dashboard .stat-card span{font-size:9px;color:#8797a6}
+#dashboard .dashboard-exams-head{align-items:center;margin:4px 0 15px;padding:0 2px}
+#dashboard .dashboard-exams-head .dashboard-eyebrow{color:#07858a}
+#dashboard .dashboard-exams-head h2{font-size:21px;color:#102f4f;letter-spacing:-.7px}
+#dashboard .dashboard-exams-head p{font-size:11px;color:#7c8ea0}
+#dashboard .dashboard-view-all{padding:10px 14px;border:1px solid #d8e7ed;border-radius:10px;background:#fff;box-shadow:0 4px 12px #153d5b0a}
+#dashboard .dashboard-view-all:hover{background:#edf8f7;border-color:#b8dedb}
+#dashboard .dashboard-exam-tabs{gap:8px;margin-bottom:15px}
+#dashboard .dashboard-exam-tabs button{min-height:42px;padding:10px 14px;border-radius:11px;font-size:10px}
+#dashboard .dashboard-exam-tabs button:not(.active):hover{border-color:#9bc9cc;background:#f3fbfa}
+#dashboard .dashboard-exam-tabs button.active{background:linear-gradient(110deg,#082f55,#087f85);border-color:#087f85}
+#dashboard .dashboard-exam-grid{margin-bottom:22px}
+/* Preserve .dashboard-exam-card, online-card, physical-card and their
+   child styles exactly as authored: card types, labels, actions and states. */
+#dashboard .dashboard-lower-grid{gap:14px;margin:20px 0 27px}
+#dashboard .dashboard-panel{border-color:#e1eaf1;border-radius:16px;box-shadow:0 7px 22px rgba(14,48,77,.045);padding:19px}
+#dashboard .dashboard-panel-head h2{font-size:14px;color:#102f4f}
+#dashboard .dashboard-panel-icon{border-radius:12px;background:#e9f6f5;color:#087f85}
+#dashboard .gpa-heading{margin-bottom:14px}
+#dashboard .gpa-heading h2{font-size:19px;color:#102f4f}
+#dashboard .gpa-stats{gap:12px}
+#dashboard .gpa-stat{border-radius:14px;border-color:#e1eaf1;box-shadow:0 5px 17px rgba(14,48,77,.04)}
+#dashboard .gpa-primary{background:linear-gradient(135deg,#082f55,#087f85);border:0}
+#dashboard .chart-card{border-radius:16px;border-color:#e1eaf1;box-shadow:0 6px 20px rgba(14,48,77,.04)}
+/* Consistent modern treatment for the other student modules */
+.module-view.content-card{border-radius:17px;border-color:#e1eaf1;box-shadow:0 8px 26px rgba(13,48,78,.045)}
+.module-view .section-icon{background:#e8f5f5;color:#087f85;border-radius:12px}
+.module-view .section-head h2{color:#102f4f;font-size:16px}
+.module-view .refresh-btn{border-radius:10px}
+#timetable .student-timetable-scroll{border-radius:13px}
+#timetable .student-timetable-table th{background:#eff6f8;color:#476175}
+#timetable .student-timetable-table tr:hover td{background:#f8fbfc}
+#announcements .announcement-card,#exam-history .history-card{border-radius:13px}
+.exam-footer{padding-top:22px}
+@media(max-width:1100px){
+ #dashboard .dashboard-lower-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #dashboard .calendar-panel{grid-column:1/-1}
+}
+@media(max-width:850px){
+ #dashboard .dashboard-welcome{padding:23px}
+ #dashboard .dashboard-hero-art{right:-15px;opacity:.28}
+ #dashboard .dashboard-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #dashboard .dashboard-lower-grid{grid-template-columns:1fr 1fr}
+ #dashboard .calendar-panel{grid-column:1/-1}
+}
+@media(max-width:680px){
+ .exam-header{height:64px}
+ .exam-main{padding-top:15px}
+ #dashboard .dashboard-welcome{min-height:190px;padding:22px 18px;border-radius:16px;margin-bottom:13px}
+ #dashboard .dashboard-welcome h1,#dashboard .dashboard-welcome h1 #greeting-label{font-size:25px}
+ #dashboard .dashboard-welcome-main>p{max-width:94%;font-size:10px}
+ #dashboard .dashboard-live{top:auto;right:13px;bottom:13px;font-size:8px;padding:6px 8px}
+ #dashboard .dashboard-hero-art{right:-85px;top:20px;opacity:.15}
+ #dashboard .dashboard-stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:20px}
+ #dashboard .stat-card{min-height:100px;padding:12px}
+ #dashboard .stat-card strong{font-size:23px}
+ #dashboard .dashboard-exams-head{align-items:flex-start}
+ #dashboard .dashboard-exams-head h2{font-size:18px}
+ #dashboard .dashboard-view-all{font-size:0;padding:10px 11px}
+ #dashboard .dashboard-view-all i{font-size:12px;margin:0}
+ #dashboard .dashboard-exam-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+ #dashboard .dashboard-exam-tabs button{justify-content:center;padding:10px 8px;font-size:9px;min-width:0}
+ #dashboard .dashboard-exam-grid{grid-template-columns:1fr;gap:11px}
+ /* Existing exam cards retain their original appearance and information hierarchy. */
+ #dashboard .dashboard-lower-grid{grid-template-columns:1fr;gap:10px;margin-top:15px}
+ #dashboard .calendar-panel{grid-column:auto}
+ #dashboard .dashboard-panel{padding:15px;min-height:0}
+ #dashboard .gpa-heading{align-items:flex-start}
+ #dashboard .gpa-heading h2{font-size:17px}
+ #dashboard .gpa-stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ #dashboard .gpa-stat{padding:13px}
+ .module-view.content-card{padding:15px 12px}
+ .exam-footer{font-size:8px}
+}
