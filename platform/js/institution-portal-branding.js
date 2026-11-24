@@ -28,7 +28,17 @@
   }
 
   function safeColor(value, fallback) {
-    return typeof value === "string" && /^#[0-9a-f]{3,8}$/i.test(value) ? value : fallback;
+    if (typeof value !== "string") return fallback;
+    const color = value.trim();
+    if (/^#[0-9a-f]{3}$/i.test(color)) return "#" + color.slice(1).split("").map(ch => ch + ch).join("");
+    return /^#[0-9a-f]{6}$/i.test(color) ? color : fallback;
+  }
+  function institutionPalette(institution) {
+    const defaults = ["#082f49","#0f766e","#d4a017","#2563eb","#7c3aed","#db2777"];
+    const source = institution && institution.brand_colors;
+    const named = source && !Array.isArray(source) && typeof source === "object" ? source : {};
+    const values = Array.isArray(source) ? source : [named.primary,named.secondary,named.accent1||named.accent||named.gold||named.tertiary,named.accent2,named.accent3,named.accent4];
+    return defaults.map((fallback,index)=>safeColor(index===0?(institution.primary_color||values[index]):index===1?(institution.secondary_color||values[index]):values[index],fallback));
   }
   function initials(value) {
     return String(value || "Institution").trim().split(/\s+/).filter(Boolean)
@@ -73,10 +83,9 @@
       : role === "Student Examination" ? "Student Examination Portal"
       : role === "Examinations" ? "Examination Portal" : role + " Portal";
     const title = identity + " " + roleLabel;
-    const primary = safeColor(institution.primary_color, "#082f49");
-    const secondary = safeColor(institution.secondary_color, "#0f766e");
-    const colors = institution.brand_colors && typeof institution.brand_colors === "object" ? institution.brand_colors : [];
-    const gold = safeColor(Array.isArray(colors) ? colors[2] : (colors.gold || colors.accent || colors.tertiary), "#d4a017");
+    const palette = institutionPalette(institution);
+    const [primary, secondary, accent1, accent2, accent3, accent4] = palette;
+    const gold = accent1;
     const logo = institution.logo_url && /^https:\/\//i.test(institution.logo_url)
       ? institution.logo_url : fallbackLogo(name, primary, secondary);
 
@@ -86,9 +95,12 @@
     root.dataset.institutionName = name;
     root.dataset.institutionCode = schoolCode;
     root.dataset.schoolCode = schoolCode;
-    root.style.setProperty("--cn-institution-primary", primary);
-    root.style.setProperty("--cn-institution-secondary", secondary);
-    root.style.setProperty("--cn-institution-gold", gold);
+    palette.forEach((color,index)=>root.style.setProperty("--cn-institution-color-"+(index+1),color));
+    root.style.setProperty("--cn-institution-primary",primary);root.style.setProperty("--cn-institution-secondary",secondary);root.style.setProperty("--cn-institution-gold",gold);
+    root.style.setProperty("--nchsm-navy",primary);root.style.setProperty("--nchsm-teal",secondary);root.style.setProperty("--nchsm-gold",gold);
+    root.style.setProperty("--institution-primary",primary);root.style.setProperty("--institution-secondary",secondary);root.style.setProperty("--institution-gold",gold);
+    root.style.setProperty("--cn-brand-primary",primary);root.style.setProperty("--cn-brand-secondary",secondary);root.style.setProperty("--cn-brand-accent",accent1);
+    root.style.setProperty("--cn-brand-accent-2",accent2);root.style.setProperty("--cn-brand-accent-3",accent3);root.style.setProperty("--cn-brand-accent-4",accent4);
 
     // One consistent identity across tab, loading screen, app label and module headers.
     document.title = title;
@@ -161,16 +173,28 @@
       styleHost.appendChild(theme);
     }
     theme.textContent = [
-      ":root{--cn-institution-primary:", primary, ";--cn-institution-secondary:", secondary, ";--cn-institution-gold:", gold, "}",
-      "#sidebar,.sidebar{background-color:", primary, "!important;background-image:linear-gradient(180deg,", primary, ",", primary, " 68%,", secondary, ")!important}",
-      ".sidebar-header,.sidebar-brand,.nchsm-header-brand{border-color:", secondary, "55!important}",
+      ":root{--cn-institution-primary:",primary,";--cn-institution-secondary:",secondary,";--cn-institution-gold:",gold,
+      ";--cn-institution-color-1:",primary,";--cn-institution-color-2:",secondary,";--cn-institution-color-3:",accent1,
+      ";--cn-institution-color-4:",accent2,";--cn-institution-color-5:",accent3,";--cn-institution-color-6:",accent4,
+      ";--nchsm-navy:",primary,";--nchsm-teal:",secondary,";--nchsm-gold:",gold,
+      ";--institution-primary:",primary,";--institution-secondary:",secondary,";--institution-gold:",gold,
+      ";--cn-brand-primary:",primary,";--cn-brand-secondary:",secondary,";--cn-brand-accent:",accent1,
+      ";--cn-brand-accent-2:",accent2,";--cn-brand-accent-3:",accent3,";--cn-brand-accent-4:",accent4,"}",
+      "#sidebar,.sidebar{background-color:",primary,"!important;background-image:linear-gradient(180deg,",primary,",",primary," 68%,",secondary,")!important}",
+      ".sidebar-header,.sidebar-brand,.nchsm-header-brand{border-color:",secondary,"55!important}",
       ".sidebar-header img,.brand-crest img,.nchsm-header-logo,.mobile-header .logo img,.header-content .logo img,.nchsm-loading-logo img{object-fit:contain!important}",
-      ".sidebar a.active,.sidebar-menu a.active,#sidebar .nav a.active{border-left-color:", gold, "!important}",
-      ".nchsm-header-title,.brand-text .cn-institution-brand-name{color:", primary, "!important}",
-      ".nchsm-header-subtitle{color:", secondary, "!important}",
+      ".sidebar a.active,.sidebar-menu a.active,#sidebar .nav a.active{border-left-color:",gold,"!important}",
+      ".nchsm-header-title,.brand-text .cn-institution-brand-name{color:",primary,"!important}",
+      ".nchsm-header-subtitle{color:",secondary,"!important}",
       ".cn-institution-school-code{display:block;font-size:11px;font-weight:600;opacity:.85}",
       ".cn-institution-portal-role{display:block;font-size:12px;font-weight:500}",
-      ".admin-badge{border-color:", gold, "66!important}"
+      ".admin-badge{border-color:",gold,"66!important}",
+      ".btn-primary,.primary-button,.primary-btn,.ia-primary-btn,.submit,.login-button{background:linear-gradient(135deg,",secondary,",",primary,")!important;border-color:",primary,"!important}",
+      ".btn-secondary,.secondary-button,.ia-secondary-btn{border-color:",accent2,"!important;color:",primary,"!important}",
+      ".nav-link.active,.nav-item.active,.tab-button.active,[aria-current=page]{border-color:",accent1,"!important;box-shadow:inset 3px 0 ",accent1,"!important}",
+      ".progress-bar,.progress-fill{background:linear-gradient(90deg,",secondary,",",accent2,",",accent3,")!important}",
+      "input:focus,select:focus,textarea:focus,button:focus-visible{outline-color:",accent1,"!important}",
+      "table thead th{border-bottom-color:",accent1,"}"
     ].join("");
 
     document.querySelectorAll("h1,h2,h3,[role=heading]").forEach(el => {
