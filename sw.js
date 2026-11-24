@@ -1,5 +1,5 @@
 // CampusNexus service worker — network-first navigation and versioned assets.
-const CACHE_NAME = 'campusnexus-v10';;
+const CACHE_NAME = 'campusnexus-v11';
 const PRECACHE_URLS = [
   '/',
   '/index.html',
@@ -46,6 +46,22 @@ self.addEventListener('fetch', event => {
     url.pathname.startsWith('/adminexams/') ||
     url.pathname.startsWith('/platform/examinations/source/');
   if (isAdminExamsRequest) return;
+
+  // Student portal, login and database scripts must never be served from a
+  // stale cache. These pages authenticate users and depend on tightly-coupled
+  // HTML/JS versions, so always let the browser fetch the current deployment.
+  const isStudentOrLoginRequest =
+    url.pathname === '/platform/student.html' ||
+    url.pathname === '/platform/student' ||
+    url.pathname.startsWith('/platform/js/student-') ||
+    url.pathname === '/js/database.js' ||
+    url.pathname === '/config.js' ||
+    url.pathname === '/platform/login.html' ||
+    url.pathname.startsWith('/platform/login/') ||
+    url.pathname === '/login' ||
+    url.pathname === '/login/' ||
+    url.pathname.startsWith('/login/');
+  if (isStudentOrLoginRequest) return;
 
   if (request.mode === 'navigate') {
     event.respondWith(
