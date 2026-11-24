@@ -1,4 +1,4 @@
-name: Build Campus Nexus Secure Exam Browser
+name: Build and Publish Campus Nexus Secure Exam Browser
 
 on:
   workflow_dispatch:
@@ -9,7 +9,7 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build-windows:
@@ -24,14 +24,29 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
+          cache: npm
+          cache-dependency-path: secure-exam-browser/package-lock.json
       - name: Install dependencies
         run: npm install
       - name: Build Windows installer and portable app
         run: npm run dist:all
-      - name: Upload Windows builds
-        uses: actions/upload-artifact@v4
+      - name: Prepare stable download filenames
+        shell: pwsh
+        run: |
+          $installer = Get-ChildItem dist -Filter "*-Setup.exe" | Select-Object -First 1
+          $portable = Get-ChildItem dist -Filter "*-portable.exe" | Select-Object -First 1
+          if (-not $installer) { throw "Windows installer EXE was not produced." }
+          if (-not $portable) { throw "Portable EXE was not produced." }
+          Copy-Item $installer.FullName "dist/Campus-Nexus-Secure-Exam-Browser-Setup.exe" -Force
+          Copy-Item $portable.FullName "dist/Campus-Nexus-Secure-Exam-Browser-Portable.exe" -Force
+      - name: Publish stable Windows downloads
+        uses: softprops/action-gh-release@v2
         with:
-          name: campus-nexus-secure-exam-browser-windows
-          path: secure-exam-browser/dist/*
-          if-no-files-found: error
-          retention-days: 14
+          tag_name: cnseb-latest
+          name: Campus Nexus Secure Exam Browser – Latest
+          prerelease: false
+          make_latest: true
+          overwrite_files: true
+          files: |
+            secure-exam-browser/dist/Campus-Nexus-Secure-Exam-Browser-Setup.exe
+            secure-exam-browser/dist/Campus-Nexus-Secure-Exam-Browser-Portable.exe
