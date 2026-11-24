@@ -75,7 +75,7 @@ async function initializeApp() {
         // during a slow/mobile page load. The auth client remains the single
         // persistent Supabase client; this only restores the Database wrapper.
         async function ensureStudentDatabaseModule() {
-            if (window.db && typeof window.db === 'object') return window.db;
+            if (window.db && typeof window.db.initialize === 'function') return window.db;
 
             // The student portal can be served from either /student or /platform/student.html.
             // Resolve the database script from the site root and retry once without stale cache.
@@ -97,8 +97,8 @@ async function initializeApp() {
                         document.head.appendChild(script);
                     });
                     if (window.db && typeof window.db === 'object') return window.db;
-                    if (typeof Database === 'function') {
-                        window.db = new Database();
+                    if (typeof window.Database === 'function') {
+                        window.db = new window.Database();
                         return window.db;
                     }
                     throw new Error('The database script loaded but did not expose its Database instance.');
@@ -108,10 +108,10 @@ async function initializeApp() {
                 }
             }
 
-            if (!window.db && typeof Database === 'function') {
-                window.db = new Database();
+            if ((!window.db || typeof window.db.initialize !== 'function') && typeof window.Database === 'function') {
+                window.db = new window.Database();
             }
-            if (!window.db) {
+            if (!window.db || typeof window.db.initialize !== 'function') {
                 throw new Error('Student database module could not be loaded. Please refresh the page or contact support.');
             }
             return window.db;
