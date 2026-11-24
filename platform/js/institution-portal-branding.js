@@ -1,410 +1,218 @@
-/* Campus Nexus — institution-aware branding for authenticated tenant portals.
- * Resolves the signed-in user's institution and school code.
- * Platform Super Admin remains Campus Nexus branded.
+/* Campus Nexus — authenticated institution branding.
+ * Student Portal consumes the institution record verified by student-auth-boot.js.
+ * Never select a tenant from an untrusted URL or stale browser storage.
  */
 (function () {
   "use strict";
-  const SUPABASE_URL = "https://irahplkvocaakjxuisto.supabase.co";
-  const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_5Cg5FFudf03UnmOXGNGMHQ_uK9S-uQX";
   let applied = false;
   let attempts = 0;
 
-  function getClient() {
-    const candidates = [window.sb, window.supabaseClient, window.db && window.db.supabase,
-      window.NCHSMLogin && window.NCHSMLogin.supabase];
-    const existing = candidates.find(client => client && typeof client.from === "function" &&
-      client.auth && typeof client.auth.getUser === "function");
-    if (existing) return existing;
-    if (window.supabase && typeof window.supabase.createClient === "function") {
-      try {
-        window.cnInstitutionBrandingClient = window.cnInstitutionBrandingClient ||
-          window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
-        return window.cnInstitutionBrandingClient;
-      } catch (error) {
-        console.warn("[Campus Nexus] Branding client initialization failed:", error);
-      }
-    }
-    return null;
+  function client() {
+    const candidates = [
+      window.db && window.db.supabase,
+      window.sb,
+      window.supabaseClient,
+      window.app && window.app.supabase
+    ];
+    return candidates.find(value =>
+      value && typeof value.from === "function" &&
+      value.auth && typeof value.auth.getUser === "function"
+    ) || null;
   }
 
-  function safeColor(value, fallback) {
-    if (typeof value !== "string") return fallback;
-    const color = value.trim();
-    if (/^#[0-9a-f]{3}$/i.test(color)) return "#" + color.slice(1).split("").map(ch => ch + ch).join("");
+  function validColor(value, fallback) {
+    const color = String(value || "").trim();
+    if (/^#[0-9a-f]{3}$/i.test(color)) {
+      return "#" + color.slice(1).split("").map(ch => ch + ch).join("");
+    }
     return /^#[0-9a-f]{6}$/i.test(color) ? color : fallback;
   }
-  function institutionPalette(institution) {
-    const defaults = ["#082f49","#0f766e","#d4a017","#2563eb","#7c3aed","#db2777"];
-    const source = institution && institution.brand_colors;
+
+  function palette(institution) {
+    const defaults = ["#082f49", "#0f766e", "#d4a017", "#2563eb", "#7c3aed", "#db2777"];
+    const source = institution.brand_colors;
     const named = source && !Array.isArray(source) && typeof source === "object" ? source : {};
-    const values = Array.isArray(source) ? source : [named.primary,named.secondary,named.accent1||named.accent||named.gold||named.tertiary,named.accent2,named.accent3,named.accent4];
-    // The approved six-colour palette is the source of truth. Legacy
-    // primary_color/secondary_color columns may contain older branding and
-    // must never override a newer approved palette.
-    return defaults.map((fallback,index)=>{
-      const paletteValue=values[index];
-      const legacyValue=index===0?institution.primary_color:index===1?institution.secondary_color:null;
-      return safeColor(paletteValue, safeColor(legacyValue, fallback));
+    const values = Array.isArray(source) ? source : [
+      named.primary, named.secondary,
+      named.accent1 || named.accent || named.gold || named.tertiary,
+      named.accent2, named.accent3, named.accent4
+    ];
+    return defaults.map((fallback, index) => {
+      const legacy = index === 0 ? institution.primary_color :
+        index === 1 ? institution.secondary_color : null;
+      return validColor(values[index], validColor(legacy, fallback));
     });
   }
-  function initials(value) {
-    return String(value || "Institution").trim().split(/\s+/).filter(Boolean)
+
+  function initials(name) {
+    return String(name || "Institution").trim().split(/\s+/).filter(Boolean)
       .slice(0, 2).map(part => part.charAt(0)).join("").toUpperCase() || "IN";
   }
+
   function fallbackLogo(name, primary, secondary) {
     const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">' +
       '<rect width="128" height="128" rx="24" fill="' + primary + '"/>' +
       '<circle cx="64" cy="64" r="53" fill="none" stroke="' + secondary + '" stroke-width="5"/>' +
-      '<text x="64" y="76" text-anchor="middle" font-family="Arial,sans-serif" font-size="43" font-weight="700" fill="#fff">' +
+      '<text x="64" y="76" text-anchor="middle" font-family="Arial" font-size="43" font-weight="700" fill="#fff">' +
       initials(name) + '</text></svg>';
     return "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(svg);
   }
-  function pageRole() {
-    const path = String(location.pathname || "").toLowerCase();
-    if (/\/superadmin(?:login)?\.html$|\/platform\/superadmin/.test(path)) return "Platform";
-    if (/exam_dashboard/.test(path)) return "Student Examination";
-    if (/lecturerexams|\/lecturer(?:\.html)?$/.test(path)) return "Lecturer";
-    if (/institution-admin|\/admin(?:\.html)?$|\/source\/admin(?:exams)?\.html$/.test(path)) return "Administrator";
-    if (/exam|examination/.test(path)) return "Examinations";
-    if (/student/.test(path)) return "Student";
-    return "Institution";
-  }
+
   function setText(selector, value) {
-    document.querySelectorAll(selector).forEach(el => {
-      // Never replace the document root or body: tenant metadata selectors can
-      // match <html> after institution data attributes are applied.
-      if (el === document.documentElement || el === document.body) return;
-      el.textContent = value;
+    document.querySelectorAll(selector).forEach(element => {
+      if (element !== document.documentElement && element !== document.body) {
+        element.textContent = value;
+      }
     });
   }
 
-  function applyBranding(institution) {
-    if (applied || !institution || !institution.id) return;
-    const role = pageRole();
-    if (role === "Platform") return;
+  function apply(institution) {
+    if (applied || !institution || !institution.id) return false;
+    const path = String(location.pathname || "").toLowerCase();
+    if (/superadmin/.test(path)) return false;
 
     const name = String(institution.name || "Your Institution").trim();
-    const schoolCode = String(institution.school_code || institution.short_code || "").trim();
-    const identity = schoolCode ? name + " (" + schoolCode + ")" : name;
-    const roleLabel = role === "Institution" ? "Portal"
-      : role === "Student Examination" ? "Student Examination Portal"
-      : role === "Examinations" ? "Examination Portal" : role + " Portal";
-    const title = identity + " " + roleLabel;
-    const palette = institutionPalette(institution);
-    const [primary, secondary, accent1, accent2, accent3, accent4] = palette;
-    const gold = accent1;
-    const logo = institution.logo_url && /^https:\/\//i.test(institution.logo_url)
-      ? institution.logo_url : fallbackLogo(name, primary, secondary);
+    const code = String(institution.school_code || institution.short_code || "").trim();
+    const identity = code ? name + " (" + code + ")" : name;
+    const title = identity + " Student Portal";
+    const colors = palette(institution);
+    const primary = colors[0];
+    const secondary = colors[1];
+    const accent = colors[2];
+    const logoUrl = String(institution.logo_url || "").trim();
+    const logo = /^(https:\/\/|\/)/i.test(logoUrl) ? logoUrl :
+      fallbackLogo(name, primary, secondary);
 
     const root = document.documentElement;
     root.dataset.institutionPortal = "true";
     root.dataset.institutionId = String(institution.id);
     root.dataset.institutionName = name;
-    root.dataset.institutionCode = schoolCode;
-    root.dataset.schoolCode = schoolCode;
-    palette.forEach((color,index)=>root.style.setProperty("--cn-institution-color-"+(index+1),color));
-    root.style.setProperty("--cn-institution-primary",primary);root.style.setProperty("--cn-institution-secondary",secondary);root.style.setProperty("--cn-institution-gold",gold);
-    root.style.setProperty("--nchsm-navy",primary);root.style.setProperty("--nchsm-teal",secondary);root.style.setProperty("--nchsm-gold",gold);
-    root.style.setProperty("--institution-primary",primary);root.style.setProperty("--institution-secondary",secondary);root.style.setProperty("--institution-gold",gold);
-    root.style.setProperty("--cn-brand-primary",primary);root.style.setProperty("--cn-brand-secondary",secondary);root.style.setProperty("--cn-brand-accent",accent1);
-    root.style.setProperty("--cn-brand-accent-2",accent2);root.style.setProperty("--cn-brand-accent-3",accent3);root.style.setProperty("--cn-brand-accent-4",accent4);
+    root.dataset.institutionCode = code;
+    root.dataset.schoolCode = code;
 
-    // One consistent identity across tab, loading screen, app label and module headers.
+    const variables = [
+      ["--cn-institution-primary", primary],
+      ["--cn-institution-secondary", secondary],
+      ["--cn-institution-gold", accent],
+      ["--nchsm-navy", primary],
+      ["--nchsm-teal", secondary],
+      ["--nchsm-gold", accent],
+      ["--institution-primary", primary],
+      ["--institution-secondary", secondary],
+      ["--institution-gold", accent],
+      ["--cn-brand-primary", primary],
+      ["--cn-brand-secondary", secondary],
+      ["--cn-brand-accent", accent]
+    ];
+    variables.forEach(([key, value]) => root.style.setProperty(key, value));
+    colors.forEach((value, index) => root.style.setProperty("--cn-institution-color-" + (index + 1), value));
+
     document.title = title;
-    document.querySelectorAll('meta[name="application-name"],meta[name="apple-mobile-web-app-title"]').forEach(meta => {
-      meta.content = title;
-    });
-    setText("#loading-screen .welcome-text h1", "Welcome to " + identity);
-    setText("#loading-screen .subtitle", roleLabel);
-    setText("[data-institution-name]", name);
-    setText("[data-institution-code]", schoolCode);
+    document.querySelectorAll('meta[name="application-name"],meta[name="apple-mobile-web-app-title"]')
+      .forEach(meta => { meta.content = title; });
+
+    setText(".nchsm-header-title", name);
+    setText(".nchsm-header-subtitle", "Student Portal • School Code: " + (code || "—"));
     setText("#institution-name", name);
     setText("#institution-portal-label", "STUDENT PORTAL");
-    setText("#institution-header-name", identity + "  ›  STUDENT EXAMINATION CENTRE");
-    const examLogo = document.getElementById("institution-logo");
-    const examLogoFallback = document.getElementById("institution-logo-fallback");
-    if (examLogo) {
-      examLogo.src = logo;
-      examLogo.alt = name + " logo";
-      examLogo.hidden = false;
-      if (examLogoFallback) examLogoFallback.hidden = true;
-    }
-    setText(".nchsm-header-title", name);
-    setText(".nchsm-header-subtitle", roleLabel);
-    setText(".lecturer-command-brand h1", title);
-    setText(".lecturer-command-brand p", "Teaching, examinations, results and student monitoring");
-    setText(".nrd-kicker", (identity + " " + roleLabel).toUpperCase());
+    setText("[data-institution-name]", name);
+    setText("[data-institution-code]", code);
 
-    document.querySelectorAll(".brand-text h2").forEach(el => {
-      const strong = document.createElement("strong");
-      strong.className = "cn-institution-brand-name";
-      strong.textContent = name;
-      const code = document.createElement("small");
-      code.className = "cn-institution-school-code";
-      code.textContent = schoolCode ? "School Code: " + schoolCode : "";
-      const portal = document.createElement("span");
-      portal.className = "cn-institution-portal-role";
-      portal.textContent = roleLabel;
-      el.replaceChildren(strong, code, portal);
-    });
-    document.querySelectorAll(".sidebar-header h2").forEach(el => {
-      if (/nchsm|campus nexus|institution/i.test(el.textContent || "")) el.textContent = name;
-    });
-    document.querySelectorAll(".sidebar-header").forEach(header => {
-      let label = header.querySelector("[data-cn-institution-label]");
-      if (!label) {
-        label = document.createElement("small");
-        label.dataset.cnInstitutionLabel = "true";
-        header.appendChild(label);
-      }
-      label.textContent = schoolCode ? "School Code: " + schoolCode :
-        (institution.physical_address || "Institution Portal");
-    });
+    document.querySelectorAll(".nchsm-header-logo,[data-institution-logo],#institutionLogo")
+      .forEach(image => {
+        image.src = logo;
+        image.alt = name + " logo";
+        image.removeAttribute("srcset");
+        image.style.objectFit = "contain";
+      });
 
-    const logoSelectors = [".sidebar-header img", ".brand-crest img", ".nchsm-header-logo",
-      ".mobile-header .logo img", ".header-content .logo img", ".nchsm-loading-logo img",
-      ".logo-animation img", ".logo-circle img", "[data-institution-logo]"];
-    document.querySelectorAll(logoSelectors.join(",")).forEach(img => {
-      img.src = logo;
-      img.alt = name + " logo";
-      img.removeAttribute("srcset");
-      img.style.objectFit = "contain";
-    });
-    document.querySelectorAll(".logo-circle").forEach(el => {
-      if (el.querySelector("img")) return;
-      const img = document.createElement("img");
-      img.src = logo;
-      img.alt = name + " logo";
-      img.style.cssText = "width:100%;height:100%;object-fit:contain;border-radius:inherit";
-      el.replaceChildren(img);
-    });
-    document.querySelectorAll('link[rel~="icon"],link[rel="apple-touch-icon"]').forEach(link => {
-      link.href = logo;
-    });
+    document.querySelectorAll('link[rel~="icon"],link[rel="apple-touch-icon"]')
+      .forEach(icon => { icon.href = logo; });
 
-    let theme = document.getElementById("cn-authenticated-institution-theme");
-    if (!theme) {
-      theme = document.createElement("style");
-      theme.id = "cn-authenticated-institution-theme";
-      const styleHost = document.head || document.documentElement;
-      if (!styleHost) return;
-      styleHost.appendChild(theme);
-    }
-    theme.textContent = [
-      ":root{--cn-institution-primary:",primary,";--cn-institution-secondary:",secondary,";--cn-institution-gold:",gold,
-      ";--cn-institution-color-1:",primary,";--cn-institution-color-2:",secondary,";--cn-institution-color-3:",accent1,
-      ";--cn-institution-color-4:",accent2,";--cn-institution-color-5:",accent3,";--cn-institution-color-6:",accent4,
-      ";--nchsm-navy:",primary,";--nchsm-teal:",secondary,";--nchsm-gold:",gold,
-      ";--institution-primary:",primary,";--institution-secondary:",secondary,";--institution-gold:",gold,
-      ";--cn-brand-primary:",primary,";--cn-brand-secondary:",secondary,";--cn-brand-accent:",accent1,
-      ";--cn-brand-accent-2:",accent2,";--cn-brand-accent-3:",accent3,";--cn-brand-accent-4:",accent4,"}",
-      "#sidebar,.sidebar,.student-sidebar,.exam-sidebar{background-color:",primary,"!important;background-image:linear-gradient(180deg,",primary,",",primary," 68%,",secondary,")!important}",
-      "#sidebar::before,.sidebar::before,.student-sidebar::before,.exam-sidebar::before{background:",primary,"!important}",
-      ".dashboard-hero,.welcome-banner,.welcome-card,.dashboard-welcome,.hero{background-color:",primary,"!important;background-image:linear-gradient(120deg,",primary," 0%,",secondary," 100%)!important}",
-      ".dashboard-hero h1,.welcome-banner h1,.welcome-card h1,.dashboard-welcome h1,.hero h1{color:#fff!important}",
-      ".dashboard-hero .eyebrow,.welcome-banner .eyebrow,.dashboard-welcome .dashboard-eyebrow,.hero .hero-tag{color:",gold,"!important}",
-      ".sidebar-header,.sidebar-brand,.nchsm-header-brand{border-color:",secondary,"55!important}",
-      ".sidebar-header img,.brand-crest img,.nchsm-header-logo,.mobile-header .logo img,.header-content .logo img,.nchsm-loading-logo img{object-fit:contain!important}",
-      "#sidebar .sidebar-header img,#sidebar .brand-crest img{background:#fff!important;padding:5px!important;border:1px solid #e6edf3!important;border-radius:12px!important;box-sizing:border-box!important;mix-blend-mode:normal!important;filter:none!important}",
-      "#sidebar .sidebar-header img[ src ],#sidebar .brand-crest img[ src ]{opacity:1!important;visibility:visible!important}",
-      ".sidebar a.active,.sidebar-menu a.active,#sidebar .nav a.active{border-left-color:",gold,"!important}",
-      ".nchsm-header-title,.brand-text .cn-institution-brand-name{color:",primary,"!important}",
-      ".nchsm-header-subtitle{color:",secondary,"!important}",
-      ".cn-institution-school-code{display:block;font-size:11px;font-weight:600;opacity:.85}",
-      ".cn-institution-portal-role{display:block;font-size:12px;font-weight:500}",
-      ".admin-badge{border-color:",gold,"66!important}",
-      ".btn-primary,.primary-button,.primary-btn,.ia-primary-btn,.submit,.login-button{background:linear-gradient(135deg,",secondary,",",primary,")!important;border-color:",primary,"!important}",
-      ".btn-secondary,.secondary-button,.ia-secondary-btn{border-color:",accent2,"!important;color:",primary,"!important}",
-      ".nav-link.active,.nav-item.active,.tab-button.active,[aria-current=page]{border-color:",accent1,"!important;box-shadow:inset 3px 0 ",accent1,"!important}",
-      ".progress-bar,.progress-fill{background:linear-gradient(90deg,",secondary,",",accent2,",",accent3,")!important}",
-      "input:focus,select:focus,textarea:focus,button:focus-visible{outline-color:",accent1,"!important}",
-      "table thead th{border-bottom-color:",accent1,"}",
-      "body[data-institution-portal=true],html[data-institution-portal=true]{--primary:",primary,";--secondary:",secondary,";--accent:",accent1,";--accent-2:",accent2,";--accent-3:",accent3,";--accent-4:",accent4,"}",
-      "header,.topbar,.top-bar,.top-header,.dashboard-header,.page-header,.main-header,.navbar,.top-nav{border-color:",secondary,"33}",
-      ".topbar,.top-bar,.top-header,.main-header{--header-brand-color:",primary,"}",
-      ".dashboard-hero,.page-hero,.welcome-banner,.welcome-card,.command-hero,.lecturer-command-hero{background-image:linear-gradient(120deg,",primary," 0%,",secondary," 100%)!important;border-color:",secondary,"!important}",
-      ".dashboard-hero h1,.dashboard-hero h2,.page-hero h1,.welcome-banner h1,.welcome-card h1{color:#fff!important}",
-      ".stat-card,.metric-card,.dashboard-card,.analytics-card,.summary-card,.kpi-card,.overview-card,.quick-stat,.metric-tile{border-top-color:",accent1,"!important}",
-      ".stat-card .icon,.metric-card .icon,.dashboard-card .card-icon,.analytics-card .card-icon,.summary-card .icon,.kpi-card .icon{background-color:",accent2,"22!important;color:",secondary,"!important}",
-      ".stat-card:nth-child(6n+2),.metric-card:nth-child(6n+2),.dashboard-metric-grid>div:nth-child(6n+2){--card-accent:",accent2,"}",
-      ".stat-card:nth-child(6n+3),.metric-card:nth-child(6n+3),.dashboard-metric-grid>div:nth-child(6n+3){--card-accent:",accent3,"}",
-      ".stat-card:nth-child(6n+4),.metric-card:nth-child(6n+4),.dashboard-metric-grid>div:nth-child(6n+4){--card-accent:",accent4,"}",
-      ".stat-card,.metric-card,.dashboard-metric-grid>div{border-bottom:2px solid var(--card-accent,",accent1,")}",
-      ".sidebar a:hover,.sidebar-menu a:hover,#sidebar .nav a:hover{background-color:",secondary,"33!important}",
-      ".sidebar .active,.sidebar-menu .active,#sidebar .nav .active{background-color:",secondary,"44!important}",
-      ".tab-button.active,.nav-link.active,.nav-item.active,[aria-current=page]{color:",primary,"!important}",
-      ".badge-primary,.status-primary,.chip-primary,.tag-primary{background-color:",primary,"!important;color:#fff!important}",
-      ".badge-success,.status-success,.chip-success{background-color:",secondary,"!important;color:#fff!important}",
-      ".section-title,.panel-title,.card-title,.dashboard-section-title{border-left-color:",accent1,"}",
-      ".form-control:focus,.form-select:focus,.ia-input:focus,.ia-select:focus{border-color:",accent1,"!important;box-shadow:0 0 0 3px ",accent1,"22!important}",
-      ".btn-primary:hover,.primary-button:hover,.primary-btn:hover,.ia-primary-btn:hover,.submit:hover{filter:brightness(1.08)}",
-      ".sidebar-header .cn-institution-school-code{color:#fff!important}",
-      ".brand-logo img,.sidebar-logo img,.institution-logo img,#institutionLogo,.header-logo img{object-fit:contain!important}",
-      ".cn-institution-brand-name{font-weight:800;letter-spacing:-.02em}",
-      ".exam-sidebar{background:linear-gradient(180deg,",primary," 0%,",primary," 72%,",secondary," 145%)!important}",
-      ".exam-brand .brand-symbol{background:linear-gradient(145deg,",accent1,",",accent2,")!important;color:",primary,"!important}",
-      ".exam-brand b{color:#fff!important}.exam-brand small{color:rgba(255,255,255,.76)!important}",
-      ".exam-nav a.active{box-shadow:inset 3px 0 ",accent1,"!important;background:linear-gradient(100deg,",secondary,"55,#ffffff0d)!important}",
-      ".side-label,.exam-nav a:hover{color:",accent1,"!important}",
-      ".help-icon{background:",accent1,"25!important;color:",accent1,"!important}",
-      ".exam-header{border-bottom-color:",accent2,"55!important}",
-      ".header-kicker{color:",primary,"!important}.header-kicker i{color:",accent1,"!important}",
-      ".secure-top{background:",secondary,"12!important;border-color:",secondary,"55!important;color:",secondary,"!important}",
-      ".header-avatar,.mobile-toggle{background:",accent2,"22!important;border-color:",accent2,"66!important;color:",primary,"!important}",
-      ".hero{background:linear-gradient(112deg,",primary," 0%,",secondary," 100%)!important}",
-      ".hero-tag,.dashboard-eyebrow{color:",accent1,"!important}",
-      ".hero h1 em,.dashboard-welcome h1 #welcome-name{color:",accent1,"!important}",
-      ".dashboard-live{background:",secondary,"18!important;color:",secondary,"!important}",
-      ".stat-card{border-top:2px solid ",accent1,"!important}",
-      ".stat-total .stat-icon{background:",accent2,"22!important;color:",primary,"!important}",
-      ".stat-upcoming .stat-icon{background:",accent1,"25!important;color:",primary,"!important}",
-      ".stat-open .stat-icon{background:",secondary,"20!important;color:",secondary,"!important}",
-      ".stat-completed .stat-icon{background:",accent3,"25!important;color:",accent3,"!important}",
-      ".dashboard-exam-tabs button.active,.dashboard-view-all,.primary-btn{background:",primary,"!important;border-color:",primary,"!important;color:#fff!important}",
-      ".section-icon,.dashboard-panel-icon{background:",accent2,"25!important;color:",primary,"!important}",
-      ".exam-nav a.active .nav-current{color:",accent1,"!important}",
-      ".exam-brand .brand-symbol img{width:100%;height:100%;object-fit:contain!important;background:#fff;border-radius:inherit}",
-      "@media(max-width:680px){.exam-header{min-height:76px!important;height:auto!important;padding:9px 12px!important;gap:8px!important}.header-left{min-width:0!important;flex:1 1 auto!important;gap:9px!important}.header-left>div{min-width:0!important;max-width:100%!important}.header-kicker{display:block!important;max-width:100%!important;white-space:normal!important;overflow-wrap:anywhere!important;font-size:8px!important;line-height:1.35!important;letter-spacing:.8px!important}.header-left>div>b{font-size:12px!important;margin-top:3px!important}.header-right{flex:0 0 auto!important;gap:6px!important}.secure-top{font-size:0!important;padding:8px!important;width:34px;height:34px;display:grid;place-items:center}.secure-top i{font-size:13px!important;margin:0!important}.header-avatar{width:34px!important;height:34px!important;flex:0 0 34px!important}}";
-    ].join("");
+    const style = document.getElementById("cn-authenticated-institution-theme") ||
+      document.createElement("style");
+    style.id = "cn-authenticated-institution-theme";
+    style.textContent =
+      ":root{--cn-institution-primary:" + primary + ";--cn-institution-secondary:" + secondary +
+      ";--cn-institution-gold:" + accent + ";--primary:" + primary + ";--secondary:" + secondary + "}" +
+      "#sidebar,.sidebar{background:linear-gradient(180deg," + primary + " 0%," + primary + " 70%," + secondary + " 130%)!important}" +
+      ".nchsm-header-title{color:" + primary + "!important}" +
+      ".dashboard-hero,.welcome-banner,.welcome-card,.hero{background-image:linear-gradient(120deg," +
+      primary + " 0%," + secondary + " 100%)!important;border-color:" + accent + "!important}" +
+      ".btn-primary,.primary-button,.primary-btn{background:" + primary + "!important;border-color:" + primary + "!important}";
+    if (!style.parentNode) (document.head || document.documentElement).appendChild(style);
 
-    document.querySelectorAll("h1,h2,h3,[role=heading]").forEach(el => {
-      const current = String(el.textContent || "").trim();
-      if (/^NCHSM\b.*(portal|dashboard|exam)|^(?:portal|dashboard|exam).*NCHSM\b/i.test(current)) {
-        el.textContent = title;
-      }
-    });
-    document.querySelectorAll('input[value="NCHSM Exam Proctoring System"]').forEach(input => {
-      input.value = identity + " Examination System";
-    });
-
-    document.querySelectorAll(".nchsm-pwa-install,[data-pwa-install],#installBtn,#installButton").forEach(button => {
-      if (!/install/i.test(button.textContent || "")) return;
-      const icon = button.querySelector("i");
-      const label = "Install " + identity + " Portal";
-      if (icon) button.replaceChildren(icon, document.createTextNode(" " + label));
-      else button.textContent = label;
-      button.setAttribute("aria-label", label);
-    });
-
-    const manifestLink = document.querySelector('link[rel="manifest"]');
-    if (manifestLink && window.Blob && window.URL && URL.createObjectURL) {
-      try {
-        if (window.cnTenantManifestUrl) URL.revokeObjectURL(window.cnTenantManifestUrl);
-        const manifest = {
-          id: location.pathname + "?school_code=" + encodeURIComponent(schoolCode),
-          name: title,
-          short_name: (schoolCode || name).slice(0, 20),
-          description: identity + " secure learning and administration portal",
-          start_url: location.pathname + "?school_code=" + encodeURIComponent(schoolCode),
-          scope: "/platform/",
-          display: "standalone",
-          orientation: "portrait",
-          theme_color: primary,
-          background_color: "#ffffff",
-          icons: [{src: logo, sizes: "192x192", purpose: "any maskable"}]
-        };
-        window.cnTenantManifestUrl = URL.createObjectURL(
-          new Blob([JSON.stringify(manifest)], {type: "application/manifest+json"})
-        );
-        manifestLink.href = window.cnTenantManifestUrl;
-      } catch (error) {
-        console.warn("[Campus Nexus] Tenant install metadata could not be generated:", error);
-      }
-    }
+    document.querySelectorAll(".nchsm-pwa-install,[data-pwa-install],#installBtn,#installButton")
+      .forEach(button => {
+        if (/install/i.test(button.textContent || "")) {
+          const icon = button.querySelector("i");
+          const label = "Install " + name + " Portal";
+          if (icon) button.replaceChildren(icon, document.createTextNode(" " + label));
+          else button.textContent = label;
+          button.setAttribute("aria-label", label);
+        }
+      });
 
     applied = true;
+    window.CURRENT_INSTITUTION = institution;
+    window.CURRENT_INSTITUTION_ID = String(institution.id);
+    window.CURRENT_INSTITUTION_CODE = code;
+    window.CURRENT_SCHOOL_CODE = code;
+    window.currentInstitutionCode = code;
+    window.currentSchoolCode = code;
     document.dispatchEvent(new CustomEvent("campusnexus:institution-branding-applied", {
-      detail: {institutionId: institution.id, name, schoolCode, logoUrl: institution.logo_url || null}
+      detail: { institutionId: institution.id, name: name, schoolCode: code, logoUrl: institution.logo_url || null }
     }));
-    console.info("[Campus Nexus] Institution branding applied:", title);
+    console.info("[Campus Nexus] Student institution branding applied:", title);
+    return true;
   }
 
-  async function resolveInstitution(client) {
-    // Student authentication already verifies the tenant by the authenticated
-    // profile's institution_id. Use that trusted result directly instead of
-    // performing a second profile lookup with a separate client/RLS context.
-    const authenticatedTenant = window.CURRENT_INSTITUTION;
-    if (authenticatedTenant && authenticatedTenant.id) {
-      applyBranding(authenticatedTenant);
+  async function resolve() {
+    const authenticatedInstitution = window.CURRENT_INSTITUTION;
+    if (authenticatedInstitution && authenticatedInstitution.id) {
+      apply(authenticatedInstitution);
       return;
     }
 
-    const auth = await client.auth.getUser();
-    const user = auth.data && auth.data.user;
+    const supabase = client();
+    if (!supabase) return;
+    const auth = await supabase.auth.getUser();
+    const user = auth && auth.data && auth.data.user;
     if (auth.error || !user) return;
 
-    // Exam Login performs the institution/role verification before routing to
-    // the dedicated dashboards. Reuse that verified hand-off if profile lookup
-    // is delayed or its RLS policy differs from the normal portal.
-    let handoff = null;
-    try {
-      const raw = sessionStorage.getItem("campusNexusExamLecturerAuth")
-        || localStorage.getItem("campusNexusExamLecturerAuth")
-        || sessionStorage.getItem("campusNexusExamAdminAuth")
-        || localStorage.getItem("campusNexusExamAdminAuth");
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed && String(parsed.user_id || "") === String(user.id)
-          && parsed.institution_id && parsed.institution_name) handoff = parsed;
-      }
-    } catch (_) {}
+    const profileResult = await supabase.from("consolidated_user_profiles_table")
+      .select("institution_id,role").eq("user_id", user.id).maybeSingle();
+    if (profileResult.error) throw profileResult.error;
+    const profile = profileResult.data;
+    if (!profile || !profile.institution_id) return;
+    if (["superadmin", "super_admin", "platform_super_admin"].includes(String(profile.role || "").toLowerCase())) return;
 
-    let profile = {};
-    const profileResult = await client.from("consolidated_user_profiles_table")
-      .select("institution_id,role,status").eq("user_id", user.id).maybeSingle();
-    if (!profileResult.error) profile = profileResult.data || {};
-    else if (!handoff) throw profileResult.error;
-
-    const role = String(profile.role || handoff?.role || "").toLowerCase();
-    if (["superadmin", "super_admin", "platform_super_admin"].includes(role)) return;
-
-    let institutionId = profile.institution_id || handoff?.institution_id || null;
-    if (!institutionId) {
-      const memberships = await client.from("institution_users")
-        .select("institution_id,role,status").eq("user_id", user.id).eq("status", "active");
-      if (memberships.error) throw memberships.error;
-      const ids = [...new Set((memberships.data || []).map(row => row.institution_id).filter(Boolean))];
-      if (ids.length !== 1) return;
-      institutionId = ids[0];
-    }
-
-    const result = await client.from("institutions")
+    const institutionResult = await supabase.from("institutions")
       .select("id,name,short_code,school_code,logo_url,primary_color,secondary_color,brand_colors,physical_address,postal_address,status")
-      .eq("id", institutionId).maybeSingle();
-    if (result.error) throw result.error;
-    if (!result.data || String(result.data.status || "").toLowerCase() === "suspended") return;
-    applyBranding(result.data);
+      .eq("id", profile.institution_id).maybeSingle();
+    if (institutionResult.error) throw institutionResult.error;
+    if (!institutionResult.data || String(institutionResult.data.status || "").toLowerCase() === "suspended") return;
+    apply(institutionResult.data);
   }
 
   async function boot() {
-    if (applied || attempts++ > 50) return;
-
-    // The Student Portal publishes CURRENT_INSTITUTION only after its
-    // authenticated profile and institution record have both been verified.
-    if (window.CURRENT_INSTITUTION && window.CURRENT_INSTITUTION.id) {
-      applyBranding(window.CURRENT_INSTITUTION);
-      if (applied) return;
-    }
-
-    const client = getClient();
-    if (!client) {
-      window.setTimeout(boot, 400);
-      return;
-    }
+    if (applied || attempts++ >= 50) return;
     try {
-      await resolveInstitution(client);
+      await resolve();
     } catch (error) {
-      console.warn("[Campus Nexus] Institution branding not applied:", error && error.message || error);
-      if (!applied && attempts < 50) window.setTimeout(boot, 900);
+      console.warn("[Campus Nexus] Could not apply institution branding:", error && error.message || error);
     }
+    if (!applied && attempts < 50) window.setTimeout(boot, 700);
   }
 
-  // Student startup dispatches appReady on document (not window).
-  // Listen on both targets to remain compatible with other portal shells.
-  document.addEventListener("appReady", () => { if (!applied) boot(); });
-  window.addEventListener("appReady", () => { if (!applied) boot(); });
-  window.addEventListener("load", () => { if (!applied) boot(); });
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot, {once: true});
-  else boot();
-  window.addEventListener("pageshow", () => { if (!applied) boot(); });
+  // student-auth-boot dispatches appReady on document, so listen there.
+  document.addEventListener("appReady", boot);
+  window.addEventListener("appReady", boot);
+  window.addEventListener("load", boot);
+  window.addEventListener("pageshow", boot);
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot, { once: true });
+  } else {
+    boot();
+  }
 })();
