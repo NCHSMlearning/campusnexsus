@@ -462,7 +462,7 @@ const LecturerQuestions = {
 
         if (!type || !mcqOptions || !essayOptions) return;
 
-        if (type.value === 'essay' || type.value === 'written') {
+        if (['essay','short_answer','written'].includes(type.value)) {
             mcqOptions.style.display = 'none';
             essayOptions.style.display = 'block';
         } else {
@@ -496,7 +496,7 @@ const LecturerQuestions = {
             document.getElementById('lecOptionB').value = data.option_b || '';
             document.getElementById('lecOptionC').value = data.option_c || '';
             document.getElementById('lecOptionD').value = data.option_d || '';
-            document.getElementById('lecCorrectAnswer').value = data.correct_answer || '';
+            document.getElementById('lecCorrectAnswer').value = data.correct_answer || '';\n            const keyInput = document.getElementById('lecMarkingKey');\n            if (keyInput) keyInput.value = data.marking_key || '';
             document.getElementById('lecQuestionMarks').value = data.marks || 1;
             document.getElementById('lecMaxChars').value = data.max_chars || 500;
 
@@ -525,7 +525,7 @@ const LecturerQuestions = {
         const optionD = document.getElementById('lecOptionD')?.value?.trim();
         const correctAnswer = document.getElementById('lecCorrectAnswer')?.value;
         const marks = parseInt(document.getElementById('lecQuestionMarks')?.value) || 1;
-        const maxChars = parseInt(document.getElementById('lecMaxChars')?.value) || 500;
+        const maxChars = parseInt(document.getElementById('lecMaxChars')?.value) || 5000;\n        const markingKey = document.getElementById('lecMarkingKey')?.value?.trim() || '';
 
         // Validation
         if (!questionText) {
