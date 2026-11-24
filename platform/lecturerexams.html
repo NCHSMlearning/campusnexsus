@@ -13,7 +13,7 @@
     <!-- These shared stylesheets live at the repository root, not under /platform/.
          Absolute paths prevent the browser from requesting /platform/css/... (404). -->
     <link rel="stylesheet" href="/platform/examinations/source/css/admindashboard.css?v=20261123-admin-layout-v3" />
-    <link rel="stylesheet" href="/css/lecturer-exams-modern.css?v=20261124-command-centre-responsive-v4" />
+    <link rel="stylesheet" href="/css/lecturer-exams-modern.css?v=20261124-lecturer-analytics-v5" />
     <link rel="stylesheet" href="/platform/examinations/source/css/admin-exams-modern.css?v=20261123-admin-command-centre-v1" />
     <style id="lecturer-admin-dashboard-parity">
       .sidebar-header .brand-text h2{font-family:Manrope,Inter,sans-serif!important;font-size:18px!important;line-height:1.1!important;color:#fff!important}
@@ -964,7 +964,7 @@
             const passRows = grades.filter(g => String(g.result_status || '').toUpperCase() === 'PASS');
             const failRows = grades.filter(g => String(g.result_status || '').toUpperCase() === 'FAIL');
             const decidedRows = passRows.length + failRows.length;
-            const marks = grades.map(g => Number(g.marks)).filter(n => Number.isFinite(n));
+            const marks = grades.filter(g => g.marks !== null && g.marks !== undefined && g.marks !== '').map(g => Number(g.marks)).filter(n => Number.isFinite(n));
             const averageMarks = marks.length ? marks.reduce((a,b) => a+b,0) / marks.length : null;
             const passRate = decidedRows ? (passRows.length / decidedRows) * 100 : null;
 
