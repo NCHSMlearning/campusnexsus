@@ -155,20 +155,36 @@
       install.hidden = true;
     };
     const isMobileInstallBrowser = /android|iphone|ipad|ipod/i.test(navigator.userAgent);
+    const installLabel = function () {
+      const institutionName = String(window.CURRENT_INSTITUTION?.name || '').trim();
+      return institutionName ? 'Install ' + institutionName + ' Portal' : 'Install Campus Nexus';
+    };
+    const setInstallLabel = function () {
+      const label = installLabel();
+      install.textContent = label;
+      install.setAttribute('aria-label', label);
+    };
     const install = document.createElement('button');
     install.type = 'button';
     install.className = 'nchsm-pwa-install';
-    install.textContent = 'Install NCHSM';
-    install.setAttribute('aria-label', 'Install NCHSM Digital Campus');
+    setInstallLabel();
     install.hidden = isStandalone() || wasInstalled() || !isMobileInstallBrowser;
     install.style.cssText = 'position:fixed;z-index:2147483645;left:max(16px,env(safe-area-inset-left));bottom:max(18px,env(safe-area-inset-bottom));padding:12px 18px;border:0;border-radius:999px;background:#073b5c;color:#fff;font:700 14px system-ui,sans-serif;box-shadow:0 6px 22px rgba(7,35,55,.25);cursor:pointer';
     document.body.appendChild(install);
+
+    const institutionLabelObserver = new MutationObserver(function () {
+      if (String(window.CURRENT_INSTITUTION?.name || '').trim()) {
+        setInstallLabel();
+        institutionLabelObserver.disconnect();
+      }
+    });
+    institutionLabelObserver.observe(document.documentElement, { childList: true, subtree: true });
 
     let deferredInstallPrompt = null;
     function syncInstallVisibility() {
       // Installed users should never see the website install control again.
       install.hidden = isStandalone() || wasInstalled() || !isMobileInstallBrowser;
-      if (!install.hidden) install.textContent = 'Install NCHSM';
+      if (!install.hidden) setInstallLabel();
     }
     window.addEventListener('beforeinstallprompt', function (event) {
       event.preventDefault();
@@ -193,8 +209,8 @@
       if (!deferredInstallPrompt) {
         const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
         window.alert(ios
-          ? 'To install NCHSM Digital Campus on iPhone/iPad, tap Share and choose “Add to Home Screen”.'
-          : 'To install NCHSM Digital Campus, open the browser menu (⋮) and choose “Install app” or “Add to Home screen”.');
+          ? 'To install ' + installLabel().replace(/^Install /, '') + ' on iPhone/iPad, tap Share and choose “Add to Home Screen”.'
+          : 'To install ' + installLabel().replace(/^Install /, '') + ', open the browser menu (⋮) and choose “Install app” or “Add to Home screen”.');
         return;
       }
       const promptEvent = deferredInstallPrompt;
@@ -207,12 +223,12 @@
         if (choice && choice.outcome === 'accepted') markInstalled();
         else {
           install.hidden = false;
-          install.textContent = 'Install NCHSM';
+          setInstallLabel();
         }
       } catch (error) {
-        console.warn('NCHSM PWA installation prompt failed:', error);
+        console.warn('Campus Nexus PWA installation prompt failed:', error);
         install.hidden = false;
-        install.textContent = 'Install NCHSM';
+        setInstallLabel();
       } finally {
         install.disabled = false;
       }
@@ -228,14 +244,14 @@
           if (worker.state === 'installed' && navigator.serviceWorker.controller) {
             if (window.Swal && typeof window.Swal.fire === 'function') {
               window.Swal.fire({
-                title: 'NCHSM has been updated',
+                title: 'Campus Nexus has been updated',
                 text: 'A new version is ready. Reload to use the latest improvements.',
                 icon: 'success',
                 confirmButtonText: 'Reload now',
                 confirmButtonColor: '#073b5c',
                 allowOutsideClick: false
               }).then(function (result) { if (result.isConfirmed) window.location.reload(); });
-            } else if (window.confirm('A new NCHSM version is ready. Reload now?')) {
+            } else if (window.confirm('A new Campus Nexus version is ready. Reload now?')) {
               window.location.reload();
             }
           }
