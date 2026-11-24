@@ -3,13 +3,10 @@
 const $=id=>document.getElementById(id);
 const form=$('examLoginForm'),email=$('email'),password=$('password'),schoolCode=$('schoolCode'),button=$('submitBtn'),loadButton=$('loadSchoolBtn'),message=$('message'),schoolStatus=$('schoolStatus');
 let selectedInstitution=null;
-const schoolField=schoolCode.closest('.field');
-const schoolModal=document.createElement('div');
-schoolModal.className='school-code-modal';schoolModal.id='schoolCodeModal';
-schoolModal.innerHTML='<section class="school-code-dialog" role="dialog" aria-modal="true" aria-labelledby="schoolPromptTitle"><div class="school-prompt-icon">⌂</div><h2 id="schoolPromptTitle">Welcome to your examination portal</h2><p>Enter your institution school code to load its name and logo before signing in.</p><div id="schoolPromptField"></div></section>';
-document.body.appendChild(schoolModal);
-document.getElementById('schoolPromptField').appendChild(schoolField);
-form.style.display='none';
+const credentialsPanel=$('loginCredentialsPanel');
+const schoolCodeField=$('schoolCodeField');
+credentialsPanel.hidden=true;
+form.style.display='block';
 const show=(text,type='error')=>{message.textContent=text;message.className='message '+type};
 const nextPath=(role)=>{const p=new URLSearchParams(location.search).get('redirect');if(role==='student')return p&&p.startsWith('/')&&!p.startsWith('//')?p:'/studentexam.html';if(['lecturer','instructor','teacher'].includes(role))return '/lecturerexams/';return '/adminexams/';};
 function clientReady(){const c=window.examSupabase;if(c&&typeof c.auth?.signInWithPassword==='function')return c;throw new Error(window.__EXAM_CONFIG_ERROR__||'The examination sign-in service is unavailable. Refresh and try again.')}
@@ -30,9 +27,15 @@ function paintInstitution(institution){
  if(/^#[0-9a-f]{3,8}$/i.test(institution.primary_color||''))document.documentElement.style.setProperty('--navy',institution.primary_color);
  if(/^#[0-9a-f]{3,8}$/i.test(institution.secondary_color||''))document.documentElement.style.setProperty('--teal',institution.secondary_color);
  document.title=name+' Examination Login';
- schoolStatus.textContent='Institution loaded. Sign in with your Campus Nexus account.';
- schoolStatus.style.color='#176c68';
- form.style.display='block';schoolModal.classList.add('is-hidden');
+ schoolStatus.textContent='Verified: '+name+'. Your institution is ready. Sign in below.';
+ schoolStatus.style.color='#14745f';
+ schoolCodeField.classList.add('is-verified');
+ schoolCode.readOnly=true;
+ loadButton.disabled=true;loadButton.textContent='School loaded';
+ credentialsPanel.hidden=false;
+ $('examLoginTitle').textContent='Welcome back';
+ $('examLoginIntro').textContent='Sign in with your registered Campus Nexus account. You will be directed to the correct examination dashboard for your role.';
+ email.focus();
 }
 async function loadSchool(){
  const code=schoolCode.value.trim().toUpperCase();
@@ -57,7 +60,19 @@ loadButton.addEventListener('click',loadSchool);
 const suppliedCode=new URLSearchParams(location.search).get('school_code');
 if(suppliedCode){schoolCode.value=suppliedCode;loadSchool();}else{schoolCode.focus();}
 schoolCode.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();loadSchool()}});
-schoolCode.addEventListener('input',()=>{if(selectedInstitution&&schoolCode.value.trim().toUpperCase()!==String(selectedInstitution.school_code||selectedInstitution.short_code||'').toUpperCase()){selectedInstitution=null;schoolStatus.textContent='Load the school again after changing its code.';schoolStatus.style.color='#a52b2b'}});
+schoolCode.addEventListener('input',()=>{
+ if(selectedInstitution){
+  selectedInstitution=null;
+  schoolCode.readOnly=false;
+  loadButton.disabled=false;loadButton.textContent='Continue';
+  schoolCodeField.classList.remove('is-verified');
+  credentialsPanel.hidden=true;
+  $('examLoginTitle').textContent='Welcome to your examination portal';
+  $('examLoginIntro').textContent='Enter your institution school code to securely load your school identity and continue to the correct examination sign-in.';
+  schoolStatus.textContent='Load the school again after changing its code.';
+  schoolStatus.style.color='#a52b2b';
+ }
+});
 form.addEventListener('submit',async e=>{
  e.preventDefault();message.className='message';
  if(!selectedInstitution){show('Enter your school code and select Load school before signing in.');return}
