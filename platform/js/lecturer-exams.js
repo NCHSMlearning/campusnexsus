@@ -631,31 +631,33 @@ const FROM_ADDRESS =
 
             try {
                 // ✅ Primary source: units_catalog
+                // The unit catalogue is institution-owned and carries its own
+                // programme/block fields. Do not intersect it with program_courses:
+                // that legacy mapping may contain UUIDs or stale IDs and can empty
+                // the lecturer's dropdown even when active units exist.
                 const { data, error } = await sb
                     .from('units_catalog')
-                    .select('id, unit_code, unit_name, program, block, assessment_type, status, institution_id')
+                    .select('*')
                     .eq('institution_id', this.institutionId)
                     .eq('status', 'active')
                     .order('unit_name', { ascending: true });
 
                 if (error) throw error;
 
-                this.courses = data || [];
-                const selectedProgram = this.value(['exam_program', 'examProgram']) || this.profile()?.program || this.profile()?.department || '';
+                this.courses = (data || []).filter(unit =>
+                    String(unit.institution_id || '') === String(this.institutionId)
+                );
+                const selectedProgram = this.value(['exam_program', 'examProgram']) ||
+                    this.profile()?.program || this.profile()?.department || '';
                 if (selectedProgram) {
-                    const { data: programRow, error: programError } = await sb.from('programs')
-                        .select('id').eq('program_code', selectedProgram).eq('institution_id', this.institutionId).maybeSingle();
-                    if (programError) throw programError;
-                    if (programRow?.id) {
-                        const { data: mappings, error: mappingError } = await sb.from('program_courses')
-                            .select('unit_catalog_id,block_name').eq('program_id', programRow.id)
-                            .not('unit_catalog_id', 'is', null);
-                        if (mappingError) throw mappingError;
-                        if ((mappings || []).length) {
-                            const mappedIds = new Set(mappings.map(x => Number(x.unit_catalog_id)).filter(Number.isFinite));
-                            this.courses = this.courses.filter(unit => mappedIds.has(Number(unit.id)));
-                        }
-                    }
+                    const normalizedProgram = String(selectedProgram).trim().toUpperCase();
+                    const programUnits = this.courses.filter(unit => {
+                        const unitProgram = String(
+                            unit.program || unit.program_code || unit.target_program || ''
+                        ).trim().toUpperCase();
+                        return !unitProgram || unitProgram === normalizedProgram;
+                    });
+                    if (programUnits.length) this.courses = programUnits;
                 }
 
                 const byProgram = {};
