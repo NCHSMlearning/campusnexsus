@@ -1910,6 +1910,16 @@ function updateStats(data) {
 function updateDashboardFinanceBridge(data) {
     const balance = document.getElementById('dashboard-finance-balance');
     const status = document.getElementById('dashboard-finance-status');
+    const label = document.getElementById('dashboard-finance-label');
+    const sublabel = document.getElementById('dashboard-finance-sublabel');
+
+    if (data?.feeStructureConfigured === false) {
+        if (balance) balance.textContent = 'Not set';
+        if (status) status.textContent = 'Fee Setup Required';
+        if (label) label.textContent = 'Finance Setup Required';
+        if (sublabel) sublabel.textContent = 'Your institution has not configured this programme fee structure.';
+        return;
+    }
 
     // Dashboard = CURRENT block/semester outstanding.
     // data.balance remains the FULL account outstanding for the Finance page.
@@ -1945,14 +1955,12 @@ function updateDashboardFinanceBridge(data) {
                 : 'Current Period Outstanding';
     }
 
-    const label = document.getElementById('dashboard-finance-label');
     if (label) {
         label.textContent = data?.currentPeriod
             ? `${data.currentPeriod} Outstanding`
             : 'Current Period Outstanding';
     }
 
-    const sublabel = document.getElementById('dashboard-finance-sublabel');
     if (sublabel) {
         sublabel.textContent = currentFee > 0
             ? `Fee: KES ${currentFee.toLocaleString()} • Paid: KES ${currentPaid.toLocaleString()}`
