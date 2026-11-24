@@ -32,7 +32,8 @@
       ["library","Library management","Library catalogue, circulation and digital resources"],
       ["hostel_management","Accommodation & hostels","Room allocation, occupancy and hostel services"],
       ["transport_management","Transport management","Vehicles, routes, schedules and transport requests"],
-      ["career_services","Career services & alumni","Career support, placements and alumni engagement"],
+      ["career_services","Career services","Career guidance, internships, placements and graduate employability"],
+      ["alumni","Alumni network","Graduate records, alumni engagement and tracer studies"],
       ["events","Events & calendar","Institution events, academic calendar and activities"]
     ]],
     ["Institution operations", [
