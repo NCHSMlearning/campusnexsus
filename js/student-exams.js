@@ -106,7 +106,8 @@ function onlineHref(exam){
   const authorization=state.examResults[String(exam.id)]?.summary||{};
   const authorized=authorization.result_status==='RESET_FOR_RETAKE'&&authorization.allow_retake===true&&authorization.retake_unlocked===true;
   if(authorized)url.searchParams.set('retake','true');else url.searchParams.delete('retake');
-  return url.href;
+  // Send students through the CN-SEB installation/launch page first.
+  return '/secure-exam-browser.html?exam_url='+encodeURIComponent(url.href);
  }catch(_){return ''}
 }
 function dateLabel(exam){const d=startsAt(exam);return d?d.toLocaleString('en-KE',{timeZone:'Africa/Nairobi',dateStyle:'medium',timeStyle:'short'})+' Kenya time (UTC+3)':'Schedule to be confirmed'}
