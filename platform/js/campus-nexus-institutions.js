@@ -639,6 +639,37 @@
     if (form && institutionFormHome) institutionFormHome.insertBefore(form,institutionFormNext);
   }
 
+  function extractLogoPalette(image) {
+    try {
+      const canvas=document.createElement('canvas'), maxSide=180;
+      const scale=Math.min(1,maxSide/Math.max(image.naturalWidth||image.width,image.naturalHeight||image.height));
+      canvas.width=Math.max(1,Math.round((image.naturalWidth||image.width)*scale));
+      canvas.height=Math.max(1,Math.round((image.naturalHeight||image.height)*scale));
+      const context=canvas.getContext('2d',{willReadFrequently:true});
+      context.drawImage(image,0,0,canvas.width,canvas.height);
+      const pixels=context.getImageData(0,0,canvas.width,canvas.height).data, bins=new Map();
+      for(let i=0;i<pixels.length;i+=16){
+        const a=pixels[i+3],r=pixels[i],g=pixels[i+1],b=pixels[i+2],hi=Math.max(r,g,b),lo=Math.min(r,g,b);
+        if(a<150||(hi>245&&hi-lo<18)||hi<35) continue;
+        const key=[r,g,b].map(v=>Math.min(255,Math.round(v/24)*24)).join(',');
+        const item=bins.get(key)||{n:0,r:0,g:0,b:0}; item.n++;item.r+=r;item.g+=g;item.b+=b;bins.set(key,item);
+      }
+      const hex=v=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,'0');
+      const candidates=[...bins.values()].sort((a,b)=>b.n-a.n).map(x=>'#'+hex(x.r/x.n)+hex(x.g/x.n)+hex(x.b/x.n));
+      const chosen=[],rgb=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16));
+      for(const color of candidates){const c=rgb(color);if(chosen.every(existing=>{const o=rgb(existing);return Math.sqrt(c.reduce((sum,v,i)=>sum+Math.pow(v-o[i],2),0))>58;}))chosen.push(color);if(chosen.length===6)break;}
+      return [...chosen,'#082f49','#0f766e','#d4a017','#2563eb','#7c3aed','#db2777'].slice(0,6);
+    }catch(error){console.warn('[Campus Nexus] Logo colour extraction failed:',error);return null;}
+  }
+
+  function showLogoPalette(colors) {
+    const host=$('cnLogoPaletteReview'); if(!host||!Array.isArray(colors)||colors.length!==6)return;
+    const labels=['Primary','Secondary','Accent 1','Accent 2','Accent 3','Accent 4'];
+    host.innerHTML='<div class="cn-logo-palette-title"><strong>Colours detected in your logo</strong><small>Would you like to use these colours for this institution?</small></div><div class="cn-logo-palette-swatches">'+colors.map((color,index)=>'<div class="cn-logo-palette-swatch"><span style="background:'+esc(color)+'"></span><small>'+labels[index]+'</small><code>'+esc(color.toUpperCase())+'</code></div>').join('')+'</div><div class="cn-logo-palette-actions"><button type="button" id="cnLogoPaletteApply">Yes, use these colours</button><button type="button" id="cnLogoPaletteDismiss">Keep current colours</button></div>';
+    host.hidden=false;
+    $('cnLogoPaletteApply').addEventListener('click',()=>{applyBrandColors(colors);host.hidden=true;notify('Logo colours applied to this institution. Save the institution to keep the changes.','success');});
+    $('cnLogoPaletteDismiss').addEventListener('click',()=>{host.hidden=true;notify('Your existing institution colours have been kept.','info');});
+  }
   function setupLogoUploader() {
     const logoInput = $("cnInstitutionLogo");
     if (!logoInput || $("cnInstitutionLogoUpload")) return;
@@ -671,6 +702,19 @@
         .cn-logo-clear{border:0;background:transparent;color:#b42318;font-size:11px;font-weight:700;cursor:pointer;padding:7px 0}
         .cn-logo-reset{border:1px solid #dbe5eb;border-radius:8px;background:#fff;color:#334155;font-size:11px;font-weight:700;padding:7px 10px;cursor:pointer}
         .cn-logo-status{color:#64748b;font-size:10px}
+        .cn-logo-palette{margin-top:14px;padding:13px;border:1px solid #cbdde8;border-radius:12px;background:linear-gradient(135deg,#f8fbff,#f4fbf7)}
+        .cn-logo-palette[hidden]{display:none!important}
+        .cn-logo-palette-title strong{display:block;color:#173b52;font-size:12px;font-weight:850}
+        .cn-logo-palette-title small{display:block;margin-top:4px;color:#64748b;font-size:10px;line-height:1.45}
+        .cn-logo-palette-swatches{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:12px}
+        .cn-logo-palette-swatch{display:grid;grid-template-columns:30px minmax(0,1fr);column-gap:7px;align-items:center;min-width:0}
+        .cn-logo-palette-swatch>span{grid-row:span 2;width:30px;height:30px;border:1px solid #d7e0e8;border-radius:8px}
+        .cn-logo-palette-swatch small{color:#475569;font-size:9px;font-weight:750}
+        .cn-logo-palette-swatch code{color:#64748b;font-size:9px}
+        .cn-logo-palette-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:13px}
+        .cn-logo-palette-actions button{min-height:36px;padding:8px 11px;border:1px solid #d2dce5;border-radius:8px;background:#fff;color:#334155;font-size:10px;font-weight:800;cursor:pointer}
+        .cn-logo-palette-actions #cnLogoPaletteApply{border-color:#0f766e;background:#0f766e;color:#fff}
+        @media(max-width:720px){.cn-logo-palette-swatches{grid-template-columns:repeat(2,minmax(0,1fr))}.cn-logo-palette-actions button{flex:1}}
         @media(max-width:720px){.cn-logo-studio{grid-template-columns:1fr;padding:13px;gap:12px}.cn-logo-studio-head{grid-column:auto}.cn-logo-preview{height:130px}}
         /* Consistent, responsive alignment for every field in the institution editor */
         #cnInstitutionForm{display:grid;grid-template-columns:minmax(0,1fr);column-gap:0;row-gap:8px;align-content:start}
@@ -698,6 +742,7 @@
           <div class="cn-logo-control"><label for="cnLogoFit">Image fit</label><select id="cnLogoFit"><option value="contain">Show full logo</option><option value="cover">Fill preview</option></select></div>
           <div class="cn-logo-control"><label for="cnLogoBackground">Preview background</label><input id="cnLogoBackground" type="color" value="#ffffff"></div>
         </div>
+        <section class="cn-logo-palette" id="cnLogoPaletteReview" hidden aria-live="polite"></section>
       </div>`;
     const field = logoInput.closest(".form-group,.form-field,.field,.mb-3") || logoInput.parentElement;
     field.insertAdjacentElement("afterend", wrap);
@@ -725,6 +770,7 @@
       const file = event.target.files && event.target.files[0] ? event.target.files[0] : null;
       if (!file) {
         selectedLogoFile = null;
+        $("cnLogoPaletteReview")?.setAttribute("hidden","");
         renderPreview(safeWebUrl(logoInput.value,true));
         $("cnLogoFileStatus").textContent = "No new file selected";
         return;
@@ -754,7 +800,11 @@
         renderPreview(dataUrl);
         const img = preview.querySelector("img");
         if (img) {
-          img.onload = () => { $("cnLogoFileStatus").textContent = file.name + " · " + (file.size/1024).toFixed(0) + " KB · Preview ready"; };
+          img.onload = () => {
+            $("cnLogoFileStatus").textContent = file.name + " · " + (file.size/1024).toFixed(0) + " KB · Preview ready";
+            const detectedColors=extractLogoPalette(img);
+            if(detectedColors) showLogoPalette(detectedColors);
+          };
           img.onerror = () => { $("cnLogoFileStatus").textContent = "Image preview failed. Try a PNG or JPG file."; };
         }
       };
@@ -767,6 +817,7 @@
       $("cnInstitutionLogoFile").value = "";
       logoInput.value = "";
       $("cnLogoFileStatus").textContent = "Logo will be removed when saved";
+      $("cnLogoPaletteReview")?.setAttribute("hidden","");
       renderPreview("");
     });
     $("cnLogoStyleReset").addEventListener("click",() => {
