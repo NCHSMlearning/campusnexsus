@@ -618,11 +618,13 @@
  </div>
  <div class="ia-panel"><div class="ia-panel-head"><div><h2>Marks register filters</h2><p>Filter the institution marks register by academic year, programme and block.</p></div></div><div class="ia-filter-row"><select id="iaMEYearFilter" class="ia-module-search"><option value="all">All academic years</option></select><select id="iaMEProgramFilter" class="ia-module-search"><option value="all">All programmes</option></select><select id="iaMEBlockFilter" class="ia-module-search"><option value="all">All blocks / terms</option></select><input id="iaMESearch" class="ia-module-search" type="search" placeholder="Search student, admission no., unit…"></div></div>
  <div class="ia-panel ia-table-panel"><div class="ia-panel-head"><div><h2>Institution marks register</h2><p>Saved assessment records for this institution. Mark capture remains in the authorised examination centre.</p></div><div class="ia-panel-actions"><button class="ia-secondary-btn" id="iaMEExport" type="button"><i class="fa-solid fa-download"></i> Export CSV</button></div></div><div class="ia-table-scroll"><table><thead><tr><th>Student</th><th>Admission no.</th><th>Programme</th><th>Block</th><th>Unit</th><th>Year</th><th>CAT 1</th><th>CAT 2</th><th>Exam</th><th>Final</th><th>Grade</th><th>Status</th></tr></thead><tbody id="iaMarksEntryRows"><tr><td colspan="12" class="ia-empty">Loading marks…</td></tr></tbody></table></div></div>
+<div class="ia-compat-toolbar" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:14px 0"><div id="iaMECaptureNotice" role="status" style="flex:1 1 100%;padding:10px;background:#f0fdfa;border-radius:8px">Loading institution marks workspace…</div><input id="iaMECaptureSearch" type="search" placeholder="Search learner…" style="padding:9px;border:1px solid #cbd5e1;border-radius:8px"><button id="iaMELoadStudents" type="button" class="btn btn-primary">Load learners</button><button id="iaMESaveCapture" type="button" class="btn btn-primary">Save marks & submit for approval</button><span id="iaMEPageInfo"></span><button id="iaMEPrevPage" type="button">Previous</button><button id="iaMENextPage" type="button">Next</button></div><table class="table" style="width:100%;border-collapse:collapse"><tbody id="iaMEEditorRows"><tr><td>Choose a programme and unit to load learners.</td></tr></tbody></table>
 </section>
 <section class="ia-view" id="view-marks-approval">
  <div class="ia-page-heading"><div><span class="ia-eyebrow">RESULTS GOVERNANCE</span><h1>Marks approval</h1><p>Review marks submitted for approval by authorised academic staff.</p></div><button class="ia-secondary-btn" data-marks-refresh="approval"><i class="fa-solid fa-rotate"></i> Refresh</button></div>
  <div class="ia-stat-grid ia-report-grid"><article class="ia-stat-card"><small>Pending review</small><strong id="iaMAPending">—</strong></article><article class="ia-stat-card"><small>Approved today</small><strong id="iaMAApproved">—</strong></article><article class="ia-stat-card"><small>Rejected</small><strong id="iaMARejected">—</strong></article><article class="ia-stat-card"><small>Pending subjects</small><strong id="iaMAUnits">—</strong></article></div>
  <div class="ia-panel"><div class="ia-panel-head"><div><h2>Approval queue filters</h2><p>Search and narrow the pending review queue before individual or bulk decisions.</p></div></div><div class="ia-filter-row"><input id="iaMASearch" class="ia-module-search" type="search" placeholder="Search student, admission no., unit…"><select id="iaMASubjectFilter" class="ia-module-search"><option value="all">All units</option></select><select id="iaMABlockFilter" class="ia-module-search"><option value="all">All blocks / terms</option></select><select id="iaMAYearFilter" class="ia-module-search"><option value="all">All academic years</option></select><select id="iaMAProgramFilter" class="ia-module-search"><option value="all">All programmes</option></select></div></div><div class="ia-panel ia-table-panel"><div class="ia-panel-head"><div><h2>Marks awaiting review</h2><p>Approval and rejection actions are recorded against this institution's marks.</p></div><div class="ia-panel-actions"><button type="button" class="ia-secondary-btn" id="iaMAExport"><i class="fa-solid fa-file-csv"></i> Export CSV</button><button type="button" class="ia-primary-btn" id="iaApproveAllPending">Approve all filtered</button><button type="button" class="ia-danger-btn" id="iaRejectAllPending">Reject all filtered</button></div></div><div class="ia-table-scroll"><table><thead><tr><th>Student</th><th>Admission no.</th><th>Programme</th><th>Block</th><th>Unit</th><th>Final score</th><th>Submitted</th><th>Action</th></tr></thead><tbody id="iaMarksApprovalRows"><tr><td colspan="8" class="ia-empty">Loading pending marks…</td></tr></tbody></table></div></div>
+<div hidden><select id="iaMEYearFilter"></select><select id="iaMEProgramFilter"></select><select id="iaMEBlockFilter"></select><select id="iaMASubjectFilter"></select><select id="iaMABlockFilter"></select><select id="iaMAYearFilter"></select><select id="iaMAProgramFilter"></select></div><table hidden><tbody id="iaMarksApprovalRows"></tbody></table>
 </section>
 <section class="ia-view" id="view-entry-control">
  <div class="ia-page-heading"><div><span class="ia-eyebrow">ACADEMIC ACCESS CONTROL</span><h1>Mark entry control</h1><p>Manage the institution's mark-entry window. Platform-wide controls remain with Superadmin.</p></div><button class="ia-secondary-btn" data-marks-refresh="control"><i class="fa-solid fa-rotate"></i> Refresh</button></div>
@@ -644,6 +646,7 @@
  <div class="ia-panel ia-table-panel"><div class="ia-panel-head"><div><h2>Manual student check-in</h2><p>Record an institution-authorised attendance entry. The action is saved to this institution only.</p></div></div><form id="iaManualAttendanceForm" class="ia-filter-row"><select class="ia-module-search" id="iaAttStudent" required><option value="">Select student</option></select><select class="ia-module-search" id="iaAttSession"><option value="classroom">Classroom</option><option value="clinical">Clinical</option><option value="lab">Lab</option><option value="tutorial">Tutorial</option><option value="virtual">Virtual</option></select><input class="ia-module-search" id="iaAttTarget" type="text" placeholder="Course / rotation / location" required><input class="ia-module-search" id="iaAttDate" type="date" required><input class="ia-module-search" id="iaAttTime" type="time"><button class="ia-primary-btn" type="submit">Record attendance</button></form></div><div class="ia-panel ia-table-panel"><div class="ia-panel-head"><div><h2>Attendance filters</h2><p>Filters apply only to your institution's registered students.</p></div></div><div class="ia-filter-row"><input class="ia-module-search" id="iaAttendanceSearch" type="search" placeholder="Search student, admission no. or session…"><select class="ia-module-search" id="iaAttendanceProgram"><option value="all">All programmes</option><option value="krchn">KRCHN</option><option value="tvet">TVET</option></select><select class="ia-module-search" id="iaAttendanceStatus"><option value="all">All statuses</option><option value="verified">Verified / present</option><option value="pending">Pending / unverified</option></select><select class="ia-module-search" id="iaAttendanceType"><option value="all">All session types</option><option value="classroom">Classroom</option><option value="clinical">Clinical</option><option value="lab">Lab</option><option value="tutorial">Tutorial</option><option value="virtual">Virtual</option></select><button class="ia-secondary-btn" type="button" id="iaAttendanceReset">Reset filters</button></div></div>
  <div class="ia-panel ia-table-panel"><div class="ia-panel-head"><div><h2>Today's attendance</h2><p>Student geo check-ins recorded today.</p></div></div><div class="ia-table-scroll"><table><thead><tr><th>Date & time</th><th>Student</th><th>Admission no.</th><th>Programme</th><th>Session</th><th>Target</th><th>Location</th><th>GPS coordinates</th><th>Distance</th><th>Status</th></tr></thead><tbody id="iaAttendanceTodayRows"><tr><td colspan="10" class="ia-empty">Loading…</td></tr></tbody></table></div></div>
  <div class="ia-panel ia-table-panel"><div class="ia-panel-head"><div><h2>Attendance history</h2><p>Previous check-ins and verification status.</p></div></div><div class="ia-table-scroll"><table><thead><tr><th>Date & time</th><th>Student</th><th>Admission no.</th><th>Programme</th><th>Session</th><th>Target</th><th>Location</th><th>GPS coordinates</th><th>Distance</th><th>Status</th></tr></thead><tbody id="iaAttendanceHistoryRows"><tr><td colspan="10" class="ia-empty">Loading…</td></tr></tbody></table></div></div>
+<div hidden><span id="iaAttendanceNotice"></span><span id="iaAttendanceTodayRows"></span><span id="iaAttendanceHistoryRows"></span><select id="iaAttendanceReset"></select></div>
 </section>
 <section class="ia-view" id="view-learning"><div class="ia-page-heading"><div><span class="ia-eyebrow">DIGITAL LEARNING</span><h1>Learning management</h1><p>Learning services enabled for your institution.</p></div></div><div class="ia-panel ia-table-panel"><div class="ia-panel-head"><div><h2>Institution learning resources</h2><p>Approved learning resources uploaded for this institution</p></div></div><div class="ia-table-scroll"><table><thead><tr><th>Resource</th><th>Unit</th><th>Programme</th><th>Category</th><th>Approval</th><th>File</th></tr></thead><tbody id="iaResources"><tr><td colspan="6" class="ia-empty">Loading resources…</td></tr></tbody></table></div></div></section>
 <section class="ia-view" id="view-reports"><div class="ia-page-heading"><div><span class="ia-eyebrow">INSTITUTION INSIGHTS</span><h1>Reports & analytics</h1><p>Live summary of your institution's core records.</p></div></div><div class="ia-stat-grid ia-report-grid"><article class="ia-stat-card"><small>Students</small><strong id="repStudents">—</strong></article><article class="ia-stat-card"><small>Staff</small><strong id="repStaff">—</strong></article><article class="ia-stat-card"><small>Programmes</small><strong id="repPrograms">—</strong></article><article class="ia-stat-card"><small>Examinations</small><strong id="repExams">—</strong></article><article class="ia-stat-card"><small>Attendance records</small><strong id="repAttendance">—</strong></article><article class="ia-stat-card"><small>Published results</small><strong id="repResults">—</strong></article><article class="ia-stat-card" data-module="admissions"><small>Applicants</small><strong id="repAdmissions">—</strong></article><article class="ia-stat-card" data-module="human_resources"><small>HR records</small><strong id="repHR">—</strong></article><article class="ia-stat-card" data-module="timetable"><small>Timetable sessions</small><strong id="repTimetable">—</strong></article><article class="ia-stat-card" data-module="clinical_placements"><small>Clinical placements</small><strong id="repPlacements">—</strong></article><article class="ia-stat-card" data-module="research_management"><small>Research projects</small><strong id="repResearch">—</strong></article><article class="ia-stat-card" data-module="student_welfare"><small>Welfare cases</small><strong id="repWelfare">—</strong></article></div><div class="ia-page-heading" style="margin-top:24px"><div><span class="ia-eyebrow">ACADEMIC PERFORMANCE</span><h2>Marks analytics</h2><p>Institution-scoped performance indicators with the same academic filters used in the Super Admin analytics workspace.</p></div><div class="ia-page-actions"><span id="iaMarksAnalyticsUpdated" class="ia-muted"></span><button class="ia-secondary-btn" id="iaAnalyticsRefresh" type="button"><i class="fa-solid fa-rotate"></i> Refresh analytics</button><button class="ia-secondary-btn" id="iaAnalyticsExport" type="button"><i class="fa-solid fa-file-csv"></i> Export CSV</button><button class="ia-secondary-btn" id="iaAnalyticsPrint" type="button"><i class="fa-solid fa-print"></i> Print</button></div></div><div class="ia-panel"><div class="ia-panel-head"><div><h2>Analytics filters</h2><p>These filters only affect records belonging to this institution.</p></div></div><div class="ia-filter-row"><select id="iaAnalyticsProgram" class="ia-module-search"><option value="all">All programmes</option></select><select id="iaAnalyticsYear" class="ia-module-search"><option value="2026" selected>2026</option><option value="all">All academic years</option></select><select id="iaAnalyticsIntake" class="ia-module-search"><option value="all">All intakes</option></select><select id="iaAnalyticsBlock" class="ia-module-search"><option value="all">All blocks / terms</option></select></div></div><div id="iaAnalyticsNotice" class="ia-notice" aria-live="polite">Loading academic analytics…</div><div class="ia-stat-grid ia-report-grid"><article class="ia-stat-card"><small>Mark records</small><strong id="iaAnalyticsMarks">—</strong></article><article class="ia-stat-card"><small>Students assessed</small><strong id="iaAnalyticsStudents">—</strong></article><article class="ia-stat-card"><small>Units assessed</small><strong id="iaAnalyticsUnits">—</strong></article><article class="ia-stat-card"><small>Average score</small><strong id="iaAnalyticsAverage">—</strong></article><article class="ia-stat-card"><small>Pass rate</small><strong id="iaAnalyticsPassRate">—</strong></article><article class="ia-stat-card"><small>At risk / failed</small><strong id="iaAnalyticsAtRisk">—</strong></article><article class="ia-stat-card"><small>Pending approval</small><strong id="iaAnalyticsPending">—</strong></article><article class="ia-stat-card"><small>Published records</small><strong id="iaAnalyticsPublished">—</strong></article></div><div class="ia-grid-two" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:16px"><div class="ia-panel"><div class="ia-panel-head"><div><h2>Grade distribution</h2><p>Grades from the institution's saved marks.</p></div></div><div style="height:280px"><canvas id="iaAnalyticsGradeChart"></canvas></div></div><div class="ia-panel"><div class="ia-panel-head"><div><h2>Marks by block / term</h2><p>Assessment record volume across academic blocks.</p></div></div><div style="height:280px"><canvas id="iaAnalyticsBlockChart"></canvas></div></div><div class="ia-panel"><div class="ia-panel-head"><div><h2>Programme comparison</h2><p>Assessment records by programme.</p></div></div><div style="height:280px"><canvas id="iaAnalyticsProgramChart"></canvas></div></div></div><div class="ia-grid-two" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:16px">
@@ -652,7 +655,8 @@
  <div class="ia-panel"><div class="ia-panel-head"><div><h2>Assessment type mix</h2><p>Marks by assessment format.</p></div></div><div style="height:280px"><canvas id="iaAnalyticsAssessmentChart"></canvas></div></div>
  <div class="ia-panel"><div class="ia-panel-head"><div><h2>Grade by assessment type</h2><p>Grade distribution across assessment formats.</p></div></div><div style="height:280px"><canvas id="iaAnalyticsGradeByAssessmentChart"></canvas></div></div>
  <div class="ia-panel"><div class="ia-panel-head"><div><h2>Unit ranking</h2><p>Highest average-scoring units.</p></div></div><div style="height:280px"><canvas id="iaAnalyticsUnitChart"></canvas></div></div>
-</div><div class="ia-panel ia-table-panel"><div class="ia-panel-head"><div><h2>Unit performance summary</h2><p>Average recorded score by unit.</p></div></div><div class="ia-table-scroll"><table><thead><tr><th>Unit</th><th>Records</th><th>Average score</th></tr></thead><tbody id="iaAnalyticsUnitRows"><tr><td colspan="3" class="ia-empty">Loading…</td></tr></tbody></table></div></div></section>
+</div><div class="ia-panel ia-table-panel"><div class="ia-panel-head"><div><h2>Unit performance summary</h2><p>Average recorded score by unit.</p></div></div><div class="ia-table-scroll"><table><thead><tr><th>Unit</th><th>Records</th><th>Average score</th></tr></thead><tbody id="iaAnalyticsUnitRows"><tr><td colspan="3" class="ia-empty">Loading…</td></tr></tbody></table></div></div><div hidden><select id="iaAnalyticsIntake"><option value="all">All intakes</option></select><span id="iaMarksAnalyticsUpdated"></span><span id="iaAnalyticsPending"></span><span id="iaAnalyticsPublished"></span><span id="iaAnalyticsMarks"></span><span id="iaAnalyticsStudents"></span><span id="iaAnalyticsUnits"></span><span id="iaAnalyticsAverage"></span><span id="iaAnalyticsPassRate"></span><span id="iaAnalyticsAtRisk"></span></div>
+</section>
 <section class="ia-view" id="view-activity"><div class="ia-page-heading"><div><span class="ia-eyebrow">INSTITUTION GOVERNANCE</span><h1>Institution activity</h1><p>Read-only history of actions recorded for this institution. Platform-wide activity remains restricted to Super Admin.</p></div><button class="ia-secondary-btn" type="button" id="iaActivityRefresh"><i class="fa-solid fa-rotate"></i> Refresh</button></div><div class="ia-stat-grid ia-report-grid"><article class="ia-stat-card"><small>Recorded actions</small><strong id="iaActivityTotal">—</strong></article><article class="ia-stat-card"><small>Today</small><strong id="iaActivityToday">—</strong></article><article class="ia-stat-card"><small>Unique actors</small><strong id="iaActivityActors">—</strong></article></div><div class="ia-panel ia-table-panel"><div class="ia-panel-head"><div><h2>Activity log</h2><p>Latest 300 records for your institution only.</p></div><input class="ia-module-search" id="iaActivitySearch" type="search" placeholder="Search actions, records or details…"><button class="ia-secondary-btn" type="button" id="iaActivityExport"><i class="fa-solid fa-download"></i> Export CSV</button></div><div class="ia-table-scroll"><table><thead><tr><th>Date & time</th><th>Action</th><th>Record type</th><th>Record ID</th><th>Actor user ID</th><th>Details</th></tr></thead><tbody id="iaActivityRows"><tr><td colspan="6" class="ia-empty">Open this page to load activity.</td></tr></tbody></table></div></div></section>
 <section class="ia-view" id="view-settings">
  <div class="ia-page-heading"><div><span class="ia-eyebrow">TENANT CONFIGURATION</span><h1>Institution settings</h1><p>Institution information is organised by section. Platform-controlled details are read-only here.</p></div></div>
@@ -738,4 +742,1428 @@
 </dialog></div>
 <div class="ia-mobile-scrim" id="iaScrim"></div>
 
-</body></html>
+</body></html><section id="view-attendance" class="tab-content ia-view">
+    <div style="background: linear-gradient(135deg, #0A3D62, #1a5a7a); border-radius: 16px; padding: 20px 25px; margin-bottom: 20px;">
+        <h2 style="color: white; margin: 0; display: flex; align-items: center; gap: 12px;">
+            <i class="fas fa-clipboard-check" style="color: #FDB913;"></i> Daily Attendance & Geo Check-in
+        </h2>
+        <p style="color: rgba(255,255,255,0.85); margin: 4px 0 0 0; font-size: 14px;">
+            <i class="fas fa-map-marker-alt"></i> Track attendance for KRCHN and TVET students with geo-location
+        </p>
+    </div>
+
+    <!-- Quick Actions -->
+    <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px;">
+        <button onclick="adminCheckIn()" style="padding: 10px 24px; background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-fingerprint"></i> Mark My Attendance Now
+        </button>
+        <button onclick="refreshAttendance()" style="padding: 10px 20px; background: #6b7280; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500; display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-sync-alt"></i> Refresh
+        </button>
+        <button onclick="exportAllAttendance()" style="padding: 10px 20px; background: #4C1D95; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500; display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-download"></i> Export All
+        </button>
+    </div>
+
+    <hr style="border: none; border-top: 2px solid #e5e7eb; margin: 20px 0;">
+
+    <!-- Manual Student Check-in -->
+    <div style="background: white; border-radius: 12px; padding: 20px; border: 1px solid #e5e7eb; margin-bottom: 20px;">
+        <h3 style="color: #0A3D62; margin-top: 0; display: flex; align-items: center; gap: 10px;">
+            <i class="fas fa-user-plus" style="color: #4C1D95;"></i> Manual Student Check-in
+        </h3>
+        
+        <form id="manual-attendance-form">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
+                <div>
+                    <label style="font-weight: 600; font-size: 13px; color: #475569; display: block; margin-bottom: 4px;">
+                        <i class="fas fa-user"></i> Student *
+                    </label>
+                    <select id="att_student_id" required style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 13px; background: white;">
+                        <option value="">-- Select Student --</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-weight: 600; font-size: 13px; color: #475569; display: block; margin-bottom: 4px;">
+                        <i class="fas fa-tag"></i> Session Type *
+                    </label>
+                    <select id="att_session_type" required style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 13px; background: white;" onchange="toggleAttendanceFields()">
+                        <option value="">-- Select Type --</option>
+                        <option value="classroom">📚 Classroom</option>
+                        <option value="clinical">🏥 Clinical</option>
+                        <option value="virtual">💻 Virtual</option>
+                        <option value="call">📞 On Call</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-weight: 600; font-size: 13px; color: #475569; display: block; margin-bottom: 4px;">
+                        <i class="fas fa-building"></i> Department / Area *
+                    </label>
+                    <input type="text" id="att_department" placeholder="e.g., Nursing, Clinical" required 
+                           style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 13px;">
+                </div>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-top: 12px;">
+                <div>
+                    <label style="font-weight: 600; font-size: 13px; color: #475569; display: block; margin-bottom: 4px;">
+                        <i class="fas fa-graduation-cap"></i> Program
+                    </label>
+                    <select id="att_program" style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 13px; background: white;">
+                        <option value="">-- Optional: Filter by Program --</option>
+                        <option value="KRCHN">🎓 KRCHN Nursing</option>
+                        <optgroup label="🔧 TVET Programs">
+                            <option value="DPOTT">Diploma in Perioperative Theatre</option>
+                            <option value="DCH">Diploma in Community Health</option>
+                            <option value="CPOTT">Certificate in Perioperative Theatre</option>
+                            <option value="CCH">Certificate in Community Health</option>
+                        </optgroup>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-weight: 600; font-size: 13px; color: #475569; display: block; margin-bottom: 4px;">
+                        <i class="fas fa-layer-group"></i> Block / Term
+                    </label>
+                    <select id="att_block_term" style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 13px; background: white;">
+                        <option value="">-- Optional: Filter by Block/Term --</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-weight: 600; font-size: 13px; color: #475569; display: block; margin-bottom: 4px;">
+                        <i class="fas fa-book"></i> Course
+                    </label>
+                    <select id="att_course_id" style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 13px; background: white;">
+                        <option value="">-- Optional: Select Course --</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-weight: 600; font-size: 13px; color: #475569; display: block; margin-bottom: 4px;">
+                        <i class="fas fa-map-pin"></i> Location
+                    </label>
+                    <input type="text" id="att_location" placeholder="e.g., Hall A, Skills Lab" 
+                           style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 13px;">
+                </div>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 12px;">
+                <div>
+                    <label style="font-weight: 600; font-size: 13px; color: #475569; display: block; margin-bottom: 4px;">
+                        <i class="fas fa-calendar-day"></i> Date *
+                    </label>
+                    <input type="date" id="att_date" required 
+                           style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 13px;">
+                </div>
+                <div>
+                    <label style="font-weight: 600; font-size: 13px; color: #475569; display: block; margin-bottom: 4px;">
+                        <i class="fas fa-clock"></i> Time
+                    </label>
+                    <input type="time" id="att_time" 
+                           style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 13px;">
+                </div>
+                <div style="display: flex; align-items: flex-end;">
+                    <button type="submit" style="width: 100%; padding: 10px; background: linear-gradient(135deg, #4C1D95, #6d28d9); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                        <i class="fas fa-check-circle"></i> Mark Attendance
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Filter Controls -->
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
+        <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+            <div style="position: relative;">
+                <i class="fas fa-search" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #94a3b8;"></i>
+                <input type="text" id="attendance_search" placeholder="Search by name..." 
+                       style="padding: 8px 12px 8px 32px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 13px; width: 180px;">
+            </div>
+            <select id="attendance_program_filter" style="padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 13px; background: white;">
+                <option value="all">🎯 All Programs</option>
+                <option value="krchn">🎓 KRCHN Only</option>
+                <option value="tvet">🔧 TVET Only</option>
+            </select>
+            <select id="attendance_type_filter" style="padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 13px; background: white;">
+                <option value="all">📋 All Types</option>
+                <option value="classroom">📚 Classroom</option>
+                <option value="clinical">🏥 Clinical</option>
+                <option value="virtual">💻 Virtual</option>
+                <option value="call">📞 On Call</option>
+            </select>
+            <select id="attendance_status_filter" style="padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 13px; background: white;">
+                <option value="all">📊 All Status</option>
+                <option value="verified">✅ Verified</option>
+                <option value="pending">⏳ Pending</option>
+            </select>
+            <button onclick="filterAttendance()" style="padding: 8px 16px; background: #4C1D95; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">
+                <i class="fas fa-filter"></i> Filter
+            </button>
+            <button onclick="resetAttendanceFilters()" style="padding: 8px 14px; background: #e5e7eb; color: #475569; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">
+                <i class="fas fa-undo"></i> Reset
+            </button>
+        </div>
+        <div style="font-size: 13px; color: #6b7280; background: #f8fafc; padding: 6px 14px; border-radius: 20px; border: 1px solid #e5e7eb;">
+            <i class="fas fa-users"></i> <span id="attendanceTotalCount">0</span> records
+        </div>
+    </div>
+
+    <!-- Today's Attendance -->
+    <div style="background: white; border-radius: 12px; border: 1px solid #e5e7eb; margin-bottom: 20px; overflow: hidden;">
+        <div style="padding: 15px 20px; background: #f8fafc; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <h3 style="margin: 0; color: #0A3D62; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-calendar-day" style="color: #4C1D95;"></i> Today's Attendance Records
+                <span id="todayCount" style="font-size: 12px; background: #4C1D95; color: white; padding: 2px 10px; border-radius: 12px;">0</span>
+            </h3>
+            <button onclick="exportTableToCSV('attendance-table', 'Todays_Attendance_Export.csv')" style="padding: 6px 16px; background: #059669; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 12px;">
+                <i class="fas fa-download"></i> Export CSV
+            </button>
+        </div>
+        <div style="overflow-x: auto;">
+            <table id="attendance-table" style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                <thead>
+                    <tr style="background: #f8fafc; border-bottom: 2px solid #e5e7eb;">
+                        <th style="padding: 10px 14px; text-align: left; font-weight: 600; color: #475569;">Student</th>
+                        <th style="padding: 10px 14px; text-align: left; font-weight: 600; color: #475569;">Session Type</th>
+                        <th style="padding: 10px 14px; text-align: left; font-weight: 600; color: #475569;">Program</th>
+                        <th style="padding: 10px 14px; text-align: left; font-weight: 600; color: #475569;">Target</th>
+                        <th style="padding: 10px 14px; text-align: left; font-weight: 600; color: #475569;">Location</th>
+                        <th style="padding: 10px 14px; text-align: center; font-weight: 600; color: #475569;">Date/Time</th>
+                        <th style="padding: 10px 14px; text-align: center; font-weight: 600; color: #475569;">Geo Data</th>
+                        <th style="padding: 10px 14px; text-align: center; font-weight: 600; color: #475569;">Status</th>
+                        <th style="padding: 10px 14px; text-align: center; font-weight: 600; color: #475569;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="attendance-table-body">
+                    <tr><td colspan="9" style="padding: 40px; text-align: center; color: #94a3b8;"><div class="loading-spinner"></div> Loading today's records...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Past Attendance History -->
+    <div style="background: white; border-radius: 12px; border: 1px solid #e5e7eb; overflow: hidden;">
+        <div style="padding: 15px 20px; background: #f8fafc; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <h3 style="margin: 0; color: #0A3D62; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-history" style="color: #4C1D95;"></i> Past Attendance History
+                <span id="pastCount" style="font-size: 12px; background: #6b7280; color: white; padding: 2px 10px; border-radius: 12px;">0</span>
+            </h3>
+            <button onclick="exportTableToCSV('past-attendance-table', 'Past_Attendance_History_Export.csv')" style="padding: 6px 16px; background: #059669; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 12px;">
+                <i class="fas fa-download"></i> Export CSV
+            </button>
+        </div>
+        <div style="overflow-x: auto;">
+            <table id="past-attendance-table" style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                <thead>
+                    <tr style="background: #f8fafc; border-bottom: 2px solid #e5e7eb;">
+                        <th style="padding: 10px 14px; text-align: left; font-weight: 600; color: #475569;">Student</th>
+                        <th style="padding: 10px 14px; text-align: left; font-weight: 600; color: #475569;">Session Type</th>
+                        <th style="padding: 10px 14px; text-align: left; font-weight: 600; color: #475569;">Program</th>
+                        <th style="padding: 10px 14px; text-align: left; font-weight: 600; color: #475569;">Target</th>
+                        <th style="padding: 10px 14px; text-align: center; font-weight: 600; color: #475569;">Date/Time</th>
+                        <th style="padding: 10px 14px; text-align: center; font-weight: 600; color: #475569;">Status</th>
+                        <th style="padding: 10px 14px; text-align: center; font-weight: 600; color: #475569;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="past-attendance-table-body">
+                    <tr><td colspan="7" style="padding: 40px; text-align: center; color: #94a3b8;"><div class="loading-spinner"></div> Loading history...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section><section id="view-reports" class="tab-content ia-view">
+    <!-- ============================================ -->
+    <!-- HEADER - From Your Existing                  -->
+    <!-- ============================================ -->
+    <div style="background: linear-gradient(135deg, #ec4899, #8b5cf6); border-radius: 16px; padding: 25px 30px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; box-shadow: 0 4px 20px rgba(236,72,153,0.3);">
+        <div>
+            <h2 style="color: white; margin: 0; font-weight: 700;">
+                <i class="fas fa-chart-line"></i> Academic Intelligence
+            </h2>
+            <p style="color: rgba(255,255,255,0.9); margin: 4px 0 0 0; font-size: 14px;">
+                <i class="fas fa-graduation-cap"></i> KRCHN Nursing &nbsp;|&nbsp; <i class="fas fa-tools"></i> TVET Programs
+            </p>
+        </div>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button onclick="refreshAnalytics()" class="btn-action" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+            <button onclick="exportAnalyticsReport()" class="btn-action" style="background: white; color: #ec4899; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; border: none;">
+                <i class="fas fa-download"></i> Export Report
+            </button>
+        </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- TOP BAR NAVIGATION - Quick Jump to Sections -->
+    <!-- ============================================ -->
+    <div style="background: white; border-radius: 12px; padding: 12px 20px; margin-bottom: 25px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08); overflow-x: auto;">
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center; min-width: max-content;">
+            <span style="font-weight: 600; font-size: 13px; color: #64748b; margin-right: 8px;">
+                <i class="fas fa-bars"></i> Jump to:
+            </span>
+            
+            <a href="#section-charts" onclick="scrollToSection('section-charts')" 
+               style="background: #f1f5f9; padding: 6px 14px; border-radius: 20px; font-size: 12px; color: #475569; text-decoration: none; font-weight: 500; transition: all 0.2s; white-space: nowrap;"
+               onmouseover="this.style.background='#e2e8f0';" onmouseout="this.style.background='#f1f5f9';">
+                <i class="fas fa-chart-pie"></i> Charts
+            </a>
+            <a href="#section-units" onclick="scrollToSection('section-units')" 
+               style="background: #f1f5f9; padding: 6px 14px; border-radius: 20px; font-size: 12px; color: #475569; text-decoration: none; font-weight: 500; transition: all 0.2s; white-space: nowrap;"
+               onmouseover="this.style.background='#e2e8f0';" onmouseout="this.style.background='#f1f5f9';">
+                <i class="fas fa-book"></i> Units
+            </a>
+            <a href="#section-learners" onclick="scrollToSection('section-learners')" 
+               style="background: #f1f5f9; padding: 6px 14px; border-radius: 20px; font-size: 12px; color: #475569; text-decoration: none; font-weight: 500; transition: all 0.2s; white-space: nowrap;"
+               onmouseover="this.style.background='#e2e8f0';" onmouseout="this.style.background='#f1f5f9';">
+                <i class="fas fa-user-graduate"></i> Learners
+            </a>
+            <a href="#section-topweak" onclick="scrollToSection('section-topweak')" 
+               style="background: #f1f5f9; padding: 6px 14px; border-radius: 20px; font-size: 12px; color: #475569; text-decoration: none; font-weight: 500; transition: all 0.2s; white-space: nowrap;"
+               onmouseover="this.style.background='#e2e8f0';" onmouseout="this.style.background='#f1f5f9';">
+                <i class="fas fa-crown"></i> Top / Weak
+            </a>
+            <a href="#section-progression" onclick="scrollToSection('section-progression')" 
+               style="background: #f1f5f9; padding: 6px 14px; border-radius: 20px; font-size: 12px; color: #475569; text-decoration: none; font-weight: 500; transition: all 0.2s; white-space: nowrap;"
+               onmouseover="this.style.background='#e2e8f0';" onmouseout="this.style.background='#f1f5f9';">
+                <i class="fas fa-arrow-trend-up"></i> Progression
+            </a>
+            <a href="#section-stage" onclick="scrollToSection('section-stage')" 
+               style="background: #f1f5f9; padding: 6px 14px; border-radius: 20px; font-size: 12px; color: #475569; text-decoration: none; font-weight: 500; transition: all 0.2s; white-space: nowrap;"
+               onmouseover="this.style.background='#e2e8f0';" onmouseout="this.style.background='#f1f5f9';">
+                <i class="fas fa-layer-group"></i> Stage
+            </a>
+            <a href="#section-programmes" onclick="scrollToSection('section-programmes')" 
+               style="background: #f1f5f9; padding: 6px 14px; border-radius: 20px; font-size: 12px; color: #475569; text-decoration: none; font-weight: 500; transition: all 0.2s; white-space: nowrap;"
+               onmouseover="this.style.background='#e2e8f0';" onmouseout="this.style.background='#f1f5f9';">
+                <i class="fas fa-code-branch"></i> Programmes
+            </a>
+            <a href="#section-lecturer" onclick="scrollToSection('section-lecturer')" 
+               style="background: #f1f5f9; padding: 6px 14px; border-radius: 20px; font-size: 12px; color: #475569; text-decoration: none; font-weight: 500; transition: all 0.2s; white-space: nowrap;"
+               onmouseover="this.style.background='#e2e8f0';" onmouseout="this.style.background='#f1f5f9';">
+                <i class="fas fa-chalkboard-teacher"></i> Lecturers
+            </a>
+            <a href="#section-assessment" onclick="scrollToSection('section-assessment')" 
+               style="background: #f1f5f9; padding: 6px 14px; border-radius: 20px; font-size: 12px; color: #475569; text-decoration: none; font-weight: 500; transition: all 0.2s; white-space: nowrap;"
+               onmouseover="this.style.background='#e2e8f0';" onmouseout="this.style.background='#f1f5f9';">
+                <i class="fas fa-file-alt"></i> Assessment
+            </a>
+            <a href="#section-trends" onclick="scrollToSection('section-trends')" 
+               style="background: #f1f5f9; padding: 6px 14px; border-radius: 20px; font-size: 12px; color: #475569; text-decoration: none; font-weight: 500; transition: all 0.2s; white-space: nowrap;"
+               onmouseover="this.style.background='#e2e8f0';" onmouseout="this.style.background='#f1f5f9';">
+                <i class="fas fa-chart-line"></i> Trends
+            </a>
+            <a href="#section-consolidated" onclick="scrollToSection('section-consolidated')" 
+               style="background: #8b5cf6; padding: 6px 14px; border-radius: 20px; font-size: 12px; color: white; text-decoration: none; font-weight: 600; transition: all 0.2s; white-space: nowrap;"
+               onmouseover="this.style.background='#7c3aed';" onmouseout="this.style.background='#8b5cf6';">
+                <i class="fas fa-th-list"></i> Consolidated
+            </a>
+        </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- EXTENDED STATS CARDS - Merged (8 Cards)     -->
+    <!-- ============================================ -->
+    <div class="cards" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 25px;">
+        <!-- Card 1: Total Students -->
+        <div class="card" style="border-top: 4px solid #6366f1; padding: 14px 16px;">
+            <h3 style="color: #6366f1; font-size: 11px; margin: 0 0 2px 0;">Total Learners</h3>
+            <p class="data" id="analytics_total_students" style="font-size: 26px; font-weight: 700; color: #6366f1; margin: 0;">0</p>
+            <p class="minor-data" style="font-size: 10px; color: #94a3b8; margin: 0;">Active enrolments</p>
+        </div>
+        <!-- Card 2: Pass Rate -->
+        <div class="card" style="border-top: 4px solid #10b981; padding: 14px 16px;">
+            <h3 style="color: #10b981; font-size: 11px; margin: 0 0 2px 0;">Pass Rate</h3>
+            <p class="data" id="analytics_pass_rate" style="font-size: 26px; font-weight: 700; color: #10b981; margin: 0;">0%</p>
+            <p class="minor-data" style="font-size: 10px; color: #94a3b8; margin: 0;">≥60% passing</p>
+        </div>
+        <!-- Card 3: Average Score -->
+        <div class="card" style="border-top: 4px solid #f59e0b; padding: 14px 16px;">
+            <h3 style="color: #d97706; font-size: 11px; margin: 0 0 2px 0;">Average Score</h3>
+            <p class="data" id="analytics_avg_score" style="font-size: 26px; font-weight: 700; color: #d97706; margin: 0;">0%</p>
+            <p class="minor-data" style="font-size: 10px; color: #94a3b8; margin: 0;">Overall average</p>
+        </div>
+        <!-- Card 4: Active Units -->
+        <div class="card" style="border-top: 4px solid #8b5cf6; padding: 14px 16px;">
+            <h3 style="color: #6d28d9; font-size: 11px; margin: 0 0 2px 0;">Active Units</h3>
+            <p class="data" id="analytics_active_subjects" style="font-size: 26px; font-weight: 700; color: #6d28d9; margin: 0;">0</p>
+            <p class="minor-data" style="font-size: 10px; color: #94a3b8; margin: 0;">With marks entered</p>
+        </div>
+        <!-- Card 5: At Risk -->
+        <div class="card" style="border-top: 4px solid #ef4444; padding: 14px 16px;">
+            <h3 style="color: #dc2626; font-size: 11px; margin: 0 0 2px 0;">At Risk</h3>
+            <p class="data" id="analytics_at_risk" style="font-size: 26px; font-weight: 700; color: #dc2626; margin: 0;">0</p>
+            <p class="minor-data" style="font-size: 10px; color: #94a3b8; margin: 0;">Below 60% - Need support</p>
+        </div>
+        <!-- Card 6: Improvement -->
+        <div class="card" style="border-top: 4px solid #14b8a6; padding: 14px 16px;">
+            <h3 style="color: #14b8a6; font-size: 11px; margin: 0 0 2px 0;">📈 Improvement</h3>
+            <p class="data" id="analytics_improvement" style="font-size: 26px; font-weight: 700; color: #14b8a6; margin: 0;">0%</p>
+            <p class="minor-data" style="font-size: 10px; color: #94a3b8; margin: 0;"><span id="improvementPeriodLabel">Block</span>-to-<span id="improvementPeriodLabel2">Block</span></p>
+        </div>
+        <!-- Card 7: Struggling Units -->
+        <div class="card" style="border-top: 4px solid #f43f5e; padding: 14px 16px;">
+            <h3 style="color: #f43f5e; font-size: 11px; margin: 0 0 2px 0;">📚 Struggling Units</h3>
+            <p class="data" id="analytics_failing_units" style="font-size: 26px; font-weight: 700; color: #f43f5e; margin: 0;">0</p>
+            <p class="minor-data" style="font-size: 10px; color: #94a3b8; margin: 0;">Units with <50% pass rate</p>
+        </div>
+        <!-- Card 8: Gender Ratio -->
+        <div class="card" style="border-top: 4px solid #f59e0b; padding: 14px 16px;">
+            <h3 style="color: #f59e0b; font-size: 11px; margin: 0 0 2px 0;">👩‍🎓 Gender Ratio</h3>
+            <p class="data" id="analytics_gender_ratio" style="font-size: 20px; font-weight: 700; color: #f59e0b; margin: 0;">-</p>
+            <p class="minor-data" style="font-size: 10px; color: #94a3b8; margin: 0;">Female : Male</p>
+        </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- FILTERS / SELECTORS - From Your Existing    -->
+    <!-- ============================================ -->
+    <div style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 25px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); border: 1px solid #e5e7eb;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 15px;">
+            <!-- Program -->
+            <div>
+                <label style="font-weight: 600; font-size: 13px; color: #475569; display: block; margin-bottom: 5px;">
+                    <i class="fas fa-tag"></i> Programme
+                </label>
+                <select id="analytics_program_select" class="form-control" onchange="loadAnalyticsData(); updateTerminology()" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0; background: #f8fafc; font-size: 14px;">
+                    <option value="all">All Programmes</option>
+                    <option value="KRCHN">🎓 KRCHN Nursing</option>
+                    <optgroup label="🎯 TVET Diploma Programmes">
+                        <option value="DPOTT">Diploma in Perioperative Theatre Technology</option>
+                        <option value="DCH">Diploma in Community Health</option>
+                        <option value="DHRIT">Diploma in Health Records and IT</option>
+                        <option value="DSL">Diploma in Science Lab</option>
+                        <option value="DSW">Diploma in Social Work</option>
+                        <option value="DCJS">Diploma in Criminal Justice</option>
+                        <option value="DHSS">Diploma in Health Support Services</option>
+                        <option value="DICT">Diploma in ICT</option>
+                        <option value="DME">Diploma in Medical Engineering</option>
+                    </optgroup>
+                    <optgroup label="📜 TVET Certificate Programmes">
+                        <option value="CPOTT">Certificate in Perioperative Theatre Technology</option>
+                        <option value="CCH">Certificate in Community Health</option>
+                        <option value="CHRIT">Certificate in Health Records and IT</option>
+                        <option value="CPC">Certificate in Patient Care</option>
+                        <option value="CSL">Certificate in Science Lab</option>
+                        <option value="CSW">Certificate in Social Work</option>
+                        <option value="CCJS">Certificate in Criminal Justice</option>
+                        <option value="CAG">Certificate in Agriculture</option>
+                        <option value="CHSS">Certificate in Health Support Services</option>
+                        <option value="CICT">Certificate in ICT</option>
+                    </optgroup>
+                    <optgroup label="🔧 TVET Artisan Programmes">
+                        <option value="ACH">Artisan in Community Health</option>
+                        <option value="AAG">Artisan in Agriculture</option>
+                        <option value="ASW">Artisan in Social Work</option>
+                    </optgroup>
+                </select>
+            </div>
+            <!-- Year -->
+            <div>
+                <label style="font-weight: 600; font-size: 13px; color: #475569; display: block; margin-bottom: 5px;">
+                    <i class="fas fa-calendar"></i> Academic Year
+                </label>
+                <select id="analytics_year_select" class="form-control" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0; background: #f8fafc; font-size: 14px;">
+                    <option value="2024">2024</option>
+                    <option value="2025" selected>2025</option>
+                    <option value="2026">2026</option>
+                    <option value="2027">2027</option>
+                    <option value="2028">2028</option>
+                </select>
+            </div>
+            <!-- Block/Term -->
+            <div>
+                <label style="font-weight: 600; font-size: 13px; color: #475569; display: block; margin-bottom: 5px;">
+                    <i class="fas fa-layer-group"></i> <span id="periodLabel">Stage/Block</span>
+                </label>
+                <select id="analytics_block_select" class="form-control" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0; background: #f8fafc; font-size: 14px;">
+                    <option value="all">All Stages</option>
+                    <optgroup label="🎓 KRCHN Nursing Blocks" id="krchnBlocks">
+                        <option value="Introductory">Introductory Block</option>
+                        <option value="Block 1">Block 1</option>
+                        <option value="Block 2">Block 2</option>
+                        <option value="Block 3">Block 3</option>
+                        <option value="Block 4">Block 4</option>
+                        <option value="Block 5">Block 5</option>
+                        <option value="Final">Final Block</option>
+                    </optgroup>
+                    <optgroup label="📚 TVET Terms" id="tvetTerms">
+                        <option value="Term 1">Term 1</option>
+                        <option value="Term 2">Term 2</option>
+                        <option value="Term 3">Term 3</option>
+                        <option value="Term 4">Term 4</option>
+                        <option value="Term 5">Term 5</option>
+                        <option value="Term 6">Term 6</option>
+                        <option value="Final">Final Term</option>
+                    </optgroup>
+                </select>
+            </div>
+            <!-- Metric View -->
+            <div>
+                <label style="font-weight: 600; font-size: 13px; color: #475569; display: block; margin-bottom: 5px;">
+                    <i class="fas fa-chart-bar"></i> Analytics View
+                </label>
+                <select id="analytics_metric_select" class="form-control" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0; background: #f8fafc; font-size: 14px;" onchange="updateAnalyticsMetric()">
+                    <option value="overview">📊 Overview Dashboard</option>
+                    <option value="units">📚 Unit Performance</option>
+                    <option value="students">👥 Learner Performance</option>
+                    <option value="periods">📋 Period Performance</option>
+                    <option value="programs">🔄 Programme Comparison</option>
+                    <option value="trends">📈 Performance Trends</option>
+                    <option value="lecturers">👨‍🏫 Lecturer Performance</option>
+                </select>
+            </div>
+            <!-- Buttons -->
+            <div style="display: flex; align-items: flex-end; gap: 10px;">
+                <button onclick="loadAnalyticsData()" style="flex: 1; background: #ec4899; padding: 10px 20px; border: none; border-radius: 8px; color: white; cursor: pointer; font-weight: 600;">
+                    <i class="fas fa-chart-line"></i> Load Analytics
+                </button>
+                <button onclick="refreshAnalytics()" style="flex: 1; background: #8b5cf6; padding: 10px 20px; border: none; border-radius: 8px; color: white; cursor: pointer; font-weight: 600;">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- QUICK FILTER PILLS                          -->
+    <!-- ============================================ -->
+    <div style="display: flex; gap: 10px; margin-bottom: 25px; flex-wrap: wrap;">
+        <button onclick="filterAnalytics('all')" class="btn-action" style="background: #6366f1; padding: 8px 20px; border: none; border-radius: 8px; color: white; cursor: pointer; font-weight: 600;">
+            <i class="fas fa-globe"></i> All Programmes
+        </button>
+        <button onclick="filterAnalytics('KRCHN')" class="btn-action" style="background: #10b981; padding: 8px 20px; border: none; border-radius: 8px; color: white; cursor: pointer; font-weight: 600;">
+            <i class="fas fa-user-md"></i> KRCHN Nursing
+        </button>
+        <button onclick="filterAnalytics('TVET')" class="btn-action" style="background: #f59e0b; padding: 8px 20px; border: none; border-radius: 8px; color: #0A3D62; cursor: pointer; font-weight: 600;">
+            <i class="fas fa-tools"></i> TVET
+        </button>
+        <span id="analytics_program_badge" style="background: #e5e7eb; padding: 6px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; color: #475569;">
+            Showing: <span id="analytics_program_label">All Programmes</span>
+        </span>
+        <span style="margin-left:auto;font-size:12px;color:#94a3b8;" id="terminologyIndicator">
+            <i class="fas fa-info-circle"></i> <span id="terminologyLabel">Using: Blocks (KRCHN)</span>
+        </span>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- PLACEHOLDER                                 -->
+    <!-- ============================================ -->
+    <div id="analyticsPlaceholder" style="text-align: center; padding: 60px 20px; background: white; border-radius: 12px; border: 1px solid #e5e7eb;">
+        <i class="fas fa-chart-line" style="font-size: 48px; color: #94a3b8; margin-bottom: 16px; display: block;"></i>
+        <h3 style="color: #1e293b;">Select filters and click "Load Analytics"</h3>
+        <p style="color: #94a3b8;">Choose programme, year, and period to view analytics</p>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- DYNAMIC CONTENT                             -->
+    <!-- ============================================ -->
+    <div id="analyticsDynamicContent" style="display: none;">
+
+        <!-- ============================================ -->
+        <!-- SECTION: CHARTS - Row 1                     -->
+        <!-- ============================================ -->
+        <div id="section-charts" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 25px;">
+            <div style="background: white; border-radius: 12px; padding: 20px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+                <h4 style="margin: 0 0 16px 0; color: #1e293b;">
+                    <i class="fas fa-chart-pie" style="color: #6366f1;"></i> Grade Distribution
+                </h4>
+                <canvas id="analyticsGradeChart" style="max-height: 220px; width: 100%;"></canvas>
+                <div style="display:flex;justify-content:center;gap:16px;margin-top:10px;flex-wrap:wrap;font-size:12px;">
+                    <span><span style="color:#22c55e;">●</span> A (≥80%)</span>
+                    <span><span style="color:#3b82f6;">●</span> B (70-79%)</span>
+                    <span><span style="color:#f59e0b;">●</span> C (60-69%)</span>
+                    <span><span style="color:#ef4444;">●</span> D (<60%)</span>
+                </div>
+            </div>
+            <div style="background: white; border-radius: 12px; padding: 20px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+                <h4 style="margin: 0 0 16px 0; color: #1e293b;">
+                    <i class="fas fa-chart-bar" style="color: #10b981;"></i> Unit Performance
+                </h4>
+                <canvas id="analyticsSubjectChart" style="max-height: 220px; width: 100%;"></canvas>
+            </div>
+        </div>
+
+        <!-- ============================================ -->
+        <!-- SECTION: CHARTS - Row 2                     -->
+        <!-- ============================================ -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 25px;">
+            <div style="background: white; border-radius: 12px; padding: 20px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+                <h4 style="margin: 0 0 16px 0; color: #1e293b;">
+                    <i class="fas fa-chart-line" style="color: #f59e0b;"></i> <span id="periodChartLabel">Block</span> Performance
+                </h4>
+                <canvas id="analyticsBlockChart" style="max-height: 220px; width: 100%;"></canvas>
+            </div>
+            <div style="background: white; border-radius: 12px; padding: 20px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+                <h4 style="margin: 0 0 16px 0; color: #1e293b;">
+                    <i class="fas fa-venus-mars" style="color: #8b5cf6;"></i> Gender Performance
+                </h4>
+                <canvas id="analyticsGenderChart" style="max-height: 220px; width: 100%;"></canvas>
+                <div style="display:flex;justify-content:center;gap:20px;margin-top:10px;flex-wrap:wrap;font-size:13px;">
+                    <span>♀ Female Avg: <strong id="genderFemaleAvg">0%</strong></span>
+                    <span>♂ Male Avg: <strong id="genderMaleAvg">0%</strong></span>
+                    <span>Gap: <strong id="genderGap" style="color:#f59e0b;">0%</strong></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================ -->
+        <!-- SECTION: CHARTS - Row 3 (Unit Ranking)      -->
+        <!-- ============================================ -->
+        <div style="display: grid; grid-template-columns: 1fr; gap: 20px; margin-bottom: 25px;">
+            <div style="background: white; border-radius: 12px; padding: 20px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+                <h4 style="margin: 0 0 16px 0; color: #1e293b;">
+                    <i class="fas fa-trophy" style="color: #f59e0b;"></i> Unit Ranking (By Average Score)
+                </h4>
+                <canvas id="analyticsUnitRankingChart" style="max-height: 280px; width: 100%;"></canvas>
+            </div>
+        </div>
+
+        <!-- ============================================ -->
+        <!-- SECTION: CHARTS - Row 4 (CAT vs Exam)       -->
+        <!-- ============================================ -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 25px;">
+            <div style="background: white; border-radius: 12px; padding: 20px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+                <h4 style="margin: 0 0 16px 0; color: #1e293b;">
+                    <i class="fas fa-pencil-alt" style="color:#f59e0b;"></i> CAT vs Exam Performance
+                </h4>
+                <canvas id="analyticsExamTypeChart" style="max-height:200px;width:100%;"></canvas>
+                <div style="display:flex;justify-content:center;gap:20px;margin-top:10px;flex-wrap:wrap;font-size:13px;">
+                    <span>📝 CAT Avg: <strong id="analytics_cat_avg">0%</strong></span>
+                    <span>📄 Exam Avg: <strong id="analytics_exam_avg">0%</strong></span>
+                </div>
+            </div>
+            <div style="background: white; border-radius: 12px; padding: 20px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+                <h4 style="margin: 0 0 16px 0; color: #1e293b;">
+                    <i class="fas fa-chart-pie" style="color:#8b5cf6;"></i> Grade Distribution by Assessment Type
+                </h4>
+                <canvas id="analyticsGradeByExamChart" style="max-height:200px;width:100%;"></canvas>
+            </div>
+        </div>
+
+        <!-- ============================================ -->
+        <!-- SECTION: UNIT DIFFICULTY HEATMAP            -->
+        <!-- ============================================ -->
+        <div style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 16px;">
+                <h4 style="margin: 0; color: #1e293b;">
+                    <i class="fas fa-fire" style="color: #ef4444;"></i> Unit Difficulty Heatmap
+                </h4>
+                <span style="font-size: 12px; color: #94a3b8;">
+                    <i class="fas fa-info-circle"></i> 🔴 Hard | 🟡 Medium | 🟢 Easy
+                </span>
+            </div>
+            <div id="analytics_difficulty_heatmap" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px;">
+                <p style="color: #94a3b8; text-align: center; padding: 20px; grid-column: 1 / -1;">
+                    <i class="fas fa-spinner fa-spin"></i> Loading difficulty data...
+                </p>
+            </div>
+        </div>
+
+        <!-- ============================================ -->
+        <!-- SECTION: LECTURER PERFORMANCE               -->
+        <!-- ============================================ -->
+        <div id="section-lecturer" style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 16px;">
+                <h4 style="margin: 0; color: #1e293b;">
+                    <i class="fas fa-chalkboard-teacher" style="color: #ec4899;"></i> Lecturer Performance
+                </h4>
+                <span style="font-size: 12px; color: #94a3b8;">
+                    <i class="fas fa-info-circle"></i> Based on learner performance in assigned units
+                </span>
+            </div>
+            <div style="overflow-x:auto;">
+                <table style="width:100%;border-collapse:collapse;font-size:14px;">
+                    <thead style="background:#f8fafc;border-bottom:2px solid #e2e8f0;">
+                        <tr>
+                            <th style="padding:10px 12px;text-align:left;font-weight:600;color:#475569;">Lecturer</th>
+                            <th style="padding:10px 12px;text-align:center;font-weight:600;color:#475569;">Units</th>
+                            <th style="padding:10px 12px;text-align:center;font-weight:600;color:#475569;">Learners</th>
+                            <th style="padding:10px 12px;text-align:center;font-weight:600;color:#475569;">Avg Score</th>
+                            <th style="padding:10px 12px;text-align:center;font-weight:600;color:#475569;">Pass Rate</th>
+                            <th style="padding:10px 12px;text-align:center;font-weight:600;color:#475569;">Performance</th>
+                        </tr>
+                    </thead>
+                    <tbody id="analytics_lecturer_table_body">
+                        <tr><td colspan="6" style="padding:30px;text-align:center;color:#94a3b8;">
+                            <i class="fas fa-spinner fa-spin"></i> Loading lecturer data...
+                        </td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ============================================ -->
+        <!-- SECTION: STAGE PERFORMANCE                   -->
+        <!-- ============================================ -->
+        <div id="section-stage" style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 16px;">
+                <h4 style="margin: 0; color: #1e293b;">
+                    <i class="fas fa-layer-group" style="color: #6366f1;"></i> <span id="periodOverviewLabel">Block</span> Performance Overview
+                </h4>
+                <span style="font-size: 12px; color: #94a3b8;">
+                    <i class="fas fa-info-circle"></i> Pass: ≥60% | Fail: <60% | Pending: No score
+                </span>
+            </div>
+            <div id="analytics_block_filter_stats">
+                <p style="color: #94a3b8; text-align: center; padding: 20px;">Loading period stats...</p>
+            </div>
+        </div>
+
+        <!-- ============================================ -->
+        <!-- TABLE SEARCH & FILTER                       -->
+        <!-- ============================================ -->
+        <div style="background: white; border-radius: 12px; padding: 15px 20px; margin-bottom: 15px; border: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                <div style="position:relative;">
+                    <i class="fas fa-search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#94a3b8;"></i>
+                    <input type="text" id="analytics_table_search" placeholder="Search learners, units..." 
+                           style="padding:8px 12px 8px 36px;border:1px solid #e2e8f0;border-radius:8px;width:250px;font-size:13px;"
+                           onkeyup="filterAnalyticsTable()">
+                </div>
+                <select id="analytics_table_status_filter" onchange="filterAnalyticsTable()" 
+                        style="padding:8px 14px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;background:#f8fafc;">
+                    <option value="all">All Status</option>
+                    <option value="pass">Pass (≥60%)</option>
+                    <option value="fail">Fail (<60%)</option>
+                    <option value="pending">Pending</option>
+                </select>
+            </div>
+            <span style="font-size:13px;color:#94a3b8;">
+                <i class="fas fa-eye"></i> Showing <span id="analytics_table_visible_count">0</span> records
+            </span>
+        </div>
+
+        <!-- ============================================ -->
+        <!-- SECTION: UNIT PERFORMANCE TABLE             -->
+        <!-- ============================================ -->
+        <div id="section-units" style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 16px;">
+                <h4 style="margin: 0; color: #1e293b;">
+                    <i class="fas fa-table" style="color: #6366f1;"></i> Unit Performance Details
+                </h4>
+                <span style="font-size: 13px; color: #94a3b8;">
+                    <i class="fas fa-users"></i> <span id="analytics_student_count">0</span> learners
+                </span>
+            </div>
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                    <thead style="background: #f8fafc; border-bottom: 2px solid #e2e8f0;">
+                        <tr>
+                            <th style="padding: 12px; text-align: left; font-weight: 600; color: #475569;">Unit Code</th>
+                            <th style="padding: 12px; text-align: left; font-weight: 600; color: #475569;">Unit Name</th>
+                            <th style="padding: 12px; text-align: center; font-weight: 600; color: #475569;">Learners</th>
+                            <th style="padding: 12px; text-align: center; font-weight: 600; color: #475569;">Avg Score</th>
+                            <th style="padding: 12px; text-align: center; font-weight: 600; color: #475569;">Pass Rate</th>
+                            <th style="padding: 12px; text-align: center; font-weight: 600; color: #475569;">Grade</th>
+                            <th style="padding: 12px; text-align: center; font-weight: 600; color: #475569;">Status</th>
+                            <th style="padding: 12px; text-align: center; font-weight: 600; color: #475569;">Difficulty</th>
+                        </tr>
+                    </thead>
+                    <tbody id="analytics_subject_table_body">
+                        <tr>
+                            <td colspan="8" style="padding: 40px; text-align: center; color: #94a3b8;">
+                                <i class="fas fa-spinner fa-spin"></i> Loading unit data...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ============================================ -->
+        <!-- SECTION: LEARNER PERFORMANCE TABLE          -->
+        <!-- ============================================ -->
+        <div id="section-learners" style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 16px;">
+                <h4 style="margin: 0; color: #1e293b;">
+                    <i class="fas fa-user-graduate" style="color: #10b981;"></i> Learner Performance Details
+                </h4>
+                <span style="font-size: 13px; color: #94a3b8;">
+                    <i class="fas fa-graduation-cap"></i> <span id="analytics_program_display">All Programmes</span>
+                </span>
+            </div>
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                    <thead style="background: #f8fafc; border-bottom: 2px solid #e2e8f0;">
+                        <tr>
+                            <th style="padding: 12px; text-align: left; font-weight: 600; color: #475569;">Learner Name</th>
+                            <th style="padding: 12px; text-align: center; font-weight: 600; color: #475569;">Admission No.</th>
+                            <th style="padding: 12px; text-align: center; font-weight: 600; color: #475569;">Programme</th>
+                            <th style="padding: 12px; text-align: center; font-weight: 600; color: #475569;"><span id="periodTableLabel">Stage</span></th>
+                            <th style="padding: 12px; text-align: center; font-weight: 600; color: #475569;">Avg Score</th>
+                            <th style="padding: 12px; text-align: center; font-weight: 600; color: #475569;">Grade</th>
+                            <th style="padding: 12px; text-align: center; font-weight: 600; color: #475569;">Status</th>
+                            <th style="padding: 12px; text-align: center; font-weight: 600; color: #475569;">Risk Level</th>
+                        </tr>
+                    </thead>
+                    <tbody id="analytics_student_table_body">
+                        <tr>
+                            <td colspan="8" style="padding: 40px; text-align: center; color: #94a3b8;">
+                                <i class="fas fa-spinner fa-spin"></i> Loading learner data...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ============================================ -->
+        <!-- SECTION: TOP 10 + WEAK LEARNERS             -->
+        <!-- ============================================ -->
+        <div id="section-topweak" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+            <div style="background: white; border-radius: 12px; padding: 20px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+                <h4 style="margin: 0 0 16px 0; color: #1e293b;">
+                    <i class="fas fa-crown" style="color: #f59e0b;"></i> Top 10 Learners
+                    <span style="font-size:12px;color:#94a3b8;font-weight:normal;margin-left:8px;">🥇 Highest performing</span>
+                </h4>
+                <div id="analytics_top_students">
+                    <p style="color: #94a3b8; text-align: center; padding: 20px;">
+                        <i class="fas fa-spinner fa-spin"></i> Loading top learners...
+                    </p>
+                </div>
+            </div>
+            <div style="background: white; border-radius: 12px; padding: 20px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+                <h4 style="margin: 0 0 16px 0; color: #1e293b;">
+                    <i class="fas fa-exclamation-triangle" style="color: #dc2626;"></i> Weak Learners (At Risk)
+                    <span style="font-size:12px;color:#94a3b8;font-weight:normal;margin-left:8px;">⬇️ Below 60%</span>
+                </h4>
+                <div id="analytics_weak_students">
+                    <p style="color: #94a3b8; text-align: center; padding: 20px;">
+                        <i class="fas fa-spinner fa-spin"></i> Loading weak learners...
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================ -->
+        <!-- SECTION: LEARNER PROGRESSION TRACKER        -->
+        <!-- ============================================ -->
+        <div id="section-progression" style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 16px;">
+                <h4 style="margin: 0; color: #1e293b;">
+                    <i class="fas fa-arrow-trend-up" style="color: #10b981;"></i> Learner Progression Tracking
+                </h4>
+                <span style="font-size: 12px; color: #94a3b8;">
+                    <i class="fas fa-clock"></i> Performance across <span id="progressionPeriodLabel">blocks</span>
+                </span>
+            </div>
+            <div style="overflow-x:auto;">
+                <table style="width:100%;border-collapse:collapse;font-size:14px;">
+                    <thead style="background:#f8fafc;border-bottom:2px solid #e2e8f0;">
+                        <tr>
+                            <th style="padding:10px 12px;text-align:left;font-weight:600;color:#475569;">Learner</th>
+                            <th style="padding:10px 12px;text-align:center;font-weight:600;color:#475569;"><span id="progCol1">Introductory</span></th>
+                            <th style="padding:10px 12px;text-align:center;font-weight:600;color:#475569;"><span id="progCol2">Block 1</span></th>
+                            <th style="padding:10px 12px;text-align:center;font-weight:600;color:#475569;"><span id="progCol3">Block 2</span></th>
+                            <th style="padding:10px 12px;text-align:center;font-weight:600;color:#475569;"><span id="progCol4">Block 3</span></th>
+                            <th style="padding:10px 12px;text-align:center;font-weight:600;color:#475569;"><span id="progCol5">Block 4</span></th>
+                            <th style="padding:10px 12px;text-align:center;font-weight:600;color:#475569;">Trend</th>
+                        </tr>
+                    </thead>
+                    <tbody id="analytics_progression_body">
+                        <tr><td colspan="7" style="padding:30px;text-align:center;color:#94a3b8;">
+                            <i class="fas fa-spinner fa-spin"></i> Loading progression data...
+                        </td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ============================================ -->
+        <!-- SECTION: STAGE PERFORMANCE TABLE             -->
+        <!-- ============================================ -->
+        <div id="section-stage-summary" style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 16px;">
+                <h4 style="margin: 0; color: #1e293b;">
+                    <i class="fas fa-layer-group" style="color: #f59e0b;"></i> <span id="periodSummaryLabel">Block</span> Performance Summary
+                </h4>
+                <span style="font-size: 13px; color: #94a3b8;">
+                    <i class="fas fa-calendar"></i> <span id="analytics_block_year_display">2025</span>
+                </span>
+            </div>
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                    <thead style="background: #f8fafc; border-bottom: 2px solid #e2e8f0;">
+                        <tr>
+                            <th style="padding: 12px; text-align: left; font-weight: 600; color: #475569;"><span id="periodTableHeader">Block</span></th>
+                            <th style="padding: 12px; text-align: center; font-weight: 600; color: #475569;">Learners</th>
+                            <th style="padding: 12px; text-align: center; font-weight: 600; color: #475569;">Avg Score</th>
+                            <th style="padding: 12px; text-align: center; font-weight: 600; color: #475569;">Pass Rate</th>
+                            <th style="padding: 12px; text-align: center; font-weight: 600; color: #475569;">Top Performer</th>
+                            <th style="padding: 12px; text-align: center; font-weight: 600; color: #475569;">At Risk</th>
+                        </tr>
+                    </thead>
+                    <tbody id="analytics_block_table_body">
+                        <tr>
+                            <td colspan="6" style="padding: 40px; text-align: center; color: #94a3b8;">
+                                <i class="fas fa-spinner fa-spin"></i> Loading period data...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ============================================ -->
+        <!-- SECTION: PROGRAMME COMPARISON TABLE          -->
+        <!-- ============================================ -->
+        <div id="section-programmes" style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 16px;">
+                <h4 style="margin: 0; color: #1e293b;">
+                    <i class="fas fa-code-branch" style="color: #8b5cf6;"></i> Programme Comparison
+                </h4>
+                <span style="font-size: 13px; color: #94a3b8;">
+                    <i class="fas fa-chart-bar"></i> Overall Performance
+                </span>
+            </div>
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                    <thead style="background: #f8fafc; border-bottom: 2px solid #e2e8f0;">
+                        <tr>
+                            <th style="padding: 12px; text-align: left; font-weight: 600; color: #475569;">Programme</th>
+                            <th style="padding: 12px; text-align: center; font-weight: 600; color: #475569;">Type</th>
+                            <th style="padding: 12px; text-align: center; font-weight: 600; color: #475569;">Level</th>
+                            <th style="padding: 12px; text-align: center; font-weight: 600; color: #475569;">Learners</th>
+                            <th style="padding: 12px; text-align: center; font-weight: 600; color: #475569;">Avg Score</th>
+                            <th style="padding: 12px; text-align: center; font-weight: 600; color: #475569;">Pass Rate</th>
+                            <th style="padding: 12px; text-align: center; font-weight: 600; color: #475569;">Performance</th>
+                        </tr>
+                    </thead>
+                    <tbody id="analytics_program_table_body">
+                        <tr>
+                            <td colspan="7" style="padding: 40px; text-align: center; color: #94a3b8;">
+                                <i class="fas fa-spinner fa-spin"></i> Loading programme data...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ============================================ -->
+        <!-- SECTION: TRENDS TABLE                       -->
+        <!-- ============================================ -->
+        <div id="section-trends" style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 16px;">
+                <h4 style="margin: 0; color: #1e293b;">
+                    <i class="fas fa-chart-line" style="color: #ec4899;"></i> Performance Trends
+                </h4>
+                <span style="font-size: 13px; color: #94a3b8;">
+                    <i class="fas fa-clock"></i> Year-over-Year
+                </span>
+            </div>
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                    <thead style="background: #f8fafc; border-bottom: 2px solid #e2e8f0;">
+                        <tr>
+                            <th style="padding: 12px; text-align: left; font-weight: 600; color: #475569;">Year</th>
+                            <th style="padding: 12px; text-align: center; font-weight: 600; color: #475569;">Learners</th>
+                            <th style="padding: 12px; text-align: center; font-weight: 600; color: #475569;">Avg Score</th>
+                            <th style="padding: 12px; text-align: center; font-weight: 600; color: #475569;">Pass Rate</th>
+                            <th style="padding: 12px; text-align: center; font-weight: 600; color: #475569;">Change</th>
+                            <th style="padding: 12px; text-align: center; font-weight: 600; color: #475569;">Trend</th>
+                        </tr>
+                    </thead>
+                    <tbody id="analytics_trends_table_body">
+                        <tr>
+                            <td colspan="6" style="padding: 40px; text-align: center; color: #94a3b8;">
+                                <i class="fas fa-spinner fa-spin"></i> Loading trend data...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ============================================ -->
+        <!-- SECTION: ASSESSMENT DETAILS TABLE           -->
+        <!-- ============================================ -->
+        <div id="section-assessment" style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 16px;">
+                <h4 style="margin: 0; color: #1e293b;">
+                    <i class="fas fa-file-alt" style="color: #f59e0b;"></i> Assessment Details
+                </h4>
+                <span style="font-size: 13px; color: #94a3b8;">
+                    <i class="fas fa-tools"></i> All Programmes
+                </span>
+            </div>
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                    <thead style="background: #f8fafc; border-bottom: 2px solid #e2e8f0;">
+                        <tr>
+                            <th style="padding: 12px; text-align: left; font-weight: 600; color: #475569;">#</th>
+                            <th style="padding: 12px; text-align: left; font-weight: 600; color: #475569;">Unit</th>
+                            <th style="padding: 12px; text-align: left; font-weight: 600; color: #475569;">Learner</th>
+                            <th style="padding: 12px; text-align: center; font-weight: 600; color: #475569;"><span id="examPeriodLabel">Stage</span></th>
+                            <th style="padding: 12px; text-align: center; font-weight: 600; color: #475569;">CAT1</th>
+                            <th style="padding: 12px; text-align: center; font-weight: 600; color: #475569;">CAT2</th>
+                            <th style="padding: 12px; text-align: center; font-weight: 600; color: #475569;">Exam</th>
+                            <th style="padding: 12px; text-align: center; font-weight: 600; color: #475569;">Total</th>
+                            <th style="padding: 12px; text-align: center; font-weight: 600; color: #475569;">Grade</th>
+                            <th style="padding: 12px; text-align: center; font-weight: 600; color: #475569;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="analytics_exam_details_body">
+                        <tr>
+                            <td colspan="10" style="padding: 40px; text-align: center; color: #94a3b8;">
+                                <i class="fas fa-spinner fa-spin"></i> Loading assessment details...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ============================================ -->
+        <!-- SECTION: CONSOLIDATED MARKSHEET             -->
+        <!-- ============================================ -->
+        <div id="section-consolidated" style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 16px;">
+                <h4 style="margin: 0; color: #1e293b;">
+                    <i class="fas fa-th-list" style="color: #8b5cf6;"></i> Consolidated Marksheet
+                    <span style="font-size: 12px; color: #94a3b8; font-weight: normal; margin-left: 8px;">
+                        All units, all learners - summary view
+                    </span>
+                </h4>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button onclick="exportConsolidatedMarksheet()" style="background: #8b5cf6; color: white; padding: 6px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;">
+                        <i class="fas fa-file-excel"></i> Export Excel
+                    </button>
+                    <button onclick="printConsolidatedMarksheet()" style="background: #6366f1; color: white; padding: 6px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;">
+                        <i class="fas fa-print"></i> Print
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Consolidated Marksheet Filters -->
+            <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 16px; padding: 12px; background: #f8fafc; border-radius: 8px;">
+                <div>
+                    <label style="font-size: 11px; font-weight: 600; color: #64748b; display: block;">Sort By</label>
+                    <select id="consolidated_sort" onchange="renderConsolidatedMarksheet()" style="padding: 4px 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 13px;">
+                        <option value="name">Learner Name</option>
+                        <option value="avg" selected>Average Score</option>
+                        <option value="grade">Grade</option>
+                        <option value="points">Points</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size: 11px; font-weight: 600; color: #64748b; display: block;">Show</label>
+                    <select id="consolidated_limit" onchange="renderConsolidatedMarksheet()" style="padding: 4px 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 13px;">
+                        <option value="all">All Learners</option>
+                        <option value="10">Top 10</option>
+                        <option value="20">Top 20</option>
+                        <option value="50">Top 50</option>
+                    </select>
+                </div>
+                <div style="flex: 1; min-width: 150px;">
+                    <label style="font-size: 11px; font-weight: 600; color: #64748b; display: block;">Search</label>
+                    <input type="text" id="consolidated_search" placeholder="Search learner..." onkeyup="renderConsolidatedMarksheet()" style="width: 100%; padding: 4px 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 13px;">
+                </div>
+            </div>
+            
+            <!-- Consolidated Marksheet Table -->
+            <div style="overflow-x: auto;" id="consolidatedMarksheetContainer">
+                <div id="consolidatedLoading" style="text-align: center; padding: 40px; color: #94a3b8;">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 24px;"></i>
+                    <p style="margin-top: 10px;">Loading consolidated marksheet...</p>
+                </div>
+                <table style="width: 100%; border-collapse: collapse; font-size: 13px; display: none;" id="consolidatedMarksheetTable">
+                    <thead style="background: linear-gradient(135deg, #0d8af0, #0a66c2); color: white; position: sticky; top: 0; z-index: 10;">
+                        <tr>
+                            <th style="padding: 8px 10px; text-align: center; min-width: 40px;">#</th>
+                            <th style="padding: 8px 10px; text-align: left; min-width: 120px;">Adm No.</th>
+                            <th style="padding: 8px 10px; text-align: left; min-width: 180px;">Learner Name</th>
+                            <!-- Dynamic subject columns inserted here by JS -->
+                            <th style="padding: 8px 10px; text-align: center; background: #0a66c2; min-width: 60px;">Total</th>
+                            <th style="padding: 8px 10px; text-align: center; background: #0a66c2; min-width: 60px;">Avg</th>
+                            <th style="padding: 8px 10px; text-align: center; background: #0a66c2; min-width: 50px;">Grade</th>
+                            <th style="padding: 8px 10px; text-align: center; background: #0a66c2; min-width: 50px;">Points</th>
+                            <th style="padding: 8px 10px; text-align: center; background: #0a66c2; min-width: 80px;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="consolidatedMarksheetBody">
+                        <tr><td colspan="20" style="padding: 30px; text-align: center; color: #94a3b8;">No data available</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Summary Footer -->
+            <div id="consolidatedSummary" style="display: none; margin-top: 12px; padding: 10px 16px; background: #f8fafc; border-radius: 8px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; font-size: 13px;">
+                <span>Total Learners: <strong id="consolidated_total_count">0</strong></span>
+                <span>Average Score: <strong id="consolidated_avg_score">0%</strong></span>
+                <span>Pass Rate: <strong id="consolidated_pass_rate">0%</strong></span>
+                <span>Top Performer: <strong id="consolidated_top_performer">-</strong></span>
+            </div>
+        </div>
+
+    </div><!-- End Dynamic Content -->
+</section><section id="view-marks-approval" class="tab-content ia-view">
+    <div style="background: linear-gradient(135deg, #f59e0b, #d97706); border-radius: 16px; padding: 25px 30px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; box-shadow: 0 4px 20px rgba(245,158,11,0.3);">
+        <div>
+            <h2 style="color: white; margin: 0; font-weight: 700;">
+                <i class="fas fa-check-double"></i> Marks Pending Approval
+            </h2>
+            <p style="color: rgba(255,255,255,0.9); margin: 4px 0 0 0; font-size: 14px;">
+                <i class="fas fa-clock"></i> Review and approve marks submitted by lecturers
+            </p>
+        </div>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button onclick="loadMarksApprovals()" class="btn-action" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+            <button onclick="approveAllPendingMarks()" class="btn-action" style="background: #10b981; color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; border: none;">
+                <i class="fas fa-check-double"></i> Approve All
+            </button>
+            <button onclick="rejectAllPendingMarks()" class="btn-action" style="background: #dc2626; color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; border: none;">
+                <i class="fas fa-times"></i> Reject All
+            </button>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="cards" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 25px;">
+        <div class="card" style="border-top: 4px solid #f59e0b;">
+            <h3 style="color: #d97706; font-size: 12px;">⏳ Pending Marks</h3>
+            <p class="data" id="pendingMarksCount" style="font-size: 28px; font-weight: 700; color: #d97706;">0</p>
+            <p class="minor-data" style="font-size: 11px;">Awaiting your review</p>
+        </div>
+        <div class="card" style="border-top: 4px solid #10b981;">
+            <h3 style="color: #059669; font-size: 12px;">✅ Approved Today</h3>
+            <p class="data" id="approvedMarksToday" style="font-size: 28px; font-weight: 700; color: #059669;">0</p>
+            <p class="minor-data" style="font-size: 11px;">Marks approved</p>
+        </div>
+        <div class="card" style="border-top: 4px solid #ef4444;">
+            <h3 style="color: #dc2626; font-size: 12px;">❌ Rejected</h3>
+            <p class="data" id="rejectedMarksCount" style="font-size: 28px; font-weight: 700; color: #dc2626;">0</p>
+            <p class="minor-data" style="font-size: 11px;">This month</p>
+        </div>
+        <div class="card" style="border-top: 4px solid #4C1D95;">
+            <h3 style="color: #4C1D95; font-size: 12px;">📚 Total Subjects</h3>
+            <p class="data" id="pendingSubjectsCount" style="font-size: 28px; font-weight: 700; color: #4C1D95;">0</p>
+            <p class="minor-data" style="font-size: 11px;">With pending marks</p>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div style="background: white; border-radius: 12px; padding: 16px 20px; margin-bottom: 20px; border: 1px solid #e5e7eb; display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+        <input type="text" id="marksApprovalSearch" placeholder="🔍 Search student or subject..." onkeyup="filterMarksApprovals()" style="flex: 1; min-width: 150px; padding: 8px 14px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 13px;">
+        <select id="marksApprovalSubjectFilter" onchange="filterMarksApprovals()" style="padding: 8px 14px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 13px;">
+            <option value="all">All Subjects</option>
+        </select>
+        <select id="marksApprovalBlockFilter" onchange="filterMarksApprovals()" style="padding: 8px 14px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 13px;">
+            <option value="all">All Blocks</option>
+        </select>
+        <span style="font-size: 13px; color: #64748b;">
+            <i class="fas fa-info-circle"></i> <span id="marksFilterCount">0</span> pending
+        </span>
+    </div>
+
+    <!-- Marks Table -->
+    <div style="background: white; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); border: 1px solid #e5e7eb; overflow-x: auto;">
+        <div id="marksApprovalTableContainer">
+            <div style="text-align: center; padding: 40px; color: #94a3b8;">
+                <div class="loading-spinner" style="display: inline-block; width: 30px; height: 30px; border: 3px solid #e5e7eb; border-top-color: #4C1D95; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                <p style="margin-top: 10px;">Loading pending marks...</p>
+            </div>
+        </div>
+    </div>
+</section><section id="view-marks-entry" class="tab-content ia-view">
+    <!-- Header -->
+    <div style="background: linear-gradient(135deg, #059669, #10b981); border-radius: 16px; padding: 25px 30px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; box-shadow: 0 4px 20px rgba(5,150,105,0.3);">
+        <div>
+            <h2 style="color: white; margin: 0; font-weight: 700;">
+                <i class="fas fa-pen-alt"></i> Marks Entry System
+            </h2>
+            <p style="color: rgba(255,255,255,0.9); margin: 4px 0 0 0; font-size: 14px;">
+                <i class="fas fa-graduation-cap"></i> KRCHN Nursing &nbsp;|&nbsp; <i class="fas fa-tools"></i> TVET Programs
+            </p>
+        </div>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button onclick="publishCurrentUnitMarks()" class="btn-action" style="background: #FDB913; color: #0A3D62; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; border: none; box-shadow: 0 2px 8px rgba(253,185,19,0.3);">
+                <i class="fas fa-share-alt"></i> 📤 Publish All
+            </button>
+            <button onclick="openStudentPublishModal()" class="btn-action" style="background: #8b5cf6; color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; border: none; box-shadow: 0 2px 8px rgba(139,92,246,0.3);">
+                <i class="fas fa-user-check"></i> 👥 Select Students
+            </button>
+            <button onclick="refreshMarksData()" class="btn-action" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                <i class="fas fa-sync-alt"></i> Refresh Data
+            </button>
+            <button onclick="exportAllMarksData()" class="btn-action" style="background: white; color: #059669; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; border: none;">
+                <i class="fas fa-download"></i> Export All
+            </button>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="cards" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 25px;">
+        <div class="card" style="border-top: 4px solid #059669; background: white; border-radius: 8px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+            <h3 style="color: #059669; font-size: 12px; margin: 0;">Total Students</h3>
+            <p class="data" id="me_total_students" style="font-size: 28px; font-weight: 700; color: #059669; margin: 4px 0;">0</p>
+            <p class="minor-data" style="font-size: 11px; color: #94a3b8; margin: 0;">With marks</p>
+        </div>
+        <div class="card" style="border-top: 4px solid #4C1D95; background: white; border-radius: 8px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+            <h3 style="color: #4C1D95; font-size: 12px; margin: 0;">Total Units</h3>
+            <p class="data" id="me_total_subjects" style="font-size: 28px; font-weight: 700; color: #4C1D95; margin: 4px 0;">0</p>
+            <p class="minor-data" style="font-size: 11px; color: #94a3b8; margin: 0;">Active units</p>
+        </div>
+        <div class="card" style="border-top: 4px solid #FDB913; background: white; border-radius: 8px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+            <h3 style="color: #d97706; font-size: 12px; margin: 0;">Pass Rate</h3>
+            <p class="data" id="me_pass_rate" style="font-size: 28px; font-weight: 700; color: #d97706; margin: 4px 0;">0%</p>
+            <p class="minor-data" style="font-size: 11px; color: #94a3b8; margin: 0;">Students passing</p>
+        </div>
+        <div class="card" style="border-top: 4px solid #8b5cf6; background: white; border-radius: 8px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+            <h3 style="color: #6d28d9; font-size: 12px; margin: 0;">Class Average</h3>
+            <p class="data" id="me_class_avg" style="font-size: 28px; font-weight: 700; color: #6d28d9; margin: 4px 0;">0%</p>
+            <p class="minor-data" style="font-size: 11px; color: #94a3b8; margin: 0;">Overall performance</p>
+        </div>
+        <div class="card" style="border-top: 4px solid #ef4444; background: white; border-radius: 8px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+            <h3 style="color: #dc2626; font-size: 12px; margin: 0;">At Risk</h3>
+            <p class="data" id="me_at_risk" style="font-size: 28px; font-weight: 700; color: #dc2626; margin: 4px 0;">0</p>
+            <p class="minor-data" style="font-size: 11px; color: #94a3b8; margin: 0;">Below pass mark</p>
+        </div>
+        <div class="card" style="border-top: 4px solid #10b981; background: linear-gradient(135deg, #f0fdf4, #ecfdf5); border-radius: 8px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+            <h3 style="color: #059669; font-size: 12px; margin: 0;">📤 Published</h3>
+            <p class="data" id="me_published_count" style="font-size: 28px; font-weight: 700; color: #059669; margin: 4px 0;">0</p>
+            <p class="minor-data" style="font-size: 11px; color: #94a3b8; margin: 0;">Marks visible to students</p>
+        </div>
+    </div>
+
+    <!-- Selected Program Display -->
+    <div id="selectedProgramDisplay" style="background: linear-gradient(135deg, #f0fdf4, #ecfdf5); padding: 12px 20px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #86efac; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="font-weight: 700; color: #065f46; font-size: 14px;">
+                <i class="fas fa-check-circle"></i> Selected Program:
+            </span>
+            <span id="selectedProgramName" style="font-weight: 600; color: #1e293b; font-size: 15px;">None selected</span>
+        </div>
+        <div>
+            <span id="selectedProgramType" style="background: #dbeafe; padding: 4px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; color: #1e40af; border: 1px solid #93c5fd;">
+                <i class="fas fa-info-circle"></i> None Selected
+            </span>
+        </div>
+    </div>
+
+    <!-- Selectors -->
+    <div style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 25px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); border: 1px solid #e5e7eb;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px;">
+            <div>
+                <label style="font-weight: 600; font-size: 13px; color: #475569; display: block; margin-bottom: 5px;">
+                    <i class="fas fa-tag"></i> Program
+                </label>
+                <select id="me_program_select" class="form-control" onchange="loadMEBlocks(); updateSelectedProgramDisplay();" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0; background: #f8fafc; font-size: 14px;">
+                    <option value="">-- Select Program --</option>
+                    <option value="KRCHN">🎓 KRCHN Nursing</option>
+                    <optgroup label="🎯 TVET Diploma Programs">
+                        <option value="DPOTT">Diploma in Perioperative Theatre Technology</option>
+                        <option value="DCH">Diploma in Community Health</option>
+                        <option value="DHRIT">Diploma in Health Records and IT</option>
+                        <option value="DSL">Diploma in Science Lab</option>
+                        <option value="DSW">Diploma in Social Work</option>
+                        <option value="DCJS">Diploma in Criminal Justice</option>
+                        <option value="DHSS">Diploma in Health Support Services</option>
+                        <option value="DICT">Diploma in ICT</option>
+                        <option value="DME">Diploma in Medical Engineering</option>
+                    </optgroup>
+                    <optgroup label="📜 TVET Certificate Programs">
+                        <option value="CPOTT">Certificate in Perioperative Theatre Technology</option>
+                        <option value="CCH">Certificate in Community Health</option>
+                        <option value="CHRIT">Certificate in Health Records and IT</option>
+                        <option value="CPC">Certificate in Patient Care</option>
+                        <option value="CSL">Certificate in Science Lab</option>
+                        <option value="CSW">Certificate in Social Work</option>
+                        <option value="CCJS">Certificate in Criminal Justice</option>
+                        <option value="CAG">Certificate in Agriculture</option>
+                        <option value="CHSS">Certificate in Health Support Services</option>
+                        <option value="CICT">Certificate in ICT</option>
+                    </optgroup>
+                    <optgroup label="🔧 TVET Artisan Programs">
+                        <option value="ACH">Artisan in Community Health</option>
+                        <option value="AAG">Artisan in Agriculture</option>
+                        <option value="ASW">Artisan in Social Work</option>
+                    </optgroup>
+                    <optgroup label="📊 Other TVET Programs">
+                        <option value="CCA">Certificate in Computer Applications</option>
+                        <option value="PTE">TVET/CDACC (PTE)</option>
+                    </optgroup>
+                </select>
+            </div>
+            <div>
+                <label style="font-weight: 600; font-size: 13px; color: #475569; display: block; margin-bottom: 5px;">
+                    <i class="fas fa-calendar"></i> Academic Year
+                </label>
+                <select id="me_year_select" class="form-control" onchange="loadMEBlocks()" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0; background: #f8fafc; font-size: 14px;">
+                    <option value="2024">2024</option>
+                    <option value="2025" selected>2025</option>
+                    <option value="2026">2026</option>
+                    <option value="2027">2027</option>
+                    <option value="2028">2028</option>
+                </select>
+            </div>
+            <div>
+                <label style="font-weight: 600; font-size: 13px; color: #475569; display: block; margin-bottom: 5px;">
+                    <i class="fas fa-layer-group"></i> Block
+                </label>
+                <select id="me_block_select" class="form-control" onchange="loadMEUnits()" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0; background: #f8fafc; font-size: 14px;">
+                    <option value="">-- Select Block --</option>
+                </select>
+            </div>
+            <div>
+                <label style="font-weight: 600; font-size: 13px; color: #475569; display: block; margin-bottom: 5px;">
+                    <i class="fas fa-book"></i> Unit
+                </label>
+                <select id="me_subject_select" class="form-control" onchange="loadMarksEntry()" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0; background: #f8fafc; font-size: 14px;">
+                    <option value="">-- Select Unit --</option>
+                </select>
+            </div>
+            <div>
+                <label style="font-weight: 600; font-size: 13px; color: #475569; display: block; margin-bottom: 5px;">
+                    <i class="fas fa-tag"></i> Assessment Type
+                    <span style="font-size: 11px; color: #6b7280; font-weight: 400; display: block;">(Auto-detected from visible columns)</span>
+                </label>
+                <select id="me_assessment_type" class="form-control" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0; background: #f3f4f6; font-size: 14px; cursor: not-allowed;" disabled>
+                    <option value="full">Full (CAT1+CAT2+Exam)</option>
+                    <option value="single_cat">Single CAT (CAT+Exam)</option>
+                    <option value="exam_only">Exam Only</option>
+                    <option value="cats_only">CAT1+CAT2 Only</option>
+                    <option value="cat_only">CAT Only</option>
+                </select>
+                <small style="color: #6b7280; font-size: 11px;">Auto-detected based on visible columns</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Grading Reference -->
+    <div style="background: white; border-radius: 12px; padding: 12px 20px; margin-bottom: 25px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+        <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
+            <span style="font-weight: 700; color: #475569; font-size: 13px;">📊 Grading Systems:</span>
+            
+            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; background: #f0fdf4; padding: 6px 14px; border-radius: 8px; border: 1px solid #86efac;">
+                <span style="font-size: 11px; font-weight: 700; color: #065f46;">🔧 TVET</span>
+                <span style="background: #d1fae5; padding: 3px 10px; border-radius: 4px; font-weight: 700; color: #065f46; font-size: 10px;">A (80-100%) = 4.0</span>
+                <span style="background: #dbeafe; padding: 3px 10px; border-radius: 4px; font-weight: 700; color: #1e40af; font-size: 10px;">B (65-79%) = 3.0</span>
+                <span style="background: #fef3c7; padding: 3px 10px; border-radius: 4px; font-weight: 700; color: #92400e; font-size: 10px;">C (50-64%) = 2.0</span>
+                <span style="background: #fee2e2; padding: 3px 10px; border-radius: 4px; font-weight: 700; color: #991b1b; font-size: 10px;">E (0-49%) = 0.0</span>
+            </div>
+            
+            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; background: #eff6ff; padding: 6px 14px; border-radius: 8px; border: 1px solid #93c5fd;">
+                <span style="font-size: 11px; font-weight: 700; color: #1e40af;">🎓 Nursing</span>
+                <span style="background: #d1fae5; padding: 3px 10px; border-radius: 4px; font-weight: 700; color: #065f46; font-size: 10px;">A (75-100%) = 4.0</span>
+                <span style="background: #dbeafe; padding: 3px 10px; border-radius: 4px; font-weight: 700; color: #1e40af; font-size: 10px;">B (65-74%) = 3.0</span>
+                <span style="background: #fef3c7; padding: 3px 10px; border-radius: 4px; font-weight: 700; color: #92400e; font-size: 10px;">C (60-64%) = 2.0</span>
+                <span style="background: #fee2e2; padding: 3px 10px; border-radius: 4px; font-weight: 700; color: #991b1b; font-size: 10px;">D (0-59%) = 0.0</span>
+            </div>
+            
+            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; background: #fef3c7; padding: 6px 14px; border-radius: 8px; border: 1px solid #f59e0b;">
+                <span style="font-size: 10px; font-weight: 600; color: #92400e;">
+                    📐 CAT1=30 | CAT2=30 | Exam=70 (Nursing) / 100 (TVET)
+                </span>
+                <span style="font-size: 9px; color: #92400e; background: #fef3c7; padding: 2px 8px; border-radius: 4px; border: 1px solid #f59e0b;">
+                    Total: 130 (Nursing) / 160 (TVET)
+                </span>
+            </div>
+            
+            <span style="font-size: 11px; color: #059669; background: #d1fae5; padding: 4px 14px; border-radius: 12px;">
+                <i class="fas fa-magic"></i> Auto: <span id="autoAssessmentTypeLabel">Full</span>
+            </span>
+        </div>
+    </div>
+
+    <!-- Placeholder -->
+    <div id="marksEntryPlaceholder" style="text-align: center; padding: 60px 20px; background: white; border-radius: 12px; border: 1px solid #e5e7eb;">
+        <i class="fas fa-pen-alt" style="font-size: 48px; color: #94a3b8; margin-bottom: 16px; display: block;"></i>
+        <h3 style="color: #1e293b;">Select Program, Block and Unit</h3>
+        <p style="color: #94a3b8;">Choose from the dropdowns above to load marks for any program</p>
+    </div>
+
+    <!-- Dynamic Content -->
+    <div id="marksEntryDynamicContent" style="display: none;">
+        
+        <!-- Lecturer Assignment Management -->
+        <div style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 15px;">
+                <div>
+                    <h3 style="margin: 0; color: #1e293b;">
+                        <i class="fas fa-user-tie" style="color: #4C1D95;"></i> Lecturer Unit Assignments
+                    </h3>
+                    <p style="margin: 4px 0 0 0; color: #64748b; font-size: 13px;">
+                        <i class="fas fa-info-circle"></i> Assign lecturers to this unit
+                    </p>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button onclick="showLecturerAssignmentModal()" class="btn-action" style="background: #4C1D95; padding: 8px 20px; border: none; border-radius: 6px; color: white; cursor: pointer;">
+                        <i class="fas fa-user-plus"></i> Assign Lecturer
+                    </button>
+                    <button onclick="openStudentPublishModal()" class="btn-action" style="background: #8b5cf6; color: white; padding: 8px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                        <i class="fas fa-user-check"></i> Select Students
+                    </button>
+                </div>
+            </div>
+            <div id="me_lecturer_assignments" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px;">
+                <div style="color: #94a3b8; font-size: 13px; grid-column: 1 / -1; text-align: center; padding: 20px;">
+                    <i class="fas fa-info-circle"></i> Loading lecturer assignments...
+                </div>
+            </div>
+        </div>
+
+        <!-- Assignment History -->
+        <div style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 15px;">
+                <div>
+                    <h4 style="margin: 0; color: #1e293b;">
+                        <i class="fas fa-history" style="color: #4C1D95;"></i> Assignment History
+                    </h4>
+                    <p style="margin: 4px 0 0 0; color: #64748b; font-size: 13px;">
+                        <i class="fas fa-info-circle"></i> All lecturers assigned to this unit — click <strong>"Drop"</strong> to remove assignment
+                    </p>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button onclick="refreshAssignmentHistory()" class="btn-action" style="background: #6b7280; padding: 6px 14px; border: none; border-radius: 6px; color: white; cursor: pointer; font-size: 12px;">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                    <button onclick="clearAllAssignments()" class="btn-action" style="background: #dc2626; padding: 6px 14px; border: none; border-radius: 6px; color: white; cursor: pointer; font-size: 12px;">
+                        <i class="fas fa-trash"></i> Clear All
+                    </button>
+                </div>
+            </div>
+            <div id="me_assignment_history" style="overflow-x: auto;">
+                <div style="text-align: center; padding: 30px; color: #94a3b8; font-size: 13px;">
+                    <i class="fas fa-info-circle"></i> Loading assignment history...
+                </div>
+            </div>
+        </div>
+
+        <!-- Column Management -->
+        <div style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 15px;">
+                <div>
+                    <h3 style="margin: 0; color: #1e293b;">
+                        <i class="fas fa-columns" style="color: #059669;"></i> Column Settings for <span id="me_column_subject_name">Current Unit</span>
+                    </h3>
+                    <p style="margin: 4px 0 0 0; color: #64748b; font-size: 13px;">
+                        <i class="fas fa-info-circle"></i> Show/hide columns for this unit only
+                    </p>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button onclick="resetUnitColumns()" class="btn-action" style="background: #6b7280; padding: 8px 16px; border: none; border-radius: 6px; color: white; cursor: pointer;">
+                        <i class="fas fa-undo"></i> Reset for This Unit
+                    </button>
+                    <button onclick="openStudentPublishModal()" class="btn-action" style="background: #8b5cf6; color: white; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                        <i class="fas fa-user-check"></i> Select Students
+                    </button>
+                </div>
+            </div>
+            <div id="me_column_settings" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px;">
+                <div style="color: #94a3b8; font-size: 13px; grid-column: 1 / -1; text-align: center; padding: 20px;">
+                    <i class="fas fa-info-circle"></i> Loading column settings...
+                </div>
+            </div>
+        </div>
+
+        <!-- Marks Table -->
+        <div id="me_marks_container" style="background: white; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); border: 1px solid #e5e7eb; overflow-x: auto;">
+            <div style="text-align: center; padding: 40px;">
+                <div class="loading-spinner"></div>
+                <p style="color: #6b7280; margin-top: 10px;">Loading marks...</p>
+            </div>
+        </div>
+    </div>
+</section>
