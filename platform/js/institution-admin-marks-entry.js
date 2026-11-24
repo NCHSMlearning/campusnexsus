@@ -42,6 +42,7 @@
   finally{programsLoading=false;}
  }
  async function loadBlocks(){
+  marksLoadRequest++;rows=[];page=1;
   const program=$("iaMEProgramSelect")?.value||"";
   fill("iaMEBlockSelect",[],"Select academic period");fill("iaMEUnitSelect",[],"Select unit");units=[];academicStructure=null;
   if(!program)return;
@@ -58,6 +59,7 @@
   }catch(e){say("Academic periods could not be loaded: "+e.message,true);}
  }
  async function loadUnits(){
+  marksLoadRequest++;rows=[];page=1;
   const program=$("iaMEProgramSelect")?.value||"",block=$("iaMEBlockSelect")?.value||"";
   fill("iaMEUnitSelect",[],"Select unit");units=[];
   if(!program||!block)return;
