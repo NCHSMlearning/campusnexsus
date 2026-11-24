@@ -11,7 +11,7 @@ document.body.appendChild(schoolModal);
 document.getElementById('schoolPromptField').appendChild(schoolField);
 form.style.display='none';
 const show=(text,type='error')=>{message.textContent=text;message.className='message '+type};
-const nextPath=(role)=>{const p=new URLSearchParams(location.search).get('redirect');if(role==='student')return p&&p.startsWith('/')&&!p.startsWith('//')?p:'/studentexam';if(['lecturer','instructor','teacher'].includes(role))return '/lecturerexams/';return '/adminexams/';};
+const nextPath=(role)=>{const p=new URLSearchParams(location.search).get('redirect');if(role==='student')return p&&p.startsWith('/')&&!p.startsWith('//')?p:'/studentexam.html';if(['lecturer','instructor','teacher'].includes(role))return '/lecturerexams/';return '/adminexams/';};
 function clientReady(){const c=window.examSupabase;if(c&&typeof c.auth?.signInWithPassword==='function')return c;throw new Error(window.__EXAM_CONFIG_ERROR__||'The examination sign-in service is unavailable. Refresh and try again.')}
 function initials(name){return String(name||'School').trim().split(/\s+/).slice(0,2).map(x=>x[0]||'').join('').toUpperCase()||'SC'}
 function paintInstitution(institution){
