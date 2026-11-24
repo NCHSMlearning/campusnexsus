@@ -1,5 +1,5 @@
 // CampusNexus service worker — network-first navigation and versioned assets.
-const CACHE_NAME = 'campusnexus-v11';
+const CACHE_NAME = 'campusnexus-v12';
 const PRECACHE_URLS = [
   '/',
   '/index.html',
@@ -50,17 +50,63 @@ self.addEventListener('fetch', event => {
   // Student portal, login and database scripts must never be served from a
   // stale cache. These pages authenticate users and depend on tightly-coupled
   // HTML/JS versions, so always let the browser fetch the current deployment.
-  const isStudentOrLoginRequest =
+  const studentCoreScripts = new Set([
+    '/js/utils.js',
+    '/js/ui.js',
+    '/js/database.js',
+    '/js/dashboard.js',
+    '/js/profile.js',
+    '/js/attendance.js',
+    '/js/courses.js',
+    '/js/exams.js',
+    '/js/unit-registration.js',
+    '/js/resources.js',
+    '/js/calendar.js',
+    '/js/messages.js',
+    '/js/student-tickets.js',
+    '/js/nurseiq.js',
+    '/js/exam-card.js',
+    '/js/lecture-card.js',
+    '/js/academic-reports.js',
+    '/js/timetable-manager.js',
+    '/js/reviews-newsletter.js',
+    '/js/student-finance.js',
+    '/js/enrollment.js',
+    '/js/cleanup.js',
+    '/js/chatbot.js',
+    '/js/student-blog.js',
+    '/js/student-clinical-placements.js',
+    '/js/online-learning.js',
+    '/js/nchsm-mobile-enhancements.js',
+    '/platform/js/academic-structure.js',
+    '/platform/js/student-navigation.js',
+    '/platform/js/student-sidebar-search.js',
+    '/platform/js/student-dashboard-enhancements.js',
+    '/platform/js/student-navigation-guard.js',
+    '/platform/js/institution-portal-branding.js',
+    '/platform/js/campus-nexus-module-access.js'
+  ]);
+  const isStudentPortalRoute =
+    url.pathname === '/student' ||
+    url.pathname === '/student/' ||
+    url.pathname.startsWith('/student/') ||
     url.pathname === '/platform/student.html' ||
     url.pathname === '/platform/student' ||
+    url.pathname.startsWith('/platform/student/');
+  const isStudentOrLoginRequest =
+    isStudentPortalRoute ||
     url.pathname.startsWith('/platform/js/student-') ||
-    url.pathname === '/js/database.js' ||
+    studentCoreScripts.has(url.pathname) ||
     url.pathname === '/config.js' ||
     url.pathname === '/platform/login.html' ||
     url.pathname.startsWith('/platform/login/') ||
     url.pathname === '/login' ||
     url.pathname === '/login/' ||
     url.pathname.startsWith('/login/');
+  // Do not serve a mixed-version student workspace from the service-worker
+  // cache. Authentication, the database wrapper and dependent feature modules
+  // must all come from the same current deployment. This is intentionally
+  // network-only; the portal is authenticated and must not replay stale code.
   if (isStudentOrLoginRequest) return;
 
   if (request.mode === 'navigate') {
