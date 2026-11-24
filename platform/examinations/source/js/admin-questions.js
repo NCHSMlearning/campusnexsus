@@ -397,7 +397,7 @@ async function saveQuestion(e) {
     // Build question data based on type
     const questionData = {
         exam_id: examId,
-        question_type: (questionType === 'multiple_choice' || questionType === 'mcq') ? 'mcq' : 'essay',
+        question_type: (questionType === 'multiple_choice' || questionType === 'mcq') ? 'mcq' : (questionType === 'short_answer' ? 'short_answer' : 'essay'),
         question_text: questionText,
         marks: marks,
         marking_key: markingKey || null,
