@@ -1631,7 +1631,8 @@ body{background:var(--exam-canvas);color:var(--exam-ink)}
                     <label style="font-weight: 600; font-size: 12px; color: #475569; display: block; margin-bottom: 4px;">Question Type *</label>
                     <select id="questionType" onchange="toggleQuestionType()" required style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 13px;">
                         <option value="multiple_choice">Multiple Choice</option>
-                        <option value="essay">Essay / Written Answer</option>
+                        <option value="short_answer">Short Answer</option>
+                        <option value="essay">Long Answer / Essay</option>
                     </select>
                 </div>
                 <div>
@@ -1680,6 +1681,8 @@ body{background:var(--exam-canvas);color:var(--exam-ink)}
             
             <!-- Essay Options -->
             <div id="essayOptions" style="display:none; margin-top: 12px;">
+                <label style="display:block;font-weight:600;font-size:11px;color:#475569;margin:8px 0 4px">Lecturer marking key / model answer *</label>
+                <textarea id="questionMarkingKey" placeholder="Expected points, acceptable alternatives and mark allocation" style="width:100%;min-height:110px;padding:8px 10px;border:1px solid #e2e8f0;border-radius:6px"></textarea>
                 <label style="font-weight: 600; font-size: 11px; color: #475569; display: block; margin-bottom: 2px;">Max Characters</label>
                 <input type="number" id="maxChars" value="5000" min="100" max="50000" style="width: 100%; padding: 6px 10px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 13px;">
             </div>
