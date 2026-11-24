@@ -3,7 +3,7 @@
  */
 (() => {
  "use strict";
- const $=id=>document.getElementById(id);let api=null,records=[],students=[];
+ const aliases={"iaAttendanceTotal":"attendanceTotalCount","iaAttendanceToday":"todayCount","iaAttendanceTodayRows":"attendance-table-body","iaAttendanceHistoryRows":"past-attendance-table-body","iaAttendanceSearch":"attendance_search","iaAttendanceStatus":"attendance_status_filter","iaAttendanceType":"attendance_type_filter","iaAttendanceProgram":"attendance_program_filter","iaAttStudent":"att_student_id","iaAttDate":"att_date","iaAttTime":"att_time","iaAttSession":"att_session_type","iaAttTarget":"att_course_id","iaManualAttendanceForm":"manual-attendance-form"}; const $=id=>document.getElementById(id)||document.getElementById(aliases[id]||"");let api=null,records=[],students=[];
  const db=()=>{if(!api?.db||!api?.institutionId)throw new Error("Institution session is not ready.");return api.db;};
  const esc=v=>String(v??"—").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
  const date=v=>v?new Date(v).toLocaleString("en-KE",{dateStyle:"medium",timeStyle:"short"}):"—";
