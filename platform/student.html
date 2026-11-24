@@ -12580,6 +12580,42 @@ html,body{max-width:100%!important}
 }
 </style>
 
+<style id="cn-student-institution-header-compact">
+/* Keep the institution identity in the student top bar compact on every screen. */
+#main-header.nchsm-reference-header{
+  min-height:68px!important;height:auto!important;max-height:84px!important;
+  box-sizing:border-box!important;gap:14px!important;padding:8px 16px!important;
+}
+#main-header .nchsm-header-left{display:flex!important;align-items:center!important;gap:12px!important;min-width:0!important;flex:0 1 auto!important}
+#main-header .nchsm-header-brand{display:flex!important;align-items:center!important;gap:10px!important;min-width:0!important;max-width:min(48vw,520px)!important;overflow:hidden!important}
+#main-header .nchsm-header-logo{display:block!important;width:46px!important;height:46px!important;max-width:46px!important;max-height:46px!important;min-width:46px!important;object-fit:contain!important;flex:0 0 46px!important;border-radius:10px!important}
+#main-header .nchsm-header-brand>div{min-width:0!important;overflow:hidden!important}
+#main-header .nchsm-header-title{display:block!important;font-size:clamp(12px,1.25vw,17px)!important;line-height:1.2!important;font-weight:800!important;letter-spacing:.01em!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;max-width:100%!important}
+#main-header .nchsm-header-subtitle{display:block!important;font-size:10px!important;line-height:1.25!important;font-weight:600!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;max-width:100%!important;margin-top:3px!important}
+#main-header .nchsm-header-search{flex:1 1 280px!important;min-width:100px!important;max-width:520px!important}
+#main-header .nchsm-header-right{display:flex!important;align-items:center!important;gap:8px!important;flex:0 0 auto!important}
+#main-header .nchsm-header-icon{width:38px!important;height:38px!important;flex:0 0 38px!important}
+#main-header .nchsm-header-profile .profile-avatar{width:38px!important;height:38px!important;max-width:38px!important;max-height:38px!important;object-fit:cover!important}
+@media(max-width:760px){
+  #main-header.nchsm-reference-header{min-height:58px!important;max-height:68px!important;padding:6px 10px!important;gap:7px!important}
+  #main-header .nchsm-header-left{gap:7px!important}
+  #main-header .nchsm-header-menu{width:34px!important;height:34px!important;flex:0 0 34px!important}
+  #main-header .nchsm-header-brand{gap:7px!important;max-width:calc(100vw - 170px)!important}
+  #main-header .nchsm-header-logo{width:36px!important;height:36px!important;min-width:36px!important;max-width:36px!important;max-height:36px!important;flex-basis:36px!important}
+  #main-header .nchsm-header-title{font-size:12px!important;line-height:1.15!important}
+  #main-header .nchsm-header-subtitle{font-size:9px!important;margin-top:2px!important}
+  #main-header .nchsm-header-search{display:none!important}
+  #main-header .nchsm-header-right{gap:4px!important}
+  #main-header .nchsm-header-icon{width:32px!important;height:32px!important;flex-basis:32px!important}
+  #main-header .nchsm-header-profile .profile-avatar{width:32px!important;height:32px!important;max-width:32px!important;max-height:32px!important}
+  #main-header .nchsm-header-user-copy{display:none!important}
+  #main-header .nchsm-header-profile .dropdown-icon{display:none!important}
+}
+@media(min-width:761px) and (max-width:1100px){
+  #main-header .nchsm-header-search{max-width:280px!important}
+  #main-header .nchsm-header-brand{max-width:38vw!important}
+}
+</style>
 <script src="/platform/js/institution-portal-branding.js?v=20261124-dashboard-theme-v2" defer></script>
 <script src="/js/campus-nexus-code-guard.js?v=20261124-global-guard-v1" defer></script>
 </body>
