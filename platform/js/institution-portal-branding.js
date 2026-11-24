@@ -320,6 +320,15 @@
   }
 
   async function resolveInstitution(client) {
+    // Student authentication already verifies the tenant by the authenticated
+    // profile's institution_id. Use that trusted result directly instead of
+    // performing a second profile lookup with a separate client/RLS context.
+    const authenticatedTenant = window.CURRENT_INSTITUTION;
+    if (authenticatedTenant && authenticatedTenant.id) {
+      applyBranding(authenticatedTenant);
+      return;
+    }
+
     const auth = await client.auth.getUser();
     const user = auth.data && auth.data.user;
     if (auth.error || !user) return;
@@ -369,6 +378,14 @@
 
   async function boot() {
     if (applied || attempts++ > 50) return;
+
+    // The Student Portal publishes CURRENT_INSTITUTION only after its
+    // authenticated profile and institution record have both been verified.
+    if (window.CURRENT_INSTITUTION && window.CURRENT_INSTITUTION.id) {
+      applyBranding(window.CURRENT_INSTITUTION);
+      if (applied) return;
+    }
+
     const client = getClient();
     if (!client) {
       window.setTimeout(boot, 400);
@@ -382,6 +399,9 @@
     }
   }
 
+  // Student startup dispatches appReady on document (not window).
+  // Listen on both targets to remain compatible with other portal shells.
+  document.addEventListener("appReady", () => { if (!applied) boot(); });
   window.addEventListener("appReady", () => { if (!applied) boot(); });
   window.addEventListener("load", () => { if (!applied) boot(); });
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot, {once: true});
