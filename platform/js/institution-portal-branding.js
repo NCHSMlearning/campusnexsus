@@ -38,7 +38,14 @@
     const source = institution && institution.brand_colors;
     const named = source && !Array.isArray(source) && typeof source === "object" ? source : {};
     const values = Array.isArray(source) ? source : [named.primary,named.secondary,named.accent1||named.accent||named.gold||named.tertiary,named.accent2,named.accent3,named.accent4];
-    return defaults.map((fallback,index)=>safeColor(index===0?(institution.primary_color||values[index]):index===1?(institution.secondary_color||values[index]):values[index],fallback));
+    // The approved six-colour palette is the source of truth. Legacy
+    // primary_color/secondary_color columns may contain older branding and
+    // must never override a newer approved palette.
+    return defaults.map((fallback,index)=>{
+      const paletteValue=values[index];
+      const legacyValue=index===0?institution.primary_color:index===1?institution.secondary_color:null;
+      return safeColor(paletteValue, safeColor(legacyValue, fallback));
+    });
   }
   function initials(value) {
     return String(value || "Institution").trim().split(/\s+/).filter(Boolean)
@@ -191,7 +198,11 @@
       ";--institution-primary:",primary,";--institution-secondary:",secondary,";--institution-gold:",gold,
       ";--cn-brand-primary:",primary,";--cn-brand-secondary:",secondary,";--cn-brand-accent:",accent1,
       ";--cn-brand-accent-2:",accent2,";--cn-brand-accent-3:",accent3,";--cn-brand-accent-4:",accent4,"}",
-      "#sidebar,.sidebar{background-color:",primary,"!important;background-image:linear-gradient(180deg,",primary,",",primary," 68%,",secondary,")!important}",
+      "#sidebar,.sidebar,.student-sidebar,.exam-sidebar{background-color:",primary,"!important;background-image:linear-gradient(180deg,",primary,",",primary," 68%,",secondary,")!important}",
+      "#sidebar::before,.sidebar::before,.student-sidebar::before,.exam-sidebar::before{background:",primary,"!important}",
+      ".dashboard-hero,.welcome-banner,.welcome-card,.dashboard-welcome,.hero{background-color:",primary,"!important;background-image:linear-gradient(120deg,",primary," 0%,",secondary," 100%)!important}",
+      ".dashboard-hero h1,.welcome-banner h1,.welcome-card h1,.dashboard-welcome h1,.hero h1{color:#fff!important}",
+      ".dashboard-hero .eyebrow,.welcome-banner .eyebrow,.dashboard-welcome .dashboard-eyebrow,.hero .hero-tag{color:",gold,"!important}",
       ".sidebar-header,.sidebar-brand,.nchsm-header-brand{border-color:",secondary,"55!important}",
       ".sidebar-header img,.brand-crest img,.nchsm-header-logo,.mobile-header .logo img,.header-content .logo img,.nchsm-loading-logo img{object-fit:contain!important}",
       ".sidebar a.active,.sidebar-menu a.active,#sidebar .nav a.active{border-left-color:",gold,"!important}",
