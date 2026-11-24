@@ -75,53 +75,69 @@ async function initializeApp() {
         // during a slow/mobile page load. The auth client remains the single
         // persistent Supabase client; this only restores the Database wrapper.
         async function ensureStudentDatabaseModule() {
-            if (window.db && typeof window.db.initialize === 'function') return window.db;
+            const isUsable = value => value && typeof value.initialize === 'function';
 
-            // The student portal can be served from either /student or /platform/student.html.
-            // Resolve the database script from the site root and retry once without stale cache.
-            const candidates = [
-                new URL('/js/database.js', window.location.origin).href,
-                new URL('../js/database.js', window.location.href).href
-            ];
-            const uniqueCandidates = [...new Set(candidates)];
+            // The classic database script exports both the constructor and its
+            // singleton. Prefer either existing export before requesting it again.
+            if (isUsable(window.db)) return window.db;
+            if (typeof window.Database === 'function') {
+                window.db = new window.Database();
+                if (isUsable(window.db)) return window.db;
+            }
+
+            // One canonical URL avoids retrying two relative paths that resolve
+            // to the same file on /student and /platform/student.html.
+            const source = new URL('/js/database.js', window.location.origin);
             let lastError = null;
+            const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-            for (const source of uniqueCandidates) {
+            for (let attempt = 1; attempt <= 3; attempt++) {
                 try {
                     await new Promise((resolve, reject) => {
                         const script = document.createElement('script');
-                        script.src = source + (source.includes('?') ? '&' : '?') + 'student_boot=' + Date.now();
-                        script.async = true;
-                        script.onload = () => resolve();
-                        script.onerror = () => reject(new Error('Could not load ' + source));
+                        const timeout = window.setTimeout(() => {
+                            script.remove();
+                            reject(new Error('Timed out loading /js/database.js (attempt ' + attempt + ' of 3).'));
+                        }, 15000);
+                        script.src = source.href + '?v=20261124-student-db-recovery-v5&attempt=' + attempt + '&_=' + Date.now();
+                        script.async = false;
+                        script.dataset.studentDatabaseRecovery = 'true';
+                        script.onload = () => {
+                            window.clearTimeout(timeout);
+                            resolve();
+                        };
+                        script.onerror = () => {
+                            window.clearTimeout(timeout);
+                            reject(new Error('The browser could not download /js/database.js (attempt ' + attempt + ' of 3).'));
+                        };
                         document.head.appendChild(script);
                     });
-                    // A different legacy script may leave a plain object in
-                    // window.db. Treat it as usable only when it is the actual
-                    // Database instance with initialize(); otherwise rebuild it.
-                    if (window.db && typeof window.db.initialize === 'function') return window.db;
-                    if (typeof window.Database === 'function') {
+
+                    if (!isUsable(window.db) && typeof window.Database === 'function') {
                         window.db = new window.Database();
-                        if (typeof window.db.initialize === 'function') return window.db;
                     }
+                    if (isUsable(window.db)) {
+                        console.info('[Student Portal] Database module ready after recovery attempt', attempt);
+                        return window.db;
+                    }
+
                     throw new Error(
-                        'The database script loaded, but no usable Database instance was exposed. ' +
+                        'The database script response loaded but did not expose a usable Database instance. ' +
                         'window.db=' + typeof window.db +
-                        ', window.Database=' + typeof window.Database
+                        ', window.Database=' + typeof window.Database + '.'
                     );
                 } catch (error) {
                     lastError = error;
-                    console.error('[Student Portal] Database script load failed:', source, error);
+                    console.error('[Student Portal] Database bootstrap attempt ' + attempt + ' failed:', error);
+                    if (attempt < 3) await wait(attempt * 700);
                 }
             }
 
-            if ((!window.db || typeof window.db.initialize !== 'function') && typeof window.Database === 'function') {
-                window.db = new window.Database();
-            }
-            if (!window.db || typeof window.db.initialize !== 'function') {
-                throw new Error('Student database module could not be loaded. Please refresh the page or contact support.');
-            }
-            return window.db;
+            const detail = lastError?.message || 'Unknown database script loading error.';
+            throw new Error(
+                'Student database module could not be loaded after 3 attempts. ' + detail +
+                ' Check that /js/database.js is reachable and that the deployed student portal files are from the same release.'
+            );
         }
 
         await ensureStudentDatabaseModule();
