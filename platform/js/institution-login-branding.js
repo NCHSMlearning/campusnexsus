@@ -18,22 +18,19 @@
     const name = institution.institution_name || "Your Institution";
     const schoolCode = String(institution.school_code || code).trim();
     const identity = schoolCode ? name + " (" + schoolCode + ")" : name;
-    const palette = institution.brand_colors && typeof institution.brand_colors === "object" ? institution.brand_colors : [];
-    const normalizeColor = (value, fallback) => {
-      if (typeof value !== "string") return fallback;
-      if (/^#[0-9a-f]{3}$/i.test(value)) return "#" + value.slice(1).split("").map(ch => ch + ch).join("");
-      return /^#[0-9a-f]{6}$/i.test(value) ? value : fallback;
-    };
-    const primary = normalizeColor(institution.primary_color || (Array.isArray(palette) ? palette[0] : palette.primary), "#082f49");
-    const secondary = normalizeColor(institution.secondary_color || (Array.isArray(palette) ? palette[1] : palette.secondary), "#0f766e");
-    const gold = normalizeColor(Array.isArray(palette) ? palette[2] : (palette.gold || palette.accent || palette.tertiary), "#d4a017");
+    const source=institution.brand_colors&&typeof institution.brand_colors==="object"?institution.brand_colors:[];
+    const named=!Array.isArray(source)?source:{};
+    const values=Array.isArray(source)?source:[named.primary,named.secondary,named.accent1||named.accent||named.gold||named.tertiary,named.accent2,named.accent3,named.accent4];
+    const normalizeColor=(value,fallback)=>{if(typeof value!=="string")return fallback;if(/^#[0-9a-f]{3}$/i.test(value))return "#"+value.slice(1).split("").map(ch=>ch+ch).join("");return /^#[0-9a-f]{6}$/i.test(value)?value:fallback;};
+    const defaults=["#082f49","#0f766e","#d4a017","#2563eb","#7c3aed","#db2777"];
+    const colors=defaults.map((fallback,index)=>normalizeColor(index===0?(institution.primary_color||values[index]):index===1?(institution.secondary_color||values[index]):values[index],fallback));
+    const [primary,secondary,gold,accent2,accent3,accent4]=colors;
 
-    document.documentElement.style.setProperty("--nchsm-navy", primary);
-    document.documentElement.style.setProperty("--nchsm-teal", secondary);
-    document.documentElement.style.setProperty("--nchsm-gold", gold);
-    document.documentElement.style.setProperty("--institution-primary", primary);
-    document.documentElement.style.setProperty("--institution-secondary", secondary);
-    document.documentElement.style.setProperty("--institution-gold", gold);
+    colors.forEach((color,index)=>document.documentElement.style.setProperty("--cn-institution-color-"+(index+1),color));
+    document.documentElement.style.setProperty("--nchsm-navy",primary);document.documentElement.style.setProperty("--nchsm-teal",secondary);document.documentElement.style.setProperty("--nchsm-gold",gold);
+    document.documentElement.style.setProperty("--institution-primary",primary);document.documentElement.style.setProperty("--institution-secondary",secondary);document.documentElement.style.setProperty("--institution-gold",gold);
+    document.documentElement.style.setProperty("--cn-brand-primary",primary);document.documentElement.style.setProperty("--cn-brand-secondary",secondary);document.documentElement.style.setProperty("--cn-brand-accent",gold);
+    document.documentElement.style.setProperty("--cn-brand-accent-2",accent2);document.documentElement.style.setProperty("--cn-brand-accent-3",accent3);document.documentElement.style.setProperty("--cn-brand-accent-4",accent4);
     document.documentElement.dataset.institutionLogin = "true";
     document.documentElement.dataset.institutionName = name;
     document.documentElement.dataset.institutionId = institution.institution_id;
@@ -46,6 +43,7 @@
       document.head.appendChild(theme);
     }
     theme.textContent = `
+      :root{--cn-institution-primary:${primary};--cn-institution-secondary:${secondary};--cn-institution-gold:${gold};--cn-institution-color-1:${primary};--cn-institution-color-2:${secondary};--cn-institution-color-3:${gold};--cn-institution-color-4:${accent2};--cn-institution-color-5:${accent3};--cn-institution-color-6:${accent4};--cn-brand-primary:${primary};--cn-brand-secondary:${secondary};--cn-brand-accent:${gold};--cn-brand-accent-2:${accent2};--cn-brand-accent-3:${accent3};--cn-brand-accent-4:${accent4}}
       .left-panel{background:linear-gradient(180deg, ${primary}b8 0%, ${primary}d9 48%, ${primary}f2 100%)!important}
       .left-panel:before{background:radial-gradient(circle at 80% 15%,${secondary}55,transparent 34%),linear-gradient(135deg,${primary}22,transparent 55%)!important}
       .left-panel:after{background:linear-gradient(180deg,${primary}12,${primary}55)!important}
@@ -54,6 +52,9 @@
       .logo-wrapper .logo{border-color:${gold}!important}
       .login-button{background:linear-gradient(135deg,${secondary},${primary})!important;box-shadow:0 11px 25px ${primary}35!important}
       .login-button:hover{box-shadow:0 14px 30px ${primary}55!important}
+      input:focus,select:focus,textarea:focus{border-color:${gold}!important;box-shadow:0 0 0 3px ${gold}22!important}
+      .login-button,.submit{background:linear-gradient(135deg,${secondary},${primary})!important}
+      a{color:${accent2}}
     `;
 
     const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join("").toUpperCase();
