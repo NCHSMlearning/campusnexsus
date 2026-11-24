@@ -71,7 +71,41 @@ async function initializeApp() {
         if (!config.SUPABASE_URL || config.SUPABASE_URL === '%%SUPABASE_URL%%') throw new Error('SUPABASE_URL not configured');
         if (!config.SUPABASE_ANON_KEY || config.SUPABASE_ANON_KEY === '%%SUPABASE_ANON_KEY%%') throw new Error('SUPABASE_ANON_KEY not configured');
         
-        if (typeof window.db === 'undefined') throw new Error('Database module not loaded');
+        // Recover if the browser skipped or failed the legacy database script
+        // during a slow/mobile page load. The auth client remains the single
+        // persistent Supabase client; this only restores the Database wrapper.
+        async function ensureStudentDatabaseModule() {
+            if (window.db) return window.db;
+
+            const existing = document.querySelector('script[src*="/js/database.js"]');
+            const source = existing?.src || (window.location.origin + '/js/database.js?v=20261124-student-db-recovery-v1');
+
+            const loadScript = () => new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = source + (source.includes('?') ? '&' : '?') + 'student_recovery=' + Date.now();
+                script.async = true;
+                script.onload = () => resolve();
+                script.onerror = () => reject(new Error('The student database script could not be downloaded.'));
+                document.head.appendChild(script);
+            });
+
+            try {
+                await loadScript();
+            } catch (firstError) {
+                console.error('[Student Portal] Database module recovery attempt failed:', firstError);
+            }
+
+            if (!window.db && typeof Database === 'function') {
+                window.db = new Database();
+            }
+
+            if (!window.db) {
+                throw new Error('The student database module did not initialize. Check that /js/database.js is loading successfully, then refresh the page.');
+            }
+            return window.db;
+        }
+
+        await ensureStudentDatabaseModule();
 
         // Match the working Student Examinations portal startup:
         // reuse config.js's persistent Supabase client directly. Do not run
