@@ -2108,6 +2108,28 @@ function renderQuestion(index) {
                 const value = this.value;
                 const charCount = value.length;
                 const wordCount = value.trim() ? value.trim().split(/\s+/).length : 0;
+
+                // Keep the live textarea value in application state immediately.
+                // The previous implementation waited for a 500ms debounce before
+                // updating AppState.answers and never enabled Submit for written
+                // answers, leaving the mobile Submit button disabled.
+                if (value.trim()) AppState.answers[q.id] = value;
+                else delete AppState.answers[q.id];
+                AppState.hasAnsweredAtLeastOne = Object.values(AppState.answers)
+                    .some(answer => String(answer == null ? '' : answer).trim().length > 0);
+                if (DOM.submitBtn) {
+                    DOM.submitBtn.disabled = !AppState.hasAnsweredAtLeastOne;
+                    DOM.submitBtn.style.opacity = DOM.submitBtn.disabled ? '0.55' : '1';
+                    DOM.submitBtn.style.cursor = DOM.submitBtn.disabled ? 'not-allowed' : 'pointer';
+                }
+                saveToLocalStorage(`draft_${q.id}`, {
+                    answer: value,
+                    timestamp: Date.now(),
+                    attemptId: AppState.attemptId
+                });
+                updateStatusTable();
+                updateExamStats();
+                saveProgressLocally();
                 
                 // Update character counter
                 const charCountEl = document.getElementById(`char-count-${q.id}`);
@@ -2252,12 +2274,38 @@ function saveCurrentAnswer() {
     if (AppState.fullscreenLockActive || AppState.isExamPaused || AppState.isSubmitting || AppState.sessionLost || !AppState.isExamActive) return;
     const q = AppState.questions[AppState.currentIndex];
     if (!q) return;
-    
+
+    // Flush the currently focused written-answer field synchronously before
+    // submission/navigation; do not depend on blur or the debounce timer.
+    const textarea = document.getElementById(`text-answer-${q.id}`);
+    if (textarea) {
+        const answer = String(textarea.value || '');
+        if (answer.trim()) AppState.answers[q.id] = answer;
+        else delete AppState.answers[q.id];
+        saveToLocalStorage(`draft_${q.id}`, {
+            answer,
+            timestamp: Date.now(),
+            attemptId: AppState.attemptId
+        });
+        AppState.hasAnsweredAtLeastOne = Object.values(AppState.answers)
+            .some(value => String(value == null ? '' : value).trim().length > 0);
+        if (DOM.submitBtn) {
+            DOM.submitBtn.disabled = !AppState.hasAnsweredAtLeastOne;
+            DOM.submitBtn.style.opacity = DOM.submitBtn.disabled ? '0.55' : '1';
+            DOM.submitBtn.style.cursor = DOM.submitBtn.disabled ? 'not-allowed' : 'pointer';
+        }
+        updateStatusTable();
+        updateExamStats();
+        saveProgressLocally();
+        return;
+    }
+
     const radio = document.querySelector(`input[name="q${q.id}"]:checked`);
     if (radio) {
         const answer = radio.value;
         if (AppState.answers[q.id] !== answer) {
             AppState.answers[q.id] = answer;
+            AppState.hasAnsweredAtLeastOne = true;
             saveAnswerToDatabase(q.id, answer);
             saveProgressLocally();
             updateStatusTable();
@@ -2718,6 +2766,10 @@ function submitExam(forceAutoSubmit = false) {
         showToast('⏳ Submission already in progress...', 'warning');
         return;
     }
+
+    // Capture the active textarea before calculating answered/unanswered counts
+    // or opening confirmation. This is especially important on mobile browsers.
+    saveCurrentAnswer();
 
     // Automatic policy-triggered submissions (exam timer/fullscreen timeout) must not
     // wait for a student confirmation dialog that may no longer be accessible.
