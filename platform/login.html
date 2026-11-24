@@ -1645,7 +1645,89 @@ body.dark-theme #loginButton,body.dark-theme .login-button{background:linear-gra
 </style>
 
 <script src="/code-protection.js?v=20261121-global-v4" defer></script>
-</head>
+<style id="campus-nexus-unified-login-responsive-v2">
+/* Unified Campus Nexus sign-in: institution palette + refined responsive layout */
+:root{--cn-login-primary:#063b5b;--cn-login-secondary:#087b78;--cn-login-accent:#f5bd3d}
+html[data-institution-login="true"]{
+ --cn-login-primary:var(--cn-institution-color-1);
+ --cn-login-secondary:var(--cn-institution-color-2);
+ --cn-login-accent:var(--cn-institution-color-3);
+}
+html[data-institution-login="true"] .left-panel{
+ background:linear-gradient(145deg,color-mix(in srgb,var(--cn-login-primary) 82%,#031c30),color-mix(in srgb,var(--cn-login-secondary) 50%,var(--cn-login-primary)))!important;
+}
+html[data-institution-login="true"] .left-panel .logo-wrapper .logo,
+html[data-institution-login="true"] .mobile-header .logo,
+html[data-institution-login="true"] .welcome-icon.logo-welcome{
+ border-color:var(--cn-login-accent)!important;
+}
+html[data-institution-login="true"] .left-panel .gold,
+html[data-institution-login="true"] .welcome-title .gold{color:var(--cn-login-accent)!important}
+html[data-institution-login="true"] .left-panel .feature>svg,
+html[data-institution-login="true"] .left-panel .stat .number{color:var(--cn-login-accent)!important}
+html[data-institution-login="true"] .login-button,
+html[data-institution-login="true"] .signup-link{
+ background:linear-gradient(120deg,var(--cn-login-secondary),var(--cn-login-primary))!important;
+ border-color:var(--cn-login-primary)!important;color:#fff!important;
+}
+html[data-institution-login="true"] .form-input:focus{
+ border-color:var(--cn-login-accent)!important;
+ box-shadow:0 0 0 4px color-mix(in srgb,var(--cn-login-accent) 20%,transparent)!important;
+}
+html[data-institution-login="true"] .forgot-link,
+html[data-institution-login="true"] .footer-link{color:var(--cn-login-secondary)!important}
+html[data-institution-login="true"] .welcome-icon{background:color-mix(in srgb,var(--cn-login-secondary) 12%,white)!important;color:var(--cn-login-secondary)!important}
+html[data-institution-login="true"] .feature{border-color:color-mix(in srgb,var(--cn-login-accent) 32%,transparent)!important}
+html[data-institution-login="true"] .feature>svg{color:var(--cn-login-accent)!important}
+.login-card .welcome-icon.logo-welcome img{width:100%;height:100%;object-fit:contain;padding:5px}
+.mobile-header .logo img{width:100%;height:100%;object-fit:contain;padding:3px}
+@media(min-width:721px){
+ .container{grid-template-columns:minmax(0,1.08fr) minmax(440px,.92fr)!important}
+ .left-panel{background-position:center!important}
+ .panel-content{padding:clamp(28px,4vw,64px)!important}
+ .left-panel .welcome-section h2{max-width:650px!important}
+ .right-panel{position:relative}
+ .main-content{padding:clamp(25px,4vw,58px)!important}
+ .login-card{max-width:510px!important}
+}
+@media(max-width:720px){
+ .container{overflow:visible!important}
+ .left-panel{height:320px!important;min-height:320px!important}
+ .panel-content{height:320px!important;min-height:320px!important;padding:17px 17px 14px!important}
+ .logo-wrapper{gap:9px!important}
+ .logo-wrapper .logo{width:44px!important;height:44px!important;min-width:44px!important}
+ .logo-wrapper .college-name{font-size:12px!important;max-width:calc(100vw - 100px)!important}
+ .left-panel .welcome-section{bottom:66px!important}
+ .left-panel .welcome-section h2{font-size:clamp(25px,7vw,34px)!important;max-width:100%!important}
+ .left-panel .tagline{font-size:10px!important;max-width:95%!important}
+ .stats{bottom:9px!important;padding-top:8px!important}
+ .stat .number{font-size:15px!important}
+ .stat .label{font-size:7px!important}
+ .right-panel{background:#f4f8fb!important}
+ .main-content{padding:0 13px 18px!important}
+ .login-card{margin:-22px auto 0!important;padding:17px 14px!important;border-radius:18px!important}
+ .top-controls{margin-bottom:14px!important}
+ .top-controls .blog-btn{display:none!important}
+ .login-card>.welcome-section{margin-bottom:14px!important}
+ .welcome-icon.logo-welcome{width:46px!important;height:46px!important}
+ .welcome-title{font-size:23px!important}
+ .welcome-subtitle{font-size:10px!important}
+ .form-input{height:48px!important}
+ .login-button{height:49px!important}
+ .sso-options{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+ .sso-btn{font-size:8px!important;gap:4px!important}
+}
+@media(max-width:390px){
+ .left-panel{height:300px!important;min-height:300px!important}
+ .panel-content{height:300px!important;min-height:300px!important}
+ .left-panel .welcome-section{bottom:63px!important}
+ .left-panel .welcome-section h2{font-size:25px!important}
+ .stats .number{font-size:13px!important}
+ .login-card{padding:15px 12px!important}
+ .top-controls .main-site-btn{display:none!important}
+}
+@media(prefers-reduced-motion:reduce){.container *{animation:none!important;transition:none!important}}
+</style></head>
 <body>
     <!-- Skip to content -->
     <a href="#main-content" class="skip-to-content">Skip to main content</a>
@@ -2166,7 +2248,7 @@ body.dark-theme #loginButton,body.dark-theme .login-button{background:linear-gra
 <!-- Mandatory school-code gate verifies the institution before revealing the login form.
      The authenticated Campus Nexus profile and server-verified role still determine
      the destination; the school code only scopes the institution context. -->
-<script src="/platform/js/institution-login-branding.js?v=20261123-tenant-branding-v4" defer></script>
+<script src="/platform/js/institution-login-branding.js?v=20261124-responsive-login-v2" defer></script>
 <script id="campus-nexus-preserve-registration-code">
 (function () {
   const link = document.getElementById('campus-nexus-signup-link');
