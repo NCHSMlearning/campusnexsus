@@ -303,9 +303,41 @@ async function loadExams(){
  } finally { $('refresh-btn').disabled=false; }
 }
 
+function timetableDay(value){
+ const key=norm(value),days={mon:'Monday',monday:'Monday',tue:'Tuesday',tues:'Tuesday',tuesday:'Tuesday',wed:'Wednesday',wednesday:'Wednesday',thu:'Thursday',thur:'Thursday',thurs:'Thursday',thursday:'Thursday',fri:'Friday',friday:'Friday',sat:'Saturday',saturday:'Saturday',sun:'Sunday',sunday:'Sunday'};
+ return days[key]||String(value||'').trim()||'Day not set';
+}
+function timetableTime(value){
+ if(!value)return '—';const s=String(value).trim(),m=s.match(/(\d{1,2}):(\d{2})(?:\s*(AM|PM))?/i);
+ if(!m)return s;if(m[3])return String(Number(m[1])).padStart(2,'0')+':'+m[2]+' '+m[3].toUpperCase();
+ return String(Number(m[1])).padStart(2,'0')+':'+m[2];
+}
+function timetableField(row,keys,fallback='—'){
+ for(const key of keys){if(row?.[key]!==undefined&&row[key]!==null&&String(row[key]).trim()!=='')return row[key];}return fallback;
+}
 function renderTimetable(){
+ const panel=$('timetable-panel'),rows=state.timetableRows||[],days=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+ const sorted=rows.slice().sort((a,b)=>days.indexOf(timetableDay(timetableField(a,['day_of_week','day','week_day','weekday'],'')))-days.indexOf(timetableDay(timetableField(b,['day_of_week','day','week_day','weekday'],'')))||String(timetableField(a,['start_time','start'],'')).localeCompare(String(timetableField(b,['start_time','start'],''))));
  const upcoming=state.exams.filter(e=>examState(e)==='upcoming'||examState(e)==='open').sort((a,b)=>(startsAt(a)?.getTime()||0)-(startsAt(b)?.getTime()||0));
- $('timetable-panel').innerHTML=upcoming.length?'<div class="portal-list">'+upcoming.map(e=>'<article class="portal-list-item"><div class="portal-list-icon"><i class="fa-regular fa-calendar-check"></i></div><div class="portal-list-copy"><b>'+esc(val(e.title,e.exam_name,e.name,'Examination'))+'</b><small>'+esc(val(e.course_name,e.unit_name,e.course_code,'Assessment'))+' · '+esc(val(e.block_term,e.block,'All '+(state.academicStructure?.pluralLower||'blocks')))+'</small></div><div class="portal-list-date">'+esc(dateLabel(e))+'</div></article>').join('')+'</div>':'<div class="empty-state"><i class="fa-regular fa-calendar"></i><p>No upcoming examinations have been scheduled for you.</p></div>';
+ const profile=state.profile||{},block=val(profile.block,profile.current_block,profile.block_term,profile.term,'Not assigned'),program=val(profile.program,profile.program_name,profile.program_type,'Programme not assigned');
+ const classRows=sorted.length?'<div class="student-timetable-meta"><span><i class="fa-solid fa-graduation-cap"></i> '+esc(program)+'</span><span><i class="fa-solid fa-layer-group"></i> '+esc(block)+'</span><span><i class="fa-solid fa-list-ol"></i> '+sorted.length+' published sessions</span></div><div class="student-timetable-scroll"><table class="student-timetable-table"><thead><tr><th>Day</th><th>Time</th><th>Unit / Session</th><th>Type</th><th>Venue</th><th>Lecturer</th><th>Week</th></tr></thead><tbody>'+sorted.map(row=>'<tr><td><b>'+esc(timetableDay(timetableField(row,['day_of_week','day','week_day','weekday'],'')))+'</b></td><td class="student-tt-time">'+esc(timetableTime(timetableField(row,['start_time','start','time_start'],'')))+' – '+esc(timetableTime(timetableField(row,['end_time','end','time_end'],'')))+'</td><td><strong>'+esc(timetableField(row,['course_name','unit_name','session_name','title','subject_name'],'Scheduled session'))+'</strong><small>'+esc(timetableField(row,['course_code','unit_code','subject_code','code'],''))+'</small></td><td><span class="student-tt-type">'+esc(timetableField(row,['class_type','session_type','type','activity_type'],'Lecture'))+'</span></td><td>'+esc(timetableField(row,['venue','room','location','classroom']))+'</td><td>'+esc(timetableField(row,['lecturer_name','lecturer','teacher_name','instructor']))+'</td><td>'+esc(timetableField(row,['week_number','week','week_no','teaching_week'],'All weeks'))+'</td></tr>').join('')+'</tbody></table></div>':'<div class="empty-state"><i class="fa-regular fa-calendar-xmark"></i><p>No published class timetable was found for '+esc(program)+' · '+esc(block)+'.</p><small>Your institution may not have published the current block timetable yet.</small></div>';
+ const examRows=upcoming.length?'<div class="student-exam-timetable-list">'+upcoming.map(e=>'<article class="portal-list-item"><div class="portal-list-icon"><i class="fa-solid fa-file-circle-check"></i></div><div class="portal-list-copy"><b>'+esc(val(e.title,e.exam_name,e.name,'Examination'))+'</b><small>'+esc(val(e.course_name,e.unit_name,e.course_code,'Assessment'))+' · '+esc(val(e.block_term,e.block,'All blocks'))+'</small></div><div class="portal-list-date">'+esc(dateLabel(e))+'</div></article>').join('')+'</div>':'<div class="empty-state student-tt-empty"><i class="fa-regular fa-calendar-check"></i><p>No upcoming examinations are currently scheduled for you.</p></div>';
+ panel.innerHTML='<section class="student-timetable-section"><div class="student-timetable-heading"><div><h3><i class="fa-solid fa-calendar-week"></i> Weekly class timetable</h3><p>Live records from your institution’s published timetable.</p></div></div>'+classRows+'</section><section class="student-timetable-section"><div class="student-timetable-heading"><div><h3><i class="fa-solid fa-file-circle-check"></i> Upcoming examinations</h3><p>Your assigned examination dates and start times.</p></div></div>'+examRows+'</section>';
+}
+async function loadStudentTimetable(){
+ const panel=$('timetable-panel');panel.innerHTML='<div class="loading-state"><span class="spinner"></span><p>Loading your published class timetable…</p></div>';
+ const profile=state.profile||{},block=val(profile.block,profile.current_block,profile.block_term,profile.term);
+ if(!block){state.timetableRows=[];renderTimetable();return;}
+ const {data,error}=await state.client.from('timetables').select('*').eq('block',String(block));
+ if(error)throw error;
+ const program=norm(val(profile.program,profile.program_name,profile.program_type,'')),institutionId=String(profile.institution_id||'');
+ state.timetableRows=(data||[]).filter(row=>{
+  const rowProgram=norm(val(row.program,row.target_program,row.department,'')),rowInstitution=String(row.institution_id||'');
+  if(rowProgram&&program&&rowProgram!==program)return false;
+  if(rowInstitution&&institutionId&&rowInstitution!==institutionId)return false;
+  return true;
+ });
+ renderTimetable();
 }
 async function loadAnnouncements(){
  const panel=$('announcements-panel');panel.innerHTML='<div class="loading-state"><span class="spinner"></span><p>Loading announcements…</p></div>';
@@ -429,7 +461,7 @@ async function init(){
  await loadAcademicSummary().catch(e=>{console.warn('Published academic summary unavailable:',e);const n=$('gpa-trend');if(n)n.innerHTML='<p class="chart-empty">Academic summary is temporarily unavailable.</p>';});
  await loadExams().catch(e=>{console.error('Student examination list failed:',e);$('exam-panel').innerHTML='<div class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><p>Examination list could not be loaded. Your dashboard statistics are shown where available.</p></div>';});
  subscribeStudentResultUpdates();
- renderTimetable();renderDashboard();
+ await loadStudentTimetable().catch(e=>{console.error('Student timetable load failed:',e);$('timetable-panel').innerHTML='<div class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><p>Your timetable could not be loaded. Please refresh and try again.</p></div>';});renderDashboard();
  loadAnnouncements().catch(e=>{$('announcements-panel').innerHTML='<div class="empty-state"><p>Announcements are temporarily unavailable.</p></div>';console.warn(e)});
  loadHistory().catch(e=>{$('history-panel').innerHTML='<div class="empty-state"><p>Examination history is temporarily unavailable.</p></div>';console.warn(e)});
  loadSupportTickets().catch(e=>{const n=$('support-ticket-list');if(n)n.innerHTML='<div class="empty-state"><p>Your support tickets are temporarily unavailable.</p></div>';console.warn(e)});
@@ -442,7 +474,8 @@ $('calendar-prev')?.addEventListener('click',()=>{dashboardCalendarOffset--;rend
 $('calendar-next')?.addEventListener('click',()=>{dashboardCalendarOffset++;renderDashboardCalendar();});
 document.querySelectorAll('[data-open-module]').forEach(button=>button.addEventListener('click',()=>activateModule(button.dataset.openModule)));
 
-$('refresh-btn').addEventListener('click',()=>loadExams().then(renderTimetable).catch(e=>notify(e.message||'Could not refresh examinations.')));
+$('refresh-btn').addEventListener('click',()=>loadExams().then(()=>{renderTimetable();return loadStudentTimetable();}).catch(e=>notify(e.message||'Could not refresh examinations.')));
+$('refresh-timetable')?.addEventListener('click',async()=>{const btn=$('refresh-timetable');if(btn)btn.disabled=true;try{await Promise.all([loadStudentTimetable(),loadExams()]);notify('Timetable refreshed.');}catch(e){notify(e.message||'Could not refresh timetable.');}finally{if(btn)btn.disabled=false;}});
 $('refresh-announcements').addEventListener('click',()=>loadAnnouncements().catch(e=>notify(e.message||'Could not load announcements.')));
 $('refresh-history').addEventListener('click',()=>loadHistory().catch(e=>notify(e.message||'Could not load examination history.')));
  $('refresh-tickets')?.addEventListener('click',()=>loadSupportTickets().catch(e=>notify(e.message||'Could not load support tickets.')));
