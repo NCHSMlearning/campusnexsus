@@ -289,3 +289,135 @@ body .main-content .tab-content #liveStudentsTable{
 @media(prefers-reduced-motion:reduce){
   body .main-content .tab-content table tbody tr{animation:none!important;opacity:1!important;visibility:visible!important}
 }
+
+
+/* ============================================================
+   CAMPUS NEXUS LECTURER EXAM COMMAND CENTRE — RESPONSIVE FINISH
+   Desktop-first polish with deliberate tablet and phone layouts.
+   ============================================================ */
+:root{--lx-command-navy:#071f3b;--lx-command-blue:#0d4776;--lx-command-gold:#f5bd3d;--lx-command-border:#dce7f1}
+body{overflow-x:hidden!important}
+body .main-content{min-width:0!important}
+body .main-content>.top-header.command-topbar{
+  min-width:0!important;gap:14px!important;
+  background:linear-gradient(105deg,#061f3e 0%,#0b3d69 68%,#0b3157 100%)!important;
+  border:0!important;border-radius:0 0 16px 16px!important;
+  box-shadow:0 8px 24px rgba(5,34,64,.16)!important;color:#fff!important
+}
+body .main-content>.top-header.command-topbar .command-brand-copy h1{color:#fff!important;font-weight:800!important;letter-spacing:-.035em}
+body .main-content>.top-header.command-topbar .command-brand-copy p{color:#d6e6f3!important}
+body .main-content>.top-header.command-topbar .command-cap{box-shadow:0 7px 18px rgba(0,0,0,.16)}
+body .main-content>.top-header.command-topbar .admin-profile{min-width:0}
+body #dashboard .lecturer-dashboard-hero{
+  position:relative!important;isolation:isolate;overflow:hidden!important;
+  min-height:132px!important;padding:24px 28px!important;margin:0 0 18px!important;
+  border:1px solid rgba(255,255,255,.15)!important;border-radius:18px!important;
+  background:linear-gradient(112deg,#061f3e 0%,#0b4777 55%,#08739a 100%)!important;
+  box-shadow:0 13px 30px rgba(7,49,83,.17)!important
+}
+body #dashboard .lecturer-dashboard-hero:after{
+  content:"";position:absolute;z-index:-1;width:330px;height:330px;right:5%;top:-205px;
+  border:1px solid rgba(255,255,255,.15);border-radius:50%;
+  box-shadow:0 0 0 34px rgba(255,255,255,.035),0 0 0 72px rgba(255,255,255,.025)
+}
+body #dashboard .lecturer-dashboard-hero h2{color:#fff!important;font-size:clamp(20px,2.3vw,28px)!important;letter-spacing:-.035em!important}
+body #dashboard .lecturer-dashboard-hero p{color:#e0edf7!important;font-size:12px!important}
+body #dashboard .lecturer-dashboard-hero .lecturer-hero-icon{
+  width:58px!important;height:58px!important;flex:0 0 58px!important;
+  border-radius:16px!important;background:rgba(255,255,255,.13)!important;
+  color:#ffd15c!important;font-size:25px!important
+}
+body #dashboard #dashboardStats{gap:13px!important;margin:0 0 17px!important}
+body #dashboard #dashboardStats .stat-card{
+  min-width:0!important;min-height:100px!important;padding:18px!important;
+  border:1px solid #e0eaf3!important;border-radius:16px!important;
+  box-shadow:0 6px 18px rgba(17,65,105,.065)!important;transition:transform .18s,box-shadow .18s
+}
+body #dashboard #dashboardStats .stat-card:hover{transform:translateY(-3px);box-shadow:0 12px 26px rgba(17,65,105,.11)!important}
+body #dashboard #dashboardStats .stat-card .number{font-size:25px!important;font-weight:800!important;color:#102b48!important}
+body #dashboard #dashboardStats .stat-card .label{font-size:9px!important;font-weight:800!important;letter-spacing:.07em!important;color:#71849a!important}
+body #dashboard>div:has(>.quick-actions),body #dashboard>div:has(>#recentExamsList){
+  min-width:0!important;padding:20px!important;border:1px solid #dce7f1!important;
+  border-radius:16px!important;box-shadow:0 7px 22px rgba(15,39,64,.055)!important
+}
+body #dashboard>div:has(>.quick-actions)>h3,body #dashboard>div:has(>#recentExamsList)>h3{
+  font-size:14px!important;font-weight:800!important;color:#102b48!important;margin-bottom:15px!important
+}
+body #dashboard .quick-actions{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:11px!important}
+body #dashboard .quick-action-btn{
+  display:flex!important;align-items:center!important;justify-content:center!important;gap:10px!important;
+  min-height:62px!important;padding:13px!important;border:1px solid #dce7f1!important;
+  border-radius:12px!important;background:linear-gradient(180deg,#fff,#f7fafd)!important;
+  color:#173c5d!important;font-size:12px!important;font-weight:700!important;text-align:left!important
+}
+body #dashboard .quick-action-btn i{display:inline-block!important;margin:0!important;color:#0d6795!important;font-size:17px!important}
+body #dashboard .quick-action-btn:hover{background:linear-gradient(110deg,#0b4167,#12618a)!important;color:#fff!important;border-color:#0b4167!important}
+body #dashboard .quick-action-btn:hover i{color:#ffd15c!important}
+body #myExams .exam-filter-panel,#myExams #lebBuilder,#myExams>div:has(>#examsTable){min-width:0!important}
+body #myExams #examsTable{min-width:820px!important}
+body #results .results-filter-panel,body #attendance>div{min-width:0}
+body .main-content .tab-content .exam-filter-grid,
+body .main-content .tab-content .results-filter-grid{min-width:0}
+body .main-content .tab-content .exam-filter-field,
+body .main-content .tab-content .results-filter-field{min-width:0}
+body .main-content .tab-content input,body .main-content .tab-content select,
+body .main-content .tab-content button{max-width:100%}
+@media(max-width:1100px){
+  body #dashboard #dashboardStats{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  body #dashboard .quick-actions{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+@media(max-width:900px){
+  body .main-content>.top-header.command-topbar{margin-left:-16px!important;margin-right:-16px!important;padding:0 16px!important}
+  body #dashboard .lecturer-dashboard-hero{min-height:112px!important;padding:20px!important}
+  body #dashboard .lecturer-hero-tag{display:none!important}
+}
+@media(max-width:640px){
+  body .main-content{padding:0 11px 24px!important}
+  body .main-content>.top-header.command-topbar{
+    min-height:66px!important;height:auto!important;margin:0 -11px 12px!important;
+    padding:10px 11px!important;border-radius:0 0 13px 13px!important
+  }
+  body .main-content>.top-header.command-topbar .command-brand{gap:8px!important;min-width:0!important}
+  body .main-content>.top-header.command-topbar .command-cap{width:35px!important;height:35px!important;flex:0 0 35px!important}
+  body .main-content>.top-header.command-topbar .command-brand-copy{min-width:0!important}
+  body .main-content>.top-header.command-topbar .command-brand-copy h1{font-size:14px!important;line-height:1.2!important;white-space:normal!important}
+  body .main-content>.top-header.command-topbar .command-brand-copy p{display:none!important}
+  body .main-content>.top-header.command-topbar .header-actions{gap:7px!important}
+  body .main-content>.top-header.command-topbar .admin-profile{display:none!important}
+  body .main-content>.top-header.command-topbar .notification-bell{margin:0!important}
+  body .main-content>.top-header.command-topbar .mobile-toggle{width:36px!important;height:36px!important;min-width:36px!important}
+  body #dashboard .lecturer-dashboard-hero{
+    min-height:90px!important;padding:14px!important;margin-bottom:12px!important;
+    gap:10px!important;border-radius:14px!important
+  }
+  body #dashboard .lecturer-dashboard-hero .lecturer-hero-icon{
+    width:42px!important;height:42px!important;flex:0 0 42px!important;font-size:19px!important;border-radius:12px!important
+  }
+  body #dashboard .lecturer-dashboard-hero h2{font-size:17px!important;line-height:1.2!important}
+  body #dashboard .lecturer-dashboard-hero p{font-size:9px!important;line-height:1.45!important}
+  body #dashboard #dashboardStats{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important;margin-bottom:12px!important}
+  body #dashboard #dashboardStats .stat-card{min-height:76px!important;padding:10px!important;gap:8px!important;border-radius:12px!important}
+  body #dashboard #dashboardStats .stat-card .icon{width:36px!important;height:36px!important;flex:0 0 36px!important;border-radius:10px!important;font-size:14px!important}
+  body #dashboard #dashboardStats .stat-card .number{font-size:20px!important}
+  body #dashboard #dashboardStats .stat-card .label{font-size:8px!important;letter-spacing:.035em!important}
+  body #dashboard>div:has(>.quick-actions),body #dashboard>div:has(>#recentExamsList){padding:13px!important;margin-bottom:11px!important;border-radius:13px!important}
+  body #dashboard>div:has(>.quick-actions)>h3,body #dashboard>div:has(>#recentExamsList)>h3{font-size:12px!important;margin-bottom:11px!important}
+  body #dashboard .quick-actions{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}
+  body #dashboard .quick-action-btn{min-height:58px!important;padding:10px!important;gap:8px!important;font-size:10px!important;border-radius:10px!important}
+  body #dashboard .quick-action-btn i{font-size:15px!important}
+  body #myExams>div:first-child{padding:16px!important;border-radius:14px!important}
+  body #myExams .exam-filter-stats{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  body #myExams .exam-filter-stat{min-width:0!important;justify-content:space-between!important;font-size:10px!important}
+  body #myExams .exam-filter-grid,body #results .results-filter-grid{grid-template-columns:1fr!important}
+  body #myExams #examsTable{min-width:820px!important}
+  body #myExams #lebBuilder>div:first-child{align-items:flex-start!important}
+  body #myExams #lebBuilder .leb-actions{width:100%!important}
+  body #myExams #lebBuilder .leb-actions button{flex:1 1 0!important}
+  body #attendance .results-filter-grid{grid-template-columns:1fr!important}
+}
+@media(max-width:380px){
+  body #dashboard #dashboardStats .stat-card{padding:8px!important}
+  body #dashboard #dashboardStats .stat-card .icon{width:31px!important;height:31px!important;flex-basis:31px!important}
+  body #dashboard #dashboardStats .stat-card .number{font-size:18px!important}
+  body #dashboard .quick-action-btn{font-size:9px!important}
+}
