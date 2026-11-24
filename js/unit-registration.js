@@ -181,6 +181,16 @@
             if (window.supabase) return window.supabase;
             return null;
         }
+
+        // Resolve the UUID tenant ID; school codes such as "102" are not
+        // institution_id values and must never be used as database filters.
+        getInstitutionId() {
+            const profile = this.userProfile || window.currentUserProfile ||
+                window.db?.currentUserProfile || {};
+            const value = profile.institution_id || window.CURRENT_INSTITUTION_ID ||
+                window.CURRENT_INSTITUTION?.id || null;
+            return value ? String(value).trim() : '';
+        }
         
         // ============================================================
         // FETCH UNIT CODES CACHE
@@ -191,10 +201,18 @@
                 const supabase = this.getSupabase();
                 if (!supabase) return {};
                 
+                const institutionId = this.getInstitutionId();
+                const programCode = String(this.programCode || '').trim().toUpperCase();
+                if (!institutionId || !programCode) {
+                    this.unitCodeCache = {};
+                    console.warn('Unit code lookup skipped: institution/program not resolved.');
+                    return this.unitCodeCache;
+                }
                 const { data, error } = await supabase
                     .from('units_catalog')
                     .select('unit_name, unit_code')
-                    .eq('program', this.programCode || 'KRCHN');
+                    .eq('institution_id', institutionId)
+                    .eq('program', programCode);
                 
                 if (error) throw error;
                 
@@ -628,14 +646,17 @@ async loadAvailableUnits(supabase) {
         await this.displayRegisteredUnits();
         
         // Build query for catalog - ONLY NORMAL UNITS
+        const institutionId = this.getInstitutionId();
+        const programCode = String(this.programCode || '').trim().toUpperCase();
+        if (!institutionId || !programCode) {
+            throw new Error('Your school or programme could not be resolved. Please sign out and sign in again.');
+        }
         let query = supabase
             .from('units_catalog')
             .select('*')
+            .eq('institution_id', institutionId)
+            .eq('program', programCode)
             .eq('status', 'active');
-        
-        if (this.programCode) {
-            query = query.eq('program', this.isTVETStudent ? this.programCode : 'KRCHN');
-        }
         
         const block = this.blockFilter?.value;
         if (block && block !== "") {
@@ -1008,7 +1029,8 @@ attachCheckboxEvents() {
                         const { data: catalog } = await supabase
                             .from('units_catalog')
                             .select('unit_code, unit_name')
-                            .eq('program', this.programCode || 'KRCHN');
+                            .eq('institution_id', this.getInstitutionId())
+                            .eq('program', String(this.programCode || '').trim().toUpperCase());
                         
                         const catalogMap = {};
                         if (catalog) {
@@ -1051,7 +1073,8 @@ attachCheckboxEvents() {
                     const { data: catalogRows } = await supabase
                         .from('units_catalog')
                         .select('unit_code, unit_name, block, unit_type, credits')
-                        .eq('program', this.programCode || 'KRCHN');
+                        .eq('institution_id', this.getInstitutionId())
+                        .eq('program', String(this.programCode || '').trim().toUpperCase());
 
                     (catalogRows || []).forEach(row => {
                         if (row.unit_code) catalogByCode[row.unit_code] = row;
@@ -1210,9 +1233,12 @@ attachCheckboxEvents() {
                     return;
                 }
                 
+                const institutionId = this.getInstitutionId();
                 const { data: units, error: unitsError } = await supabase
                     .from('units_catalog')
                     .select('*')
+                    .eq('institution_id', institutionId)
+                    .eq('program', String(this.programCode || '').trim().toUpperCase())
                     .in('unit_code', newUnits);
                 
                 if (unitsError) throw unitsError;
@@ -1231,6 +1257,7 @@ attachCheckboxEvents() {
                 
                 const registrations = units.map(unit => ({
                     student_id: this.studentId,
+                    institution_id: institutionId,
                     unit_code: unit.unit_code,
                     unit_name: unit.unit_name,
                     program: unit.program || this.programCode,
@@ -1415,7 +1442,8 @@ async loadEligibleUnits() {
         const { data: catalog } = await supabase
             .from('units_catalog')
             .select('unit_code, unit_name, block, program')
-            .eq('program', this.programCode || 'KRCHN')
+            .eq('institution_id', this.getInstitutionId())
+            .eq('program', String(this.programCode || '').trim().toUpperCase())
             .eq('status', 'active');
         
         const subjectToUnitCode = {};
@@ -1750,7 +1778,8 @@ async loadStudentSupplementaryRegistrations() {
                 const { data: catalog } = await supabase
                     .from('units_catalog')
                     .select('unit_code, unit_name')
-                    .eq('program', this.programCode || 'KRCHN');
+                    .eq('institution_id', this.getInstitutionId())
+                    .eq('program', String(this.programCode || '').trim().toUpperCase());
                 
                 const catalogMap = {};
                 if (catalog) {
@@ -2938,7 +2967,8 @@ window.downloadSupplementaryExamCard = async function() {
                 const { data: catalog } = await supabase
                     .from('units_catalog')
                     .select('unit_code, unit_name')
-                    .eq('program', user?.program || 'KRCHN');
+                    .eq('institution_id', this.getInstitutionId())
+                    .eq('program', String(user?.program || this.programCode || '').trim().toUpperCase());
                 
                 const catalogMap = {};
                 if (catalog) {
