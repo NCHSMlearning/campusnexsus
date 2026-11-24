@@ -2706,6 +2706,9 @@ function startTimer(seconds) {
             if (timerDisplayHeader) timerDisplayHeader.textContent = '00:00';
             if (timerProgressBar) timerProgressBar.style.width = '0%';
 
+            // Flush the active answer field before replacing the question DOM.
+            // This is essential for short/long answers on mobile keyboards.
+            saveCurrentAnswer();
             logProctoringEvent('exam_auto_submitted', 'Exam was automatically submitted when timer reached 0', 'info');
             if (DOM.examContainer) {
                 DOM.examContainer.innerHTML = `
@@ -2720,7 +2723,9 @@ function startTimer(seconds) {
             if (DOM.nextBtn) DOM.nextBtn.disabled = true;
             if (DOM.submitBtn) DOM.submitBtn.disabled = true;
             captureSnapshot();
-            setTimeout(() => executeSubmissionWithLoading(), 1000);
+            // Use the same guarded submission path as other automatic submissions.
+            // It skips the confirmation dialog and prevents duplicate submits.
+            setTimeout(() => submitExam(true), 1000);
         }
     };
 
