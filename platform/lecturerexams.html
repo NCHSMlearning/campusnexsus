@@ -160,11 +160,25 @@
                 <div class="lecturer-hero-tag"><i class="fas fa-shield-alt"></i> Lecturer Workspace</div>
             </div>
 
-            <div class="stats-grid" id="dashboardStats">
-                <div class="stat-card"><div class="icon blue"><i class="fas fa-file-alt"></i></div><div><div class="number" id="statTotalExams">0</div><div class="label">Total Exams</div></div></div>
-                <div class="stat-card"><div class="icon green"><i class="fas fa-user-graduate"></i></div><div><div class="number" id="statTotalStudents">0</div><div class="label">Total Students</div></div></div>
-                <div class="stat-card"><div class="icon purple"><i class="fas fa-check-circle"></i></div><div><div class="number" id="statPassed">0</div><div class="label">Passed</div></div></div>
-                <div class="stat-card"><div class="icon yellow"><i class="fas fa-eye"></i></div><div><div class="number" id="statLiveStudents">0</div><div class="label">🟢 Live Students</div></div></div>
+            <div class="stats-grid lecturer-analytics-stats" id="dashboardStats">
+                <div class="stat-card"><div class="icon blue"><i class="fas fa-file-alt"></i></div><div><div class="number" id="statTotalExams">0</div><div class="label">Total Assessments</div><small>Across your programme</small></div></div>
+                <div class="stat-card"><div class="icon green"><i class="fas fa-user-graduate"></i></div><div><div class="number" id="statTotalStudents">0</div><div class="label">Students Assessed</div><small>Unique students</small></div></div>
+                <div class="stat-card"><div class="icon purple"><i class="fas fa-check-circle"></i></div><div><div class="number" id="statPassed">0</div><div class="label">Students Passed</div><small>Recorded pass results</small></div></div>
+                <div class="stat-card"><div class="icon yellow"><i class="fas fa-eye"></i></div><div><div class="number" id="statLiveStudents">0</div><div class="label">Live Candidates</div><small>Started in last 5 minutes</small></div></div>
+                <div class="stat-card"><div class="icon teal"><i class="fas fa-cloud-upload-alt"></i></div><div><div class="number" id="statPublishedExams">0</div><div class="label">Published</div><small>Available assessments</small></div></div>
+                <div class="stat-card"><div class="icon orange"><i class="fas fa-file-pen"></i></div><div><div class="number" id="statDraftExams">0</div><div class="label">Drafts</div><small>Not yet published</small></div></div>
+                <div class="stat-card"><div class="icon indigo"><i class="fas fa-list-check"></i></div><div><div class="number" id="statGradedRecords">0</div><div class="label">Graded Records</div><small>Final result records</small></div></div>
+                <div class="stat-card"><div class="icon rose"><i class="fas fa-chart-line"></i></div><div><div class="number" id="statPassRate">—</div><div class="label">Pass Rate</div><small>Of recorded outcomes</small></div></div>
+            </div>
+            <div class="lecturer-analytics-panels" id="lecturerAnalyticsPanels">
+                <section class="lecturer-analytics-panel">
+                    <div class="lecturer-analytics-panel-heading"><div><span class="analytics-kicker">ASSESSMENT OVERVIEW</span><h3>Assessment pipeline</h3></div><i class="fas fa-layer-group"></i></div>
+                    <div id="lecturerAssessmentPipeline" class="analytics-pipeline"><p class="analytics-empty">Analytics will appear when assessments load.</p></div>
+                </section>
+                <section class="lecturer-analytics-panel">
+                    <div class="lecturer-analytics-panel-heading"><div><span class="analytics-kicker">STUDENT OUTCOMES</span><h3>Performance snapshot</h3></div><i class="fas fa-chart-pie"></i></div>
+                    <div id="lecturerPerformanceSnapshot" class="analytics-performance"><p class="analytics-empty">Performance data will appear when results load.</p></div>
+                </section>
             </div>
 
             <div style="background: white; border-radius: 16px; padding: 20px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.04); margin-bottom: 20px;">
@@ -917,54 +931,99 @@
     // DASHBOARD — shows program-wide stats
     // ============================================================
     async function loadDashboard() {
+        const setMetric = (id, value) => {
+            const node = document.getElementById(id);
+            if (node) node.textContent = value;
+        };
+        const safeText = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
         try {
-            let q = sb.from('exams').select('id, exam_name, status, created_by').order('id', { ascending: false });
+            let q = sb.from('exams').select('id, exam_name, status, created_by, target_program, institution_id').order('id', { ascending: false });
+            if (lecturerInstitutionId) q = q.eq('institution_id', lecturerInstitutionId);
             if (lecturerProgram) q = q.eq('target_program', lecturerProgram);
-            const { data: exams } = await q;
+            const { data: exams, error: examsError } = await q;
+            if (examsError) throw examsError;
 
-            const examIds = exams?.map(e => e.id) || [];
-
-            let totalStudents = 0;
-            let passed = 0;
-
-            if (examIds.length > 0) {
-                const { data: grades } = await sb
-                    .from('exam_grades')
-                    .select('student_id, result_status, marks')
+            const examRows = exams || [];
+            const examIds = examRows.map(e => e.id).filter(Boolean);
+            let grades = [];
+            if (examIds.length) {
+                const { data, error } = await sb.from('exam_grades')
+                    .select('exam_id, student_id, result_status, marks')
                     .eq('question_id', ZERO_QUESTION_ID)
                     .in('exam_id', examIds);
-
-                const uniqueStudents = new Set(grades?.map(g => g.student_id) || []);
-                totalStudents = uniqueStudents.size;
-                passed = grades?.filter(g => g.result_status === 'PASS').length || 0;
+                if (error) throw error;
+                grades = data || [];
             }
 
+            const normalizedStatus = e => String(e.status || 'draft').trim().toLowerCase();
+            const published = examRows.filter(e => ['published','active','released'].includes(normalizedStatus(e))).length;
+            const drafts = examRows.filter(e => ['draft','unpublished'].includes(normalizedStatus(e))).length;
+            const pending = examRows.filter(e => ['pending','pending_approval','submitted','under_review'].includes(normalizedStatus(e))).length;
+            const archived = examRows.filter(e => ['archived','closed','completed'].includes(normalizedStatus(e))).length;
+            const uniqueStudents = new Set(grades.map(g => g.student_id).filter(Boolean));
+            const passRows = grades.filter(g => String(g.result_status || '').toUpperCase() === 'PASS');
+            const failRows = grades.filter(g => String(g.result_status || '').toUpperCase() === 'FAIL');
+            const decidedRows = passRows.length + failRows.length;
+            const marks = grades.map(g => Number(g.marks)).filter(n => Number.isFinite(n));
+            const averageMarks = marks.length ? marks.reduce((a,b) => a+b,0) / marks.length : null;
+            const passRate = decidedRows ? (passRows.length / decidedRows) * 100 : null;
+
             const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
-            const { data: liveLogs } = await sb
-                .from('exam_proctoring_logs')
-                .select('student_id')
-                .eq('event_type', 'exam_started')
-                .gte('timestamp', fiveMinutesAgo)
-                .in('exam_id', examIds.length ? examIds : [-1]);
+            let liveCount = 0;
+            if (examIds.length) {
+                const { data: liveLogs, error: liveError } = await sb.from('exam_proctoring_logs')
+                    .select('student_id').eq('event_type','exam_started')
+                    .gte('timestamp',fiveMinutesAgo).in('exam_id',examIds);
+                if (liveError) console.warn('Live candidate analytics unavailable:', liveError.message);
+                liveCount = new Set((liveLogs || []).map(l => l.student_id).filter(Boolean)).size;
+            }
 
-            const liveCount = new Set(liveLogs?.map(l => l.student_id) || []).size;
+            setMetric('statTotalExams', examRows.length);
+            setMetric('statTotalStudents', uniqueStudents.size);
+            setMetric('statPassed', passRows.length);
+            setMetric('statLiveStudents', liveCount);
+            setMetric('statPublishedExams', published);
+            setMetric('statDraftExams', drafts);
+            setMetric('statGradedRecords', grades.length);
+            setMetric('statPassRate', passRate === null ? '—' : passRate.toFixed(1) + '%');
 
-            document.getElementById('statTotalExams').textContent = exams?.length || 0;
-            document.getElementById('statTotalStudents').textContent = totalStudents;
-            document.getElementById('statPassed').textContent = passed;
-            document.getElementById('statLiveStudents').textContent = liveCount;
+            const pipeline = document.getElementById('lecturerAssessmentPipeline');
+            if (pipeline) {
+                const total = examRows.length || 1;
+                const items = [
+                    ['Published',published,'#0d9488'],
+                    ['Drafts',drafts,'#f59e0b'],
+                    ['Pending review',pending,'#64748b'],
+                    ['Archived / completed',archived,'#64748b']
+                ];
+                pipeline.innerHTML = items.map(([label,count,color]) => {
+                    const width = examRows.length ? Math.round(count / total * 100) : 0;
+                    return '<div class="analytics-pipeline-row"><div class="analytics-pipeline-meta"><span>'+label+'</span><strong>'+count+'</strong></div><div class="analytics-track"><span style="width:'+width+'%;background:'+color+'"></span></div></div>';
+                }).join('') + '<div class="analytics-total-line"><span>Total assessments</span><strong>'+examRows.length+'</strong></div>';
+            }
 
-            const recent = exams?.slice(0, 5) || [];
-            document.getElementById('recentExamsList').innerHTML = recent.length ?
-                recent.map(e => `
-                    <div style="display:flex; justify-content:space-between; padding:10px 14px; background:#F8FAFC; border-radius:8px; border-left:3px solid #0A3D62; margin-bottom:6px;">
-                        <span style="font-weight:600; color:#0A3D62;">${e.exam_name}</span>
-                        <span class="status-badge ${e.status === 'published' ? 'active' : 'pending'}">${e.status || 'draft'}</span>
-                    </div>
-                `).join('') :
-                '<p style="color:#94A3B8; text-align:center; padding:20px; font-size:0.85rem;">No exams yet</p>';
+            const performance = document.getElementById('lecturerPerformanceSnapshot');
+            if (performance) {
+                const rateText = passRate === null ? '—' : passRate.toFixed(1) + '%';
+                const avgText = averageMarks === null ? '—' : averageMarks.toFixed(1);
+                performance.innerHTML =
+                    '<div class="analytics-primary-metric"><span>Average recorded marks</span><strong>'+avgText+'</strong><small>Based on '+marks.length+' numeric result records</small></div>'+
+                    '<div class="analytics-outcome-grid"><div><span class="outcome-dot pass"></span><strong>'+passRows.length+'</strong><small>Pass</small></div><div><span class="outcome-dot fail"></span><strong>'+failRows.length+'</strong><small>Fail</small></div><div><span class="outcome-dot pending"></span><strong>'+Math.max(0,grades.length-decidedRows)+'</strong><small>Unclassified</small></div></div>'+
+                    '<div class="analytics-passrate"><div><span>Pass rate</span><strong>'+rateText+'</strong></div><div class="analytics-track"><span style="width:'+(passRate === null ? 0 : Math.max(0,Math.min(100,passRate)))+'%;background:linear-gradient(90deg,#0d9488,#35c6a6)"></span></div></div>';
+            }
 
-        } catch (e) { console.error(e); }
+            const recent = examRows.slice(0,5);
+            const recentNode = document.getElementById('recentExamsList');
+            if (recentNode) recentNode.innerHTML = recent.length ?
+                recent.map(e => '<div class="lecturer-recent-exam"><span><i class="fas fa-file-alt"></i> '+safeText(e.exam_name || 'Untitled assessment')+'</span><span class="status-badge '+(normalizedStatus(e)==='published'?'active':'pending')+'">'+safeText(e.status || 'draft')+'</span></div>').join('') :
+                '<p class="analytics-empty">No assessments have been created for this programme yet.</p>';
+        } catch (e) {
+            console.error('Lecturer dashboard analytics error:', e);
+            const pipeline = document.getElementById('lecturerAssessmentPipeline');
+            if (pipeline) pipeline.innerHTML = '<p class="analytics-empty">Unable to load assessment analytics. Please refresh or check your institution access.</p>';
+            const performance = document.getElementById('lecturerPerformanceSnapshot');
+            if (performance) performance.innerHTML = '<p class="analytics-empty">Performance analytics are temporarily unavailable.</p>';
+        }
     }
 
     // ============================================================
