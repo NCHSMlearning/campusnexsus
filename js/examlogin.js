@@ -33,7 +33,17 @@ function paintInstitution(institution){
  document.documentElement.style.setProperty('--navy',colors[0]);document.documentElement.style.setProperty('--teal',colors[1]);document.documentElement.style.setProperty('--gold',colors[2]);
  document.documentElement.style.setProperty('--cn-brand-primary',colors[0]);document.documentElement.style.setProperty('--cn-brand-secondary',colors[1]);document.documentElement.style.setProperty('--cn-brand-accent',colors[2]);document.documentElement.style.setProperty('--cn-brand-accent-2',colors[3]);document.documentElement.style.setProperty('--cn-brand-accent-3',colors[4]);document.documentElement.style.setProperty('--cn-brand-accent-4',colors[5]);
  let theme=document.getElementById('cn-exam-login-institution-theme');if(!theme){theme=document.createElement('style');theme.id='cn-exam-login-institution-theme';document.head.appendChild(theme);}
- theme.textContent='.brand-mark{background:linear-gradient(135deg,'+colors[1]+','+colors[0]+')!important;border-color:'+colors[2]+'!important}.submit,#loadSchoolBtn{background:linear-gradient(135deg,'+colors[1]+','+colors[0]+')!important}.card{border-top:4px solid '+colors[2]+'}.field input:focus{border-color:'+colors[2]+'!important;box-shadow:0 0 0 3px '+colors[2]+'22!important}.foot a{color:'+colors[3]+'!important}';
+ theme.textContent=
+  ':root{--navy:'+colors[0]+';--teal:'+colors[1]+';--gold:'+colors[2]+';--cn-login-primary:'+colors[0]+';--cn-login-secondary:'+colors[1]+';--cn-login-accent:'+colors[2]+'}'+
+  '.exam-login-visual{background:linear-gradient(145deg,'+colors[0]+' 0%,'+colors[1]+' 58%,'+colors[0]+' 100%)!important}'+
+  '.exam-visual-mark{background:'+colors[2]+'!important;color:'+colors[0]+'!important}'+
+  '.exam-visual-kicker,.exam-visual-copy h2 em{color:'+colors[2]+'!important}'+
+  '.exam-visual-features span{border-color:'+colors[3]+'88!important}'+
+  '.brand-mark{background:linear-gradient(135deg,'+colors[1]+','+colors[0]+')!important;border-color:'+colors[2]+'!important;color:#fff!important}'+
+  '.brand h1{color:'+colors[0]+'!important}.brand p{color:#52677b!important}'+
+  '.brand .school-code{background:'+colors[1]+'18!important;color:'+colors[1]+'!important;border-color:'+colors[1]+'44!important}'+
+  '.submit,#loadSchoolBtn{background:linear-gradient(135deg,'+colors[1]+','+colors[0]+')!important}'+
+  '.card{border-top:4px solid '+colors[2]+'}.field input:focus{border-color:'+colors[2]+'!important;box-shadow:0 0 0 3px '+colors[2]+'22!important}.foot a{color:'+colors[3]+'!important}';
  document.title=name+' Examination Login';
  schoolStatus.textContent='Verified: '+name+'. Your institution is ready. Sign in below.';
  schoolStatus.style.color='#14745f';
