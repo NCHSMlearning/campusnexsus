@@ -29,15 +29,15 @@
       "target": [
         "nsis",
         "portable"
-      ],
-      "artifactName": "Campus-Nexus-Secure-Exam-Browser-${version}-${arch}.${ext}"
+      ]
     },
     "nsis": {
       "oneClick": false,
       "perMachine": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
-      "createStartMenuShortcut": true
+      "createStartMenuShortcut": true,
+      "artifactName": "Campus-Nexus-Secure-Exam-Browser-Setup-${version}.${ext}"
     },
     "protocols": [
       {
@@ -46,6 +46,9 @@
           "campusnexus-seb"
         ]
       }
-    ]
+    ],
+    "portable": {
+      "artifactName": "Campus-Nexus-Secure-Exam-Browser-Portable-${version}.${ext}"
+    }
   }
 }
