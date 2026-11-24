@@ -1317,7 +1317,7 @@ async function loadLobbyData() {
         const startButton = document.getElementById('startExamBtn');
         if (startButton) startButton.disabled = true;
         if (/institution|student profile|approved|published|belong to/i.test(String(error.message || ''))) {
-            setTimeout(() => window.location.replace('/studentexam'), 3500);
+            setTimeout(() => window.location.replace('/studentexam.html'), 3500);
         }
     }
 }
