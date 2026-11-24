@@ -1,13 +1,15 @@
 {
   "name": "campus-nexus-secure-exam-browser",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
-  "description": "Windows desktop shell for Campus Nexus secure examinations",
+  "description": "Windows desktop client for Campus Nexus secure examinations",
   "main": "src/main.js",
   "scripts": {
     "start": "electron .",
+    "start:strict": "electron . --strict",
     "dist:win": "electron-builder --win nsis",
-    "dist:portable": "electron-builder --win portable"
+    "dist:portable": "electron-builder --win portable",
+    "dist:all": "electron-builder --win nsis portable"
   },
   "devDependencies": {
     "electron": "^35.0.0",
@@ -16,11 +18,19 @@
   "build": {
     "appId": "co.ke.campusnexus.secureexam",
     "productName": "Campus Nexus Secure Exam Browser",
-    "directories": { "output": "dist" },
-    "files": ["src/**/*", "package.json"],
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
     "win": {
-      "target": ["nsis"],
-      "artifactName": "Campus-Nexus-Secure-Exam-Browser-${version}-Setup.${ext}"
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "artifactName": "Campus-Nexus-Secure-Exam-Browser-${version}-${arch}.${ext}"
     },
     "nsis": {
       "oneClick": false,
