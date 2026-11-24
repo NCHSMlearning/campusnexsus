@@ -71,3 +71,9 @@ No Supabase service-role key or privileged secret belongs in this desktop client
 4. Test camera permissions, written-answer autosave, timer warnings, automatic submission, offline/network loss, crashes and forced restarts.
 5. Code-sign the Windows installer before distributing it.
 6. Pilot with invigilators and institution IT on dedicated test devices before live examinations.
+
+## Automatic updates
+
+Installed Windows (NSIS) builds check the GitHub Releases feed after startup and then every six hours. Updates download in the background and are installed when the student closes the application; the app never forces a restart during an active examination. The release must include `latest.yml`, the installer, and its blockmap files for electron-updater.
+
+The portable executable is provided as a convenience build; automatic installation/update behavior is intended for the installed NSIS version.
