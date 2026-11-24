@@ -825,35 +825,39 @@ function toggleLecturer(lecturerId) {
 // APPROVE ALL QUESTIONS FOR A LECTURER
 // ============================================================
 async function approveLecturerQuestions(lecturerId) {
-    const lecturerQuestions = pendingQuestionsData.filter(q => q.lecturer_id === lecturerId && q.status === 'pending');
-    
-    if (lecturerQuestions.length === 0) {
+    const lecturerQuestions = pendingQuestionsData.filter(q => String(q.lecturer_id) === String(lecturerId) && q.status === 'pending');
+    if (!lecturerQuestions.length) {
         showToast('No pending questions for this lecturer', 'info');
         return;
     }
-
     if (!confirm(`Approve all ${lecturerQuestions.length} questions from ${lecturerQuestions[0]?.lecturer_name || 'this lecturer'}?`)) return;
-
     try {
+        const client = adminQuestionsClient();
+        const { data: authData, error: authError } = await client.auth.getUser();
+        if (authError) throw authError;
+        const actorId = authData?.user?.id;
+        if (!actorId) throw new Error('Your login could not be verified. Please sign in again.');
         const ids = lecturerQuestions.map(q => q.id);
-        const { error } = await adminQuestionsClient()
-            .from('exam_questions')
+        const { data, error } = await client.from('exam_questions')
             .update({
                 status: 'approved',
                 approved_at: new Date().toISOString(),
-                approved_by: 'superadmin',
+                approved_by: actorId,
+                rejection_reason: null,
                 updated_at: new Date().toISOString()
             })
-            .in('id', ids);
-
+            .in('id', ids)
+            .eq('status', 'pending')
+            .select('id');
         if (error) throw error;
-
-        showToast(`✅ Approved ${ids.length} questions from ${lecturerQuestions[0]?.lecturer_name || 'lecturer'}!`, 'success');
-        loadPendingQuestions();
-
+        const updated = data || [];
+        if (!updated.length) throw new Error('No questions were approved. Check your institution permissions and refresh the page.');
+        if (updated.length !== ids.length) throw new Error(`Only ${updated.length} of ${ids.length} questions were approved. Refresh and review the remaining questions.`);
+        showToast(`Approved ${updated.length} questions from ${lecturerQuestions[0]?.lecturer_name || 'lecturer'}.`, 'success');
+        await loadPendingQuestions();
     } catch (error) {
-        showToast('❌ Error approving questions: ' + error.message, 'error');
-        console.error(error);
+        console.error('Bulk question approval failed:', error);
+        showToast('Approval failed: ' + (error.message || 'Unknown database error'), 'error');
     }
 }
 
@@ -862,26 +866,31 @@ async function approveLecturerQuestions(lecturerId) {
 // ============================================================
 async function approveSingleQuestion(questionId) {
     if (!confirm('Approve this question?')) return;
-
     try {
-        const { error } = await adminQuestionsClient()
-            .from('exam_questions')
+        const client = adminQuestionsClient();
+        const { data: authData, error: authError } = await client.auth.getUser();
+        if (authError) throw authError;
+        const actorId = authData?.user?.id;
+        if (!actorId) throw new Error('Your login could not be verified. Please sign in again.');
+        const { data, error } = await client.from('exam_questions')
             .update({
                 status: 'approved',
                 approved_at: new Date().toISOString(),
-                approved_by: 'superadmin',
+                approved_by: actorId,
+                rejection_reason: null,
                 updated_at: new Date().toISOString()
             })
-            .eq('id', questionId);
-
+            .eq('id', questionId)
+            .eq('status', 'pending')
+            .select('id');
         if (error) throw error;
-
-        showToast('✅ Question approved successfully!', 'success');
-        loadPendingQuestions();
-
+        if (!data?.length) throw new Error('The question was not updated. It may already have been reviewed, or your account lacks approval permission for this institution.');
+        showToast('Question approved successfully.', 'success');
+        await loadPendingQuestions();
     } catch (error) {
-        showToast('❌ Error approving question: ' + error.message, 'error');
-        console.error(error);
+        console.error('Question approval failed:', error);
+        showToast('Approval failed: ' + (error.message || 'Unknown database error'), 'error');
+        alert('Approval failed: ' + (error.message || 'Unknown database error'));
     }
 }
 
@@ -907,33 +916,35 @@ function closeRejectModal() {
 async function confirmReject() {
     const questionId = document.getElementById('rejectQuestionId').value;
     const reason = document.getElementById('rejectReason').value.trim();
-
     if (!reason) {
-        showToast('⚠️ Please provide a rejection reason', 'warning');
+        showToast('Please provide a rejection reason', 'warning');
         return;
     }
-
     try {
-        const { error } = await adminQuestionsClient()
-            .from('exam_questions')
+        const client = adminQuestionsClient();
+        const { data: authData, error: authError } = await client.auth.getUser();
+        if (authError) throw authError;
+        const actorId = authData?.user?.id;
+        if (!actorId) throw new Error('Your login could not be verified. Please sign in again.');
+        const { data, error } = await client.from('exam_questions')
             .update({
                 status: 'rejected',
                 rejection_reason: reason,
                 rejected_at: new Date().toISOString(),
-                rejected_by: 'superadmin',
+                rejected_by: actorId,
                 updated_at: new Date().toISOString()
             })
-            .eq('id', questionId);
-
+            .eq('id', questionId)
+            .eq('status', 'pending')
+            .select('id');
         if (error) throw error;
-
-        showToast('❌ Question rejected', 'info');
+        if (!data?.length) throw new Error('The question was not updated. Refresh and verify that it is still pending.');
+        showToast('Question rejected. Reason recorded.', 'success');
         closeRejectModal();
-        loadPendingQuestions();
-
+        await loadPendingQuestions();
     } catch (error) {
-        showToast('❌ Error rejecting question: ' + error.message, 'error');
-        console.error(error);
+        console.error('Question rejection failed:', error);
+        showToast('Rejection failed: ' + (error.message || 'Unknown database error'), 'error');
     }
 }
 
