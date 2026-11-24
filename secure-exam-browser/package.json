@@ -49,6 +49,17 @@
     ],
     "portable": {
       "artifactName": "Campus-Nexus-Secure-Exam-Browser-Portable-${version}.${ext}"
-    }
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "NCHSMlearning",
+        "repo": "campusnexsus",
+        "releaseType": "release"
+      }
+    ]
+  },
+  "dependencies": {
+    "electron-updater": "^6.6.2"
   }
 }
