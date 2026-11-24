@@ -2002,6 +2002,7 @@ function renderQuestion(index) {
     // ============================================================
     else {
         const isShortAnswer = String(questionType).toLowerCase() === 'short_answer';
+        const safeSavedAnswer = String(savedAnswer || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
         const maxChars = q.max_chars || q.max_characters || 5000;
         const currentChars = savedAnswer ? savedAnswer.length : 0;
         const wordCount = savedAnswer ? savedAnswer.trim().split(/\s+/).length : 0;
@@ -2020,10 +2021,10 @@ function renderQuestion(index) {
                 <textarea 
                     id="text-answer-${q.id}" 
                     placeholder="Type your answer here..." 
-                    style="width:100%; min-height:180px; padding:14px 16px; border:2px solid #e2e8f0; border-radius:12px; font-size:0.95rem; font-family:'Inter', sans-serif; line-height:1.7; resize:vertical; transition:border-color 0.3s; background:#fafbfc;"
+                    style="width:100%; min-height:${isShortAnswer ? 76 : 180}px; padding:14px 16px; border:2px solid #e2e8f0; border-radius:12px; font-size:0.95rem; font-family:'Inter', sans-serif; line-height:1.7; resize:vertical; transition:border-color 0.3s; background:#fafbfc;"
                     onfocus="this.style.borderColor='#0A3D62'; this.style.background='white';"
                     onblur="this.style.borderColor='#e2e8f0'; this.style.background='#fafbfc';"
-                >${savedAnswer || ''}</textarea>
+                >${safeSavedAnswer}</textarea>
                 
                 <!-- Character Counter -->
                 <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.75rem; color:#94a3b8; margin-top:6px; flex-wrap:wrap; gap:4px;">
