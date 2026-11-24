@@ -499,8 +499,6 @@ const LecturerQuestions = {
             document.getElementById('lecCorrectAnswer').value = data.correct_answer || '';
             const keyInput = document.getElementById('lecMarkingKey');
             if (keyInput) keyInput.value = data.marking_key || '';
-            const keyInput = document.getElementById('lecMarkingKey');
-            if (keyInput) keyInput.value = data.marking_key || '';
             document.getElementById('lecQuestionMarks').value = data.marks || 1;
             document.getElementById('lecMaxChars').value = data.max_chars || 500;
 
@@ -530,7 +528,6 @@ const LecturerQuestions = {
         const correctAnswer = document.getElementById('lecCorrectAnswer')?.value;
         const marks = parseInt(document.getElementById('lecQuestionMarks')?.value) || 1;
         const maxChars = parseInt(document.getElementById('lecMaxChars')?.value) || 5000;
-        const markingKey = document.getElementById('lecMarkingKey')?.value?.trim() || '';
         const markingKey = document.getElementById('lecMarkingKey')?.value?.trim() || '';
 
         // Validation
