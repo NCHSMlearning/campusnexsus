@@ -64,9 +64,19 @@ Deno.serve(async (req: Request) => {
       .select("user_id,email,full_name,role,status,login_enabled,student_id,admission_number,staff_id,program,department,intake_year,intake_month,current_block,institution_id")
       .eq("user_id",userId).maybeSingle();
     if(profileError || !profile) return reply({success:false,error:"Approved account could not be found."},404,origin);
-    if(!["student","lecturer"].includes(String(profile.role||"").toLowerCase()) ||
-       String(profile.status||"").toLowerCase()!=="approved" || String(profile.login_enabled).toLowerCase()!=="true" || !profile.institution_id) {
-      return reply({success:false,error:"The account is not fully approved or login is not enabled."},409,origin);
+    const approvedRole = ["student","lecturer"].includes(String(profile.role||"").trim().toLowerCase());
+    const approvedStatus = ["approved","active"].includes(String(profile.status||"").trim().toLowerCase());
+    const loginEnabled = profile.login_enabled === true || String(profile.login_enabled).trim().toLowerCase() === "true";
+    const hasInstitution = Boolean(profile.institution_id);
+    if(!approvedRole || !approvedStatus || !loginEnabled || !hasInstitution) {
+      return reply({
+        success:false,
+        error:"The account is not fully approved or login is not enabled.",
+        stage:"approval_state",
+        checks:{approvedRole,approvedStatus,loginEnabled,hasInstitution},
+        accountStatus:String(profile.status||""),
+        accountRole:String(profile.role||"")
+      },409,origin);
     }
 
     // The approval RPC transaction creates/activates institution_users before this
