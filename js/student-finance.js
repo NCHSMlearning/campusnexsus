@@ -1813,9 +1813,13 @@ function updateFinanceUI(data) {
 
     const message = document.getElementById('finance-periodMessage');
     if (message) {
-        message.innerHTML = studentFinanceState.currentPeriodOutstanding > 0
-            ? `<i class="fas fa-info-circle"></i><span>Current period outstanding: KES ${studentFinanceState.currentPeriodOutstanding.toLocaleString()}</span>`
-            : `<i class="fas fa-check-circle"></i><span>Your current payment period is fully paid.</span>`;
+        if (data.feeStructureConfigured === false) {
+            message.innerHTML = `<i class="fas fa-info-circle"></i><span>Your institution has not configured an active fee structure for this programme yet.</span>`;
+        } else {
+            message.innerHTML = studentFinanceState.currentPeriodOutstanding > 0
+                ? `<i class="fas fa-info-circle"></i><span>Current period outstanding: KES ${studentFinanceState.currentPeriodOutstanding.toLocaleString()}</span>`
+                : `<i class="fas fa-check-circle"></i><span>Your current payment period is fully paid.</span>`;
+        }
     }
 
     updateDashboardFinanceBridge(data);
