@@ -11918,8 +11918,11 @@ document.addEventListener('DOMContentLoaded', function() {
 <script>
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
+        navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' })
             .then(registration => {
+                // Ask the browser to check for the current worker immediately.
+                // The worker bypasses caches for the authenticated student app.
+                registration.update().catch(error => console.warn('Student portal service-worker update check deferred:', error));
                 console.log('✅ Service Worker registered successfully:', registration.scope);
                 
                 registration.addEventListener('updatefound', () => {
