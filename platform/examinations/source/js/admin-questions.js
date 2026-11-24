@@ -372,6 +372,7 @@ async function saveQuestion(e) {
     const correctAnswer = document.getElementById('correctAnswer')?.value;
     const marks = parseInt(document.getElementById('questionMarks')?.value) || 1;
     const maxChars = parseInt(document.getElementById('maxChars')?.value) || 5000;
+    const markingKey = document.getElementById('questionMarkingKey')?.value?.trim() || '';
 
     // Validation - Question text is always required
     if (!questionText) {
@@ -391,12 +392,15 @@ async function saveQuestion(e) {
         }
     }
 
+    if (!(questionType === 'multiple_choice' || questionType === 'mcq') && !markingKey) { showToast('Please provide a marking key for written questions', 'warning'); return; }
+
     // Build question data based on type
     const questionData = {
         exam_id: examId,
         question_type: (questionType === 'multiple_choice' || questionType === 'mcq') ? 'mcq' : 'essay',
         question_text: questionText,
         marks: marks,
+        marking_key: markingKey || null,
         updated_at: new Date().toISOString()
     };
 
