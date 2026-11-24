@@ -275,7 +275,7 @@ async function initializeApp() {
         try {
             const { data: institution, error: institutionError } = await studentSupabase
                 .from('institutions')
-                .select('id,name,short_code,school_code,logo_url,primary_color,secondary_color,status')
+                .select('id,name,short_code,school_code,logo_url,primary_color,secondary_color,brand_colors,physical_address,postal_address,status')
                 .eq('id', studentInstitutionId)
                 .maybeSingle();
             if (institutionError) throw institutionError;
