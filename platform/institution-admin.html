@@ -13,15 +13,14 @@
 <script src="/platform/js/institution-admin-programs.js?v=20261124-add-unit-to-program-v1" defer></script>
 <script src="/platform/js/institution-admin-curriculum.js?v=20261124-tenant-curriculum-v1" defer></script>
 <script src="/platform/js/institution-admin-modules.js?v=20261121-14" defer></script>
-<script src="/platform/js/institution-admin-results.js?v=20261124-superadmin-parity-v1" defer></script>
-<script src="/platform/js/institution-admin-marks-entry.js?v=20261124-superadmin-parity-v1" defer></script>
-<script src="/platform/js/institution-admin-analytics.js?v=20261124-superadmin-parity-v1" defer></script>
-<script src="/platform/js/institution-admin-attendance.js?v=20261124-superadmin-parity-v1" defer></script>
+<script src="/platform/js/institution-admin-results.js?v=20261123-results-parity-v13" defer></script>
+<script src="/platform/js/institution-admin-marks-entry.js?v=20261123-tenant-structure-v1" defer></script>
+<script src="/platform/js/institution-admin-analytics.js?v=20261123-analytics-v12" defer></script>
+<script src="/platform/js/institution-admin-attendance.js?v=20261123-attendance-v13" defer></script>
 <script src="/platform/js/institution-admin-activity.js?v=20261122-activity-v1" defer></script>
 <script src="/platform/js/institution-admin-finance.js?v=20261122-finance-v2" defer></script>
 <script src="/platform/js/institution-admin-settings.js?v=20261122-settings-v2" defer></script>
 <script src="/platform/js/institution-admin-users.js?v=20261123-tenant-structure-v1" defer></script>
-<script src="/platform/js/institution-admin-parity-bridge.js?v=20261124-superadmin-parity-v1" defer></script>
 <script src="/code-protection.js?v=20261121-global-v4" defer></script>
 <style id="ia-canonical-program-styles">
 #view-programs #programs{max-width:100%;overflow:hidden}
@@ -598,34 +597,379 @@
 </section>
 </section>
 <section class="ia-view" id="view-exams"><div class="ia-page-heading"><div><span class="ia-eyebrow">ASSESSMENT MANAGEMENT</span><h1>Examinations</h1><p>Examination schedule and approval status for your institution.</p></div><div class="ia-page-actions"><a class="ia-secondary-btn" href="/exams?view=approvals"><i class="fa-solid fa-clipboard-check"></i> Review exam approvals</a><a class="ia-primary-btn" href="/exams"><i class="fa-solid fa-arrow-up-right-from-square"></i> Open examination centre</a></div></div><div class="ia-panel ia-table-panel"><div class="ia-table-scroll"><table><thead><tr><th>Examination</th><th>Programme</th><th>Block</th><th>Date</th><th>Assessment type</th><th>Approval</th><th>Publication</th></tr></thead><tbody id="iaExams"><tr><td colspan="6" class="ia-empty">Loading…</td></tr></tbody></table></div></div></section>
-<section class="ia-view" id="view-marks-entry">
- <div class="ia-page-heading"><div><span class="ia-eyebrow">ASSESSMENT MANAGEMENT</span><h1>Marks entry</h1><p>Review this institution’s marks register and open the examination centre for authorised mark capture.</p></div><a class="ia-primary-btn" href="/adminexams/"><i class="fa-solid fa-arrow-up-right-from-square"></i> Open examination centre</a><button class="ia-secondary-btn" data-marks-refresh="entry"><i class="fa-solid fa-rotate"></i> Refresh</button></div>
- <div class="ia-stat-grid ia-report-grid"><article class="ia-stat-card"><small>Total students</small><strong id="iaMEStudents">—</strong></article><article class="ia-stat-card"><small>Total units</small><strong id="iaMEUnits">—</strong></article><article class="ia-stat-card"><small>Pass rate</small><strong id="iaMEPassRate">—</strong></article><article class="ia-stat-card"><small>Class average</small><strong id="iaMEAverage">—</strong></article><article class="ia-stat-card"><small>At risk</small><strong id="iaMEAtRisk">—</strong></article><article class="ia-stat-card"><small>Published</small><strong id="iaMEPublished">—</strong></article></div>
- <div class="ia-panel ia-me-capture">
-  <div class="ia-panel-head"><div><h2>Marks capture workspace</h2><p>Enter CAT and examination scores for approved unit registrations. Saving submits marks for approval; it never publishes results.</p></div><div class="ia-panel-actions"><span class="ia-count">Institution-scoped entry</span><button type="button" class="ia-secondary-btn" id="iaMEExportCapture"><i class="fa-solid fa-file-csv"></i> Export loaded CSV</button></div></div>
-  <div class="ia-filter-row">
-   <select id="iaMEProgramSelect" class="ia-module-search" aria-label="Marks entry programme"><option value="">Select programme</option></select>
-   <select id="iaMEBlockSelect" class="ia-module-search" aria-label="Marks entry block"><option value="">Select block</option></select>
-   <select id="iaMEUnitSelect" class="ia-module-search" aria-label="Marks entry unit"><option value="">Select unit</option></select>
-   <select id="iaMEYearSelect" class="ia-module-search" aria-label="Marks entry academic year"><option value="">Select academic year</option><option>2023</option><option>2024</option><option>2025</option><option>2026</option><option>2027</option><option>2028</option><option>2029</option><option>2030</option></select>
-   <select id="iaMEAssessmentType" class="ia-module-search" aria-label="Assessment type"><option value="full">Full assessment</option><option value="single_cat">Single CAT</option><option value="exam_only">Exam only</option><option value="nck">NCK assessment</option></select>
-   <input id="iaMECaptureSearch" class="ia-module-search" type="search" placeholder="Search loaded students…">
-   <button type="button" class="ia-primary-btn" id="iaMELoadStudents"><i class="fa-solid fa-users-viewfinder"></i> Load registered students</button>
-  </div>
-  <div id="iaMECaptureNotice" class="ia-notice" aria-live="polite">Select programme, block, unit and academic year to load approved registrations.</div>
-  <div class="ia-table-scroll"><table><thead><tr><th>Student</th><th>Admission no.</th><th>CAT 1 / 30</th><th>CAT 2 / 30</th><th>Exam</th><th>Final score</th><th>Grade</th><th>Retake status</th><th>Retake score</th><th>Workflow</th></tr></thead><tbody id="iaMEEditorRows"><tr><td colspan="10" class="ia-empty">No students loaded.</td></tr></tbody></table></div>
-  <div class="ia-page-actions" style="justify-content:center;margin-top:10px"><button type="button" class="ia-secondary-btn" id="iaMEPrevPage">Previous</button><span id="iaMEPageInfo" class="ia-count">Page 1 of 1</span><button type="button" class="ia-secondary-btn" id="iaMENextPage">Next</button></div>
-  <div class="ia-page-actions" style="justify-content:flex-end;margin-top:14px"><button type="button" class="ia-primary-btn" id="iaMESaveCapture" disabled><i class="fa-solid fa-floppy-disk"></i> Save marks & submit for approval</button></div>
- </div>
- <div class="ia-panel"><div class="ia-panel-head"><div><h2>Marks register filters</h2><p>Filter the institution marks register by academic year, programme and block.</p></div></div><div class="ia-filter-row"><select id="iaMEYearFilter" class="ia-module-search"><option value="all">All academic years</option></select><select id="iaMEProgramFilter" class="ia-module-search"><option value="all">All programmes</option></select><select id="iaMEBlockFilter" class="ia-module-search"><option value="all">All blocks / terms</option></select><input id="iaMESearch" class="ia-module-search" type="search" placeholder="Search student, admission no., unit…"></div></div>
- <div class="ia-panel ia-table-panel"><div class="ia-panel-head"><div><h2>Institution marks register</h2><p>Saved assessment records for this institution. Mark capture remains in the authorised examination centre.</p></div><div class="ia-panel-actions"><button class="ia-secondary-btn" id="iaMEExport" type="button"><i class="fa-solid fa-download"></i> Export CSV</button></div></div><div class="ia-table-scroll"><table><thead><tr><th>Student</th><th>Admission no.</th><th>Programme</th><th>Block</th><th>Unit</th><th>Year</th><th>CAT 1</th><th>CAT 2</th><th>Exam</th><th>Final</th><th>Grade</th><th>Status</th></tr></thead><tbody id="iaMarksEntryRows"><tr><td colspan="12" class="ia-empty">Loading marks…</td></tr></tbody></table></div></div>
-<div class="ia-compat-toolbar" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:14px 0"><div id="iaMECaptureNotice" role="status" style="flex:1 1 100%;padding:10px;background:#f0fdfa;border-radius:8px">Loading institution marks workspace…</div><input id="iaMECaptureSearch" type="search" placeholder="Search learner…" style="padding:9px;border:1px solid #cbd5e1;border-radius:8px"><button id="iaMELoadStudents" type="button" class="btn btn-primary">Load learners</button><button id="iaMEExportCapture" type="button" class="btn btn-secondary">Export loaded CSV</button><button id="iaMESaveCapture" type="button" class="btn btn-primary">Save marks & submit for approval</button><span id="iaMEPageInfo"></span><button id="iaMEPrevPage" type="button">Previous</button><button id="iaMENextPage" type="button">Next</button></div><table class="table" style="width:100%;border-collapse:collapse"><tbody id="iaMEEditorRows"><tr><td>Choose a programme and unit to load learners.</td></tr></tbody></table>
+<section id="view-marks-entry" class="tab-content ia-view">
+    <!-- Header -->
+    <div style="background: linear-gradient(135deg, #059669, #10b981); border-radius: 16px; padding: 25px 30px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; box-shadow: 0 4px 20px rgba(5,150,105,0.3);">
+        <div>
+            <h2 style="color: white; margin: 0; font-weight: 700;">
+                <i class="fas fa-pen-alt"></i> Marks Entry System
+            </h2>
+            <p style="color: rgba(255,255,255,0.9); margin: 4px 0 0 0; font-size: 14px;">
+                <i class="fas fa-graduation-cap"></i> KRCHN Nursing &nbsp;|&nbsp; <i class="fas fa-tools"></i> TVET Programs
+            </p>
+        </div>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button onclick="publishCurrentUnitMarks()" class="btn-action" style="background: #FDB913; color: #0A3D62; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; border: none; box-shadow: 0 2px 8px rgba(253,185,19,0.3);">
+                <i class="fas fa-share-alt"></i> 📤 Publish All
+            </button>
+            <button onclick="openStudentPublishModal()" class="btn-action" style="background: #8b5cf6; color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; border: none; box-shadow: 0 2px 8px rgba(139,92,246,0.3);">
+                <i class="fas fa-user-check"></i> 👥 Select Students
+            </button>
+            <button onclick="refreshMarksData()" class="btn-action" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                <i class="fas fa-sync-alt"></i> Refresh Data
+            </button>
+            <button onclick="exportAllMarksData()" class="btn-action" style="background: white; color: #059669; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; border: none;">
+                <i class="fas fa-download"></i> Export All
+            </button>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="cards" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 25px;">
+        <div class="card" style="border-top: 4px solid #059669; background: white; border-radius: 8px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+            <h3 style="color: #059669; font-size: 12px; margin: 0;">Total Students</h3>
+            <p class="data" id="me_total_students" style="font-size: 28px; font-weight: 700; color: #059669; margin: 4px 0;">0</p>
+            <p class="minor-data" style="font-size: 11px; color: #94a3b8; margin: 0;">With marks</p>
+        </div>
+        <div class="card" style="border-top: 4px solid #4C1D95; background: white; border-radius: 8px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+            <h3 style="color: #4C1D95; font-size: 12px; margin: 0;">Total Units</h3>
+            <p class="data" id="me_total_subjects" style="font-size: 28px; font-weight: 700; color: #4C1D95; margin: 4px 0;">0</p>
+            <p class="minor-data" style="font-size: 11px; color: #94a3b8; margin: 0;">Active units</p>
+        </div>
+        <div class="card" style="border-top: 4px solid #FDB913; background: white; border-radius: 8px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+            <h3 style="color: #d97706; font-size: 12px; margin: 0;">Pass Rate</h3>
+            <p class="data" id="me_pass_rate" style="font-size: 28px; font-weight: 700; color: #d97706; margin: 4px 0;">0%</p>
+            <p class="minor-data" style="font-size: 11px; color: #94a3b8; margin: 0;">Students passing</p>
+        </div>
+        <div class="card" style="border-top: 4px solid #8b5cf6; background: white; border-radius: 8px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+            <h3 style="color: #6d28d9; font-size: 12px; margin: 0;">Class Average</h3>
+            <p class="data" id="me_class_avg" style="font-size: 28px; font-weight: 700; color: #6d28d9; margin: 4px 0;">0%</p>
+            <p class="minor-data" style="font-size: 11px; color: #94a3b8; margin: 0;">Overall performance</p>
+        </div>
+        <div class="card" style="border-top: 4px solid #ef4444; background: white; border-radius: 8px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+            <h3 style="color: #dc2626; font-size: 12px; margin: 0;">At Risk</h3>
+            <p class="data" id="me_at_risk" style="font-size: 28px; font-weight: 700; color: #dc2626; margin: 4px 0;">0</p>
+            <p class="minor-data" style="font-size: 11px; color: #94a3b8; margin: 0;">Below pass mark</p>
+        </div>
+        <div class="card" style="border-top: 4px solid #10b981; background: linear-gradient(135deg, #f0fdf4, #ecfdf5); border-radius: 8px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+            <h3 style="color: #059669; font-size: 12px; margin: 0;">📤 Published</h3>
+            <p class="data" id="me_published_count" style="font-size: 28px; font-weight: 700; color: #059669; margin: 4px 0;">0</p>
+            <p class="minor-data" style="font-size: 11px; color: #94a3b8; margin: 0;">Marks visible to students</p>
+        </div>
+    </div>
+
+    <!-- Selected Program Display -->
+    <div id="selectedProgramDisplay" style="background: linear-gradient(135deg, #f0fdf4, #ecfdf5); padding: 12px 20px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #86efac; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="font-weight: 700; color: #065f46; font-size: 14px;">
+                <i class="fas fa-check-circle"></i> Selected Program:
+            </span>
+            <span id="selectedProgramName" style="font-weight: 600; color: #1e293b; font-size: 15px;">None selected</span>
+        </div>
+        <div>
+            <span id="selectedProgramType" style="background: #dbeafe; padding: 4px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; color: #1e40af; border: 1px solid #93c5fd;">
+                <i class="fas fa-info-circle"></i> None Selected
+            </span>
+        </div>
+    </div>
+
+    <!-- Selectors -->
+    <div style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 25px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); border: 1px solid #e5e7eb;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px;">
+            <div>
+                <label style="font-weight: 600; font-size: 13px; color: #475569; display: block; margin-bottom: 5px;">
+                    <i class="fas fa-tag"></i> Program
+                </label>
+                <select id="me_program_select" class="form-control" onchange="loadMEBlocks(); updateSelectedProgramDisplay();" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0; background: #f8fafc; font-size: 14px;">
+                    <option value="">-- Select Program --</option>
+                    <option value="KRCHN">🎓 KRCHN Nursing</option>
+                    <optgroup label="🎯 TVET Diploma Programs">
+                        <option value="DPOTT">Diploma in Perioperative Theatre Technology</option>
+                        <option value="DCH">Diploma in Community Health</option>
+                        <option value="DHRIT">Diploma in Health Records and IT</option>
+                        <option value="DSL">Diploma in Science Lab</option>
+                        <option value="DSW">Diploma in Social Work</option>
+                        <option value="DCJS">Diploma in Criminal Justice</option>
+                        <option value="DHSS">Diploma in Health Support Services</option>
+                        <option value="DICT">Diploma in ICT</option>
+                        <option value="DME">Diploma in Medical Engineering</option>
+                    </optgroup>
+                    <optgroup label="📜 TVET Certificate Programs">
+                        <option value="CPOTT">Certificate in Perioperative Theatre Technology</option>
+                        <option value="CCH">Certificate in Community Health</option>
+                        <option value="CHRIT">Certificate in Health Records and IT</option>
+                        <option value="CPC">Certificate in Patient Care</option>
+                        <option value="CSL">Certificate in Science Lab</option>
+                        <option value="CSW">Certificate in Social Work</option>
+                        <option value="CCJS">Certificate in Criminal Justice</option>
+                        <option value="CAG">Certificate in Agriculture</option>
+                        <option value="CHSS">Certificate in Health Support Services</option>
+                        <option value="CICT">Certificate in ICT</option>
+                    </optgroup>
+                    <optgroup label="🔧 TVET Artisan Programs">
+                        <option value="ACH">Artisan in Community Health</option>
+                        <option value="AAG">Artisan in Agriculture</option>
+                        <option value="ASW">Artisan in Social Work</option>
+                    </optgroup>
+                    <optgroup label="📊 Other TVET Programs">
+                        <option value="CCA">Certificate in Computer Applications</option>
+                        <option value="PTE">TVET/CDACC (PTE)</option>
+                    </optgroup>
+                </select>
+            </div>
+            <div>
+                <label style="font-weight: 600; font-size: 13px; color: #475569; display: block; margin-bottom: 5px;">
+                    <i class="fas fa-calendar"></i> Academic Year
+                </label>
+                <select id="me_year_select" class="form-control" onchange="loadMEBlocks()" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0; background: #f8fafc; font-size: 14px;">
+                    <option value="2024">2024</option>
+                    <option value="2025" selected>2025</option>
+                    <option value="2026">2026</option>
+                    <option value="2027">2027</option>
+                    <option value="2028">2028</option>
+                </select>
+            </div>
+            <div>
+                <label style="font-weight: 600; font-size: 13px; color: #475569; display: block; margin-bottom: 5px;">
+                    <i class="fas fa-layer-group"></i> Block
+                </label>
+                <select id="me_block_select" class="form-control" onchange="loadMEUnits()" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0; background: #f8fafc; font-size: 14px;">
+                    <option value="">-- Select Block --</option>
+                </select>
+            </div>
+            <div>
+                <label style="font-weight: 600; font-size: 13px; color: #475569; display: block; margin-bottom: 5px;">
+                    <i class="fas fa-book"></i> Unit
+                </label>
+                <select id="me_subject_select" class="form-control" onchange="loadMarksEntry()" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0; background: #f8fafc; font-size: 14px;">
+                    <option value="">-- Select Unit --</option>
+                </select>
+            </div>
+            <div>
+                <label style="font-weight: 600; font-size: 13px; color: #475569; display: block; margin-bottom: 5px;">
+                    <i class="fas fa-tag"></i> Assessment Type
+                    <span style="font-size: 11px; color: #6b7280; font-weight: 400; display: block;">(Auto-detected from visible columns)</span>
+                </label>
+                <select id="me_assessment_type" class="form-control" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0; background: #f3f4f6; font-size: 14px; cursor: not-allowed;" disabled>
+                    <option value="full">Full (CAT1+CAT2+Exam)</option>
+                    <option value="single_cat">Single CAT (CAT+Exam)</option>
+                    <option value="exam_only">Exam Only</option>
+                    <option value="cats_only">CAT1+CAT2 Only</option>
+                    <option value="cat_only">CAT Only</option>
+                </select>
+                <small style="color: #6b7280; font-size: 11px;">Auto-detected based on visible columns</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Grading Reference -->
+    <div style="background: white; border-radius: 12px; padding: 12px 20px; margin-bottom: 25px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+        <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
+            <span style="font-weight: 700; color: #475569; font-size: 13px;">📊 Grading Systems:</span>
+            
+            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; background: #f0fdf4; padding: 6px 14px; border-radius: 8px; border: 1px solid #86efac;">
+                <span style="font-size: 11px; font-weight: 700; color: #065f46;">🔧 TVET</span>
+                <span style="background: #d1fae5; padding: 3px 10px; border-radius: 4px; font-weight: 700; color: #065f46; font-size: 10px;">A (80-100%) = 4.0</span>
+                <span style="background: #dbeafe; padding: 3px 10px; border-radius: 4px; font-weight: 700; color: #1e40af; font-size: 10px;">B (65-79%) = 3.0</span>
+                <span style="background: #fef3c7; padding: 3px 10px; border-radius: 4px; font-weight: 700; color: #92400e; font-size: 10px;">C (50-64%) = 2.0</span>
+                <span style="background: #fee2e2; padding: 3px 10px; border-radius: 4px; font-weight: 700; color: #991b1b; font-size: 10px;">E (0-49%) = 0.0</span>
+            </div>
+            
+            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; background: #eff6ff; padding: 6px 14px; border-radius: 8px; border: 1px solid #93c5fd;">
+                <span style="font-size: 11px; font-weight: 700; color: #1e40af;">🎓 Nursing</span>
+                <span style="background: #d1fae5; padding: 3px 10px; border-radius: 4px; font-weight: 700; color: #065f46; font-size: 10px;">A (75-100%) = 4.0</span>
+                <span style="background: #dbeafe; padding: 3px 10px; border-radius: 4px; font-weight: 700; color: #1e40af; font-size: 10px;">B (65-74%) = 3.0</span>
+                <span style="background: #fef3c7; padding: 3px 10px; border-radius: 4px; font-weight: 700; color: #92400e; font-size: 10px;">C (60-64%) = 2.0</span>
+                <span style="background: #fee2e2; padding: 3px 10px; border-radius: 4px; font-weight: 700; color: #991b1b; font-size: 10px;">D (0-59%) = 0.0</span>
+            </div>
+            
+            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; background: #fef3c7; padding: 6px 14px; border-radius: 8px; border: 1px solid #f59e0b;">
+                <span style="font-size: 10px; font-weight: 600; color: #92400e;">
+                    📐 CAT1=30 | CAT2=30 | Exam=70 (Nursing) / 100 (TVET)
+                </span>
+                <span style="font-size: 9px; color: #92400e; background: #fef3c7; padding: 2px 8px; border-radius: 4px; border: 1px solid #f59e0b;">
+                    Total: 130 (Nursing) / 160 (TVET)
+                </span>
+            </div>
+            
+            <span style="font-size: 11px; color: #059669; background: #d1fae5; padding: 4px 14px; border-radius: 12px;">
+                <i class="fas fa-magic"></i> Auto: <span id="autoAssessmentTypeLabel">Full</span>
+            </span>
+        </div>
+    </div>
+
+    <!-- Placeholder -->
+    <div id="marksEntryPlaceholder" style="text-align: center; padding: 60px 20px; background: white; border-radius: 12px; border: 1px solid #e5e7eb;">
+        <i class="fas fa-pen-alt" style="font-size: 48px; color: #94a3b8; margin-bottom: 16px; display: block;"></i>
+        <h3 style="color: #1e293b;">Select Program, Block and Unit</h3>
+        <p style="color: #94a3b8;">Choose from the dropdowns above to load marks for any program</p>
+    </div>
+
+    <!-- Dynamic Content -->
+    <div id="marksEntryDynamicContent" style="display: none;">
+        
+        <!-- Lecturer Assignment Management -->
+        <div style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 15px;">
+                <div>
+                    <h3 style="margin: 0; color: #1e293b;">
+                        <i class="fas fa-user-tie" style="color: #4C1D95;"></i> Lecturer Unit Assignments
+                    </h3>
+                    <p style="margin: 4px 0 0 0; color: #64748b; font-size: 13px;">
+                        <i class="fas fa-info-circle"></i> Assign lecturers to this unit
+                    </p>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button onclick="showLecturerAssignmentModal()" class="btn-action" style="background: #4C1D95; padding: 8px 20px; border: none; border-radius: 6px; color: white; cursor: pointer;">
+                        <i class="fas fa-user-plus"></i> Assign Lecturer
+                    </button>
+                    <button onclick="openStudentPublishModal()" class="btn-action" style="background: #8b5cf6; color: white; padding: 8px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                        <i class="fas fa-user-check"></i> Select Students
+                    </button>
+                </div>
+            </div>
+            <div id="me_lecturer_assignments" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px;">
+                <div style="color: #94a3b8; font-size: 13px; grid-column: 1 / -1; text-align: center; padding: 20px;">
+                    <i class="fas fa-info-circle"></i> Loading lecturer assignments...
+                </div>
+            </div>
+        </div>
+
+        <!-- Assignment History -->
+        <div style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 15px;">
+                <div>
+                    <h4 style="margin: 0; color: #1e293b;">
+                        <i class="fas fa-history" style="color: #4C1D95;"></i> Assignment History
+                    </h4>
+                    <p style="margin: 4px 0 0 0; color: #64748b; font-size: 13px;">
+                        <i class="fas fa-info-circle"></i> All lecturers assigned to this unit — click <strong>"Drop"</strong> to remove assignment
+                    </p>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button onclick="refreshAssignmentHistory()" class="btn-action" style="background: #6b7280; padding: 6px 14px; border: none; border-radius: 6px; color: white; cursor: pointer; font-size: 12px;">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                    <button onclick="clearAllAssignments()" class="btn-action" style="background: #dc2626; padding: 6px 14px; border: none; border-radius: 6px; color: white; cursor: pointer; font-size: 12px;">
+                        <i class="fas fa-trash"></i> Clear All
+                    </button>
+                </div>
+            </div>
+            <div id="me_assignment_history" style="overflow-x: auto;">
+                <div style="text-align: center; padding: 30px; color: #94a3b8; font-size: 13px;">
+                    <i class="fas fa-info-circle"></i> Loading assignment history...
+                </div>
+            </div>
+        </div>
+
+        <!-- Column Management -->
+        <div style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 15px;">
+                <div>
+                    <h3 style="margin: 0; color: #1e293b;">
+                        <i class="fas fa-columns" style="color: #059669;"></i> Column Settings for <span id="me_column_subject_name">Current Unit</span>
+                    </h3>
+                    <p style="margin: 4px 0 0 0; color: #64748b; font-size: 13px;">
+                        <i class="fas fa-info-circle"></i> Show/hide columns for this unit only
+                    </p>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button onclick="resetUnitColumns()" class="btn-action" style="background: #6b7280; padding: 8px 16px; border: none; border-radius: 6px; color: white; cursor: pointer;">
+                        <i class="fas fa-undo"></i> Reset for This Unit
+                    </button>
+                    <button onclick="openStudentPublishModal()" class="btn-action" style="background: #8b5cf6; color: white; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                        <i class="fas fa-user-check"></i> Select Students
+                    </button>
+                </div>
+            </div>
+            <div id="me_column_settings" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px;">
+                <div style="color: #94a3b8; font-size: 13px; grid-column: 1 / -1; text-align: center; padding: 20px;">
+                    <i class="fas fa-info-circle"></i> Loading column settings...
+                </div>
+            </div>
+        </div>
+
+        <!-- Marks Table -->
+        <div id="me_marks_container" style="background: white; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); border: 1px solid #e5e7eb; overflow-x: auto;">
+            <div style="text-align: center; padding: 40px;">
+                <div class="loading-spinner"></div>
+                <p style="color: #6b7280; margin-top: 10px;">Loading marks...</p>
+            </div>
+        </div>
+    </div>
+<div class="ia-parity-tenant-controls" style="margin:16px 0;padding:14px;border:1px solid #dbe3ea;border-radius:12px;background:#fff"><div id="iaMECaptureNotice" role="status" style="margin-bottom:10px">Loading institution marks workspace…</div><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><input id="iaMECaptureSearch" type="search" placeholder="Search learner…" style="padding:9px;border:1px solid #cbd5e1;border-radius:8px"><button id="iaMELoadStudents" type="button" class="btn btn-primary">Load learners</button><button id="iaMESaveCapture" type="button" class="btn btn-primary">Save marks & submit for approval</button><button id="iaMEExportCapture" type="button" class="btn btn-secondary">Export loaded CSV</button><span id="iaMEPageInfo"></span><button id="iaMEPrevPage" type="button">Previous</button><button id="iaMENextPage" type="button">Next</button></div><div style="overflow:auto;margin-top:12px"><table style="width:100%;border-collapse:collapse"><tbody id="iaMEEditorRows"><tr><td>Choose a programme and unit to load learners.</td></tr></tbody></table></div></div>
 </section>
-<section class="ia-view" id="view-marks-approval">
- <div class="ia-page-heading"><div><span class="ia-eyebrow">RESULTS GOVERNANCE</span><h1>Marks approval</h1><p>Review marks submitted for approval by authorised academic staff.</p></div><button class="ia-secondary-btn" data-marks-refresh="approval"><i class="fa-solid fa-rotate"></i> Refresh</button></div>
- <div class="ia-stat-grid ia-report-grid"><article class="ia-stat-card"><small>Pending review</small><strong id="iaMAPending">—</strong></article><article class="ia-stat-card"><small>Approved today</small><strong id="iaMAApproved">—</strong></article><article class="ia-stat-card"><small>Rejected</small><strong id="iaMARejected">—</strong></article><article class="ia-stat-card"><small>Pending subjects</small><strong id="iaMAUnits">—</strong></article></div>
- <div class="ia-panel"><div class="ia-panel-head"><div><h2>Approval queue filters</h2><p>Search and narrow the pending review queue before individual or bulk decisions.</p></div></div><div class="ia-filter-row"><input id="iaMASearch" class="ia-module-search" type="search" placeholder="Search student, admission no., unit…"><select id="iaMASubjectFilter" class="ia-module-search"><option value="all">All units</option></select><select id="iaMABlockFilter" class="ia-module-search"><option value="all">All blocks / terms</option></select><select id="iaMAYearFilter" class="ia-module-search"><option value="all">All academic years</option></select><select id="iaMAProgramFilter" class="ia-module-search"><option value="all">All programmes</option></select></div></div><div class="ia-panel ia-table-panel"><div class="ia-panel-head"><div><h2>Marks awaiting review</h2><p>Approval and rejection actions are recorded against this institution's marks.</p></div><div class="ia-panel-actions"><button type="button" class="ia-secondary-btn" id="iaMAExport"><i class="fa-solid fa-file-csv"></i> Export CSV</button><button type="button" class="ia-primary-btn" id="iaApproveAllPending">Approve all filtered</button><button type="button" class="ia-danger-btn" id="iaRejectAllPending">Reject all filtered</button></div></div><div class="ia-table-scroll"><table><thead><tr><th>Student</th><th>Admission no.</th><th>Programme</th><th>Block</th><th>Unit</th><th>Final score</th><th>Submitted</th><th>Action</th></tr></thead><tbody id="iaMarksApprovalRows"><tr><td colspan="8" class="ia-empty">Loading pending marks…</td></tr></tbody></table></div></div>
-<div hidden><select id="iaMEYearFilter"></select><select id="iaMEProgramFilter"></select><select id="iaMEBlockFilter"></select><select id="iaMASubjectFilter"></select><select id="iaMABlockFilter"></select><select id="iaMAYearFilter"></select><select id="iaMAProgramFilter"></select></div><table style="width:100%;border-collapse:collapse;margin-top:12px"><tbody id="iaMarksApprovalRows"></tbody></table>
+<section id="view-marks-approval" class="tab-content ia-view">
+    <div style="background: linear-gradient(135deg, #f59e0b, #d97706); border-radius: 16px; padding: 25px 30px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; box-shadow: 0 4px 20px rgba(245,158,11,0.3);">
+        <div>
+            <h2 style="color: white; margin: 0; font-weight: 700;">
+                <i class="fas fa-check-double"></i> Marks Pending Approval
+            </h2>
+            <p style="color: rgba(255,255,255,0.9); margin: 4px 0 0 0; font-size: 14px;">
+                <i class="fas fa-clock"></i> Review and approve marks submitted by lecturers
+            </p>
+        </div>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button onclick="loadMarksApprovals()" class="btn-action" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+            <button onclick="approveAllPendingMarks()" class="btn-action" style="background: #10b981; color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; border: none;">
+                <i class="fas fa-check-double"></i> Approve All
+            </button>
+            <button onclick="rejectAllPendingMarks()" class="btn-action" style="background: #dc2626; color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; border: none;">
+                <i class="fas fa-times"></i> Reject All
+            </button>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="cards" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 25px;">
+        <div class="card" style="border-top: 4px solid #f59e0b;">
+            <h3 style="color: #d97706; font-size: 12px;">⏳ Pending Marks</h3>
+            <p class="data" id="pendingMarksCount" style="font-size: 28px; font-weight: 700; color: #d97706;">0</p>
+            <p class="minor-data" style="font-size: 11px;">Awaiting your review</p>
+        </div>
+        <div class="card" style="border-top: 4px solid #10b981;">
+            <h3 style="color: #059669; font-size: 12px;">✅ Approved Today</h3>
+            <p class="data" id="approvedMarksToday" style="font-size: 28px; font-weight: 700; color: #059669;">0</p>
+            <p class="minor-data" style="font-size: 11px;">Marks approved</p>
+        </div>
+        <div class="card" style="border-top: 4px solid #ef4444;">
+            <h3 style="color: #dc2626; font-size: 12px;">❌ Rejected</h3>
+            <p class="data" id="rejectedMarksCount" style="font-size: 28px; font-weight: 700; color: #dc2626;">0</p>
+            <p class="minor-data" style="font-size: 11px;">This month</p>
+        </div>
+        <div class="card" style="border-top: 4px solid #4C1D95;">
+            <h3 style="color: #4C1D95; font-size: 12px;">📚 Total Subjects</h3>
+            <p class="data" id="pendingSubjectsCount" style="font-size: 28px; font-weight: 700; color: #4C1D95;">0</p>
+            <p class="minor-data" style="font-size: 11px;">With pending marks</p>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div style="background: white; border-radius: 12px; padding: 16px 20px; margin-bottom: 20px; border: 1px solid #e5e7eb; display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+        <input type="text" id="marksApprovalSearch" placeholder="🔍 Search student or subject..." onkeyup="filterMarksApprovals()" style="flex: 1; min-width: 150px; padding: 8px 14px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 13px;">
+        <select id="marksApprovalSubjectFilter" onchange="filterMarksApprovals()" style="padding: 8px 14px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 13px;">
+            <option value="all">All Subjects</option>
+        </select>
+        <select id="marksApprovalBlockFilter" onchange="filterMarksApprovals()" style="padding: 8px 14px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 13px;">
+            <option value="all">All Blocks</option>
+        </select>
+        <span style="font-size: 13px; color: #64748b;">
+            <i class="fas fa-info-circle"></i> <span id="marksFilterCount">0</span> pending
+        </span>
+    </div>
+
+    <!-- Marks Table -->
+    <div style="background: white; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); border: 1px solid #e5e7eb; overflow-x: auto;">
+        <div id="marksApprovalTableContainer">
+            <div style="text-align: center; padding: 40px; color: #94a3b8;">
+                <div class="loading-spinner" style="display: inline-block; width: 30px; height: 30px; border: 3px solid #e5e7eb; border-top-color: #4C1D95; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                <p style="margin-top: 10px;">Loading pending marks...</p>
+            </div>
+        </div>
+    </div>
+<div hidden><select id="iaMEYearFilter"></select><select id="iaMEProgramFilter"></select><select id="iaMEBlockFilter"></select><select id="iaMASubjectFilter"></select><select id="iaMABlockFilter"></select><select id="iaMAYearFilter"></select><select id="iaMAProgramFilter"></select></div><div class="ia-parity-tenant-queue" style="margin-top:14px;overflow:auto"><table style="width:100%;border-collapse:collapse"><tbody id="iaMarksApprovalRows"><tr><td>Loading institution approval queue…</td></tr></tbody></table></div>
 </section>
 <section class="ia-view" id="view-entry-control">
  <div class="ia-page-heading"><div><span class="ia-eyebrow">ACADEMIC ACCESS CONTROL</span><h1>Mark entry control</h1><p>Manage the institution's mark-entry window. Platform-wide controls remain with Superadmin.</p></div><button class="ia-secondary-btn" data-marks-refresh="control"><i class="fa-solid fa-rotate"></i> Refresh</button></div>
@@ -640,110 +984,7 @@
  <div class="ia-panel ia-table-panel"><div class="ia-panel-head"><div><h2>Approved results ready to publish</h2><p>Only approved, unpublished records can be released.</p></div><button class="ia-primary-btn" id="iaPMPublishFiltered" type="button"><i class="fa-solid fa-cloud-arrow-up"></i> Publish all filtered</button></div><div class="ia-table-scroll"><table><thead><tr><th>Student</th><th>Admission no.</th><th>Programme</th><th>Block</th><th>Unit</th><th>Year</th><th>Final score</th><th>Grade</th><th>Action</th></tr></thead><tbody id="iaReadyToPublishRows"><tr><td colspan="9" class="ia-empty">Loading approved marks…</td></tr></tbody></table></div></div>
  <div class="ia-panel ia-table-panel" id="iaPublishedPrintArea"><div class="ia-panel-head"><div><h2>Released results</h2><p>Published results for the selected institution filters.</p></div></div><div class="ia-table-scroll"><table><thead><tr><th>Student</th><th>Admission no.</th><th>Programme</th><th>Block</th><th>Unit</th><th>Year</th><th>Final score</th><th>Grade</th><th>Published</th></tr></thead><tbody id="iaPublishedMarksRows"><tr><td colspan="9" class="ia-empty">Loading published marks…</td></tr></tbody></table></div></div>
 </section>
-<section class="ia-view" <div class="ia-page-actions" style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0"><button id="iaAttendanceRefresh" type="button" class="ia-secondary-btn">Refresh attendance</button><button id="iaAttendanceExport" type="button" class="ia-primary-btn">Export CSV</button><button id="iaAttendancePrint" type="button" class="ia-secondary-btn">Print</button><button id="iaAttendanceReset" type="button" class="ia-secondary-btn">Reset filters</button></div>id="view-attendance">
- <div class="ia-page-heading"><div><span class="ia-eyebrow">PARTICIPATION & GEO VERIFICATION</span><h1>Attendance management</h1><p>Review geo check-ins and attendance history for students registered at this institution.</p></div><div class="ia-page-actions"><button class="ia-secondary-btn" type="button" id="iaAttendanceRefresh"><i class="fa-solid fa-rotate"></i> Refresh</button><button class="ia-primary-btn" type="button" id="iaAttendanceExport"><i class="fa-solid fa-download"></i> Export CSV</button><button class="ia-secondary-btn" type="button" id="iaAttendancePrint"><i class="fa-solid fa-print"></i> Print</button></div></div>
- <div id="iaAttendanceNotice" class="ia-notice" aria-live="polite">Loading institution attendance…</div>
- <div class="ia-stat-grid ia-report-grid"><article class="ia-stat-card"><small>All records</small><strong id="iaAttendanceTotal">—</strong></article><article class="ia-stat-card"><small>Today</small><strong id="iaAttendanceToday">—</strong></article><article class="ia-stat-card"><small>Verified / present</small><strong id="iaAttendanceVerified">—</strong></article><article class="ia-stat-card"><small>Pending review</small><strong id="iaAttendancePending">—</strong></article></div>
- <div class="ia-panel ia-table-panel"><div class="ia-panel-head"><div><h2>Manual student check-in</h2><p>Record an institution-authorised attendance entry. The action is saved to this institution only.</p></div></div><form id="iaManualAttendanceForm" class="ia-filter-row"><select class="ia-module-search" id="iaAttStudent" required><option value="">Select student</option></select><select class="ia-module-search" id="iaAttSession"><option value="classroom">Classroom</option><option value="clinical">Clinical</option><option value="lab">Lab</option><option value="tutorial">Tutorial</option><option value="virtual">Virtual</option></select><input class="ia-module-search" id="iaAttTarget" type="text" placeholder="Course / rotation / location" required><input class="ia-module-search" id="iaAttDate" type="date" required><input class="ia-module-search" id="iaAttTime" type="time"><button class="ia-primary-btn" type="submit">Record attendance</button></form></div><div class="ia-panel ia-table-panel"><div class="ia-panel-head"><div><h2>Attendance filters</h2><p>Filters apply only to your institution's registered students.</p></div></div><div class="ia-filter-row"><input class="ia-module-search" id="iaAttendanceSearch" type="search" placeholder="Search student, admission no. or session…"><select class="ia-module-search" id="iaAttendanceProgram"><option value="all">All programmes</option><option value="krchn">KRCHN</option><option value="tvet">TVET</option></select><select class="ia-module-search" id="iaAttendanceStatus"><option value="all">All statuses</option><option value="verified">Verified / present</option><option value="pending">Pending / unverified</option></select><select class="ia-module-search" id="iaAttendanceType"><option value="all">All session types</option><option value="classroom">Classroom</option><option value="clinical">Clinical</option><option value="lab">Lab</option><option value="tutorial">Tutorial</option><option value="virtual">Virtual</option></select><button class="ia-secondary-btn" type="button" id="iaAttendanceReset">Reset filters</button></div></div>
- <div class="ia-panel ia-table-panel"><div class="ia-panel-head"><div><h2>Today's attendance</h2><p>Student geo check-ins recorded today.</p></div></div><div class="ia-table-scroll"><table><thead><tr><th>Date & time</th><th>Student</th><th>Admission no.</th><th>Programme</th><th>Session</th><th>Target</th><th>Location</th><th>GPS coordinates</th><th>Distance</th><th>Status</th></tr></thead><tbody id="iaAttendanceTodayRows"><tr><td colspan="10" class="ia-empty">Loading…</td></tr></tbody></table></div></div>
- <div class="ia-panel ia-table-panel"><div class="ia-panel-head"><div><h2>Attendance history</h2><p>Previous check-ins and verification status.</p></div></div><div class="ia-table-scroll"><table><thead><tr><th>Date & time</th><th>Student</th><th>Admission no.</th><th>Programme</th><th>Session</th><th>Target</th><th>Location</th><th>GPS coordinates</th><th>Distance</th><th>Status</th></tr></thead><tbody id="iaAttendanceHistoryRows"><tr><td colspan="10" class="ia-empty">Loading…</td></tr></tbody></table></div></div>
-<div hidden><span id="iaAttendanceNotice"></span><span id="iaAttendanceVerified"></span><span id="iaAttendancePending"></span></div>
-</section>
-<section class="ia-view" id="view-learning"><div class="ia-page-heading"><div><span class="ia-eyebrow">DIGITAL LEARNING</span><h1>Learning management</h1><p>Learning services enabled for your institution.</p></div></div><div class="ia-panel ia-table-panel"><div class="ia-panel-head"><div><h2>Institution learning resources</h2><p>Approved learning resources uploaded for this institution</p></div></div><div class="ia-table-scroll"><table><thead><tr><th>Resource</th><th>Unit</th><th>Programme</th><th>Category</th><th>Approval</th><th>File</th></tr></thead><tbody id="iaResources"><tr><td colspan="6" class="ia-empty">Loading resources…</td></tr></tbody></table></div></div></section>
-<section class="ia-view" <div class="ia-page-actions" style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0"><button id="iaAnalyticsRefresh" type="button" class="ia-secondary-btn">Refresh analytics</button><button id="iaAnalyticsExport" type="button" class="ia-primary-btn">Export analytics</button><button id="iaAnalyticsPrint" type="button" class="ia-secondary-btn">Print</button></div>id="view-reports"><div class="ia-page-heading"><div><span class="ia-eyebrow">INSTITUTION INSIGHTS</span><h1>Reports & analytics</h1><p>Live summary of your institution's core records.</p></div></div><div class="ia-stat-grid ia-report-grid"><article class="ia-stat-card"><small>Students</small><strong id="repStudents">—</strong></article><article class="ia-stat-card"><small>Staff</small><strong id="repStaff">—</strong></article><article class="ia-stat-card"><small>Programmes</small><strong id="repPrograms">—</strong></article><article class="ia-stat-card"><small>Examinations</small><strong id="repExams">—</strong></article><article class="ia-stat-card"><small>Attendance records</small><strong id="repAttendance">—</strong></article><article class="ia-stat-card"><small>Published results</small><strong id="repResults">—</strong></article><article class="ia-stat-card" data-module="admissions"><small>Applicants</small><strong id="repAdmissions">—</strong></article><article class="ia-stat-card" data-module="human_resources"><small>HR records</small><strong id="repHR">—</strong></article><article class="ia-stat-card" data-module="timetable"><small>Timetable sessions</small><strong id="repTimetable">—</strong></article><article class="ia-stat-card" data-module="clinical_placements"><small>Clinical placements</small><strong id="repPlacements">—</strong></article><article class="ia-stat-card" data-module="research_management"><small>Research projects</small><strong id="repResearch">—</strong></article><article class="ia-stat-card" data-module="student_welfare"><small>Welfare cases</small><strong id="repWelfare">—</strong></article></div><div class="ia-page-heading" style="margin-top:24px"><div><span class="ia-eyebrow">ACADEMIC PERFORMANCE</span><h2>Marks analytics</h2><p>Institution-scoped performance indicators with the same academic filters used in the Super Admin analytics workspace.</p></div><div class="ia-page-actions"><span id="iaMarksAnalyticsUpdated" class="ia-muted"></span><button class="ia-secondary-btn" id="iaAnalyticsRefresh" type="button"><i class="fa-solid fa-rotate"></i> Refresh analytics</button><button class="ia-secondary-btn" id="iaAnalyticsExport" type="button"><i class="fa-solid fa-file-csv"></i> Export CSV</button><button class="ia-secondary-btn" id="iaAnalyticsPrint" type="button"><i class="fa-solid fa-print"></i> Print</button></div></div><div class="ia-panel"><div class="ia-panel-head"><div><h2>Analytics filters</h2><p>These filters only affect records belonging to this institution.</p></div></div><div class="ia-filter-row"><select id="iaAnalyticsProgram" class="ia-module-search"><option value="all">All programmes</option></select><select id="iaAnalyticsYear" class="ia-module-search"><option value="2026" selected>2026</option><option value="all">All academic years</option></select><select id="iaAnalyticsIntake" class="ia-module-search"><option value="all">All intakes</option></select><select id="iaAnalyticsBlock" class="ia-module-search"><option value="all">All blocks / terms</option></select></div></div><div id="iaAnalyticsNotice" class="ia-notice" aria-live="polite">Loading academic analytics…</div><div class="ia-stat-grid ia-report-grid"><article class="ia-stat-card"><small>Mark records</small><strong id="iaAnalyticsMarks">—</strong></article><article class="ia-stat-card"><small>Students assessed</small><strong id="iaAnalyticsStudents">—</strong></article><article class="ia-stat-card"><small>Units assessed</small><strong id="iaAnalyticsUnits">—</strong></article><article class="ia-stat-card"><small>Average score</small><strong id="iaAnalyticsAverage">—</strong></article><article class="ia-stat-card"><small>Pass rate</small><strong id="iaAnalyticsPassRate">—</strong></article><article class="ia-stat-card"><small>At risk / failed</small><strong id="iaAnalyticsAtRisk">—</strong></article><article class="ia-stat-card"><small>Pending approval</small><strong id="iaAnalyticsPending">—</strong></article><article class="ia-stat-card"><small>Published records</small><strong id="iaAnalyticsPublished">—</strong></article></div><div class="ia-grid-two" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:16px"><div class="ia-panel"><div class="ia-panel-head"><div><h2>Grade distribution</h2><p>Grades from the institution's saved marks.</p></div></div><div style="height:280px"><canvas id="iaAnalyticsGradeChart"></canvas></div></div><div class="ia-panel"><div class="ia-panel-head"><div><h2>Marks by block / term</h2><p>Assessment record volume across academic blocks.</p></div></div><div style="height:280px"><canvas id="iaAnalyticsBlockChart"></canvas></div></div><div class="ia-panel"><div class="ia-panel-head"><div><h2>Programme comparison</h2><p>Assessment records by programme.</p></div></div><div style="height:280px"><canvas id="iaAnalyticsProgramChart"></canvas></div></div></div><div class="ia-grid-two" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:16px">
- <div class="ia-panel"><div class="ia-panel-head"><div><h2>Subject performance</h2><p>Average score by subject.</p></div></div><div style="height:280px"><canvas id="iaAnalyticsSubjectChart"></canvas></div></div>
- <div class="ia-panel"><div class="ia-panel-head"><div><h2>Gender distribution</h2><p>Assessment records by learner gender.</p></div></div><div style="height:280px"><canvas id="iaAnalyticsGenderChart"></canvas></div></div>
- <div class="ia-panel"><div class="ia-panel-head"><div><h2>Assessment type mix</h2><p>Marks by assessment format.</p></div></div><div style="height:280px"><canvas id="iaAnalyticsAssessmentChart"></canvas></div></div>
- <div class="ia-panel"><div class="ia-panel-head"><div><h2>Grade by assessment type</h2><p>Grade distribution across assessment formats.</p></div></div><div style="height:280px"><canvas id="iaAnalyticsGradeByAssessmentChart"></canvas></div></div>
- <div class="ia-panel"><div class="ia-panel-head"><div><h2>Unit ranking</h2><p>Highest average-scoring units.</p></div></div><div style="height:280px"><canvas id="iaAnalyticsUnitChart"></canvas></div></div>
-</div><div class="ia-panel ia-table-panel"><div class="ia-panel-head"><div><h2>Unit performance summary</h2><p>Average recorded score by unit.</p></div></div><div class="ia-table-scroll"><table><thead><tr><th>Unit</th><th>Records</th><th>Average score</th></tr></thead><tbody id="iaAnalyticsUnitRows"><tr><td colspan="3" class="ia-empty">Loading…</td></tr></tbody></table></div></div><div hidden><select id="iaAnalyticsIntake"><option value="all">All intakes</option></select><span id="iaMarksAnalyticsUpdated"></span><span id="iaAnalyticsNotice"></span><span id="iaAnalyticsPending"></span><span id="iaAnalyticsPublished"></span><span id="iaAnalyticsMarks"></span><span id="iaAnalyticsStudents"></span><span id="iaAnalyticsUnits"></span><span id="iaAnalyticsAverage"></span><span id="iaAnalyticsPassRate"></span><span id="iaAnalyticsAtRisk"></span></div>
-</section>
-<section class="ia-view" id="view-activity"><div class="ia-page-heading"><div><span class="ia-eyebrow">INSTITUTION GOVERNANCE</span><h1>Institution activity</h1><p>Read-only history of actions recorded for this institution. Platform-wide activity remains restricted to Super Admin.</p></div><button class="ia-secondary-btn" type="button" id="iaActivityRefresh"><i class="fa-solid fa-rotate"></i> Refresh</button></div><div class="ia-stat-grid ia-report-grid"><article class="ia-stat-card"><small>Recorded actions</small><strong id="iaActivityTotal">—</strong></article><article class="ia-stat-card"><small>Today</small><strong id="iaActivityToday">—</strong></article><article class="ia-stat-card"><small>Unique actors</small><strong id="iaActivityActors">—</strong></article></div><div class="ia-panel ia-table-panel"><div class="ia-panel-head"><div><h2>Activity log</h2><p>Latest 300 records for your institution only.</p></div><input class="ia-module-search" id="iaActivitySearch" type="search" placeholder="Search actions, records or details…"><button class="ia-secondary-btn" type="button" id="iaActivityExport"><i class="fa-solid fa-download"></i> Export CSV</button></div><div class="ia-table-scroll"><table><thead><tr><th>Date & time</th><th>Action</th><th>Record type</th><th>Record ID</th><th>Actor user ID</th><th>Details</th></tr></thead><tbody id="iaActivityRows"><tr><td colspan="6" class="ia-empty">Open this page to load activity.</td></tr></tbody></table></div></div></section>
-<section class="ia-view" id="view-settings">
- <div class="ia-page-heading"><div><span class="ia-eyebrow">TENANT CONFIGURATION</span><h1>Institution settings</h1><p>Institution information is organised by section. Platform-controlled details are read-only here.</p></div></div>
- <div class="ia-settings-tabs" role="tablist" aria-label="Institution settings sections">
-  <button type="button" class="ia-settings-tab active" role="tab" aria-selected="true" data-settings-section="profile"><i class="fa-solid fa-building"></i> Institution profile</button>
-  <button type="button" class="ia-settings-tab" role="tab" aria-selected="false" data-settings-section="contact"><i class="fa-solid fa-address-book"></i> Contacts & administration</button>
-  <button type="button" class="ia-settings-tab" role="tab" aria-selected="false" data-settings-section="branding"><i class="fa-solid fa-palette"></i> Branding</button>
-  <button type="button" class="ia-settings-tab" role="tab" aria-selected="false" data-settings-section="access"><i class="fa-solid fa-shield-halved"></i> Module access</button>
- </div>
- <div class="ia-settings-section active" id="iaSettingsSection-profile" role="tabpanel">
-  <div class="ia-settings-grid">
-   <article class="ia-panel ia-settings-card"><div class="ia-panel-head"><div><h2>Institution identity</h2><p>Official institution details registered with Campus Nexus.</p></div><span class="ia-settings-card-icon"><i class="fa-solid fa-building-columns"></i></span></div>
-    <div class="ia-settings-identity"><div class="ia-profile-logo large" id="iaSettingsLogo">CN</div><div><h3 id="iaSettingsName">—</h3><p id="iaSettingsType">—</p></div></div>
-    <div class="ia-settings-data-grid">
-     <div class="ia-settings-data"><small>School code</small><b id="setCode">—</b></div>
-     <div class="ia-settings-data"><small>Institution type</small><b id="iaSettingsTypeDetail">—</b></div>
-     <div class="ia-settings-data"><small>Account status</small><b id="setStatus">—</b></div>
-     <div class="ia-settings-data"><small>Institution ID</small><b id="iaSettingsId">—</b></div>
-    </div>
-   </article>
-   <article class="ia-panel ia-settings-note"><span class="ia-settings-note-icon"><i class="fa-solid fa-circle-info"></i></span><h2>Institution profile</h2><p>This section contains the institution's identity only. Contact information, branding and module access are maintained in their own sections.</p><small>Changes to official identity details are managed by the Platform Super Admin.</small></article>
-  </div>
- </div>
- <div class="ia-settings-section" id="iaSettingsSection-contact" role="tabpanel" hidden>
-  <article class="ia-panel ia-settings-card"><div class="ia-panel-head"><div><h2>Contacts & administration</h2><p>Official communication channels and administrator contact.</p></div><span class="ia-settings-card-icon"><i class="fa-solid fa-address-card"></i></span></div>
-   <div class="ia-settings-data-grid">
-    <div class="ia-settings-data"><small>Administrator email</small><b id="setAdminEmail">—</b></div>
-    <div class="ia-settings-data"><small>Public contact email</small><b id="setContactEmail">—</b></div>
-    <div class="ia-settings-data"><small>Institution phone</small><b id="setPhone">—</b></div>
-    <div class="ia-settings-data"><small>Website</small><b id="setWebsite">—</b></div>
-   </div>
-  </article>
- </div>
- <div class="ia-settings-section" id="iaSettingsSection-branding" role="tabpanel" hidden>
-  <article class="ia-panel ia-settings-card"><div class="ia-panel-head"><div><h2>Institution branding</h2><p>Logo and official colours applied to institution-facing experiences.</p></div><span class="ia-settings-card-icon"><i class="fa-solid fa-swatchbook"></i></span></div>
-   <div class="ia-settings-brand-preview"><div class="ia-profile-logo large" id="iaSettingsBrandLogo">CN</div><div><b id="iaBrandPreviewName">—</b><small>Institution brand preview</small></div></div>
-   <div class="ia-settings-data-grid">
-    <div class="ia-settings-data"><small>Primary colour</small><div class="ia-colour-value"><i id="iaPrimarySwatch"></i><b id="iaPrimaryColour">—</b></div></div>
-    <div class="ia-settings-data"><small>Secondary colour</small><div class="ia-colour-value"><i id="iaSecondarySwatch"></i><b id="iaSecondaryColour">—</b></div></div>
-    <div class="ia-settings-data ia-settings-wide"><small>Logo URL</small><b id="iaLogoUrl">—</b></div>
-   </div>
-   <p class="ia-settings-footnote">Branding is displayed here for reference. Official brand changes are controlled by the Platform Super Admin.</p>
-  </article>
- </div>
- <div class="ia-settings-section" id="iaSettingsSection-access" role="tabpanel" hidden>
-  <article class="ia-panel ia-settings-card"><div class="ia-panel-head"><div><h2>Enabled modules</h2><p>Only modules enabled for this institution are available in the workspace.</p></div><span class="ia-settings-card-icon"><i class="fa-solid fa-shield-halved"></i></span></div>
-   <div class="ia-settings-access-summary"><strong id="iaSettingsModuleCount">0</strong><span>modules enabled for this institution</span></div>
-   <div id="iaModuleList" class="ia-module-list"></div>
-  </article>
- </div>
-</section>
-<section class="ia-view" id="view-admissions"><div class="ia-page-heading"><div><span class="ia-eyebrow">STUDENT RECRUITMENT</span><h1>Admissions</h1><p>Manage applicant records, programme choices and admission decisions.</p></div></div><div class="ia-panel ia-table-panel"><div class="ia-table-scroll"><table><thead><tr><th>Applicant</th><th>Application no.</th><th>Email</th><th>Phone</th><th>Programme</th><th>Intake</th><th>Status</th></tr></thead><tbody id="iaAdmissions"><tr><td colspan="7" class="ia-empty">Loading…</td></tr></tbody></table></div></div></section>
-<section class="ia-view" id="view-hr"><div class="ia-page-heading"><div><span class="ia-eyebrow">PEOPLE OPERATIONS</span><h1>Human resources</h1><p>Maintain institution staff directory, appointments and contract dates.</p></div></div><div class="ia-panel ia-table-panel"><div class="ia-table-scroll"><table><thead><tr><th>Staff member</th><th>Email</th><th>Department</th><th>Designation</th><th>Employment</th><th>Contract end</th><th>Status</th></tr></thead><tbody id="iaHR"><tr><td colspan="7" class="ia-empty">Loading…</td></tr></tbody></table></div></div></section>
-<section class="ia-view" id="view-timetable"><div class="ia-page-heading"><div><span class="ia-eyebrow">ACADEMIC SCHEDULING</span><h1>Timetabling</h1><p>Create and maintain institution class and academic session schedules.</p></div></div><div class="ia-panel ia-table-panel"><div class="ia-table-scroll"><table><thead><tr><th>Session</th><th>Date</th><th>Time</th><th>Programme / block</th><th>Course</th><th>Lecturer</th><th>Venue</th></tr></thead><tbody id="iaTimetable"><tr><td colspan="7" class="ia-empty">Loading…</td></tr></tbody></table></div></div></section>
-<section class="ia-view" id="view-placements"><div class="ia-page-heading"><div><span class="ia-eyebrow">CLINICAL EDUCATION</span><h1>Clinical placements</h1><p>Allocate students to facilities, departments and supervised clinical rotations.</p></div></div><div class="ia-panel ia-table-panel"><div class="ia-table-scroll"><table><thead><tr><th>Student</th><th>Facility</th><th>Department</th><th>Supervisor</th><th>Dates</th><th>Hours</th><th>Status</th></tr></thead><tbody id="iaPlacements"><tr><td colspan="7" class="ia-empty">Loading…</td></tr></tbody></table></div></div></section>
-<section class="ia-view" id="view-research"><div class="ia-page-heading"><div><span class="ia-eyebrow">RESEARCH & SCHOLARSHIP</span><h1>Research management</h1><p>Track student research projects, supervisors, stages and feedback.</p></div></div><div class="ia-panel ia-table-panel"><div class="ia-table-scroll"><table><thead><tr><th>Project</th><th>Student</th><th>Programme</th><th>Supervisor</th><th>Stage</th><th>Due date</th><th>Status</th></tr></thead><tbody id="iaResearch"><tr><td colspan="7" class="ia-empty">Loading…</td></tr></tbody></table></div></div></section>
-<section class="ia-view" id="view-welfare"><div class="ia-page-heading"><div><span class="ia-eyebrow">STUDENT SUPPORT</span><h1>Student welfare</h1><p>Record and follow up confidential student support and welfare cases.</p></div></div><div class="ia-panel ia-table-panel"><div class="ia-table-scroll"><table><thead><tr><th>Student</th><th>Category</th><th>Priority</th><th>Case summary</th><th>Assigned to</th><th>Status</th></tr></thead><tbody id="iaWelfare"><tr><td colspan="6" class="ia-empty">Loading…</td></tr></tbody></table></div></div></section>
-<section class="ia-view" id="view-proctoring"><div class="ia-page-heading"><div><span class="ia-eyebrow">CAMPUS NEXUS · INSTITUTION WORKSPACE</span><h1>Exam proctoring</h1><p>Monitor examination integrity events, risk flags and follow-up actions.</p></div><button class="ia-secondary-btn" data-workspace-refresh="proctoring"><i class="fa-solid fa-rotate"></i> Refresh</button></div><div class="ia-stat-grid ia-report-grid"><article class="ia-stat-card"><small>Total records</small><strong id="ws-proctoring-total">—</strong></article><article class="ia-stat-card"><small>Active / open</small><strong id="ws-proctoring-active">—</strong></article><article class="ia-stat-card"><small>Completed</small><strong id="ws-proctoring-done">—</strong></article><article class="ia-stat-card"><small>Needs attention</small><strong id="ws-proctoring-attention">—</strong></article></div><div class="ia-panel ia-table-panel"><div class="ia-panel-head"><div><h2>Exam proctoring register</h2><p>Records are restricted to this institution and this enabled module.</p></div><input class="ia-module-search" id="ws-proctoring-search" type="search" placeholder="Search records…"><button class="ia-primary-btn" data-workspace-create="proctoring"><i class="fa-solid fa-plus"></i> Add record</button></div><div class="ia-table-scroll"><table><thead><tr><th>Title / name</th><th>Reference</th><th>Category</th><th>Assigned to</th><th>Start date</th><th>Due date</th><th>Status</th><th>Actions</th></tr></thead><tbody id="ws-proctoring-rows"><tr><td colspan="8" class="ia-empty">Loading records…</td></tr></tbody></table></div></div></section>
-<section class="ia-view" id="view-transcripts-certificates"><div class="ia-page-heading"><div><span class="ia-eyebrow">CAMPUS NEXUS · INSTITUTION WORKSPACE</span><h1>Transcripts & certificates</h1><p>Track transcript requests, certificate issuance and verification records.</p></div><button class="ia-secondary-btn" data-workspace-refresh="transcripts-certificates"><i class="fa-solid fa-rotate"></i> Refresh</button></div><div class="ia-stat-grid ia-report-grid"><article class="ia-stat-card"><small>Total records</small><strong id="ws-transcripts-certificates-total">—</strong></article><article class="ia-stat-card"><small>Active / open</small><strong id="ws-transcripts-certificates-active">—</strong></article><article class="ia-stat-card"><small>Completed</small><strong id="ws-transcripts-certificates-done">—</strong></article><article class="ia-stat-card"><small>Needs attention</small><strong id="ws-transcripts-certificates-attention">—</strong></article></div><div class="ia-panel ia-table-panel"><div class="ia-panel-head"><div><h2>Transcripts & certificates register</h2><p>Records are restricted to this institution and this enabled module.</p></div><input class="ia-module-search" id="ws-transcripts-certificates-search" type="search" placeholder="Search records…"><button class="ia-primary-btn" data-workspace-create="transcripts_certificates"><i class="fa-solid fa-plus"></i> Add record</button></div><div class="ia-table-scroll"><table><thead><tr><th>Title / name</th><th>Reference</th><th>Category</th><th>Assigned to</th><th>Start date</th><th>Due date</th><th>Status</th><th>Actions</th></tr></thead><tbody id="ws-transcripts-certificates-rows"><tr><td colspan="8" class="ia-empty">Loading records…</td></tr></tbody></table></div></div></section>
-<section class="ia-view" id="view-quality-assurance"><div class="ia-page-heading"><div><span class="ia-eyebrow">CAMPUS NEXUS · INSTITUTION WORKSPACE</span><h1>Quality assurance</h1><p>Maintain audit findings, compliance reviews and corrective actions.</p></div><button class="ia-secondary-btn" data-workspace-refresh="quality-assurance"><i class="fa-solid fa-rotate"></i> Refresh</button></div><div class="ia-stat-grid ia-report-grid"><article class="ia-stat-card"><small>Total records</small><strong id="ws-quality-assurance-total">—</strong></article><article class="ia-stat-card"><small>Active / open</small><strong id="ws-quality-assurance-active">—</strong></article><article class="ia-stat-card"><small>Completed</small><strong id="ws-quality-assurance-done">—</strong></article><article class="ia-stat-card"><small>Needs attention</small><strong id="ws-quality-assurance-attention">—</strong></article></div><div class="ia-panel ia-table-panel"><div class="ia-panel-head"><div><h2>Quality assurance register</h2><p>Records are restricted to this institution and this enabled module.</p></div><input class="ia-module-search" id="ws-quality-assurance-search" type="search" placeholder="Search records…"><button class="ia-primary-btn" data-workspace-create="quality_assurance"><i class="fa-solid fa-plus"></i> Add record</button></div><div class="ia-table-scroll"><table><thead><tr><th>Title / name</th><th>Reference</th><th>Category</th><th>Assigned to</th><th>Start date</th><th>Due date</th><th>Status</th><th>Actions</th></tr></thead><tbody id="ws-quality-assurance-rows"><tr><td colspan="8" class="ia-empty">Loading records…</td></tr></tbody></table></div></div></section>
-<section class="ia-view" id="view-library"><div class="ia-page-heading"><div><span class="ia-eyebrow">CAMPUS NEXUS · INSTITUTION WORKSPACE</span><h1>Library management</h1><p>Manage catalogue records, circulation activity and digital resources.</p></div><button class="ia-secondary-btn" data-workspace-refresh="library"><i class="fa-solid fa-rotate"></i> Refresh</button></div><div class="ia-stat-grid ia-report-grid"><article class="ia-stat-card"><small>Total records</small><strong id="ws-library-total">—</strong></article><article class="ia-stat-card"><small>Active / open</small><strong id="ws-library-active">—</strong></article><article class="ia-stat-card"><small>Completed</small><strong id="ws-library-done">—</strong></article><article class="ia-stat-card"><small>Needs attention</small><strong id="ws-library-attention">—</strong></article></div><div class="ia-panel ia-table-panel"><div class="ia-panel-head"><div><h2>Library management register</h2><p>Records are restricted to this institution and this enabled module.</p></div><input class="ia-module-search" id="ws-library-search" type="search" placeholder="Search records…"><button class="ia-primary-btn" data-workspace-create="library"><i class="fa-solid fa-plus"></i> Add record</button></div><div class="ia-table-scroll"><table><thead><tr><th>Title / name</th><th>Reference</th><th>Category</th><th>Assigned to</th><th>Start date</th><th>Due date</th><th>Status</th><th>Actions</th></tr></thead><tbody id="ws-library-rows"><tr><td colspan="8" class="ia-empty">Loading records…</td></tr></tbody></table></div></div></section>
-<section class="ia-view" id="view-hostel-management"><div class="ia-page-heading"><div><span class="ia-eyebrow">CAMPUS NEXUS · INSTITUTION WORKSPACE</span><h1>Hostels & accommodation</h1><p>Manage rooms, occupancy, allocations and accommodation requests.</p></div><button class="ia-secondary-btn" data-workspace-refresh="hostel-management"><i class="fa-solid fa-rotate"></i> Refresh</button></div><div class="ia-stat-grid ia-report-grid"><article class="ia-stat-card"><small>Total records</small><strong id="ws-hostel-management-total">—</strong></article><article class="ia-stat-card"><small>Active / open</small><strong id="ws-hostel-management-active">—</strong></article><article class="ia-stat-card"><small>Completed</small><strong id="ws-hostel-management-done">—</strong></article><article class="ia-stat-card"><small>Needs attention</small><strong id="ws-hostel-management-attention">—</strong></article></div><div class="ia-panel ia-table-panel"><div class="ia-panel-head"><div><h2>Hostels & accommodation register</h2><p>Records are restricted to this institution and this enabled module.</p></div><input class="ia-module-search" id="ws-hostel-management-search" type="search" placeholder="Search records…"><button class="ia-primary-btn" data-workspace-create="hostel_management"><i class="fa-solid fa-plus"></i> Add record</button></div><div class="ia-table-scroll"><table><thead><tr><th>Title / name</th><th>Reference</th><th>Category</th><th>Assigned to</th><th>Start date</th><th>Due date</th><th>Status</th><th>Actions</th></tr></thead><tbody id="ws-hostel-management-rows"><tr><td colspan="8" class="ia-empty">Loading records…</td></tr></tbody></table></div></div></section>
-<section class="ia-view" id="view-transport-management"><div class="ia-page-heading"><div><span class="ia-eyebrow">CAMPUS NEXUS · INSTITUTION WORKSPACE</span><h1>Transport management</h1><p>Manage vehicles, routes, schedules and transport requests.</p></div><button class="ia-secondary-btn" data-workspace-refresh="transport-management"><i class="fa-solid fa-rotate"></i> Refresh</button></div><div class="ia-stat-grid ia-report-grid"><article class="ia-stat-card"><small>Total records</small><strong id="ws-transport-management-total">—</strong></article><article class="ia-stat-card"><small>Active / open</small><strong id="ws-transport-management-active">—</strong></article><article class="ia-stat-card"><small>Completed</small><strong id="ws-transport-management-done">—</strong></article><article class="ia-stat-card"><small>Needs attention</small><strong id="ws-transport-management-attention">—</strong></article></div><div class="ia-panel ia-table-panel"><div class="ia-panel-head"><div><h2>Transport management register</h2><p>Records are restricted to this institution and this enabled module.</p></div><input class="ia-module-search" id="ws-transport-management-search" type="search" placeholder="Search records…"><button class="ia-primary-btn" data-workspace-create="transport_management"><i class="fa-solid fa-plus"></i> Add record</button></div><div class="ia-table-scroll"><table><thead><tr><th>Title / name</th><th>Reference</th><th>Category</th><th>Assigned to</th><th>Start date</th><th>Due date</th><th>Status</th><th>Actions</th></tr></thead><tbody id="ws-transport-management-rows"><tr><td colspan="8" class="ia-empty">Loading records…</td></tr></tbody></table></div></div></section>
-<section class="ia-view" id="view-career-services"><div class="ia-page-heading"><div><span class="ia-eyebrow">CAMPUS NEXUS · INSTITUTION WORKSPACE</span><h1>Career services & alumni</h1><p>Track placements, employer engagement and alumni follow-up.</p></div><button class="ia-secondary-btn" data-workspace-refresh="career-services"><i class="fa-solid fa-rotate"></i> Refresh</button></div><div class="ia-stat-grid ia-report-grid"><article class="ia-stat-card"><small>Total records</small><strong id="ws-career-services-total">—</strong></article><article class="ia-stat-card"><small>Active / open</small><strong id="ws-career-services-active">—</strong></article><article class="ia-stat-card"><small>Completed</small><strong id="ws-career-services-done">—</strong></article><article class="ia-stat-card"><small>Needs attention</small><strong id="ws-career-services-attention">—</strong></article></div><div class="ia-panel ia-table-panel"><div class="ia-panel-head"><div><h2>Career services & alumni register</h2><p>Records are restricted to this institution and this enabled module.</p></div><input class="ia-module-search" id="ws-career-services-search" type="search" placeholder="Search records…"><button class="ia-primary-btn" data-workspace-create="career_services"><i class="fa-solid fa-plus"></i> Add record</button></div><div class="ia-table-scroll"><table><thead><tr><th>Title / name</th><th>Reference</th><th>Category</th><th>Assigned to</th><th>Start date</th><th>Due date</th><th>Status</th><th>Actions</th></tr></thead><tbody id="ws-career-services-rows"><tr><td colspan="8" class="ia-empty">Loading records…</td></tr></tbody></table></div></div></section>
-<section class="ia-view" id="view-events"><div class="ia-page-heading"><div><span class="ia-eyebrow">CAMPUS NEXUS · INSTITUTION WORKSPACE</span><h1>Events & calendar</h1><p>Plan institutional events, academic dates and participation.</p></div><button class="ia-secondary-btn" data-workspace-refresh="events"><i class="fa-solid fa-rotate"></i> Refresh</button></div><div class="ia-stat-grid ia-report-grid"><article class="ia-stat-card"><small>Total records</small><strong id="ws-events-total">—</strong></article><article class="ia-stat-card"><small>Active / open</small><strong id="ws-events-active">—</strong></article><article class="ia-stat-card"><small>Completed</small><strong id="ws-events-done">—</strong></article><article class="ia-stat-card"><small>Needs attention</small><strong id="ws-events-attention">—</strong></article></div><div class="ia-panel ia-table-panel"><div class="ia-panel-head"><div><h2>Events & calendar register</h2><p>Records are restricted to this institution and this enabled module.</p></div><input class="ia-module-search" id="ws-events-search" type="search" placeholder="Search records…"><button class="ia-primary-btn" data-workspace-create="events"><i class="fa-solid fa-plus"></i> Add record</button></div><div class="ia-table-scroll"><table><thead><tr><th>Title / name</th><th>Reference</th><th>Category</th><th>Assigned to</th><th>Start date</th><th>Due date</th><th>Status</th><th>Actions</th></tr></thead><tbody id="ws-events-rows"><tr><td colspan="8" class="ia-empty">Loading records…</td></tr></tbody></table></div></div></section>
-<section class="ia-view" id="view-inventory"><div class="ia-page-heading"><div><span class="ia-eyebrow">CAMPUS NEXUS · INSTITUTION WORKSPACE</span><h1>Inventory & procurement</h1><p>Track stock, requisitions, suppliers and procurement status.</p></div><button class="ia-secondary-btn" data-workspace-refresh="inventory"><i class="fa-solid fa-rotate"></i> Refresh</button></div><div class="ia-stat-grid ia-report-grid"><article class="ia-stat-card"><small>Total records</small><strong id="ws-inventory-total">—</strong></article><article class="ia-stat-card"><small>Active / open</small><strong id="ws-inventory-active">—</strong></article><article class="ia-stat-card"><small>Completed</small><strong id="ws-inventory-done">—</strong></article><article class="ia-stat-card"><small>Needs attention</small><strong id="ws-inventory-attention">—</strong></article></div><div class="ia-panel ia-table-panel"><div class="ia-panel-head"><div><h2>Inventory & procurement register</h2><p>Records are restricted to this institution and this enabled module.</p></div><input class="ia-module-search" id="ws-inventory-search" type="search" placeholder="Search records…"><button class="ia-primary-btn" data-workspace-create="inventory"><i class="fa-solid fa-plus"></i> Add record</button></div><div class="ia-table-scroll"><table><thead><tr><th>Title / name</th><th>Reference</th><th>Category</th><th>Assigned to</th><th>Start date</th><th>Due date</th><th>Status</th><th>Actions</th></tr></thead><tbody id="ws-inventory-rows"><tr><td colspan="8" class="ia-empty">Loading records…</td></tr></tbody></table></div></div></section>
-<section class="ia-view" id="view-asset-management"><div class="ia-page-heading"><div><span class="ia-eyebrow">CAMPUS NEXUS · INSTITUTION WORKSPACE</span><h1>Asset management</h1><p>Maintain asset registers, locations and maintenance history.</p></div><button class="ia-secondary-btn" data-workspace-refresh="asset-management"><i class="fa-solid fa-rotate"></i> Refresh</button></div><div class="ia-stat-grid ia-report-grid"><article class="ia-stat-card"><small>Total records</small><strong id="ws-asset-management-total">—</strong></article><article class="ia-stat-card"><small>Active / open</small><strong id="ws-asset-management-active">—</strong></article><article class="ia-stat-card"><small>Completed</small><strong id="ws-asset-management-done">—</strong></article><article class="ia-stat-card"><small>Needs attention</small><strong id="ws-asset-management-attention">—</strong></article></div><div class="ia-panel ia-table-panel"><div class="ia-panel-head"><div><h2>Asset management register</h2><p>Records are restricted to this institution and this enabled module.</p></div><input class="ia-module-search" id="ws-asset-management-search" type="search" placeholder="Search records…"><button class="ia-primary-btn" data-workspace-create="asset_management"><i class="fa-solid fa-plus"></i> Add record</button></div><div class="ia-table-scroll"><table><thead><tr><th>Title / name</th><th>Reference</th><th>Category</th><th>Assigned to</th><th>Start date</th><th>Due date</th><th>Status</th><th>Actions</th></tr></thead><tbody id="ws-asset-management-rows"><tr><td colspan="8" class="ia-empty">Loading records…</td></tr></tbody></table></div></div></section>
-<section class="ia-view" id="view-document-management"><div class="ia-page-heading"><div><span class="ia-eyebrow">CAMPUS NEXUS · INSTITUTION WORKSPACE</span><h1>Document management</h1><p>Track institutional records, approvals and retention.</p></div><button class="ia-secondary-btn" data-workspace-refresh="document-management"><i class="fa-solid fa-rotate"></i> Refresh</button></div><div class="ia-stat-grid ia-report-grid"><article class="ia-stat-card"><small>Total records</small><strong id="ws-document-management-total">—</strong></article><article class="ia-stat-card"><small>Active / open</small><strong id="ws-document-management-active">—</strong></article><article class="ia-stat-card"><small>Completed</small><strong id="ws-document-management-done">—</strong></article><article class="ia-stat-card"><small>Needs attention</small><strong id="ws-document-management-attention">—</strong></article></div><div class="ia-panel ia-table-panel"><div class="ia-panel-head"><div><h2>Document management register</h2><p>Records are restricted to this institution and this enabled module.</p></div><input class="ia-module-search" id="ws-document-management-search" type="search" placeholder="Search records…"><button class="ia-primary-btn" data-workspace-create="document_management"><i class="fa-solid fa-plus"></i> Add record</button></div><div class="ia-table-scroll"><table><thead><tr><th>Title / name</th><th>Reference</th><th>Category</th><th>Assigned to</th><th>Start date</th><th>Due date</th><th>Status</th><th>Actions</th></tr></thead><tbody id="ws-document-management-rows"><tr><td colspan="8" class="ia-empty">Loading records…</td></tr></tbody></table></div></div></section>
-<section class="ia-view" id="view-communication"><div class="ia-page-heading"><div><span class="ia-eyebrow">CAMPUS NEXUS · INSTITUTION WORKSPACE</span><h1>Communications</h1><p>Manage announcements, communication campaigns and delivery status.</p></div><button class="ia-secondary-btn" data-workspace-refresh="communication"><i class="fa-solid fa-rotate"></i> Refresh</button></div><div class="ia-stat-grid ia-report-grid"><article class="ia-stat-card"><small>Total records</small><strong id="ws-communication-total">—</strong></article><article class="ia-stat-card"><small>Active / open</small><strong id="ws-communication-active">—</strong></article><article class="ia-stat-card"><small>Completed</small><strong id="ws-communication-done">—</strong></article><article class="ia-stat-card"><small>Needs attention</small><strong id="ws-communication-attention">—</strong></article></div><div class="ia-panel ia-table-panel"><div class="ia-panel-head"><div><h2>Communications register</h2><p>Records are restricted to this institution and this enabled module.</p></div><input class="ia-module-search" id="ws-communication-search" type="search" placeholder="Search records…"><button class="ia-primary-btn" data-workspace-create="communication"><i class="fa-solid fa-plus"></i> Add record</button></div><div class="ia-table-scroll"><table><thead><tr><th>Title / name</th><th>Reference</th><th>Category</th><th>Assigned to</th><th>Start date</th><th>Due date</th><th>Status</th><th>Actions</th></tr></thead><tbody id="ws-communication-rows"><tr><td colspan="8" class="ia-empty">Loading records…</td></tr></tbody></table></div></div></section>
-<section class="ia-view" id="view-helpdesk"><div class="ia-page-heading"><div><span class="ia-eyebrow">CAMPUS NEXUS · INSTITUTION WORKSPACE</span><h1>Helpdesk & support</h1><p>Track service requests, incidents, assignments and resolution.</p></div><button class="ia-secondary-btn" data-workspace-refresh="helpdesk"><i class="fa-solid fa-rotate"></i> Refresh</button></div><div class="ia-stat-grid ia-report-grid"><article class="ia-stat-card"><small>Total records</small><strong id="ws-helpdesk-total">—</strong></article><article class="ia-stat-card"><small>Active / open</small><strong id="ws-helpdesk-active">—</strong></article><article class="ia-stat-card"><small>Completed</small><strong id="ws-helpdesk-done">—</strong></article><article class="ia-stat-card"><small>Needs attention</small><strong id="ws-helpdesk-attention">—</strong></article></div><div class="ia-panel ia-table-panel"><div class="ia-panel-head"><div><h2>Helpdesk & support register</h2><p>Records are restricted to this institution and this enabled module.</p></div><input class="ia-module-search" id="ws-helpdesk-search" type="search" placeholder="Search records…"><button class="ia-primary-btn" data-workspace-create="helpdesk"><i class="fa-solid fa-plus"></i> Add record</button></div><div class="ia-table-scroll"><table><thead><tr><th>Title / name</th><th>Reference</th><th>Category</th><th>Assigned to</th><th>Start date</th><th>Due date</th><th>Status</th><th>Actions</th></tr></thead><tbody id="ws-helpdesk-rows"><tr><td colspan="8" class="ia-empty">Loading records…</td></tr></tbody></table></div></div></section>
-<footer class="ia-footer">Campus Nexus · Secure multi-institution administration</footer>
-</main></div><dialog class="ia-account-profile-dialog" id="iaMyProfileDialog" aria-labelledby="iaMyProfileTitle">
- <div class="ia-account-profile-head"><div><span>ACCOUNT INFORMATION</span><h2 id="iaMyProfileTitle">My Profile</h2></div><button type="button" id="iaCloseMyProfile" aria-label="Close profile"><i class="fa-solid fa-xmark"></i></button></div>
- <div class="ia-account-profile-body">
-  <div class="ia-account-profile-avatar" id="iaMyProfileAvatar">IA</div>
-  <h3 id="iaMyProfileName">Administrator</h3><p id="iaMyProfileEmail">—</p>
-  <div class="ia-account-profile-details">
-   <div><small>Account role</small><b id="iaMyProfileRole">Institution administrator</b></div>
-   <div><small>Account status</small><b id="iaMyProfileStatus">—</b></div>
-   <div><small>Institution</small><b id="iaMyProfileInstitution">—</b></div>
-  </div>
- </div>
-</dialog></div>
-<div class="ia-mobile-scrim" id="iaScrim"></div>
-
-</body></html><section id="view-attendance" class="tab-content ia-view">
+<section id="view-attendance" class="tab-content ia-view">
     <div style="background: linear-gradient(135deg, #0A3D62, #1a5a7a); border-radius: 16px; padding: 20px 25px; margin-bottom: 20px;">
         <h2 style="color: white; margin: 0; display: flex; align-items: center; gap: 12px;">
             <i class="fas fa-clipboard-check" style="color: #FDB913;"></i> Daily Attendance & Geo Check-in
@@ -970,7 +1211,10 @@
             </table>
         </div>
     </div>
-</section><section id="view-reports" class="tab-content ia-view">
+<div class="ia-page-actions" style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0"><button id="iaAttendanceRefresh" type="button" class="ia-secondary-btn">Refresh attendance</button><button id="iaAttendanceExport" type="button" class="ia-primary-btn">Export CSV</button><button id="iaAttendancePrint" type="button" class="ia-secondary-btn">Print</button><button id="iaAttendanceReset" type="button" class="ia-secondary-btn">Reset filters</button></div><div hidden><span id="iaAttendanceNotice"></span><span id="iaAttendanceVerified"></span><span id="iaAttendancePending"></span></div>
+</section>
+<section class="ia-view" id="view-learning"><div class="ia-page-heading"><div><span class="ia-eyebrow">DIGITAL LEARNING</span><h1>Learning management</h1><p>Learning services enabled for your institution.</p></div></div><div class="ia-panel ia-table-panel"><div class="ia-panel-head"><div><h2>Institution learning resources</h2><p>Approved learning resources uploaded for this institution</p></div></div><div class="ia-table-scroll"><table><thead><tr><th>Resource</th><th>Unit</th><th>Programme</th><th>Category</th><th>Approval</th><th>File</th></tr></thead><tbody id="iaResources"><tr><td colspan="6" class="ia-empty">Loading resources…</td></tr></tbody></table></div></div></section>
+<section id="view-reports" class="tab-content ia-view">
     <!-- ============================================ -->
     <!-- HEADER - From Your Existing                  -->
     <!-- ============================================ -->
@@ -1797,374 +2041,91 @@
         </div>
 
     </div><!-- End Dynamic Content -->
-</section><section id="view-marks-approval" class="tab-content ia-view">
-    <div style="background: linear-gradient(135deg, #f59e0b, #d97706); border-radius: 16px; padding: 25px 30px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; box-shadow: 0 4px 20px rgba(245,158,11,0.3);">
-        <div>
-            <h2 style="color: white; margin: 0; font-weight: 700;">
-                <i class="fas fa-check-double"></i> Marks Pending Approval
-            </h2>
-            <p style="color: rgba(255,255,255,0.9); margin: 4px 0 0 0; font-size: 14px;">
-                <i class="fas fa-clock"></i> Review and approve marks submitted by lecturers
-            </p>
-        </div>
-        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-            <button onclick="loadMarksApprovals()" class="btn-action" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">
-                <i class="fas fa-sync-alt"></i> Refresh
-            </button>
-            <button onclick="approveAllPendingMarks()" class="btn-action" style="background: #10b981; color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; border: none;">
-                <i class="fas fa-check-double"></i> Approve All
-            </button>
-            <button onclick="rejectAllPendingMarks()" class="btn-action" style="background: #dc2626; color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; border: none;">
-                <i class="fas fa-times"></i> Reject All
-            </button>
-        </div>
-    </div>
-
-    <!-- Stats Cards -->
-    <div class="cards" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 25px;">
-        <div class="card" style="border-top: 4px solid #f59e0b;">
-            <h3 style="color: #d97706; font-size: 12px;">⏳ Pending Marks</h3>
-            <p class="data" id="pendingMarksCount" style="font-size: 28px; font-weight: 700; color: #d97706;">0</p>
-            <p class="minor-data" style="font-size: 11px;">Awaiting your review</p>
-        </div>
-        <div class="card" style="border-top: 4px solid #10b981;">
-            <h3 style="color: #059669; font-size: 12px;">✅ Approved Today</h3>
-            <p class="data" id="approvedMarksToday" style="font-size: 28px; font-weight: 700; color: #059669;">0</p>
-            <p class="minor-data" style="font-size: 11px;">Marks approved</p>
-        </div>
-        <div class="card" style="border-top: 4px solid #ef4444;">
-            <h3 style="color: #dc2626; font-size: 12px;">❌ Rejected</h3>
-            <p class="data" id="rejectedMarksCount" style="font-size: 28px; font-weight: 700; color: #dc2626;">0</p>
-            <p class="minor-data" style="font-size: 11px;">This month</p>
-        </div>
-        <div class="card" style="border-top: 4px solid #4C1D95;">
-            <h3 style="color: #4C1D95; font-size: 12px;">📚 Total Subjects</h3>
-            <p class="data" id="pendingSubjectsCount" style="font-size: 28px; font-weight: 700; color: #4C1D95;">0</p>
-            <p class="minor-data" style="font-size: 11px;">With pending marks</p>
-        </div>
-    </div>
-
-    <!-- Filters -->
-    <div style="background: white; border-radius: 12px; padding: 16px 20px; margin-bottom: 20px; border: 1px solid #e5e7eb; display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
-        <input type="text" id="marksApprovalSearch" placeholder="🔍 Search student or subject..." onkeyup="filterMarksApprovals()" style="flex: 1; min-width: 150px; padding: 8px 14px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 13px;">
-        <select id="marksApprovalSubjectFilter" onchange="filterMarksApprovals()" style="padding: 8px 14px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 13px;">
-            <option value="all">All Subjects</option>
-        </select>
-        <select id="marksApprovalBlockFilter" onchange="filterMarksApprovals()" style="padding: 8px 14px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 13px;">
-            <option value="all">All Blocks</option>
-        </select>
-        <span style="font-size: 13px; color: #64748b;">
-            <i class="fas fa-info-circle"></i> <span id="marksFilterCount">0</span> pending
-        </span>
-    </div>
-
-    <!-- Marks Table -->
-    <div style="background: white; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); border: 1px solid #e5e7eb; overflow-x: auto;">
-        <div id="marksApprovalTableContainer">
-            <div style="text-align: center; padding: 40px; color: #94a3b8;">
-                <div class="loading-spinner" style="display: inline-block; width: 30px; height: 30px; border: 3px solid #e5e7eb; border-top-color: #4C1D95; border-radius: 50%; animation: spin 1s linear infinite;"></div>
-                <p style="margin-top: 10px;">Loading pending marks...</p>
-            </div>
-        </div>
-    </div>
-</section><section id="view-marks-entry" class="tab-content ia-view">
-    <!-- Header -->
-    <div style="background: linear-gradient(135deg, #059669, #10b981); border-radius: 16px; padding: 25px 30px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; box-shadow: 0 4px 20px rgba(5,150,105,0.3);">
-        <div>
-            <h2 style="color: white; margin: 0; font-weight: 700;">
-                <i class="fas fa-pen-alt"></i> Marks Entry System
-            </h2>
-            <p style="color: rgba(255,255,255,0.9); margin: 4px 0 0 0; font-size: 14px;">
-                <i class="fas fa-graduation-cap"></i> KRCHN Nursing &nbsp;|&nbsp; <i class="fas fa-tools"></i> TVET Programs
-            </p>
-        </div>
-        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-            <button onclick="publishCurrentUnitMarks()" class="btn-action" style="background: #FDB913; color: #0A3D62; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; border: none; box-shadow: 0 2px 8px rgba(253,185,19,0.3);">
-                <i class="fas fa-share-alt"></i> 📤 Publish All
-            </button>
-            <button onclick="openStudentPublishModal()" class="btn-action" style="background: #8b5cf6; color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; border: none; box-shadow: 0 2px 8px rgba(139,92,246,0.3);">
-                <i class="fas fa-user-check"></i> 👥 Select Students
-            </button>
-            <button onclick="refreshMarksData()" class="btn-action" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">
-                <i class="fas fa-sync-alt"></i> Refresh Data
-            </button>
-            <button onclick="exportAllMarksData()" class="btn-action" style="background: white; color: #059669; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; border: none;">
-                <i class="fas fa-download"></i> Export All
-            </button>
-        </div>
-    </div>
-
-    <!-- Stats Cards -->
-    <div class="cards" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 25px;">
-        <div class="card" style="border-top: 4px solid #059669; background: white; border-radius: 8px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
-            <h3 style="color: #059669; font-size: 12px; margin: 0;">Total Students</h3>
-            <p class="data" id="me_total_students" style="font-size: 28px; font-weight: 700; color: #059669; margin: 4px 0;">0</p>
-            <p class="minor-data" style="font-size: 11px; color: #94a3b8; margin: 0;">With marks</p>
-        </div>
-        <div class="card" style="border-top: 4px solid #4C1D95; background: white; border-radius: 8px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
-            <h3 style="color: #4C1D95; font-size: 12px; margin: 0;">Total Units</h3>
-            <p class="data" id="me_total_subjects" style="font-size: 28px; font-weight: 700; color: #4C1D95; margin: 4px 0;">0</p>
-            <p class="minor-data" style="font-size: 11px; color: #94a3b8; margin: 0;">Active units</p>
-        </div>
-        <div class="card" style="border-top: 4px solid #FDB913; background: white; border-radius: 8px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
-            <h3 style="color: #d97706; font-size: 12px; margin: 0;">Pass Rate</h3>
-            <p class="data" id="me_pass_rate" style="font-size: 28px; font-weight: 700; color: #d97706; margin: 4px 0;">0%</p>
-            <p class="minor-data" style="font-size: 11px; color: #94a3b8; margin: 0;">Students passing</p>
-        </div>
-        <div class="card" style="border-top: 4px solid #8b5cf6; background: white; border-radius: 8px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
-            <h3 style="color: #6d28d9; font-size: 12px; margin: 0;">Class Average</h3>
-            <p class="data" id="me_class_avg" style="font-size: 28px; font-weight: 700; color: #6d28d9; margin: 4px 0;">0%</p>
-            <p class="minor-data" style="font-size: 11px; color: #94a3b8; margin: 0;">Overall performance</p>
-        </div>
-        <div class="card" style="border-top: 4px solid #ef4444; background: white; border-radius: 8px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
-            <h3 style="color: #dc2626; font-size: 12px; margin: 0;">At Risk</h3>
-            <p class="data" id="me_at_risk" style="font-size: 28px; font-weight: 700; color: #dc2626; margin: 4px 0;">0</p>
-            <p class="minor-data" style="font-size: 11px; color: #94a3b8; margin: 0;">Below pass mark</p>
-        </div>
-        <div class="card" style="border-top: 4px solid #10b981; background: linear-gradient(135deg, #f0fdf4, #ecfdf5); border-radius: 8px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
-            <h3 style="color: #059669; font-size: 12px; margin: 0;">📤 Published</h3>
-            <p class="data" id="me_published_count" style="font-size: 28px; font-weight: 700; color: #059669; margin: 4px 0;">0</p>
-            <p class="minor-data" style="font-size: 11px; color: #94a3b8; margin: 0;">Marks visible to students</p>
-        </div>
-    </div>
-
-    <!-- Selected Program Display -->
-    <div id="selectedProgramDisplay" style="background: linear-gradient(135deg, #f0fdf4, #ecfdf5); padding: 12px 20px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #86efac; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
-        <div style="display: flex; align-items: center; gap: 12px;">
-            <span style="font-weight: 700; color: #065f46; font-size: 14px;">
-                <i class="fas fa-check-circle"></i> Selected Program:
-            </span>
-            <span id="selectedProgramName" style="font-weight: 600; color: #1e293b; font-size: 15px;">None selected</span>
-        </div>
-        <div>
-            <span id="selectedProgramType" style="background: #dbeafe; padding: 4px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; color: #1e40af; border: 1px solid #93c5fd;">
-                <i class="fas fa-info-circle"></i> None Selected
-            </span>
-        </div>
-    </div>
-
-    <!-- Selectors -->
-    <div style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 25px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); border: 1px solid #e5e7eb;">
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px;">
-            <div>
-                <label style="font-weight: 600; font-size: 13px; color: #475569; display: block; margin-bottom: 5px;">
-                    <i class="fas fa-tag"></i> Program
-                </label>
-                <select id="me_program_select" class="form-control" onchange="loadMEBlocks(); updateSelectedProgramDisplay();" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0; background: #f8fafc; font-size: 14px;">
-                    <option value="">-- Select Program --</option>
-                    <option value="KRCHN">🎓 KRCHN Nursing</option>
-                    <optgroup label="🎯 TVET Diploma Programs">
-                        <option value="DPOTT">Diploma in Perioperative Theatre Technology</option>
-                        <option value="DCH">Diploma in Community Health</option>
-                        <option value="DHRIT">Diploma in Health Records and IT</option>
-                        <option value="DSL">Diploma in Science Lab</option>
-                        <option value="DSW">Diploma in Social Work</option>
-                        <option value="DCJS">Diploma in Criminal Justice</option>
-                        <option value="DHSS">Diploma in Health Support Services</option>
-                        <option value="DICT">Diploma in ICT</option>
-                        <option value="DME">Diploma in Medical Engineering</option>
-                    </optgroup>
-                    <optgroup label="📜 TVET Certificate Programs">
-                        <option value="CPOTT">Certificate in Perioperative Theatre Technology</option>
-                        <option value="CCH">Certificate in Community Health</option>
-                        <option value="CHRIT">Certificate in Health Records and IT</option>
-                        <option value="CPC">Certificate in Patient Care</option>
-                        <option value="CSL">Certificate in Science Lab</option>
-                        <option value="CSW">Certificate in Social Work</option>
-                        <option value="CCJS">Certificate in Criminal Justice</option>
-                        <option value="CAG">Certificate in Agriculture</option>
-                        <option value="CHSS">Certificate in Health Support Services</option>
-                        <option value="CICT">Certificate in ICT</option>
-                    </optgroup>
-                    <optgroup label="🔧 TVET Artisan Programs">
-                        <option value="ACH">Artisan in Community Health</option>
-                        <option value="AAG">Artisan in Agriculture</option>
-                        <option value="ASW">Artisan in Social Work</option>
-                    </optgroup>
-                    <optgroup label="📊 Other TVET Programs">
-                        <option value="CCA">Certificate in Computer Applications</option>
-                        <option value="PTE">TVET/CDACC (PTE)</option>
-                    </optgroup>
-                </select>
-            </div>
-            <div>
-                <label style="font-weight: 600; font-size: 13px; color: #475569; display: block; margin-bottom: 5px;">
-                    <i class="fas fa-calendar"></i> Academic Year
-                </label>
-                <select id="me_year_select" class="form-control" onchange="loadMEBlocks()" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0; background: #f8fafc; font-size: 14px;">
-                    <option value="2024">2024</option>
-                    <option value="2025" selected>2025</option>
-                    <option value="2026">2026</option>
-                    <option value="2027">2027</option>
-                    <option value="2028">2028</option>
-                </select>
-            </div>
-            <div>
-                <label style="font-weight: 600; font-size: 13px; color: #475569; display: block; margin-bottom: 5px;">
-                    <i class="fas fa-layer-group"></i> Block
-                </label>
-                <select id="me_block_select" class="form-control" onchange="loadMEUnits()" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0; background: #f8fafc; font-size: 14px;">
-                    <option value="">-- Select Block --</option>
-                </select>
-            </div>
-            <div>
-                <label style="font-weight: 600; font-size: 13px; color: #475569; display: block; margin-bottom: 5px;">
-                    <i class="fas fa-book"></i> Unit
-                </label>
-                <select id="me_subject_select" class="form-control" onchange="loadMarksEntry()" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0; background: #f8fafc; font-size: 14px;">
-                    <option value="">-- Select Unit --</option>
-                </select>
-            </div>
-            <div>
-                <label style="font-weight: 600; font-size: 13px; color: #475569; display: block; margin-bottom: 5px;">
-                    <i class="fas fa-tag"></i> Assessment Type
-                    <span style="font-size: 11px; color: #6b7280; font-weight: 400; display: block;">(Auto-detected from visible columns)</span>
-                </label>
-                <select id="me_assessment_type" class="form-control" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0; background: #f3f4f6; font-size: 14px; cursor: not-allowed;" disabled>
-                    <option value="full">Full (CAT1+CAT2+Exam)</option>
-                    <option value="single_cat">Single CAT (CAT+Exam)</option>
-                    <option value="exam_only">Exam Only</option>
-                    <option value="cats_only">CAT1+CAT2 Only</option>
-                    <option value="cat_only">CAT Only</option>
-                </select>
-                <small style="color: #6b7280; font-size: 11px;">Auto-detected based on visible columns</small>
-            </div>
-        </div>
-    </div>
-
-    <!-- Grading Reference -->
-    <div style="background: white; border-radius: 12px; padding: 12px 20px; margin-bottom: 25px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
-        <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
-            <span style="font-weight: 700; color: #475569; font-size: 13px;">📊 Grading Systems:</span>
-            
-            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; background: #f0fdf4; padding: 6px 14px; border-radius: 8px; border: 1px solid #86efac;">
-                <span style="font-size: 11px; font-weight: 700; color: #065f46;">🔧 TVET</span>
-                <span style="background: #d1fae5; padding: 3px 10px; border-radius: 4px; font-weight: 700; color: #065f46; font-size: 10px;">A (80-100%) = 4.0</span>
-                <span style="background: #dbeafe; padding: 3px 10px; border-radius: 4px; font-weight: 700; color: #1e40af; font-size: 10px;">B (65-79%) = 3.0</span>
-                <span style="background: #fef3c7; padding: 3px 10px; border-radius: 4px; font-weight: 700; color: #92400e; font-size: 10px;">C (50-64%) = 2.0</span>
-                <span style="background: #fee2e2; padding: 3px 10px; border-radius: 4px; font-weight: 700; color: #991b1b; font-size: 10px;">E (0-49%) = 0.0</span>
-            </div>
-            
-            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; background: #eff6ff; padding: 6px 14px; border-radius: 8px; border: 1px solid #93c5fd;">
-                <span style="font-size: 11px; font-weight: 700; color: #1e40af;">🎓 Nursing</span>
-                <span style="background: #d1fae5; padding: 3px 10px; border-radius: 4px; font-weight: 700; color: #065f46; font-size: 10px;">A (75-100%) = 4.0</span>
-                <span style="background: #dbeafe; padding: 3px 10px; border-radius: 4px; font-weight: 700; color: #1e40af; font-size: 10px;">B (65-74%) = 3.0</span>
-                <span style="background: #fef3c7; padding: 3px 10px; border-radius: 4px; font-weight: 700; color: #92400e; font-size: 10px;">C (60-64%) = 2.0</span>
-                <span style="background: #fee2e2; padding: 3px 10px; border-radius: 4px; font-weight: 700; color: #991b1b; font-size: 10px;">D (0-59%) = 0.0</span>
-            </div>
-            
-            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; background: #fef3c7; padding: 6px 14px; border-radius: 8px; border: 1px solid #f59e0b;">
-                <span style="font-size: 10px; font-weight: 600; color: #92400e;">
-                    📐 CAT1=30 | CAT2=30 | Exam=70 (Nursing) / 100 (TVET)
-                </span>
-                <span style="font-size: 9px; color: #92400e; background: #fef3c7; padding: 2px 8px; border-radius: 4px; border: 1px solid #f59e0b;">
-                    Total: 130 (Nursing) / 160 (TVET)
-                </span>
-            </div>
-            
-            <span style="font-size: 11px; color: #059669; background: #d1fae5; padding: 4px 14px; border-radius: 12px;">
-                <i class="fas fa-magic"></i> Auto: <span id="autoAssessmentTypeLabel">Full</span>
-            </span>
-        </div>
-    </div>
-
-    <!-- Placeholder -->
-    <div id="marksEntryPlaceholder" style="text-align: center; padding: 60px 20px; background: white; border-radius: 12px; border: 1px solid #e5e7eb;">
-        <i class="fas fa-pen-alt" style="font-size: 48px; color: #94a3b8; margin-bottom: 16px; display: block;"></i>
-        <h3 style="color: #1e293b;">Select Program, Block and Unit</h3>
-        <p style="color: #94a3b8;">Choose from the dropdowns above to load marks for any program</p>
-    </div>
-
-    <!-- Dynamic Content -->
-    <div id="marksEntryDynamicContent" style="display: none;">
-        
-        <!-- Lecturer Assignment Management -->
-        <div style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 15px;">
-                <div>
-                    <h3 style="margin: 0; color: #1e293b;">
-                        <i class="fas fa-user-tie" style="color: #4C1D95;"></i> Lecturer Unit Assignments
-                    </h3>
-                    <p style="margin: 4px 0 0 0; color: #64748b; font-size: 13px;">
-                        <i class="fas fa-info-circle"></i> Assign lecturers to this unit
-                    </p>
-                </div>
-                <div style="display: flex; gap: 8px;">
-                    <button onclick="showLecturerAssignmentModal()" class="btn-action" style="background: #4C1D95; padding: 8px 20px; border: none; border-radius: 6px; color: white; cursor: pointer;">
-                        <i class="fas fa-user-plus"></i> Assign Lecturer
-                    </button>
-                    <button onclick="openStudentPublishModal()" class="btn-action" style="background: #8b5cf6; color: white; padding: 8px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
-                        <i class="fas fa-user-check"></i> Select Students
-                    </button>
-                </div>
-            </div>
-            <div id="me_lecturer_assignments" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px;">
-                <div style="color: #94a3b8; font-size: 13px; grid-column: 1 / -1; text-align: center; padding: 20px;">
-                    <i class="fas fa-info-circle"></i> Loading lecturer assignments...
-                </div>
-            </div>
-        </div>
-
-        <!-- Assignment History -->
-        <div style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 15px;">
-                <div>
-                    <h4 style="margin: 0; color: #1e293b;">
-                        <i class="fas fa-history" style="color: #4C1D95;"></i> Assignment History
-                    </h4>
-                    <p style="margin: 4px 0 0 0; color: #64748b; font-size: 13px;">
-                        <i class="fas fa-info-circle"></i> All lecturers assigned to this unit — click <strong>"Drop"</strong> to remove assignment
-                    </p>
-                </div>
-                <div style="display: flex; gap: 8px;">
-                    <button onclick="refreshAssignmentHistory()" class="btn-action" style="background: #6b7280; padding: 6px 14px; border: none; border-radius: 6px; color: white; cursor: pointer; font-size: 12px;">
-                        <i class="fas fa-sync-alt"></i> Refresh
-                    </button>
-                    <button onclick="clearAllAssignments()" class="btn-action" style="background: #dc2626; padding: 6px 14px; border: none; border-radius: 6px; color: white; cursor: pointer; font-size: 12px;">
-                        <i class="fas fa-trash"></i> Clear All
-                    </button>
-                </div>
-            </div>
-            <div id="me_assignment_history" style="overflow-x: auto;">
-                <div style="text-align: center; padding: 30px; color: #94a3b8; font-size: 13px;">
-                    <i class="fas fa-info-circle"></i> Loading assignment history...
-                </div>
-            </div>
-        </div>
-
-        <!-- Column Management -->
-        <div style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 15px;">
-                <div>
-                    <h3 style="margin: 0; color: #1e293b;">
-                        <i class="fas fa-columns" style="color: #059669;"></i> Column Settings for <span id="me_column_subject_name">Current Unit</span>
-                    </h3>
-                    <p style="margin: 4px 0 0 0; color: #64748b; font-size: 13px;">
-                        <i class="fas fa-info-circle"></i> Show/hide columns for this unit only
-                    </p>
-                </div>
-                <div style="display: flex; gap: 8px;">
-                    <button onclick="resetUnitColumns()" class="btn-action" style="background: #6b7280; padding: 8px 16px; border: none; border-radius: 6px; color: white; cursor: pointer;">
-                        <i class="fas fa-undo"></i> Reset for This Unit
-                    </button>
-                    <button onclick="openStudentPublishModal()" class="btn-action" style="background: #8b5cf6; color: white; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
-                        <i class="fas fa-user-check"></i> Select Students
-                    </button>
-                </div>
-            </div>
-            <div id="me_column_settings" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px;">
-                <div style="color: #94a3b8; font-size: 13px; grid-column: 1 / -1; text-align: center; padding: 20px;">
-                    <i class="fas fa-info-circle"></i> Loading column settings...
-                </div>
-            </div>
-        </div>
-
-        <!-- Marks Table -->
-        <div id="me_marks_container" style="background: white; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); border: 1px solid #e5e7eb; overflow-x: auto;">
-            <div style="text-align: center; padding: 40px;">
-                <div class="loading-spinner"></div>
-                <p style="color: #6b7280; margin-top: 10px;">Loading marks...</p>
-            </div>
-        </div>
-    </div>
+<div hidden><select id="iaAnalyticsIntake"><option value="all">All intakes</option></select><span id="iaMarksAnalyticsUpdated"></span><span id="iaAnalyticsPending"></span><span id="iaAnalyticsPublished"></span><span id="iaAnalyticsMarks"></span><span id="iaAnalyticsStudents"></span><span id="iaAnalyticsUnits"></span><span id="iaAnalyticsAverage"></span><span id="iaAnalyticsPassRate"></span><span id="iaAnalyticsAtRisk"></span></div><div class="ia-page-actions" style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0"><button id="iaAnalyticsRefresh" type="button" class="ia-secondary-btn">Refresh analytics</button><button id="iaAnalyticsExport" type="button" class="ia-primary-btn">Export analytics</button><button id="iaAnalyticsPrint" type="button" class="ia-secondary-btn">Print</button></div>
 </section>
+<section class="ia-view" id="view-activity"><div class="ia-page-heading"><div><span class="ia-eyebrow">INSTITUTION GOVERNANCE</span><h1>Institution activity</h1><p>Read-only history of actions recorded for this institution. Platform-wide activity remains restricted to Super Admin.</p></div><button class="ia-secondary-btn" type="button" id="iaActivityRefresh"><i class="fa-solid fa-rotate"></i> Refresh</button></div><div class="ia-stat-grid ia-report-grid"><article class="ia-stat-card"><small>Recorded actions</small><strong id="iaActivityTotal">—</strong></article><article class="ia-stat-card"><small>Today</small><strong id="iaActivityToday">—</strong></article><article class="ia-stat-card"><small>Unique actors</small><strong id="iaActivityActors">—</strong></article></div><div class="ia-panel ia-table-panel"><div class="ia-panel-head"><div><h2>Activity log</h2><p>Latest 300 records for your institution only.</p></div><input class="ia-module-search" id="iaActivitySearch" type="search" placeholder="Search actions, records or details…"><button class="ia-secondary-btn" type="button" id="iaActivityExport"><i class="fa-solid fa-download"></i> Export CSV</button></div><div class="ia-table-scroll"><table><thead><tr><th>Date & time</th><th>Action</th><th>Record type</th><th>Record ID</th><th>Actor user ID</th><th>Details</th></tr></thead><tbody id="iaActivityRows"><tr><td colspan="6" class="ia-empty">Open this page to load activity.</td></tr></tbody></table></div></div></section>
+<section class="ia-view" id="view-settings">
+ <div class="ia-page-heading"><div><span class="ia-eyebrow">TENANT CONFIGURATION</span><h1>Institution settings</h1><p>Institution information is organised by section. Platform-controlled details are read-only here.</p></div></div>
+ <div class="ia-settings-tabs" role="tablist" aria-label="Institution settings sections">
+  <button type="button" class="ia-settings-tab active" role="tab" aria-selected="true" data-settings-section="profile"><i class="fa-solid fa-building"></i> Institution profile</button>
+  <button type="button" class="ia-settings-tab" role="tab" aria-selected="false" data-settings-section="contact"><i class="fa-solid fa-address-book"></i> Contacts & administration</button>
+  <button type="button" class="ia-settings-tab" role="tab" aria-selected="false" data-settings-section="branding"><i class="fa-solid fa-palette"></i> Branding</button>
+  <button type="button" class="ia-settings-tab" role="tab" aria-selected="false" data-settings-section="access"><i class="fa-solid fa-shield-halved"></i> Module access</button>
+ </div>
+ <div class="ia-settings-section active" id="iaSettingsSection-profile" role="tabpanel">
+  <div class="ia-settings-grid">
+   <article class="ia-panel ia-settings-card"><div class="ia-panel-head"><div><h2>Institution identity</h2><p>Official institution details registered with Campus Nexus.</p></div><span class="ia-settings-card-icon"><i class="fa-solid fa-building-columns"></i></span></div>
+    <div class="ia-settings-identity"><div class="ia-profile-logo large" id="iaSettingsLogo">CN</div><div><h3 id="iaSettingsName">—</h3><p id="iaSettingsType">—</p></div></div>
+    <div class="ia-settings-data-grid">
+     <div class="ia-settings-data"><small>School code</small><b id="setCode">—</b></div>
+     <div class="ia-settings-data"><small>Institution type</small><b id="iaSettingsTypeDetail">—</b></div>
+     <div class="ia-settings-data"><small>Account status</small><b id="setStatus">—</b></div>
+     <div class="ia-settings-data"><small>Institution ID</small><b id="iaSettingsId">—</b></div>
+    </div>
+   </article>
+   <article class="ia-panel ia-settings-note"><span class="ia-settings-note-icon"><i class="fa-solid fa-circle-info"></i></span><h2>Institution profile</h2><p>This section contains the institution's identity only. Contact information, branding and module access are maintained in their own sections.</p><small>Changes to official identity details are managed by the Platform Super Admin.</small></article>
+  </div>
+ </div>
+ <div class="ia-settings-section" id="iaSettingsSection-contact" role="tabpanel" hidden>
+  <article class="ia-panel ia-settings-card"><div class="ia-panel-head"><div><h2>Contacts & administration</h2><p>Official communication channels and administrator contact.</p></div><span class="ia-settings-card-icon"><i class="fa-solid fa-address-card"></i></span></div>
+   <div class="ia-settings-data-grid">
+    <div class="ia-settings-data"><small>Administrator email</small><b id="setAdminEmail">—</b></div>
+    <div class="ia-settings-data"><small>Public contact email</small><b id="setContactEmail">—</b></div>
+    <div class="ia-settings-data"><small>Institution phone</small><b id="setPhone">—</b></div>
+    <div class="ia-settings-data"><small>Website</small><b id="setWebsite">—</b></div>
+   </div>
+  </article>
+ </div>
+ <div class="ia-settings-section" id="iaSettingsSection-branding" role="tabpanel" hidden>
+  <article class="ia-panel ia-settings-card"><div class="ia-panel-head"><div><h2>Institution branding</h2><p>Logo and official colours applied to institution-facing experiences.</p></div><span class="ia-settings-card-icon"><i class="fa-solid fa-swatchbook"></i></span></div>
+   <div class="ia-settings-brand-preview"><div class="ia-profile-logo large" id="iaSettingsBrandLogo">CN</div><div><b id="iaBrandPreviewName">—</b><small>Institution brand preview</small></div></div>
+   <div class="ia-settings-data-grid">
+    <div class="ia-settings-data"><small>Primary colour</small><div class="ia-colour-value"><i id="iaPrimarySwatch"></i><b id="iaPrimaryColour">—</b></div></div>
+    <div class="ia-settings-data"><small>Secondary colour</small><div class="ia-colour-value"><i id="iaSecondarySwatch"></i><b id="iaSecondaryColour">—</b></div></div>
+    <div class="ia-settings-data ia-settings-wide"><small>Logo URL</small><b id="iaLogoUrl">—</b></div>
+   </div>
+   <p class="ia-settings-footnote">Branding is displayed here for reference. Official brand changes are controlled by the Platform Super Admin.</p>
+  </article>
+ </div>
+ <div class="ia-settings-section" id="iaSettingsSection-access" role="tabpanel" hidden>
+  <article class="ia-panel ia-settings-card"><div class="ia-panel-head"><div><h2>Enabled modules</h2><p>Only modules enabled for this institution are available in the workspace.</p></div><span class="ia-settings-card-icon"><i class="fa-solid fa-shield-halved"></i></span></div>
+   <div class="ia-settings-access-summary"><strong id="iaSettingsModuleCount">0</strong><span>modules enabled for this institution</span></div>
+   <div id="iaModuleList" class="ia-module-list"></div>
+  </article>
+ </div>
+</section>
+<section class="ia-view" id="view-admissions"><div class="ia-page-heading"><div><span class="ia-eyebrow">STUDENT RECRUITMENT</span><h1>Admissions</h1><p>Manage applicant records, programme choices and admission decisions.</p></div></div><div class="ia-panel ia-table-panel"><div class="ia-table-scroll"><table><thead><tr><th>Applicant</th><th>Application no.</th><th>Email</th><th>Phone</th><th>Programme</th><th>Intake</th><th>Status</th></tr></thead><tbody id="iaAdmissions"><tr><td colspan="7" class="ia-empty">Loading…</td></tr></tbody></table></div></div></section>
+<section class="ia-view" id="view-hr"><div class="ia-page-heading"><div><span class="ia-eyebrow">PEOPLE OPERATIONS</span><h1>Human resources</h1><p>Maintain institution staff directory, appointments and contract dates.</p></div></div><div class="ia-panel ia-table-panel"><div class="ia-table-scroll"><table><thead><tr><th>Staff member</th><th>Email</th><th>Department</th><th>Designation</th><th>Employment</th><th>Contract end</th><th>Status</th></tr></thead><tbody id="iaHR"><tr><td colspan="7" class="ia-empty">Loading…</td></tr></tbody></table></div></div></section>
+<section class="ia-view" id="view-timetable"><div class="ia-page-heading"><div><span class="ia-eyebrow">ACADEMIC SCHEDULING</span><h1>Timetabling</h1><p>Create and maintain institution class and academic session schedules.</p></div></div><div class="ia-panel ia-table-panel"><div class="ia-table-scroll"><table><thead><tr><th>Session</th><th>Date</th><th>Time</th><th>Programme / block</th><th>Course</th><th>Lecturer</th><th>Venue</th></tr></thead><tbody id="iaTimetable"><tr><td colspan="7" class="ia-empty">Loading…</td></tr></tbody></table></div></div></section>
+<section class="ia-view" id="view-placements"><div class="ia-page-heading"><div><span class="ia-eyebrow">CLINICAL EDUCATION</span><h1>Clinical placements</h1><p>Allocate students to facilities, departments and supervised clinical rotations.</p></div></div><div class="ia-panel ia-table-panel"><div class="ia-table-scroll"><table><thead><tr><th>Student</th><th>Facility</th><th>Department</th><th>Supervisor</th><th>Dates</th><th>Hours</th><th>Status</th></tr></thead><tbody id="iaPlacements"><tr><td colspan="7" class="ia-empty">Loading…</td></tr></tbody></table></div></div></section>
+<section class="ia-view" id="view-research"><div class="ia-page-heading"><div><span class="ia-eyebrow">RESEARCH & SCHOLARSHIP</span><h1>Research management</h1><p>Track student research projects, supervisors, stages and feedback.</p></div></div><div class="ia-panel ia-table-panel"><div class="ia-table-scroll"><table><thead><tr><th>Project</th><th>Student</th><th>Programme</th><th>Supervisor</th><th>Stage</th><th>Due date</th><th>Status</th></tr></thead><tbody id="iaResearch"><tr><td colspan="7" class="ia-empty">Loading…</td></tr></tbody></table></div></div></section>
+<section class="ia-view" id="view-welfare"><div class="ia-page-heading"><div><span class="ia-eyebrow">STUDENT SUPPORT</span><h1>Student welfare</h1><p>Record and follow up confidential student support and welfare cases.</p></div></div><div class="ia-panel ia-table-panel"><div class="ia-table-scroll"><table><thead><tr><th>Student</th><th>Category</th><th>Priority</th><th>Case summary</th><th>Assigned to</th><th>Status</th></tr></thead><tbody id="iaWelfare"><tr><td colspan="6" class="ia-empty">Loading…</td></tr></tbody></table></div></div></section>
+<section class="ia-view" id="view-proctoring"><div class="ia-page-heading"><div><span class="ia-eyebrow">CAMPUS NEXUS · INSTITUTION WORKSPACE</span><h1>Exam proctoring</h1><p>Monitor examination integrity events, risk flags and follow-up actions.</p></div><button class="ia-secondary-btn" data-workspace-refresh="proctoring"><i class="fa-solid fa-rotate"></i> Refresh</button></div><div class="ia-stat-grid ia-report-grid"><article class="ia-stat-card"><small>Total records</small><strong id="ws-proctoring-total">—</strong></article><article class="ia-stat-card"><small>Active / open</small><strong id="ws-proctoring-active">—</strong></article><article class="ia-stat-card"><small>Completed</small><strong id="ws-proctoring-done">—</strong></article><article class="ia-stat-card"><small>Needs attention</small><strong id="ws-proctoring-attention">—</strong></article></div><div class="ia-panel ia-table-panel"><div class="ia-panel-head"><div><h2>Exam proctoring register</h2><p>Records are restricted to this institution and this enabled module.</p></div><input class="ia-module-search" id="ws-proctoring-search" type="search" placeholder="Search records…"><button class="ia-primary-btn" data-workspace-create="proctoring"><i class="fa-solid fa-plus"></i> Add record</button></div><div class="ia-table-scroll"><table><thead><tr><th>Title / name</th><th>Reference</th><th>Category</th><th>Assigned to</th><th>Start date</th><th>Due date</th><th>Status</th><th>Actions</th></tr></thead><tbody id="ws-proctoring-rows"><tr><td colspan="8" class="ia-empty">Loading records…</td></tr></tbody></table></div></div></section>
+<section class="ia-view" id="view-transcripts-certificates"><div class="ia-page-heading"><div><span class="ia-eyebrow">CAMPUS NEXUS · INSTITUTION WORKSPACE</span><h1>Transcripts & certificates</h1><p>Track transcript requests, certificate issuance and verification records.</p></div><button class="ia-secondary-btn" data-workspace-refresh="transcripts-certificates"><i class="fa-solid fa-rotate"></i> Refresh</button></div><div class="ia-stat-grid ia-report-grid"><article class="ia-stat-card"><small>Total records</small><strong id="ws-transcripts-certificates-total">—</strong></article><article class="ia-stat-card"><small>Active / open</small><strong id="ws-transcripts-certificates-active">—</strong></article><article class="ia-stat-card"><small>Completed</small><strong id="ws-transcripts-certificates-done">—</strong></article><article class="ia-stat-card"><small>Needs attention</small><strong id="ws-transcripts-certificates-attention">—</strong></article></div><div class="ia-panel ia-table-panel"><div class="ia-panel-head"><div><h2>Transcripts & certificates register</h2><p>Records are restricted to this institution and this enabled module.</p></div><input class="ia-module-search" id="ws-transcripts-certificates-search" type="search" placeholder="Search records…"><button class="ia-primary-btn" data-workspace-create="transcripts_certificates"><i class="fa-solid fa-plus"></i> Add record</button></div><div class="ia-table-scroll"><table><thead><tr><th>Title / name</th><th>Reference</th><th>Category</th><th>Assigned to</th><th>Start date</th><th>Due date</th><th>Status</th><th>Actions</th></tr></thead><tbody id="ws-transcripts-certificates-rows"><tr><td colspan="8" class="ia-empty">Loading records…</td></tr></tbody></table></div></div></section>
+<section class="ia-view" id="view-quality-assurance"><div class="ia-page-heading"><div><span class="ia-eyebrow">CAMPUS NEXUS · INSTITUTION WORKSPACE</span><h1>Quality assurance</h1><p>Maintain audit findings, compliance reviews and corrective actions.</p></div><button class="ia-secondary-btn" data-workspace-refresh="quality-assurance"><i class="fa-solid fa-rotate"></i> Refresh</button></div><div class="ia-stat-grid ia-report-grid"><article class="ia-stat-card"><small>Total records</small><strong id="ws-quality-assurance-total">—</strong></article><article class="ia-stat-card"><small>Active / open</small><strong id="ws-quality-assurance-active">—</strong></article><article class="ia-stat-card"><small>Completed</small><strong id="ws-quality-assurance-done">—</strong></article><article class="ia-stat-card"><small>Needs attention</small><strong id="ws-quality-assurance-attention">—</strong></article></div><div class="ia-panel ia-table-panel"><div class="ia-panel-head"><div><h2>Quality assurance register</h2><p>Records are restricted to this institution and this enabled module.</p></div><input class="ia-module-search" id="ws-quality-assurance-search" type="search" placeholder="Search records…"><button class="ia-primary-btn" data-workspace-create="quality_assurance"><i class="fa-solid fa-plus"></i> Add record</button></div><div class="ia-table-scroll"><table><thead><tr><th>Title / name</th><th>Reference</th><th>Category</th><th>Assigned to</th><th>Start date</th><th>Due date</th><th>Status</th><th>Actions</th></tr></thead><tbody id="ws-quality-assurance-rows"><tr><td colspan="8" class="ia-empty">Loading records…</td></tr></tbody></table></div></div></section>
+<section class="ia-view" id="view-library"><div class="ia-page-heading"><div><span class="ia-eyebrow">CAMPUS NEXUS · INSTITUTION WORKSPACE</span><h1>Library management</h1><p>Manage catalogue records, circulation activity and digital resources.</p></div><button class="ia-secondary-btn" data-workspace-refresh="library"><i class="fa-solid fa-rotate"></i> Refresh</button></div><div class="ia-stat-grid ia-report-grid"><article class="ia-stat-card"><small>Total records</small><strong id="ws-library-total">—</strong></article><article class="ia-stat-card"><small>Active / open</small><strong id="ws-library-active">—</strong></article><article class="ia-stat-card"><small>Completed</small><strong id="ws-library-done">—</strong></article><article class="ia-stat-card"><small>Needs attention</small><strong id="ws-library-attention">—</strong></article></div><div class="ia-panel ia-table-panel"><div class="ia-panel-head"><div><h2>Library management register</h2><p>Records are restricted to this institution and this enabled module.</p></div><input class="ia-module-search" id="ws-library-search" type="search" placeholder="Search records…"><button class="ia-primary-btn" data-workspace-create="library"><i class="fa-solid fa-plus"></i> Add record</button></div><div class="ia-table-scroll"><table><thead><tr><th>Title / name</th><th>Reference</th><th>Category</th><th>Assigned to</th><th>Start date</th><th>Due date</th><th>Status</th><th>Actions</th></tr></thead><tbody id="ws-library-rows"><tr><td colspan="8" class="ia-empty">Loading records…</td></tr></tbody></table></div></div></section>
+<section class="ia-view" id="view-hostel-management"><div class="ia-page-heading"><div><span class="ia-eyebrow">CAMPUS NEXUS · INSTITUTION WORKSPACE</span><h1>Hostels & accommodation</h1><p>Manage rooms, occupancy, allocations and accommodation requests.</p></div><button class="ia-secondary-btn" data-workspace-refresh="hostel-management"><i class="fa-solid fa-rotate"></i> Refresh</button></div><div class="ia-stat-grid ia-report-grid"><article class="ia-stat-card"><small>Total records</small><strong id="ws-hostel-management-total">—</strong></article><article class="ia-stat-card"><small>Active / open</small><strong id="ws-hostel-management-active">—</strong></article><article class="ia-stat-card"><small>Completed</small><strong id="ws-hostel-management-done">—</strong></article><article class="ia-stat-card"><small>Needs attention</small><strong id="ws-hostel-management-attention">—</strong></article></div><div class="ia-panel ia-table-panel"><div class="ia-panel-head"><div><h2>Hostels & accommodation register</h2><p>Records are restricted to this institution and this enabled module.</p></div><input class="ia-module-search" id="ws-hostel-management-search" type="search" placeholder="Search records…"><button class="ia-primary-btn" data-workspace-create="hostel_management"><i class="fa-solid fa-plus"></i> Add record</button></div><div class="ia-table-scroll"><table><thead><tr><th>Title / name</th><th>Reference</th><th>Category</th><th>Assigned to</th><th>Start date</th><th>Due date</th><th>Status</th><th>Actions</th></tr></thead><tbody id="ws-hostel-management-rows"><tr><td colspan="8" class="ia-empty">Loading records…</td></tr></tbody></table></div></div></section>
+<section class="ia-view" id="view-transport-management"><div class="ia-page-heading"><div><span class="ia-eyebrow">CAMPUS NEXUS · INSTITUTION WORKSPACE</span><h1>Transport management</h1><p>Manage vehicles, routes, schedules and transport requests.</p></div><button class="ia-secondary-btn" data-workspace-refresh="transport-management"><i class="fa-solid fa-rotate"></i> Refresh</button></div><div class="ia-stat-grid ia-report-grid"><article class="ia-stat-card"><small>Total records</small><strong id="ws-transport-management-total">—</strong></article><article class="ia-stat-card"><small>Active / open</small><strong id="ws-transport-management-active">—</strong></article><article class="ia-stat-card"><small>Completed</small><strong id="ws-transport-management-done">—</strong></article><article class="ia-stat-card"><small>Needs attention</small><strong id="ws-transport-management-attention">—</strong></article></div><div class="ia-panel ia-table-panel"><div class="ia-panel-head"><div><h2>Transport management register</h2><p>Records are restricted to this institution and this enabled module.</p></div><input class="ia-module-search" id="ws-transport-management-search" type="search" placeholder="Search records…"><button class="ia-primary-btn" data-workspace-create="transport_management"><i class="fa-solid fa-plus"></i> Add record</button></div><div class="ia-table-scroll"><table><thead><tr><th>Title / name</th><th>Reference</th><th>Category</th><th>Assigned to</th><th>Start date</th><th>Due date</th><th>Status</th><th>Actions</th></tr></thead><tbody id="ws-transport-management-rows"><tr><td colspan="8" class="ia-empty">Loading records…</td></tr></tbody></table></div></div></section>
+<section class="ia-view" id="view-career-services"><div class="ia-page-heading"><div><span class="ia-eyebrow">CAMPUS NEXUS · INSTITUTION WORKSPACE</span><h1>Career services & alumni</h1><p>Track placements, employer engagement and alumni follow-up.</p></div><button class="ia-secondary-btn" data-workspace-refresh="career-services"><i class="fa-solid fa-rotate"></i> Refresh</button></div><div class="ia-stat-grid ia-report-grid"><article class="ia-stat-card"><small>Total records</small><strong id="ws-career-services-total">—</strong></article><article class="ia-stat-card"><small>Active / open</small><strong id="ws-career-services-active">—</strong></article><article class="ia-stat-card"><small>Completed</small><strong id="ws-career-services-done">—</strong></article><article class="ia-stat-card"><small>Needs attention</small><strong id="ws-career-services-attention">—</strong></article></div><div class="ia-panel ia-table-panel"><div class="ia-panel-head"><div><h2>Career services & alumni register</h2><p>Records are restricted to this institution and this enabled module.</p></div><input class="ia-module-search" id="ws-career-services-search" type="search" placeholder="Search records…"><button class="ia-primary-btn" data-workspace-create="career_services"><i class="fa-solid fa-plus"></i> Add record</button></div><div class="ia-table-scroll"><table><thead><tr><th>Title / name</th><th>Reference</th><th>Category</th><th>Assigned to</th><th>Start date</th><th>Due date</th><th>Status</th><th>Actions</th></tr></thead><tbody id="ws-career-services-rows"><tr><td colspan="8" class="ia-empty">Loading records…</td></tr></tbody></table></div></div></section>
+<section class="ia-view" id="view-events"><div class="ia-page-heading"><div><span class="ia-eyebrow">CAMPUS NEXUS · INSTITUTION WORKSPACE</span><h1>Events & calendar</h1><p>Plan institutional events, academic dates and participation.</p></div><button class="ia-secondary-btn" data-workspace-refresh="events"><i class="fa-solid fa-rotate"></i> Refresh</button></div><div class="ia-stat-grid ia-report-grid"><article class="ia-stat-card"><small>Total records</small><strong id="ws-events-total">—</strong></article><article class="ia-stat-card"><small>Active / open</small><strong id="ws-events-active">—</strong></article><article class="ia-stat-card"><small>Completed</small><strong id="ws-events-done">—</strong></article><article class="ia-stat-card"><small>Needs attention</small><strong id="ws-events-attention">—</strong></article></div><div class="ia-panel ia-table-panel"><div class="ia-panel-head"><div><h2>Events & calendar register</h2><p>Records are restricted to this institution and this enabled module.</p></div><input class="ia-module-search" id="ws-events-search" type="search" placeholder="Search records…"><button class="ia-primary-btn" data-workspace-create="events"><i class="fa-solid fa-plus"></i> Add record</button></div><div class="ia-table-scroll"><table><thead><tr><th>Title / name</th><th>Reference</th><th>Category</th><th>Assigned to</th><th>Start date</th><th>Due date</th><th>Status</th><th>Actions</th></tr></thead><tbody id="ws-events-rows"><tr><td colspan="8" class="ia-empty">Loading records…</td></tr></tbody></table></div></div></section>
+<section class="ia-view" id="view-inventory"><div class="ia-page-heading"><div><span class="ia-eyebrow">CAMPUS NEXUS · INSTITUTION WORKSPACE</span><h1>Inventory & procurement</h1><p>Track stock, requisitions, suppliers and procurement status.</p></div><button class="ia-secondary-btn" data-workspace-refresh="inventory"><i class="fa-solid fa-rotate"></i> Refresh</button></div><div class="ia-stat-grid ia-report-grid"><article class="ia-stat-card"><small>Total records</small><strong id="ws-inventory-total">—</strong></article><article class="ia-stat-card"><small>Active / open</small><strong id="ws-inventory-active">—</strong></article><article class="ia-stat-card"><small>Completed</small><strong id="ws-inventory-done">—</strong></article><article class="ia-stat-card"><small>Needs attention</small><strong id="ws-inventory-attention">—</strong></article></div><div class="ia-panel ia-table-panel"><div class="ia-panel-head"><div><h2>Inventory & procurement register</h2><p>Records are restricted to this institution and this enabled module.</p></div><input class="ia-module-search" id="ws-inventory-search" type="search" placeholder="Search records…"><button class="ia-primary-btn" data-workspace-create="inventory"><i class="fa-solid fa-plus"></i> Add record</button></div><div class="ia-table-scroll"><table><thead><tr><th>Title / name</th><th>Reference</th><th>Category</th><th>Assigned to</th><th>Start date</th><th>Due date</th><th>Status</th><th>Actions</th></tr></thead><tbody id="ws-inventory-rows"><tr><td colspan="8" class="ia-empty">Loading records…</td></tr></tbody></table></div></div></section>
+<section class="ia-view" id="view-asset-management"><div class="ia-page-heading"><div><span class="ia-eyebrow">CAMPUS NEXUS · INSTITUTION WORKSPACE</span><h1>Asset management</h1><p>Maintain asset registers, locations and maintenance history.</p></div><button class="ia-secondary-btn" data-workspace-refresh="asset-management"><i class="fa-solid fa-rotate"></i> Refresh</button></div><div class="ia-stat-grid ia-report-grid"><article class="ia-stat-card"><small>Total records</small><strong id="ws-asset-management-total">—</strong></article><article class="ia-stat-card"><small>Active / open</small><strong id="ws-asset-management-active">—</strong></article><article class="ia-stat-card"><small>Completed</small><strong id="ws-asset-management-done">—</strong></article><article class="ia-stat-card"><small>Needs attention</small><strong id="ws-asset-management-attention">—</strong></article></div><div class="ia-panel ia-table-panel"><div class="ia-panel-head"><div><h2>Asset management register</h2><p>Records are restricted to this institution and this enabled module.</p></div><input class="ia-module-search" id="ws-asset-management-search" type="search" placeholder="Search records…"><button class="ia-primary-btn" data-workspace-create="asset_management"><i class="fa-solid fa-plus"></i> Add record</button></div><div class="ia-table-scroll"><table><thead><tr><th>Title / name</th><th>Reference</th><th>Category</th><th>Assigned to</th><th>Start date</th><th>Due date</th><th>Status</th><th>Actions</th></tr></thead><tbody id="ws-asset-management-rows"><tr><td colspan="8" class="ia-empty">Loading records…</td></tr></tbody></table></div></div></section>
+<section class="ia-view" id="view-document-management"><div class="ia-page-heading"><div><span class="ia-eyebrow">CAMPUS NEXUS · INSTITUTION WORKSPACE</span><h1>Document management</h1><p>Track institutional records, approvals and retention.</p></div><button class="ia-secondary-btn" data-workspace-refresh="document-management"><i class="fa-solid fa-rotate"></i> Refresh</button></div><div class="ia-stat-grid ia-report-grid"><article class="ia-stat-card"><small>Total records</small><strong id="ws-document-management-total">—</strong></article><article class="ia-stat-card"><small>Active / open</small><strong id="ws-document-management-active">—</strong></article><article class="ia-stat-card"><small>Completed</small><strong id="ws-document-management-done">—</strong></article><article class="ia-stat-card"><small>Needs attention</small><strong id="ws-document-management-attention">—</strong></article></div><div class="ia-panel ia-table-panel"><div class="ia-panel-head"><div><h2>Document management register</h2><p>Records are restricted to this institution and this enabled module.</p></div><input class="ia-module-search" id="ws-document-management-search" type="search" placeholder="Search records…"><button class="ia-primary-btn" data-workspace-create="document_management"><i class="fa-solid fa-plus"></i> Add record</button></div><div class="ia-table-scroll"><table><thead><tr><th>Title / name</th><th>Reference</th><th>Category</th><th>Assigned to</th><th>Start date</th><th>Due date</th><th>Status</th><th>Actions</th></tr></thead><tbody id="ws-document-management-rows"><tr><td colspan="8" class="ia-empty">Loading records…</td></tr></tbody></table></div></div></section>
+<section class="ia-view" id="view-communication"><div class="ia-page-heading"><div><span class="ia-eyebrow">CAMPUS NEXUS · INSTITUTION WORKSPACE</span><h1>Communications</h1><p>Manage announcements, communication campaigns and delivery status.</p></div><button class="ia-secondary-btn" data-workspace-refresh="communication"><i class="fa-solid fa-rotate"></i> Refresh</button></div><div class="ia-stat-grid ia-report-grid"><article class="ia-stat-card"><small>Total records</small><strong id="ws-communication-total">—</strong></article><article class="ia-stat-card"><small>Active / open</small><strong id="ws-communication-active">—</strong></article><article class="ia-stat-card"><small>Completed</small><strong id="ws-communication-done">—</strong></article><article class="ia-stat-card"><small>Needs attention</small><strong id="ws-communication-attention">—</strong></article></div><div class="ia-panel ia-table-panel"><div class="ia-panel-head"><div><h2>Communications register</h2><p>Records are restricted to this institution and this enabled module.</p></div><input class="ia-module-search" id="ws-communication-search" type="search" placeholder="Search records…"><button class="ia-primary-btn" data-workspace-create="communication"><i class="fa-solid fa-plus"></i> Add record</button></div><div class="ia-table-scroll"><table><thead><tr><th>Title / name</th><th>Reference</th><th>Category</th><th>Assigned to</th><th>Start date</th><th>Due date</th><th>Status</th><th>Actions</th></tr></thead><tbody id="ws-communication-rows"><tr><td colspan="8" class="ia-empty">Loading records…</td></tr></tbody></table></div></div></section>
+<section class="ia-view" id="view-helpdesk"><div class="ia-page-heading"><div><span class="ia-eyebrow">CAMPUS NEXUS · INSTITUTION WORKSPACE</span><h1>Helpdesk & support</h1><p>Track service requests, incidents, assignments and resolution.</p></div><button class="ia-secondary-btn" data-workspace-refresh="helpdesk"><i class="fa-solid fa-rotate"></i> Refresh</button></div><div class="ia-stat-grid ia-report-grid"><article class="ia-stat-card"><small>Total records</small><strong id="ws-helpdesk-total">—</strong></article><article class="ia-stat-card"><small>Active / open</small><strong id="ws-helpdesk-active">—</strong></article><article class="ia-stat-card"><small>Completed</small><strong id="ws-helpdesk-done">—</strong></article><article class="ia-stat-card"><small>Needs attention</small><strong id="ws-helpdesk-attention">—</strong></article></div><div class="ia-panel ia-table-panel"><div class="ia-panel-head"><div><h2>Helpdesk & support register</h2><p>Records are restricted to this institution and this enabled module.</p></div><input class="ia-module-search" id="ws-helpdesk-search" type="search" placeholder="Search records…"><button class="ia-primary-btn" data-workspace-create="helpdesk"><i class="fa-solid fa-plus"></i> Add record</button></div><div class="ia-table-scroll"><table><thead><tr><th>Title / name</th><th>Reference</th><th>Category</th><th>Assigned to</th><th>Start date</th><th>Due date</th><th>Status</th><th>Actions</th></tr></thead><tbody id="ws-helpdesk-rows"><tr><td colspan="8" class="ia-empty">Loading records…</td></tr></tbody></table></div></div></section>
+<footer class="ia-footer">Campus Nexus · Secure multi-institution administration</footer>
+</main></div><dialog class="ia-account-profile-dialog" id="iaMyProfileDialog" aria-labelledby="iaMyProfileTitle">
+ <div class="ia-account-profile-head"><div><span>ACCOUNT INFORMATION</span><h2 id="iaMyProfileTitle">My Profile</h2></div><button type="button" id="iaCloseMyProfile" aria-label="Close profile"><i class="fa-solid fa-xmark"></i></button></div>
+ <div class="ia-account-profile-body">
+  <div class="ia-account-profile-avatar" id="iaMyProfileAvatar">IA</div>
+  <h3 id="iaMyProfileName">Administrator</h3><p id="iaMyProfileEmail">—</p>
+  <div class="ia-account-profile-details">
+   <div><small>Account role</small><b id="iaMyProfileRole">Institution administrator</b></div>
+   <div><small>Account status</small><b id="iaMyProfileStatus">—</b></div>
+   <div><small>Institution</small><b id="iaMyProfileInstitution">—</b></div>
+  </div>
+ </div>
+</dialog></div>
+<div class="ia-mobile-scrim" id="iaScrim"></div>
+
+</body></html>
