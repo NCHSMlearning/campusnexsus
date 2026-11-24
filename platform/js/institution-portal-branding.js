@@ -194,7 +194,29 @@
       ".nav-link.active,.nav-item.active,.tab-button.active,[aria-current=page]{border-color:",accent1,"!important;box-shadow:inset 3px 0 ",accent1,"!important}",
       ".progress-bar,.progress-fill{background:linear-gradient(90deg,",secondary,",",accent2,",",accent3,")!important}",
       "input:focus,select:focus,textarea:focus,button:focus-visible{outline-color:",accent1,"!important}",
-      "table thead th{border-bottom-color:",accent1,"}"
+      "table thead th{border-bottom-color:",accent1,"}",
+      "body[data-institution-portal=true],html[data-institution-portal=true]{--primary:",primary,";--secondary:",secondary,";--accent:",accent1,";--accent-2:",accent2,";--accent-3:",accent3,";--accent-4:",accent4,"}",
+      "header,.topbar,.top-bar,.top-header,.dashboard-header,.page-header,.main-header,.navbar,.top-nav{border-color:",secondary,"33}",
+      ".topbar,.top-bar,.top-header,.main-header{--header-brand-color:",primary,"}",
+      ".dashboard-hero,.page-hero,.welcome-banner,.welcome-card,.command-hero,.lecturer-command-hero{background-image:linear-gradient(120deg,",primary," 0%,",secondary," 100%)!important;border-color:",secondary,"!important}",
+      ".dashboard-hero h1,.dashboard-hero h2,.page-hero h1,.welcome-banner h1,.welcome-card h1{color:#fff!important}",
+      ".stat-card,.metric-card,.dashboard-card,.analytics-card,.summary-card,.kpi-card,.overview-card,.quick-stat,.metric-tile{border-top-color:",accent1,"!important}",
+      ".stat-card .icon,.metric-card .icon,.dashboard-card .card-icon,.analytics-card .card-icon,.summary-card .icon,.kpi-card .icon{background-color:",accent2,"22!important;color:",secondary,"!important}",
+      ".stat-card:nth-child(6n+2),.metric-card:nth-child(6n+2),.dashboard-metric-grid>div:nth-child(6n+2){--card-accent:",accent2,"}",
+      ".stat-card:nth-child(6n+3),.metric-card:nth-child(6n+3),.dashboard-metric-grid>div:nth-child(6n+3){--card-accent:",accent3,"}",
+      ".stat-card:nth-child(6n+4),.metric-card:nth-child(6n+4),.dashboard-metric-grid>div:nth-child(6n+4){--card-accent:",accent4,"}",
+      ".stat-card,.metric-card,.dashboard-metric-grid>div{border-bottom:2px solid var(--card-accent,",accent1,")}",
+      ".sidebar a:hover,.sidebar-menu a:hover,#sidebar .nav a:hover{background-color:",secondary,"33!important}",
+      ".sidebar .active,.sidebar-menu .active,#sidebar .nav .active{background-color:",secondary,"44!important}",
+      ".tab-button.active,.nav-link.active,.nav-item.active,[aria-current=page]{color:",primary,"!important}",
+      ".badge-primary,.status-primary,.chip-primary,.tag-primary{background-color:",primary,"!important;color:#fff!important}",
+      ".badge-success,.status-success,.chip-success{background-color:",secondary,"!important;color:#fff!important}",
+      ".section-title,.panel-title,.card-title,.dashboard-section-title{border-left-color:",accent1,"}",
+      ".form-control:focus,.form-select:focus,.ia-input:focus,.ia-select:focus{border-color:",accent1,"!important;box-shadow:0 0 0 3px ",accent1,"22!important}",
+      ".btn-primary:hover,.primary-button:hover,.primary-btn:hover,.ia-primary-btn:hover,.submit:hover{filter:brightness(1.08)}",
+      ".sidebar-header .cn-institution-school-code{color:#fff!important}",
+      ".brand-logo img,.sidebar-logo img,.institution-logo img,#institutionLogo,.header-logo img{object-fit:contain!important}",
+      ".cn-institution-brand-name{font-weight:800;letter-spacing:-.02em}"
     ].join("");
 
     document.querySelectorAll("h1,h2,h3,[role=heading]").forEach(el => {
