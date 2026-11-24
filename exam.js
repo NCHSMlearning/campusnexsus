@@ -712,8 +712,11 @@ async function getOrCreateCurrentAttempt() {
     }
 
     // Attempt creation is performed by a protected Supabase RPC.
-    // This is required because the exam page is not relying on auth.uid()
-    // and therefore should not insert directly into exam_attempts under RLS.
+    // Eligibility is based on the authenticated active student, the exam's
+    // publication/approval state and institution ownership. Do NOT require
+    // a student_unit_registrations row or lecturer unit allocation here:
+    // students may sit an institution-published exam without either record.
+    // This page is not relying on direct exam_attempts inserts under RLS.
     const { data: attemptData, error: attemptError } = await sb.rpc(
         'prepare_exam_attempt',
         {
@@ -3370,6 +3373,9 @@ async function saveAllAnswersToDatabase() {
 }
 async function calculateAndSaveGrade() {
     if (!AppState.attemptId) throw new Error('No active exam attempt');
+    // Submission deliberately does not query student_unit_registrations or
+    // lecturer allocations. Server-side checks still enforce the student's
+    // identity, institution match and ownership of this in-progress attempt.
     const answers = {};
     Object.entries(AppState.answers || {}).forEach(([questionId, answer]) => {
         answers[String(questionId)] = answer == null ? '' : String(answer);
