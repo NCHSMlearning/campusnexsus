@@ -276,8 +276,616 @@
  </div>
  <dialog class="ia-users-dialog" id="iaUsersDialog" aria-labelledby="iaUsersDialogTitle"><div class="ia-users-dialog-head"><div><span>ACCOUNT DETAILS</span><h2 id="iaUsersDialogTitle">User profile</h2></div><button type="button" data-users-close aria-label="Close dialog"><i class="fa-solid fa-xmark"></i></button></div><div class="ia-users-dialog-body" id="iaUsersDialogBody"></div></dialog>
 </section>
-<section class="ia-view" id="view-students"><div class="ia-page-heading"><div><span class="ia-eyebrow">ACADEMIC RECORDS</span><h1>Students</h1><p>Student profiles registered under this institution.</p></div></div><div class="ia-toolbar"><input id="iaStudentSearch" type="search" placeholder="Search name, email or admission number"><span id="iaStudentCount" class="ia-count"></span></div><div class="ia-panel ia-table-panel"><div class="ia-table-scroll"><table><thead><tr><th>Student</th><th>Admission number</th><th>Programme</th><th>Academic period</th><th>Status</th></tr></thead><tbody id="iaStudents"><tr><td colspan="5" class="ia-empty">Loading…</td></tr></tbody></table></div></div></section>
-<section class="ia-view" id="view-staff"><div class="ia-page-heading"><div><span class="ia-eyebrow">PEOPLE & RESOURCES</span><h1>Staff & lecturers</h1><p>Teaching and institutional staff linked to your institution.</p></div></div><div class="ia-toolbar"><input id="iaStaffSearch" type="search" placeholder="Search staff name, email or department"><span id="iaStaffCount" class="ia-count"></span></div><div class="ia-panel ia-table-panel"><div class="ia-table-scroll"><table><thead><tr><th>Name</th><th>Email</th><th>Department</th><th>Staff ID</th><th>Status</th></tr></thead><tbody id="iaStaff"><tr><td colspan="5" class="ia-empty">Loading…</td></tr></tbody></table></div></div></section>
+<section id="view-students" class="ia-view">
+    <!-- Header -->
+    <div style="background: linear-gradient(135deg, #0A3D62, #1a5a7a); border-radius: 16px; padding: 25px 30px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; box-shadow: 0 4px 20px rgba(10,61,98,0.3);">
+        <div>
+            <h2 style="color: white; margin: 0; font-weight: 700; display: flex; align-items: center; gap: 12px;">
+                <i class="fas fa-user-graduate" style="color: #FDB913;"></i> Student Management
+            </h2>
+            <p style="color: rgba(255,255,255,0.85); margin: 4px 0 0 0; font-size: 14px;">
+                <i class="fas fa-exchange-alt"></i> Change of Program &nbsp;|&nbsp; 
+                <i class="fas fa-undo-alt"></i> Readmission &nbsp;|&nbsp;
+                <i class="fas fa-file-alt"></i> Admissions &nbsp;|&nbsp;
+                <i class="fas fa-calendar-check"></i> Session Reporting
+            </p>
+        </div>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button onclick="refreshStudentManagement()" class="btn-action" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+            <button onclick="exportStudentRequests()" class="btn-action" style="background: #FDB913; color: #0A3D62; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; border: none;">
+                <i class="fas fa-download"></i> Export CSV
+            </button>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 25px;">
+        <div class="card" style="border-top: 4px solid #4C1D95; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 11px; color: #94a3b8; font-weight: 600; text-transform: uppercase;">Total Requests</span>
+                <i class="fas fa-clipboard-list" style="color: #4C1D95; opacity: 0.5;"></i>
+            </div>
+            <div style="font-size: 28px; font-weight: 800; color: #4C1D95; margin-top: 4px;" id="smTotalRequests">0</div>
+            <div style="font-size: 11px; color: #94a3b8;">All requests</div>
+        </div>
+        <div class="card" style="border-top: 4px solid #f59e0b; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 11px; color: #94a3b8; font-weight: 600; text-transform: uppercase;">Change of Program</span>
+                <i class="fas fa-exchange-alt" style="color: #f59e0b; opacity: 0.5;"></i>
+            </div>
+            <div style="font-size: 28px; font-weight: 800; color: #f59e0b; margin-top: 4px;" id="smChangeProgramCount">0</div>
+            <div style="font-size: 11px; color: #94a3b8;">Pending reviews</div>
+        </div>
+        <div class="card" style="border-top: 4px solid #10b981; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 11px; color: #94a3b8; font-weight: 600; text-transform: uppercase;">Readmissions</span>
+                <i class="fas fa-undo-alt" style="color: #10b981; opacity: 0.5;"></i>
+            </div>
+            <div style="font-size: 28px; font-weight: 800; color: #10b981; margin-top: 4px;" id="smReadmissionCount">0</div>
+            <div style="font-size: 11px; color: #94a3b8;">Pending reviews</div>
+        </div>
+        <div class="card" style="border-top: 4px solid #3b82f6; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 11px; color: #94a3b8; font-weight: 600; text-transform: uppercase;">Session Reports</span>
+                <i class="fas fa-calendar-check" style="color: #3b82f6; opacity: 0.5;"></i>
+            </div>
+            <div style="font-size: 28px; font-weight: 800; color: #3b82f6; margin-top: 4px;" id="smSessionReportsCount">0</div>
+            <div style="font-size: 11px; color: #94a3b8;">Pending approval</div>
+        </div>
+        <div class="card" style="border-top: 4px solid #ef4444; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 11px; color: #94a3b8; font-weight: 600; text-transform: uppercase;">Rejected</span>
+                <i class="fas fa-times-circle" style="color: #ef4444; opacity: 0.5;"></i>
+            </div>
+            <div style="font-size: 28px; font-weight: 800; color: #ef4444; margin-top: 4px;" id="smRejectedCount">0</div>
+            <div style="font-size: 11px; color: #94a3b8;">This month</div>
+        </div>
+    </div>
+
+    <!-- TABS -->
+    <div style="display: flex; gap: 6px; margin-bottom: 20px; background: white; padding: 6px 10px; border-radius: 60px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.04); flex-wrap: wrap;">
+        <button onclick="showSMSubTab('admissions')" id="smTabAdmissions" class="sm-tab-btn active" 
+                style="padding: 10px 28px; background: linear-gradient(135deg, #0A3D62, #1a6f9f); color: white; border: none; border-radius: 40px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.3s; box-shadow: 0 4px 16px rgba(10,61,98,0.25); display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-file-alt"></i> Admissions
+            <span id="smAdmissionsBadge" style="background: rgba(255,255,255,0.2); padding: 0 10px; border-radius: 20px; font-size: 11px;">0</span>
+        </button>
+        <button onclick="showSMSubTab('change-program')" id="smTabChangeProgram" class="sm-tab-btn" 
+                style="padding: 10px 28px; background: transparent; color: #334155; border: none; border-radius: 40px; cursor: pointer; font-weight: 500; font-size: 14px; transition: all 0.3s; display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-exchange-alt"></i> Change of Program
+            <span id="smChangePendingBadge" style="background: #fef3c7; padding: 0 10px; border-radius: 20px; font-size: 11px; color: #92400e;">0</span>
+        </button>
+        <button onclick="showSMSubTab('readmission')" id="smTabReadmission" class="sm-tab-btn" 
+                style="padding: 10px 28px; background: transparent; color: #334155; border: none; border-radius: 40px; cursor: pointer; font-weight: 500; font-size: 14px; transition: all 0.3s; display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-undo-alt"></i> Readmission
+            <span id="smReadmissionBadge" style="background: #fef3c7; padding: 0 10px; border-radius: 20px; font-size: 11px; color: #92400e;">0</span>
+        </button>
+        <button onclick="showSMSubTab('session-reports')" id="smTabSessionReports" class="sm-tab-btn" 
+                style="padding: 10px 28px; background: transparent; color: #334155; border: none; border-radius: 40px; cursor: pointer; font-weight: 500; font-size: 14px; transition: all 0.3s; display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-calendar-check"></i> Session Reports
+            <span id="smSessionReportsBadge" style="background: #fef3c7; padding: 0 10px; border-radius: 20px; font-size: 11px; color: #92400e;">0</span>
+        </button>
+        <button onclick="showSMSubTab('history')" id="smTabHistory" class="sm-tab-btn" 
+                style="padding: 10px 28px; background: transparent; color: #334155; border: none; border-radius: 40px; cursor: pointer; font-weight: 500; font-size: 14px; transition: all 0.3s; display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-history"></i> History
+        </button>
+        <button onclick="showSMSubTab('new-request')" id="smTabNewRequest" class="sm-tab-btn" 
+                style="padding: 10px 28px; background: transparent; color: #334155; border: none; border-radius: 40px; cursor: pointer; font-weight: 500; font-size: 14px; transition: all 0.3s; display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-plus-circle"></i> New Request
+        </button>
+    </div>
+
+    <!-- TAB 1: ADMISSIONS (unchanged) -->
+    <div id="smAdmissionsTab" class="sm-tab-content">
+        <!-- ... keep existing admissions content ... -->
+        <div style="background: white; border-radius: 12px; padding: 14px 18px; margin-bottom: 16px; border: 1px solid #e5e7eb; display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+            <div style="position: relative; flex: 1; min-width: 160px;">
+                <i class="fas fa-search" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #94a3b8;"></i>
+                <input type="text" id="smAdmissionsSearch" placeholder="Search by name or ID..." onkeyup="filterSMRequests('admissions')" 
+                       style="width: 100%; padding: 8px 12px 8px 34px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 13px; background: #f8fafc;">
+            </div>
+            <select id="smAdmissionsStatusFilter" onchange="filterSMRequests('admissions')" style="padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 13px; background: #f8fafc;">
+                <option value="all">All Status</option>
+                <option value="draft">📝 Draft</option>
+                <option value="submitted">⏳ Submitted</option>
+                <option value="reviewing">🔄 Reviewing</option>
+                <option value="approved">✅ Approved</option>
+                <option value="rejected">❌ Rejected</option>
+            </select>
+            <select id="smAdmissionsProgramFilter" onchange="filterSMRequests('admissions')" style="padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 13px; background: #f8fafc;">
+                <option value="all">All Programs</option>
+                <option value="KRCHN">KRCHN Nursing</option>
+                <option value="DCHN">DCHN Nursing</option>
+                <option value="DPOTT">Diploma POTT</option>
+                <option value="DCH">Diploma CH</option>
+                <option value="DHRIT">Diploma HRIT</option>
+                <option value="DSL">Diploma SL</option>
+                <option value="DSW">Diploma SW</option>
+                <option value="DCJS">Diploma CJS</option>
+                <option value="DHSS">Diploma HSS</option>
+                <option value="DICT">Diploma ICT</option>
+                <option value="DME">Diploma ME</option>
+            </select>
+            <button onclick="loadAdmissions()" style="background: #0A3D62; color: white; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">
+                <i class="fas fa-filter"></i> Filter
+            </button>
+        </div>
+
+        <div style="background: white; border-radius: 12px; border: 1px solid #e5e7eb; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                    <thead>
+                        <tr style="background: #f8fafc; border-bottom: 2px solid #e5e7eb;">
+                            <th style="padding: 12px 16px; text-align: center; width: 40px;">
+                                <input type="checkbox" id="smSelectAllAdmissions" onchange="toggleAllSMCheckboxes('admissions')">
+                            </th>
+                            <th style="padding: 12px 16px; text-align: left; font-weight: 600; color: #475569;">Student</th>
+                            <th style="padding: 12px 16px; text-align: left; font-weight: 600; color: #475569;">Program</th>
+                            <th style="padding: 12px 16px; text-align: left; font-weight: 600; color: #475569;">Student Type</th>
+                            <th style="padding: 12px 16px; text-align: center; font-weight: 600; color: #475569;">Applied</th>
+                            <th style="padding: 12px 16px; text-align: center; font-weight: 600; color: #475569;">Eligibility</th>
+                            <th style="padding: 12px 16px; text-align: center; font-weight: 600; color: #475569;">Status</th>
+                            <th style="padding: 12px 16px; text-align: center; font-weight: 600; color: #475569;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="smAdmissionsBody">
+                        <tr><td colspan="8" style="padding: 40px; text-align: center; color: #94a3b8;">
+                            <div class="loading-spinner" style="margin: 0 auto 12px; width: 40px; height: 40px; border: 4px solid #e2e8f0; border-top-color: #0A3D62; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+                            <p>Loading admissions...</p>
+                        </td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div style="padding: 12px 16px; background: #f8fafc; border-top: 1px solid #e5e7eb; display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                <span style="font-size: 12px; color: #94a3b8;">Selected: <strong id="smAdmissionsSelectedCount">0</strong></span>
+                <button onclick="bulkApproveSM('admissions')" class="btn-action" style="background: #10b981; padding: 6px 16px; border: none; border-radius: 6px; color: white; cursor: pointer; font-size: 12px;">
+                    <i class="fas fa-check"></i> Approve Selected
+                </button>
+                <button onclick="bulkRejectSM('admissions')" class="btn-action" style="background: #dc2626; padding: 6px 16px; border: none; border-radius: 6px; color: white; cursor: pointer; font-size: 12px;">
+                    <i class="fas fa-times"></i> Reject Selected
+                </button>
+                <button onclick="bulkReviewSM('admissions')" class="btn-action" style="background: #f59e0b; padding: 6px 16px; border: none; border-radius: 6px; color: white; cursor: pointer; font-size: 12px;">
+                    <i class="fas fa-eye"></i> Mark Reviewing
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 2: CHANGE OF PROGRAM (unchanged) -->
+    <div id="smChangeProgramTab" class="sm-tab-content" style="display: none;">
+        <!-- ... keep existing change program content ... -->
+        <div style="background: white; border-radius: 12px; padding: 14px 18px; margin-bottom: 16px; border: 1px solid #e5e7eb; display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+            <div style="position: relative; flex: 1; min-width: 160px;">
+                <i class="fas fa-search" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #94a3b8;"></i>
+                <input type="text" id="smChangeSearch" placeholder="Search by name or ID..." onkeyup="filterSMRequests('change')" 
+                       style="width: 100%; padding: 8px 12px 8px 34px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 13px; background: #f8fafc;">
+            </div>
+            <select id="smChangeStatusFilter" onchange="filterSMRequests('change')" style="padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 13px; background: #f8fafc;">
+                <option value="all">All Status</option>
+                <option value="pending">⏳ Pending</option>
+                <option value="approved">✅ Approved</option>
+                <option value="rejected">❌ Rejected</option>
+                <option value="processing">🔄 Processing</option>
+            </select>
+            <button onclick="loadChangeProgramRequests()" style="background: #4C1D95; color: white; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">
+                <i class="fas fa-filter"></i> Filter
+            </button>
+        </div>
+
+        <div style="background: white; border-radius: 12px; border: 1px solid #e5e7eb; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                    <thead>
+                        <tr style="background: #f8fafc; border-bottom: 2px solid #e5e7eb;">
+                            <th style="padding: 12px 16px; text-align: center; width: 40px;">
+                                <input type="checkbox" id="smSelectAllChange" onchange="toggleAllSMCheckboxes('change')">
+                            </th>
+                            <th style="padding: 12px 16px; text-align: left; font-weight: 600; color: #475569;">Student</th>
+                            <th style="padding: 12px 16px; text-align: left; font-weight: 600; color: #475569;">Current Program</th>
+                            <th style="padding: 12px 16px; text-align: left; font-weight: 600; color: #475569;">Requested Program</th>
+                            <th style="padding: 12px 16px; text-align: center; font-weight: 600; color: #475569;">Date Requested</th>
+                            <th style="padding: 12px 16px; text-align: center; font-weight: 600; color: #475569;">Status</th>
+                            <th style="padding: 12px 16px; text-align: center; font-weight: 600; color: #475569;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="smChangeProgramBody">
+                        <tr><td colspan="7" style="padding: 40px; text-align: center; color: #94a3b8;">
+                            <div class="loading-spinner" style="margin: 0 auto 12px; width: 40px; height: 40px; border: 4px solid #e2e8f0; border-top-color: #4C1D95; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+                            <p>Loading change of program requests...</p>
+                        </td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div style="padding: 12px 16px; background: #f8fafc; border-top: 1px solid #e5e7eb; display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                <span style="font-size: 12px; color: #94a3b8;">Selected: <strong id="smChangeSelectedCount">0</strong></span>
+                <button onclick="bulkApproveSM('change')" class="btn-action" style="background: #10b981; padding: 6px 16px; border: none; border-radius: 6px; color: white; cursor: pointer; font-size: 12px;">
+                    <i class="fas fa-check"></i> Approve Selected
+                </button>
+                <button onclick="bulkRejectSM('change')" class="btn-action" style="background: #dc2626; padding: 6px 16px; border: none; border-radius: 6px; color: white; cursor: pointer; font-size: 12px;">
+                    <i class="fas fa-times"></i> Reject Selected
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 3: READMISSION (unchanged) -->
+    <div id="smReadmissionTab" class="sm-tab-content" style="display: none;">
+        <!-- ... keep existing readmission content ... -->
+        <div style="background: white; border-radius: 12px; padding: 14px 18px; margin-bottom: 16px; border: 1px solid #e5e7eb; display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+            <div style="position: relative; flex: 1; min-width: 160px;">
+                <i class="fas fa-search" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #94a3b8;"></i>
+                <input type="text" id="smReadmissionSearch" placeholder="Search by name or ID..." onkeyup="filterSMRequests('readmission')" 
+                       style="width: 100%; padding: 8px 12px 8px 34px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 13px; background: #f8fafc;">
+            </div>
+            <select id="smReadmissionStatusFilter" onchange="filterSMRequests('readmission')" style="padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 13px; background: #f8fafc;">
+                <option value="all">All Status</option>
+                <option value="pending">⏳ Pending</option>
+                <option value="approved">✅ Approved</option>
+                <option value="rejected">❌ Rejected</option>
+                <option value="processing">🔄 Processing</option>
+            </select>
+            <button onclick="loadReadmissionRequests()" style="background: #4C1D95; color: white; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">
+                <i class="fas fa-filter"></i> Filter
+            </button>
+        </div>
+
+        <div style="background: white; border-radius: 12px; border: 1px solid #e5e7eb; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                    <thead>
+                        <tr style="background: #f8fafc; border-bottom: 2px solid #e5e7eb;">
+                            <th style="padding: 12px 16px; text-align: center; width: 40px;">
+                                <input type="checkbox" id="smSelectAllReadmission" onchange="toggleAllSMCheckboxes('readmission')">
+                            </th>
+                            <th style="padding: 12px 16px; text-align: left; font-weight: 600; color: #475569;">Student</th>
+                            <th style="padding: 12px 16px; text-align: left; font-weight: 600; color: #475569;">Previous Program</th>
+                            <th style="padding: 12px 16px; text-align: left; font-weight: 600; color: #475569;">Requested Program</th>
+                            <th style="padding: 12px 16px; text-align: center; font-weight: 600; color: #475569;">Date Requested</th>
+                            <th style="padding: 12px 16px; text-align: center; font-weight: 600; color: #475569;">Status</th>
+                            <th style="padding: 12px 16px; text-align: center; font-weight: 600; color: #475569;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="smReadmissionBody">
+                        <tr><td colspan="7" style="padding: 40px; text-align: center; color: #94a3b8;">
+                            <div class="loading-spinner" style="margin: 0 auto 12px; width: 40px; height: 40px; border: 4px solid #e2e8f0; border-top-color: #4C1D95; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+                            <p>Loading readmission requests...</p>
+                        </td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div style="padding: 12px 16px; background: #f8fafc; border-top: 1px solid #e5e7eb; display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                <span style="font-size: 12px; color: #94a3b8;">Selected: <strong id="smReadmissionSelectedCount">0</strong></span>
+                <button onclick="bulkApproveSM('readmission')" class="btn-action" style="background: #10b981; padding: 6px 16px; border: none; border-radius: 6px; color: white; cursor: pointer; font-size: 12px;">
+                    <i class="fas fa-check"></i> Approve Selected
+                </button>
+                <button onclick="bulkRejectSM('readmission')" class="btn-action" style="background: #dc2626; padding: 6px 16px; border: none; border-radius: 6px; color: white; cursor: pointer; font-size: 12px;">
+                    <i class="fas fa-times"></i> Reject Selected
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- TAB 4: SESSION REPORTS (NEW - ADMIN VIEW)                    -->
+    <!-- ============================================================ -->
+    <div id="smSessionReportsTab" class="sm-tab-content" style="display: none;">
+        <div style="background: white; border-radius: 12px; padding: 14px 18px; margin-bottom: 16px; border: 1px solid #e5e7eb; display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+            <div style="position: relative; flex: 1; min-width: 160px;">
+                <i class="fas fa-search" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #94a3b8;"></i>
+                <input type="text" id="smSessionReportSearch" placeholder="Search by name or ID..." onkeyup="filterSMRequests('session-reports')" 
+                       style="width: 100%; padding: 8px 12px 8px 34px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 13px; background: #f8fafc;">
+            </div>
+            <select id="smSessionReportStatusFilter" onchange="filterSMRequests('session-reports')" style="padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 13px; background: #f8fafc;">
+                <option value="all">All Status</option>
+                <option value="pending">⏳ Pending</option>
+                <option value="approved">✅ Approved</option>
+                <option value="rejected">❌ Rejected</option>
+            </select>
+            <select id="smSessionReportTypeFilter" onchange="filterSMRequests('session-reports')" style="padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 13px; background: #f8fafc;">
+                <option value="all">All Types</option>
+                <option value="Nursing">🎓 Nursing (Block)</option>
+                <option value="TVET">📚 TVET (Year/Term)</option>
+            </select>
+            <button onclick="loadSessionReportsAdmin()" style="background: #3b82f6; color: white; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">
+                <i class="fas fa-filter"></i> Filter
+            </button>
+        </div>
+
+        <div style="background: white; border-radius: 12px; border: 1px solid #e5e7eb; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                    <thead>
+                        <tr style="background: #f8fafc; border-bottom: 2px solid #e5e7eb;">
+                            <th style="padding: 12px 16px; text-align: center; width: 40px;">
+                                <input type="checkbox" id="smSelectAllSessionReports" onchange="toggleAllSMCheckboxes('session-reports')">
+                            </th>
+                            <th style="padding: 12px 16px; text-align: left; font-weight: 600; color: #475569;">Student</th>
+                            <th style="padding: 12px 16px; text-align: left; font-weight: 600; color: #475569;">Program</th>
+                            <th style="padding: 12px 16px; text-align: left; font-weight: 600; color: #475569;">Session Reported</th>
+                            <th style="padding: 12px 16px; text-align: left; font-weight: 600; color: #475569;">Status</th>
+                            <th style="padding: 12px 16px; text-align: center; font-weight: 600; color: #475569;">Submitted</th>
+                            <th style="padding: 12px 16px; text-align: center; font-weight: 600; color: #475569;">Approval</th>
+                            <th style="padding: 12px 16px; text-align: center; font-weight: 600; color: #475569;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="smSessionReportsBody">
+                        <tr><td colspan="8" style="padding: 40px; text-align: center; color: #94a3b8;">
+                            <div class="loading-spinner" style="margin: 0 auto 12px; width: 40px; height: 40px; border: 4px solid #e2e8f0; border-top-color: #3b82f6; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+                            <p>Loading session reports...</p>
+                        </td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div style="padding: 12px 16px; background: #f8fafc; border-top: 1px solid #e5e7eb; display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                <span style="font-size: 12px; color: #94a3b8;">Selected: <strong id="smSessionReportsSelectedCount">0</strong></span>
+                <button onclick="bulkApproveSessionReports()" class="btn-action" style="background: #10b981; padding: 6px 16px; border: none; border-radius: 6px; color: white; cursor: pointer; font-size: 12px;">
+                    <i class="fas fa-check"></i> Approve Selected
+                </button>
+                <button onclick="bulkRejectSessionReports()" class="btn-action" style="background: #dc2626; padding: 6px 16px; border: none; border-radius: 6px; color: white; cursor: pointer; font-size: 12px;">
+                    <i class="fas fa-times"></i> Reject Selected
+                </button>
+                <span style="font-size: 11px; color: #94a3b8; margin-left: auto;">
+                    <i class="fas fa-info-circle"></i> Approval updates student's block/year/term
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 5: HISTORY (unchanged) -->
+    <div id="smHistoryTab" class="sm-tab-content" style="display: none;">
+        <div style="background: white; border-radius: 12px; padding: 16px 20px; margin-bottom: 16px; border: 1px solid #e5e7eb; display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
+            <select id="smHistoryType" onchange="loadSMHistory()" style="padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 13px; background: #f8fafc;">
+                <option value="all">All Types</option>
+                <option value="admissions">Admissions</option>
+                <option value="change-program">Change of Program</option>
+                <option value="readmission">Readmission</option>
+                <option value="session-report">Session Report</option>
+            </select>
+            <select id="smHistoryStatus" onchange="loadSMHistory()" style="padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 13px; background: #f8fafc;">
+                <option value="all">All Status</option>
+                <option value="approved">✅ Approved</option>
+                <option value="rejected">❌ Rejected</option>
+                <option value="submitted">⏳ Submitted</option>
+            </select>
+            <input type="date" id="smHistoryDateFrom" onchange="loadSMHistory()" style="padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 13px; background: #f8fafc;">
+            <span style="color: #94a3b8;">to</span>
+            <input type="date" id="smHistoryDateTo" onchange="loadSMHistory()" style="padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 13px; background: #f8fafc;">
+            <button onclick="loadSMHistory()" style="background: #4C1D95; color: white; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">
+                <i class="fas fa-search"></i> Search
+            </button>
+        </div>
+
+        <div style="background: white; border-radius: 12px; border: 1px solid #e5e7eb; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                    <thead>
+                        <tr style="background: #f8fafc; border-bottom: 2px solid #e5e7eb;">
+                            <th style="padding: 12px 16px; text-align: left; font-weight: 600; color: #475569;">Student</th>
+                            <th style="padding: 12px 16px; text-align: left; font-weight: 600; color: #475569;">Type</th>
+                            <th style="padding: 12px 16px; text-align: left; font-weight: 600; color: #475569;">Details</th>
+                            <th style="padding: 12px 16px; text-align: center; font-weight: 600; color: #475569;">Date</th>
+                            <th style="padding: 12px 16px; text-align: center; font-weight: 600; color: #475569;">Status</th>
+                            <th style="padding: 12px 16px; text-align: center; font-weight: 600; color: #475569;">Approved By</th>
+                        </tr>
+                    </thead>
+                    <tbody id="smHistoryBody">
+                        <tr><td colspan="6" style="padding: 40px; text-align: center; color: #94a3b8;">
+                            <div class="loading-spinner" style="margin: 0 auto 12px; width: 40px; height: 40px; border: 4px solid #e2e8f0; border-top-color: #4C1D95; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+                            <p>Loading history...</p>
+                        </td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 6: NEW REQUEST (unchanged) -->
+    <div id="smNewRequestTab" class="sm-tab-content" style="display: none;">
+        <div style="background: white; border-radius: 12px; padding: 24px; border: 1px solid #e5e7eb; max-width: 700px; margin: 0 auto; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+            <h3 style="margin: 0 0 20px 0; color: #0A3D62; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-plus-circle" style="color: #4C1D95;"></i> Submit New Request
+            </h3>
+
+            <form id="smRequestForm" onsubmit="event.preventDefault(); submitSMRequest();">
+                <div style="margin-bottom: 16px;">
+                    <label style="font-weight: 600; font-size: 13px; color: #475569; display: block; margin-bottom: 5px;">
+                        <i class="fas fa-user"></i> Student *
+                    </label>
+                    <select id="smStudentSelect" required style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 14px; background: white;">
+                        <option value="">-- Select Student --</option>
+                    </select>
+                </div>
+
+                <div style="margin-bottom: 16px;">
+                    <label style="font-weight: 600; font-size: 13px; color: #475569; display: block; margin-bottom: 5px;">
+                        <i class="fas fa-tag"></i> Request Type *
+                    </label>
+                    <div style="display: flex; gap: 20px;">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="radio" name="requestType" value="change-program" checked onchange="toggleSMRequestFields()"> Change of Program
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="radio" name="requestType" value="readmission" onchange="toggleSMRequestFields()"> Readmission
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="radio" name="requestType" value="admission" onchange="toggleSMRequestFields()"> New Admission
+                        </label>
+                    </div>
+                </div>
+
+                <div id="smCurrentProgramSection" style="margin-bottom: 16px;">
+                    <label style="font-weight: 600; font-size: 13px; color: #475569; display: block; margin-bottom: 5px;">
+                        <i class="fas fa-graduation-cap"></i> Current Program *
+                    </label>
+                    <select id="smCurrentProgram" required style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 14px; background: white;">
+                        <option value="">-- Select Current Program --</option>
+                        <option value="KRCHN">🎓 KRCHN Nursing</option>
+                        <optgroup label="🎯 TVET Diploma Programs">
+                            <option value="DPOTT">Diploma in Perioperative Theatre Technology</option>
+                            <option value="DCH">Diploma in Community Health</option>
+                            <option value="DHRIT">Diploma in Health Records and IT</option>
+                            <option value="DSL">Diploma in Science Lab</option>
+                            <option value="DSW">Diploma in Social Work</option>
+                            <option value="DCJS">Diploma in Criminal Justice</option>
+                            <option value="DHSS">Diploma in Health Support Services</option>
+                            <option value="DICT">Diploma in ICT</option>
+                            <option value="DME">Diploma in Medical Engineering</option>
+                        </optgroup>
+                        <optgroup label="📜 TVET Certificate Programs">
+                            <option value="CPOTT">Certificate in Perioperative Theatre Technology</option>
+                            <option value="CCH">Certificate in Community Health</option>
+                            <option value="CHRIT">Certificate in Health Records and IT</option>
+                            <option value="CPC">Certificate in Patient Care</option>
+                            <option value="CSL">Certificate in Science Lab</option>
+                            <option value="CSW">Certificate in Social Work</option>
+                            <option value="CCJS">Certificate in Criminal Justice</option>
+                            <option value="CAG">Certificate in Agriculture</option>
+                            <option value="CHSS">Certificate in Health Support Services</option>
+                            <option value="CICT">Certificate in ICT</option>
+                        </optgroup>
+                    </select>
+                </div>
+
+                <div id="smPreviousProgramSection" style="display: none; margin-bottom: 16px;">
+                    <label style="font-weight: 600; font-size: 13px; color: #475569; display: block; margin-bottom: 5px;">
+                        <i class="fas fa-history"></i> Previous Program *
+                    </label>
+                    <select id="smPreviousProgram" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 14px; background: white;">
+                        <option value="">-- Select Previous Program --</option>
+                        <option value="KRCHN">🎓 KRCHN Nursing</option>
+                        <optgroup label="🎯 TVET Diploma Programs">
+                            <option value="DPOTT">Diploma in Perioperative Theatre Technology</option>
+                            <option value="DCH">Diploma in Community Health</option>
+                            <option value="DHRIT">Diploma in Health Records and IT</option>
+                            <option value="DSL">Diploma in Science Lab</option>
+                            <option value="DSW">Diploma in Social Work</option>
+                            <option value="DCJS">Diploma in Criminal Justice</option>
+                            <option value="DHSS">Diploma in Health Support Services</option>
+                            <option value="DICT">Diploma in ICT</option>
+                            <option value="DME">Diploma in Medical Engineering</option>
+                        </optgroup>
+                        <optgroup label="📜 TVET Certificate Programs">
+                            <option value="CPOTT">Certificate in Perioperative Theatre Technology</option>
+                            <option value="CCH">Certificate in Community Health</option>
+                            <option value="CHRIT">Certificate in Health Records and IT</option>
+                            <option value="CPC">Certificate in Patient Care</option>
+                            <option value="CSL">Certificate in Science Lab</option>
+                            <option value="CSW">Certificate in Social Work</option>
+                            <option value="CCJS">Certificate in Criminal Justice</option>
+                            <option value="CAG">Certificate in Agriculture</option>
+                            <option value="CHSS">Certificate in Health Support Services</option>
+                            <option value="CICT">Certificate in ICT</option>
+                        </optgroup>
+                    </select>
+                </div>
+
+                <div style="margin-bottom: 16px;">
+                    <label style="font-weight: 600; font-size: 13px; color: #475569; display: block; margin-bottom: 5px;">
+                        <i class="fas fa-graduation-cap"></i> Requested Program *
+                    </label>
+                    <select id="smRequestedProgram" required style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 14px; background: white;">
+                        <option value="">-- Select Requested Program --</option>
+                        <option value="KRCHN">🎓 KRCHN Nursing</option>
+                        <optgroup label="🎯 TVET Diploma Programs">
+                            <option value="DPOTT">Diploma in Perioperative Theatre Technology</option>
+                            <option value="DCH">Diploma in Community Health</option>
+                            <option value="DHRIT">Diploma in Health Records and IT</option>
+                            <option value="DSL">Diploma in Science Lab</option>
+                            <option value="DSW">Diploma in Social Work</option>
+                            <option value="DCJS">Diploma in Criminal Justice</option>
+                            <option value="DHSS">Diploma in Health Support Services</option>
+                            <option value="DICT">Diploma in ICT</option>
+                            <option value="DME">Diploma in Medical Engineering</option>
+                        </optgroup>
+                        <optgroup label="📜 TVET Certificate Programs">
+                            <option value="CPOTT">Certificate in Perioperative Theatre Technology</option>
+                            <option value="CCH">Certificate in Community Health</option>
+                            <option value="CHRIT">Certificate in Health Records and IT</option>
+                            <option value="CPC">Certificate in Patient Care</option>
+                            <option value="CSL">Certificate in Science Lab</option>
+                            <option value="CSW">Certificate in Social Work</option>
+                            <option value="CCJS">Certificate in Criminal Justice</option>
+                            <option value="CAG">Certificate in Agriculture</option>
+                            <option value="CHSS">Certificate in Health Support Services</option>
+                            <option value="CICT">Certificate in ICT</option>
+                        </optgroup>
+                    </select>
+                </div>
+
+                <div style="margin-bottom: 16px;">
+                    <label style="font-weight: 600; font-size: 13px; color: #475569; display: block; margin-bottom: 5px;">
+                        <i class="fas fa-comment"></i> Reason / Justification *
+                    </label>
+                    <textarea id="smReason" rows="4" required placeholder="Please provide detailed reason for the request..." 
+                              style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 14px; resize: vertical; font-family: inherit;"></textarea>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <label style="font-weight: 600; font-size: 13px; color: #475569; display: block; margin-bottom: 5px;">
+                        <i class="fas fa-paperclip"></i> Supporting Documents (Optional)
+                    </label>
+                    <input type="file" id="smSupportingDocs" multiple accept=".pdf,.jpg,.png,.jpeg" 
+                           style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 13px; background: #f8fafc;">
+                    <small style="color: #94a3b8; font-size: 11px;">PDF, JPG, PNG (Max 5MB per file)</small>
+                </div>
+
+                <div style="display: flex; gap: 12px;">
+                    <button type="submit" style="flex: 1; padding: 12px; background: linear-gradient(135deg, #4C1D95, #6d28d9); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 15px;">
+                        <i class="fas fa-paper-plane"></i> Submit Request
+                    </button>
+                    <button type="reset" style="padding: 12px 24px; background: #e5e7eb; color: #475569; border: none; border-radius: 8px; cursor: pointer; font-weight: 500;">
+                        <i class="fas fa-times"></i> Clear
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+<div class="ia-institution-live-data" style="margin:24px 0;padding:18px;border:1px solid var(--ia-border,#dbe3ea);border-radius:14px;background:var(--ia-card,#fff)"><div class="ia-page-heading"><div><span class="ia-eyebrow">INSTITUTION STUDENT RECORDS</span><h2>Institution student directory</h2><p>Live records and actions are limited to this institution.</p></div></div><div class="ia-toolbar"><input id="iaStudentSearch" type="search" placeholder="Search name, email or admission number"><span id="iaStudentCount" class="ia-count"></span></div><div class="ia-panel ia-table-panel"><div class="ia-table-scroll"><table><thead><tr><th>Student</th><th>Admission number</th><th>Email</th><th>Phone</th><th>Programme</th><th>Block</th><th>Intake</th><th>Status</th><th>Actions</th></tr></thead><tbody id="iaStudents"><tr><td colspan="9">Loading institution records…</td></tr></tbody></table></div></div></div>
+</section>
+<section id="view-staff" class="ia-view" style="display:none;padding:0 4px;">
+  <style>
+    #staff-management .staff-directory-header{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:20px}
+    #staff-management .staff-directory-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:20px}
+    #staff-management .staff-directory-card{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:17px;box-shadow:0 3px 12px rgba(15,23,42,.04)}
+    #staff-management .staff-directory-card small{display:block;color:#64748b;font-size:12px;margin-bottom:8px}
+    #staff-management .staff-directory-card strong{font-size:25px;color:#0f172a}
+    #staff-management .staff-directory-tools{display:grid;grid-template-columns:minmax(220px,2fr) repeat(3,minmax(140px,1fr));gap:10px;margin-bottom:15px}
+    #staff-management .staff-directory-tools input,#staff-management .staff-directory-tools select{width:100%;min-width:0;padding:11px 12px;border:1px solid #cbd5e1;border-radius:9px;background:#fff;color:#0f172a}
+    #staff-management .staff-directory-table-wrap{width:100%;overflow-x:auto;border:1px solid #e2e8f0;border-radius:13px;background:#fff;-webkit-overflow-scrolling:touch}
+    #staff-management table{min-width:900px;width:100%;border-collapse:collapse}
+    #staff-management th,#staff-management td{padding:12px 14px;text-align:left;border-bottom:1px solid #edf2f7;white-space:nowrap}
+    #staff-management th{background:#f8fafc;color:#475569;font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+    #staff-management td{font-size:13px;color:#1e293b}
+    #staff-management .staff-directory-empty{text-align:center;padding:36px 18px;color:#64748b;white-space:normal}
+    #staff-management .staff-directory-error{color:#b91c1c}
+    #staff-management .staff-directory-status{display:inline-block;padding:4px 9px;border-radius:99px;font-size:11px;font-weight:700}
+    #staff-management .staff-directory-status.is-active{background:#dcfce7;color:#166534}
+    #staff-management .staff-directory-status.is-inactive{background:#fee2e2;color:#991b1b}
+    #staff-management .staff-directory-notice{padding:13px 15px;border:1px solid #fde68a;background:#fffbeb;color:#92400e;border-radius:11px;font-size:13px;line-height:1.5;margin-bottom:17px}
+    @media(max-width:700px){#staff-management .staff-directory-tools{grid-template-columns:1fr 1fr}#staff-management .staff-directory-tools input{grid-column:1/-1}}
+  </style>
+  <div class="staff-directory-header">
+    <div><h2 style="margin:0 0 6px;color:#0f172a;font-size:24px;">Staff Management</h2><p style="margin:0;color:#64748b;font-size:13px;">Institution staff directory and workforce overview</p></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><button id="staffDirectoryRefresh" type="button" class="btn-action"><i class="fas fa-rotate"></i> Refresh</button><button id="staffDirectoryExport" type="button" class="btn-action" style="background:#0f766e"><i class="fas fa-file-csv"></i> Export CSV</button></div>
+  </div>
+  <div class="staff-directory-notice"><strong>Security notice:</strong> This directory intentionally excludes bank details, national ID data, payroll information and password fields. Staff account creation and password resets are being moved to secure authentication workflows; this page will not store passwords in browser-side encoding.</div>
+  <div class="staff-directory-grid">
+    <div class="staff-directory-card"><small>Total staff</small><strong id="staffDirectoryTotal">—</strong></div><div class="staff-directory-card"><small>Active staff</small><strong id="staffDirectoryActive">—</strong></div><div class="staff-directory-card"><small>Academic staff</small><strong id="staffDirectoryAcademic">—</strong></div><div class="staff-directory-card"><small>Departments</small><strong id="staffDirectoryDepartments">—</strong></div>
+  </div>
+  <div class="staff-directory-tools">
+    <input id="staffDirectorySearch" type="search" placeholder="Search name, staff ID, email, phone or department" aria-label="Search staff">
+    <select id="staffDirectoryDepartment" aria-label="Filter department"><option value="all">All departments</option></select>
+    <select id="staffDirectoryProgram" aria-label="Filter program"><option value="all">All programs</option><option value="KRCHN">KRCHN</option><option value="TVET">TVET</option></select>
+    <select id="staffDirectoryStatus" aria-label="Filter status"><option value="all">All statuses</option><option value="active">Active</option><option value="inactive">Inactive</option></select>
+  </div>
+  <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 2px 10px;color:#64748b;font-size:12px"><span id="staffDirectoryResultCount">Loading records…</span><span id="staffDirectoryUpdated"></span></div>
+  <div class="staff-directory-table-wrap"><table><thead><tr><th>Staff member</th><th>Staff ID</th><th>Department</th><th>Designation</th><th>Email</th><th>Phone</th><th>Status</th></tr></thead><tbody id="staffDirectoryBody"><tr><td colspan="7" class="staff-directory-empty">Open Staff Management to load records.</td></tr></tbody></table></div>
+  <p id="staffDirectoryError" role="status" style="color:#b91c1c;font-size:12px;margin-top:10px"></p>
+
+<div class="ia-institution-live-data" style="margin:24px 0;padding:18px;border:1px solid var(--ia-border,#dbe3ea);border-radius:14px;background:var(--ia-card,#fff)"><div class="ia-page-heading"><div><span class="ia-eyebrow">INSTITUTION STAFF RECORDS</span><h2>Institution staff directory</h2><p>Staff and lecturer records belonging to this institution.</p></div></div><div class="ia-toolbar"><input id="iaStaffSearch" type="search" placeholder="Search staff name, email or department"><span id="iaStaffCount" class="ia-count"></span></div><div class="ia-panel ia-table-panel"><div class="ia-table-scroll"><table><thead><tr><th>Name</th><th>Email</th><th>Department</th><th>Staff ID</th><th>Role</th><th>Status</th><th>Approved</th><th>Actions</th></tr></thead><tbody id="iaStaff"><tr><td colspan="8">Loading institution staff…</td></tr></tbody></table></div></div></div>
+</section>
 <section class="ia-view" id="view-unit-catalog">
  <div class="ia-page-heading"><div><span class="ia-eyebrow">CURRICULUM · INSTITUTION WORKSPACE</span><h1>Unit Catalog</h1><p>Browse this institution’s academic units across KRCHN and TVET programmes. Programme ownership and academic periods follow your institution settings.</p></div><button class="ia-secondary-btn" id="iaUnitCatalogRefresh"><i class="fa-solid fa-rotate"></i> Refresh</button></div>
  <div class="ia-panel ia-table-panel">
@@ -597,7 +1205,539 @@
     </div>
 </section>
 </section>
-<section class="ia-view" id="view-exams"><div class="ia-page-heading"><div><span class="ia-eyebrow">ASSESSMENT MANAGEMENT</span><h1>Examinations</h1><p>Examination schedule and approval status for your institution.</p></div><div class="ia-page-actions"><a class="ia-secondary-btn" href="/exams?view=approvals"><i class="fa-solid fa-clipboard-check"></i> Review exam approvals</a><a class="ia-primary-btn" href="/exams"><i class="fa-solid fa-arrow-up-right-from-square"></i> Open examination centre</a></div></div><div class="ia-panel ia-table-panel"><div class="ia-table-scroll"><table><thead><tr><th>Examination</th><th>Programme</th><th>Block</th><th>Date</th><th>Assessment type</th><th>Approval</th><th>Publication</th></tr></thead><tbody id="iaExams"><tr><td colspan="6" class="ia-empty">Loading…</td></tr></tbody></table></div></div></section>
+<section id="view-exams" class="ia-view" style="padding: 0 24px 40px 24px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; min-height: 100vh;">
+    
+    <!-- HEADER -->
+    <div style="background: linear-gradient(135deg, #0f172a 0%, #1a1a3e 40%, #312e81 100%); border-radius: 28px; padding: 32px 40px; margin-bottom: 28px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 18px; box-shadow: 0 24px 64px rgba(15,23,42,0.3); border: 1px solid rgba(255,255,255,0.08); backdrop-filter: blur(12px); position: relative; overflow: hidden;">
+        <div style="position: absolute; top: -80px; right: -80px; width: 280px; height: 280px; background: radial-gradient(circle, rgba(124,58,237,0.15), transparent 70%); border-radius: 50%;"></div>
+        <div style="position: absolute; bottom: -100px; left: -60px; width: 200px; height: 200px; background: radial-gradient(circle, rgba(16,185,129,0.08), transparent 70%); border-radius: 50%;"></div>
+        
+        <div style="position: relative; z-index: 2; display: flex; align-items: center; gap: 20px;">
+            <div style="background: rgba(255,255,255,0.08); border-radius: 16px; padding: 10px 16px; border: 1px solid rgba(255,255,255,0.06); backdrop-filter: blur(4px);">
+                <span style="font-weight: 800; font-size: 18px; color: white; letter-spacing: -0.5px;">NCHSM</span>
+                <span style="display: block; font-size: 8px; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.5px;">Nursing & Health Sciences</span>
+            </div>
+            <div>
+                <h2 style="color: white; margin: 0; font-weight: 800; font-size: 26px; letter-spacing: -0.025em; display: flex; align-items: center; gap: 12px;">
+                    <i class="fas fa-pen-ruler" style="color: #a78bfa; font-size: 22px;"></i>
+                    CATS / Exams
+                </h2>
+                <p style="color: rgba(255,255,255,0.7); margin: 4px 0 0 0; font-size: 13px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                    <span style="display: flex; align-items: center; gap: 6px;">
+                        <i class="fas fa-graduation-cap" style="color: #34d399; font-size: 11px;"></i> All NCHSM Programs
+                    </span>
+                    <span style="color: rgba(255,255,255,0.15);">|</span>
+                    <span style="background: rgba(16,185,129,0.15); padding: 2px 14px; border-radius: 20px; font-size: 10px; color: #34d399; border: 1px solid rgba(16,185,129,0.15); display: flex; align-items: center; gap: 4px;">
+                        <i class="fas fa-circle" style="font-size: 5px; color: #34d399;"></i> 25+ Programs
+                    </span>
+                </p>
+            </div>
+        </div>
+        
+        <div style="display: flex; gap: 10px; flex-wrap: wrap; position: relative; z-index: 2;">
+            <button onclick="loadExams()" style="background: rgba(255,255,255,0.08); backdrop-filter: blur(8px); color: white; border: 1px solid rgba(255,255,255,0.1); padding: 10px 20px; border-radius: 40px; cursor: pointer; font-weight: 600; font-size: 13px; transition: all 0.2s; display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+            <button onclick="exportExamsToCSV()" style="background: rgba(255,255,255,0.95); color: #0f172a; padding: 10px 24px; border-radius: 40px; cursor: pointer; font-weight: 600; border: none; box-shadow: 0 4px 16px rgba(0,0,0,0.08); transition: all 0.2s; font-size: 13px; display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-download"></i> Export Exams
+            </button>
+        </div>
+    </div>
+
+    <!-- Info banner -->
+    <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 16px; padding: 14px 20px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px;">
+        <i class="fas fa-info-circle" style="color: #2563eb; font-size: 18px;"></i>
+        <div style="font-size: 13px; color: #1e40af;">
+            <strong>Where things happen:</strong> Create and edit exams here. <strong>Grades are entered and published in the Marks Entry module.</strong>
+        </div>
+    </div>
+
+    <!-- TABS -->
+    <div style="display: flex; gap: 6px; margin-bottom: 28px; background: rgba(255,255,255,0.7); backdrop-filter: blur(12px); padding: 6px 10px; border-radius: 60px; border: 1px solid rgba(255,255,255,0.8); box-shadow: 0 8px 32px rgba(0,0,0,0.04); flex-wrap: wrap;">
+        <button onclick="showExamTab('list')" id="examListTabBtn" class="exam-tab-btn active" style="padding: 10px 28px; background: linear-gradient(135deg, #7c3aed, #6d28d9); color: white; border: none; border-radius: 40px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.3s; box-shadow: 0 4px 16px rgba(124,58,237,0.3); display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-list"></i> Exam List
+        </button>
+        <button onclick="showExamTab('create')" id="examCreateTabBtn" class="exam-tab-btn" style="padding: 10px 28px; background: transparent; color: #334155; border: none; border-radius: 40px; cursor: pointer; font-weight: 500; font-size: 14px; transition: all 0.3s; display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-plus-circle"></i> Create Exam
+        </button>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- TAB 1: EXAM LIST -->
+    <!-- ============================================ -->
+    <div id="examListTab" class="exam-tab-content" style="background: white; padding: 24px 28px; border-radius: 24px; box-shadow: 0 8px 40px rgba(0,0,0,0.03); border: 1px solid #f1f5f9;">
+        
+        <!-- Stats -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin-bottom: 20px;">
+            <div style="background: #f8fafc; padding: 12px 16px; border-radius: 12px; text-align: center;">
+                <div class="exam-stat-value" style="font-size: 20px; font-weight: 800; color: #7c3aed;">0</div>
+                <div style="font-size: 11px; color: #94a3b8; font-weight: 500;">Total Exams</div>
+            </div>
+            <div style="background: #f8fafc; padding: 12px 16px; border-radius: 12px; text-align: center;">
+                <div class="exam-stat-value" style="font-size: 20px; font-weight: 800; color: #059669;">0</div>
+                <div style="font-size: 11px; color: #94a3b8; font-weight: 500;">Published</div>
+            </div>
+            <div style="background: #f8fafc; padding: 12px 16px; border-radius: 12px; text-align: center;">
+                <div class="exam-stat-value" style="font-size: 20px; font-weight: 800; color: #f59e0b;">0</div>
+                <div style="font-size: 11px; color: #94a3b8; font-weight: 500;">In Progress</div>
+            </div>
+            <div style="background: #f8fafc; padding: 12px 16px; border-radius: 12px; text-align: center;">
+                <div class="exam-stat-value" style="font-size: 20px; font-weight: 800; color: #94a3b8;">0</div>
+                <div style="font-size: 11px; color: #94a3b8; font-weight: 500;">Draft</div>
+            </div>
+        </div>
+        
+        <!-- Toolbar -->
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 20px; background: #f8fafc; padding: 14px 18px; border-radius: 16px;">
+            <input type="text" id="exam-search" placeholder="🔍 Search Assessments..." onkeyup="filterExamsTable()" style="flex: 1; min-width: 180px; padding: 10px 18px; border-radius: 40px; border: 1px solid #e2e8f0; background: white; font-size: 13px; outline: none; transition: 0.2s;">
+            
+            <select id="exam_filter_program" onchange="filterExamsTable()" style="padding: 10px 16px; border-radius: 40px; border: 1px solid #e2e8f0; background: white; font-size: 12px; outline: none; min-width: 200px;">
+                <option value="">All Programs (25+)</option>
+                <optgroup label="🎓 KRCHN Nursing">
+                    <option value="KRCHN">KRCHN - Kenya Registered Community Health Nursing</option>
+                </optgroup>
+                <optgroup label="🎯 TVET Diploma Programs">
+                    <option value="DPOTT">DPOTT - Diploma in Perioperative Theatre Technology</option>
+                    <option value="DCH">DCH - Diploma in Community Health</option>
+                    <option value="DHRIT">DHRIT - Diploma in Health Records & IT</option>
+                    <option value="DSL">DSL - Diploma in Science Lab</option>
+                    <option value="DSW">DSW - Diploma in Social Work</option>
+                    <option value="DCJS">DCJS - Diploma in Criminal Justice</option>
+                    <option value="DHSS">DHSS - Diploma in Health Support Services</option>
+                    <option value="DICT">DICT - Diploma in ICT</option>
+                    <option value="DME">DME - Diploma in Medical Engineering</option>
+                </optgroup>
+                <optgroup label="📜 TVET Certificate Programs">
+                    <option value="CPOTT">CPOTT - Certificate in Perioperative Theatre Technology</option>
+                    <option value="CCH">CCH - Certificate in Community Health</option>
+                    <option value="CHRIT">CHRIT - Certificate in Health Records & IT</option>
+                    <option value="CPC">CPC - Certificate in Patient Care</option>
+                    <option value="CSL">CSL - Certificate in Science Lab</option>
+                    <option value="CSW">CSW - Certificate in Social Work</option>
+                    <option value="CCJS">CCJS - Certificate in Criminal Justice</option>
+                    <option value="CAG">CAG - Certificate in Agriculture</option>
+                    <option value="CHSS">CHSS - Certificate in Health Support Services</option>
+                    <option value="CICT">CICT - Certificate in ICT</option>
+                    <option value="CCG">CCG - Certificate in Caregiver</option>
+                    <option value="COMT">COMT - Certificate in Orthopedic Trauma Medicine</option>
+                </optgroup>
+                <optgroup label="🔧 TVET Artisan Programs">
+                    <option value="ACH">ACH - Artisan in Community Health</option>
+                    <option value="AAG">AAG - Artisan in Agriculture</option>
+                    <option value="ASW">ASW - Artisan in Social Work</option>
+                </optgroup>
+                <optgroup label="📊 Other TVET Programs">
+                    <option value="CCA">CCA - Certificate in Computer Applications</option>
+                    <option value="PTE">PTE - TVET/CDACC (PTE)</option>
+                </optgroup>
+            </select>
+            
+            <select id="exam_filter_status" onchange="filterExamsTable()" style="padding: 10px 16px; border-radius: 40px; border: 1px solid #e2e8f0; background: white; font-size: 13px; outline: none; min-width: 130px;">
+                <option value="">All Status</option>
+                <option value="Upcoming">📅 Upcoming</option>
+                <option value="InProgress">⏳ In Progress</option>
+                <option value="Completed">✅ Completed</option>
+                <option value="published">📢 Published</option>
+                <option value="Draft">📝 Draft</option>
+            </select>
+            
+            <select id="exam_filter_intake_month" onchange="filterExamsTable()" style="padding: 10px 16px; border-radius: 40px; border: 1px solid #e2e8f0; background: white; font-size: 13px; outline: none; min-width: 120px;">
+                <option value="">All Months</option>
+                <option value="January">Jan</option>
+                <option value="February">Feb</option>
+                <option value="March">Mar</option>
+                <option value="April">Apr</option>
+                <option value="May">May</option>
+                <option value="June">Jun</option>
+                <option value="July">Jul</option>
+                <option value="August">Aug</option>
+                <option value="September">Sep</option>
+                <option value="October">Oct</option>
+                <option value="November">Nov</option>
+                <option value="December">Dec</option>
+            </select>
+        </div>
+        
+        <!-- Table -->
+        <div style="overflow-x: auto; border-radius: 16px; border: 1px solid #f1f5f9;">
+            <table id="exams-table" style="width: 100%; border-collapse: collapse; font-size: 13px; min-width: 1200px;">
+                <thead>
+                    <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0;">
+                        <th style="padding: 12px 14px; text-align: left; font-weight: 600; color: #475569; font-size: 10px; text-transform: uppercase;">Type</th>
+                        <th style="padding: 12px 14px; text-align: left; font-weight: 600; color: #475569; font-size: 10px; text-transform: uppercase;">Program</th>
+                        <th style="padding: 12px 14px; text-align: left; font-weight: 600; color: #475569; font-size: 10px; text-transform: uppercase;">Course/Unit</th>
+                        <th style="padding: 12px 14px; text-align: left; font-weight: 600; color: #475569; font-size: 10px; text-transform: uppercase;">Title</th>
+                        <th style="padding: 12px 14px; text-align: center; font-weight: 600; color: #475569; font-size: 10px; text-transform: uppercase;">Out Of</th>
+                        <th style="padding: 12px 14px; text-align: center; font-weight: 600; color: #475569; font-size: 10px; text-transform: uppercase;">Pass</th>
+                        <th style="padding: 12px 14px; text-align: left; font-weight: 600; color: #475569; font-size: 10px; text-transform: uppercase;">Date/Time</th>
+                        <th style="padding: 12px 14px; text-align: center; font-weight: 600; color: #475569; font-size: 10px; text-transform: uppercase;">Duration</th>
+                        <th style="padding: 12px 14px; text-align: left; font-weight: 600; color: #475569; font-size: 10px; text-transform: uppercase;">Intake</th>
+                        <th style="padding: 12px 14px; text-align: left; font-weight: 600; color: #475569; font-size: 10px; text-transform: uppercase;">Block</th>
+                        <th style="padding: 12px 14px; text-align: center; font-weight: 600; color: #475569; font-size: 10px; text-transform: uppercase;">Purpose</th>
+                        <th style="padding: 12px 14px; text-align: center; font-weight: 600; color: #475569; font-size: 10px; text-transform: uppercase;">Status</th>
+                        <th style="padding: 12px 14px; text-align: center; font-weight: 600; color: #475569; font-size: 10px; text-transform: uppercase;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="exams-table-body">
+                    <tr><td colspan="13" style="padding: 60px; text-align: center; color: #94a3b8;">
+                        <div style="display: inline-block; width: 36px; height: 36px; border: 3px solid #e2e8f0; border-top-color: #7c3aed; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+                        <p style="margin-top: 12px; font-size: 14px;">Loading assessments...</p>
+                    </td></tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Student Preview -->
+        <h3 style="margin-top: 28px; font-weight: 700; font-size: 16px; color: #0f172a; display: flex; align-items: center; gap: 10px;">
+            <i class="fas fa-eye" style="color: #7c3aed;"></i> Available Assessments (Student Preview)
+        </h3>
+        <div id="student-exams" style="background: #f8fafc; padding: 20px; border-radius: 16px; margin-top: 10px; border: 1px solid #f1f5f9; text-align: center;">
+            <p style="color: #94a3b8; font-size: 14px;">
+                <i class="fas fa-info-circle" style="color: #7c3aed;"></i> Loading available assessments...
+            </p>
+        </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- TAB 2: CREATE EXAM -->
+    <!-- ============================================ -->
+    <div id="examCreateTab" class="exam-tab-content" style="display: none; background: white; padding: 28px; border-radius: 24px; box-shadow: 0 8px 40px rgba(0,0,0,0.03); border: 1px solid #f1f5f9;">
+        <div style="background: linear-gradient(135deg, #f8fafc, #f1f5f9); padding: 28px; border-radius: 20px;">
+            <h3 style="display: flex; align-items: center; gap: 12px; font-weight: 700; font-size: 22px; color: #0f172a; margin: 0 0 24px 0;">
+                <i class="fas fa-magic" style="color: #7c3aed; background: #ede9fe; padding: 10px; border-radius: 14px;"></i> 
+                Create New Exam / Assessment
+            </h3>
+            
+            <form id="add-exam-form-enhanced" onsubmit="event.preventDefault(); handleAddExam(event);" style="display: grid; gap: 22px;">
+                
+                <!-- Row 1 -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+                    <!-- Exam Type FIRST: determines automatic vs manual naming -->
+                    <div>
+                        <label style="font-weight: 600; font-size: 11px; text-transform: uppercase; color: #475569; display: block; margin-bottom: 5px;">Exam Type *</label>
+                        <select id="exam_type" required style="width: 100%; padding: 11px 16px; border-radius: 12px; border: 1px solid #e2e8f0; background: white; font-size: 14px; outline: none;">
+                            <option value="">-- Select --</option>
+                            <optgroup label="🎯 Main Exams (Count Toward Final Grade)">
+                                <option value="EXAM">📝 Final Exam</option>
+                                <option value="END_TERM">📚 End of Term Exam</option>
+                                <option value="SUPPLEMENTARY">🔁 Supplementary Exam</option>
+                            </optgroup>
+                            <optgroup label="📋 CATs & Formative (Practice Only)">
+                                <option value="CAT">📋 CAT</option>
+                                <option value="CAT_1">📋 CAT 1</option>
+                                <option value="CAT_2">📋 CAT 2</option>
+                                <option value="OSCE">🩺 OSCE</option>
+                                <option value="RAT">📝 RAT</option>
+                                <option value="PRACTICAL">🔬 Practical</option>
+                                <option value="ASSIGNMENT">📄 Assignment</option>
+                                <option value="QUIZ">❓ Quiz</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                    <!-- Name SECOND: automatic for Main Exams, manual for other assessments -->
+                    <div>
+                        <label style="font-weight: 600; font-size: 11px; text-transform: uppercase; color: #475569; display: block; margin-bottom: 5px;">
+                            Exam / Assessment Name *
+                            <span id="exam_title_helper" style="font-weight: 400; font-size: 10px; color: #94a3b8; margin-left: 8px;">
+                                <i class="fas fa-info-circle"></i> Select Exam Type first
+                            </span>
+                        </label>
+                        <input type="text" id="exam_title" data-auto-generated="false" placeholder="Select Exam Type first" required
+                               style="width: 100%; padding: 11px 16px; border-radius: 12px; border: 1px solid #e2e8f0; background: white; color: #334155; font-size: 14px; outline: none;">
+                    </div>
+                    <div>
+                        <label style="font-weight: 600; font-size: 11px; text-transform: uppercase; color: #475569; display: block; margin-bottom: 5px;">Status</label>
+                        <select id="exam_status" style="width: 100%; padding: 11px 16px; border-radius: 12px; border: 1px solid #e2e8f0; background: white; font-size: 14px; outline: none;">
+                            <option value="Upcoming">📅 Upcoming</option>
+                            <option value="InProgress">⏳ In Progress</option>
+                            <option value="Completed">✅ Completed</option>
+                            <option value="published">📢 Published</option>
+                            <option value="Draft">📝 Draft</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label style="font-weight: 600; font-size: 11px; text-transform: uppercase; color: #475569; display: block; margin-bottom: 5px;">Exam Basis</label>
+                        <select id="exam_basis" style="width: 100%; padding: 11px 16px; border-radius: 12px; border: 1px solid #e2e8f0; background: white; font-size: 14px; outline: none;">
+                            <option value="ordinary">Ordinary</option>
+                            <option value="consolidated">Consolidated</option>
+                            <option value="supplementary">Supplementary</option>
+                            <option value="special">Special</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Row 2 -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px;">
+                    <div>
+                        <label style="font-weight: 600; font-size: 11px; text-transform: uppercase; color: #475569; display: block; margin-bottom: 5px;">Marks Out Of *</label>
+                        <input type="number" id="exam_out_of" value="100" required style="width: 100%; padding: 11px 16px; border-radius: 12px; border: 1px solid #e2e8f0; background: white; font-size: 14px; outline: none;">
+                    </div>
+                    <div>
+                        <label style="font-weight: 600; font-size: 11px; text-transform: uppercase; color: #475569; display: block; margin-bottom: 5px;">Pass Mark (%) *</label>
+                        <input type="number" id="exam_pass_mark" value="50" required style="width: 100%; padding: 11px 16px; border-radius: 12px; border: 1px solid #e2e8f0; background: white; font-size: 14px; outline: none;">
+                    </div>
+                    <div>
+                        <label style="font-weight: 600; font-size: 11px; text-transform: uppercase; color: #475569; display: block; margin-bottom: 5px;">Min Fee Balance (%)</label>
+                        <input type="number" id="exam_min_fee" value="0" style="width: 100%; padding: 11px 16px; border-radius: 12px; border: 1px solid #e2e8f0; background: white; font-size: 14px; outline: none;">
+                    </div>
+                    <div>
+                        <label style="font-weight: 600; font-size: 11px; text-transform: uppercase; color: #475569; display: block; margin-bottom: 5px;">Duration (Min) *</label>
+                        <input type="number" id="exam_duration_minutes" value="120" required style="width: 100%; padding: 11px 16px; border-radius: 12px; border: 1px solid #e2e8f0; background: white; font-size: 14px; outline: none;">
+                    </div>
+                </div>
+                
+                <!-- Row 3 -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px;">
+                    <div>
+                        <label style="font-weight: 600; font-size: 11px; text-transform: uppercase; color: #475569; display: block; margin-bottom: 5px;">Exam Date *</label>
+                        <input type="date" id="exam_date" required style="width: 100%; padding: 11px 16px; border-radius: 12px; border: 1px solid #e2e8f0; background: white; font-size: 14px; outline: none;">
+                    </div>
+                    <div>
+                        <label style="font-weight: 600; font-size: 11px; text-transform: uppercase; color: #475569; display: block; margin-bottom: 5px;">Start Time *</label>
+                        <input type="time" id="exam_start_time" required style="width: 100%; padding: 11px 16px; border-radius: 12px; border: 1px solid #e2e8f0; background: white; font-size: 14px; outline: none;">
+                    </div>
+                    <div>
+                        <label style="font-weight: 600; font-size: 11px; text-transform: uppercase; color: #475569; display: block; margin-bottom: 5px;">Entry Deadline</label>
+                        <input type="date" id="exam_deadline" style="width: 100%; padding: 11px 16px; border-radius: 12px; border: 1px solid #e2e8f0; background: white; font-size: 14px; outline: none;">
+                    </div>
+                    <div>
+                        <label style="font-weight: 600; font-size: 11px; text-transform: uppercase; color: #475569; display: block; margin-bottom: 5px;">Online Link</label>
+                        <input type="url" id="exam_link" placeholder="https://..." style="width: 100%; padding: 11px 16px; border-radius: 12px; border: 1px solid #e2e8f0; background: white; font-size: 14px; outline: none;">
+                    </div>
+                </div>
+                
+                <!-- Row 4: Program / Intake / Block -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px;">
+                    <div>
+                        <label style="font-weight: 600; font-size: 11px; text-transform: uppercase; color: #475569; display: block; margin-bottom: 5px;">Program *</label>
+                        <select id="exam_program" required style="width: 100%; padding: 11px 16px; border-radius: 12px; border: 1px solid #e2e8f0; background: white; font-size: 13px; outline: none;">
+                            <option value="">-- Select Program --</option>
+                            <optgroup label="🎓 KRCHN Nursing">
+                                <option value="KRCHN">KRCHN - Kenya Registered Community Health Nursing</option>
+                            </optgroup>
+                            <optgroup label="🎯 TVET Diploma Programs">
+                                <option value="DPOTT">DPOTT - Diploma in Perioperative Theatre Technology</option>
+                                <option value="DCH">DCH - Diploma in Community Health</option>
+                                <option value="DHRIT">DHRIT - Diploma in Health Records & IT</option>
+                                <option value="DSL">DSL - Diploma in Science Lab</option>
+                                <option value="DSW">DSW - Diploma in Social Work</option>
+                                <option value="DCJS">DCJS - Diploma in Criminal Justice</option>
+                                <option value="DHSS">DHSS - Diploma in Health Support Services</option>
+                                <option value="DICT">DICT - Diploma in ICT</option>
+                                <option value="DME">DME - Diploma in Medical Engineering</option>
+                            </optgroup>
+                            <optgroup label="📜 TVET Certificate Programs">
+                                <option value="CPOTT">CPOTT - Certificate in Perioperative Theatre Technology</option>
+                                <option value="CCH">CCH - Certificate in Community Health</option>
+                                <option value="CHRIT">CHRIT - Certificate in Health Records & IT</option>
+                                <option value="CPC">CPC - Certificate in Patient Care</option>
+                                <option value="CSL">CSL - Certificate in Science Lab</option>
+                                <option value="CSW">CSW - Certificate in Social Work</option>
+                                <option value="CCJS">CCJS - Certificate in Criminal Justice</option>
+                                <option value="CAG">CAG - Certificate in Agriculture</option>
+                                <option value="CHSS">CHSS - Certificate in Health Support Services</option>
+                                <option value="CICT">CICT - Certificate in ICT</option>
+                                <option value="CCG">CCG - Certificate in Caregiver</option>
+                                <option value="COMT">COMT - Certificate in Orthopedic Trauma Medicine</option>
+                            </optgroup>
+                            <optgroup label="🔧 TVET Artisan Programs">
+                                <option value="ACH">ACH - Artisan in Community Health</option>
+                                <option value="AAG">AAG - Artisan in Agriculture</option>
+                                <option value="ASW">ASW - Artisan in Social Work</option>
+                            </optgroup>
+                            <optgroup label="📊 Other TVET Programs">
+                                <option value="CCA">CCA - Certificate in Computer Applications</option>
+                                <option value="PTE">PTE - TVET/CDACC (PTE)</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-weight: 600; font-size: 11px; text-transform: uppercase; color: #475569; display: block; margin-bottom: 5px;">Intake Year *</label>
+                        <select id="exam_intake" required style="width: 100%; padding: 11px 16px; border-radius: 12px; border: 1px solid #e2e8f0; background: white; font-size: 14px; outline: none;">
+                            <option value="">-- Select --</option>
+                            <option value="2024">2024</option>
+                            <option value="2025" selected>2025</option>
+                            <option value="2026">2026</option>
+                            <option value="2027">2027</option>
+                            <option value="2028">2028</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-weight: 600; font-size: 11px; text-transform: uppercase; color: #475569; display: block; margin-bottom: 5px;">Intake Month</label>
+                        <select id="exam_intake_month" style="width: 100%; padding: 11px 16px; border-radius: 12px; border: 1px solid #e2e8f0; background: white; font-size: 14px; outline: none;">
+                            <option value="">-- Select --</option>
+                            <option value="January">January</option>
+                            <option value="February">February</option>
+                            <option value="March">March</option>
+                            <option value="April">April</option>
+                            <option value="May">May</option>
+                            <option value="June">June</option>
+                            <option value="July">July</option>
+                            <option value="August">August</option>
+                            <option value="September">September</option>
+                            <option value="October">October</option>
+                            <option value="November">November</option>
+                            <option value="December">December</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-weight: 600; font-size: 11px; text-transform: uppercase; color: #475569; display: block; margin-bottom: 5px;">
+                            <span id="exam_block_label">Block/Term</span> *
+                        </label>
+                        <select id="exam_block_term" required style="width: 100%; padding: 11px 16px; border-radius: 12px; border: 1px solid #e2e8f0; background: white; font-size: 14px; outline: none;">
+                            <option value="">-- Select --</option>
+                        </select>
+                        <div style="font-size: 10px; color: #94a3b8; margin-top: 4px;">
+                            <i class="fas fa-info-circle"></i> 
+                            <span id="exam_block_hint">Select a program above to see available blocks/terms</span>
+                        </div>
+                    </div>
+
+                </div>
+                
+                <!-- Course Searchable Dropdown -->
+                <div>
+                    <label style="font-weight: 600; font-size: 11px; text-transform: uppercase; color: #475569; display: block; margin-bottom: 5px;">
+                        Course/Unit <span id="exam_course_required_marker">*</span>
+                        <span style="font-weight: 400; font-size: 10px; color: #94a3b8; margin-left: 8px;">
+                            <i class="fas fa-search"></i> Type to search
+                        </span>
+                    </label>
+                    
+                    <div class="searchable-dropdown" id="createCourseSearchContainer" style="position: relative; width: 100%;">
+                        <input type="text" 
+                               id="createCourseSearchInput" 
+                               placeholder="🔍 Search courses by name or code..." 
+                               autocomplete="off"
+                               style="width: 100%; padding: 11px 16px; border: 1px solid #e2e8f0; border-radius: 12px; font-size: 14px; outline: none; transition: border-color 0.2s, box-shadow 0.2s; background: white;"
+                               onfocus="this.style.borderColor='#7c3aed'; this.style.boxShadow='0 0 0 3px rgba(124,58,237,0.08)'"
+                               onblur="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'">
+                        
+                        <div id="createCourseDropdownList" style="
+                            position: absolute;
+                            top: 100%;
+                            left: 0;
+                            right: 0;
+                            max-height: 220px;
+                            overflow-y: auto;
+                            background: white;
+                            border: 1px solid #e2e8f0;
+                            border-radius: 0 0 12px 12px;
+                            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+                            display: none;
+                            z-index: 1000;
+                            margin-top: 2px;
+                        "></div>
+                        
+                        <input type="hidden" id="exam_course_id" value="">
+                    </div>
+                    
+                    <div style="font-size: 11px; color: #94a3b8; margin-top: 4px; display: flex; gap: 12px; flex-wrap: wrap;">
+                        <span id="createCourseHelperText"><i class="fas fa-info-circle"></i> Required for Main Exams — type to search, then click to select</span>
+                        <span id="createSelectedCourseDisplay" style="color: #7c3aed; font-weight: 500; display: none;">
+                            <i class="fas fa-check-circle"></i> Selected: <span id="createSelectedCourseName"></span>
+                        </span>
+                    </div>
+                </div>
+                
+                <!-- Classes -->
+                <div>
+                    <label style="font-weight: 600; font-size: 11px; text-transform: uppercase; color: #475569; display: block; margin-bottom: 6px;">Select Classes</label>
+                    <div id="exam_class_selector" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; padding: 14px; background: white; border-radius: 14px; max-height: 150px; overflow-y: auto; border: 1px solid #e2e8f0;">
+                        <div style="color: #94a3b8; font-size: 13px; grid-column: 1 / -1; text-align: center; padding: 8px;">
+                            <i class="fas fa-info-circle"></i> No classes loaded
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Report Settings -->
+                <div>
+                    <label style="font-weight: 600; font-size: 11px; text-transform: uppercase; color: #475569; display: block; margin-bottom: 6px;">Report Card Settings</label>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; padding: 14px; background: white; border-radius: 14px; border: 1px solid #e2e8f0;">
+                        <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #334155; cursor: pointer;">
+                            <input type="checkbox" id="exam_show_attendance"> Show Attendance
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #334155; cursor: pointer;">
+                            <input type="checkbox" id="exam_show_grades" checked> Show Grades
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #334155; cursor: pointer;">
+                            <input type="checkbox" id="exam_show_teacher_remarks"> Teacher Remarks
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #334155; cursor: pointer;">
+                            <input type="checkbox" id="exam_show_principal_remarks"> Principal Remarks
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #334155; cursor: pointer;">
+                            <input type="checkbox" id="exam_show_performance_metrics"> Performance Metrics
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Email Notification -->
+                <div style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 12px; padding: 16px 20px; margin: 16px 0;">
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px; flex-wrap: wrap;">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 600; font-size: 14px; color: #065f46;">
+                            <input type="checkbox" id="exam_notify_students" checked style="width: 18px; height: 18px; accent-color: #059669;">
+                            <i class="fas fa-envelope"></i> Notify Students via Email
+                        </label>
+                        <span style="font-size: 11px; color: #6b7280; background: #d1fae5; padding: 2px 12px; border-radius: 20px;">
+                            <i class="fas fa-info-circle"></i> Students will receive exam details
+                        </span>
+                        <span id="student_notify_count" style="font-size: 12px; color: #059669; font-weight: 600; background: white; padding: 2px 12px; border-radius: 20px; border: 1px solid #86efac;">
+                            <i class="fas fa-users"></i> 0 students
+                        </span>
+                    </div>
+                    
+                    <div id="exam_student_selection" style="margin-top: 10px;">
+                        <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: start;">
+                            <div style="flex: 1; min-width: 200px;">
+                                <label style="font-size: 12px; font-weight: 500; color: #374151; display: block; margin-bottom: 4px;">
+                                    <i class="fas fa-users"></i> Select Students to Notify
+                                </label>
+                                <select id="exam_notify_target" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid #d1d5db; font-size: 13px; background: white;">
+                                    <option value="all">📢 All Students (Program + Block)</option>
+                                    <option value="program">🎓 All Students in Program</option>
+                                    <option value="block">📚 All Students in Block</option>
+                                    <option value="specific">👤 Specific Students</option>
+                                </select>
+                            </div>
+                            <div style="flex: 2; min-width: 250px; display: none;" id="specific_students_container">
+                                <label style="font-size: 12px; font-weight: 500; color: #374151; display: block; margin-bottom: 4px;">
+                                    <i class="fas fa-search"></i> Search & Select Students
+                                </label>
+                                <div style="display: flex; gap: 6px;">
+                                    <input type="text" id="exam_student_search" placeholder="Type name or email..." 
+                                           style="flex: 1; padding: 8px 12px; border-radius: 8px; border: 1px solid #d1d5db; font-size: 13px;">
+                                    <button type="button" onclick="searchStudentsForNotification()" style="padding: 8px 16px; background: #4C1D95; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 12px; white-space: nowrap;">
+                                        <i class="fas fa-search"></i> Search
+                                    </button>
+                                </div>
+                                <div id="student_search_results" style="max-height: 150px; overflow-y: auto; margin-top: 6px; border: 1px solid #e5e7eb; border-radius: 8px; padding: 4px; background: white; display: none;"></div>
+                                <div id="selected_students_list" style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; min-height: 24px;">
+                                    <span style="font-size: 12px; color: #94a3b8;"><i class="fas fa-info-circle"></i> No students selected</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit -->
+                <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid #e2e8f0;">
+                    <button type="submit" style="background: linear-gradient(135deg, #7c3aed, #6d28d9); color: white; border: none; padding: 12px 32px; border-radius: 40px; font-weight: 700; font-size: 14px; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; gap: 10px; box-shadow: 0 4px 20px rgba(124,58,237,0.35);">
+                        <i class="fas fa-save"></i> Create Exam
+                    </button>
+                    <button type="reset" style="background: #f1f5f9; color: #475569; border: none; padding: 12px 24px; border-radius: 40px; font-weight: 600; font-size: 13px; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-undo"></i> Reset
+                    </button>
+                </div>
+                
+            </form>
+        </div>
+    </div>
+
+
+<div class="ia-institution-live-data" style="margin:24px 0;padding:18px;border:1px solid var(--ia-border,#dbe3ea);border-radius:14px;background:var(--ia-card,#fff)"><div class="ia-page-heading"><div><span class="ia-eyebrow">TENANT-SCOPED EXAMINATION RECORDS</span><h2>Institution examination records</h2><p>Manage examination records within this institution.</p></div></div><div class="ia-panel ia-table-panel"><div class="ia-table-scroll"><table><thead><tr><th>Examination</th><th>Programme</th><th>Block</th><th>Date</th><th>Type</th><th>Approval</th><th>Published</th><th>Actions</th></tr></thead><tbody id="iaExams"><tr><td colspan="8">Loading institution examinations…</td></tr></tbody></table></div></div></div>
+</section>
 <section id="view-marks-entry" class="tab-content ia-view">
     <!-- Header -->
     <div style="background: linear-gradient(135deg, #059669, #10b981); border-radius: 16px; padding: 25px 30px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; box-shadow: 0 4px 20px rgba(5,150,105,0.3);">
@@ -2097,7 +3237,481 @@
 </section>
 <section class="ia-view" id="view-admissions"><div class="ia-page-heading"><div><span class="ia-eyebrow">STUDENT RECRUITMENT</span><h1>Admissions</h1><p>Manage applicant records, programme choices and admission decisions.</p></div></div><div class="ia-panel ia-table-panel"><div class="ia-table-scroll"><table><thead><tr><th>Applicant</th><th>Application no.</th><th>Email</th><th>Phone</th><th>Programme</th><th>Intake</th><th>Status</th></tr></thead><tbody id="iaAdmissions"><tr><td colspan="7" class="ia-empty">Loading…</td></tr></tbody></table></div></div></section>
 <section class="ia-view" id="view-hr"><div class="ia-page-heading"><div><span class="ia-eyebrow">PEOPLE OPERATIONS</span><h1>Human resources</h1><p>Maintain institution staff directory, appointments and contract dates.</p></div></div><div class="ia-panel ia-table-panel"><div class="ia-table-scroll"><table><thead><tr><th>Staff member</th><th>Email</th><th>Department</th><th>Designation</th><th>Employment</th><th>Contract end</th><th>Status</th></tr></thead><tbody id="iaHR"><tr><td colspan="7" class="ia-empty">Loading…</td></tr></tbody></table></div></div></section>
-<section class="ia-view" id="view-timetable"><div class="ia-page-heading"><div><span class="ia-eyebrow">ACADEMIC SCHEDULING</span><h1>Timetabling</h1><p>Create and maintain institution class and academic session schedules.</p></div></div><div class="ia-panel ia-table-panel"><div class="ia-table-scroll"><table><thead><tr><th>Session</th><th>Date</th><th>Time</th><th>Programme / block</th><th>Course</th><th>Lecturer</th><th>Venue</th></tr></thead><tbody id="iaTimetable"><tr><td colspan="7" class="ia-empty">Loading…</td></tr></tbody></table></div></div></section>
+<section id="view-timetable" class="ia-view">
+    <!-- Header -->
+    <div style="background: linear-gradient(135deg, #4C1D95, #7C3AED); border-radius: 16px; padding: 25px 30px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; box-shadow: 0 4px 20px rgba(76,29,149,0.3);">
+        <div>
+            <h2 style="color: white; margin: 0; font-weight: 700;">
+                <i class="fas fa-calendar-alt"></i> System Calendar & Timetable Management
+            </h2>
+            <p style="color: rgba(255,255,255,0.9); margin: 4px 0 0 0; font-size: 14px;">
+                <i class="fas fa-clock"></i> Manage timetables, sessions, and schedules across all blocks & programs
+            </p>
+        </div>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button onclick="refreshCalendarData()" class="btn-action" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                <i class="fas fa-sync-alt"></i> Refresh Calendar
+            </button>
+            <button onclick="exportTimetableData()" class="btn-action" style="background: white; color: #4C1D95; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; border: none;">
+                <i class="fas fa-download"></i> Export Timetable
+            </button>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 25px;">
+        <div style="border-top: 4px solid #4C1D95; background: white; border-radius: 8px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+            <h3 style="color: #4C1D95; font-size: 12px; margin: 0;">Total Sessions</h3>
+            <p id="cal_total_events" style="font-size: 28px; font-weight: 700; color: #4C1D95; margin: 4px 0;">0</p>
+            <p style="font-size: 11px; color: #94a3b8; margin: 0;">Scheduled sessions</p>
+        </div>
+        <div style="border-top: 4px solid #059669; background: white; border-radius: 8px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+            <h3 style="color: #059669; font-size: 12px; margin: 0;">This Week</h3>
+            <p id="cal_this_week" style="font-size: 28px; font-weight: 700; color: #059669; margin: 4px 0;">0</p>
+            <p style="font-size: 11px; color: #94a3b8; margin: 0;">Upcoming classes</p>
+        </div>
+        <div style="border-top: 4px solid #FDB913; background: white; border-radius: 8px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+            <h3 style="color: #d97706; font-size: 12px; margin: 0;">Blocks Active</h3>
+            <p id="cal_active_blocks" style="font-size: 28px; font-weight: 700; color: #d97706; margin: 4px 0;">7</p>
+            <p style="font-size: 11px; color: #94a3b8; margin: 0;">Program blocks</p>
+        </div>
+        <div style="border-top: 4px solid #8b5cf6; background: white; border-radius: 8px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+            <h3 style="color: #6d28d9; font-size: 12px; margin: 0;">Trainers</h3>
+            <p id="cal_lecturers" style="font-size: 28px; font-weight: 700; color: #6d28d9; margin: 4px 0;">0</p>
+            <p style="font-size: 11px; color: #94a3b8; margin: 0;">Assigned this week</p>
+        </div>
+        <div style="border-top: 4px solid #ef4444; background: white; border-radius: 8px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+            <h3 style="color: #dc2626; font-size: 12px; margin: 0;">Holidays</h3>
+            <p id="cal_holidays" style="font-size: 28px; font-weight: 700; color: #dc2626; margin: 4px 0;">0</p>
+            <p style="font-size: 11px; color: #94a3b8; margin: 0;">Upcoming holidays</p>
+        </div>
+        <div style="border-top: 4px solid #10b981; background: linear-gradient(135deg, #f0fdf4, #ecfdf5); border-radius: 8px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+            <h3 style="color: #059669; font-size: 12px; margin: 0;">📤 Published</h3>
+            <p id="cal_published_blocks" style="font-size: 28px; font-weight: 700; color: #059669; margin: 4px 0;">0</p>
+            <p style="font-size: 11px; color: #94a3b8; margin: 0;">Timetables visible</p>
+        </div>
+    </div>
+
+    <!-- Selected Block Display -->
+    <div id="selectedBlockDisplay" style="background: linear-gradient(135deg, #f5f3ff, #ede9fe); padding: 12px 20px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #c4b5fd; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="font-weight: 700; color: #4C1D95; font-size: 14px;">
+                <i class="fas fa-check-circle"></i> Selected Block:
+            </span>
+            <span id="selectedBlockName" style="font-weight: 600; color: #1e293b; font-size: 15px;">None selected</span>
+        </div>
+        <div>
+            <span id="selectedBlockProgram" style="background: #dbeafe; padding: 4px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; color: #1e40af; border: 1px solid #93c5fd;">
+                <i class="fas fa-info-circle"></i> No Program Selected
+            </span>
+        </div>
+    </div>
+
+    <!-- ========== TIMETABLE UPLOAD SECTION ========== -->
+    <div style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 25px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); border: 1px solid #e5e7eb;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 16px;">
+            <h3 style="margin: 0; color: #1e293b; display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-upload" style="color: #4C1D95;"></i> Timetable Management
+                <span style="background: #4C1D95; color: white; padding: 2px 12px; border-radius: 12px; font-size: 11px; font-weight: 600; margin-left: 8px;">Super Admin</span>
+            </h3>
+            <button onclick="previewTimetable()" class="btn-action" style="background: #059669; color: white; padding: 8px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; box-shadow: 0 2px 8px rgba(5,150,105,0.3);">
+                <i class="fas fa-eye"></i> Preview Timetable
+            </button>
+        </div>
+        <p style="color: #64748b; font-size: 14px; margin: 0 0 16px 0;">
+            <i class="fas fa-info-circle"></i> Upload timetables for ANY BLOCK with UNLIMITED WEEKS. Students will see their block's timetable automatically.
+        </p>
+        
+        <!-- Program & Block Selection -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 16px;">
+            <div>
+                <label style="font-weight: 600; font-size: 13px; color: #475569; display: block; margin-bottom: 5px;">
+                    <i class="fas fa-graduation-cap"></i> Program
+                </label>
+                <select id="adminTimetableProgram" class="form-control" onchange="updateTimetableBlocks()" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0; background: #f8fafc; font-size: 14px;">
+                    <option value="">-- Select Program --</option>
+                    <optgroup label="🎓 KRCHN Nursing">
+                        <option value="KRCHN">KRCHN Nursing</option>
+                    </optgroup>
+                    <optgroup label="🎯 TVET Diploma Programs">
+                        <option value="DPOTT">Diploma in Perioperative Theatre Technology</option>
+                        <option value="DCH">Diploma in Community Health</option>
+                        <option value="DHRIT">Diploma in Health Records and IT</option>
+                        <option value="DSL">Diploma in Science Lab</option>
+                        <option value="DSW">Diploma in Social Work</option>
+                        <option value="DCJS">Diploma in Criminal Justice</option>
+                        <option value="DHSS">Diploma in Health Support Services</option>
+                        <option value="DICT">Diploma in ICT</option>
+                        <option value="DME">Diploma in Medical Engineering</option>
+                    </optgroup>
+                    <optgroup label="📜 TVET Certificate Programs">
+                        <option value="CPOTT">Certificate in Perioperative Theatre Technology</option>
+                        <option value="CCH">Certificate in Community Health</option>
+                        <option value="CHRIT">Certificate in Health Records and IT</option>
+                        <option value="CPC">Certificate in Patient Care</option>
+                        <option value="CSL">Certificate in Science Lab</option>
+                        <option value="CSW">Certificate in Social Work</option>
+                        <option value="CCJS">Certificate in Criminal Justice</option>
+                        <option value="CAG">Certificate in Agriculture</option>
+                        <option value="CHSS">Certificate in Health Support Services</option>
+                        <option value="CICT">Certificate in ICT</option>
+                        <option value="CCG">Certificate in Caregiver</option>
+                        <option value="COMT">Certificate in Orthopedic Trauma Medicine</option>
+                    </optgroup>
+                    <optgroup label="🔧 TVET Artisan Programs">
+                        <option value="ACH">Artisan in Community Health</option>
+                        <option value="AAG">Artisan in Agriculture</option>
+                        <option value="ASW">Artisan in Social Work</option>
+                    </optgroup>
+                    <optgroup label="📊 Other TVET Programs">
+                        <option value="CCA">Certificate in Computer Applications</option>
+                        <option value="PTE">TVET/CDACC (PTE)</option>
+                    </optgroup>
+                </select>
+            </div>
+            <div>
+                <label style="font-weight: 600; font-size: 13px; color: #475569; display: block; margin-bottom: 5px;">
+                    <i class="fas fa-layer-group"></i> Block / Year & Term
+                </label>
+                <select id="adminTimetableBlock" class="form-control" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0; background: #f8fafc; font-size: 14px;">
+                    <!-- KRCHN Blocks -->
+                    <optgroup label="🎓 KRCHN Nursing Blocks">
+                        <option value="Introductory">Introductory Block</option>
+                        <option value="Block 1">Block 1</option>
+                        <option value="Block 2">Block 2</option>
+                        <option value="Block 3">Block 3</option>
+                        <option value="Block 4">Block 4</option>
+                        <option value="Block 5">Block 5</option>
+                        <option value="Block 6">Block 6</option>
+                        <option value="Final">Final Block</option>
+                    </optgroup>
+                    <!-- TVET Certificate Terms -->
+                    <optgroup label="📜 TVET Certificate (Year 1)">
+                        <option value="Y1T1">Certificate Year 1 - Term 1</option>
+                        <option value="Y1T2">Certificate Year 1 - Term 2</option>
+                        <option value="Y1T3">Certificate Year 1 - Term 3</option>
+                    </optgroup>
+                    <optgroup label="📜 TVET Certificate (Year 2)">
+                        <option value="Y2T1">Certificate Year 2 - Term 1</option>
+                        <option value="Y2T2">Certificate Year 2 - Term 2</option>
+                        <option value="Y2T3">Certificate Year 2 - Term 3</option>
+                    </optgroup>
+                    <!-- TVET Diploma Terms -->
+                    <optgroup label="🎯 TVET Diploma (Year 1)">
+                        <option value="Y1T1">Diploma Year 1 - Term 1</option>
+                        <option value="Y1T2">Diploma Year 1 - Term 2</option>
+                        <option value="Y1T3">Diploma Year 1 - Term 3</option>
+                    </optgroup>
+                    <optgroup label="🎯 TVET Diploma (Year 2)">
+                        <option value="Y2T1">Diploma Year 2 - Term 1</option>
+                        <option value="Y2T2">Diploma Year 2 - Term 2</option>
+                        <option value="Y2T3">Diploma Year 2 - Term 3</option>
+                    </optgroup>
+                    <optgroup label="🎯 TVET Diploma (Year 3)">
+                        <option value="Y3T1">Diploma Year 3 - Term 1</option>
+                        <option value="Y3T2">Diploma Year 3 - Term 2</option>
+                        <option value="Y3T3">Diploma Year 3 - Term 3</option>
+                    </optgroup>
+                    <!-- TVET Artisan Terms -->
+                    <optgroup label="🔧 TVET Artisan">
+                        <option value="Artisan Y1T1">Artisan Year 1 - Term 1</option>
+                        <option value="Artisan Y1T2">Artisan Year 1 - Term 2</option>
+                        <option value="Artisan Y2T1">Artisan Year 2 - Term 1</option>
+                        <option value="Artisan Y2T2">Artisan Year 2 - Term 2</option>
+                    </optgroup>
+                </select>
+            </div>
+            <div>
+                <label style="font-weight: 600; font-size: 13px; color: #475569; display: block; margin-bottom: 5px;">
+                    <i class="fas fa-file-upload"></i> Upload File
+                </label>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <input type="file" id="adminTimetableFile" accept=".xlsx,.xls,.csv,.pdf,.doc,.docx" style="display: none;">
+                    <button onclick="document.getElementById('adminTimetableFile').click()" class="btn-action" style="background: #f1f5f9; color: #1e293b; padding: 10px 16px; border: 1.5px dashed #94a3b8; border-radius: 8px; cursor: pointer; font-weight: 500; display: flex; align-items: center; gap: 6px;">
+                        <i class="fas fa-folder-open"></i> Choose File
+                    </button>
+                    <span id="cal_file_name" style="font-size: 13px; color: #94a3b8;">No file chosen</span>
+                </div>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px;">
+            <button onclick="uploadTimetableToSupabase()" class="btn-action" style="background: #4C1D95; color: white; padding: 10px 24px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; box-shadow: 0 2px 8px rgba(76,29,149,0.3);">
+                <i class="fas fa-cloud-upload-alt"></i> Upload & Replace
+            </button>
+            <button onclick="clearTimetableBlock()" class="btn-action" style="background: #dc2626; color: white; padding: 10px 24px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; box-shadow: 0 2px 8px rgba(220,38,38,0.3);">
+                <i class="fas fa-trash"></i> Clear This Block
+            </button>
+        </div>
+        
+        <!-- CSV Format Info -->
+        <div style="background: #f8fafc; padding: 14px 18px; border-radius: 8px; border: 1px solid #e2e8f0;">
+            <p style="margin: 0 0 4px 0; font-size: 12px; color: #475569;">
+                <i class="fas fa-info-circle" style="color: #4C1D95;"></i> 
+                <strong>CSV/Excel Format:</strong> day_of_week, week_number, start_time, end_time, session_name, course_name, lecturer_name, venue, is_holiday, is_exam
+            </p>
+            <p style="margin: 0 0 8px 0; font-size: 12px; color: #64748b; background: white; padding: 6px 12px; border-radius: 4px; font-family: 'Courier New', monospace;">
+                <strong>Example:</strong> monday,1,08:00,10:30,Medical Surgical III,Dermatology/Burns,Mr. Job Juma,Lecture Hall 1,FALSE,FALSE
+            </p>
+            <a href="#" onclick="downloadTimetableTemplate()" style="color: #4C1D95; font-size: 13px; font-weight: 500; text-decoration: none;">
+                <i class="fas fa-download"></i> Download CSV Template
+            </a>
+        </div>
+    </div>
+
+    <!-- ========== TAB NAVIGATION ========== -->
+    <div style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 25px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); border: 1px solid #e5e7eb;">
+        <div style="display: flex; gap: 4px; background: #f1f5f9; padding: 4px; border-radius: 10px; margin-bottom: 20px;">
+            <button id="excelTabBtn" class="tab-btn active" onclick="showUploadMethod('excel')" style="flex: 1; padding: 10px 16px; border: none; border-radius: 8px; background: white; color: #4C1D95; font-weight: 600; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: flex; align-items: center; justify-content: center; gap: 6px;">
+                <i class="fas fa-file-excel"></i> Excel Upload
+            </button>
+            <button id="singleTabBtn" class="tab-btn" onclick="showUploadMethod('single')" style="flex: 1; padding: 10px 16px; border: none; border-radius: 8px; background: transparent; color: #64748b; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                <i class="fas fa-plus-circle"></i> Single Session
+            </button>
+            <button id="bulkTabBtn" class="tab-btn" onclick="showUploadMethod('bulk')" style="flex: 1; padding: 10px 16px; border: none; border-radius: 8px; background: transparent; color: #64748b; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                <i class="fas fa-calendar-week"></i> Bulk Schedule
+            </button>
+        </div>
+        
+        <!-- Excel Upload Method -->
+        <div id="excelUploadMethod" class="tab-panel">
+            <p style="color: #64748b; margin: 0 0 12px 0;">
+                <i class="fas fa-info-circle"></i> Upload Excel/CSV file with timetable data. 
+                <a href="#" onclick="downloadTimetableTemplate()" style="color: #4C1D95; font-weight: 500;">Download template</a>
+            </p>
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <input type="file" id="bulkExcelFile" accept=".xlsx,.xls,.csv" style="display: none;">
+                <button onclick="document.getElementById('bulkExcelFile').click()" class="btn-action" style="background: #f1f5f9; color: #1e293b; padding: 10px 20px; border: 1.5px dashed #94a3b8; border-radius: 8px; cursor: pointer;">
+                    <i class="fas fa-folder-open"></i> Select Excel File
+                </button>
+                <span id="bulk_file_name" style="font-size: 13px; color: #94a3b8;">No file selected</span>
+            </div>
+        </div>
+        
+        <!-- Single Session Method -->
+        <div id="singleEventMethod" class="tab-panel" style="display: none;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                <div>
+                    <label style="font-weight: 600; font-size: 13px; color: #475569; display: block; margin-bottom: 5px;">Session Title *</label>
+                    <input type="text" id="singleEventTitle" class="form-control" placeholder="Enter session title" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0; background: #f8fafc; font-size: 14px;">
+                </div>
+                <div>
+                    <label style="font-weight: 600; font-size: 13px; color: #475569; display: block; margin-bottom: 5px;">Date</label>
+                    <input type="date" id="singleEventDate" class="form-control" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0; background: #f8fafc; font-size: 14px;">
+                </div>
+                <div>
+                    <label style="font-weight: 600; font-size: 13px; color: #475569; display: block; margin-bottom: 5px;">Start Time</label>
+                    <input type="time" id="singleEventStart" class="form-control" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0; background: #f8fafc; font-size: 14px;">
+                </div>
+                <div>
+                    <label style="font-weight: 600; font-size: 13px; color: #475569; display: block; margin-bottom: 5px;">End Time</label>
+                    <input type="time" id="singleEventEnd" class="form-control" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0; background: #f8fafc; font-size: 14px;">
+                </div>
+                <div>
+                    <label style="font-weight: 600; font-size: 13px; color: #475569; display: block; margin-bottom: 5px;">Venue</label>
+                    <input type="text" id="singleEventVenue" class="form-control" placeholder="Venue name" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0; background: #f8fafc; font-size: 14px;">
+                </div>
+                <div>
+                    <label style="font-weight: 600; font-size: 13px; color: #475569; display: block; margin-bottom: 5px;">Session Type</label>
+                    <select id="singleEventType" class="form-control" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0; background: #f8fafc; font-size: 14px;">
+                        <option value="CLASS">📚 Theory Class</option>
+                        <option value="CLINICAL">🏥 Practical/Clinical</option>
+                        <option value="EXAM">📝 Assessment/Exam</option>
+                        <option value="EVENT">🎉 Event</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-weight: 600; font-size: 13px; color: #475569; display: block; margin-bottom: 5px;">Description</label>
+                    <input type="text" id="singleEventDetails" class="form-control" placeholder="Brief description" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0; background: #f8fafc; font-size: 14px;">
+                </div>
+                <div>
+                    <label style="font-weight: 600; font-size: 13px; color: #475569; display: block; margin-bottom: 5px;">Program</label>
+                    <select id="singleEventProgram" class="form-control" onchange="updateBlockTermOptions('singleEventProgram', 'singleEventBlock')" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0; background: #f8fafc; font-size: 14px;">
+                        <option value="">-- Select Program --</option>
+                        <option value="KRCHN">KRCHN Nursing</option>
+                        <option value="TVET">TVET Programs</option>
+                        <option value="General">All Programs</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-weight: 600; font-size: 13px; color: #475569; display: block; margin-bottom: 5px;">Block / Year & Term</label>
+                    <select id="singleEventBlock" class="form-control" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0; background: #f8fafc; font-size: 14px;">
+                        <option value="General">All Blocks</option>
+                    </select>
+                </div>
+                <div style="grid-column: 1 / -1;">
+                    <button onclick="addSingleEvent()" class="btn-action" style="background: #4C1D95; color: white; padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; width: 100%; box-shadow: 0 2px 8px rgba(76,29,149,0.3);">
+                        <i class="fas fa-plus"></i> Add Session
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Bulk Schedule Method -->
+        <div id="bulkScheduleMethod" class="tab-panel" style="display: none;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px;">
+                <div>
+                    <label style="font-weight: 600; font-size: 13px; color: #475569; display: block; margin-bottom: 5px;">Day of Week</label>
+                    <select id="weeklyDay" class="form-control" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0; background: #f8fafc; font-size: 14px;">
+                        <option value="0">Sunday</option>
+                        <option value="1">Monday</option>
+                        <option value="2">Tuesday</option>
+                        <option value="3">Wednesday</option>
+                        <option value="4">Thursday</option>
+                        <option value="5">Friday</option>
+                        <option value="6">Saturday</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-weight: 600; font-size: 13px; color: #475569; display: block; margin-bottom: 5px;">Start Time</label>
+                    <input type="time" id="weeklyStartTime" class="form-control" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0; background: #f8fafc; font-size: 14px;">
+                </div>
+                <div>
+                    <label style="font-weight: 600; font-size: 13px; color: #475569; display: block; margin-bottom: 5px;">End Time</label>
+                    <input type="time" id="weeklyEndTime" class="form-control" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0; background: #f8fafc; font-size: 14px;">
+                </div>
+                <div>
+                    <label style="font-weight: 600; font-size: 13px; color: #475569; display: block; margin-bottom: 5px;">Course/Unit Name *</label>
+                    <input type="text" id="weeklyCourse" class="form-control" placeholder="Enter course/unit name" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0; background: #f8fafc; font-size: 14px;">
+                </div>
+                <div>
+                    <label style="font-weight: 600; font-size: 13px; color: #475569; display: block; margin-bottom: 5px;">Venue</label>
+                    <input type="text" id="weeklyVenue" class="form-control" placeholder="Venue name" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0; background: #f8fafc; font-size: 14px;">
+                </div>
+                <div>
+                    <label style="font-weight: 600; font-size: 13px; color: #475569; display: block; margin-bottom: 5px;">Start Date</label>
+                    <input type="date" id="weeklyStartDate" class="form-control" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0; background: #f8fafc; font-size: 14px;">
+                </div>
+                <div>
+                    <label style="font-weight: 600; font-size: 13px; color: #475569; display: block; margin-bottom: 5px;">End Date</label>
+                    <input type="date" id="weeklyEndDate" class="form-control" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0; background: #f8fafc; font-size: 14px;">
+                </div>
+                <div>
+                    <label style="font-weight: 600; font-size: 13px; color: #475569; display: block; margin-bottom: 5px;">Program</label>
+                    <select id="weeklyProgram" class="form-control" onchange="updateBlockTermOptions('weeklyProgram', 'weeklyBlock')" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0; background: #f8fafc; font-size: 14px;">
+                        <option value="">-- Select Program --</option>
+                        <option value="KRCHN">KRCHN Nursing</option>
+                        <option value="TVET">TVET Programs</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-weight: 600; font-size: 13px; color: #475569; display: block; margin-bottom: 5px;">Block / Year & Term</label>
+                    <select id="weeklyBlock" class="form-control" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0; background: #f8fafc; font-size: 14px;">
+                        <option value="">Select Block</option>
+                    </select>
+                </div>
+                <div style="grid-column: 1 / -1;">
+                    <button onclick="createWeeklySchedule()" class="btn-action" style="background: #059669; color: white; padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; width: 100%; box-shadow: 0 2px 8px rgba(5,150,105,0.3);">
+                        <i class="fas fa-calendar-plus"></i> Create Weekly Schedule
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== TIMETABLE PREVIEW ========== -->
+    <div style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 25px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); border: 1px solid #e5e7eb;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 15px;">
+            <h3 style="margin: 0; color: #1e293b; display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-eye" style="color: #4C1D95;"></i> Current Timetable Preview
+            </h3>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <select id="previewBlockSelect" onchange="previewTimetable()" style="padding: 8px 14px; border-radius: 8px; border: 1px solid #e2e8f0; background: #f8fafc; font-size: 14px;">
+                    <optgroup label="🎓 KRCHN Blocks">
+                        <option value="Introductory">Introductory Block</option>
+                        <option value="Block 1">Block 1</option>
+                        <option value="Block 2">Block 2</option>
+                        <option value="Block 3">Block 3</option>
+                        <option value="Block 4" selected>Block 4</option>
+                        <option value="Block 5">Block 5</option>
+                        <option value="Block 6">Block 6</option>
+                        <option value="Final">Final Block</option>
+                    </optgroup>
+                    <optgroup label="📜 TVET Certificate">
+                        <option value="Y1T1">Certificate Year 1 - Term 1</option>
+                        <option value="Y1T2">Certificate Year 1 - Term 2</option>
+                        <option value="Y1T3">Certificate Year 1 - Term 3</option>
+                        <option value="Y2T1">Certificate Year 2 - Term 1</option>
+                        <option value="Y2T2">Certificate Year 2 - Term 2</option>
+                        <option value="Y2T3">Certificate Year 2 - Term 3</option>
+                    </optgroup>
+                    <optgroup label="🎯 TVET Diploma">
+                        <option value="Y1T1">Diploma Year 1 - Term 1</option>
+                        <option value="Y1T2">Diploma Year 1 - Term 2</option>
+                        <option value="Y1T3">Diploma Year 1 - Term 3</option>
+                        <option value="Y2T1">Diploma Year 2 - Term 1</option>
+                        <option value="Y2T2">Diploma Year 2 - Term 2</option>
+                        <option value="Y2T3">Diploma Year 2 - Term 3</option>
+                        <option value="Y3T1">Diploma Year 3 - Term 1</option>
+                        <option value="Y3T2">Diploma Year 3 - Term 2</option>
+                        <option value="Y3T3">Diploma Year 3 - Term 3</option>
+                    </optgroup>
+                    <optgroup label="🔧 TVET Artisan">
+                        <option value="Artisan Y1T1">Artisan Year 1 - Term 1</option>
+                        <option value="Artisan Y1T2">Artisan Year 1 - Term 2</option>
+                        <option value="Artisan Y2T1">Artisan Year 2 - Term 1</option>
+                        <option value="Artisan Y2T2">Artisan Year 2 - Term 2</option>
+                    </optgroup>
+                </select>
+                <button onclick="previewTimetable()" class="btn-action" style="background: #4C1D95; color: white; padding: 8px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                    <i class="fas fa-sync"></i> Load Preview
+                </button>
+            </div>
+        </div>
+        <div id="adminTimetablePreview" style="overflow-x: auto; max-height: 400px; overflow-y: auto;">
+            <div style="text-align: center; padding: 40px; color: #94a3b8;">
+                <i class="fas fa-calendar-alt" style="font-size: 36px; display: block; margin-bottom: 12px;"></i>
+                <p>Select a block and click "Load Preview" to view timetable</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== CALENDAR VIEW ========== -->
+    <div style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 25px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); border: 1px solid #e5e7eb;">
+        <h3 style="margin: 0 0 16px 0; color: #1e293b; display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-calendar-alt" style="color: #4C1D95;"></i> Calendar View
+        </h3>
+        <div id="fullCalendarDisplay" style="min-height: 400px;">
+            <div style="text-align: center; padding: 60px 20px; color: #94a3b8;">
+                <i class="fas fa-calendar" style="font-size: 48px; display: block; margin-bottom: 16px; color: #c4b5fd;"></i>
+                <p style="font-size: 16px;">Calendar view will display here</p>
+                <p style="font-size: 13px;">Sessions, classes, and assessments scheduled across all blocks</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== UPCOMING SESSIONS ========== -->
+    <div style="background: white; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); border: 1px solid #e5e7eb;">
+        <h3 style="margin: 0 0 16px 0; color: #1e293b; display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-history" style="color: #4C1D95;"></i> Upcoming Sessions (Next 14 Days)
+        </h3>
+        <div class="table-responsive" style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                <thead>
+                    <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0;">
+                        <th style="padding: 12px 16px; text-align: left; font-weight: 600; color: #475569;">Date</th>
+                        <th style="padding: 12px 16px; text-align: left; font-weight: 600; color: #475569;">Time</th>
+                        <th style="padding: 12px 16px; text-align: left; font-weight: 600; color: #475569;">Session Title</th>
+                        <th style="padding: 12px 16px; text-align: left; font-weight: 600; color: #475569;">Venue</th>
+                        <th style="padding: 12px 16px; text-align: left; font-weight: 600; color: #475569;">Program</th>
+                        <th style="padding: 12px 16px; text-align: left; font-weight: 600; color: #475569;">Block / Term</th>
+                        <th style="padding: 12px 16px; text-align: left; font-weight: 600; color: #475569;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="upcomingEventsBody">
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 40px; color: #94a3b8;">
+                            <i class="fas fa-spinner fa-spin" style="font-size: 24px; display: block; margin-bottom: 8px;"></i>
+                            Loading sessions...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+<div class="ia-institution-live-data" style="margin:24px 0;padding:18px;border:1px solid var(--ia-border,#dbe3ea);border-radius:14px;background:var(--ia-card,#fff)"><div class="ia-page-heading"><div><span class="ia-eyebrow">INSTITUTION TIMETABLE RECORDS</span><h2>Institution timetable</h2><p>Manage class, practical, clinical and examination schedules.</p></div></div><div class="ia-panel ia-table-panel"><div class="ia-table-scroll"><table><thead><tr><th>Session</th><th>Date</th><th>Start</th><th>End</th><th>Programme</th><th>Block</th><th>Unit</th><th>Lecturer</th><th>Venue</th><th>Actions</th></tr></thead><tbody id="iaTimetable"><tr><td colspan="10">Loading institution timetable…</td></tr></tbody></table></div></div></div>
+</section>
 <section class="ia-view" id="view-placements"><div class="ia-page-heading"><div><span class="ia-eyebrow">CLINICAL EDUCATION</span><h1>Clinical placements</h1><p>Allocate students to facilities, departments and supervised clinical rotations.</p></div></div><div class="ia-panel ia-table-panel"><div class="ia-table-scroll"><table><thead><tr><th>Student</th><th>Facility</th><th>Department</th><th>Supervisor</th><th>Dates</th><th>Hours</th><th>Status</th></tr></thead><tbody id="iaPlacements"><tr><td colspan="7" class="ia-empty">Loading…</td></tr></tbody></table></div></div></section>
 <section class="ia-view" id="view-research"><div class="ia-page-heading"><div><span class="ia-eyebrow">RESEARCH & SCHOLARSHIP</span><h1>Research management</h1><p>Track student research projects, supervisors, stages and feedback.</p></div></div><div class="ia-panel ia-table-panel"><div class="ia-table-scroll"><table><thead><tr><th>Project</th><th>Student</th><th>Programme</th><th>Supervisor</th><th>Stage</th><th>Due date</th><th>Status</th></tr></thead><tbody id="iaResearch"><tr><td colspan="7" class="ia-empty">Loading…</td></tr></tbody></table></div></div></section>
 <section class="ia-view" id="view-welfare"><div class="ia-page-heading"><div><span class="ia-eyebrow">STUDENT SUPPORT</span><h1>Student welfare</h1><p>Record and follow up confidential student support and welfare cases.</p></div></div><div class="ia-panel ia-table-panel"><div class="ia-table-scroll"><table><thead><tr><th>Student</th><th>Category</th><th>Priority</th><th>Case summary</th><th>Assigned to</th><th>Status</th></tr></thead><tbody id="iaWelfare"><tr><td colspan="6" class="ia-empty">Loading…</td></tr></tbody></table></div></div></section>
