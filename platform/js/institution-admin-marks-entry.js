@@ -169,8 +169,10 @@
  async function saveMarks(){
   if(saving)return;const editable=rows.filter(r=>!r.published);if(!editable.length){say("There are no editable marks to save.",true);return;}
   if(!confirm("Save "+editable.length+" marks and submit them for approval? They will remain unpublished."))return;
-  saving=true;const button=$("iaMESaveCapture");if(button){button.disabled=true;button.textContent="Saving marks…";}
-  const now=new Date().toISOString(),type=$("iaMEAssessmentType")?.value||"full";let saved=0,errors=[];
+  saving=true;const button=$("iaMESaveCapture")?.addEventListener("click",saveMarks);$("iaMEExportCapture")?.addEventListener("click",exportCaptureCsv);
+  document.addEventListener("input",e=>{if(e.target.id==="meMarksSearch"){page=1;renderRows();}});
+  document.addEventListener("click",e=>{if(e.target.id==="meMarksPrevPage"){page=Math.max(1,page-1);renderRows();}if(e.target.id==="meMarksNextPage"){page++;renderRows();}if(e.target.closest("#iaNav [data-view=marks-entry]")){if(!$("iaMEProgramSelect")?.options?.length||$("iaMEProgramSelect")?.options?.length<=1)loadPrograms();}});
+  $("iaMEAssessmentType")?.value||"full";let saved=0,errors=[];
   try{
    for(let i=0;i<editable.length;i+=8){
     const batch=editable.slice(i,i+8);
