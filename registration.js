@@ -631,48 +631,27 @@ async function getLastStudentAdmissionNumber(programType) {
 }
 
 async function generateSequentialStudentNumber(programType) {
-    const year = new Date().getFullYear();
-    const yearSuffix = year.toString().slice(-2);
-    let nextNumber = 1;
-    
-    try {
-        const lastStudentId = await getLastStudentAdmissionNumber(programType);
-        
-        if (lastStudentId) {
-            const match = lastStudentId.match(new RegExp(`${programType}/(\\d{1,6})/(?:MAR|(\\d{1,2}))/(\\d{2,4})`));
-            if (match) {
-                const number = parseInt(match[1]);
-                const yearMatch = match[3];
-                
-                const currentYearSuffix = year.toString().slice(-2);
-                let lastYearSuffix = yearMatch;
-                if (yearMatch.length === 4) {
-                    lastYearSuffix = yearMatch.slice(-2);
-                }
-                
-                if (lastYearSuffix === currentYearSuffix) {
-                    nextNumber = number + 1;
-                } else {
-                    nextNumber = 1;
-                }
-            }
-        }
-    } catch (error) {
-        console.error('Error generating sequential number:', error);
-    }
-    
+    const context = resolvedInstitutionContext;
+    if (!context?.institution_id) throw new Error('Verify your school code before generating an admission number.');
     const selectedProgram = document.getElementById('program_type')?.selectedOptions?.[0];
-    const isNursingProgram = programType === 'DCHN' || programType === 'KRCHN' || /nurs/i.test(selectedProgram?.dataset?.category || '');
-    const paddedNumber = String(nextNumber).padStart(isNursingProgram ? 4 : 5, '0');
-    
-    const now = new Date();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    
-    if (isNursingProgram) {
-        return `${programType}/${paddedNumber}/MAR/${year}`;
+    const category = String(selectedProgram?.dataset?.category || '').toLowerCase();
+    const isNursing = /nurs/.test(category) || ['DCHN','KRCHN'].includes(String(programType).toUpperCase());
+    const admissionProgram = isNursing ? 'NUR' : String(programType || '').toUpperCase().replace(/[^A-Z0-9]/g,'');
+    const intake = getIntakeData();
+    const year = String(intake.intake_year || new Date().getFullYear()).slice(-2);
+    const month = String(intake.intake_month || '09').toUpperCase();
+    const monthNum = /^\d+$/.test(month) ? Number(month) : ({JAN:1,FEB:2,MAR:3,APR:4,MAY:5,JUN:6,JUL:7,AUG:8,SEP:9,OCT:10,NOV:11,DEC:12}[month] || 9);
+    const intakeCode = (monthNum >= 7 ? 'S' : 'M') + year;
+    const { data, error } = await sb.rpc('generate_institution_admission_number', {
+        p_institution_id: context.institution_id,
+        p_program_code: admissionProgram,
+        p_intake_code: intakeCode
+    });
+    if (error || !data) {
+        console.error('Admission number generation failed:', error);
+        throw new Error(error?.message || 'Could not generate your admission number. Please try again.');
     }
-    
-    return `${programType}/${paddedNumber}/${month}/${yearSuffix}`;
+    return data;
 }
 
 function normalizeStudentIdInput(value) {
@@ -693,69 +672,17 @@ function validateStudentId(studentId) {
         return { valid: false, message: 'Invalid characters detected' };
     }
 
-    // Flexible institutional registration format:
-    // PROGRAM / SERIAL / INTAKE-MONTH / YEAR
-    // Accepts 1-8 serial digits, numeric months (1-12), or
-    // three-letter month codes (JAN-DEC), and 2- or 4-digit years.
-    // The programme code is verified against the institution's active programmes.
-    const match = cleaned.match(/^([A-Z][A-Z0-9]{1,11})\/(\d{1,8})\/([A-Z]{3}|\d{1,2})\/(\d{2}|\d{4})$/);
-    if (!match) {
-        return {
-            valid: false,
-            message: 'Use PROGRAM/NUMBER/MONTH/YEAR, e.g. KRCHN/0001/MAR/2024, KRCHN/12345/03/26 or DPOTT/27/5/2026. Different serial lengths are accepted.'
-        };
-    }
+    // Institutional admission format: PREFIX/PROGRAM/INTAKE/SERIAL.
+    // Example: NASHS/NUR/S26/001.
+    const match = cleaned.match(/^([A-Z][A-Z0-9]{1,15})\/([A-Z][A-Z0-9]{1,11})\/([A-Z][0-9]{2})\/(\d{3,6})$/);
+    if (!match) return { valid: false, message: 'Use your institution admission format, e.g. NASHS/NUR/S26/001.' };
 
-    const program = match[1];
-    const rawNumber = match[2];
-    const rawMonth = match[3];
-    const rawYear = match[4];
-    const monthNames = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
-    const yearNum = Number(rawYear);
-    const fullYear = rawYear.length === 2 ? 2000 + yearNum : yearNum;
-
-    if (fullYear < 2000 || fullYear > new Date().getFullYear() + 10) {
-        return { valid: false, message: 'Enter a valid intake year (2 or 4 digits).' };
-    }
-
-    let month;
-    let monthName;
-    let isNamedMonth = /^[A-Z]{3}$/.test(rawMonth);
-    if (isNamedMonth) {
-        if (!monthNames.includes(rawMonth)) {
-            return { valid: false, message: 'Use a valid month code from JAN to DEC.' };
-        }
-        month = rawMonth;
-        monthName = rawMonth;
-    } else {
-        const monthNum = Number(rawMonth);
-        if (monthNum < 1 || monthNum > 12) {
-            return { valid: false, message: 'Month must be between 1 and 12.' };
-        }
-        month = String(monthNum).padStart(2, '0');
-        monthName = monthNames[monthNum - 1];
-    }
-
-    // Preserve the familiar nursing (4-digit) and numeric-intake (5-digit)
-    // display conventions while accepting shorter or longer entered serials.
-    const paddedNumber = rawNumber.padStart(isNamedMonth ? 4 : 5, '0');
-    const year = rawYear.length === 2 ? String(fullYear).slice(-2) : String(fullYear);
-    const canonical = `${program}/${paddedNumber}/${month}/${year}`;
-
-    return {
-        valid: true,
-        format: isNamedMonth ? 'named-month' : 'numeric-month',
-        program,
-        number: rawNumber,
-        paddedNumber,
-        month,
-        monthName,
-        year: rawYear,
-        fullYear: String(fullYear),
-        display: canonical,
-        canonical,
-        is2DigitYear: rawYear.length === 2
-    };
+    const prefix = match[1], program = match[2], intake = match[3], serial = match[4];
+    const expectedPrefix = String(resolvedInstitutionContext?.admission_prefix || (normalizeSchoolCode(resolvedInstitutionContext?.school_code) === '102' ? 'NASHS' : '')).toUpperCase();
+    if (expectedPrefix && prefix !== expectedPrefix) return { valid: false, message: 'The admission prefix does not match your institution.' };
+    if (!/^[A-Z][0-9]{2}$/.test(intake)) return { valid: false, message: 'Use an intake code such as S26.' };
+    const canonical = `${prefix}/${program}/${intake}/${serial.padStart(3,'0')}`;
+    return { valid: true, canonical, normalized: canonical, program, serial, intake };
 }
 
 // ============================================
