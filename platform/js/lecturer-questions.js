@@ -932,13 +932,10 @@ Correct Answer: ${data.correct_answer || 'N/A'}`;
 
     parsePastedQuestions: function(text) {
         if (!this.requireSelectedExam()) return;
-        const source = String(text || '').replace(/\r
-?/g, '
-').replace(/\u00a0/g, ' ');
+        const source = String(text || '').replace(/\r\n?/g, '\n').replace(/\u00a0/g, ' ');
         if (!source.trim()) return [];
 
-        const lines = source.split('
-').map(line => line.trimEnd());
+        const lines = source.split('\n').map(line => line.trimEnd());
         const starts = [];
         const startRegex = /^\s*(?:question\s*)?(\d{1,4})\s*[.)\-:]\s*(.*)$/i;
         lines.forEach((line, index) => {
@@ -1264,8 +1261,7 @@ Correct Answer: ${data.correct_answer || 'N/A'}`;
                 XLSX.utils.book_append_sheet(wb, ws, 'Questions');
                 XLSX.writeFile(wb, 'Lecturer_Question_Bank_Template.xlsx');
             } else {
-                const csv = [headers, ...sample].map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('
-');
+                const csv = [headers, ...sample].map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
                 const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a'); a.href = url; a.download = 'Lecturer_Question_Bank_Template.csv';
