@@ -6689,17 +6689,32 @@ window.openReleaseModal = async function() {
                 .select('id, student_id, exam_id, attempt_number, status, is_retake, started_at, submitted_at, score, percentage, total_marks, updated_at')
                 .eq('exam_id', examId),
             sb.from('exam_grades')
-                .select('id, student_id, exam_id, attempt_id, marks, total_score, percentage, result_status, released, released_at, total_marks, updated_at, graded_at, completed, published, grade')
+                // Read the exam's grade rows first, then identify the final
+                // exam-level sentinel row in JavaScript. This avoids hiding a
+                // real submitted result because of legacy completed-flag or
+                // PostgREST boolean-filter inconsistencies.
+                .select('*')
                 .eq('exam_id', examId)
                 .eq('question_id', ZERO_QUESTION_ID)
-                .eq('completed', true)
         ]);
 
         if (attemptsError) throw attemptsError;
         if (gradesError) throw gradesError;
 
         const allAttempts = attempts || [];
-        const completedSentinelGrades = grades || [];
+        const completedSentinelGrades = (grades || []).filter(g => {
+            const status = String(g?.result_status || '').trim().toUpperCase();
+            const hasCompletedGrade = g?.completed === true ||
+                ['GRADED', 'COMPLETED', 'PUBLISHED', 'RELEASED'].includes(status) ||
+                g?.published === true || g?.released === true;
+            return !!g?.student_id && hasCompletedGrade;
+        });
+        console.info('[Release Results] Exam', examId, {
+            attempts: allAttempts.length,
+            submittedAttempts: allAttempts.filter(a => !!a.submitted_at || ['SUBMITTED','COMPLETED','FINISHED','GRADED','PASSED','FAILED'].includes(String(a.status || '').toUpperCase())).length,
+            finalGradeRows: (grades || []).length,
+            releasableGradeRows: completedSentinelGrades.length
+        });
 
         // Pick the newest attempt for each student. Retakes therefore replace
         // older attempts as the current result for release purposes.
