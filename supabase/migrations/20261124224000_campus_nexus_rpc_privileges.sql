@@ -12,6 +12,21 @@ GRANT EXECUTE ON FUNCTION public.get_student_exam_dashboard_stats() TO authentic
 REVOKE EXECUTE ON FUNCTION public.submit_student_exam_support_ticket(text,text,text) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.submit_student_exam_support_ticket(text,text,text) TO authenticated;
 
+REVOKE EXECUTE ON FUNCTION public.get_my_exam_institution() FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.get_my_exam_institution() TO authenticated;
+
+REVOKE EXECUTE ON FUNCTION public.get_released_exam_attempt_review(integer,uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.get_released_exam_attempt_review(integer,uuid) TO authenticated;
+
+REVOKE EXECUTE ON FUNCTION public.get_student_exam_announcements() FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.get_student_exam_announcements() TO authenticated;
+
+REVOKE EXECUTE ON FUNCTION public.get_program_units(character varying,character varying,character varying,integer) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.get_program_units(character varying,character varying,character varying,integer) TO authenticated;
+
+REVOKE EXECUTE ON FUNCTION public.get_available_blocks() FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.get_available_blocks() TO authenticated;
+
 REVOKE EXECUTE ON FUNCTION public.clinical_rotation_preferences_fit_capacity(uuid,text[]) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.clinical_rotation_preferences_fit_capacity(uuid,text[]) TO authenticated;
 
