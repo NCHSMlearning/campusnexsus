@@ -496,7 +496,11 @@ const LecturerQuestions = {
             document.getElementById('lecOptionB').value = data.option_b || '';
             document.getElementById('lecOptionC').value = data.option_c || '';
             document.getElementById('lecOptionD').value = data.option_d || '';
-            document.getElementById('lecCorrectAnswer').value = data.correct_answer || '';\n            const keyInput = document.getElementById('lecMarkingKey');\n            if (keyInput) keyInput.value = data.marking_key || '';
+            document.getElementById('lecCorrectAnswer').value = data.correct_answer || '';
+            const keyInput = document.getElementById('lecMarkingKey');
+            if (keyInput) keyInput.value = data.marking_key || '';
+            const keyInput = document.getElementById('lecMarkingKey');
+            if (keyInput) keyInput.value = data.marking_key || '';
             document.getElementById('lecQuestionMarks').value = data.marks || 1;
             document.getElementById('lecMaxChars').value = data.max_chars || 500;
 
@@ -525,7 +529,9 @@ const LecturerQuestions = {
         const optionD = document.getElementById('lecOptionD')?.value?.trim();
         const correctAnswer = document.getElementById('lecCorrectAnswer')?.value;
         const marks = parseInt(document.getElementById('lecQuestionMarks')?.value) || 1;
-        const maxChars = parseInt(document.getElementById('lecMaxChars')?.value) || 5000;\n        const markingKey = document.getElementById('lecMarkingKey')?.value?.trim() || '';
+        const maxChars = parseInt(document.getElementById('lecMaxChars')?.value) || 5000;
+        const markingKey = document.getElementById('lecMarkingKey')?.value?.trim() || '';
+        const markingKey = document.getElementById('lecMarkingKey')?.value?.trim() || '';
 
         // Validation
         if (!questionText) {
@@ -542,6 +548,11 @@ const LecturerQuestions = {
                 if (window.showToast) window.showToast('⚠️ Please select the correct answer', 'warning');
                 return;
             }
+        }
+
+        if (!['mcq','multiple_choice'].includes(questionType) && !markingKey) {
+            if (window.showToast) window.showToast('Please provide a marking key for written questions.', 'warning');
+            return;
         }
 
         // Get lecturer data
@@ -577,11 +588,12 @@ const LecturerQuestions = {
             question_number: nextNumber,
             question_type: questionType,
             question_text: questionText,
-            option_a: optionA || null,
-            option_b: optionB || null,
+            option_a: optionA || '',
+            option_b: optionB || '',
             option_c: optionC || null,
             option_d: optionD || null,
-            correct_answer: correctAnswer || null,
+            correct_answer: correctAnswer || '',
+            marking_key: markingKey || null,
             marks: marks,
             max_chars: maxChars,
             status: 'pending',
@@ -696,23 +708,39 @@ const LecturerQuestions = {
             if (error) throw error;
 
             const isMcq = data.question_type === 'mcq' || data.question_type === 'multiple_choice';
-            let details = `📝 Question Details\n\n`;
-            details += `Question: ${data.question_text}\n\n`;
-            details += `Type: ${isMcq ? 'Multiple Choice' : 'Essay'}\n`;
-            details += `Marks: ${data.marks || 1}\n`;
-            details += `Status: ${data.status || 'Pending'}\n`;
+            let details = `📝 Question Details
+
+`;
+            details += `Question: ${data.question_text}
+
+`;
+            details += `Type: ${isMcq ? 'Multiple Choice' : 'Essay'}
+`;
+            details += `Marks: ${data.marks || 1}
+`;
+            details += `Status: ${data.status || 'Pending'}
+`;
             
             if (isMcq) {
-                details += `\nOptions:\n`;
-                if (data.option_a) details += `A: ${data.option_a}\n`;
-                if (data.option_b) details += `B: ${data.option_b}\n`;
-                if (data.option_c) details += `C: ${data.option_c}\n`;
-                if (data.option_d) details += `D: ${data.option_d}\n`;
-                details += `\nCorrect Answer: ${data.correct_answer || 'N/A'}`;
+                details += `
+Options:
+`;
+                if (data.option_a) details += `A: ${data.option_a}
+`;
+                if (data.option_b) details += `B: ${data.option_b}
+`;
+                if (data.option_c) details += `C: ${data.option_c}
+`;
+                if (data.option_d) details += `D: ${data.option_d}
+`;
+                details += `
+Correct Answer: ${data.correct_answer || 'N/A'}`;
             }
 
             if (data.rejection_reason) {
-                details += `\n\n❌ Rejection Reason: ${data.rejection_reason}`;
+                details += `
+
+❌ Rejection Reason: ${data.rejection_reason}`;
             }
 
             alert(details);
@@ -907,10 +935,13 @@ const LecturerQuestions = {
 
     parsePastedQuestions: function(text) {
         if (!this.requireSelectedExam()) return;
-        const source = String(text || '').replace(/\r\n?/g, '\n').replace(/\u00a0/g, ' ');
+        const source = String(text || '').replace(/\r
+?/g, '
+').replace(/\u00a0/g, ' ');
         if (!source.trim()) return [];
 
-        const lines = source.split('\n').map(line => line.trimEnd());
+        const lines = source.split('
+').map(line => line.trimEnd());
         const starts = [];
         const startRegex = /^\s*(?:question\s*)?(\d{1,4})\s*[.)\-:]\s*(.*)$/i;
         lines.forEach((line, index) => {
@@ -1011,7 +1042,8 @@ const LecturerQuestions = {
             }
 
             if (questionLines.length) {
-                q.question_text = [q.question_text, ...questionLines.filter(x => x !== q.question_text)].filter(Boolean).join('\n').trim();
+                q.question_text = [q.question_text, ...questionLines.filter(x => x !== q.question_text)].filter(Boolean).join('
+').trim();
             }
 
             const hasOptions = !!(q.option_a || q.option_b);
@@ -1235,7 +1267,8 @@ const LecturerQuestions = {
                 XLSX.utils.book_append_sheet(wb, ws, 'Questions');
                 XLSX.writeFile(wb, 'Lecturer_Question_Bank_Template.xlsx');
             } else {
-                const csv = [headers, ...sample].map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+                const csv = [headers, ...sample].map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('
+');
                 const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a'); a.href = url; a.download = 'Lecturer_Question_Bank_Template.csv';
@@ -1327,7 +1360,8 @@ const LecturerQuestions = {
         const csv = [
             headers.join(','),
             ...data.map(row => headers.map(h => `"${(row[h] || '').replace(/"/g, '""')}"`).join(','))
-        ].join('\n');
+        ].join('
+');
 
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
