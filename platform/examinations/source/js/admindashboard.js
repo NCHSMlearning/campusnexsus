@@ -8596,12 +8596,27 @@ window.publishApprovedAssessment = async function(examId) {
                 // Editing changes assessment details only. Approval/publication
                 // decisions remain controlled by the dedicated review workflow.
                 delete row.institution_id;
+                // The database RLS policies are the authoritative tenant boundary.
+                // Do not duplicate the institution filter here: the page context can
+                // be stale after an institution switch, which makes a valid record
+                // appear to update zero rows even when the signed-in admin owns it.
+                // RLS still limits this UPDATE to the institution(s) the user may manage.
                 result = await sb.from('exams').update(row)
                     .eq('id', Number(examId))
-                    .eq('institution_id', institutionId)
-                    .select('id');
+                    .select('id, institution_id');
+
                 if (!result.error && (!result.data || result.data.length === 0)) {
-                    throw new Error('No assessment was updated. Check that it belongs to your institution and that your account has edit permission.');
+                    // Distinguish a missing/inaccessible row from a tenant-context mismatch.
+                    const check = await sb.from('exams')
+                        .select('id, institution_id')
+                        .eq('id', Number(examId))
+                        .maybeSingle();
+
+                    if (check.error) throw check.error;
+                    if (!check.data) {
+                        throw new Error('Assessment not found or your account is not authorised to edit it. Confirm that you are signed in to institution 102 and that your institution-admin membership is active.');
+                    }
+                    throw new Error('The assessment is visible but the database denied the update. Check the active institution-admin membership, examination-module entitlement and UPDATE RLS policy for institution ' + check.data.institution_id + '.');
                 }
             } else {
                 row.created_by = user.id;
