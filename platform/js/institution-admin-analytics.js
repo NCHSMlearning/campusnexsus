@@ -3,7 +3,7 @@
  */
 (() => {
  "use strict";
- const $=id=>document.getElementById(id);let api=null,rows=[],students=[],charts={};
+ const aliases={"iaAnalyticsProgram":"analytics_program_select","iaAnalyticsYear":"analytics_year_select","iaAnalyticsBlock":"analytics_block_select","iaAnalyticsUnitRows":"analytics_subject_table_body","iaAnalyticsGradeChart":"analyticsGradeChart","iaAnalyticsBlockChart":"analyticsBlockChart","iaAnalyticsProgramChart":"analyticsUnitRankingChart","iaAnalyticsGenderChart":"analyticsGenderChart","iaAnalyticsAssessmentChart":"analyticsExamTypeChart"}; const $=id=>document.getElementById(id)||document.getElementById(aliases[id]||"");let api=null,rows=[],students=[],charts={};
  const db=()=>{if(!api?.db||!api?.institutionId)throw new Error("Institution session is not ready.");return api.db;};
  const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
  const score=r=>{const status=String(r.retake_status||"").trim().toUpperCase();if(["PASS","PASSED","COMPETENT","COMPETENT/PASS"].includes(status)){const n=Number(r.retake_score);if(Number.isFinite(n))return n;}const raw=r.final_score;if(raw===null||raw===undefined||raw==="")return null;const n=Number(raw);return Number.isFinite(n)?n:null;};
