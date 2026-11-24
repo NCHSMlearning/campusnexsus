@@ -194,7 +194,7 @@ function examAttemptState(exam){
  return released?'released':'pending_release';
 }
 function showStudentExamResult(examId){
- const exam=state.exams.find(e=>String(e.id)===String(examId)),result=state.examResults[String(examId)]||{},attempt=result.attempt,summary=result.summary||{};
+ const exam=state.exams.find(e=>String(e.id)===String(examId)),result=state.examResults[String(examId)]||{},attempt=result.attempt;let summary=result.summary||{};
  if(!attempt?.id||!(summary.is_released===true||summary.released===true||summary.published===true||['released','published'].includes(norm(summary.result_status)))){notify('Your result is not yet released by the administrator.');return;}
  let modal=document.getElementById('student-exam-result-modal');
  if(!modal){modal=document.createElement('div');modal.id='student-exam-result-modal';modal.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(15,23,42,.68);display:flex;align-items:center;justify-content:center;padding:16px;';modal.innerHTML='<section style="background:#fff;width:min(100%,1000px);max-height:90vh;overflow:auto;border-radius:14px;padding:20px;"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px;"><h2 id="student-result-title" style="margin:0;color:#0f172a;">Examination result</h2><button type="button" id="student-result-close" style="border:0;background:#e2e8f0;border-radius:8px;padding:9px 12px;cursor:pointer;">Close</button></div><div id="student-result-content" style="margin-top:16px;">Loading result details…</div></section>';document.body.appendChild(modal);modal.addEventListener('click',e=>{if(e.target===modal)modal.remove();});modal.querySelector('#student-result-close').addEventListener('click',()=>modal.remove());}
