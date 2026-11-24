@@ -1957,7 +1957,7 @@ function renderQuestion(index) {
     // ============================================================
     const questionType = q.question_type || 'multiple_choice';
     const hasOptions = q.option_a || q.option_b || q.option_c || q.option_d;
-    const isTextQuestion = ['text','essay','short_answer','written','fill_blank'].includes(String(questionType).toLowerCase()) || !hasOptions;
+    const isTextQuestion = ['text','essay','short_answer','long_answer','written','fill_blank'].includes(String(questionType).toLowerCase()) || !hasOptions;
 
     let questionHtml = '';
 
