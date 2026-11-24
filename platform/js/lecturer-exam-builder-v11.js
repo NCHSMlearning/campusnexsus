@@ -58,7 +58,7 @@ async function loadLecturerUnits(){
   var result=await S.db.from('units_catalog').select('*').eq('institution_id',S.institution).eq('status','active').order('unit_name',{ascending:true}).limit(5000);
   if(result.error)throw result.error;
   var units=(result.data||[]).filter(function(u){return String(u.institution_id||'')===String(S.institution)});
-  var norm=function(v){return String(v||'').trim().toUpperCase().replace(/\\s+/g,' ')};
+  var norm=function(v){return String(v||'').trim().toUpperCase().replace(/\s+/g,' ')};
   if(program){
    units=units.filter(function(u){var p=u.program||u.program_code||u.target_program||'';return !String(p).trim()||norm(p)===norm(program)});
   }
