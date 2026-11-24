@@ -48,3 +48,5 @@ jobs:
           files: |
             secure-exam-browser/dist/Campus-Nexus-Secure-Exam-Browser-Setup.exe
             secure-exam-browser/dist/Campus-Nexus-Secure-Exam-Browser-Portable.exe
+            secure-exam-browser/dist/latest.yml
+            secure-exam-browser/dist/*.blockmap
