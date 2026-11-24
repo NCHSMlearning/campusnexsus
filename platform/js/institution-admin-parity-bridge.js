@@ -13,13 +13,13 @@
   const change = id => document.getElementById(id)?.dispatchEvent(new Event("change", {bubbles:true}));
   window.refreshMarksData = async () => { await window.InstitutionAdminMarksEntry?.refresh?.(); await window.InstitutionAdminResults?.refresh?.(); };
   window.exportAllMarksData = () => window.InstitutionAdminMarksEntry?.export?.();
-  window.loadMEBlocks = () => change("me_program_select");
-  window.loadMEUnits = () => change("me_block_select");
+  window.loadMEBlocks = () => {};
+  window.loadMEUnits = () => {};
   window.loadMarksEntry = () => click("iaMELoadStudents");
   window.loadMarksApprovals = () => window.InstitutionAdminResults?.refresh?.();
   window.approveAllPendingMarks = () => window.InstitutionAdminResults?.approveAll?.();
   window.rejectAllPendingMarks = () => window.InstitutionAdminResults?.rejectAll?.();
-  window.filterMarksApprovals = () => window.InstitutionAdminResults?.refresh?.();
+  window.filterMarksApprovals = () => {};
   window.refreshAnalytics = window.loadAnalyticsData = () => window.InstitutionAdminAnalytics?.refresh?.();
   window.exportAnalyticsReport = window.exportConsolidatedMarksheet = () => window.InstitutionAdminAnalytics?.export?.();
   window.printConsolidatedMarksheet = () => window.InstitutionAdminAnalytics?.print?.();
@@ -30,8 +30,8 @@
   window.refreshAttendance = () => window.InstitutionAdminAttendance?.refresh?.();
   window.exportAllAttendance = () => window.InstitutionAdminAttendance?.export?.();
   window.resetAttendanceFilters = () => window.InstitutionAdminAttendance?.reset?.();
-  window.filterAttendance = () => ["attendance_search","attendance_program_filter","attendance_type_filter","attendance_status_filter"].forEach(change);
-  window.adminCheckIn = event => { if(event) event.preventDefault(); document.getElementById("manual-attendance-form")?.requestSubmit(); return false; };
+  window.filterAttendance = () => {};
+  window.adminCheckIn = event => { if(event) event.preventDefault(); return false; };
   window.toggleAttendanceFields = () => {};
   window.exportTableToCSV = () => window.InstitutionAdminAttendance?.export?.();
   // These legacy controls are not allowed to run Super Admin-wide handlers in a tenant session.
