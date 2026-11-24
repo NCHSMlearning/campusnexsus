@@ -75,49 +75,65 @@ async function initializeApp() {
         // during a slow/mobile page load. The auth client remains the single
         // persistent Supabase client; this only restores the Database wrapper.
         async function ensureStudentDatabaseModule() {
-            // Prefer the constructor already exported by database.js. Reloading
-            // a classic script containing "class Database" can fail with a
-            // duplicate lexical declaration when it was previously evaluated.
-            if (typeof window.Database === 'function') {
-                if (!window.db || typeof window.db.initialize !== 'function') {
-                    window.db = new window.Database();
+            const isDatabase = value => !!value && typeof value.initialize === 'function';
+
+            // Classic-script class declarations are not consistently exposed as
+            // window properties in every browser/webview. Check both the explicit
+            // export and the global lexical binding before attempting recovery.
+            const getDatabaseConstructor = () => {
+                if (typeof window.Database === 'function') return window.Database;
+                try {
+                    if (typeof Database === 'function') return Database;
+                } catch (_) {}
+                return null;
+            };
+
+            const ensureInstance = () => {
+                if (isDatabase(window.db)) return window.db;
+                const Constructor = getDatabaseConstructor();
+                if (Constructor) {
+                    window.db = new Constructor();
+                    if (isDatabase(window.db)) return window.db;
                 }
-                if (window.db && typeof window.db.initialize === 'function') return window.db;
-            }
+                return null;
+            };
 
-            if (window.db && typeof window.db.initialize === 'function') return window.db;
+            const existing = ensureInstance();
+            if (existing) return existing;
 
-            // Recover only if neither the Database constructor nor a usable
-            // instance was exposed. Keep the root-relative path canonical.
-            const source = new URL('/js/database.js', window.location.origin).href;
+            // The normal HTML script is deliberately loaded before this boot
+            // file. If it did not expose the module, retry once from the
+            // canonical root path with a fresh URL to bypass intermediary caches.
+            const source = '/js/database.js';
             let loadError = null;
             try {
                 await new Promise((resolve, reject) => {
                     const script = document.createElement('script');
-                    script.src = source + (source.includes('?') ? '&' : '?') + 'student_boot=' + Date.now();
-                    script.async = true;
-                    script.onload = resolve;
-                    script.onerror = () => reject(new Error('Browser failed to load ' + source));
+                    const timeout = setTimeout(() => reject(new Error('Timed out loading ' + source)), 15000);
+                    script.src = source + '?student_recovery=20261124_v5_' + Date.now();
+                    script.async = false;
+                    script.onload = () => { clearTimeout(timeout); resolve(); };
+                    script.onerror = () => { clearTimeout(timeout); reject(new Error('Browser could not load ' + source + ' (check deployment path or network).')); };
                     document.head.appendChild(script);
                 });
             } catch (error) {
                 loadError = error;
-                console.error('[Student Portal] Database script load failed:', source, error);
+                console.error('[Student Portal] Database module recovery failed:', error);
             }
 
-            if (typeof window.Database === 'function') {
-                if (!window.db || typeof window.db.initialize !== 'function') {
-                    window.db = new window.Database();
-                }
-                if (window.db && typeof window.db.initialize === 'function') return window.db;
-            }
+            const recovered = ensureInstance();
+            if (recovered) return recovered;
 
-            if (window.db && typeof window.db.initialize === 'function') return window.db;
-
-            const detail = loadError?.message ||
-                ('Database constructor unavailable (window.Database=' + typeof window.Database +
-                 ', window.db=' + typeof window.db + ')');
-            throw new Error('Student database module could not be loaded: ' + detail);
+            const diagnostics = [
+                'window.db=' + (window.db === null ? 'null' : typeof window.db),
+                'window.Database=' + typeof window.Database,
+                'global Database=' + (() => { try { return typeof Database; } catch (_) { return 'unavailable'; } })()
+            ].join(', ');
+            throw new Error(
+                'Student database module could not be initialized. ' +
+                (loadError?.message ? loadError.message + ' ' : '') +
+                diagnostics
+            );
         }
 
         await ensureStudentDatabaseModule();
