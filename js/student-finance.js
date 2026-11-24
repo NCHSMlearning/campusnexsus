@@ -1226,7 +1226,7 @@ async function fetchFinanceDataFromSupabase(user) {
         try {
             const { data, error } = await supabase
                 .from('consolidated_user_profiles_table')
-                .select('id,user_id,student_id,full_name,email,program,intake_year,phone,block')
+                .select('id,user_id,student_id,full_name,email,program,intake_year,phone,block,institution_id')
                 .eq('user_id', userId)
                 .maybeSingle();
 
@@ -1246,23 +1246,29 @@ async function fetchFinanceDataFromSupabase(user) {
         const programLevel = getProgramLevel(program);
         const periods = getPeriods(programType, programLevel);
 
+        const institutionId = profile?.institution_id || user?.institution_id || null;
         let accountData = null;
 
-        for (const id of [profileId, userId].filter(Boolean)) {
-            try {
-                const { data, error } = await supabase
-                    .from('finance_student_accounts')
-                    .select('*')
-                    .eq('student_id', id)
-                    .maybeSingle();
+        if (!institutionId) {
+            console.warn('⚠️ Finance account lookup skipped: student institution is not resolved.');
+        } else {
+            for (const id of [profileId, userId].filter(Boolean)) {
+                try {
+                    const { data, error } = await supabase
+                        .from('finance_student_accounts')
+                        .select('*')
+                        .eq('student_id', id)
+                        .eq('institution_id', institutionId)
+                        .maybeSingle();
 
-                if (!error && data) {
-                    accountData = data;
-                    console.log('✅ Finance account found using:', id);
-                    break;
+                    if (!error && data) {
+                        accountData = data;
+                        console.log('✅ Institution-scoped finance account found using:', id);
+                        break;
+                    }
+                } catch (e) {
+                    console.warn('⚠️ Account lookup failed:', e.message);
                 }
-            } catch (e) {
-                console.warn('⚠️ Account lookup failed:', e.message);
             }
         }
 
@@ -1304,30 +1310,37 @@ async function fetchFinanceDataFromSupabase(user) {
 
         let feeStructureData = null;
 
-        try {
-            const programFullName = mapProgramCodeToFullName(program);
+        if (!institutionId) {
+            console.warn('⚠️ Institution fee structure lookup skipped: institution is not resolved.');
+        } else {
+            try {
+                const programFullName = mapProgramCodeToFullName(program);
 
-            const { data, error } = await supabase
-                .from('finance_fee_structure')
-                .select('*')
-                .eq('program', programFullName)
-                .eq('is_active', true)
-                .order('period_index', { ascending: true });
-
-            if (!error && data?.length) {
-                feeStructureData = data;
-            } else {
-                const { data: altData, error: altError } = await supabase
+                const { data, error } = await supabase
                     .from('finance_fee_structure')
                     .select('*')
-                    .eq('program', program)
+                    .eq('institution_id', institutionId)
+                    .eq('program', programFullName)
                     .eq('is_active', true)
                     .order('period_index', { ascending: true });
 
-                if (!altError && altData?.length) feeStructureData = altData;
+                if (!error && data?.length) {
+                    feeStructureData = data;
+                } else {
+                    const { data: altData, error: altError } = await supabase
+                        .from('finance_fee_structure')
+                        .select('*')
+                        .eq('institution_id', institutionId)
+                        .eq('program', program)
+                        .eq('is_active', true)
+                        .order('period_index', { ascending: true });
+
+                    if (!altError && altData?.length) feeStructureData = altData;
+                    else if (error || altError) console.warn('⚠️ Institution fee structure lookup:', error?.message || altError?.message);
+                }
+            } catch (e) {
+                console.warn('⚠️ Fee structure lookup failed:', e.message);
             }
-        } catch (e) {
-            console.warn('⚠️ Fee structure lookup failed:', e.message);
         }
 
         let processedFeeStructure = [];
@@ -1378,18 +1391,10 @@ async function fetchFinanceDataFromSupabase(user) {
                 voteHeads.push(vh);
             });
         } else {
-            periods.forEach((period, index) => {
-                const amount = getFeeAmount(programType, index, programLevel);
-
-                processedFeeStructure.push({
-                    name: period,
-                    amount,
-                    hostel: 0,
-                    components: []
-                });
-
-                periodTotals.push(amount);
-            });
+            // Never invent a fee amount when the institution has not configured
+            // an active fee structure. Account-level balances remain authoritative.
+            processedFeeStructure = [];
+            periodTotals = [];
         }
 
         const profilePeriod =
@@ -1490,7 +1495,7 @@ async function fetchFinanceDataFromSupabase(user) {
         const semesterFee =
             Number(processedFeeStructure[currentPeriodIndex]?.amount) ||
             getProfilePeriodFee(processedFeeStructure, currentPeriod, 0) ||
-            getFeeAmount(programType, currentPeriodIndex, programLevel);
+            0;
 
         const currentPeriodOutstanding = Math.max(
             semesterFee - paidThisSemester,
@@ -1553,6 +1558,8 @@ async function fetchFinanceDataFromSupabase(user) {
             overallProgress: paymentProgress,
             currentPeriodOutstanding,
             currentPeriodBalance: currentPeriodOutstanding,
+            feeStructureConfigured: Boolean(feeStructureData?.length),
+            institutionId,
             currentPeriodProgress,
             payments: formattedPayments,
             feeStructure: formattedFees,
