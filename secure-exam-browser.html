@@ -52,12 +52,33 @@ a.btn{min-height:50px;padding:13px 16px;border-radius:12px;text-decoration:none;
 <script>
 (function(){
  const params=new URLSearchParams(location.search);
- const raw=params.get('exam_url');
- const validExamUrl=value=>{try{const u=new URL(value);return u.protocol==='https:'&&u.hostname==='campusnexus.co.ke'&&u.pathname==='/exam.html'}catch(_){return false}};
- if(!validExamUrl(raw)){document.querySelector('h1').textContent='Exam link unavailable';document.querySelector('.lead').textContent='This examination link is missing or invalid. Return to your student examination centre and open the assessment again.';document.querySelectorAll('.actions a').forEach(a=>a.style.display='none');document.getElementById('browser-fallback').style.display='none';return;}
- const launch='campusnexus-seb://launch?url='+encodeURIComponent(raw);
+ // The exam link is nested inside another URL. Decode defensively because
+ // some older exam records contain an already URL-encoded destination.
+ let raw=params.get('exam_url')||'';
+ for(let i=0;i<2&&raw;i++){try{const decoded=decodeURIComponent(raw);if(decoded===raw)break;raw=decoded;}catch(_){break;}}
+ const resolveExamUrl=value=>{
+  try{
+   const u=new URL(String(value||'').trim(),location.origin);
+   const host=u.hostname.toLowerCase().replace(/^www\\./,'');
+   const allowedPaths=['/exam.html','/exam','/exam/'];
+   if(u.protocol!=='https:'||host!=='campusnexus.co.ke'||!allowedPaths.includes(u.pathname.toLowerCase()))return null;
+   // Strip fragments and retain exam_id and other server-issued query parameters.
+   u.hash='';
+   return u.href;
+  }catch(_){return null;}
+ };
+ const examUrl=resolveExamUrl(raw);
+ if(!examUrl){
+  document.querySelector('h1').textContent='Exam link unavailable';
+  document.querySelector('.lead').textContent='The examination destination could not be verified. Return to your student examination centre, refresh the examination list, and open the assessment again.';
+  document.querySelectorAll('.actions a').forEach(a=>a.style.display='none');
+  document.getElementById('browser-fallback').style.display='none';
+  console.warn('[CN-SEB] Invalid exam destination:',{hasParameter:params.has('exam_url'),receivedValue:params.get('exam_url')});
+  return;
+ }
+ const launch='campusnexus-seb://launch?url='+encodeURIComponent(examUrl);
  document.getElementById('open-app').href=launch;
- document.getElementById('browser-fallback').href=raw;
+ document.getElementById('browser-fallback').href=examUrl;
  const isWindows=/Windows/i.test(navigator.userAgent);
  if(!isWindows){
    document.getElementById('mobile-note').style.display='block';
