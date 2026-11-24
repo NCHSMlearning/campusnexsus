@@ -469,11 +469,34 @@ async function init(){
    logo.src=institution.logo_url;logo.alt=institutionName+' logo';logo.hidden=false;fallback.hidden=true;
    logo.onerror=()=>{logo.hidden=true;fallback.hidden=false;};
   }else{logo.hidden=true;fallback.hidden=false;}
-  const primary=typeof institution.primary_color==='string'&&/^#[0-9a-f]{3,8}$/i.test(institution.primary_color)?institution.primary_color:'#082f55';
-  const secondary=typeof institution.secondary_color==='string'&&/^#[0-9a-f]{3,8}$/i.test(institution.secondary_color)?institution.secondary_color:'#0c8990';
-  document.documentElement.style.setProperty('--navy',primary);
-  document.documentElement.style.setProperty('--navy2',secondary);
-  document.documentElement.style.setProperty('--teal',secondary);
+  const validColor=(value,fallback)=>typeof value==='string'&&/^#[0-9a-f]{3}(?:[0-9a-f]{3})?$/i.test(value.trim())?value.trim():fallback;
+  const paletteSource=institution.brand_colors;
+  const paletteObject=paletteSource&&!Array.isArray(paletteSource)&&typeof paletteSource==='object'?paletteSource:{};
+  const paletteValues=Array.isArray(paletteSource)?paletteSource:[
+   paletteObject.primary,paletteObject.secondary,paletteObject.accent1||paletteObject.accent||paletteObject.gold||paletteObject.tertiary,
+   paletteObject.accent2,paletteObject.accent3,paletteObject.accent4
+  ];
+  const palette=[
+   validColor(institution.primary_color||paletteValues[0],'#082f55'),
+   validColor(institution.secondary_color||paletteValues[1],'#0c8990'),
+   validColor(paletteValues[2],'#f5bd3d'),
+   validColor(paletteValues[3],'#3473ba'),
+   validColor(paletteValues[4],'#16835b'),
+   validColor(paletteValues[5],'#7952c8')
+  ];
+  const [primary,secondary,accent1,accent2,accent3,accent4]=palette;
+  const root=document.documentElement;
+  ['--navy','--navy2','--teal','--cn-institution-primary','--cn-institution-secondary',
+   '--cn-institution-color-1','--cn-institution-color-2','--cn-institution-color-3',
+   '--cn-institution-color-4','--cn-institution-color-5','--cn-institution-color-6',
+   '--cn-brand-primary','--cn-brand-secondary','--cn-brand-accent','--cn-brand-accent-2',
+   '--cn-brand-accent-3','--cn-brand-accent-4'].forEach((key,index)=>{
+    const values=[primary,secondary,secondary,primary,secondary,...palette,primary,secondary,accent1,accent2,accent3,accent4];
+    root.style.setProperty(key,values[index]);
+   });
+  root.dataset.institutionPortal='true';
+  root.dataset.institutionName=institutionName;
+  root.dataset.institutionCode=val(institution.school_code,institution.short_code,'');
   document.title=institutionName+' | Student Examinations';
  
  } catch(brandingError) {
