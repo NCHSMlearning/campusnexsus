@@ -2844,5 +2844,16 @@ window.viewLecturerStudentProgress = async function(studentId, studentName, exam
 <script src="/platform/js/lecturer-exam-builder-v11.js?v=20261124-written-marking-v2" defer></script>
 <script src="/js/campus-nexus-code-guard.js?v=20261124-global-guard-v1" defer></script>
 <script src="/platform/js/cnseb-live-viewer.js?v=20261125-live-viewer-v1" defer></script>
+<script id="cnseb-open-live-camera-tab">
+document.addEventListener('DOMContentLoaded',function(){
+ const target=new URLSearchParams(location.search).get('view');
+ if(target==='liveCameraFeed'){
+  setTimeout(function(){
+   if(typeof window.switchTab==='function')window.switchTab('liveCameraFeed');
+   if(typeof window.loadLecturerLiveCameraFeed==='function')window.loadLecturerLiveCameraFeed();
+  },500);
+ }
+});
+</script>
 </body>
 </html>
