@@ -284,6 +284,9 @@
 
     applied = true;
     window.CURRENT_INSTITUTION = institution;
+    if (typeof window.__cnSubscribeInstitutionBranding === "function") {
+      window.__cnSubscribeInstitutionBranding(String(institution.id));
+    }
     window.CURRENT_INSTITUTION_ID = String(institution.id);
     window.CURRENT_INSTITUTION_CODE = code;
     window.CURRENT_SCHOOL_CODE = code;
@@ -357,6 +360,27 @@
   }
 
   let refreshInFlight = false;
+  let brandingChannel = null;
+  let subscribedInstitutionId = null;
+  window.__cnSubscribeInstitutionBranding = function (institutionId) {
+    const supabase = client();
+    if (!supabase || typeof supabase.channel !== "function" ||
+        subscribedInstitutionId === institutionId) return;
+    if (brandingChannel && typeof supabase.removeChannel === "function") {
+      try { supabase.removeChannel(brandingChannel); } catch (_) {}
+    }
+    subscribedInstitutionId = institutionId;
+    try {
+      brandingChannel = supabase.channel("cn-institution-branding-" + institutionId)
+        .on("postgres_changes", {
+          event: "UPDATE", schema: "public", table: "institutions",
+          filter: "id=eq." + institutionId
+        }, function () { refreshBranding(); })
+        .subscribe();
+    } catch (error) {
+      console.warn("[Campus Nexus] Realtime branding subscription unavailable:", error && error.message || error);
+    }
+  };
   async function refreshBranding() {
     if (refreshInFlight) return;
     refreshInFlight = true;
