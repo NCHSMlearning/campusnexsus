@@ -2072,7 +2072,7 @@ window.viewLecturerStudentProgress = async function(studentId, studentName, exam
             // Prefer the first NON-EMPTY value so an empty selected_answer does
             // not hide a valid student_answer/answer/response.
             const candidates = [
-                row?.selected_answer, row?.student_answer, row?.answer,
+                row?.selected_answer, row?.answer,
                 row?.response, row?.answer_text, row?.selected_option,
                 row?.answer_value
             ];
@@ -2134,7 +2134,7 @@ window.viewLecturerStudentProgress = async function(studentId, studentName, exam
             }
 
             let answersQuery = sb.from('exam_grades')
-                .select('*')
+                .select('id, exam_id, student_id, question_id, selected_answer, marks, remarks, graded_by, graded_at, result_status, percentage, released, released_at, grade, published, published_at, total_marks, attempt_id, is_subjective_graded, updated_at')
                 .eq('student_id', String(studentId))
                 .eq('exam_id', numericExamId)
                 .neq('question_id', sentinel);
@@ -2148,7 +2148,7 @@ window.viewLecturerStudentProgress = async function(studentId, studentName, exam
             // Never combine answers across retakes.
             if ((!answerRows || !answerRows.length) && attemptId) {
                 const { data: fallbackRows, error: fallbackError } = await sb.from('exam_grades')
-                    .select('*')
+                    .select('id, exam_id, student_id, question_id, selected_answer, marks, remarks, graded_by, graded_at, result_status, percentage, released, released_at, grade, published, published_at, total_marks, attempt_id, is_subjective_graded, updated_at')
                     .eq('student_id', String(studentId))
                     .eq('exam_id', numericExamId)
                     .neq('question_id', sentinel)
