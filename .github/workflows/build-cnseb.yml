@@ -11,12 +11,12 @@ on:
 permissions:
   contents: write
 
-# Only one Secure Exam Browser build may run for a branch at a time.
-# A newer push cancels the older in-progress build instead of creating
-# overlapping duplicate installer builds.
+# Serialize Secure Exam Browser builds without cancelling an active build.
+# GitHub may keep the newest pending run for this concurrency group, but a
+# running Windows installer build is allowed to finish and publish its assets.
 concurrency:
   group: cnseb-build-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build-windows:
@@ -26,9 +26,9 @@ jobs:
         working-directory: secure-exam-browser
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: "20"
       - name: Prepare official Campus Nexus brand assets
