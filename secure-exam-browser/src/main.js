@@ -210,6 +210,9 @@ app.whenReady().then(() => {
   ));
   ipcMain.handle('cnseb:brand-logo-url', () => pathToFileURL(path.join(__dirname, '../build/campus-nexus-original-logo.webp')).href);
   ipcMain.handle('cnseb:update-state', () => updateState);
+  ipcMain.on('cnseb:is-kiosk', event => {
+    event.returnValue = !!(mainWindow && !mainWindow.isDestroyed() && mainWindow.isKiosk() && mainWindow.isFullScreen());
+  });
   ipcMain.handle('cnseb:device-info', () => ({
     appVersion: app.getVersion(), platform: process.platform,
     architecture: process.arch, strictMode: STRICT,
