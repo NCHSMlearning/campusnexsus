@@ -1316,8 +1316,10 @@ async function loadLobbyData() {
             if (DOM.examTitleLobby) DOM.examTitleLobby.textContent = displayExamName;
             if (DOM.examDuration) DOM.examDuration.textContent = exam.duration_minutes ?? '—';
             if (DOM.examPassMark) DOM.examPassMark.textContent = exam.pass_mark ?? '—';
-            const unitName = exam.unit_name || exam.unit_title || exam.course_unit_name || exam.unit || exam.subject_name || '';
-            const unitCode = exam.unit_code || exam.course_unit_code || exam.subject_code || '';
+            const rawUnitName = exam.unit_name || exam.unit_title || exam.course_unit_name || exam.unit || exam.subject_name || '';
+            const rawUnitCode = exam.unit_code || exam.course_unit_code || exam.subject_code || '';
+            const unitName = typeof rawUnitName === 'string' ? rawUnitName.trim() : (rawUnitName?.name || rawUnitName?.title || '');
+            const unitCode = typeof rawUnitCode === 'string' ? rawUnitCode.trim() : '';
             const unitLabel = [unitCode, unitName].filter(Boolean).join(' — ') || 'Unit details not provided';
             const unitNode = document.getElementById('examUnitName');
             if (unitNode) unitNode.textContent = unitLabel;
