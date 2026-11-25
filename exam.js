@@ -2099,7 +2099,6 @@ function renderQuestion(index) {
             radio.addEventListener('change', function(e) {
                 const answer = e.target.value;
                 saveAnswer(answer);
-                saveAnswerToDatabase(q.id, answer);
                 saveProgressLocally();
             });
         });
