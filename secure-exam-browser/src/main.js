@@ -9,7 +9,7 @@ const EXAM_ORIGIN = 'https://campusnexus.co.ke';
 const SUPABASE_URL = 'https://irahplkvocaakjxuisto.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_5Cg5FFudf03UnmOXGNGMHQ_uK9S-uQX';
 const HANDOFF_ENDPOINT = `${SUPABASE_URL}/functions/v1/cnseb-auth-handoff`;
-const DEFAULT_EXAM_URL = `${EXAM_ORIGIN}/exam.html?client=cnseb`;
+const DEFAULT_EXAM_URL = `${EXAM_ORIGIN}/examlogin.html?client=cnseb`;
 // Packaged Windows builds always launch in strict kiosk mode.
 const STRICT = app.isPackaged || process.argv.includes('--strict');
 const PROTOCOL = 'campusnexus-seb:';
@@ -19,6 +19,7 @@ let pendingExamUrl = null;
 let pendingHandoffCode = null;
 let updateState = { state: 'checking' };
 let exitInProgress = false;
+let examMode = false;
 
 function isValidExamUrl(value) {
   try {
@@ -51,20 +52,53 @@ function isTrusted(url) {
   } catch { return false; }
 }
 
+function applyWindowMode(url) {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  const nextExamMode = STRICT && isValidExamUrl(url);
+  examMode = nextExamMode;
+  if (nextExamMode) {
+    mainWindow.setMenuBarVisibility(false);
+    mainWindow.setKiosk(true);
+    mainWindow.setFullScreen(true);
+    mainWindow.setAlwaysOnTop(true, 'screen-saver');
+    if (typeof mainWindow.setClosable === 'function') mainWindow.setClosable(false);
+    if (typeof mainWindow.setMinimizable === 'function') mainWindow.setMinimizable(false);
+    if (typeof mainWindow.setResizable === 'function') mainWindow.setResizable(false);
+    setImmediate(() => {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        const display = screen.getDisplayMatching(mainWindow.getBounds());
+        mainWindow.setBounds(display.bounds, false);
+      }
+    });
+  } else {
+    mainWindow.setKiosk(false);
+    mainWindow.setFullScreen(false);
+    mainWindow.setAlwaysOnTop(false);
+    mainWindow.setMenuBarVisibility(true);
+    if (typeof mainWindow.setClosable === 'function') mainWindow.setClosable(true);
+    if (typeof mainWindow.setMinimizable === 'function') mainWindow.setMinimizable(true);
+    if (typeof mainWindow.setResizable === 'function') mainWindow.setResizable(true);
+    mainWindow.setSize(1280, 850);
+    mainWindow.center();
+  }
+}
+
 function loadExam(url) {
-  const target = isValidExamUrl(url) ? url : DEFAULT_EXAM_URL;
-  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.loadURL(target);
-  else pendingExamUrl = target;
+  const target = isTrusted(url) ? url : DEFAULT_EXAM_URL;
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    applyWindowMode(target);
+    mainWindow.loadURL(target);
+  } else pendingExamUrl = target;
 }
 
 function createWindow() {
   mainWindow = new BrowserWindow({
     show: false,
-    // Exam client always occupies the full display; packaged builds are strict by default.
-    autoHideMenuBar: true, kiosk: true, fullscreen: true, fullscreenable: true, frame: false,
-    resizable: false, maximizable: false, minimizable: false, closable: !STRICT,
-    titleBarStyle: 'hidden',
-    skipTaskbar: false, alwaysOnTop: true,
+    // Login and administration use a normal desktop window. Strict kiosk
+    // is enabled only after an examination URL is opened.
+    autoHideMenuBar: false, kiosk: false, fullscreen: false, fullscreenable: true, frame: true,
+    resizable: true, maximizable: true, minimizable: true, closable: true,
+    skipTaskbar: false, alwaysOnTop: false,
     title: 'Campus Nexus | Secure Examination',
     icon: path.join(__dirname, '../build/campus-nexus.ico'),
     backgroundColor: '#071d33',
@@ -101,15 +135,14 @@ function createWindow() {
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     const examTarget = extractExamUrl([url]);
     if (examTarget) setImmediate(() => loadExam(examTarget));
-    else if (isTrusted(url)) setImmediate(() => {
-      if (mainWindow && !mainWindow.isDestroyed()) mainWindow.loadURL(url);
-    });
+    else if (isTrusted(url)) setImmediate(() => loadExam(url));
     return { action: 'deny' };
   });
   mainWindow.webContents.on('will-navigate', (event, url) => {
     const examTarget = extractExamUrl([url]);
     if (examTarget) { event.preventDefault(); loadExam(examTarget); return; }
     if (!isTrusted(url)) event.preventDefault();
+    else applyWindowMode(url);
   });
   mainWindow.webContents.on('will-attach-webview', event => event.preventDefault());
   mainWindow.webContents.on('before-input-event', (event, input) => {
@@ -143,7 +176,7 @@ function createWindow() {
     if (!quitting && mainWindow && !mainWindow.isDestroyed()) loadExam(pendingExamUrl || DEFAULT_EXAM_URL);
   });
   const enforceKioskDisplay = () => {
-    if (!mainWindow || mainWindow.isDestroyed() || !STRICT) return;
+    if (!mainWindow || mainWindow.isDestroyed() || !STRICT || !examMode) return;
     const display = screen.getDisplayMatching(mainWindow.getBounds());
     // Explicitly cover the active monitor before entering kiosk mode. This also
     // avoids retaining stale windowed bounds from an earlier app version.
@@ -164,10 +197,10 @@ function createWindow() {
     }
   });
   mainWindow.on('leave-full-screen', () => {
-    if (STRICT && !quitting) setImmediate(enforceKioskDisplay);
+    if (STRICT && examMode && !quitting) setImmediate(enforceKioskDisplay);
   });
   mainWindow.on('minimize', event => {
-    if (STRICT && !quitting) {
+    if (STRICT && examMode && !quitting) {
       event.preventDefault();
       setImmediate(() => { if (mainWindow && !mainWindow.isDestroyed()) mainWindow.restore(); enforceKioskDisplay(); });
     }
