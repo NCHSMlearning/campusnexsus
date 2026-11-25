@@ -50,7 +50,9 @@ jobs:
       - name: Install dependencies
         run: npm install
       - name: Build Windows installer and portable app
-        run: npm run dist:all
+        # Prevent electron-builder from trying to publish itself with GH_TOKEN.
+        # The next step publishes the generated files using GITHUB_TOKEN.
+        run: npx electron-builder --win --publish never
       - name: Prepare stable download filenames
         shell: pwsh
         run: |
@@ -62,6 +64,8 @@ jobs:
           Copy-Item $portable.FullName "dist/Campus-Nexus-Secure-Exam-Browser-Portable.exe" -Force
       - name: Publish stable Windows downloads
         uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: cnseb-latest
           name: Campus Nexus Secure Exam Browser – Latest
