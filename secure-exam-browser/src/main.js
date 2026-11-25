@@ -6,7 +6,8 @@ const path = require('node:path');
 
 const EXAM_ORIGIN = 'https://campusnexus.co.ke';
 const DEFAULT_EXAM_URL = `${EXAM_ORIGIN}/exam.html?client=cnseb`;
-const STRICT = process.argv.includes('--strict');
+// Packaged Windows builds launch in strict kiosk mode by default. Use --standard only for controlled testing.
+const STRICT = process.argv.includes('--standard') ? false : (app.isPackaged || process.argv.includes('--strict'));
 const PROTOCOL = 'campusnexus-seb:';
 let mainWindow;
 let quitting = false;
@@ -56,8 +57,11 @@ function loadExam(url) {
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 1440, height: 900, minWidth: 1024, minHeight: 700,
-    show: false, autoHideMenuBar: true, kiosk: STRICT, fullscreen: STRICT,
+    show: false,
+    // Exam client always occupies the full display; packaged builds are strict by default.
+    autoHideMenuBar: true, kiosk: true, fullscreen: true, frame: false,
+    resizable: false, maximizable: false, minimizable: !STRICT, closable: !STRICT,
+    skipTaskbar: true, alwaysOnTop: true,
     title: 'Campus Nexus Secure Exam Browser',
     backgroundColor: '#071d33',
     webPreferences: {
@@ -93,7 +97,9 @@ function createWindow() {
   });
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
-    if (STRICT) mainWindow.setKiosk(true);
+    mainWindow.setKiosk(true);
+    mainWindow.setFullScreen(true);
+    mainWindow.setAlwaysOnTop(true, 'screen-saver');
     if (pendingExamUrl) {
       const target = pendingExamUrl;
       pendingExamUrl = null;
