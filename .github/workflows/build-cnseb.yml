@@ -31,12 +31,15 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - name: Prepare Campus Nexus Windows application icon
+      - name: Prepare official Campus Nexus brand assets
         shell: pwsh
         run: |
-          Add-Type -AssemblyName System.Drawing
+          choco install imagemagick --no-progress -y
           New-Item -ItemType Directory -Force -Path build | Out-Null
-          $source = Resolve-Path "../images/logo-icon.png"
+          Copy-Item "../images/campus-nexus-original-logo.webp" "build/campus-nexus-original-logo.webp" -Force
+          magick "../images/campus-nexus-original-logo.webp" -background none -gravity center -resize "256x256" -extent 256x256 "build/campus-nexus-icon.png"
+          Add-Type -AssemblyName System.Drawing
+          $source = Resolve-Path "build/campus-nexus-icon.png"
           $bitmap = [System.Drawing.Bitmap]::FromFile($source)
           $canvas = New-Object System.Drawing.Bitmap(256, 256)
           $graphics = [System.Drawing.Graphics]::FromImage($canvas)
