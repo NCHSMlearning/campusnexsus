@@ -2327,33 +2327,64 @@ window.viewLecturerStudentProgress = async function(studentId, studentName, exam
         const modalContent=document.getElementById('lecturerProgressContent');
         const inputs=[...(modalContent?.querySelectorAll('.lecturer-subjective-mark')||[])];
         if(!inputs.length){showToast('No written questions are available to mark.','warning');return;}
-        const groups={short:{marks:{},feedback:{}},long:{marks:{},feedback:{}}};
+
+        // Submit every written question in one database transaction. This avoids
+        // a partial save if one question type succeeds and another type fails.
+        const marks={},feedback={};
         for(const input of inputs){
-            const id=input.dataset.questionId,type=String(input.dataset.questionType||'').toLowerCase();
+            const id=String(input.dataset.questionId||'');
             const value=Number(input.value),max=Number(input.max);
-            if(!Number.isFinite(value)||value<0||value>max||!Number.isInteger(value)){input.focus();showToast('Enter a whole-number mark within the question maximum.','error');return;}
-            const group=['short_answer','fill_blank'].includes(type)?groups.short:groups.long;
-            group.marks[id]=value;
-            group.feedback[id]=modalContent.querySelector('.lecturer-subjective-feedback[data-question-id="'+id+'"]')?.value||'';
+            if(!id||!Number.isFinite(value)||value<0||value>max||!Number.isInteger(value)){
+                input.focus();
+                showToast('Enter a whole-number mark within the question maximum.','error');
+                return;
+            }
+            marks[id]=value;
+            feedback[id]=modalContent.querySelector('.lecturer-subjective-feedback[data-question-id="'+id+'"]')?.value||'';
         }
+
         const button=modalContent.querySelector('button[onclick*="saveLecturerSubjectiveMarks"]');
         if(button){button.disabled=true;button.textContent='Saving marks…';}
         try{
-            let data=null;
-            for(const [key,group] of Object.entries(groups)){
-                if(!Object.keys(group.marks).length)continue;
-                const {data:result,error}=await sb.rpc(key==='short'?'grade_short_answer_exam_attempt':'grade_long_answer_exam_attempt',{
-                    p_student_id:studentId,p_exam_id:Number(examId),p_attempt_id:attemptId,p_marks:group.marks,p_feedback:group.feedback
-                });
-                if(error)throw error;
-                data=result;
+            const {data,error}=await sb.rpc('grade_subjective_exam_attempt',{
+                p_student_id:studentId,
+                p_exam_id:Number(examId),
+                p_attempt_id:attemptId,
+                p_marks:marks,
+                p_feedback:feedback
+            });
+            if(error)throw error;
+            if(!data)throw new Error('The marking service returned no confirmation.');
+
+            // Read back the exact attempt rows before reporting success. Marks
+            // and lecturer feedback must survive a refresh and later login.
+            const questionIds=Object.keys(marks);
+            const {data:savedRows,error:verifyError}=await sb
+                .from('exam_grades')
+                .select('question_id,marks,remarks,is_subjective_graded,attempt_id')
+                .eq('student_id',String(studentId))
+                .eq('exam_id',Number(examId))
+                .eq('attempt_id',String(attemptId))
+                .in('question_id',questionIds);
+            if(verifyError)throw new Error('Marks were submitted but could not be verified: '+verifyError.message);
+
+            const savedByQuestion=new Map((savedRows||[]).map(row=>[String(row.question_id),row]));
+            const notVerified=questionIds.filter(id=>{
+                const row=savedByQuestion.get(id);
+                return !row || Number(row.marks)!==Number(marks[id]) ||
+                    String(row.remarks||'')!==String(feedback[id]||'') ||
+                    row.is_subjective_graded!==true;
+            });
+            if(notVerified.length){
+                throw new Error('The database did not confirm marks and feedback for '+notVerified.length+' question(s). Please retry; do not assume the marking was saved.');
             }
-            showToast('Written answers saved. Total: '+data.totalScore+'/'+data.totalMarks+' ('+data.percentage+'%). '+(data.pendingQuestions?data.pendingQuestions+' question(s) remain unmarked.':'All written questions are marked. Results remain pending approval.'),'success');
+
+            showToast('Verified and saved '+questionIds.length+' written-question mark(s) and feedback. Total: '+data.totalScore+'/'+data.totalMarks+' ('+data.percentage+'%). '+(data.pendingQuestions?data.pendingQuestions+' question(s) remain unmarked.':'All written questions are marked.')+' Results remain pending approval.','success');
             await window.viewLecturerStudentProgress(studentId,'Student',examId);
             if(typeof loadLecturerResults==='function')await loadLecturerResults();
         }catch(error){
             console.error('Lecturer subjective marking failed:',error);
-            showToast('Could not save written marks: '+(error.message||error),'error');
+            showToast('Could not verify saved written marks: '+(error.message||error),'error');
             if(button){button.disabled=false;button.textContent='Save marking';}
         }
     };
