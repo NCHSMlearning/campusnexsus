@@ -1876,6 +1876,7 @@ async function initExam() {
             startExamFaceDetection();
             setupFullscreenMonitoring();
             setupNetworkMonitoring();
+            setupCNSEBDeviceMonitoring();
             setupBeforeUnloadHandler();
             setupInactivityTimer();
 
@@ -4067,6 +4068,27 @@ function unblockApplications() {
 // ============================================================
 // NETWORK MONITORING
 // ============================================================
+function setupCNSEBDeviceMonitoring() {
+    if (!window.CNSEB || typeof window.CNSEB.onSecurityEvent !== 'function' || AppState.cnsebDeviceMonitorAttached) return;
+    AppState.cnsebDeviceMonitorAttached = true;
+    window.CNSEB.onSecurityEvent((event) => {
+        if (!AppState.isExamActive || AppState.isSubmitting || !event?.eventType) return;
+        const labels = {
+            external_display_added: 'An additional display was connected while the examination was active.',
+            external_display_removed: 'A display was disconnected while the examination was active.',
+            display_metrics_changed: 'Display configuration changed during the examination.',
+            application_focus_lost: 'The Secure Exam Browser lost application focus.',
+            application_focus_returned: 'The Secure Exam Browser regained application focus.'
+        };
+        const message = labels[event.eventType] || 'Secure Exam Browser device event: ' + event.eventType;
+        const severity = event.eventType === 'application_focus_returned' ? 'info' : 'warning';
+        logProctoringEvent(event.eventType, message + ' ' + JSON.stringify(event.details || {}), severity);
+        if (event.eventType === 'external_display_added' || event.eventType === 'display_metrics_changed') {
+            showToast('⚠️ ' + message, 'warning', 6000);
+        }
+    });
+}
+
 function setupNetworkMonitoring() {
     window.addEventListener('online', async () => {
         showToast('✅ Network restored. Synchronizing saved answers with Campus Nexus…', 'success');
