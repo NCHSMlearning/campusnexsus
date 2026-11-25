@@ -25,6 +25,8 @@
     ["staff","Staff & lecturer profiles","—","Teaching and administrative accounts","fa-chalkboard-user","#0d9488","#f0fdfa"],
     ["exams","Examinations","—","Examination records","fa-file-circle-check","#7c3aed","#f5f3ff"],
     ["examAttempts","Exam attempts","—","Recorded candidate attempts","fa-clipboard-list","#2563eb","#eff6ff"],
+    ["liveExamSessions","Live exam sessions","—","Active exam sessions · click to inspect","fa-desktop","#0d9488","#f0fdfa"],
+    ["proctoringAlerts","Proctoring alerts (24h)","—","Recent examination security events","fa-shield-halved","#b45309","#fffbeb"],
     ["questionBank","Question bank","—","Stored examination questions","fa-circle-question","#0d9488","#f0fdfa"],
     ["marks","Marks records","—","Student marks and exam grades","fa-square-poll-vertical","#b45309","#fffbeb"],
     ["attendance","Attendance records","—","Geo and examination attendance","fa-calendar-check","#059669","#ecfdf5"],
@@ -77,6 +79,11 @@
         '<small style="display:block;max-width:calc(100% - 42px);color:#64748b;font-size:10px;font-weight:800;letter-spacing:.07em;line-height:1.45;text-transform:uppercase">' + label + '</small>' +
         '<strong id="cnMetric_' + key + '" style="display:block;color:' + accent + ';font-size:clamp(25px,2.2vw,32px);font-weight:850;line-height:1.12;letter-spacing:-.04em;margin-top:3px">' + value + '</strong>' +
         '<em id="cnMetricDetail_' + key + '" style="display:block;color:#64748b;font-size:11px;font-style:normal;line-height:1.45;margin-top:1px">' + detail + '</em>';
+      if (key === "liveExamSessions") {
+        card.style.cursor = "pointer";
+        card.title = "Open live Secure Exam Browser session monitor";
+        card.addEventListener("click", openSecureExamSessionMonitor);
+      }
       card.addEventListener("mouseenter", () => {
         card.style.transform = "translateY(-3px)";
         card.style.boxShadow = "0 12px 26px rgba(8,47,73,.12)";
@@ -212,6 +219,53 @@
     });
   }
 
+  async function openSecureExamSessionMonitor() {
+    if (!state.access.platformAdmin) return;
+    const client = db();
+    if (!client) return;
+    let rows = [];
+    try {
+      const selected = selectedInstitutionId();
+      if (selected !== "all") {
+        const exams = await client.from("exams").select("id").eq("institution_id", selected);
+        if (exams.error) throw exams.error;
+        const examIds = (exams.data || []).map(row => row.id);
+        if (!examIds.length) rows = [];
+        else {
+          const result = await client.from("live_exam_sessions")
+            .select("student_id,exam_id,claimed_at,last_heartbeat,user_agent,ip_address")
+            .in("exam_id", examIds).order("last_heartbeat", {ascending:false}).limit(50);
+          if (result.error) throw result.error;
+          rows = result.data || [];
+        }
+      } else {
+        const result = await client.from("live_exam_sessions")
+          .select("student_id,exam_id,claimed_at,last_heartbeat,user_agent,ip_address")
+          .order("last_heartbeat", {ascending:false}).limit(50);
+        if (result.error) throw result.error;
+        rows = result.data || [];
+      }
+      const now = Date.now();
+      const body = rows.map(row => {
+        const active = now - new Date(row.last_heartbeat).getTime() <= 90000;
+        const version = String(row.user_agent || "").match(/CampusNexus-SEB\/([^ |]+)/)?.[1] || "Browser / unknown";
+        const last = row.last_heartbeat ? new Date(row.last_heartbeat).toLocaleString() : "Unknown";
+        return '<tr><td style="padding:9px;border-bottom:1px solid #e2e8f0">' + (active ? '<b style="color:#168154">Active</b>' : '<b style="color:#b45309">Stale</b>') + '</td><td style="padding:9px;border-bottom:1px solid #e2e8f0">' + String(row.exam_id) + '</td><td style="padding:9px;border-bottom:1px solid #e2e8f0;font-family:monospace;font-size:11px">' + String(row.student_id || "").slice(0,8) + '…</td><td style="padding:9px;border-bottom:1px solid #e2e8f0">' + version + '</td><td style="padding:9px;border-bottom:1px solid #e2e8f0">' + last + '</td></tr>';
+      }).join("");
+      document.getElementById("cnsebSessionMonitorModal")?.remove();
+      const modal = document.createElement("div");
+      modal.id = "cnsebSessionMonitorModal";
+      modal.style.cssText = "position:fixed;inset:0;z-index:999999;background:rgba(4,20,36,.72);display:flex;align-items:center;justify-content:center;padding:18px";
+      modal.innerHTML = '<section style="background:#fff;border-radius:16px;width:min(100%,1050px);max-height:85vh;overflow:auto;padding:20px;color:#123"><header style="display:flex;justify-content:space-between;align-items:center;gap:12px"><div><h2 style="margin:0 0 5px">Secure Exam Browser sessions</h2><p style="margin:0;color:#64748b;font-size:12px">Latest 50 sessions · Active means heartbeat within 90 seconds</p></div><button id="cnsebMonitorClose" type="button" style="padding:10px 15px;border:0;border-radius:8px;background:#0a3d62;color:white;font-weight:700">Close</button></header><div style="overflow:auto;margin-top:16px"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="text-align:left;background:#f1f5f9"><th style="padding:9px">Status</th><th style="padding:9px">Exam</th><th style="padding:9px">Student ID</th><th style="padding:9px">Client</th><th style="padding:9px">Last heartbeat</th></tr></thead><tbody>' + (body || '<tr><td colspan="5" style="padding:18px;text-align:center">No exam sessions found.</td></tr>') + '</tbody></table></div><p style="font-size:11px;color:#64748b;margin:12px 0 0">IP addresses are intentionally not displayed in this overview. Device/session status is operational telemetry, not proof of operating-system lockdown.</p></section>';
+      document.body.appendChild(modal);
+      modal.querySelector("#cnsebMonitorClose")?.addEventListener("click", () => modal.remove());
+      modal.addEventListener("click", event => { if (event.target === modal) modal.remove(); });
+    } catch (error) {
+      console.error("[CN-SEB monitor]", error);
+      window.showFeedback?.("Could not load Secure Exam Browser sessions: " + (error.message || "Database error"), "error");
+    }
+  }
+
   async function getAdminDb() {
     const client = db();
     if (!client?.auth || typeof client.from !== "function") throw new Error("Database session is not available.");
@@ -263,7 +317,7 @@
       const countMetric = async (table, filters = []) => {
         let query = client.from(table).select("id", { count: "exact", head: true });
         filters.forEach(([column, operator, value]) => {
-          query = operator === "in" ? query.in(column, value) : query.eq(column, value);
+          query = operator === "in" ? query.in(column, value) : operator === "gte" ? query.gte(column, value) : query.eq(column, value);
         });
         const result = await query;
         if (result.error) throw result.error;
@@ -276,6 +330,8 @@
         staff: () => countMetric("consolidated_user_profiles_table", [["role","in",["lecturer","admin","superadmin","super_admin","institution_admin","director","finance_officer","nursing_hod"]]]),
         exams: () => countMetric("exams"),
         examAttempts: () => countMetric("exam_attempts"),
+        liveExamSessions: () => countMetric("live_exam_sessions", [["last_heartbeat","gte",new Date(Date.now()-90000).toISOString()]]),
+        proctoringAlerts: () => countMetric("exam_proctoring_logs", [["timestamp","gte",new Date(Date.now()-24*60*60*1000).toISOString()]]),
         questionBank: () => countMetric("exam_questions"),
         marks: async () => (await Promise.all([countMetric("student_marks"),countMetric("exam_grades")])).reduce((a,b)=>a+b,0),
         attendance: async () => (await Promise.all([countMetric("geo_attendance_logs"),countMetric("exam_attendance")])).reduce((a,b)=>a+b,0),
