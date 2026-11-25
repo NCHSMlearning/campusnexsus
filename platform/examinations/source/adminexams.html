@@ -1600,11 +1600,11 @@ body{background:var(--exam-canvas);color:var(--exam-ink)}
         </section>
         <section id="cnsebDevices" class="tab-content" style="display:none;">
           <div class="cnseb-section-heading"><div><h2>Devices &amp; Installations</h2><p>Registered computers, app versions, last check-in and device enrollment state.</p></div></div>
-          <div class="cnseb-panel"><div class="cnseb-empty"><i class="fas fa-laptop"></i><strong>Device registry not connected yet</strong><span>Devices will appear after secure enrollment and authenticated heartbeat reporting are enabled. A client-reported kiosk flag alone will never count as a verified managed device.</span></div></div>
+          <div class="cnseb-panel"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px"><p>Review new installations and approve, suspend or revoke a student's computer. Only approved registrations can claim a CN-SEB exam session.</p><button id="cnsebDevicesRefresh" type="button" class="cnseb-action">Refresh devices</button></div><div id="cnsebDeviceTableHost"><div class="cnseb-empty"><i class="fas fa-spinner fa-spin"></i><strong>Connecting to device registry…</strong></div></div></div>
         </section>
         <section id="cnsebSessions" class="tab-content" style="display:none;">
           <div class="cnseb-section-heading"><div><h2>Live Exam Sessions</h2><p>Monitor candidates, exam progress, connection status and device health.</p></div></div>
-          <div class="cnseb-panel"><div class="cnseb-empty"><i class="fas fa-desktop"></i><strong>Live session feed not connected yet</strong><span>Session records will be populated by server-validated app heartbeats and exam-session events. Existing exam attempts and results remain unchanged.</span></div></div>
+          <div class="cnseb-panel"><div style="display:flex;justify-content:flex-end;margin-bottom:14px"><button id="cnsebSessionsRefresh" type="button" class="cnseb-action">Refresh sessions</button></div><div id="cnsebSessionTableHost"><div class="cnseb-empty"><i class="fas fa-spinner fa-spin"></i><strong>Connecting to live sessions…</strong></div></div></div>
         </section>
         <section id="cnsebAlerts" class="tab-content" style="display:none;">
           <div class="cnseb-section-heading"><div><h2>Secure Browser Security Events</h2><p>Review focus loss, app integrity, connection interruptions and managed-device policy events.</p></div></div>
