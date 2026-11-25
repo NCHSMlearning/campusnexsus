@@ -134,8 +134,27 @@
     setText("[data-institution-name]", name);
     setText("[data-institution-code]", code);
 
+    const logoHosts = document.querySelectorAll(
+      ".nchsm-header-logo,[data-institution-logo],#institutionLogo,.sidebar-header .brand-crest,#iaLogo,#iaSettingsBrandLogo"
+    );
+    logoHosts.forEach(host => {
+      let image = host.matches("img") ? host : host.querySelector("img[data-cn-institution-logo]");
+      if (!image) {
+        host.replaceChildren();
+        image = document.createElement("img");
+        image.dataset.cnInstitutionLogo = "true";
+        image.alt = name + " logo";
+        image.style.cssText = "display:block;width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain;border-radius:inherit";
+        host.appendChild(image);
+      }
+      image.src = logo;
+      image.alt = name + " logo";
+      image.removeAttribute("srcset");
+      image.style.objectFit = "contain";
+      host.setAttribute("aria-label", name + " logo");
+    });
     const logoTargets = new Set(document.querySelectorAll(
-      ".nchsm-header-logo,[data-institution-logo],#institutionLogo,.sidebar-header .brand-crest img"
+      ".nchsm-header-logo img,[data-institution-logo] img,#institutionLogo img,.sidebar-header .brand-crest img"
     ));
     document.querySelectorAll(".command-brand .command-cap,.command-brand .command-brand-icon").forEach(host => {
       let image = host.querySelector("img[data-cn-institution-logo]");
@@ -202,6 +221,31 @@
       ";--cn-accent-1:"+colors[3]+";--cn-accent-2:"+colors[4]+";--cn-accent-3:"+colors[5]+
       ";--cn-page-bg:#f4f7fb;--cn-surface:#fff;--cn-text:#172b43;--cn-muted:#64748b;"+
       "--cn-border:color-mix(in srgb,"+primary+" 16%,#dbe4ee)}"+
+      ":root{--cn-institution-color-1:"+colors[0]+";--cn-institution-color-2:"+colors[1]+
+      ";--cn-institution-color-3:"+colors[2]+";--cn-institution-color-4:"+colors[3]+
+      ";--cn-institution-color-5:"+colors[4]+";--cn-institution-color-6:"+colors[5]+
+      ";--cn-page-bg:color-mix(in srgb,"+primary+" 3%,white);--cn-surface:#fff;--cn-text:#172b43;--cn-muted:#64748b}"+
+      "body{color:var(--cn-text)}"+
+      ".ia-sidebar,#iaApp #iaSidebar,.exam-sidebar,.sidebar,#sidebar{background:linear-gradient(180deg,"+primary+" 0%,"+primary+" 65%,"+secondary+" 115%)!important}"+
+      ".ia-nav-item.active,.ia-nav-item:hover,.exam-nav a.active,.sidebar-menu a.active,.sidebar-menu .active>a{background:"+accent+"!important;color:"+primary+"!important}"+
+      ".ia-nav-item.active i,.ia-nav-item:hover i,.exam-nav a.active i,.sidebar-menu a.active i{color:"+primary+"!important}"+
+      ".ia-logo,.ia-institution-logo,.ia-profile-logo{border-color:"+accent+"!important;background:#fff!important;color:"+primary+"!important}"+
+      ".ia-topbar,.command-topbar,.top-header{background:linear-gradient(110deg,"+primary+","+secondary+")!important;color:#fff!important}"+
+      ".ia-content,.main-content,.dashboard-content,.page-content,.workspace-content{background:var(--cn-page-bg)!important;color:var(--cn-text)}"+
+      ".ia-welcome,.ia-page-heading,.dashboard-welcome,.dashboard-hero,.welcome-banner,.welcome-card,.hero,.lecturer-dashboard-hero{background:linear-gradient(110deg,"+primary+","+secondary+")!important;border-color:"+accent+"!important;color:#fff!important}"+
+      ".ia-welcome h1,.ia-page-heading h1,.dashboard-welcome h1,.dashboard-hero h1,.welcome-banner h1,.lecturer-dashboard-hero h2{color:#fff!important}"+
+      ".ia-eyebrow,.ia-stat-card strong,.ia-panel-head h2,.ia-welcome h1,.ia-page-heading h1,.page-title h1,.section-title,.dashboard-title{--cn-heading-color:"+primary+"}"+
+      ".ia-stat-card,.ia-panel,.ia-content-card,.stat-card,.metric-card,.dashboard-card,.content-card,.section-card,.panel,.card,.module-card,.quick-action-card,.widget-card{border-color:var(--cn-border)!important}"+
+      ".ia-stat-icon,.stat-icon,.metric-icon,.card-icon,.section-icon{border-color:color-mix(in srgb,"+secondary+" 25%,white)!important}"+
+      ".ia-primary-btn,.ia-primary-button,.btn-primary,.primary-button,.primary-btn,.button-primary,.submit-button,.action-primary{background:"+primary+"!important;border-color:"+primary+"!important;color:#fff!important}"+
+      ".ia-secondary-btn,.btn-secondary,.secondary-button,.button-secondary,.outline-button{border-color:"+secondary+"!important;color:"+secondary+"!important}"+
+      ".ia-text-btn,.ia-eyebrow,.section-eyebrow,.dashboard-eyebrow,.header-kicker{color:"+secondary+"}"+
+      ".ia-table-panel th,thead th,.data-table thead th,.table thead th{background:color-mix(in srgb,"+primary+" 9%,white)!important;color:"+primary+"!important}"+
+      "input:focus,select:focus,textarea:focus,.form-control:focus{border-color:"+secondary+"!important;box-shadow:0 0 0 3px color-mix(in srgb,"+secondary+" 18%,transparent)!important}"+
+      "input[type=checkbox],input[type=radio],progress{accent-color:"+secondary+"}"+
+      ".progress-bar,.progress-fill,.completion-fill{background:"+secondary+"!important}"+
+      ".tab.active,.nav-tabs .active,.filter-chip.active,.segmented-control .active{color:"+primary+"!important;border-color:"+secondary+"!important}"+
+      ".ia-logo img,.ia-profile-logo img{display:block;width:100%;height:100%;object-fit:contain}"+
       "body{color:var(--cn-text)}"+
       "main, .main-content, .content-wrapper, .dashboard-content, .page-content, .workspace-content{color:var(--cn-text)}"+
       "h1,h2,h3,h4,.page-title,.section-title,.dashboard-title,.card-title,.panel-title{color:"+primary+"}"+
