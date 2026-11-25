@@ -2213,6 +2213,75 @@ body{
 @media(prefers-reduced-motion:reduce){#lobbyContainer *,#lobbyContainer *:before,#lobbyContainer *:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 </style>
 
+
+<style id="campus-nexus-mobile-lobby-layout-v24">
+/* Phone-first layout correction: readable type, natural page height, no clipped columns. */
+@media screen and (max-width: 820px) {
+  html, body { width:100%!important; min-width:0!important; overflow-x:hidden!important; }
+  #lobbyContainer { width:100%!important; min-height:calc(100svh - 64px)!important; height:auto!important; max-height:none!important; overflow:visible!important; }
+  .site-header { height:auto!important; min-height:60px!important; padding:9px 12px!important; gap:8px!important; }
+  .site-header .brand { flex:1 1 auto!important; min-width:0!important; gap:8px!important; }
+  .site-header .brand-mark { width:38px!important; height:38px!important; }
+  .site-header .brand-copy strong { font-size:clamp(11px,3.2vw,14px)!important; line-height:1.25!important; white-space:normal!important; }
+  .site-header .brand-copy small { font-size:9px!important; }
+  .site-header .secure-badge { flex:0 0 auto!important; max-width:45%!important; white-space:normal!important; text-align:center!important; font-size:8px!important; padding:6px 8px!important; }
+  #lobbyContainer.welcome-screen .lobby-wrap {
+    display:block!important; width:calc(100% - 24px)!important; max-width:620px!important;
+    min-width:0!important; height:auto!important; min-height:0!important; max-height:none!important;
+    margin:0 auto!important; padding:16px 0 28px!important;
+  }
+  #lobbyContainer.welcome-screen .lobby-main { width:100%!important; min-width:0!important; }
+  #lobbyContainer.welcome-screen .welcome-hero {
+    display:flex!important; flex-direction:column!important; align-items:stretch!important;
+    gap:16px!important; width:100%!important; min-width:0!important; min-height:0!important;
+    padding:20px 16px!important; border-radius:20px!important; overflow:hidden!important;
+  }
+  #lobbyContainer.welcome-screen .welcome-main { order:1!important; width:100%!important; min-width:0!important; padding:0!important; }
+  #lobbyContainer.welcome-screen .eyebrow { font-size:9px!important; padding:7px 10px!important; letter-spacing:.7px!important; }
+  #lobbyContainer.welcome-screen .welcome-kicker { font-size:9px!important; line-height:1.4!important; }
+  #lobbyContainer.welcome-screen .welcome-main h1 { font-size:clamp(34px,8.5vw,46px)!important; line-height:1.04!important; letter-spacing:-1.5px!important; margin:8px 0 10px!important; }
+  #lobbyContainer.welcome-screen .welcome-description { font-size:13px!important; line-height:1.65!important; max-width:none!important; }
+  #lobbyContainer.welcome-screen .welcome-trust { display:grid!important; grid-template-columns:repeat(3,minmax(0,1fr))!important; gap:7px!important; margin:14px 0!important; }
+  #lobbyContainer.welcome-screen .welcome-trust>div { min-width:0!important; display:flex!important; flex-direction:column!important; align-items:center!important; justify-content:center!important; gap:5px!important; padding:9px 5px!important; text-align:center!important; font-size:9px!important; }
+  #lobbyContainer.welcome-screen .welcome-trust>div i { font-size:15px!important; }
+  #lobbyContainer.welcome-screen .welcome-trust strong { display:block!important; font-size:10px!important; }
+  #lobbyContainer.welcome-screen .welcome-journey { display:flex!important; width:100%!important; max-width:none!important; gap:3px!important; margin:14px 0!important; align-items:flex-start!important; }
+  #lobbyContainer.welcome-screen .welcome-journey>div { flex:1 1 0!important; min-width:0!important; display:flex!important; flex-direction:column!important; align-items:center!important; text-align:center!important; gap:5px!important; }
+  #lobbyContainer.welcome-screen .welcome-journey b { width:29px!important; height:29px!important; font-size:11px!important; }
+  #lobbyContainer.welcome-screen .welcome-journey span { font-size:8px!important; line-height:1.25!important; }
+  #lobbyContainer.welcome-screen .welcome-journey>i { margin-top:9px!important; font-size:9px!important; }
+  #lobbyContainer.welcome-screen .welcome-begin-btn { display:flex!important; width:100%!important; min-width:0!important; min-height:50px!important; justify-content:center!important; font-size:13px!important; }
+  #lobbyContainer.welcome-screen .welcome-visual { order:2!important; display:flex!important; width:100%!important; min-width:0!important; min-height:165px!important; margin:0!important; }
+  #lobbyContainer.welcome-screen .welcome-visual-screen { width:min(72%,290px)!important; min-height:132px!important; }
+  #lobbyContainer.welcome-screen .exam-hero-card { order:3!important; display:block!important; width:100%!important; min-width:0!important; margin:0!important; padding:14px!important; }
+  #lobbyContainer.welcome-screen .exam-hero-top { align-items:flex-start!important; gap:8px!important; }
+  #lobbyContainer.welcome-screen .exam-hero-top h2 { font-size:clamp(15px,4.3vw,19px)!important; line-height:1.25!important; overflow-wrap:anywhere!important; }
+  #lobbyContainer.welcome-screen .exam-hero-top p { font-size:10px!important; line-height:1.4!important; }
+  #lobbyContainer.welcome-screen .proctored-pill { font-size:8px!important; padding:6px 8px!important; }
+  #lobbyContainer.welcome-screen .exam-metrics { grid-template-columns:repeat(3,minmax(0,1fr))!important; gap:6px!important; margin-top:12px!important; }
+  #lobbyContainer.welcome-screen .metric { min-width:0!important; min-height:68px!important; padding:9px 7px!important; }
+  #lobbyContainer.welcome-screen .metric-icon { width:23px!important; height:23px!important; }
+  #lobbyContainer.welcome-screen .metric>span { font-size:8px!important; }
+  #lobbyContainer.welcome-screen .metric strong { font-size:17px!important; line-height:1.15!important; }
+  #lobbyContainer.welcome-screen .exam-extra-details { display:grid!important; grid-template-columns:minmax(0,1fr)!important; gap:6px!important; margin-top:8px!important; }
+  #lobbyContainer.welcome-screen .exam-extra-details>div { min-width:0!important; padding:9px!important; }
+  #lobbyContainer.welcome-screen .exam-extra-details small { font-size:8px!important; }
+  #lobbyContainer.welcome-screen .exam-extra-details strong { font-size:10px!important; line-height:1.35!important; }
+  #lobbyContainer.welcome-screen .lobby-aside { display:none!important; }
+  #lobbyContainer.welcome-screen .student-card,
+  #lobbyContainer.welcome-screen .lobby-readiness,
+  #lobbyContainer.welcome-screen .steps,
+  #lobbyContainer.welcome-screen .step-content { display:none!important; }
+}
+@media screen and (max-width:380px) {
+  #lobbyContainer.welcome-screen .lobby-wrap { width:calc(100% - 18px)!important; }
+  #lobbyContainer.welcome-screen .welcome-hero { padding:16px 12px!important; }
+  #lobbyContainer.welcome-screen .welcome-trust>div { font-size:8px!important; }
+  #lobbyContainer.welcome-screen .welcome-journey span { font-size:7px!important; }
+  #lobbyContainer.welcome-screen .metric { padding:8px 5px!important; }
+}
+</style>
+
 </head>
 
 <body>
