@@ -4166,23 +4166,25 @@ function returnToExam() {
 // ============================================================
 // APPLICATION BLOCKING
 // ============================================================
-function blockApplications() {
-    document.addEventListener('keydown', blockKeyboardShortcuts);
-    document.addEventListener('contextmenu', preventDefault);
-    document.addEventListener('copy', preventDefault);
-    document.addEventListener('paste', preventDefault);
-    document.addEventListener('cut', preventDefault);
-    document.addEventListener('dragstart', preventDefault);
-    document.addEventListener('drop', preventDefault);
-    document.addEventListener('selectstart', preventDefault);
+function handleExamPrintScreen(e) {
+    if (e.key !== 'PrintScreen') return;
+    preventDefault(e);
+    showToast('⚠️ Screenshot shortcut detected.', 'warning');
+    logProctoringEvent('screenshot_attempt', 'Student pressed the Print Screen key during the examination.', 'critical');
+}
 
-    document.addEventListener('keyup', function(e) {
-        if (e.key === 'PrintScreen') {
-            preventDefault(e);
-            showToast('⚠️ Screenshot attempt detected!', 'warning');
-            logProctoringEvent('screenshot_attempt', 'Student attempted to take screenshot', 'critical');
-        }
-    });
+function blockApplications() {
+    // Capture phase runs before page-level handlers. Ordinary typing remains
+    // available in answer fields; only system/browser shortcuts are blocked.
+    document.addEventListener('keydown', blockKeyboardShortcuts, true);
+    document.addEventListener('keyup', handleExamPrintScreen, true);
+    document.addEventListener('contextmenu', preventDefault, true);
+    document.addEventListener('copy', preventDefault, true);
+    document.addEventListener('paste', preventDefault, true);
+    document.addEventListener('cut', preventDefault, true);
+    document.addEventListener('dragstart', preventDefault, true);
+    document.addEventListener('drop', preventDefault, true);
+    document.addEventListener('selectstart', preventDefault, true);
 }
 
 function preventDefault(e) {
@@ -4192,76 +4194,67 @@ function preventDefault(e) {
 }
 
 function blockKeyboardShortcuts(e) {
-    if (e.key === 'F12') {
+    const key = String(e.key || '').toLowerCase();
+    const typingTarget = e.target && e.target.closest
+        ? e.target.closest('input, textarea, select, [contenteditable="true"]')
+        : false;
+    const modified = e.ctrlKey || e.metaKey;
+
+    // Block browser, operating-system and developer shortcuts. Do not block
+    // normal character entry into student answer fields.
+    const blockedModifiedKeys = new Set([
+        'r','w','t','n','l','p','s','c','v','x','u','o','j','d',
+        'a','f','g','h','q','e','+','=','-','0','insert','delete',
+        'arrowleft','arrowright','home','end','pageup','pagedown'
+    ]);
+    const blockedAltKeys = new Set(['tab','f4','f','left','right','space','escape','arrowleft','arrowright']);
+    const blockedFunctionKeys = new Set(['f1','f3','f5','f6','f10','f11','f12']);
+    const devToolsCombo = e.shiftKey && ['i','j','c','k','n'].includes(key);
+    const blocked =
+        (modified && blockedModifiedKeys.has(key)) ||
+        (modified && e.shiftKey && blockedModifiedKeys.has(key)) ||
+        (e.altKey && blockedAltKeys.has(key)) ||
+        (e.altKey && e.ctrlKey) ||
+        blockedFunctionKeys.has(key) ||
+        key === 'printscreen' ||
+        key === 'meta' || key === 'os' || key === 'super' ||
+        (e.ctrlKey && e.shiftKey && devToolsCombo) ||
+        (e.ctrlKey && e.altKey && key === 'delete');
+
+    if (blocked) {
         e.preventDefault();
-        showToast('⚠️ Developer Tools are blocked!', 'warning');
+        e.stopPropagation();
+        if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+        if (key === 'f12' || devToolsCombo) {
+            showToast('Developer tools and browser shortcuts are disabled during this examination.', 'warning');
+        } else if (key === 'printscreen') {
+            handleExamPrintScreen(e);
+        }
         return false;
     }
-    if (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i')) {
-        e.preventDefault();
-        return false;
-    }
-    if (e.ctrlKey && e.shiftKey && (e.key === 'J' || e.key === 'j')) {
-        e.preventDefault();
-        return false;
-    }
-    if (e.altKey && e.key === 'Tab') {
-        e.preventDefault();
-        showToast('⚠️ Alt+Tab is blocked!', 'warning');
-        return false;
-    }
-    if (e.key === 'Meta' || e.key === 'Windows') {
-        e.preventDefault();
-        return false;
-    }
-    if (e.altKey && e.key === 'F4') {
-        e.preventDefault();
-        return false;
-    }
-    if (e.ctrlKey && e.key === 'w') {
-        e.preventDefault();
-        return false;
-    }
-    if (e.ctrlKey && (e.key === 'n' || e.key === 't')) {
-        e.preventDefault();
-        return false;
-    }
-    if (e.ctrlKey && e.shiftKey && e.key === 'Escape') {
-        e.preventDefault();
-        showToast('⚠️ Task Manager is blocked!', 'warning');
-        return false;
-    }
-    if (e.ctrlKey && (e.key === 'c' || e.key === 'C' || e.key === 'v' || e.key === 'V' || e.key === 'x' || e.key === 'X')) {
-        e.preventDefault();
-        return false;
-    }
-    if (e.ctrlKey && (e.key === 's' || e.key === 'S' || e.key === 'p' || e.key === 'P' || e.key === 'u' || e.key === 'U')) {
-        e.preventDefault();
-        return false;
-    }
-    if (e.ctrlKey && (e.key === '+' || e.key === '-' || e.key === '=')) {
-        e.preventDefault();
-        return false;
-    }
-    if ((e.key === 'f' || e.key === 'F') && !e.target.matches('input, textarea, select')) {
+
+    // Keep only the examination navigation shortcuts intentionally supported.
+    if (!typingTarget && !modified && !e.altKey && !e.shiftKey && key === 'f') {
         e.preventDefault();
         if (!AppState.isExamPaused) window.toggleFlagQuestion();
+        return false;
     }
-    if (e.key === '?' && !e.ctrlKey && !e.metaKey) {
+    if (!typingTarget && key === '?' && !modified && !e.altKey) {
         e.preventDefault();
         showKeyboardShortcuts();
+        return false;
     }
 }
-
 function unblockApplications() {
-    document.removeEventListener('keydown', blockKeyboardShortcuts);
-    document.removeEventListener('contextmenu', preventDefault);
-    document.removeEventListener('copy', preventDefault);
-    document.removeEventListener('paste', preventDefault);
-    document.removeEventListener('cut', preventDefault);
-    document.removeEventListener('dragstart', preventDefault);
-    document.removeEventListener('drop', preventDefault);
-    document.removeEventListener('selectstart', preventDefault);
+    document.removeEventListener('keydown', blockKeyboardShortcuts, true);
+    document.removeEventListener('keyup', handleExamPrintScreen, true);
+    document.removeEventListener('contextmenu', preventDefault, true);
+    document.removeEventListener('copy', preventDefault, true);
+    document.removeEventListener('paste', preventDefault, true);
+    document.removeEventListener('cut', preventDefault, true);
+    document.removeEventListener('dragstart', preventDefault, true);
+    document.removeEventListener('drop', preventDefault, true);
+    document.removeEventListener('selectstart', preventDefault, true);
 }
 
 // ============================================================
