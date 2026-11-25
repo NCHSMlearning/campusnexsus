@@ -265,6 +265,8 @@ app.whenReady().then(() => {
   ipcMain.handle('cnseb:device-info', () => ({
     appVersion: app.getVersion(), platform: process.platform,
     architecture: process.arch, strictMode: STRICT,
+    kioskRuntime: !!(mainWindow && !mainWindow.isDestroyed() && mainWindow.isKiosk() && mainWindow.isFullScreen()),
+    deviceTrust: 'unverified', managedWindowsPolicyRequired: true,
     displayCount: screen.getAllDisplays().length
   }));
   // Use an in-app confirmation rather than a native modal hidden behind kiosk.
