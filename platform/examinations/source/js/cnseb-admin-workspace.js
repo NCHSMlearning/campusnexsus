@@ -33,6 +33,8 @@
       setWorkspaceTitle(tab);
       if (tab === 'cnsebDevices') loadDevices();
       if (tab === 'cnsebSessions') loadSessions();
+      if (tab === 'cnsebAlerts') loadAlerts();
+      if (tab === 'cnsebAudit') loadAudit();
     };
     wrapped.__cnsebWrapped = true;
     window.switchTab = wrapped;
@@ -54,7 +56,7 @@
     const { data: profile } = await client.from('consolidated_user_profiles_table')
       .select('institution_id,role').eq('user_id', user.id).maybeSingle();
     institutionId = profile?.institution_id || null;
-    await Promise.all([loadDevices(), loadSessions()]);
+    await Promise.all([loadDevices(), loadSessions(), loadAlerts(), loadAudit()]);
   }
 
   function deviceHost() { return document.getElementById('cnsebDeviceTableHost'); }
@@ -110,6 +112,47 @@
       '</tbody></table></div>';
   }
 
+  async function loadAlerts() {
+    const host = document.getElementById('cnsebAlertsTableHost');
+    if (!host || !client) return;
+    host.innerHTML = '<div class="cnseb-empty"><i class="fas fa-spinner fa-spin"></i><strong>Loading security events…</strong></div>';
+    let query = client.from('exam_proctoring_logs')
+      .select('timestamp,student_name,student_reg_number,exam_name,event_type,severity,details,device_info,institution_id')
+      .order('timestamp', { ascending: false }).limit(100);
+    if (institutionId) query = query.eq('institution_id', institutionId);
+    const { data, error } = await query;
+    if (error) {
+      host.innerHTML = '<div class="cnseb-empty"><i class="fas fa-triangle-exclamation"></i><strong>Could not load security events</strong><span>'+esc(error.message)+'</span></div>';
+      return;
+    }
+    if (!data?.length) {
+      host.innerHTML = '<div class="cnseb-empty"><i class="fas fa-shield-halved"></i><strong>No recent security events</strong><span>Proctoring and desktop-client security events will appear here.</span></div>';
+      return;
+    }
+    host.innerHTML = '<div style="overflow:auto"><table style="width:100%;min-width:780px;border-collapse:collapse"><thead><tr><th>Time</th><th>Student</th><th>Exam</th><th>Event</th><th>Severity</th><th>Device</th></tr></thead><tbody>' +
+      data.map(e=>'<tr><td>'+esc(e.timestamp||'—')+'</td><td>'+esc(e.student_name||e.student_reg_number||'Student')+'</td><td>'+esc(e.exam_name||'—')+'</td><td>'+esc(e.event_type||'—')+'</td><td><b>'+esc(e.severity||'info')+'</b></td><td>'+esc(e.device_info||'—')+'</td></tr>').join('') +
+      '</tbody></table></div>';
+  }
+
+  async function loadAudit() {
+    const host = document.getElementById('cnsebAuditTableHost');
+    if (!host || !client) return;
+    host.innerHTML = '<div class="cnseb-empty"><i class="fas fa-spinner fa-spin"></i><strong>Loading device audit trail…</strong></div>';
+    const { data, error } = await client.rpc('cnseb_admin_list_audit', { p_institution_id: institutionId });
+    if (error) {
+      host.innerHTML = '<div class="cnseb-empty"><i class="fas fa-triangle-exclamation"></i><strong>Could not load device audit trail</strong><span>'+esc(error.message)+'</span></div>';
+      return;
+    }
+    const rows = data?.events || [];
+    if (!rows.length) {
+      host.innerHTML = '<div class="cnseb-empty"><i class="fas fa-clipboard-list"></i><strong>No device audit events yet</strong><span>Enrollment, approval, revocation and secure-session actions will be recorded here.</span></div>';
+      return;
+    }
+    host.innerHTML = '<div style="overflow:auto"><table style="width:100%;min-width:700px;border-collapse:collapse"><thead><tr><th>Time</th><th>Event</th><th>Actor</th><th>Device registration</th><th>Details</th></tr></thead><tbody>' +
+      rows.map(a=>'<tr><td>'+esc(a.created_at||'—')+'</td><td><b>'+esc(a.event_type||'—')+'</b></td><td>'+esc(a.actor_id||'System')+'</td><td>'+esc(a.device_registration_id||'—')+'</td><td><code>'+esc(JSON.stringify(a.details||{}))+'</code></td></tr>').join('') +
+      '</tbody></table></div>';
+  }
+
   document.addEventListener('click', async event => {
     const button = event.target.closest('[data-device-action][data-device-id]');
     if (!button || !client || button.disabled) return;
@@ -136,6 +179,8 @@
     const refresh = document.getElementById('cnsebDevicesRefresh');
     refresh?.addEventListener('click', loadDevices);
     document.getElementById('cnsebSessionsRefresh')?.addEventListener('click', loadSessions);
+    document.getElementById('cnsebAlertsRefresh')?.addEventListener('click', loadAlerts);
+    document.getElementById('cnsebAuditRefresh')?.addEventListener('click', loadAudit);
     initialise();
   });
 
