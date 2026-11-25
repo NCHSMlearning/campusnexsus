@@ -144,15 +144,22 @@ function createWindow() {
       mainWindow.webContents.send('cnseb:exit-blocked');
     }
   });
-  const initialTarget = pendingExamUrl || DEFAULT_EXAM_URL;
+  // Preserve the requested exam URL until the splash screen has loaded.
+  // A protocol hand-off can arrive during startup; it must win over the default.
+  const initialTarget = pendingExamUrl;
   pendingExamUrl = null;
-  // Display a branded native startup screen first, then initialize the exam portal.
-  mainWindow.webContents.once('did-finish-load', () => {
-    if (!quitting && mainWindow && !mainWindow.isDestroyed()) loadExam(initialTarget);
-  });
+  let splashResolved = false;
+  const resolveStartupDestination = () => {
+    if (splashResolved || quitting || !mainWindow || mainWindow.isDestroyed()) return;
+    splashResolved = true;
+    const target = pendingExamUrl || initialTarget || DEFAULT_EXAM_URL;
+    pendingExamUrl = null;
+    loadExam(target);
+  };
+  mainWindow.webContents.once('did-finish-load', resolveStartupDestination);
   mainWindow.loadFile(path.join(__dirname, 'splash.html')).catch(error => {
     console.error('[CN-SEB] Startup screen failed:', error);
-    loadExam(initialTarget);
+    resolveStartupDestination();
   });
 }
 
