@@ -9,6 +9,7 @@
 
   function client() {
     const candidates = [
+      window.examSupabase,
       window.db && window.db.supabase,
       window.sb,
       window.supabaseClient,
@@ -67,7 +68,7 @@
   }
 
   function apply(institution) {
-    if (applied || !institution || !institution.id) return false;
+    if (!institution || !institution.id) return false;
     const path = String(location.pathname || "").toLowerCase();
     if (/superadmin/.test(path)) return false;
 
@@ -264,6 +265,28 @@
     const user = auth && auth.data && auth.data.user;
     if (auth.error || !user) return;
 
+    /* Lecturer Exams authenticates through examlogin.js and carries a verified,
+       user-bound institution handoff into this tab. Prefer that same tenant
+       context before falling back to the standard portal profile lookup. */
+    if (/lecturerexams/.test(String(location.pathname || "").toLowerCase())) {
+      let handoff = null;
+      try {
+        handoff = JSON.parse(sessionStorage.getItem("campusNexusExamLecturerAuth") ||
+          localStorage.getItem("campusNexusExamLecturerAuth") || "null");
+      } catch (_) {}
+      if (handoff && handoff.user_id === user.id && handoff.institution_id) {
+        const lecturerInstitution = await supabase.from("institutions")
+          .select("id,name,short_code,school_code,logo_url,primary_color,secondary_color,brand_colors,status")
+          .eq("id", handoff.institution_id).maybeSingle();
+        if (lecturerInstitution.error) throw lecturerInstitution.error;
+        if (lecturerInstitution.data &&
+            String(lecturerInstitution.data.status || "").toLowerCase() !== "suspended") {
+          apply(lecturerInstitution.data);
+          return;
+        }
+      }
+    }
+
     const profileResult = await supabase.from("consolidated_user_profiles_table")
       .select("institution_id,role").eq("user_id", user.id).maybeSingle();
     if (profileResult.error) throw profileResult.error;
@@ -280,7 +303,7 @@
   }
 
   async function boot() {
-    if (applied || attempts++ >= 50) return;
+    if (attempts++ >= 50 && !applied) return;
     try {
       await resolve();
     } catch (error) {
@@ -288,6 +311,23 @@
     }
     if (!applied && attempts < 50) window.setTimeout(boot, 700);
   }
+
+  let refreshInFlight = false;
+  async function refreshBranding() {
+    if (refreshInFlight) return;
+    refreshInFlight = true;
+    try { await resolve(); }
+    catch (error) { console.warn("[Campus Nexus] Institution branding refresh failed:", error && error.message || error); }
+    finally { refreshInFlight = false; }
+  }
+  document.addEventListener("campusnexus:institution-updated", refreshBranding);
+  document.addEventListener("campusnexus:institution-branding-changed", refreshBranding);
+  window.addEventListener("focus", refreshBranding);
+  window.addEventListener("pageshow", refreshBranding);
+  window.addEventListener("storage", event => {
+    if (!event.key || /institution|brand|school/i.test(event.key)) refreshBranding();
+  });
+  window.setInterval(refreshBranding, 30000);
 
   // student-auth-boot dispatches appReady on document, so listen there.
   document.addEventListener("appReady", boot);
