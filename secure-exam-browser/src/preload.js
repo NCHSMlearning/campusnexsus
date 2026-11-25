@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld('CNSEB', Object.freeze({
   requestExit: () => ipcRenderer.invoke('cnseb:request-exit'),
   requestLogout: () => ipcRenderer.invoke('cnseb:request-logout'),
   installUpdate: () => ipcRenderer.invoke('cnseb:install-update'),
+  setExamScheduleStatus: payload => ipcRenderer.send('cnseb:exam-schedule-status', payload),
   onSecurityEvent: callback => {
     if (typeof callback !== 'function') return () => {};
     const listener = (_event, payload) => callback(payload);
@@ -165,6 +166,11 @@ window.addEventListener('DOMContentLoaded', async () => {
         update.textContent = 'Update now';
         status.textContent = error.message || 'Update could not start';
       }
+    });
+
+    ipcRenderer.on('cnseb:toolbar-schedule', (_event, payload = {}) => {
+      if (payload.state === 'countdown') status.textContent = 'Exam starts in ' + String(payload.remaining || '');
+      else if (payload.state === 'available') status.textContent = 'Exam is now open';
     });
 
     ipcRenderer.on('cnseb:update-status', (_event, payload = {}) => {
