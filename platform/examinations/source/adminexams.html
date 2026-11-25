@@ -161,6 +161,17 @@ body{background:var(--exam-canvas);color:var(--exam-ink)}
 
 <script src="/platform/js/campus-nexus-module-access.js?v=20261120-entitlements-v3" defer></script>
 <script src="/code-protection.js?v=20261121-global-v4" defer></script>
+<style id="cnseb-admin-workspace">
+.cnseb-hero{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;padding:26px;border-radius:18px;background:linear-gradient(125deg,#092e50,#0b6480);color:#fff;margin-bottom:20px}
+.cnseb-kicker{font-size:10px;font-weight:800;letter-spacing:1.5px;color:#9ce8dc}.cnseb-hero h2{font-size:clamp(22px,3vw,30px);margin:8px 0;color:#fff}.cnseb-hero p{max-width:720px;margin:0;color:#d5e8f1;line-height:1.6;font-size:13px}
+.cnseb-status{white-space:nowrap;border:1px solid #ffffff40;border-radius:99px;padding:9px 13px;font-size:11px;color:#d9fff2}.cnseb-status i{font-size:8px;color:#4ade80;margin-right:6px}
+.cnseb-metric-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:18px}.cnseb-metric,.cnseb-panel{background:#fff;border:1px solid #dce6ef;border-radius:14px;padding:19px;box-shadow:0 5px 18px rgba(15,23,42,.035)}.cnseb-metric span{display:block;color:#64748b;font-size:11px;font-weight:700}.cnseb-metric strong{display:block;color:#102f4b;font-size:30px;margin:10px 0 4px}.cnseb-metric small{color:#8191a2;font-size:10px}
+.cnseb-panel{margin:14px 0}.cnseb-panel h3{margin:0 0 12px;color:#173b57;font-size:15px}.cnseb-panel p{color:#64748b;font-size:12px;line-height:1.7;margin:0}.cnseb-readiness{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.cnseb-readiness span{font-size:12px;color:#476174}.cnseb-readiness i{color:#0d9488;margin-right:7px}
+.cnseb-section-heading{margin:4px 0 18px}.cnseb-section-heading h2{margin:0 0 6px;color:#102f4b}.cnseb-section-heading p{margin:0;color:#718096;font-size:12px}.cnseb-empty{min-height:220px;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;gap:10px;padding:25px}.cnseb-empty>i{font-size:30px;color:#0b7894}.cnseb-empty strong{color:#183c58;font-size:14px}.cnseb-empty span{max-width:600px;color:#718096;font-size:12px;line-height:1.65}
+@media(max-width:900px){.cnseb-metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.cnseb-readiness{grid-template-columns:1fr}}
+@media(max-width:520px){.cnseb-hero{padding:18px}.cnseb-metric-grid{gap:9px}.cnseb-metric{padding:13px}.cnseb-metric strong{font-size:24px}.cnseb-metric small{font-size:9px}}
+</style>
+
 </head>
 <body>
 
@@ -243,6 +254,18 @@ body{background:var(--exam-canvas);color:var(--exam-ink)}
                         <i class="fas fa-exclamation-triangle"></i> Proctoring Alerts
                         <span class="badge-sidebar" id="sidebarAlertCount">0</span>
                     </a></li>
+                </ul>
+            </div>
+
+            <!-- Secure Exam Browser operations -->
+            <div class="menu-section" id="cnseb-menu-section">
+                <div class="menu-label">Secure Exam Browser</div>
+                <ul class="sidebar-menu">
+                    <li><a data-tab="cnsebOverview" onclick="switchTab('cnsebOverview')"><i class="fas fa-shield-alt"></i> Secure Browser Overview</a></li>
+                    <li><a data-tab="cnsebDevices" onclick="switchTab('cnsebDevices')"><i class="fas fa-laptop"></i> Devices &amp; Installations</a></li>
+                    <li><a data-tab="cnsebSessions" onclick="switchTab('cnsebSessions')"><i class="fas fa-desktop"></i> Live Exam Sessions</a></li>
+                    <li><a data-tab="cnsebAlerts" onclick="switchTab('cnsebAlerts')"><i class="fas fa-triangle-exclamation"></i> Security Events</a></li>
+                    <li><a data-tab="cnsebAudit" onclick="switchTab('cnsebAudit')"><i class="fas fa-clipboard-list"></i> Device Audit Trail</a></li>
                 </ul>
             </div>
 
@@ -1563,6 +1586,34 @@ body{background:var(--exam-canvas);color:var(--exam-ink)}
         </div>
     </div>
 </section>
+        <!-- Secure Exam Browser operations: same Admin Exams workspace -->
+        <section id="cnsebOverview" class="tab-content" style="display:none;">
+          <div class="cnseb-hero"><div><span class="cnseb-kicker">CAMPUS NEXUS SECURE EXAM BROWSER</span><h2>Examination Security Command Centre</h2><p>Monitor registered devices, secure exam sessions and examination security events from this administration workspace.</p></div><span class="cnseb-status"><i class="fas fa-circle"></i> Connected workspace</span></div>
+          <div class="cnseb-metric-grid">
+            <article class="cnseb-metric"><span>Registered devices</span><strong id="cnsebRegisteredDevices">—</strong><small>Awaiting device registry service</small></article>
+            <article class="cnseb-metric"><span>Active sessions</span><strong id="cnsebActiveSessions">—</strong><small>Awaiting live session telemetry</small></article>
+            <article class="cnseb-metric"><span>App installations</span><strong id="cnsebInstallations">—</strong><small>Counted after first device registration</small></article>
+            <article class="cnseb-metric"><span>Open security events</span><strong id="cnsebOpenEvents">—</strong><small>Awaiting secure event feed</small></article>
+          </div>
+          <div class="cnseb-panel"><h3><i class="fas fa-circle-info"></i> Monitoring readiness</h3><p>The dashboard interface is connected to the existing Admin Exams workspace. Live device counts, IP addresses, app versions and session states will appear after the device registry and server-side heartbeat/event services are deployed. Installer downloads will not be counted as installations.</p></div>
+          <div class="cnseb-panel"><h3>Security model</h3><div class="cnseb-readiness"><span><i class="fas fa-check"></i> Existing exam engine retained</span><span><i class="fas fa-check"></i> Existing role-based exam login retained</span><span><i class="fas fa-lock"></i> Device trust must be verified server-side</span><span><i class="fas fa-shield-halved"></i> Institution-scoped access required</span></div></div>
+        </section>
+        <section id="cnsebDevices" class="tab-content" style="display:none;">
+          <div class="cnseb-section-heading"><div><h2>Devices &amp; Installations</h2><p>Registered computers, app versions, last check-in and device enrollment state.</p></div></div>
+          <div class="cnseb-panel"><div class="cnseb-empty"><i class="fas fa-laptop"></i><strong>Device registry not connected yet</strong><span>Devices will appear after secure enrollment and authenticated heartbeat reporting are enabled. A client-reported kiosk flag alone will never count as a verified managed device.</span></div></div>
+        </section>
+        <section id="cnsebSessions" class="tab-content" style="display:none;">
+          <div class="cnseb-section-heading"><div><h2>Live Exam Sessions</h2><p>Monitor candidates, exam progress, connection status and device health.</p></div></div>
+          <div class="cnseb-panel"><div class="cnseb-empty"><i class="fas fa-desktop"></i><strong>Live session feed not connected yet</strong><span>Session records will be populated by server-validated app heartbeats and exam-session events. Existing exam attempts and results remain unchanged.</span></div></div>
+        </section>
+        <section id="cnsebAlerts" class="tab-content" style="display:none;">
+          <div class="cnseb-section-heading"><div><h2>Secure Browser Security Events</h2><p>Review focus loss, app integrity, connection interruptions and managed-device policy events.</p></div></div>
+          <div class="cnseb-panel"><div class="cnseb-empty"><i class="fas fa-triangle-exclamation"></i><strong>Secure Browser event stream not connected yet</strong><span>Only authenticated, timestamped events will be shown here. Existing proctoring alerts remain in the current Proctoring section.</span></div></div>
+        </section>
+        <section id="cnsebAudit" class="tab-content" style="display:none;">
+          <div class="cnseb-section-heading"><div><h2>Device Audit Trail</h2><p>Trace enrollment, app updates, access changes, revocations and administrator actions.</p></div></div>
+          <div class="cnseb-panel"><div class="cnseb-empty"><i class="fas fa-clipboard-list"></i><strong>Device audit service not connected yet</strong><span>Audit history will be written by trusted server-side operations, not by editable browser-only records.</span></div></div>
+        </section>
     </div> <!-- End main-content -->
 
     <!-- ============================================================ -->
@@ -2132,5 +2183,6 @@ body{background:var(--exam-canvas);color:var(--exam-ink)}
 <script>(function(){function updateCommandClock(){const now=new Date();const d=document.getElementById('commandDate');const t=document.getElementById('commandTime');if(d)d.textContent=new Intl.DateTimeFormat('en-KE',{weekday:'short',day:'2-digit',month:'short',year:'numeric'}).format(now);if(t)t.textContent=new Intl.DateTimeFormat('en-KE',{hour:'numeric',minute:'2-digit',hour12:true,timeZone:'Africa/Nairobi'}).format(now)+' (EAT)';}updateCommandClock();window.setInterval(updateCommandClock,60000);})();</script>
 <script src="/platform/js/institution-portal-branding.js?v=20261125-tenant-system-v2" defer></script>
 <script src="/js/campus-nexus-code-guard.js?v=20261124-global-guard-v1" defer></script>
+<script src="/platform/examinations/source/js/cnseb-admin-workspace.js?v=20261125-v1"></script>
 </body>
 </html>
