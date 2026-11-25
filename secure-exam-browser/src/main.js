@@ -222,6 +222,13 @@ app.whenReady().then(() => {
     }
     return { ok: true };
   });
+  ipcMain.on('cnseb:exam-schedule-status', (_event, payload = {}) => {
+    if (!mainWindow || mainWindow.isDestroyed()) return;
+    const safe = payload && payload.state === 'countdown'
+      ? { state: 'countdown', remaining: String(payload.remaining || '').slice(0, 24) }
+      : { state: 'available' };
+    mainWindow.webContents.send('cnseb:toolbar-schedule', safe);
+  });
   ipcMain.handle('cnseb:install-update', () => {
     if (!app.isPackaged) return { ok: false, reason: 'not-packaged' };
     autoUpdater.quitAndInstall(true, true);
