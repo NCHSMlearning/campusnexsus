@@ -223,40 +223,27 @@
     if (!state.access.platformAdmin) return;
     const client = db();
     if (!client) return;
-    let rows = [];
     try {
       const selected = selectedInstitutionId();
-      if (selected !== "all") {
-        const exams = await client.from("exams").select("id").eq("institution_id", selected);
-        if (exams.error) throw exams.error;
-        const examIds = (exams.data || []).map(row => row.id);
-        if (!examIds.length) rows = [];
-        else {
-          const result = await client.from("live_exam_sessions")
-            .select("student_id,exam_id,claimed_at,last_heartbeat,user_agent,ip_address")
-            .in("exam_id", examIds).order("last_heartbeat", {ascending:false}).limit(50);
-          if (result.error) throw result.error;
-          rows = result.data || [];
-        }
-      } else {
-        const result = await client.from("live_exam_sessions")
-          .select("student_id,exam_id,claimed_at,last_heartbeat,user_agent,ip_address")
-          .order("last_heartbeat", {ascending:false}).limit(50);
-        if (result.error) throw result.error;
-        rows = result.data || [];
-      }
-      const now = Date.now();
+      const result = await client.rpc("get_cnseb_superadmin_monitor", {
+        p_institution_id: selected === "all" ? null : selected
+      });
+      if (result.error) throw result.error;
+      const data = result.data || {};
+      const rows = data.sessions || [];
+      const escapeHtml = value => String(value ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
       const body = rows.map(row => {
-        const active = now - new Date(row.last_heartbeat).getTime() <= 90000;
         const version = String(row.user_agent || "").match(/CampusNexus-SEB\/([^ |]+)/)?.[1] || "Browser / unknown";
         const last = row.last_heartbeat ? new Date(row.last_heartbeat).toLocaleString() : "Unknown";
-        return '<tr><td style="padding:9px;border-bottom:1px solid #e2e8f0">' + (active ? '<b style="color:#168154">Active</b>' : '<b style="color:#b45309">Stale</b>') + '</td><td style="padding:9px;border-bottom:1px solid #e2e8f0">' + String(row.exam_id) + '</td><td style="padding:9px;border-bottom:1px solid #e2e8f0;font-family:monospace;font-size:11px">' + String(row.student_id || "").slice(0,8) + '…</td><td style="padding:9px;border-bottom:1px solid #e2e8f0">' + version + '</td><td style="padding:9px;border-bottom:1px solid #e2e8f0">' + last + '</td></tr>';
+        const exam = escapeHtml(row.exam_title || ("Exam " + row.exam_id));
+        const student = escapeHtml(String(row.student_id || "").slice(0,8) + "…");
+        return '<tr><td style="padding:9px;border-bottom:1px solid #e2e8f0">' + (row.is_active ? '<b style="color:#168154">Active</b>' : '<b style="color:#b45309">Stale</b>') + '</td><td style="padding:9px;border-bottom:1px solid #e2e8f0">' + exam + '</td><td style="padding:9px;border-bottom:1px solid #e2e8f0;font-family:monospace;font-size:11px">' + student + '</td><td style="padding:9px;border-bottom:1px solid #e2e8f0">' + escapeHtml(version) + '</td><td style="padding:9px;border-bottom:1px solid #e2e8f0">' + escapeHtml(last) + '</td></tr>';
       }).join("");
       document.getElementById("cnsebSessionMonitorModal")?.remove();
       const modal = document.createElement("div");
       modal.id = "cnsebSessionMonitorModal";
       modal.style.cssText = "position:fixed;inset:0;z-index:999999;background:rgba(4,20,36,.72);display:flex;align-items:center;justify-content:center;padding:18px";
-      modal.innerHTML = '<section style="background:#fff;border-radius:16px;width:min(100%,1050px);max-height:85vh;overflow:auto;padding:20px;color:#123"><header style="display:flex;justify-content:space-between;align-items:center;gap:12px"><div><h2 style="margin:0 0 5px">Secure Exam Browser sessions</h2><p style="margin:0;color:#64748b;font-size:12px">Latest 50 sessions · Active means heartbeat within 90 seconds</p></div><button id="cnsebMonitorClose" type="button" style="padding:10px 15px;border:0;border-radius:8px;background:#0a3d62;color:white;font-weight:700">Close</button></header><div style="overflow:auto;margin-top:16px"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="text-align:left;background:#f1f5f9"><th style="padding:9px">Status</th><th style="padding:9px">Exam</th><th style="padding:9px">Student ID</th><th style="padding:9px">Client</th><th style="padding:9px">Last heartbeat</th></tr></thead><tbody>' + (body || '<tr><td colspan="5" style="padding:18px;text-align:center">No exam sessions found.</td></tr>') + '</tbody></table></div><p style="font-size:11px;color:#64748b;margin:12px 0 0">IP addresses are intentionally not displayed in this overview. Device/session status is operational telemetry, not proof of operating-system lockdown.</p></section>';
+      modal.innerHTML = '<section style="background:#fff;border-radius:16px;width:min(100%,1050px);max-height:85vh;overflow:auto;padding:20px;color:#123"><header style="display:flex;justify-content:space-between;align-items:center;gap:12px"><div><h2 style="margin:0 0 5px">Secure Exam Browser sessions</h2><p style="margin:0;color:#64748b;font-size:12px">Active: ' + Number(data.active_sessions||0) + ' · Stale: ' + Number(data.stale_sessions||0) + ' · Proctoring alerts (24h): ' + Number(data.proctoring_alerts_24h||0) + '</p></div><button id="cnsebMonitorClose" type="button" style="padding:10px 15px;border:0;border-radius:8px;background:#0a3d62;color:white;font-weight:700">Close</button></header><div style="overflow:auto;margin-top:16px"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="text-align:left;background:#f1f5f9"><th style="padding:9px">Status</th><th style="padding:9px">Exam</th><th style="padding:9px">Student ID</th><th style="padding:9px">Client</th><th style="padding:9px">Last heartbeat</th></tr></thead><tbody>' + (body || '<tr><td colspan="5" style="padding:18px;text-align:center">No exam sessions found.</td></tr>') + '</tbody></table></div><p style="font-size:11px;color:#64748b;margin:12px 0 0">Device/session telemetry is operational monitoring, not proof of operating-system lockdown.</p></section>';
       document.body.appendChild(modal);
       modal.querySelector("#cnsebMonitorClose")?.addEventListener("click", () => modal.remove());
       modal.addEventListener("click", event => { if (event.target === modal) modal.remove(); });
@@ -323,6 +310,7 @@
         if (result.error) throw result.error;
         return Number(result.count || 0);
       };
+      const cnsebMonitorPromise = client.rpc("get_cnseb_superadmin_monitor", { p_institution_id: null });
       const metricTasks = {
         students: () => countMetric("consolidated_user_profiles_table", [["role","eq","student"]]),
         activeStudents: () => countMetric("consolidated_user_profiles_table", [["role","eq","student"],["status","in",["active","approved"]]]),
@@ -330,8 +318,8 @@
         staff: () => countMetric("consolidated_user_profiles_table", [["role","in",["lecturer","admin","superadmin","super_admin","institution_admin","director","finance_officer","nursing_hod"]]]),
         exams: () => countMetric("exams"),
         examAttempts: () => countMetric("exam_attempts"),
-        liveExamSessions: () => countMetric("live_exam_sessions", [["last_heartbeat","gte",new Date(Date.now()-90000).toISOString()]]),
-        proctoringAlerts: () => countMetric("exam_proctoring_logs", [["timestamp","gte",new Date(Date.now()-24*60*60*1000).toISOString()]]),
+        liveExamSessions: async () => { const result = await cnsebMonitorPromise; if (result.error) throw result.error; return Number(result.data?.active_sessions || 0); },
+        proctoringAlerts: async () => { const result = await cnsebMonitorPromise; if (result.error) throw result.error; return Number(result.data?.proctoring_alerts_24h || 0); },
         questionBank: () => countMetric("exam_questions"),
         marks: async () => (await Promise.all([countMetric("student_marks"),countMetric("exam_grades")])).reduce((a,b)=>a+b,0),
         attendance: async () => (await Promise.all([countMetric("geo_attendance_logs"),countMetric("exam_attendance")])).reduce((a,b)=>a+b,0),
