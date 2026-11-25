@@ -5589,7 +5589,7 @@ class StealthProctor {
 // ============================================================
 async async function logProctoringEvent(eventType, details, severity = 'info') {
     try {
-        await sb.from('exam_proctoring_logs').insert({
+        const { error } = await sb.from('exam_proctoring_logs').insert({
             student_id: AppState.studentId,
             exam_id: parseInt(AppState.examId),
             institution_id: AppState.institutionId || AppState.examData?.institution_id || null,
