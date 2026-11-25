@@ -1935,8 +1935,17 @@
                     '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:11px;color:#64748b;margin-bottom:12px;">' +
                     '<span>' + (snap ? 'Snapshot: ' + lecturerCameraEscape(new Date(snap.timestamp).toLocaleTimeString('en-KE')) : 'Awaiting first snapshot') + '</span>' +
                     '<span>' + (alertTotal ? 'Review alerts' : 'No recent alerts') + '</span></div>' +
-                    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"><button type="button" onclick="openLecturerCameraView(' + JSON.stringify(String(row.student_id)) + ',' + Number(row.exam_id) + ',' + JSON.stringify(name) + ',' + JSON.stringify(examName) + ')" style="padding:9px 8px;border:0;border-radius:8px;background:#e8f0f7;color:#0b3552;font-weight:700;cursor:pointer;"><i class="fas fa-images"></i> Evidence</button><button type="button" onclick="window.CNSEBLiveViewer.open({client:sb,studentId:' + JSON.stringify(String(row.student_id)) + ',examId:' + Number(row.exam_id) + ',studentName:' + JSON.stringify(name) + ',examName:' + JSON.stringify(examName) + '})" style="padding:9px 8px;border:0;border-radius:8px;background:#0b6b67;color:#fff;font-weight:700;cursor:pointer;"><i class="fas fa-video"></i> Watch live</button></div></div></article>';
+                    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"><button type="button" onclick="openLecturerCameraView(' + JSON.stringify(String(row.student_id)) + ',' + Number(row.exam_id) + ',' + JSON.stringify(name) + ',' + JSON.stringify(examName) + ')" style="padding:9px 8px;border:0;border-radius:8px;background:#e8f0f7;color:#0b3552;font-weight:700;cursor:pointer;"><i class="fas fa-images"></i> Evidence</button><button type="button" data-cnseb-watch="' + lecturerCameraEscape(String(row.student_id)) + '" data-cnseb-exam="' + Number(row.exam_id) + '" data-cnseb-student-label="' + lecturerCameraEscape(name) + '" data-cnseb-exam-label="' + lecturerCameraEscape(examName) + '" style="padding:9px 8px;border:0;border-radius:8px;background:#0b6b67;color:#fff;font-weight:700;cursor:pointer;"><i class="fas fa-video"></i> Watch live</button></div></div></article>';
             }).join('');
+            grid.querySelectorAll('[data-cnseb-watch]').forEach(button=>button.addEventListener('click',async()=>{
+                try {
+                    await window.CNSEBLiveViewer.open({client:sb,studentId:button.dataset.cnsebWatch,examId:Number(button.dataset.cnsebExam),studentName:button.dataset.cnsebStudentLabel,examName:button.dataset.cnsebExamLabel});
+                } catch(error) {
+                    console.error('Lecturer live camera viewer failed:',error);
+                    if(window.LecturerUI?.showNotification) window.LecturerUI.showNotification(error.message||'Could not open live camera.','warning');
+                    else alert(error.message||'Could not open live camera.');
+                }
+            }));
             loading.hidden = true;
         } catch (error) {
             console.error('Lecturer live camera feed failed:', error);
