@@ -3,6 +3,7 @@
 const { app, BrowserWindow, session, ipcMain, screen, dialog } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const path = require('node:path');
+const { pathToFileURL } = require('node:url');
 
 const EXAM_ORIGIN = 'https://campusnexus.co.ke';
 const DEFAULT_EXAM_URL = `${EXAM_ORIGIN}/exam.html?client=cnseb`;
@@ -170,6 +171,7 @@ app.whenReady().then(() => {
     ['media','camera','microphone'].includes(permission) &&
     isTrusted(requestingOrigin || webContents.getURL())
   ));
+  ipcMain.handle('cnseb:brand-logo-url', () => pathToFileURL(path.join(__dirname, '../build/campus-nexus-original-logo.webp')).href);
   ipcMain.handle('cnseb:device-info', () => ({
     appVersion: app.getVersion(), platform: process.platform,
     architecture: process.arch, strictMode: STRICT,
