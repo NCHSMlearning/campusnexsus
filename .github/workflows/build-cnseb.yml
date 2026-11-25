@@ -24,6 +24,29 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
+      - name: Prepare Campus Nexus Windows application icon
+        shell: pwsh
+        run: |
+          Add-Type -AssemblyName System.Drawing
+          New-Item -ItemType Directory -Force -Path build | Out-Null
+          $source = Resolve-Path "../images/logo-icon.png"
+          $bitmap = [System.Drawing.Bitmap]::FromFile($source)
+          $canvas = New-Object System.Drawing.Bitmap(256, 256)
+          $graphics = [System.Drawing.Graphics]::FromImage($canvas)
+          $graphics.Clear([System.Drawing.Color]::Transparent)
+          $graphics.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
+          $graphics.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::HighQuality
+          $graphics.DrawImage($bitmap, 0, 0, 256, 256)
+          $handle = $canvas.GetHicon()
+          $icon = [System.Drawing.Icon]::FromHandle($handle)
+          $stream = [System.IO.File]::Create("build/campus-nexus.ico")
+          $icon.Save($stream)
+          $stream.Dispose()
+          $icon.Dispose()
+          $graphics.Dispose()
+          $canvas.Dispose()
+          $bitmap.Dispose()
+          if ((Get-Item "build/campus-nexus.ico").Length -lt 1000) { throw "Campus Nexus icon generation failed." }
       - name: Install dependencies
         run: npm install
       - name: Build Windows installer and portable app
