@@ -108,9 +108,29 @@ jobs:
           }
           gh release view $tag --repo "$env:GITHUB_REPOSITORY" | Out-Null
           foreach ($file in $files) {
-            Write-Host "Uploading release asset sequentially: $file"
-            gh release upload $tag $file --clobber --repo "$env:GITHUB_REPOSITORY"
-            if ($LASTEXITCODE -ne 0) { throw "Upload failed for $file" }
+            $uploaded = $false
+            for ($attempt = 1; $attempt -le 6; $attempt++) {
+              Write-Host "Uploading release asset (attempt $attempt of 6): $file"
+              gh release upload $tag $file --clobber --repo "$env:GITHUB_REPOSITORY"
+              if ($LASTEXITCODE -eq 0) {
+                $uploaded = $true
+                break
+              }
+              if ($attempt -lt 6) {
+                $delay = [Math]::Min(180, 15 * [Math]::Pow(2, $attempt - 1))
+                Write-Warning "GitHub release upload failed (HTTP 5xx/network errors can be transient). Retrying in $delay seconds."
+                Start-Sleep -Seconds $delay
+              }
+            }
+            if (-not $uploaded) { throw "Upload failed after 6 attempts: $file" }
+          }
+          # Confirm every expected asset is visible on the release before marking it latest.
+          $releaseJson = gh release view $tag --repo "$env:GITHUB_REPOSITORY" --json assets
+          if ($LASTEXITCODE -ne 0) { throw "Could not verify the published release assets." }
+          $published = ($releaseJson | ConvertFrom-Json).assets.name
+          foreach ($file in $files) {
+            $expectedName = [System.IO.Path]::GetFileName($file)
+            if ($published -notcontains $expectedName) { throw "Release asset verification failed: $expectedName" }
           }
           gh release edit $tag --title "Campus Nexus Secure Exam Browser – Latest" --prerelease=false --latest --repo "$env:GITHUB_REPOSITORY"
           if ($LASTEXITCODE -ne 0) { throw "Could not finalize the stable release." }
