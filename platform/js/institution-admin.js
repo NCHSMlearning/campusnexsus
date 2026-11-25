@@ -189,8 +189,30 @@ async function loadAcademic(){const [p,c]=await Promise.all([loadRows("programs"
 async function loadExams(){const d=await loadRows("exams","id,title,exam_name,course_name,target_program,program_type,block,exam_date,approval_status,is_published,status",500);rows("iaExams",d,6,(tr,x)=>{cell(tr,x.title||x.exam_name||x.course_name,true);cell(tr,x.target_program||x.program_type);cell(tr,x.block);cell(tr,x.exam_date);cell(tr,statusLabel(x.approval_status||x.status));cell(tr,x.is_published?"Published":"Not published");});}
 async function loadLearning(){const data=await loadRows("resources","id,title,file_name,unit_name,unit_code,target_program,category,approval_status,file_url,created_at",300);const body=$("iaResources");body.replaceChildren();if(!data.length){empty("iaResources",6,"No learning resources have been uploaded for this institution.");return;}data.forEach(x=>{const tr=document.createElement("tr");cell(tr,x.title||x.file_name,true);cell(tr,x.unit_name||x.unit_code);cell(tr,x.target_program);cell(tr,x.category);cell(tr,statusLabel(x.approval_status));const td=document.createElement("td");if(typeof x.file_url==="string"&&x.file_url.startsWith("https://")){const a=document.createElement("a");a.href=x.file_url;a.target="_blank";a.rel="noopener noreferrer";a.textContent="Open resource";a.className="ia-text-btn";td.append(a);}else td.textContent="No file link";tr.append(td);body.append(tr);});}
 async function loadAttendance(){const d=await loadRows("attendance","id,student_id,date,timestamp,course_or_rotation,status,marked_by",200);const ids=[...new Set(d.map(x=>x.student_id).filter(Boolean))];let names={};if(ids.length){const s=await state.db.from("students").select("id,full_name,admission_number").eq("institution_id",state.institutionId).in("id",ids);if(!s.error)(s.data||[]).forEach(x=>names[x.id]=x.full_name||x.admission_number||x.id);}rows("iaAttendance",d,5,(tr,x)=>{cell(tr,x.date||x.timestamp);cell(tr,names[x.student_id]||x.student_id);cell(tr,x.course_or_rotation);cell(tr,statusLabel(x.status));cell(tr,x.marked_by);});}
-async function loadView(view){try{if(view==="students"&&!state.rows.students)await loadStudents();if(view==="staff"&&!state.rows.staff)await loadStaff();if(view==="academic")await loadAcademic();/* Examination records are rendered by institution-admin-modules.js, which supplies tenant-scoped CRUD and the matching action column. *//* Attendance is handled by institution-admin-attendance.js using the verified institution student roster. */if(view==="learning")await loadLearning();}catch(e){message("Unable to load "+view+": "+e.message,true);}}
+async function loadCNSEBInstitutionMonitor(){
+ const body=$("iaCnsebSessions");if(body)body.innerHTML='<tr><td colspan="5" class="ia-empty">Loading secure exam sessions…</td></tr>';
+ try{
+  const result=await state.db.rpc("get_cnseb_institution_monitor",{p_institution_id:state.institutionId});
+  if(result.error)throw result.error;
+  const data=result.data||{},rows=data.sessions||[];
+  setText("iaCnsebActive",Number(data.active_sessions||0).toLocaleString("en-KE"));
+  setText("iaCnsebStale",Number(data.stale_sessions||0).toLocaleString("en-KE"));
+  setText("iaCnsebAlerts",Number(data.proctoring_alerts_24h||0).toLocaleString("en-KE"));
+  const esc=value=>String(value??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  if(body)body.innerHTML=rows.map(row=>{
+   const version=String(row.user_agent||"").match(/CampusNexus-SEB\/([^ |]+)/)?.[1]||"Browser / unknown";
+   const last=row.last_heartbeat?new Date(row.last_heartbeat).toLocaleString():"Unknown";
+   return '<tr><td><b style="color:'+(row.is_active?'#168154':'#b45309')+'">'+(row.is_active?'Active':'Stale')+'</b></td><td>'+esc(row.exam_title||("Exam "+row.exam_id))+'</td><td style="font-family:monospace">'+esc(String(row.student_id||"").slice(0,8))+'…</td><td>'+esc(version)+'</td><td>'+esc(last)+'</td></tr>';
+  }).join("")||'<tr><td colspan="5" class="ia-empty">No Secure Exam Browser sessions found.</td></tr>';
+  const updated=$("iaCnsebUpdated");if(updated)updated.textContent="Updated "+new Date(data.generated_at||Date.now()).toLocaleString()+" · scoped to "+(state.institution?.name||"this institution");
+ }catch(error){
+  console.warn("[CN-SEB institution monitor]",error);
+  if(body)body.innerHTML='<tr><td colspan="5" class="ia-empty">Unable to load sessions: '+String(error.message||"Access unavailable").replace(/[&<>"]/g," ")+'</td></tr>';
+ }
+}
+async function loadView(view){try{if(view==="students"&&!state.rows.students)await loadStudents();if(view==="staff"&&!state.rows.staff)await loadStaff();if(view==="academic")await loadAcademic();if(view==="proctoring")await loadCNSEBInstitutionMonitor();/* Examination records are rendered by institution-admin-modules.js, which supplies tenant-scoped CRUD and the matching action column. *//* Attendance is handled by institution-admin-attendance.js using the verified institution student roster. */if(view==="learning")await loadLearning();}catch(e){message("Unable to load "+view+": "+e.message,true);}}
 function bind(){
+ $("iaCnsebRefresh")?.addEventListener("click",loadCNSEBInstitutionMonitor);
  const menuSearch=$("iaSidebarSearch"),sidebar=$("iaSidebar"),scrim=$("iaScrim"),menuToggle=$("iaMenuToggle"),nav=$("iaNav");
  const closeMenu=()=>{sidebar?.classList.remove("open");scrim?.classList.remove("show");menuToggle?.setAttribute("aria-expanded","false");};
  let empty=$("iaSearchEmpty");
