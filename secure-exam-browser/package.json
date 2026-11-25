@@ -1,6 +1,6 @@
 {
   "name": "campus-nexus-secure-exam-browser",
-  "version": "0.3.5",
+  "version": "0.3.6",
   "private": true,
   "description": "Windows desktop client for Campus Nexus secure examinations",
   "main": "src/main.js",
