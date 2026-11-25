@@ -86,7 +86,7 @@ jobs:
         run: |
           $ErrorActionPreference = "Stop"
           $tag = "cnseb-latest"
-          $dist = "secure-exam-browser/dist"
+          $dist = "dist"
           $versionedInstaller = Get-ChildItem $dist -Filter "Campus-Nexus-Secure-Exam-Browser-Setup-*.exe" |
             Where-Object { $_.Name -ne "Campus-Nexus-Secure-Exam-Browser-Setup.exe" } |
             Sort-Object LastWriteTime -Descending | Select-Object -First 1
