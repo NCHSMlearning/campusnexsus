@@ -7,7 +7,7 @@ const path = require('node:path');
 const EXAM_ORIGIN = 'https://campusnexus.co.ke';
 const DEFAULT_EXAM_URL = `${EXAM_ORIGIN}/exam.html?client=cnseb`;
 // Packaged Windows builds launch in strict kiosk mode by default. Use --standard only for controlled testing.
-const STRICT = process.argv.includes('--standard') ? false : (app.isPackaged || process.argv.includes('--strict'));
+const STRICT = app.isPackaged || process.argv.includes('--strict');
 const PROTOCOL = 'campusnexus-seb:';
 let mainWindow;
 let quitting = false;
