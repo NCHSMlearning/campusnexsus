@@ -5,6 +5,12 @@ on:
   push:
     paths:
       - "secure-exam-browser/**"
+      - "exam.js"
+      - "secure-exam-browser.html"
+      - "platform/examinations/source/adminexams.html"
+      - "platform/examinations/source/js/cnseb-admin-workspace.js"
+      - "supabase/functions/cnseb-auth-handoff/**"
+      - "platform/database/migrations/*cnseb*"
       - ".github/workflows/build-cnseb.yml"
     branches: [main]
 
@@ -66,6 +72,7 @@ jobs:
           node --check src/preload.js
           node --check ../exam.js
           node --check ../platform/js/campus-nexus-dashboard-filter.js
+          node --check ../platform/examinations/source/js/cnseb-admin-workspace.js
       - name: Build Windows installer and portable app
         # Prevent electron-builder from trying to publish itself with GH_TOKEN.
         # The next step publishes the generated files using GITHUB_TOKEN.
