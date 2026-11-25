@@ -2123,7 +2123,7 @@ window.viewLecturerStudentProgress = async function(studentId, studentName, exam
             let attemptId = latestAttempt?.id || null;
             if (!attemptId) {
                 const { data: summaries, error: summaryError } = await sb.from('exam_grades')
-                    .select('attempt_id, updated_at, attempt_number')
+                    .select('attempt_id, updated_at')
                     .eq('student_id', String(studentId))
                     .eq('exam_id', numericExamId)
                     .eq('question_id', sentinel)
