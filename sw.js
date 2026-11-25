@@ -1,5 +1,5 @@
 // CampusNexus service worker — network-first navigation and versioned assets.
-const CACHE_NAME = 'campusnexus-v13';
+const CACHE_NAME = 'campusnexus-v14';
 const PRECACHE_URLS = [
   '/',
   '/index.html',
@@ -58,10 +58,13 @@ self.addEventListener('fetch', event => {
   if (isLecturerExamAsset) return;
 
   const isAdminExamsRequest =
+    url.pathname === '/exams' ||
+    url.pathname === '/exams.html' ||
+    url.pathname === '/admin-exams' ||
     url.pathname === '/adminexams' ||
     url.pathname === '/adminexams/' ||
     url.pathname.startsWith('/adminexams/') ||
-    url.pathname.startsWith('/platform/examinations/source/');
+    url.pathname.startsWith('/platform/examinations/');
   if (isAdminExamsRequest) return;
 
   // Student portal, login and database scripts must never be served from a
