@@ -10556,5 +10556,16 @@ h1:has(#welcomeHeader){display:none!important}
 
 <script src="/platform/js/institution-portal-branding.js?v=20261124-dashboard-theme-v2" defer></script>
 <script src="/js/campus-nexus-code-guard.js?v=20261124-global-guard-v1" defer></script>
+<script id="cnseb-lecturer-dashboard-shortcut">
+document.addEventListener('DOMContentLoaded',function(){
+ const dashboard=document.getElementById('dashboard');
+ if(!dashboard||document.getElementById('cnsebLecturerShortcut'))return;
+ const panel=document.createElement('section');
+ panel.id='cnsebLecturerShortcut';
+ panel.style.cssText='display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin:14px 0 20px;padding:18px 20px;border:1px solid #cce6e5;border-radius:15px;background:linear-gradient(120deg,#f0fdfa,#fff);box-shadow:0 5px 18px rgba(15,23,42,.05)';
+ panel.innerHTML='<div style="display:flex;align-items:center;gap:13px;min-width:0"><span style="width:44px;height:44px;display:grid;place-items:center;border-radius:12px;background:#d1fae5;color:#047857;font-size:19px"><i class="fas fa-video"></i></span><div><strong style="display:block;color:#10243a;font-size:14px">Live examination proctoring</strong><span style="display:block;color:#64748b;font-size:12px;margin-top:4px">View students currently sitting your examinations, watch live camera feeds and review proctoring evidence.</span></div></div><a href="/lecturerexams/?view=liveCameraFeed" style="display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:9px;background:#0b6b67;color:#fff;text-decoration:none;font-size:12px;font-weight:800;white-space:nowrap">Open live monitoring <i class="fas fa-arrow-right"></i></a>';
+ dashboard.insertBefore(panel,dashboard.firstChild);
+});
+</script>
 </body>
 </html>
