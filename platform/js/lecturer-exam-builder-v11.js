@@ -262,7 +262,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
           '<p style="margin:8px 0;color:#334155;white-space:pre-wrap;">' + esc(q.question_text || '') + '</p>' +
           '<div style="padding:11px;background:#f8fafc;border-radius:8px;margin:8px 0;"><small style="display:block;color:#64748b;font-weight:700;margin-bottom:5px;">STUDENT RESPONSE</small><div style="white-space:pre-wrap;overflow-wrap:anywhere;color:#0f172a;">' + (hasResponse ? esc(response) : '<em style="color:#94a3b8;">No written response recorded</em>') + '</div></div>' +
           '<div style="padding:10px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;margin:8px 0;"><small style="display:block;color:#92400e;font-weight:700;margin-bottom:5px;">LECTURER MARKING KEY</small><div style="white-space:pre-wrap;color:#78350f;">' + esc(q.marking_key || 'No marking key supplied for this question.') + '</div></div>' +
-          '<div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap;"><label style="display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:700;color:#475569;">Awarded marks<input type="number" class="cn-written-mark" data-question-id="' + esc(q.id) + '" data-grade-id="' + esc(row?.id || '') + '" min="0" max="' + esc(max) + '" step="0.5" value="' + esc(existing) + '" ' + (hasResponse ? '' : 'disabled') + ' style="width:130px;padding:9px;border:1px solid #cbd5e1;border-radius:8px;"></label><span style="font-size:11px;color:#64748b;">' + (hasResponse ? (row?.id ? 'Previously saved mark · editable after grading' : 'Answer row unavailable for marking') : 'No response to mark') + '</span></div>';
+          '<div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap;"><label style="display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:700;color:#475569;">Awarded marks<input type="number" class="cn-written-mark" data-question-id="' + esc(q.id) + '" data-grade-id="' + esc(row?.id || '') + '" min="0" max="' + esc(max) + '" step="1" value="' + esc(existing) + '" ' + (hasResponse ? '' : 'disabled') + ' style="width:130px;padding:9px;border:1px solid #cbd5e1;border-radius:8px;"></label><span style="font-size:11px;color:#64748b;">' + (hasResponse ? (row?.id ? 'Previously saved mark · editable after grading' : 'Answer row unavailable for marking') : 'No response to mark') + '</span></div>';
         panel.appendChild(card);
       });
       const actions = document.createElement('div');
@@ -272,51 +272,42 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
       document.getElementById('cnSaveWrittenMarks').addEventListener('click', async function () {
         const button = this;
         const fields = [...panel.querySelectorAll('.cn-written-mark:not(:disabled)')];
-        const updates = fields.map(input => ({ input, id: input.dataset.gradeId, value: Number(input.value), previous: Number(input.defaultValue || 0) }));
-        if (updates.some(item => !item.id || !Number.isFinite(item.value) || item.value < 0 || item.value > Number(item.input.max))) {
-          toast('Every mark must be between zero and the question maximum. Refresh if an answer row is missing.', 'warning');
+        const updates = fields.map(input => ({ input, id: input.dataset.gradeId, questionId: input.dataset.questionId, value: Number(input.value), previous: Number(input.defaultValue || 0) }));
+        if (updates.some(item => !item.id || !item.questionId || !Number.isInteger(item.value) || item.value < 0 || item.value > Number(item.input.max))) {
+          toast('Every mark must be a whole number between zero and the question maximum. Refresh if an answer row is missing.', 'warning');
           return;
         }
         if (!updates.length) { toast('There are no submitted written answers available to mark.', 'warning'); return; }
         button.disabled = true; button.textContent = 'Saving marks…';
         try {
-          for (const item of updates) {
-            const result = await db.from('exam_grades')
-              .update({ marks: item.value, graded_by: (await db.auth.getUser()).data?.user?.id || null, updated_at: new Date().toISOString() })
-              .eq('id', item.id).eq('student_id', String(studentId)).eq('exam_id', numericExamId)
-              .eq('attempt_id', attemptId).select('id');
-            if (result.error) throw result.error;
-            if (!result.data?.length) throw new Error('A mark was not saved. Check lecturer permissions and institution access.');
-          }
-          // Best-effort audit entry preserves who changed marks and the before/after values.
+          const actorResult = await db.auth.getUser();
+          const actorId = actorResult.data?.user?.id || null;
+          const marks = Object.fromEntries(updates.map(item => [item.questionId, item.value]));
+          const feedback = {};
+          // Use the database's authorized marking RPC. It validates institution,
+          // lecturer role, submitted attempt, question maxima, and marks each row
+          // as lecturer-reviewed before recalculating the attempt and pending status.
+          const saved = await db.rpc('grade_subjective_exam_attempt', {
+            p_student_id: String(studentId),
+            p_exam_id: numericExamId,
+            p_attempt_id: attemptId,
+            p_marks: marks,
+            p_feedback: feedback
+          });
+          if (saved.error) throw saved.error;
+          const summary = saved.data || {};
+          // Best-effort audit entry; the grading RPC remains the source of truth.
           try {
-            const actorResult = await db.auth.getUser();
-            const actorId = actorResult.data?.user?.id || null;
             await db.from('exam_proctoring_logs').insert({
               student_id: String(studentId), exam_id: numericExamId,
               event_type: 'written_answer_marks_saved',
-              details: JSON.stringify({ attempt_id: attemptId, lecturer_id: actorId, changes: updates.map(item => ({ grade_id: item.id, previous_marks: item.previous, revised_marks: item.value })) }),
+              details: JSON.stringify({ attempt_id: attemptId, lecturer_id: actorId, changes: updates.map(item => ({ question_id: item.questionId, previous_marks: item.previous, revised_marks: item.value })) }),
               severity: 'info', timestamp: new Date().toISOString()
             });
           } catch (auditError) {
             console.warn('Written-answer mark audit entry could not be recorded:', auditError);
           }
-          const allQuestions = questionResult.data || [];
-          const allAnswersResult = await db.from('exam_grades').select('question_id,marks,attempt_id')
-            .eq('student_id', String(studentId)).eq('exam_id', numericExamId).eq('attempt_id', attemptId)
-            .neq('question_id', sentinel);
-          if (allAnswersResult.error) throw allAnswersResult.error;
-          const answerMap = new Map((allAnswersResult.data || []).map(row => [String(row.question_id), Number(row.marks) || 0]));
-          const totalMarks = allQuestions.reduce((sum, q) => sum + (Number(q.marks) || 0), 0);
-          const score = allQuestions.reduce((sum, q) => sum + (answerMap.get(String(q.id)) || 0), 0);
-          if (attempt?.id) {
-            const attemptUpdate = await db.from('exam_attempts').update({
-              score, percentage: totalMarks ? Number((score / totalMarks * 100).toFixed(2)) : 0,
-              total_marks: totalMarks, updated_at: new Date().toISOString()
-            }).eq('id', attemptId).select('id');
-            if (attemptUpdate.error) console.warn('Question marks saved; attempt summary could not be refreshed:', attemptUpdate.error.message);
-          }
-          toast('Written marks saved. Existing results were not published or released; use the approved results-release workflow when ready.', 'success');
+          toast('Written marks saved: ' + (summary.totalScore ?? '—') + '/' + (summary.totalMarks ?? '—') + ' (' + (summary.percentage ?? '—') + '%). ' + (summary.pendingQuestions ?? 0) + ' written question(s) remain pending. Results remain unpublished.', 'success');
           await addMarkingPanel(studentId, studentName, examId);
         } catch (error) {
           console.error('Written-answer marking save failed:', error);
