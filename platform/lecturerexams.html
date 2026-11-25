@@ -6,14 +6,14 @@
     <title>Lecturer Examinations | Campus Nexus</title>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="/config.js?v=20261123-lecturer-exam-auth-v2"></script>
+    <script src="/config.js?v=20261125-lecturer-marking-v1"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <!-- These shared stylesheets live at the repository root, not under /platform/.
          Absolute paths prevent the browser from requesting /platform/css/... (404). -->
     <link rel="stylesheet" href="/platform/examinations/source/css/admindashboard.css?v=20261123-admin-layout-v3" />
-    <link rel="stylesheet" href="/css/lecturer-exams-modern.css?v=20261124-lecturer-analytics-v5" />
+    <link rel="stylesheet" href="/css/lecturer-exams-modern.css?v=20261125-lecturer-marking-v1" />
     <link rel="stylesheet" href="/platform/examinations/source/css/admin-exams-modern.css?v=20261123-admin-command-centre-v1" />
     <style id="lecturer-admin-dashboard-parity">
       .sidebar-header .brand-text h2{font-family:Manrope,Inter,sans-serif!important;font-size:18px!important;line-height:1.1!important;color:#fff!important}
@@ -2217,7 +2217,7 @@ window.viewLecturerStudentProgress = async function(studentId, studentName, exam
 
             const writtenRows = reviewRows.filter(q => q.isWritten);
             const markedWritten = writtenRows.filter(q => q.isMarked).length;
-            const canMark = !!attemptId && latestAttempt && ['PENDING_REVIEW','SUBMITTED','COMPLETED'].includes(String(latestAttempt.status || '').toUpperCase());
+            const canMark = !!attemptId && (!latestAttempt || ['PENDING_REVIEW','SUBMITTED','COMPLETED'].includes(String(latestAttempt.status || '').toUpperCase()));
             let html = `
                 <style>
                   .lecturer-marking-workspace{color:#10243a}
