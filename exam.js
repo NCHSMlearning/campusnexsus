@@ -1383,10 +1383,7 @@ window.toggleTermsAgreed = function() {
         
         updateStartButton();
         
-        if (isChecked && AppState.currentStep === 1) {
-            console.log('📋 Terms agreed, advancing to step 2');
-            goToStep(2);
-        }
+        // Student advances only after pressing Continue on this screen.
         
         return isChecked;
     }
@@ -1397,43 +1394,43 @@ window.toggleTermsAgreed = function() {
 // goToStep
 // ============================================================
 function goToStep(step) {
-    console.log('📋 goToStep called with step:', step);
-    
-    AppState.currentStep = step;
-    
-    for (let i = 1; i <= 3; i++) {
+    const requestedStep = Number(step);
+    if (![1, 2, 3].includes(requestedStep)) return false;
+    if (requestedStep >= 2 && !AppState.termsAgreed) {
+        showToast('Please read and accept the examination instructions first.', 'warning');
+        return false;
+    }
+    if (requestedStep >= 3 && !(AppState.cameraWorking && AppState.faceVerified)) {
+        showToast('Complete the camera and face verification before continuing.', 'warning');
+        return false;
+    }
+    AppState.currentStep = requestedStep;
+    const lobby = document.getElementById('lobbyContainer');
+    if (lobby) {
+        lobby.classList.remove('stage-1', 'stage-2', 'stage-3');
+        lobby.classList.add('stage-' + requestedStep);
+    }
+    for (let i = 1; i <= 4; i++) {
         const stepEl = document.getElementById(`step${i}`);
+        if (!stepEl) continue;
+        stepEl.classList.remove('active', 'completed');
+        if (i < requestedStep) stepEl.classList.add('completed');
+        else if (i === requestedStep) stepEl.classList.add('active');
+    }
+    for (let i = 1; i <= 3; i++) {
         const contentEl = document.getElementById(`stepContent${i}`);
-        
-        if (stepEl) {
-            stepEl.classList.remove('active', 'completed');
-            if (i < step) {
-                stepEl.classList.add('completed');
-            } else if (i === step) {
-                stepEl.classList.add('active');
-            }
-        }
-        
-        if (contentEl) {
-            contentEl.style.display = i === step ? 'block' : 'none';
-            if (i === step) {
-                contentEl.classList.add('active');
-            } else {
-                contentEl.classList.remove('active');
-            }
-        }
+        if (!contentEl) continue;
+        contentEl.style.display = i === requestedStep ? 'block' : 'none';
+        contentEl.classList.toggle('active', i === requestedStep);
     }
-
-    if (step === 2 && AppState.cameraWorking && AppState.faceVerified) {
-        if (DOM.cameraNextBtn) {
-            DOM.cameraNextBtn.disabled = false;
-            DOM.cameraNextBtn.style.opacity = '1';
-            DOM.cameraNextBtn.style.cursor = 'pointer';
-        }
+    if (requestedStep === 2 && AppState.cameraWorking && AppState.faceVerified && DOM.cameraNextBtn) {
+        DOM.cameraNextBtn.disabled = false;
+        DOM.cameraNextBtn.style.opacity = '1';
+        DOM.cameraNextBtn.style.cursor = 'pointer';
     }
-    if (step === 3) {
-        updateStartButton();
-    }
+    if (requestedStep === 3) updateStartButton();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    return true;
 }
 
 // ============================================================
@@ -5830,6 +5827,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     initDomRefs();
     loadLobbyData();
     console.log('📝 Exam Lobby loaded. Exam ID:', AppState.examId, 'Student ID:', AppState.studentId);
+    goToStep(1);
     if (retakeRequestedByUrl) {
         console.log('🔄 RETAKE REQUEST ACTIVE - only DB authorization can create a new attempt');
     }
