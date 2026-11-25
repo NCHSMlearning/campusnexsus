@@ -21,7 +21,7 @@ let quitting = false;
 let pendingExamUrl = null;
 let currentExamUrl = null;
 let pendingHandoffCode = null;
-let updateState = { state: 'checking' };
+let updateState = { state: 'checking', installedVersion: app.getVersion(), latestVersion: null, lastCheckedAt: null };
 let exitInProgress = false;
 let examMode = false;
 let deviceInstallId = null;
@@ -401,7 +401,7 @@ app.whenReady().then(() => {
     autoUpdater.autoInstallOnAppQuit = true;
     autoUpdater.allowPrerelease = false;
     const publishUpdateState = payload => {
-      updateState = { ...payload, checkedAt: new Date().toISOString() };
+      updateState = { ...updateState, ...payload, installedVersion: app.getVersion() };
       if (mainWindow && !mainWindow.isDestroyed()) {
         mainWindow.webContents.send('cnseb:update-status', updateState);
       }
@@ -409,11 +409,11 @@ app.whenReady().then(() => {
     autoUpdater.on('checking-for-update', () => publishUpdateState({ state: 'checking' }));
     autoUpdater.on('update-available', info => {
       console.log('[CN-SEB] Update available:', info.version);
-      publishUpdateState({ state: 'downloading', version: info.version });
+      publishUpdateState({ state: 'downloading', version: info.version, latestVersion: info.version, lastCheckedAt: new Date().toISOString() });
     });
     autoUpdater.on('update-not-available', info => {
       console.log('[CN-SEB] App is up to date:', info.version);
-      publishUpdateState({ state: 'current', version: info.version });
+      publishUpdateState({ state: 'current', version: info.version, latestVersion: info.version, lastCheckedAt: new Date().toISOString() });
     });
     autoUpdater.on('download-progress', progress => publishUpdateState({
       state: 'progress', percent: Math.round(progress.percent || 0)
