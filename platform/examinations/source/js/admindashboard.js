@@ -3011,12 +3011,14 @@ window.viewStudentProfile = async function(pid) {
     // ============================================
     // Rubric format: one line per criterion, e.g. 2|hand hygiene;hand washing
 function calculateRubricProvisionalMark(answer, key, maximum) {
- const body=String(answer||'').toLowerCase();
+ const body=String(answer||'').trim().toLocaleLowerCase().replace(/[\\s.,;:!?]+/g,' ').trim();
  const rows=String(key||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
- const criteria=rows.map(line=>{ const m=line.match(/^(\d+(?:\.\d+)?)\s*[|:]\s*(.+)$/); if(!m)return null; const marks=Number(m[1]); const terms=m[2].split(/[;；]/).map(x=>x.trim().toLowerCase()).filter(Boolean); if(!(marks>0)||!terms.length)return null; const found=terms.find(term=>body.includes(term)); return {marks:marks,matched:!!found,matchedTerm:found||''}; }).filter(Boolean);
- if(!criteria.length||!body.trim())return {configured:false,score:0,criteria:[]};
- const score=criteria.filter(x=>x.matched).reduce((sum,x)=>sum+x.marks,0);
- return {configured:true,score:Math.min(Math.max(0,Number(maximum)||0),score),criteria:criteria};
+ if(!body||!rows.length)return {configured:false,score:0,criteria:[]};
+ const criteria=rows.map(line=>{ const m=line.match(/^(\d+(?:\.\d+)?)\s*[|:]\s*(.+)$/); if(!m)return null; const marks=Number(m[1]); const terms=m[2].split(/[;；]/).map(x=>x.trim().toLocaleLowerCase()).filter(Boolean); if(!(marks>0)||!terms.length)return null; const found=terms.find(term=>body.includes(term)); return {marks:marks,matched:!!found,matchedTerm:found||''}; }).filter(Boolean);
+ if(criteria.length){const score=criteria.filter(x=>x.matched).reduce((sum,x)=>sum+x.marks,0);return {configured:true,score:Math.min(Math.max(0,Number(maximum)||0),score),criteria:criteria,method:'structured_rubric'};}
+ const normalizedKey=rows.join(' ').toLocaleLowerCase().replace(/[\\s.,;:!?]+/g,' ').trim();
+ if(normalizedKey&&body===normalizedKey){const max=Math.max(0,Number(maximum)||0);return {configured:true,score:max,criteria:[{marks:max,matched:true,matchedTerm:'Exact model-answer match'}],method:'exact_model_answer'};}
+ return {configured:false,score:0,criteria:[],method:'manual_review'};
 }
 
 window.viewStudentProgress = async function(studentId, studentName, examId) {
@@ -3247,7 +3249,7 @@ window.viewStudentProgress = async function(studentId, studentName, examId) {
                   ${q.isSubjective ? `
                     <div style="font-size:11px;font-weight:800;color:#92400e;letter-spacing:.06em;margin:14px 0 6px">MARKING GUIDE / MODEL ANSWER</div>
                     <div class="cn-guide-box">${safe(guide)}</div>
-                    ${q.provisional.configured ? '<div style="margin-top:8px;padding:9px;background:#eff6ff;color:#1e40af;border-radius:8px;font-size:12px"><strong>Rule-based first mark: '+q.provisional.score+'/'+safe(q.totalMarks)+'</strong> · '+q.provisional.criteria.filter(c=>c.matched).length+' criteria matched. Countercheck before saving.</div>' : '<div style="margin-top:8px;color:#9a3412;font-size:12px">No structured rubric detected; manual marking required.</div>'}
+                    ${q.provisional.configured ? '<div style="margin-top:8px;padding:9px;background:#eff6ff;color:#1e40af;border-radius:8px;font-size:12px"><strong>Rule-based first mark: '+q.provisional.score+'/'+safe(q.totalMarks)+'</strong> · '+q.provisional.criteria.filter(c=>c.matched).length+' criteria matched. Countercheck before saving.</div>' : '<div style="margin-top:8px;color:#9a3412;font-size:12px">No exact model-answer match or structured rubric detected; manual marking required.</div>'}
                     <div style="display:grid;grid-template-columns:minmax(110px,.35fr) minmax(0,1fr);gap:10px;margin-top:13px">
                       <label style="font-size:12px;font-weight:700">Marks awarded<input class="subjective-mark-input cn-mark-field" data-question-id="${safe(q.id)}" type="number" min="0" max="${Number(q.totalMarks)||1}" step="1" value="${q.isSubjectiveGraded ? Number(q.marks)||0 : (q.provisional.configured ? q.provisional.score : Number(q.marks)||0)}" style="margin-top:6px"></label>
                       <label style="font-size:12px;font-weight:700">Lecturer feedback<textarea class="subjective-feedback-input cn-mark-field" data-question-id="${safe(q.id)}" rows="2" maxlength="4000" placeholder="Give feedback to the student…" style="margin-top:6px;resize:vertical">${safe(q.feedback)}</textarea></label>
