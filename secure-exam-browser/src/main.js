@@ -52,8 +52,9 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     show: false,
     // Exam client always occupies the full display; packaged builds are strict by default.
-    autoHideMenuBar: true, kiosk: true, fullscreen: true, frame: false,
-    resizable: false, maximizable: false, minimizable: !STRICT, closable: !STRICT,
+    autoHideMenuBar: true, kiosk: true, fullscreen: true, fullscreenable: true, frame: false,
+    resizable: false, maximizable: false, minimizable: false, closable: !STRICT,
+    titleBarStyle: 'hidden',
     skipTaskbar: true, alwaysOnTop: true,
     title: 'Campus Nexus | Secure Examination',
     icon: path.join(__dirname, '../build/campus-nexus.ico'),
@@ -86,15 +87,34 @@ function createWindow() {
     console.error('[CN-SEB] Renderer process ended:', details.reason);
     if (!quitting && mainWindow && !mainWindow.isDestroyed()) loadExam(pendingExamUrl || DEFAULT_EXAM_URL);
   });
-  mainWindow.once('ready-to-show', () => {
-    mainWindow.show();
+  const enforceKioskDisplay = () => {
+    if (!mainWindow || mainWindow.isDestroyed() || !STRICT) return;
+    const display = screen.getDisplayMatching(mainWindow.getBounds());
+    // Explicitly cover the active monitor before entering kiosk mode. This also
+    // avoids retaining stale windowed bounds from an earlier app version.
+    mainWindow.setBounds(display.bounds, false);
+    mainWindow.setMenuBarVisibility(false);
     mainWindow.setKiosk(true);
     mainWindow.setFullScreen(true);
     mainWindow.setAlwaysOnTop(true, 'screen-saver');
+  };
+
+  mainWindow.once('ready-to-show', () => {
+    mainWindow.show();
+    enforceKioskDisplay();
     if (pendingExamUrl) {
       const target = pendingExamUrl;
       pendingExamUrl = null;
       loadExam(target);
+    }
+  });
+  mainWindow.on('leave-full-screen', () => {
+    if (STRICT && !quitting) setImmediate(enforceKioskDisplay);
+  });
+  mainWindow.on('minimize', event => {
+    if (STRICT && !quitting) {
+      event.preventDefault();
+      setImmediate(() => { if (mainWindow && !mainWindow.isDestroyed()) mainWindow.restore(); enforceKioskDisplay(); });
     }
   });
   mainWindow.on('close', event => {
