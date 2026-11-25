@@ -393,7 +393,7 @@ function bind(){
  $("changePasswordBtn").addEventListener("click",changePassword);$("signOutOtherBtn").addEventListener("click",async()=>{await sb.auth.signOut();window.location.replace("/examlogin.html")});
 
  $("markStudent").addEventListener("change",renderStudentMarks);$("saveMarkBtn").addEventListener("click",saveManualMark);
- $("logoutBtn").addEventListener("click",async()=>{await sb.auth.signOut();window.location.replace("/login")});
+ $("logoutBtn").addEventListener("click",async()=>{await sb.auth.signOut();window.location.replace("/examlogin.html")});
 }
 document.addEventListener("DOMContentLoaded",()=>{bind();boot().catch(e=>{console.error(e);fail(e.message||"Unable to open examination management.")})});
 })();
