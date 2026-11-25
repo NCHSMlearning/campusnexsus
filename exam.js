@@ -886,12 +886,18 @@ async function claimExamSessionLock() {
     try {
         console.log('🔐 Claiming live exam session...');
 
+        let clientAgent = navigator.userAgent || '';
+        try {
+            const clientInfo = window.CNSEB?.getDeviceInfo ? await window.CNSEB.getDeviceInfo() : null;
+            if (clientInfo?.appVersion) clientAgent += ' | CampusNexus-SEB/' + clientInfo.appVersion;
+            if (clientInfo?.platform) clientAgent += ' | ' + clientInfo.platform + '/' + (clientInfo.architecture || '');
+        } catch (_) {}
         const { data, error } = await sb.rpc('claim_exam_session', {
             p_student_id: AppState.studentId,
             p_exam_id: parseInt(AppState.examId, 10),
             p_session_token: token,
             p_device_fingerprint: deviceFingerprint,
-            p_user_agent: (navigator.userAgent || '').slice(0, 500)
+            p_user_agent: clientAgent.slice(0, 500)
         });
 
         if (error) {
