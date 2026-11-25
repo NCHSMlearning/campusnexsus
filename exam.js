@@ -3401,7 +3401,7 @@ async function executeSubmissionWithLoading() {
         AppState.isSubmitting = false;
         if (DOM.submitBtn) DOM.submitBtn.style.display = '';
         try {
-            if (!document.fullscreenElement) {
+            if (!isExamFullscreen()) {
                 await enterSecureFullscreen();
             }
         } catch (retryFsError) {
@@ -3804,6 +3804,13 @@ function startFullscreenExitWarning() {
 
 async function enterSecureFullscreen() {
     try {
+        // Electron's native kiosk/fullscreen mode is enforced by CN-SEB's main
+        // process. Chromium's DOM Fullscreen API remains false in that mode;
+        // treating that as an exit caused valid kiosk sessions to auto-submit.
+        if (window.CNSEB && typeof window.CNSEB.isKiosk === 'function' && window.CNSEB.isKiosk()) {
+            blockApplications();
+            return true;
+        }
         const root = document.documentElement;
 
         if (document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement) {
@@ -3850,6 +3857,9 @@ function setupFullscreenMonitoring() {
 }
 
 function isExamFullscreen() {
+    // CN-SEB owns the native display lock. Do not require a second, nested
+    // DOM fullscreen request inside its already-fullscreen kiosk window.
+    if (window.CNSEB && typeof window.CNSEB.isKiosk === 'function' && window.CNSEB.isKiosk()) return true;
     return !!(document.fullscreenElement ||
                document.webkitFullscreenElement ||
                document.msFullscreenElement);
@@ -4082,7 +4092,8 @@ function returnToExam() {
         DOM.appBlockOverlay.style.display = 'none';
         DOM.appBlockOverlay.classList.remove('active');
     }
-    if (document.documentElement.requestFullscreen) {
+    if (!(window.CNSEB && typeof window.CNSEB.isKiosk === 'function' && window.CNSEB.isKiosk()) &&
+        document.documentElement.requestFullscreen) {
         document.documentElement.requestFullscreen().catch(() => {});
     }
     window.focus();
