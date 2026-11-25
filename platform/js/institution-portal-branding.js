@@ -75,8 +75,10 @@
     const code = String(institution.school_code || institution.short_code || "").trim();
     const identity = code ? name + " (" + code + ")" : name;
     const pageKind = /lecturerexams/.test(path) ? "Lecturer Examination Workspace" :
-      /adminexams|examinations\/source\/adminexams/.test(path) ? "Examination Command Centre" :
-      /studentexam|student-exams/.test(path) ? "Student Examination Centre" : "Student Portal";
+      /adminexams|examinations\/source\/adminexams|admin\.html|examinations\/index/.test(path) ? "Examination Command Centre" :
+      /institution-admin/.test(path) ? "Institution Administration" :
+      /studentexam|student-exams/.test(path) ? "Student Examination Centre" :
+      /exam\.html/.test(path) ? "Online Examination" : "Student Portal";
     const title = identity + " · " + pageKind;
     const colors = palette(institution);
     const primary = colors[0];
@@ -116,26 +118,40 @@
 
     setText(".nchsm-header-title", name);
     setText(".nchsm-header-subtitle", pageKind + " • School Code: " + (code || "—"));
+    if (document.querySelector(".sidebar-header .brand-text h2")) {
+      setText(".sidebar-header .brand-text h2", name);
+      const sidebarLabel = document.querySelector(".sidebar-header .brand-text>small");
+      if (sidebarLabel) sidebarLabel.textContent = pageKind;
+    }
     if (/lecturerexams/.test(path)) {
-      setText(".sidebar-header .brand-text h2", name);
-      setText(".sidebar-header .brand-text>small", "Lecturer Examination Workspace");
-      setText(".command-brand-copy p", "Lecturer Examination Workspace • " + name);
-    } else if (/adminexams|examinations\/source\/adminexams/.test(path)) {
-      setText(".sidebar-header .brand-text h2", name);
-      setText(".sidebar-header .brand-text>small", "Examination Command Centre");
+      setText(".command-brand-copy p", pageKind + " • " + name);
     }
     setText("#institution-name", name);
     setText("#institution-portal-label", "STUDENT PORTAL");
     setText("[data-institution-name]", name);
     setText("[data-institution-code]", code);
 
-    document.querySelectorAll(".nchsm-header-logo,[data-institution-logo],#institutionLogo,.sidebar-header .brand-crest img")
-      .forEach(image => {
-        image.src = logo;
+    const logoTargets = new Set(document.querySelectorAll(
+      ".nchsm-header-logo,[data-institution-logo],#institutionLogo,.sidebar-header .brand-crest img"
+    ));
+    document.querySelectorAll(".command-brand .command-cap,.command-brand .command-brand-icon").forEach(host => {
+      let image = host.querySelector("img[data-cn-institution-logo]");
+      if (!image) {
+        host.replaceChildren();
+        image = document.createElement("img");
+        image.dataset.cnInstitutionLogo = "true";
         image.alt = name + " logo";
-        image.removeAttribute("srcset");
-        image.style.objectFit = "contain";
-      });
+        image.style.cssText = "display:block;width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain;border-radius:inherit";
+        host.appendChild(image);
+      }
+      logoTargets.add(image);
+    });
+    logoTargets.forEach(image => {
+      image.src = logo;
+      image.alt = name + " logo";
+      image.removeAttribute("srcset");
+      image.style.objectFit = "contain";
+    });
 
     document.querySelectorAll('link[rel~="icon"],link[rel="apple-touch-icon"]')
       .forEach(icon => { icon.href = logo; });
@@ -151,16 +167,28 @@
       ".dashboard-hero,.welcome-banner,.welcome-card,.hero{background-image:linear-gradient(120deg," +
       primary + " 0%," + secondary + " 100%)!important;border-color:" + accent + "!important}" +
       ".btn-primary,.primary-button,.primary-btn{background:" + primary + "!important;border-color:" + primary + "!important}" +
-      (/lecturerexams/.test(path) ?
-        ".sidebar-header .brand-crest{background:" + secondary + "!important;border-color:" + accent + "!important}" +
-        ".command-topbar{background:linear-gradient(110deg," + primary + "," + secondary + ")!important}" +
-        ".command-cap,.lecturer-hero-icon{background:" + accent + "!important;color:" + primary + "!important}" +
+      ".sidebar-header{box-sizing:border-box!important;min-height:82px!important;height:auto!important;padding:9px 12px!important;overflow:hidden!important}" +
+      ".sidebar-header .sidebar-brand{display:flex!important;align-items:center!important;gap:10px!important;min-width:0!important;width:100%!important;overflow:hidden!important}" +
+      ".sidebar-header .brand-crest{display:flex!important;flex:0 0 64px!important;width:64px!important;height:64px!important;min-width:64px!important;align-items:center!important;justify-content:center!important;padding:4px!important;box-sizing:border-box!important;border:1px solid " + accent + "!important;border-radius:12px!important;background:#fff!important;overflow:hidden!important}" +
+      ".sidebar-header .brand-crest img{display:block!important;width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;object-fit:contain!important}" +
+      ".sidebar-header .brand-text{display:flex!important;flex:1 1 auto!important;flex-direction:column!important;min-width:0!important;max-width:100%!important;overflow:hidden!important}" +
+      ".sidebar-header .brand-text h2{display:-webkit-box!important;max-width:100%!important;margin:0!important;overflow:hidden!important;font-size:clamp(12px,1vw,16px)!important;line-height:1.2!important;white-space:normal!important;overflow-wrap:anywhere!important;-webkit-box-orient:vertical!important;-webkit-line-clamp:2!important}" +
+      ".sidebar-header .brand-text small{display:block!important;max-width:100%!important;overflow:hidden!important;font-size:9px!important;line-height:1.25!important;text-overflow:ellipsis!important;white-space:nowrap!important}" +
+      ".command-topbar,.top-header.command-topbar{background:linear-gradient(110deg," + primary + "," + secondary + ")!important}" +
+      ".command-brand .command-cap,.command-brand .command-brand-icon{display:flex!important;align-items:center!important;justify-content:center!important;flex:0 0 54px!important;width:54px!important;height:54px!important;padding:5px!important;box-sizing:border-box!important;border:1px solid " + accent + "!important;border-radius:12px!important;background:#fff!important;overflow:hidden!important}" +
+      ".command-brand .command-cap img,.command-brand .command-brand-icon img{display:block!important;width:100%!important;height:100%!important;object-fit:contain!important}" +
+      ".sidebar-menu a.active,.sidebar-menu a.active:hover,.sidebar-menu .active>a{background:" + accent + "!important;color:" + primary + "!important}" +
+      ".sidebar-menu a.active i,.sidebar-menu .active>a i{color:" + primary + "!important}" +
+      ".btn-primary,.primary-button,.primary-btn,.button-primary{background:" + primary + "!important;border-color:" + primary + "!important}" +
+      ".command-welcome,.welcome-card,.command-welcome-card{border-color:" + accent + "!important}" +
+      ".command-welcome .welcome-symbol,.command-welcome .welcome-icon{background:" + colors[2] + "!important;color:" + primary + "!important}" +
+      ".command-brand-copy h1,.command-brand-copy p{color:#fff!important}" +
+      ".command-brand-copy p{opacity:.9!important}" +
+      ( /lecturerexams/.test(path) ?
         ".lecturer-dashboard-hero{background:linear-gradient(110deg," + primary + "," + secondary + ")!important;border-color:" + accent + "!important}" +
         ".lecturer-dashboard-hero h2,.lecturer-dashboard-hero p{color:#fff!important}" +
         ".lecturer-hero-tag{border-color:" + accent + "!important;color:" + primary + "!important}" +
-        ".sidebar-menu a.active,.sidebar-menu a.active:hover{background:" + accent + "!important;color:" + primary + "!important}" +
-        ".sidebar-menu a.active i{color:" + primary + "!important}" +
-        ".quick-action-btn:hover{background:" + primary + "!important;border-color:" + primary + "!important}" : "");
+        ".lecturer-hero-icon{background:" + accent + "!important;color:" + primary + "!important}" : "");
     if (!style.parentNode) (document.head || document.documentElement).appendChild(style);
 
     document.querySelectorAll(".nchsm-pwa-install,[data-pwa-install],#installBtn,#installButton")
