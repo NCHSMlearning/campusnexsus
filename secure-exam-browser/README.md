@@ -13,8 +13,8 @@ The workflow uploads both files as the artifact **campus-nexus-secure-exam-brows
 
 ## Modes
 
-- **Standard monitored mode**: launches a dedicated app window, limits navigation/popups and exposes a minimal device-information bridge. It does not claim to prevent OS-level app switching.
-- **Strict kiosk mode**: requests Electron kiosk/fullscreen mode and blocks common in-app shortcuts/close requests. This is not, by itself, an operating-system lockdown.
+- **Fullscreen monitored mode**: launches borderless in fullscreen kiosk presentation, hides the taskbar entry and window controls, limits navigation/popups and exposes a minimal device-information bridge. Use `--standard` only for controlled testing; it still remains fullscreen.
+- **Strict kiosk mode (default for packaged Windows builds)**: additionally blocks common in-app shortcuts and close requests. This is not, by itself, an operating-system lockdown.
 
 ## Requirements
 
@@ -35,6 +35,12 @@ Strict kiosk preview:
 
 ```powershell
 npm run start:strict
+```
+
+Controlled standard-mode preview (still fullscreen):
+
+```powershell
+electron . --standard
 ```
 
 Build both Windows outputs locally:
