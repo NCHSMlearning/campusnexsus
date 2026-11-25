@@ -4204,14 +4204,16 @@ function blockKeyboardShortcuts(e) {
     // normal character entry into student answer fields.
     const blockedModifiedKeys = new Set([
         'r','w','t','n','l','p','s','c','v','x','u','o','j','d',
-        'a','f','g','h','q','e','+','=','-','0','insert','delete',
+        'f','g','h','q','e','+','=','-','0','insert','delete',
         'arrowleft','arrowright','home','end','pageup','pagedown'
     ]);
     const blockedAltKeys = new Set(['tab','f4','f','left','right','space','escape','arrowleft','arrowright']);
     const blockedFunctionKeys = new Set(['f1','f3','f5','f6','f10','f11','f12']);
     const devToolsCombo = e.shiftKey && ['i','j','c','k','n'].includes(key);
+    const editingShortcut = typingTarget && ['a','arrowleft','arrowright','home','end','pageup','pagedown'].includes(key);
     const blocked =
-        (modified && blockedModifiedKeys.has(key)) ||
+        (modified && blockedModifiedKeys.has(key) && !editingShortcut) ||
+        (modified && ['arrowleft','arrowright','home','end','pageup','pagedown'].includes(key) && !typingTarget) ||
         (modified && e.shiftKey && blockedModifiedKeys.has(key)) ||
         (e.altKey && blockedAltKeys.has(key)) ||
         (e.altKey && e.ctrlKey) ||
