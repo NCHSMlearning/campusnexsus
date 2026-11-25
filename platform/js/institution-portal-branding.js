@@ -123,6 +123,8 @@
       const sidebarLabel = document.querySelector(".sidebar-header .brand-text>small");
       if (sidebarLabel) sidebarLabel.textContent = pageKind;
     }
+    setText("#iaTenantName", name);
+    setText("#iaSchoolCode", code ? "School code " + code : "Institution workspace");
     if (/lecturerexams/.test(path)) {
       setText(".command-brand-copy p", pageKind + " • " + name);
     }
@@ -162,7 +164,11 @@
     style.textContent =
       ":root{--cn-institution-primary:" + primary + ";--cn-institution-secondary:" + secondary +
       ";--cn-institution-gold:" + accent + ";--primary:" + primary + ";--secondary:" + secondary + "}" +
-      "#sidebar,.sidebar{background:linear-gradient(180deg," + primary + " 0%," + primary + " 70%," + secondary + " 130%)!important}" +
+      "#sidebar,.sidebar,#iaApp #iaSidebar{background:linear-gradient(180deg," + primary + " 0%," + primary + " 70%," + secondary + " 130%)!important}" +
+      "#iaApp #iaSidebar .ia-nav-item.active,#iaApp #iaSidebar .ia-nav-item:hover{background:" + accent + "!important;color:" + primary + "!important}" +
+      "#iaApp #iaSidebar .ia-nav-item.active i,#iaApp #iaSidebar .ia-nav-item:hover i{color:" + primary + "!important}" +
+      "#iaApp #iaSidebar .ia-institution-logo{display:flex!important;align-items:center!important;justify-content:center!important;background:#fff!important;border-color:" + accent + "!important;overflow:hidden!important}" +
+      "#iaApp #iaSidebar .ia-institution-logo img{display:block!important;width:100%!important;height:100%!important;object-fit:contain!important}" +
       ".nchsm-header-title{color:" + primary + "!important}" +
       ".dashboard-hero,.welcome-banner,.welcome-card,.hero{background-image:linear-gradient(120deg," +
       primary + " 0%," + secondary + " 100%)!important;border-color:" + accent + "!important}" +
