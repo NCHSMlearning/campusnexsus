@@ -177,30 +177,38 @@ app.whenReady().then(() => {
     architecture: process.arch, strictMode: STRICT,
     displayCount: screen.getAllDisplays().length
   }));
-  ipcMain.handle('cnseb:request-exit', async () => {
+  async function confirmClose(mode) {
     if (exitInProgress) return false;
+    const isLogout = mode === 'logout';
     const result = await dialog.showMessageBox(mainWindow && !mainWindow.isDestroyed() ? mainWindow : undefined, {
       type: 'warning',
-      title: 'Exit Campus Nexus Secure Exam Browser?',
-      message: 'Do you want to exit the examination application and return to the desktop?',
-      detail: 'Make sure you have submitted your examination before exiting. Exiting here does not submit an unfinished examination.',
-      buttons: ['Cancel', 'Exit to Desktop'],
-      defaultId: 0,
-      cancelId: 0,
-      noLink: true
+      title: isLogout ? 'Logout of Campus Nexus?' : 'Exit Campus Nexus Secure Exam Browser?',
+      message: isLogout
+        ? 'You will be logged out and the application will close completely.'
+        : 'The application will close completely and return you to the desktop.',
+      detail: isLogout
+        ? 'Your Campus Nexus sign-in session on this app will be cleared. Any unfinished examination will not be submitted.'
+        : 'Your sign-in session will be kept for your next launch. Make sure you have submitted your examination before exiting.',
+      buttons: ['Cancel', isLogout ? 'Logout and Close' : 'Exit Application'],
+      defaultId: 0, cancelId: 0, noLink: true
     });
     if (result.response !== 1) return false;
     exitInProgress = true;
     quitting = true;
-    try {
-      // Clear this app's site login so the next launch starts at the sign-in flow.
-      await session.fromPartition('persist:cnseb-exam').clearStorageData({ storages: ['cookies', 'localstorage'] });
-    } catch (error) {
-      console.error('[CN-SEB] Could not clear sign-in state on exit:', error);
+    if (isLogout) {
+      try {
+        await session.fromPartition('persist:cnseb-exam').clearStorageData({
+          storages: ['cookies', 'localstorage', 'indexdb', 'serviceworkers', 'cachestorage']
+        });
+      } catch (error) {
+        console.error('[CN-SEB] Could not clear sign-in state on logout:', error);
+      }
     }
     app.quit();
     return true;
-  });
+  }
+  ipcMain.handle('cnseb:request-exit', () => confirmClose('exit'));
+  ipcMain.handle('cnseb:request-logout', () => confirmClose('logout'));
   createWindow();
 
   // Updates are downloaded in the background and installed only after the
