@@ -252,9 +252,9 @@
     return true;
   }
 
-  async function resolve() {
+  async function resolve(forceRefresh) {
     const authenticatedInstitution = window.CURRENT_INSTITUTION;
-    if (authenticatedInstitution && authenticatedInstitution.id) {
+    if (!forceRefresh && authenticatedInstitution && authenticatedInstitution.id) {
       apply(authenticatedInstitution);
       return;
     }
@@ -316,7 +316,7 @@
   async function refreshBranding() {
     if (refreshInFlight) return;
     refreshInFlight = true;
-    try { await resolve(); }
+    try { await resolve(true); }
     catch (error) { console.warn("[Campus Nexus] Institution branding refresh failed:", error && error.message || error); }
     finally { refreshInFlight = false; }
   }
