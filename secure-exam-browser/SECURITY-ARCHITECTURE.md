@@ -12,15 +12,15 @@ The desktop shell is a client-side enforcement layer, not the authority for iden
 4. Campus Nexus backend: validates the active exam attempt and live-session token for per-question draft writes; final submission and grading remain server-authoritative. Display/focus telemetry is client-reported and is evidence, not proof of compliance.
 5. Managed Windows policy (strict mode): Assigned Access/Shell Launcher plus WDAC/AppLocker allow-listing on institution-owned devices.
 
-## Mode matrix
+## Current release scope\n\nWindows desktop is the supported lockdown target for this release. Android app lockdown is deferred. Browser fallback is permitted only by institution policy and must be recorded as browser mode.\n\n## Device trust boundary\n\nElectron `isKiosk()` and `getDeviceInfo().kioskRuntime` report only the current window state. They are not evidence of institution ownership, Windows Assigned Access, Device Owner, enrollment or policy compliance. The renderer currently reports device trust as `unverified`. Do not grant managed-device exam access from these values. Managed trust requires administrator enrollment, a hardware-backed device key, fresh challenge-response, server-side attestation/policy validation and revocation checks.\n\n## Mode matrix
 
-| Control | Standard monitored | Strict managed |
+| Control | Standard monitored | Institution-managed Windows (OS policy independently verified) |
 |---|---|---|
 | Dedicated exam window | Yes | Yes |
 | Trusted-origin navigation | Yes | Yes |
 | Common app shortcuts blocked in app | Yes | Yes |
-| Kiosk/fullscreen request | No | Yes |
-| OS application allow-list | No | Windows policy required |
+| Kiosk/fullscreen request | Optional | Yes |
+| OS application allow-list | No | Windows policy required and server-verified before managed classification |
 | Ctrl+Alt+Delete suppression | No | Not claimed |
 | Force-close other apps | No | Not implemented |
 | Server-side exam authorization | Required | Required |
