@@ -6,6 +6,12 @@ contextBridge.exposeInMainWorld('CNSEB', Object.freeze({
   getDeviceInfo: () => ipcRenderer.invoke('cnseb:device-info'),
   requestExit: () => ipcRenderer.invoke('cnseb:request-exit'),
   requestLogout: () => ipcRenderer.invoke('cnseb:request-logout'),
+  onSecurityEvent: callback => {
+    if (typeof callback !== 'function') return () => {};
+    const listener = (_event, payload) => callback(payload);
+    ipcRenderer.on('cnseb:device-event', listener);
+    return () => ipcRenderer.removeListener('cnseb:device-event', listener);
+  },
   onExitBlocked: callback => {
     if (typeof callback !== 'function') return () => {};
     const listener = () => callback();
