@@ -72,9 +72,10 @@ function applyIdentity(){
  const logo=i.logo_url&&/^https:\/\//i.test(i.logo_url)?i.logo_url:"";
  const validColor=(value,fallback)=>typeof value==="string"&&/^#[0-9a-f]{3,8}$/i.test(value)?value:fallback;
  const palette=Array.isArray(i.brand_colors)?i.brand_colors:[];
- const primary=validColor(i.primary_color,"#0c1445");
- const secondary=validColor(i.secondary_color,"#0f766e");
+ const primary=validColor(i.primary_color||palette[0],"#0c1445");
+ const secondary=validColor(i.secondary_color||palette[1],"#0f766e");
  const gold=validColor(palette[2]||i.accent_color,"#fdb913");
+ const accentColors=[primary,secondary,gold,validColor(palette[3],"#2563eb"),validColor(palette[4],"#7c3aed"),validColor(palette[5],"#db2777")];
  const root=document.documentElement;
  root.dataset.institutionId=String(i.id||"");
  root.dataset.institutionName=name;
@@ -85,12 +86,23 @@ function applyIdentity(){
  root.style.setProperty("--ia-super-navy",primary);
  root.style.setProperty("--ia-super-indigo",secondary);
  root.style.setProperty("--ia-super-gold",gold);
+ accentColors.forEach((color,index)=>root.style.setProperty("--cn-institution-color-"+(index+1),color));
+ root.style.setProperty("--cn-institution-primary",primary);
+ root.style.setProperty("--cn-institution-secondary",secondary);
+ root.style.setProperty("--cn-institution-gold",gold);
+ window.CURRENT_INSTITUTION=i;
+ window.CURRENT_INSTITUTION_ID=String(i.id||"");
+ window.CURRENT_INSTITUTION_CODE=code;
  let brandStyle=$("iaInstitutionBrandTheme");
  if(!brandStyle){brandStyle=document.createElement("style");brandStyle.id="iaInstitutionBrandTheme";document.head.append(brandStyle);}
  brandStyle.textContent=[
   ".ia-sidebar{background:linear-gradient(145deg,"+primary+" 0%,"+secondary+" 100%)!important}",
-  ".ia-nav-item.active{border-color:"+gold+"55!important;box-shadow:inset 3px 0 "+gold+"!important}",
+  ".ia-nav-item.active{background:linear-gradient(100deg,"+gold+"22,"+secondary+"22)!important;border-color:"+gold+"55!important;box-shadow:inset 3px 0 "+gold+"!important}",
   ".ia-nav-item i,.ia-support i{color:"+gold+"!important}",
+  ".ia-sidebar .ia-nav-item.active span{color:#fff!important}",
+  ".ia-sidebar .ia-institution-logo{background:#fff!important;border-color:"+gold+"!important}",
+  ".ia-sidebar .ia-institution-brand-copy b{color:#fff!important}",
+  ".ia-sidebar .ia-institution-brand-copy small{color:#dce8f5!important}",
   ".ia-logo,.ia-brand-mark,.ia-profile-logo,.ia-avatar{background:"+primary+"!important;color:#fff!important}",
   ".ia-brand-mark img,.ia-logo img,.ia-profile-logo img,.ia-avatar img,.ia-account-logo img{display:block;width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain;border-radius:inherit}",
   ".ia-primary-btn{background:"+secondary+"!important}",
@@ -105,6 +117,7 @@ function applyIdentity(){
  const setImage=(el,alt)=>{if(!el)return;if(logo){const img=document.createElement("img");img.src=logo;img.alt=alt;img.loading="eager";img.referrerPolicy="no-referrer";img.decoding="async";img.style.cssText="display:block;width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain;border-radius:inherit";img.onerror=()=>{el.textContent=initials(name);};el.replaceChildren(img);}else el.textContent=initials(name);};
  ["iaLogo","iaProfileLogo","iaSettingsLogo","iaSettingsBrandLogo","iaBootLogo"].forEach(id=>setImage($(id),name+" logo"));
  const topLogo=$("iaTopInstitutionLogo");setImage(topLogo,name+" logo");
+ window.dispatchEvent(new Event("appReady"));
  const bootTitle=$("iaBootTitle");if(bootTitle)bootTitle.textContent=name;
  const bootMark=$("iaBoot")?.querySelector(".ia-brand-mark");if(bootMark&&!logo)bootMark.textContent=initials(name);
  const footer=document.querySelector(".ia-footer");if(footer)footer.textContent=name+" · Powered by Campus Nexus";
