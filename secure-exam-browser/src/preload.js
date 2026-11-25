@@ -66,10 +66,14 @@ window.addEventListener('DOMContentLoaded', async () => {
     sessionStatus.textContent = info.kioskRuntime ? 'Desktop app · kiosk window' : 'Desktop app · monitored window';
 sessionStatus.title = 'App-level kiosk presentation only. Institution-managed Windows compliance is not verified by this client.';
     sessionStatus.style.cssText = 'color:#a9d8e8;font-size:11px;padding:5px 7px';
+    const versionStatus = document.createElement('span');
+    versionStatus.textContent = 'Installed v' + (info.appVersion || 'unknown');
+    versionStatus.title = 'Version currently installed on this computer';
+    versionStatus.style.cssText = 'color:#d9eaf2;font-size:11px;padding:5px 7px';
     const updateStatus = document.createElement('span');
     updateStatus.textContent = 'Checking for updates…';
     updateStatus.style.cssText = 'color:#b8d7e5;font-size:11px;padding:5px 7px';
-    statusGroup.append(sessionStatus, updateStatus);
+    statusGroup.append(sessionStatus, versionStatus, updateStatus);
 
     function makeButton(label, background) {
       const button = document.createElement('button');
@@ -205,14 +209,20 @@ sessionStatus.title = 'App-level kiosk presentation only. Institution-managed Wi
 
     const renderUpdateStatus = payload => {
       if (!payload) return;
-      if (payload.state === 'checking') updateStatus.textContent = 'Checking for updates…';
-      else if (payload.state === 'downloading') updateStatus.textContent = 'Downloading v' + (payload.version || 'update') + '…';
-      else if (payload.state === 'progress') updateStatus.textContent = 'Downloading update · ' + (payload.percent || 0) + '%';
+      const installed = payload.installedVersion || info.appVersion || 'unknown';
+      const latest = payload.latestVersion || payload.version || null;
+      versionStatus.textContent = 'Installed v' + installed + (latest ? ' · Latest v' + latest : '');
+      const checked = payload.lastCheckedAt
+        ? new Date(payload.lastCheckedAt).toLocaleString()
+        : 'Not checked yet';
+      if (payload.state === 'checking') updateStatus.textContent = 'Checking for updates… · Last successful check: ' + checked;
+      else if (payload.state === 'downloading') updateStatus.textContent = 'Downloading v' + (latest || 'update') + '… · Last check: ' + checked;
+      else if (payload.state === 'progress') updateStatus.textContent = 'Downloading update · ' + (payload.percent || 0) + '% · Last check: ' + checked;
       else if (payload.state === 'ready') {
-        updateStatus.textContent = 'Update v' + (payload.version || '') + ' ready';
+        updateStatus.textContent = 'Update v' + (latest || '') + ' ready to install · Last check: ' + checked;
         if (!info.kioskRuntime) update.style.display = 'inline-block';
-      } else if (payload.state === 'current') updateStatus.textContent = 'Up to date · v' + (payload.version || info.appVersion);
-      else if (payload.state === 'error') updateStatus.textContent = payload.message || 'Update check failed';
+      } else if (payload.state === 'current') updateStatus.textContent = 'Up to date · Last successful check: ' + checked;
+      else if (payload.state === 'error') updateStatus.textContent = (payload.message || 'Update check failed') + ' · Last successful check: ' + checked;
     };
     ipcRenderer.on('cnseb:update-status', (_event, payload = {}) => renderUpdateStatus(payload));
     ipcRenderer.on('cnseb:toolbar-schedule', (_event, payload = {}) => {
