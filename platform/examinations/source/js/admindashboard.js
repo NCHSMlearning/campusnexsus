@@ -3009,7 +3009,17 @@ window.viewStudentProfile = async function(pid) {
     // ============================================
     // 📝 VIEW STUDENT PROGRESS
     // ============================================
-    window.viewStudentProgress = async function(studentId, studentName, examId) {
+    // Rubric format: one line per criterion, e.g. 2|hand hygiene;hand washing
+function calculateRubricProvisionalMark(answer, key, maximum) {
+ const body=String(answer||'').toLowerCase();
+ const rows=String(key||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+ const criteria=rows.map(line=>{ const m=line.match(/^(\d+(?:\.\d+)?)\s*[|:]\s*(.+)$/); if(!m)return null; const marks=Number(m[1]); const terms=m[2].split(/[;；]/).map(x=>x.trim().toLowerCase()).filter(Boolean); if(!(marks>0)||!terms.length)return null; const found=terms.find(term=>body.includes(term)); return {marks:marks,matched:!!found,matchedTerm:found||''}; }).filter(Boolean);
+ if(!criteria.length||!body.trim())return {configured:false,score:0,criteria:[]};
+ const score=criteria.filter(x=>x.matched).reduce((sum,x)=>sum+x.marks,0);
+ return {configured:true,score:Math.min(Math.max(0,Number(maximum)||0),score),criteria:criteria};
+}
+
+window.viewStudentProgress = async function(studentId, studentName, examId) {
         const modalTitle = document.getElementById('modalTitle');
         const modalContent = document.getElementById('modalContent');
         const modal = document.getElementById('studentModal');
@@ -3166,7 +3176,8 @@ window.viewStudentProfile = async function(pid) {
                     isAnswered,
                     isCorrect,
                     marks: row?.marks ?? row?.marks_obtained ?? 0,
-                    totalMarks: q.marks ?? 1
+                    totalMarks: q.marks ?? 1,
+                    provisional: calculateRubricProvisionalMark(selected, q.marking_key || '', q.marks ?? 1)
                 };
             });
 
