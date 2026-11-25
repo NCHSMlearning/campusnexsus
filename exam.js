@@ -1246,6 +1246,7 @@ async function ensureStudentInstitutionContext(profile = AppState.studentProfile
     AppState.institution = institution;
     AppState.institutionReady = true;
     applyExamInstitutionBranding(institution);
+    updateLobbyReadiness();
     return institution;
 }
 
@@ -1270,6 +1271,13 @@ async function loadLobbyData() {
             if (DOM.studentName) DOM.studentName.textContent = profile.full_name || 'Unknown';
             if (DOM.studentReg) DOM.studentReg.textContent = profile.student_id || 'N/A';
             if (DOM.studentProgram) DOM.studentProgram.textContent = profile.program || 'N/A';
+            const institutionName = AppState.institution?.name || AppState.institution?.institution_name || 'Institution verified';
+            const institutionNode = document.getElementById('studentInstitution');
+            if (institutionNode) institutionNode.textContent = institutionName;
+            const identityStatus = document.getElementById('lobbyIdentityStatus');
+            if (identityStatus) setLobbyReadinessStatus(identityStatus, 'Verified', 'Student account confirmed', 'good');
+            const securityStatus = document.getElementById('lobbySecurityStatus');
+            if (securityStatus) setLobbyReadinessStatus(securityStatus, 'Verified', 'Institution access confirmed', 'good');
             if (DOM.examStudentName) DOM.examStudentName.textContent = profile.full_name || 'Unknown';
             if (DOM.examStudentReg) DOM.examStudentReg.textContent = profile.student_id || 'N/A';
             if (DOM.readyStudentName) DOM.readyStudentName.textContent = profile.full_name || 'Student';
@@ -1308,6 +1316,15 @@ async function loadLobbyData() {
             if (DOM.examTitleLobby) DOM.examTitleLobby.textContent = displayExamName;
             if (DOM.examDuration) DOM.examDuration.textContent = exam.duration_minutes ?? '—';
             if (DOM.examPassMark) DOM.examPassMark.textContent = exam.pass_mark ?? '—';
+            const unitName = exam.unit_name || exam.unit_title || exam.course_unit_name || exam.unit || exam.subject_name || '';
+            const unitCode = exam.unit_code || exam.course_unit_code || exam.subject_code || '';
+            const unitLabel = [unitCode, unitName].filter(Boolean).join(' — ') || 'Unit details not provided';
+            const unitNode = document.getElementById('examUnitName');
+            if (unitNode) unitNode.textContent = unitLabel;
+            const unitSubline = document.getElementById('examUnitLabel');
+            if (unitSubline) unitSubline.textContent = unitLabel;
+            const typeNode = document.getElementById('examTypeLabel');
+            if (typeNode) typeNode.textContent = exam.exam_type || exam.assessment_type || exam.category || 'Online examination';
 
             // Use the database's exact count instead of relying on the returned
             // row array (which may be empty when a head-only count is requested).
@@ -1533,7 +1550,35 @@ function startExamScheduleCountdown() {
     }, 1000);
 }
 
+function setLobbyReadinessStatus(node, label, detail, state) {
+    if (!node) return;
+    node.classList.toggle('is-good', state === 'good');
+    node.classList.toggle('is-bad', state === 'bad');
+    const status = node.querySelector('b');
+    const description = node.querySelector('small');
+    if (status) status.textContent = label;
+    if (description) description.textContent = detail;
+}
+
+function updateLobbyReadiness() {
+    const camera = document.getElementById('lobbyCameraStatus');
+    const internet = document.getElementById('lobbyInternetStatus');
+    if (camera) {
+        if (AppState.cameraWorking && AppState.faceVerified) setLobbyReadinessStatus(camera, 'Ready', 'Camera and face verified', 'good');
+        else if (AppState.cameraWorking) setLobbyReadinessStatus(camera, 'Checking', 'Camera active; face check pending', '');
+        else setLobbyReadinessStatus(camera, 'Pending', 'Complete camera check in step 2', '');
+    }
+    if (internet) {
+        const online = navigator.onLine !== false;
+        setLobbyReadinessStatus(internet, online ? 'Online' : 'Offline', online ? 'Browser is connected' : 'Check your internet connection', online ? 'good' : 'bad');
+    }
+}
+
+window.addEventListener('online', updateLobbyReadiness);
+window.addEventListener('offline', updateLobbyReadiness);
+
 function updateStartButton() {
+    updateLobbyReadiness();
     const scheduleReady = updateExamScheduleGate();
     const ready = AppState.termsAgreed && AppState.cameraWorking && AppState.faceVerified && scheduleReady;
     
