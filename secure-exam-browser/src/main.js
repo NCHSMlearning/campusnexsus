@@ -16,6 +16,7 @@ const PROTOCOL = 'campusnexus-seb:';
 let mainWindow;
 let quitting = false;
 let pendingExamUrl = null;
+let currentExamUrl = null;
 let pendingHandoffCode = null;
 let updateState = { state: 'checking' };
 let exitInProgress = false;
@@ -85,6 +86,7 @@ function applyWindowMode(url) {
 
 function loadExam(url) {
   const target = isTrusted(url) ? url : DEFAULT_EXAM_URL;
+  if (isValidExamUrl(target)) currentExamUrl = target;
   if (mainWindow && !mainWindow.isDestroyed()) {
     applyWindowMode(target);
     mainWindow.loadURL(target);
@@ -175,7 +177,11 @@ function createWindow() {
   });
   mainWindow.webContents.on('render-process-gone', (_event, details) => {
     console.error('[CN-SEB] Renderer process ended:', details.reason);
-    if (!quitting && mainWindow && !mainWindow.isDestroyed()) loadExam(pendingExamUrl || DEFAULT_EXAM_URL);
+    if (!quitting && mainWindow && !mainWindow.isDestroyed()) {
+      // Recover the same in-progress exam after a renderer crash; never send a
+      // student back to the generic login page and silently drop the attempt.
+      loadExam(currentExamUrl || pendingExamUrl || DEFAULT_EXAM_URL);
+    }
   });
   const enforceKioskDisplay = () => {
     if (!mainWindow || mainWindow.isDestroyed() || !STRICT || !examMode) return;
