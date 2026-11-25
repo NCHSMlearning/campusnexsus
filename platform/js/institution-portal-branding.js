@@ -74,7 +74,9 @@
     const name = String(institution.name || "Your Institution").trim();
     const code = String(institution.school_code || institution.short_code || "").trim();
     const identity = code ? name + " (" + code + ")" : name;
-    const title = identity + " Student Portal";
+    const pageKind = /lecturerexams/.test(path) ? "Lecturer Examination Workspace" :
+      /studentexam|student-exams/.test(path) ? "Student Examination Centre" : "Student Portal";
+    const title = identity + " · " + pageKind;
     const colors = palette(institution);
     const primary = colors[0];
     const secondary = colors[1];
@@ -112,13 +114,18 @@
       .forEach(meta => { meta.content = title; });
 
     setText(".nchsm-header-title", name);
-    setText(".nchsm-header-subtitle", "Student Portal • School Code: " + (code || "—"));
+    setText(".nchsm-header-subtitle", pageKind + " • School Code: " + (code || "—"));
+    if (/lecturerexams/.test(path)) {
+      setText(".sidebar-header .brand-text h2", name);
+      setText(".sidebar-header .brand-text>small", "Lecturer Examination Workspace");
+      setText(".command-brand-copy p", "Lecturer Examination Workspace • " + name);
+    }
     setText("#institution-name", name);
     setText("#institution-portal-label", "STUDENT PORTAL");
     setText("[data-institution-name]", name);
     setText("[data-institution-code]", code);
 
-    document.querySelectorAll(".nchsm-header-logo,[data-institution-logo],#institutionLogo")
+    document.querySelectorAll(".nchsm-header-logo,[data-institution-logo],#institutionLogo,.sidebar-header .brand-crest img")
       .forEach(image => {
         image.src = logo;
         image.alt = name + " logo";
@@ -139,7 +146,17 @@
       ".nchsm-header-title{color:" + primary + "!important}" +
       ".dashboard-hero,.welcome-banner,.welcome-card,.hero{background-image:linear-gradient(120deg," +
       primary + " 0%," + secondary + " 100%)!important;border-color:" + accent + "!important}" +
-      ".btn-primary,.primary-button,.primary-btn{background:" + primary + "!important;border-color:" + primary + "!important}";
+      ".btn-primary,.primary-button,.primary-btn{background:" + primary + "!important;border-color:" + primary + "!important}" +
+      (/lecturerexams/.test(path) ?
+        ".sidebar-header .brand-crest{background:" + secondary + "!important;border-color:" + accent + "!important}" +
+        ".command-topbar{background:linear-gradient(110deg," + primary + "," + secondary + ")!important}" +
+        ".command-cap,.lecturer-hero-icon{background:" + accent + "!important;color:" + primary + "!important}" +
+        ".lecturer-dashboard-hero{background:linear-gradient(110deg," + primary + "," + secondary + ")!important;border-color:" + accent + "!important}" +
+        ".lecturer-dashboard-hero h2,.lecturer-dashboard-hero p{color:#fff!important}" +
+        ".lecturer-hero-tag{border-color:" + accent + "!important;color:" + primary + "!important}" +
+        ".sidebar-menu a.active,.sidebar-menu a.active:hover{background:" + accent + "!important;color:" + primary + "!important}" +
+        ".sidebar-menu a.active i{color:" + primary + "!important}" +
+        ".quick-action-btn:hover{background:" + primary + "!important;border-color:" + primary + "!important}" : "");
     if (!style.parentNode) (document.head || document.documentElement).appendChild(style);
 
     document.querySelectorAll(".nchsm-pwa-install,[data-pwa-install],#installBtn,#installButton")
