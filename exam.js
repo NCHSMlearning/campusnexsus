@@ -5683,6 +5683,33 @@ document.addEventListener('DOMContentLoaded', async function() {
     console.log('✅ exam.js loaded with Retake/Continuation support');
     
     const params = new URLSearchParams(window.location.search);
+    // If this exam was opened from the signed-in student browser, redeem its
+    // one-time handoff inside the trusted Electron main process, then establish
+    // the Supabase session in this isolated app partition. No browser tokens
+    // or passwords are copied into the app or placed in the URL.
+    if (window.CNSEB && typeof window.CNSEB.redeemAuthHandoff === 'function') {
+        try {
+            const handoff = await window.CNSEB.redeemAuthHandoff();
+            if (handoff && handoff.ok) {
+                if (String(params.get('exam_id') || '') !== String(handoff.exam_id)) {
+                    throw new Error('The secure sign-in does not match this examination.');
+                }
+                const { data: handoffSession, error: handoffError } = await sb.auth.verifyOtp({
+                    token_hash: handoff.token_hash,
+                    type: handoff.type || 'magiclink'
+                });
+                if (handoffError || !handoffSession?.session?.access_token) {
+                    throw new Error(handoffError?.message || 'Secure sign-in could not be completed.');
+                }
+                console.info('[CN-SEB] Secure student session established for selected exam.');
+            } else if (handoff && !handoff.unavailable) {
+                console.warn('[CN-SEB] Secure handoff could not be redeemed:', handoff.error);
+            }
+        } catch (handoffError) {
+            console.error('[CN-SEB] Secure handoff error:', handoffError);
+            showToast(handoffError.message || 'Secure sign-in failed. Return to the student portal and launch again.', 'error');
+        }
+    }
     // Never trust user_id from the URL, localStorage, or a cached profile.
     // The verified Supabase Auth session is the sole source of student identity.
     const { data: authData, error: authError } = await sb.auth.getUser();
