@@ -4,6 +4,8 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('CNSEB', Object.freeze({
   getDeviceInfo: () => ipcRenderer.invoke('cnseb:device-info'),
+  getUpdateState: () => ipcRenderer.invoke('cnseb:update-state'),
+  checkForUpdates: () => ipcRenderer.invoke('cnseb:check-for-updates'),
   requestExit: () => ipcRenderer.invoke('cnseb:request-exit'),
   requestLogout: () => ipcRenderer.invoke('cnseb:request-logout'),
   installUpdate: () => ipcRenderer.invoke('cnseb:install-update'),
@@ -31,53 +33,60 @@ contextBridge.exposeInMainWorld('CNSEB', Object.freeze({
 window.addEventListener('DOMContentLoaded', async () => {
   try {
     const info = await ipcRenderer.invoke('cnseb:device-info');
-    const bar = document.createElement('section');
-    bar.id = 'cnseb-control-bar';
+    const bar = document.createElement('header');
+    bar.id = 'cnseb-app-header';
     Object.assign(bar.style, {
-      position: 'fixed', top: '12px', left: '50%', transform: 'translateX(-50%)',
-      zIndex: '2147483647', display: 'flex', flexWrap: 'wrap', alignItems: 'center',
-      justifyContent: 'center', gap: '8px', padding: '8px 10px',
-      borderRadius: '13px', background: 'rgba(5,29,52,.97)', color: '#fff',
-      border: '1px solid #19b6d5', font: '700 11px/1.2 Segoe UI,Arial,sans-serif',
-      boxShadow: '0 5px 22px rgba(0,0,0,.32)', maxWidth: 'calc(100vw - 24px)',
-      boxSizing: 'border-box'
+      position: 'relative', display: 'flex', flexWrap: 'wrap', alignItems: 'center',
+      justifyContent: 'space-between', gap: '10px', width: '100%',
+      padding: '10px 16px', margin: '0', boxSizing: 'border-box',
+      background: '#071d33', color: '#fff', borderBottom: '3px solid #19b6d5',
+      font: '600 12px/1.3 Segoe UI,Arial,sans-serif'
     });
 
-    const brand = document.createElement('span');
+    const brand = document.createElement('div');
     brand.textContent = 'CAMPUS NEXUS  /  SECURE EXAM';
     Object.assign(brand.style, {
-      color: '#fff', fontWeight: '850', letterSpacing: '.55px',
-      whiteSpace: 'nowrap', padding: '0 9px'
+      fontWeight: '850', letterSpacing: '.55px', whiteSpace: 'nowrap',
+      padding: '4px 6px'
     });
 
-    const status = document.createElement('span');
-    status.textContent = info.strictMode ? 'Protected session' : 'Monitored session';
-    Object.assign(status.style, {
-      color: '#a9d8e8', fontSize: '10px', whiteSpace: 'nowrap', padding: '0 5px'
+    const statusGroup = document.createElement('div');
+    Object.assign(statusGroup.style, {
+      display: 'flex', flexWrap: 'wrap', alignItems: 'center',
+      justifyContent: 'flex-end', gap: '8px', minWidth: '0'
     });
+    const sessionStatus = document.createElement('span');
+    sessionStatus.textContent = info.strictMode ? 'Protected session' : 'Monitored session';
+    sessionStatus.style.cssText = 'color:#a9d8e8;font-size:11px;padding:5px 7px';
+    const updateStatus = document.createElement('span');
+    updateStatus.textContent = 'Checking for updates…';
+    updateStatus.style.cssText = 'color:#b8d7e5;font-size:11px;padding:5px 7px';
+    statusGroup.append(sessionStatus, updateStatus);
 
-    function makeButton(text, background) {
+    function makeButton(label, background) {
       const button = document.createElement('button');
       button.type = 'button';
-      button.textContent = text;
+      button.textContent = label;
       Object.assign(button.style, {
-        minWidth: '78px', minHeight: '36px', padding: '8px 13px',
-        border: '1px solid rgba(255,255,255,.65)', borderRadius: '9px',
-        background, color: '#fff', font: '800 11px/1 Segoe UI,Arial,sans-serif',
-        cursor: 'pointer', whiteSpace: 'nowrap'
+        minHeight: '34px', padding: '7px 12px', border: '1px solid #6c879b',
+        borderRadius: '8px', background, color: '#fff',
+        font: '700 11px Segoe UI,Arial,sans-serif', cursor: 'pointer',
+        whiteSpace: 'nowrap'
       });
-      button.addEventListener('mouseenter', () => { button.style.filter = 'brightness(1.13)'; });
-      button.addEventListener('mouseleave', () => { button.style.filter = 'none'; });
       return button;
     }
-
-    const logout = makeButton('Logout', '#a65b12');
-    const exit = makeButton('Exit', '#a92d2d');
-    const update = makeButton('Update now', '#087f64');
+    const check = makeButton('Check updates', '#14506a');
+    const update = makeButton('Update and restart', '#087f64');
     update.style.display = 'none';
-    update.title = 'Install the downloaded Campus Nexus update and restart';
-    bar.append(brand, status, logout, exit, update);
-    document.documentElement.appendChild(bar);
+    const logout = makeButton('Log out', '#8b5319');
+    const exit = makeButton('Exit app', '#8f3030');
+    statusGroup.append(check, update, logout, exit);
+    bar.append(brand, statusGroup);
+
+    // Insert a normal-flow application header. It is part of the page layout,
+    // not a fixed/floating overlay over examination content.
+    const mount = document.body || document.documentElement;
+    mount.insertBefore(bar, mount.firstChild);
 
     const shade = document.createElement('div');
     Object.assign(shade.style, {
@@ -104,7 +113,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     controls.append(cancel, confirm);
     panel.append(heading, message, controls);
     shade.appendChild(panel);
-    document.documentElement.appendChild(shade);
+    document.body.appendChild(shade);
 
     let mode = null;
     let busy = false;
@@ -115,7 +124,7 @@ window.addEventListener('DOMContentLoaded', async () => {
       message.textContent = nextMode === 'logout'
         ? 'This clears the saved sign-in for this app and closes it. Any unfinished examination will not be submitted.'
         : 'The app will close and return you to the desktop. Your sign-in will be kept for your next launch. Submit your examination first.';
-      confirm.textContent = nextMode === 'logout' ? 'Logout and close' : 'Exit application';
+      confirm.textContent = nextMode === 'logout' ? 'Log out and close' : 'Exit application';
       confirm.style.background = nextMode === 'logout' ? '#a65b12' : '#a92d2d';
       shade.style.display = 'flex';
     }
@@ -140,13 +149,9 @@ window.addEventListener('DOMContentLoaded', async () => {
           ipcRenderer.invoke(action),
           new Promise((_, reject) => setTimeout(() => reject(new Error('The close request timed out. Please try again.')), 10000))
         ]);
-        if (result && result.ok) {
-          confirm.textContent = 'Closing…';
-        } else {
-          throw new Error('The app could not complete that request.');
-        }
+        if (!result || !result.ok) throw new Error('The app could not complete that request.');
+        confirm.textContent = 'Closing…';
       } catch (error) {
-        console.error('[CN-SEB] App control failed:', error);
         busy = false;
         confirm.disabled = false;
         cancel.disabled = false;
@@ -155,34 +160,51 @@ window.addEventListener('DOMContentLoaded', async () => {
       }
     });
 
+    async function checkForUpdates() {
+      check.disabled = true;
+      check.textContent = 'Checking…';
+      try {
+        const result = await ipcRenderer.invoke('cnseb:check-for-updates');
+        if (!result || !result.ok) throw new Error(result && result.reason || 'Update check unavailable');
+      } catch (error) {
+        updateStatus.textContent = error.message || 'Update check failed';
+      } finally {
+        check.disabled = false;
+        check.textContent = 'Check updates';
+      }
+    }
+    check.addEventListener('click', checkForUpdates);
     update.addEventListener('click', async () => {
       update.disabled = true;
-      update.textContent = 'Installing…';
+      update.textContent = 'Restarting…';
       try {
         const result = await ipcRenderer.invoke('cnseb:install-update');
         if (!result || !result.ok) throw new Error('The update is not ready yet.');
       } catch (error) {
         update.disabled = false;
-        update.textContent = 'Update now';
-        status.textContent = error.message || 'Update could not start';
+        update.textContent = 'Update and restart';
+        updateStatus.textContent = error.message || 'Update could not start';
       }
     });
 
-    ipcRenderer.on('cnseb:toolbar-schedule', (_event, payload = {}) => {
-      if (payload.state === 'countdown') status.textContent = 'Exam starts in ' + String(payload.remaining || '');
-      else if (payload.state === 'available') status.textContent = 'Exam is now open';
-    });
-
-    ipcRenderer.on('cnseb:update-status', (_event, payload = {}) => {
-      if (payload.state === 'checking') status.textContent = 'Checking for updates…';
-      else if (payload.state === 'downloading') status.textContent = 'New version found · Downloading…';
-      else if (payload.state === 'progress') status.textContent = 'Downloading update · ' + payload.percent + '%';
+    const renderUpdateStatus = payload => {
+      if (!payload) return;
+      if (payload.state === 'checking') updateStatus.textContent = 'Checking for updates…';
+      else if (payload.state === 'downloading') updateStatus.textContent = 'Downloading v' + (payload.version || 'update') + '…';
+      else if (payload.state === 'progress') updateStatus.textContent = 'Downloading update · ' + (payload.percent || 0) + '%';
       else if (payload.state === 'ready') {
-        status.textContent = 'New version ' + (payload.version || '') + ' is ready';
+        updateStatus.textContent = 'Update v' + (payload.version || '') + ' ready';
         update.style.display = 'inline-block';
-      } else if (payload.state === 'current') status.textContent = 'Up to date · v' + (payload.version || info.appVersion);
-      else if (payload.state === 'error') status.textContent = payload.message || 'Update check failed';
+      } else if (payload.state === 'current') updateStatus.textContent = 'Up to date · v' + (payload.version || info.appVersion);
+      else if (payload.state === 'error') updateStatus.textContent = payload.message || 'Update check failed';
+    };
+    ipcRenderer.on('cnseb:update-status', (_event, payload = {}) => renderUpdateStatus(payload));
+    ipcRenderer.on('cnseb:toolbar-schedule', (_event, payload = {}) => {
+      sessionStatus.textContent = payload.state === 'countdown'
+        ? 'Exam starts in ' + String(payload.remaining || '')
+        : 'Exam is now open';
     });
+    renderUpdateStatus(await ipcRenderer.invoke('cnseb:update-state'));
   } catch (error) {
     console.error('[CN-SEB] Could not initialize application controls:', error);
   }
