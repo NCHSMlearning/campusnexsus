@@ -84,7 +84,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     );
 
     Object.assign(container.style, {
-      position: 'fixed', top: '14px', right: '18px', zIndex: '2147483647',
+      position: 'fixed', top: '82px', right: '18px', zIndex: '2147483647',
       display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
       gap: '14px', padding: '12px 14px', borderRadius: '14px',
       background: 'rgba(5,29,52,.97)', color: '#fff', border: '2px solid #19b6d5',
