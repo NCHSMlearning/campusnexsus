@@ -2,6 +2,11 @@ name: Deploy CampusNexus with Digital Campus source
 on:
   push:
     branches: [main]
+    # Secure Exam Browser source/build changes do not alter the website.
+    # Keep those commits out of the Pages deployment workflow.
+    paths-ignore:
+      - 'secure-exam-browser/**'
+      - '.github/workflows/build-cnseb.yml'
   workflow_dispatch:
 
 permissions:
