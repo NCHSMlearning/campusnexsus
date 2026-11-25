@@ -1889,6 +1889,64 @@ body{
   background:rgba(6,43,72,.88)!important;color:#fff!important;
 }
 .campus-caption strong,.campus-caption span{color:#fff!important}
+
+/* FOUR-SCREEN EXAMINATION FLOW */
+#lobbyContainer .lobby-wrap{display:block;width:min(1040px,calc(100% - 36px));padding:22px 0 34px}
+#lobbyContainer .lobby-main{width:100%;max-width:none}
+#lobbyContainer .lobby-aside{display:none!important}
+#lobbyContainer .welcome-hero,#lobbyContainer .student-card,#lobbyContainer .lobby-readiness{display:none!important}
+#lobbyContainer .steps{grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:0 0 18px}
+#lobbyContainer .step{min-height:66px;padding:12px 14px;border-radius:14px}
+#lobbyContainer .step-copy strong{font-size:11px}
+#lobbyContainer .step-copy span{font-size:9px}
+#lobbyContainer .step-content{display:none;min-height:min(590px,calc(100dvh - 190px));padding:clamp(20px,3vw,34px);border-radius:20px;box-shadow:0 16px 44px rgba(6,43,72,.09)}
+#lobbyContainer.stage-1 #stepContent1,#lobbyContainer.stage-2 #stepContent2,#lobbyContainer.stage-3 #stepContent3{display:block!important}
+#lobbyContainer.stage-1 #stepContent1{max-width:900px;margin:0 auto}
+#lobbyContainer.stage-2 #stepContent2{max-width:1000px;margin:0 auto}
+#lobbyContainer.stage-3 #stepContent3{max-width:900px;margin:0 auto;display:grid!important;place-items:center}
+#lobbyContainer.stage-3 .welcome-hero,#lobbyContainer.stage-3 .student-card{display:grid!important;margin:0 0 12px}
+#lobbyContainer.stage-3 .welcome-hero{grid-template-columns:minmax(0,1fr) 230px;gap:14px}
+#lobbyContainer.stage-3 .welcome-visual{display:none!important}
+#lobbyContainer.stage-3 .exam-hero-card{margin:10px 0 0;padding:15px}
+#lobbyContainer.stage-3 .welcome-main h1{font-size:22px}
+#lobbyContainer.stage-3 .welcome-description,#lobbyContainer.stage-3 .ready-card>p{font-size:11px}
+#lobbyContainer.stage-3 .welcome-trust{display:none!important}
+#lobbyContainer.stage-3 .student-card{grid-template-columns:auto 1fr auto}
+#lobbyContainer .step-content h3{font-size:clamp(21px,2.5vw,28px);margin-bottom:8px}
+#lobbyContainer .step-content>p{font-size:12px;margin-bottom:20px}
+#lobbyContainer .instructions{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+#lobbyContainer .instruction{min-height:68px;padding:13px}
+#lobbyContainer .instruction span{font-size:11px}
+#lobbyContainer .terms-box{padding:15px;margin:18px 0}
+#lobbyContainer .terms-label{font-size:11px;gap:11px}
+#lobbyContainer .btn{min-height:44px;padding:12px 18px;font-size:11px}
+#lobbyContainer .camera-layout{grid-template-columns:minmax(0,1.1fr) minmax(280px,.9fr);gap:18px}
+#lobbyContainer .camera-preview{min-height:270px}
+#lobbyContainer .ready-card{width:100%;max-width:680px}
+#lobbyContainer .ready-card h3{font-size:28px}
+#lobbyContainer .ready-item{font-size:11px;padding:13px}
+#lobbyContainer .quote{font-size:11px;padding:14px}
+@media(max-width:700px){
+ #lobbyContainer .lobby-wrap{width:calc(100% - 22px);padding:14px 0 24px}
+ #lobbyContainer .steps{grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
+ #lobbyContainer .step{padding:8px 5px;min-height:62px;display:flex;flex-direction:column;justify-content:center;text-align:center;gap:5px}
+ #lobbyContainer .step-number{width:25px;height:25px;font-size:9px}
+ #lobbyContainer .step-copy strong{font-size:8px;line-height:1.2}
+ #lobbyContainer .step-copy span{display:none}
+ #lobbyContainer .step-content{min-height:calc(100dvh - 155px);padding:17px 14px}
+ #lobbyContainer .instructions,#lobbyContainer .camera-layout{grid-template-columns:1fr}
+ #lobbyContainer .instruction{min-height:0}
+ #lobbyContainer .action-row{flex-wrap:wrap}
+ #lobbyContainer .action-row .btn{flex:1 1 auto}
+ #lobbyContainer.stage-3 .welcome-hero{display:block!important}
+ #lobbyContainer.stage-3 .exam-hero-card{padding:12px}
+ #lobbyContainer.stage-3 .exam-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}
+ #lobbyContainer.stage-3 .metric{padding:8px;min-height:65px}
+ #lobbyContainer.stage-3 .metric strong{font-size:16px}
+ #lobbyContainer.stage-3 .student-card{grid-template-columns:auto 1fr;gap:8px}
+ #lobbyContainer.stage-3 .student-program{grid-column:1/-1;text-align:left}
+}
+
 </style>
 <style id="exam-lobby-refinement">
 /* CAMPUS NEXUS EXAM LOBBY REFINEMENT */
@@ -2111,6 +2169,10 @@ body{
       <div class="step" id="step3">
         <div class="step-number">3</div>
         <div class="step-copy"><strong>Ready to Start</strong><span>Final confirmation</span></div>
+      </div>
+      <div class="step" id="step4" aria-label="Examination">
+        <div class="step-number"><i class="fa-solid fa-file-pen"></i></div>
+        <div class="step-copy"><strong>Examination</strong><span>Answer and submit</span></div>
       </div>
     </div>
 
