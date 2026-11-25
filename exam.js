@@ -2533,7 +2533,8 @@ function checkSavedProgress() {
             && String(data.attemptId) === String(AppState.attemptId);
         if (belongsToCurrentAttempt && Date.now() - data.timestamp < 30 * 60 * 1000) {
             if (data.answers && Object.keys(data.answers).length > 0) {
-                AppState.answers = data.answers;
+                // Keep the newest per-question drafts already reconciled from the server/local store.
+                AppState.answers = { ...(data.answers || {}), ...(AppState.answers || {}) };
                 AppState.currentIndex = data.currentIndex || 0;
                 if (data.flaggedQuestions) {
                     AppState.flaggedQuestions = data.flaggedQuestions;
