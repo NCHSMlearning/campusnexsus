@@ -113,14 +113,31 @@ function createWindow() {
   });
   mainWindow.webContents.on('will-attach-webview', event => event.preventDefault());
   mainWindow.webContents.on('before-input-event', (event, input) => {
-    const key = input.key.toLowerCase();
-    const blocked = input.type === 'keyDown' && (
-      (input.control && ['r','w','t','n','l','p','s','c','v','x'].includes(key)) ||
-      (input.alt && ['left','right','f4','tab'].includes(key)) ||
-      key === 'f5' || key === 'f11' || key === 'f12' ||
-      (input.control && input.shift && ['i','j','c'].includes(key))
-    );
-    if (blocked) event.preventDefault();
+    if (input.type !== 'keyDown') return;
+    const key = String(input.key || '').toLowerCase();
+    const ctrlOrMeta = !!(input.control || input.meta);
+    const blockedCtrlKeys = [
+      'r','w','t','n','l','p','s','c','v','x','u','o','j','d',
+      'a','f','g','h','q','e','+','=','-','0','insert','delete',
+      'left','right','home','end','pageup','pagedown'
+    ];
+    const blocked =
+      (ctrlOrMeta && blockedCtrlKeys.includes(key)) ||
+      (ctrlOrMeta && input.shift && ['i','j','c','k','n','escape'].includes(key)) ||
+      (input.alt && ['left','right','f4','f','tab','space','escape'].includes(key)) ||
+      (input.control && input.alt) ||
+      ['f1','f3','f5','f6','f10','f11','f12','printscreen'].includes(key) ||
+      ['meta','super','os'].includes(key);
+    if (blocked) {
+      event.preventDefault();
+      if (['f12','printscreen'].includes(key)) {
+        mainWindow.webContents.send('cnseb:device-event', {
+          eventType: key === 'printscreen' ? 'screenshot_shortcut_blocked' : 'developer_shortcut_blocked',
+          details: { key: input.key, modifiers: { control: !!input.control, alt: !!input.alt, shift: !!input.shift, meta: !!input.meta } },
+          timestamp: new Date().toISOString()
+        });
+      }
+    }
   });
   mainWindow.webContents.on('render-process-gone', (_event, details) => {
     console.error('[CN-SEB] Renderer process ended:', details.reason);
