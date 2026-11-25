@@ -118,8 +118,7 @@ function createWindow() {
     const ctrlOrMeta = !!(input.control || input.meta);
     const blockedCtrlKeys = [
       'r','w','t','n','l','p','s','c','v','x','u','o','j','d',
-      'a','f','g','h','q','e','+','=','-','0','insert','delete',
-      'left','right','home','end','pageup','pagedown'
+      'f','g','h','q','e','+','=','-','0','insert','delete'
     ];
     const blocked =
       (ctrlOrMeta && blockedCtrlKeys.includes(key)) ||
