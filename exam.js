@@ -2380,22 +2380,80 @@ async function upsertAttemptGrade(payload) {
     return inserted || null;
 }
 
-async function saveAnswerToDatabase(questionId, answer) {
-    // Answers are held locally while the exam is in progress. Direct browser
-    // writes to exam_grades are intentionally disabled; the authenticated,
-    // server-side submit_exam_attempt_secure RPC persists and grades them.
-    if (!AppState.attemptId) throw new Error('No active exam attempt');
-    const saved = saveToLocalStorage(`draft_${questionId}`, {
-        answer: answer == null ? '' : String(answer),
-        timestamp: Date.now(),
-        attemptId: AppState.attemptId
+const answerDraftTimers = new Map();
+
+function setAnswerSyncStatus(message, state = 'pending') {
+    if (!DOM.autoSaveStatus) return;
+    DOM.autoSaveStatus.textContent = message;
+    DOM.autoSaveStatus.dataset.state = state;
+    DOM.autoSaveStatus.style.color = state === 'saved' ? '#168154' : state === 'error' ? '#b42318' : '#9a6700';
+}
+
+async function persistAnswerDraft(questionId, answer) {
+    if (!AppState.attemptId || !AppState.sessionToken) throw new Error('The active exam session is not ready.');
+    const { data, error } = await sb.rpc('save_exam_attempt_answer_draft', {
+        p_attempt_id: AppState.attemptId,
+        p_exam_id: parseInt(AppState.examId, 10),
+        p_question_id: questionId,
+        p_answer: answer == null ? '' : String(answer),
+        p_session_token: AppState.sessionToken
     });
-    if (!saved) throw new Error('Could not save answer locally. Check browser storage.');
+    if (error) throw error;
+    if (!data || data.saved !== true) throw new Error('The server did not confirm the answer draft.');
     return true;
 }
+
+async function saveAnswerToDatabase(questionId, answer) {
+    // Save locally immediately, then debounce a verified server-side draft.
+    if (!AppState.attemptId) throw new Error('No active exam attempt');
+    const normalizedAnswer = answer == null ? '' : String(answer);
+    const saved = saveToLocalStorage(`draft_${questionId}`, {
+        answer: normalizedAnswer, timestamp: Date.now(), attemptId: AppState.attemptId
+    });
+    if (!saved) throw new Error('Could not save answer locally. Check browser storage.');
+
+    if (answerDraftTimers.has(questionId)) clearTimeout(answerDraftTimers.get(questionId));
+    setAnswerSyncStatus(navigator.onLine ? 'Saved on this device · syncing to Campus Nexus…' : 'Saved on this device · waiting for internet', 'pending');
+    const timer = setTimeout(async () => {
+        answerDraftTimers.delete(questionId);
+        if (!navigator.onLine || !AppState.sessionClaimed || AppState.sessionLost) {
+            setAnswerSyncStatus('Saved on this device · server sync pending', 'pending');
+            return;
+        }
+        try {
+            await persistAnswerDraft(questionId, normalizedAnswer);
+            setAnswerSyncStatus('All answers saved to Campus Nexus', 'saved');
+        } catch (error) {
+            console.warn('Server answer-draft sync will retry:', error);
+            setAnswerSyncStatus('Saved on this device · server sync will retry', 'pending');
+        }
+    }, 650);
+    answerDraftTimers.set(questionId, timer);
+    return true;
+}
+
+async function flushAnswerDraftsToServer() {
+    if (!navigator.onLine) return false;
+    for (const [questionId, timer] of answerDraftTimers.entries()) {
+        clearTimeout(timer);
+        answerDraftTimers.delete(questionId);
+    }
+    const entries = Object.entries(AppState.answers || {});
+    if (!entries.length) return true;
+    let allSaved = true;
+    for (const [questionId, answer] of entries) {
+        try {
+            await persistAnswerDraft(questionId, answer);
+        } catch (error) {
+            allSaved = false;
+            console.warn('Could not flush answer draft before submission:', questionId, error);
+        }
+    }
+    setAnswerSyncStatus(allSaved ? 'All answers saved to Campus Nexus' : 'Some answers remain locally saved; final submission will retry', allSaved ? 'saved' : 'pending');
+    return allSaved;
+}
+
 async function loadSavedAnswers() {
-    // Individual answer rows are no longer readable by students. Recover only
-    // this attempt's locally saved drafts; final answers go to the secure RPC.
     if (!AppState.attemptId) return;
     let loaded = 0;
     (AppState.questions || []).forEach((question) => {
@@ -2405,7 +2463,35 @@ async function loadSavedAnswers() {
             loaded++;
         }
     });
-    if (loaded > 0) {
+
+    // Restore server drafts as well, so a browser/device restart does not lose work.
+    if (navigator.onLine && AppState.sessionToken) {
+        try {
+            const { data, error } = await sb.rpc('get_exam_attempt_answer_drafts', {
+                p_attempt_id: AppState.attemptId,
+                p_exam_id: parseInt(AppState.examId, 10),
+                p_session_token: AppState.sessionToken
+            });
+            if (error) throw error;
+            for (const [questionId, draft] of Object.entries(data || {})) {
+                const local = loadFromLocalStorage(`draft_${questionId}`);
+                const serverTime = Date.parse(draft?.updated_at || '') || 0;
+                if (!local || local.attemptId !== AppState.attemptId || serverTime >= Number(local.timestamp || 0)) {
+                    AppState.answers[questionId] = String(draft?.answer ?? '');
+                    saveToLocalStorage(`draft_${questionId}`, {
+                        answer: AppState.answers[questionId], timestamp: serverTime || Date.now(), attemptId: AppState.attemptId
+                    });
+                }
+                loaded++;
+            }
+            setAnswerSyncStatus('Recovered answers from Campus Nexus', 'saved');
+        } catch (error) {
+            console.warn('Server draft recovery unavailable; local drafts retained:', error);
+            setAnswerSyncStatus('Local answers restored · server recovery unavailable', 'pending');
+        }
+    }
+
+    if (Object.keys(AppState.answers).length > 0) {
         AppState.hasAnsweredAtLeastOne = true;
         if (DOM.submitBtn) {
             DOM.submitBtn.disabled = false;
@@ -2413,7 +2499,7 @@ async function loadSavedAnswers() {
             DOM.submitBtn.style.cursor = 'pointer';
         }
     }
-    console.log(`Recovered ${loaded} locally saved answers for Attempt ${AppState.attemptNumber}`);
+    console.log(`Recovered ${loaded} local/server answer drafts for Attempt ${AppState.attemptNumber}`);
 }
 
 function saveProgressLocally() {
@@ -3432,9 +3518,10 @@ function yieldToBrowser() {
 // ============================================================
 async function saveAllAnswersToDatabase() {
     if (!AppState.attemptId) throw new Error('No active exam attempt');
-    // No direct exam_grades writes: the secure submission RPC stores answers
-    // and grades MCQs on the server in one validated operation.
+    // Flush durable per-question drafts first. Final grading remains exclusively
+    // in submit_exam_attempt_secure, which receives the complete answer map.
     const total = Object.keys(AppState.answers || {}).length;
+    if (navigator.onLine) await flushAnswerDraftsToServer();
     setSubmissionProgressValue(45);
     await yieldToBrowser();
     console.log('Prepared ' + total + ' responses for secure server submission.');
@@ -3981,11 +4068,9 @@ function unblockApplications() {
 // NETWORK MONITORING
 // ============================================================
 function setupNetworkMonitoring() {
-    window.addEventListener('online', () => {
-        // Answers are kept as attempt-scoped local drafts until the secure
-        // submit_exam_attempt_secure RPC submits them. Re-saving a local draft
-        // is NOT a server sync, so never delete drafts or claim they were synced.
-        showToast('✅ Network restored. Your saved answers are ready for secure submission.', 'success');
+    window.addEventListener('online', async () => {
+        showToast('✅ Network restored. Synchronizing saved answers with Campus Nexus…', 'success');
+        await flushAnswerDraftsToServer();
     });
 
     window.addEventListener('offline', () => {
