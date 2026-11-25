@@ -12,7 +12,8 @@
     return;
   }
   document.documentElement.dataset.cnGuard = 'active';
-  const editable = el => !!el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName));
+  const asElement = target => target instanceof Element ? target : (target && target.parentElement instanceof Element ? target.parentElement : null);
+  const editable = target => { const el = asElement(target); return !!el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)); };
   document.addEventListener('contextmenu', event => {
     if (!editable(event.target)) event.preventDefault();
   }, true);
@@ -20,7 +21,8 @@
     if (!editable(event.target)) event.preventDefault();
   }, true);
   document.addEventListener('selectstart', event => {
-    if (!editable(event.target) && !event.target.closest('[data-allow-select],.allow-text-selection')) event.preventDefault();
+    const target = asElement(event.target);
+    if (!editable(target) && !(target && target.closest('[data-allow-select],.allow-text-selection'))) event.preventDefault();
   }, true);
   document.addEventListener('keydown', event => {
     if (editable(event.target)) return;
