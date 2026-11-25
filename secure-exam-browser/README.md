@@ -67,14 +67,21 @@ The student examination cards now route the Open Exam action through `/secure-ex
 
 No Supabase service-role key or privileged secret belongs in this desktop client. Device registration, exam launch authorization and audit events must be validated by trusted server-side code. The client-reported mode is informational and must not be treated as proof of device compliance. `getDeviceInfo()` explicitly reports `deviceTrust: unverified`; only a future server-side enrollment and attestation flow may issue a managed-device trust classification.
 
+## Device enrollment and exam-session binding (v1.2.2)
+
+- Each desktop installation creates a persistent random installation identifier in the app's user-data directory. It is an installation identifier, not hardware attestation or proof of device ownership.
+- The signed-in student portal issues a one-time, 60-second handoff. The desktop app redeems it and submits the installation identifier; the server stores only a SHA-256-derived device hash.
+- New computers enter `pending` status. An institution administrator or primary platform super administrator must approve the registration before it can claim a secure examination session.
+- The server validates the active student, published and approved exam, institution match, device approval, attempt ownership and attempt state when binding the exam session.
+- Session heartbeats are bound to the registered device and session token. Browser fallback retains the existing browser session path; CN-SEB cannot silently fall back to an unregistered device.
+- Existing legacy device records are marked `legacy_unverified` and are not silently trusted as approved CN-SEB installations.
+
 ## Before institutional deployment
 
-1. Add a server-issued, short-lived exam launch ticket bound to user, institution, exam, attempt and device registration.
-2. Add server-side client/session checks; do not trust a client-supplied `strictMode` flag.
-3. Add an institution-controlled managed-device policy deployment package and tested recovery workflow.
-4. Test camera permissions, written-answer autosave, timer warnings, automatic submission, offline/network loss, crashes and forced restarts.
-5. Code-sign the Windows installer before distributing it.
-6. Pilot with invigilators and institution IT on dedicated test devices before live examinations.
+1. Add an institution-controlled managed-device policy deployment package and tested recovery workflow.
+2. Test camera permissions, written-answer autosave, timer warnings, automatic submission, offline/network loss, crashes and forced restarts.
+3. Code-sign the Windows installer before distributing it.
+4. Pilot with invigilators and institution IT on dedicated test devices before live examinations.
 
 ## Active-examination safeguards
 
