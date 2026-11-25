@@ -127,11 +127,10 @@ function createWindow() {
   const initialTarget = pendingExamUrl || DEFAULT_EXAM_URL;
   pendingExamUrl = null;
   // Display a branded native startup screen first, then initialize the exam portal.
-  mainWindow.loadFile(path.join(__dirname, 'splash.html')).then(() => {
-    mainWindow.webContents.once('did-finish-load', () => {
-      if (!quitting && mainWindow && !mainWindow.isDestroyed()) loadExam(initialTarget);
-    });
-  }).catch(error => {
+  mainWindow.webContents.once('did-finish-load', () => {
+    if (!quitting && mainWindow && !mainWindow.isDestroyed()) loadExam(initialTarget);
+  });
+  mainWindow.loadFile(path.join(__dirname, 'splash.html')).catch(error => {
     console.error('[CN-SEB] Startup screen failed:', error);
     loadExam(initialTarget);
   });
