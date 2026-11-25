@@ -37,6 +37,8 @@
  </main>
  <footer class="footer"><span>© Campus Nexus · Learn • Prepare • Excel</span><span><i class="fa-solid fa-shield-halved"></i> SECURE EXAM ACCESS</span></footer>
 </div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/config.js?v=20261125-cnseb-handoff"></script>
 <script>
 (function(){
  const params=new URLSearchParams(location.search);
@@ -64,12 +66,12 @@
   console.warn('[CN-SEB] Invalid exam destination:',{hasParameter:params.has('exam_url'),receivedValue:params.get('exam_url')});
   return;
  }
- const launch='campusnexus-seb://launch?url='+encodeURIComponent(examUrl);
+ const launchBase='campusnexus-seb://launch?url='+encodeURIComponent(examUrl);
  const openButton=document.getElementById('open-app');
  const downloadButton=document.getElementById('download-link');
  const fallback=document.getElementById('browser-fallback');
  const fallbackCopy=document.getElementById('fallback-copy');
- openButton.href=launch;
+ openButton.href=launchBase;
  fallback.href=examUrl;
  const isWindows=/Windows/i.test(navigator.userAgent);
  if(!isWindows){
@@ -87,9 +89,22 @@
    };
    setTimeout(()=>{
      launchStatus();
-     try { window.location.href=launch; } catch(error) { console.warn('[CN-SEB] Protocol launch was blocked:',error); }
+     issueAndLaunch().catch(error=>{console.error('[CN-SEB] Secure launch handoff failed:',error);fallbackCopy.textContent=error.message||'Secure sign-in could not be prepared. Return to the student portal and try again.';});
    },650);
-   openButton.addEventListener('click',()=>{fallbackCopy.textContent='Requesting permission to open Campus Nexus Secure Exam Browser…';});
+   openButton.addEventListener('click',event=>{event.preventDefault();fallbackCopy.textContent='Preparing a one-time secure sign-in for this examination…';issueAndLaunch().catch(error=>{fallbackCopy.textContent=error.message||'Secure launch failed. Return to the student portal and try again.';});});
+ }
+ async function issueAndLaunch(){
+   if(!window.sb?.auth)throw new Error('Secure sign-in is unavailable. Refresh this page and try again.');
+   const {data:{session},error}=await window.sb.auth.getSession();
+   if(error||!session?.access_token)throw new Error('Your student browser session has expired. Sign in to the student portal again.');
+   const examId=new URL(examUrl).searchParams.get('exam_id');
+   if(!examId)throw new Error('The selected examination ID is missing. Return to your student portal and reopen the exam.');
+   const response=await fetch(window.APP_CONFIG.SUPABASE_URL+'/functions/v1/cnseb-auth-handoff',{method:'POST',headers:{'Content-Type':'application/json','apikey':window.APP_CONFIG.SUPABASE_PUBLISHABLE_KEY,'Authorization':'Bearer '+session.access_token},body:JSON.stringify({action:'issue',exam_id:examId})});
+   const payload=await response.json().catch(()=>({}));
+   if(!response.ok||!payload.code)throw new Error(payload.error||'Could not create the secure exam handoff.');
+   openButton.href=launchBase+'&code='+encodeURIComponent(payload.code);
+   fallbackCopy.textContent='Your secure sign-in is ready. Windows will ask to open Campus Nexus Secure Exam Browser.';
+   window.location.href=openButton.href;
  }
  downloadButton.addEventListener('click',()=>{
    fallbackCopy.textContent='The latest Windows installer is downloading. Once installation finishes, return to this page and select Open in Secure Exam Browser.';
