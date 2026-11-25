@@ -88,6 +88,14 @@ sessionStatus.title = 'App-level kiosk presentation only. Institution-managed Wi
     update.style.display = 'none';
     const logout = makeButton('Log out', '#8b5319');
     const exit = makeButton('Exit app', '#8f3030');
+    // Do not expose controls that can interrupt an examination. Main-process
+    // IPC guards independently enforce this even if a page calls the bridge.
+    if (info.kioskRuntime) {
+      check.style.display = 'none';
+      update.style.display = 'none';
+      logout.style.display = 'none';
+      exit.style.display = 'none';
+    }
     statusGroup.append(check, update, logout, exit);
     bar.append(brand, statusGroup);
 
@@ -157,7 +165,7 @@ sessionStatus.title = 'App-level kiosk presentation only. Institution-managed Wi
           ipcRenderer.invoke(action),
           new Promise((_, reject) => setTimeout(() => reject(new Error('The close request timed out. Please try again.')), 10000))
         ]);
-        if (!result || !result.ok) throw new Error('The app could not complete that request.');
+        if (!result || !result.ok) throw new Error(result && result.message || 'The app could not complete that request.');
         confirm.textContent = 'Closing…';
       } catch (error) {
         busy = false;
@@ -187,7 +195,7 @@ sessionStatus.title = 'App-level kiosk presentation only. Institution-managed Wi
       update.textContent = 'Restarting…';
       try {
         const result = await ipcRenderer.invoke('cnseb:install-update');
-        if (!result || !result.ok) throw new Error('The update is not ready yet.');
+        if (!result || !result.ok) throw new Error(result && result.message || 'The update is not ready yet.');
       } catch (error) {
         update.disabled = false;
         update.textContent = 'Update and restart';
@@ -202,7 +210,7 @@ sessionStatus.title = 'App-level kiosk presentation only. Institution-managed Wi
       else if (payload.state === 'progress') updateStatus.textContent = 'Downloading update · ' + (payload.percent || 0) + '%';
       else if (payload.state === 'ready') {
         updateStatus.textContent = 'Update v' + (payload.version || '') + ' ready';
-        update.style.display = 'inline-block';
+        if (!info.kioskRuntime) update.style.display = 'inline-block';
       } else if (payload.state === 'current') updateStatus.textContent = 'Up to date · v' + (payload.version || info.appVersion);
       else if (payload.state === 'error') updateStatus.textContent = payload.message || 'Update check failed';
     };
