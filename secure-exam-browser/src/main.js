@@ -146,7 +146,9 @@ function createWindow() {
   });
   mainWindow.webContents.on('will-attach-webview', event => event.preventDefault());
   mainWindow.webContents.on('before-input-event', (event, input) => {
-    if (input.type !== 'keyDown') return;
+    // Keep the normal login/admin window usable. Apply exam restrictions only
+    // after a verified exam URL has activated native kiosk mode.
+    if (!examMode || input.type !== 'keyDown') return;
     const key = String(input.key || '').toLowerCase();
     const ctrlOrMeta = !!(input.control || input.meta);
     const blockedCtrlKeys = [
