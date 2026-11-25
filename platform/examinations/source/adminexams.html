@@ -1608,11 +1608,11 @@ body{background:var(--exam-canvas);color:var(--exam-ink)}
         </section>
         <section id="cnsebAlerts" class="tab-content" style="display:none;">
           <div class="cnseb-section-heading"><div><h2>Secure Browser Security Events</h2><p>Review focus loss, app integrity, connection interruptions and managed-device policy events.</p></div></div>
-          <div class="cnseb-panel"><div class="cnseb-empty"><i class="fas fa-triangle-exclamation"></i><strong>Secure Browser event stream not connected yet</strong><span>Only authenticated, timestamped events will be shown here. Existing proctoring alerts remain in the current Proctoring section.</span></div></div>
+          <div class="cnseb-panel"><div style="display:flex;justify-content:flex-end;margin-bottom:14px"><button id="cnsebAlertsRefresh" type="button" class="cnseb-action">Refresh alerts</button></div><div id="cnsebAlertsTableHost"><div class="cnseb-empty"><i class="fas fa-spinner fa-spin"></i><strong>Connecting to security events…</strong></div></div></div>
         </section>
         <section id="cnsebAudit" class="tab-content" style="display:none;">
           <div class="cnseb-section-heading"><div><h2>Device Audit Trail</h2><p>Trace enrollment, app updates, access changes, revocations and administrator actions.</p></div></div>
-          <div class="cnseb-panel"><div class="cnseb-empty"><i class="fas fa-clipboard-list"></i><strong>Device audit service not connected yet</strong><span>Audit history will be written by trusted server-side operations, not by editable browser-only records.</span></div></div>
+          <div class="cnseb-panel"><div style="display:flex;justify-content:flex-end;margin-bottom:14px"><button id="cnsebAuditRefresh" type="button" class="cnseb-action">Refresh audit</button></div><div id="cnsebAuditTableHost"><div class="cnseb-empty"><i class="fas fa-spinner fa-spin"></i><strong>Connecting to device audit…</strong></div></div></div>
         </section>
     </div> <!-- End main-content -->
 
