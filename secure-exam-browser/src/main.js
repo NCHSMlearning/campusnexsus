@@ -1,6 +1,6 @@
 'use strict';
 
-const { app, BrowserWindow, session, ipcMain, shell, screen, dialog } = require('electron');
+const { app, BrowserWindow, session, ipcMain, screen, dialog } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const path = require('node:path');
 
@@ -42,11 +42,9 @@ function isTrusted(url) {
   } catch { return false; }
 }
 
-function openSafeExternal(url) {
-  try {
-    const parsed = new URL(url);
-    if (['https:', 'http:'].includes(parsed.protocol)) shell.openExternal(parsed.href);
-  } catch { /* Ignore malformed destinations. */ }
+function blockExternalNavigation() {
+  // A secure exam client must never launch an external browser or application.
+  // All popups are denied below; external links remain inside the exam boundary.
 }
 
 function loadExam(url) {
@@ -73,10 +71,7 @@ function createWindow() {
     }
   });
 
-  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    if (!isTrusted(url)) openSafeExternal(url);
-    return { action: 'deny' };
-  });
+  mainWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   mainWindow.webContents.on('will-navigate', (event, url) => {
     if (!isTrusted(url)) event.preventDefault();
   });
