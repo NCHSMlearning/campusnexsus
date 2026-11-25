@@ -1,7 +1,7 @@
 // ============================================================
 // CONFIGURATION
 // ============================================================
-const CONFIG = {
+const CONFIG = { 
     SUPABASE_URL: 'https://irahplkvocaakjxuisto.supabase.co',
     SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_5Cg5FFudf03UnmOXGNGMHQ_uK9S-uQX',
     FACE_MODEL_URL: 'https://justadudewhohacks.github.io/face-api.js/models',
