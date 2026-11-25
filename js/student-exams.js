@@ -106,7 +106,11 @@ function onlineHref(exam){
   const authorization=state.examResults[String(exam.id)]?.summary||{};
   const authorized=authorization.result_status==='RESET_FOR_RETAKE'&&authorization.allow_retake===true&&authorization.retake_unlocked===true;
   if(authorized)url.searchParams.set('retake','true');else url.searchParams.delete('retake');
-  // Send students through the CN-SEB installation/launch page first.
+  // Inside CN-SEB, the student is already in the protected persistent
+  // Electron session. Navigate directly to this exact exam. main.js routes
+  // target=_blank links back into the same protected window.
+  if(window.CNSEB && typeof window.CNSEB.getDeviceInfo==='function') return url.href;
+  // Ordinary browsers still use the installation/protocol hand-off page.
   return '/secure-exam-browser/?exam_url='+encodeURIComponent(url.href);
  }catch(_){return ''}
 }
