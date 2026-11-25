@@ -14,8 +14,9 @@ const nextPath=(role)=>{
   try{const target=new URL(p,location.origin);if(target.origin===location.origin&&['/studentexam','/studentexam.html','/exam.html','/exam','/exam/'].includes(target.pathname))return target.pathname+target.search;}catch(_){}
  }
  if(role==='student')return '/studentexam.html';
- if(['lecturer','instructor','teacher'].includes(role))return '/lecturerexams/';
- return '/adminexams/';
+ if(['lecturer','instructor','teacher'].includes(role))return '/platform/lecturerexams.html';
+ // One institution-admin examination workspace is served at /exams.
+ return '/exams';
 };
 function clientReady(){const c=window.examSupabase;if(c&&typeof c.auth?.signInWithPassword==='function')return c;throw new Error(window.__EXAM_CONFIG_ERROR__||'The examination sign-in service is unavailable. Refresh and try again.')}
 function initials(name){return String(name||'School').trim().split(/\s+/).slice(0,2).map(x=>x[0]||'').join('').toUpperCase()||'SC'}
