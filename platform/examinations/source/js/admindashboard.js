@@ -3152,6 +3152,12 @@ window.viewStudentProfile = async function(pid) {
                 const selectedOption = options.find(([letter, value]) => optionKeyMatches(selected, letter, value));
                 const correctOption = options.find(([letter, value]) => optionKeyMatches(correct, letter, value));
                 return {
+                    id: String(q.id),
+                    type: String(q.question_type || 'multiple_choice').toLowerCase(),
+                    markingKey: q.marking_key || q.correct_answer || '',
+                    feedback: row?.remarks || '',
+                    isSubjective: ['essay','text','short_answer','long_answer','written','fill_blank'].includes(String(q.question_type || '').toLowerCase()),
+                    isSubjectiveGraded: row?.is_subjective_graded === true,
                     number: q.question_number ?? index + 1,
                     text: q.question_text || q.question || ('Question ' + (index + 1)),
                     options,
@@ -3199,14 +3205,23 @@ window.viewStudentProfile = async function(pid) {
                 const optionsHtml = q.options.map(([letter, value]) =>
                     '<div style="margin-top:3px;color:#64748b;">' + letter + '. ' + safe(value) + '</div>'
                 ).join('');
-                const status = !q.isAnswered ? '<span style="color:#64748b;">Not answered</span>'
-                    : q.isCorrect ? '<strong style="color:#15803d;">Correct</strong>'
-                    : '<strong style="color:#b91c1c;">Incorrect</strong>';
+                const status = q.isSubjective
+                    ? (q.isSubjectiveGraded ? '<strong style="color:#15803d;">Marked</strong>' : '<strong style="color:#b45309;">Awaiting marking</strong>')
+                    : (!q.isAnswered ? '<span style="color:#64748b;">Not answered</span>' : q.isCorrect ? '<strong style="color:#15803d;">Correct</strong>' : '<strong style="color:#b91c1c;">Incorrect</strong>');
+                const markingControls = q.isSubjective ? `
+                    <div style="margin-top:8px;padding:10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;">
+                      <div style="font-size:11px;font-weight:800;color:#475569;margin-bottom:4px;">MARKING GUIDE</div>
+                      <div style="white-space:pre-wrap;color:#334155;font-size:12px;">${safe(q.markingKey || 'No marking key supplied for this question.')}</div>
+                      <label style="display:block;font-size:11px;font-weight:700;margin-top:8px;">Marks awarded (max ${safe(q.totalMarks)})</label>
+                      <input class="subjective-mark-input" data-question-id="${safe(q.id)}" type="number" min="0" max="${Number(q.totalMarks)||1}" step="1" value="${Number(q.marks)||0}" style="width:100%;max-width:130px;padding:7px;border:1px solid #cbd5e1;border-radius:7px;">
+                      <label style="display:block;font-size:11px;font-weight:700;margin-top:8px;">Lecturer feedback</label>
+                      <textarea class="subjective-feedback-input" data-question-id="${safe(q.id)}" rows="2" maxlength="4000" style="width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:7px;">${safe(q.feedback)}</textarea>
+                    </div>` : '';
                 html += `<tr style="border-bottom:1px solid #E2E8F0;vertical-align:top;">
                     <td style="padding:10px;font-weight:700;">${safe(q.number)}</td>
-                    <td style="padding:10px;white-space:normal;min-width:230px;"><strong>${safe(q.text)}</strong>${optionsHtml}</td>
-                    <td style="padding:10px;white-space:normal;">${q.isAnswered ? safe(q.selectedText) : '<span style="color:#94a3b8;">—</span>'}</td>
-                    <td style="padding:10px;white-space:normal;">${safe(q.correctText || '—')}</td>
+                    <td style="padding:10px;white-space:normal;min-width:230px;"><strong>${safe(q.text)}</strong>${optionsHtml}${markingControls}</td>
+                    <td style="padding:10px;white-space:pre-wrap;min-width:180px;">${q.isAnswered ? safe(q.selectedText) : '<span style="color:#94a3b8;">—</span>'}</td>
+                    <td style="padding:10px;text-align:center;">${q.isSubjective ? 'Lecturer assessed' : safe(q.correctText || '—')}</td>
                     <td style="padding:10px;text-align:center;">${safe(q.marks)} / ${safe(q.totalMarks)}</td>
                     <td style="padding:10px;text-align:center;">${status}</td>
                 </tr>`;
@@ -3214,6 +3229,13 @@ window.viewStudentProfile = async function(pid) {
 
             if (!reviewRows.length) html += '<tr><td colspan="6" style="padding:24px;text-align:center;color:#64748b;">No questions found for this exam.</td></tr>';
             html += '</tbody></table></div>';
+            const subjectiveCount = reviewRows.filter(q => q.isSubjective).length;
+            if (subjectiveCount && attemptId && ['PENDING_REVIEW','SUBMITTED','COMPLETED'].includes(String(latestAttempt?.status || 'PENDING_REVIEW').toUpperCase())) {
+                html += `<div style="display:flex;gap:10px;align-items:center;justify-content:flex-end;flex-wrap:wrap;margin-top:14px;padding:14px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;">
+                  <span style="margin-right:auto;color:#1e3a8a;font-size:12px;">${subjectiveCount} written question(s) · Save marks to update the attempt total. Results remain unreleased.</span>
+                  <button type="button" onclick="saveSubjectiveExamMarks(${JSON.stringify(String(studentId))},${numericExamId},${JSON.stringify(String(attemptId))})" style="padding:10px 16px;border:0;border-radius:8px;background:#0A3D62;color:#fff;font-weight:700;cursor:pointer;">Save written-question marks</button>
+                </div>`;
+            }
 
             if (!gradeRows.length) {
                 html += '<p style="margin-top:12px;padding:12px;background:#fff7ed;color:#9a3412;border-radius:8px;">No per-question answer records were returned for this attempt. The attempt may have a final score without saved question-level responses, or access to the answer records may be restricted.</p>';
@@ -3222,6 +3244,46 @@ window.viewStudentProfile = async function(pid) {
         } catch (error) {
             console.error('Student progress load failed:', error);
             if (modalContent) modalContent.innerHTML = `<div style="padding:18px;background:#fef2f2;color:#991b1b;border-radius:10px;"><strong>Unable to load student progress</strong><p>${safe(error?.message || error)}</p><button type="button" onclick="viewStudentProgress(${JSON.stringify(String(studentId || ''))},${JSON.stringify(String(studentName || 'Student'))},${Number(examId) || 0})" style="padding:8px 12px;border:0;border-radius:7px;background:#991b1b;color:#fff;">Retry</button></div>`;
+        }
+    };
+
+    // Lecturer-controlled marking for short and long written answers.
+    window.saveSubjectiveExamMarks = async function(studentId, examId, attemptId) {
+        const modalContent = document.getElementById('modalContent');
+        const markInputs = [...(modalContent?.querySelectorAll('.subjective-mark-input') || [])];
+        if (!markInputs.length) { showToast('No written questions are available to mark.', 'warning'); return; }
+        const marks = {};
+        const feedback = {};
+        for (const input of markInputs) {
+            const qid = input.dataset.questionId;
+            const value = Number(input.value);
+            const max = Number(input.max);
+            if (!Number.isFinite(value) || value < 0 || value > max) {
+                input.focus();
+                showToast('Check marks: each score must be between zero and the question maximum.', 'error');
+                return;
+            }
+            marks[qid] = value;
+            const feedbackInput = modalContent.querySelector('.subjective-feedback-input[data-question-id="' + qid + '"]');
+            feedback[qid] = feedbackInput?.value || '';
+        }
+        const button = modalContent.querySelector('button[onclick*="saveSubjectiveExamMarks"]');
+        if (button) { button.disabled = true; button.textContent = 'Saving marks…'; }
+        try {
+            const { data, error } = await sb.rpc('grade_subjective_exam_attempt', {
+                p_student_id: studentId,
+                p_exam_id: Number(examId),
+                p_attempt_id: attemptId,
+                p_marks: marks,
+                p_feedback: feedback
+            });
+            if (error) throw error;
+            showToast('Written answers marked. Total: ' + data.totalScore + '/' + data.totalMarks + ' (' + data.percentage + '%). ' + (data.pendingQuestions ? data.pendingQuestions + ' question(s) remain unmarked.' : 'All written questions are marked.'), 'success');
+            await window.viewStudentProgress(studentId, 'Student', examId);
+        } catch (error) {
+            console.error('Subjective marking failed:', error);
+            showToast('Could not save written marks: ' + (error.message || error), 'error');
+            if (button) { button.disabled = false; button.textContent = 'Save written-question marks'; }
         }
     };
 
