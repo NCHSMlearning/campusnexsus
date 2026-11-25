@@ -74,6 +74,10 @@ No Supabase service-role key or privileged secret belongs in this desktop client
 5. Code-sign the Windows installer before distributing it.
 6. Pilot with invigilators and institution IT on dedicated test devices before live examinations.
 
+## Active-examination safeguards
+
+While a verified exam URL is active, the Electron main process refuses app-exit, logout and update-install IPC requests. The corresponding toolbar controls are hidden during kiosk mode as a usability measure; the main-process checks are the security boundary. Updates may download in the background, but installation must wait until the exam page has left active exam mode. This protects against accidental interruption through the app controls; it does not replace Windows device-management policy or server-side exam-session enforcement.
+
 ## Automatic updates
 
 Installed Windows (NSIS) builds check the GitHub Releases feed immediately on every startup, again every hour while running, and when the student selects **Check updates**. Updates download in the background and are installed only when the student chooses **Update and restart** or closes the application; the app does not force a restart during an active examination. The release workflow publishes `latest.yml`, the versioned NSIS installer referenced by that manifest, and its blockmap files. The stable-name installer is provided for first-time installation.
