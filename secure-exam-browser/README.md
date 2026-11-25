@@ -1,4 +1,4 @@
-# Campus Nexus Secure Exam Browser (CN-SEB)
+# Campus Nexus Secure Exam Browser (CN-SEB)\n\n**Current platform focus: Windows desktop.** Android lockdown is outside this release scope. The browser launch fallback remains available only when institution policy explicitly allows it.
 
 Windows desktop client for the existing Campus Nexus examination web application.
 
@@ -14,7 +14,7 @@ The workflow uploads both files as the artifact **campus-nexus-secure-exam-brows
 ## Modes
 
 - **Fullscreen monitored mode (development only)**: launches borderless in fullscreen kiosk presentation, limits navigation/popups and exposes a minimal device-information bridge. Run `npm start` for this development mode; it remains fullscreen.
-- **Strict kiosk mode (default for packaged Windows builds)**: blocks common browser/navigation, refresh, print, clipboard, developer-tools and window-management shortcuts inside the exam client, and blocks close/minimize requests. This is not, by itself, an operating-system lockdown.
+- **Desktop app kiosk presentation (default for packaged Windows builds)**: runs the exam in a fullscreen, borderless, always-on-top window; blocks common browser/navigation, refresh, print, clipboard, developer-tools and window-management shortcuts inside the app; and blocks ordinary close/minimize requests. This is app-level enforcement, not proof of Windows device management or complete operating-system lockdown.\n- **Institution-managed Windows lockdown**: requires a separately provisioned Windows Assigned Access / Shell Launcher account and WDAC/AppLocker policy. The app does not install or verify those policies.
 
 ## Requirements
 
@@ -52,7 +52,7 @@ The secure client now blocks a broad set of keyboard shortcuts at both the Elect
 
 For institution-owned devices, deploy strict mode only alongside a managed Windows kiosk account and Windows Assigned Access / Shell Launcher configuration. Use App Control for Business (WDAC) or AppLocker to allow-list the approved exam client and required Windows components. Pilot policies on dedicated test devices first; never apply them to personal or staff computers. Maintain an invigilator/admin recovery account and documented exit/recovery process.
 
-The exam page now keeps attempt-scoped local drafts and synchronizes them to a server-side, session-validated draft table; the final grading/submission RPC remains authoritative. Display and application-focus changes are forwarded as proctoring events. The current client does **not** install or change Windows policies, kill processes, disable security tools, or modify the registry. It must not be described as tamper-proof. Strict mode is a kiosk presentation layer until the institution's managed Windows policy is separately provisioned.
+The exam page now keeps attempt-scoped local drafts and synchronizes them to a server-side, session-validated draft table; the final grading/submission RPC remains authoritative. Display and application-focus changes are forwarded as proctoring events. The current client does **not** install or verify Windows policies, kill processes, disable security tools, or modify the registry. It must not be described as tamper-proof. A fullscreen/kiosk response from Electron is only an app-runtime fact. It does not prove the device is institution-owned, enrolled, or compliant.
 
 ## Integration contract
 
@@ -63,7 +63,7 @@ The student examination cards now route the Open Exam action through `/secure-ex
 - `CNSEB.onSecurityEvent(callback)` for display and application focus events
 - `CNSEB.onExitBlocked(callback)`
 
-No Supabase service-role key or privileged secret belongs in this desktop client. Device registration, exam launch authorization and audit events must be validated by trusted server-side code. The client-reported mode is informational and must not be treated as proof of device compliance.
+No Supabase service-role key or privileged secret belongs in this desktop client. Device registration, exam launch authorization and audit events must be validated by trusted server-side code. The client-reported mode is informational and must not be treated as proof of device compliance. `getDeviceInfo()` explicitly reports `deviceTrust: unverified`; only a future server-side enrollment and attestation flow may issue a managed-device trust classification.
 
 ## Before institutional deployment
 
