@@ -1,5 +1,5 @@
 // CampusNexus service worker — network-first navigation and versioned assets.
-const CACHE_NAME = 'campusnexus-v12';
+const CACHE_NAME = 'campusnexus-v13';
 const PRECACHE_URLS = [
   '/',
   '/index.html',
@@ -45,6 +45,17 @@ self.addEventListener('fetch', event => {
     url.pathname === '/platform/lecturerexams' ||
     url.pathname.startsWith('/platform/lecturerexams/');
   if (isLecturerExamsRequest) return;
+
+  // Lecturer exam builder and its shared protection scripts are tightly
+  // coupled to lecturerexams.html. Never serve an older cached copy: stale
+  // bundles can still request removed exam_grades columns and break marking.
+  const isLecturerExamAsset =
+    url.pathname === '/platform/js/lecturer-exam-builder-v11.js' ||
+    url.pathname === '/js/campus-nexus-code-guard.js' ||
+    url.pathname === '/code-protection.js' ||
+    url.pathname === '/js/exam-coordinator.js' ||
+    url.pathname === '/platform/js/cnseb-live-viewer.js';
+  if (isLecturerExamAsset) return;
 
   const isAdminExamsRequest =
     url.pathname === '/adminexams' ||
