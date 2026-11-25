@@ -87,12 +87,20 @@ jobs:
           $ErrorActionPreference = "Stop"
           $tag = "cnseb-latest"
           $dist = "secure-exam-browser/dist"
+          $versionedInstaller = Get-ChildItem $dist -Filter "Campus-Nexus-Secure-Exam-Browser-Setup-*.exe" |
+            Where-Object { $_.Name -ne "Campus-Nexus-Secure-Exam-Browser-Setup.exe" } |
+            Sort-Object LastWriteTime -Descending | Select-Object -First 1
+          $versionedPortable = Get-ChildItem $dist -Filter "Campus-Nexus-Secure-Exam-Browser-Portable-*.exe" |
+            Where-Object { $_.Name -ne "Campus-Nexus-Secure-Exam-Browser-Portable.exe" } |
+            Sort-Object LastWriteTime -Descending | Select-Object -First 1
+          if (-not $versionedInstaller -or -not $versionedPortable) { throw "Versioned installer or portable build is missing." }
+          $installerBlockmap = "$($versionedInstaller.FullName).blockmap"
           $files = @(
-            "$dist/Campus-Nexus-Secure-Exam-Browser-Setup-0.3.3.exe",
-            "$dist/Campus-Nexus-Secure-Exam-Browser-Portable-0.3.3.exe",
+            $versionedInstaller.FullName,
+            $versionedPortable.FullName,
             "$dist/Campus-Nexus-Secure-Exam-Browser-Setup.exe",
             "$dist/Campus-Nexus-Secure-Exam-Browser-Portable.exe",
-            "$dist/Campus-Nexus-Secure-Exam-Browser-Setup-0.3.3.exe.blockmap",
+            $installerBlockmap,
             "$dist/latest.yml"
           )
           foreach ($file in $files) {
