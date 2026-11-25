@@ -76,6 +76,6 @@ No Supabase service-role key or privileged secret belongs in this desktop client
 
 ## Automatic updates
 
-Installed Windows (NSIS) builds check the GitHub Releases feed after startup and then every six hours. Updates download in the background and are installed when the student closes the application; the app never forces a restart during an active examination. The release must include `latest.yml`, the installer, and its blockmap files for electron-updater.
+Installed Windows (NSIS) builds check the GitHub Releases feed immediately on every startup, again every hour while running, and when the student selects **Check updates**. Updates download in the background and are installed only when the student chooses **Update and restart** or closes the application; the app does not force a restart during an active examination. The release workflow publishes `latest.yml`, the versioned NSIS installer referenced by that manifest, and its blockmap files. The stable-name installer is provided for first-time installation.
 
-The portable executable is provided as a convenience build; automatic installation/update behavior is intended for the installed NSIS version.
+The portable executable is provided as a convenience build; automatic installation/update behavior is intended for the installed NSIS version. The in-app Campus Nexus control header is part of the normal page layout, not a floating overlay.
