@@ -11,6 +11,13 @@ on:
 permissions:
   contents: write
 
+# Only one Secure Exam Browser build may run for a branch at a time.
+# A newer push cancels the older in-progress build instead of creating
+# overlapping duplicate installer builds.
+concurrency:
+  group: cnseb-build-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-windows:
     runs-on: windows-latest
