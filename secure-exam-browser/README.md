@@ -14,7 +14,7 @@ The workflow uploads both files as the artifact **campus-nexus-secure-exam-brows
 ## Modes
 
 - **Fullscreen monitored mode (development only)**: launches borderless in fullscreen kiosk presentation, limits navigation/popups and exposes a minimal device-information bridge. Run `npm start` for this development mode; it remains fullscreen.
-- **Strict kiosk mode (default for packaged Windows builds)**: additionally blocks common in-app shortcuts and close requests. This is not, by itself, an operating-system lockdown.
+- **Strict kiosk mode (default for packaged Windows builds)**: blocks common browser/navigation, refresh, print, clipboard, developer-tools and window-management shortcuts inside the exam client, and blocks close/minimize requests. This is not, by itself, an operating-system lockdown.
 
 ## Requirements
 
@@ -48,7 +48,7 @@ The generated files are placed in `secure-exam-browser/dist/`.
 
 ## Security boundary
 
-A normal Windows desktop app cannot safely or reliably terminate arbitrary running applications, disable Task Manager, suppress Ctrl+Alt+Delete, or guarantee that a student cannot escape a kiosk. Those controls belong to Windows device-management policy.
+The secure client now blocks a broad set of keyboard shortcuts at both the Electron input layer and the exam-page capture layer. Ordinary typing in answer fields remains enabled. A normal Windows desktop app still cannot reliably suppress OS-reserved combinations such as Ctrl+Alt+Delete, the Windows security screen, or every Windows-key/Alt+Tab path. Those controls belong to Windows device-management policy.
 
 For institution-owned devices, deploy strict mode only alongside a managed Windows kiosk account and Windows Assigned Access / Shell Launcher configuration. Use App Control for Business (WDAC) or AppLocker to allow-list the approved exam client and required Windows components. Pilot policies on dedicated test devices first; never apply them to personal or staff computers. Maintain an invigilator/admin recovery account and documented exit/recovery process.
 
