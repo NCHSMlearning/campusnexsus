@@ -47,11 +47,15 @@ window.addEventListener('DOMContentLoaded', async () => {
     });
 
     const brand = document.createElement('div');
-    brand.textContent = 'CAMPUS NEXUS  /  SECURE EXAM';
-    Object.assign(brand.style, {
-      fontWeight: '850', letterSpacing: '.55px', whiteSpace: 'nowrap',
-      padding: '4px 6px'
-    });
+    Object.assign(brand.style, { display:'flex', alignItems:'center', gap:'10px', minWidth:'0', padding:'2px 6px' });
+    const brandLogo = document.createElement('img');
+    brandLogo.src = 'https://campusnexus.co.ke/images/campus-nexus-original-logo.webp';
+    brandLogo.alt = 'Campus Nexus';
+    Object.assign(brandLogo.style, { width:'32px', height:'32px', objectFit:'contain', borderRadius:'8px', background:'#fff', padding:'3px', flex:'0 0 auto' });
+    const brandText = document.createElement('span');
+    brandText.textContent = 'CAMPUS NEXUS  /  SECURE EXAM';
+    Object.assign(brandText.style, { fontWeight:'850', letterSpacing:'.55px', whiteSpace:'nowrap' });
+    brand.append(brandLogo, brandText);
 
     const statusGroup = document.createElement('div');
     Object.assign(statusGroup.style, {
