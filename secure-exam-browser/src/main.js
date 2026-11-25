@@ -55,7 +55,8 @@ function createWindow() {
     autoHideMenuBar: true, kiosk: true, fullscreen: true, frame: false,
     resizable: false, maximizable: false, minimizable: !STRICT, closable: !STRICT,
     skipTaskbar: true, alwaysOnTop: true,
-    title: 'Campus Nexus Secure Exam Browser',
+    title: 'Campus Nexus | Secure Examination',
+    icon: path.join(__dirname, '../build/campus-nexus.ico'),
     backgroundColor: '#071d33',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
