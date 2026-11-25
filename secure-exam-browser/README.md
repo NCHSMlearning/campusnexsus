@@ -4,12 +4,14 @@ Windows desktop client for the existing Campus Nexus examination web application
 
 ## Build outputs
 
-The repository includes a Windows GitHub Actions workflow at `.github/workflows/build-cnseb.yml`. Every push that changes this folder (or a manual workflow dispatch) builds:
+The repository includes a Windows GitHub Actions workflow at `.github/workflows/build-cnseb.yml`. Every push that changes this folder (or the workflow itself), plus manual dispatches, builds and publishes:
 
-- Windows NSIS installer
-- Windows portable executable
+- Versioned Windows NSIS installer
+- Versioned Windows portable executable
+- Stable-name installer and portable executable
+- NSIS blockmap and `latest.yml` update manifest
 
-The workflow uploads both files as the artifact **campus-nexus-secure-exam-browser-windows**. Download it from the successful run's **Actions → Build Campus Nexus Secure Exam Browser → Artifacts** section. Artifacts are retained for 14 days.
+The workflow verifies that every required asset is present on the `cnseb-latest` GitHub Release before marking that release as the latest. Download the current installer or portable executable from the [CN-SEB latest release](https://github.com/NCHSMlearning/campusnexsus/releases/tag/cnseb-latest). A successful Actions run and verified release assets—not merely a pushed source version—are the completion criteria.
 
 ## Modes
 
