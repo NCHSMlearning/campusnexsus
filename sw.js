@@ -1,5 +1,5 @@
 // CampusNexus service worker — network-first navigation and versioned assets.
-const CACHE_NAME = 'campusnexus-v11';
+const CACHE_NAME = 'campusnexus-v12';
 const PRECACHE_URLS = [
   '/',
   '/index.html',
@@ -40,6 +40,12 @@ self.addEventListener('fetch', event => {
   // origin. Never serve a stale cached dashboard bundle or cached login route.
   // This route is an authenticated, data-sensitive workspace rather than an
   // offline app surface.
+  const isLecturerExamsRequest =
+    url.pathname === '/platform/lecturerexams.html' ||
+    url.pathname === '/platform/lecturerexams' ||
+    url.pathname.startsWith('/platform/lecturerexams/');
+  if (isLecturerExamsRequest) return;
+
   const isAdminExamsRequest =
     url.pathname === '/adminexams' ||
     url.pathname === '/adminexams/' ||
