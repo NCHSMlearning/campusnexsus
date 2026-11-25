@@ -77,17 +77,34 @@ a.btn{min-height:50px;padding:13px 16px;border-radius:12px;text-decoration:none;
   return;
  }
  const launch='campusnexus-seb://launch?url='+encodeURIComponent(examUrl);
- document.getElementById('open-app').href=launch;
- document.getElementById('browser-fallback').href=examUrl;
+ const openButton=document.getElementById('open-app');
+ const downloadButton=document.getElementById('download-link');
+ const fallback=document.getElementById('browser-fallback');
+ const fallbackCopy=document.getElementById('fallback-copy');
+ openButton.href=launch;
+ fallback.href=examUrl;
  const isWindows=/Windows/i.test(navigator.userAgent);
  if(!isWindows){
    document.getElementById('mobile-note').style.display='block';
-   document.getElementById('open-app').style.opacity='.55';
-   document.getElementById('open-app').setAttribute('aria-disabled','true');
-   document.getElementById('open-app').addEventListener('click',e=>{e.preventDefault();alert('Campus Nexus Secure Exam Browser currently supports Windows computers only.');});
+   openButton.style.opacity='.55';
+   openButton.setAttribute('aria-disabled','true');
+   openButton.addEventListener('click',e=>{e.preventDefault();alert('Campus Nexus Secure Exam Browser currently supports Windows computers only.');});
+   fallbackCopy.textContent='This device cannot run the Windows desktop app. Use the browser option only if your institution permits it.';
+ } else {
+   // The student already clicked Start Exam in the portal. Attempt the
+   // registered desktop protocol now so Windows can ask to open CN-SEB.
+   // If it is not installed, the student remains on this page to download it.
+   const launchStatus=()=>{
+     fallbackCopy.textContent='If Windows asks whether to open Campus Nexus Secure Exam Browser, choose Open. If nothing happens, install the desktop app below and select Open in Secure Exam Browser.';
+   };
+   setTimeout(()=>{
+     launchStatus();
+     try { window.location.href=launch; } catch(error) { console.warn('[CN-SEB] Protocol launch was blocked:',error); }
+   },650);
+   openButton.addEventListener('click',()=>{fallbackCopy.textContent='Requesting permission to open Campus Nexus Secure Exam Browser…';});
  }
- document.getElementById('download-link').addEventListener('click',()=>{
-   document.getElementById('fallback-copy').textContent='After the installer finishes, return here and open your examination.';
+ downloadButton.addEventListener('click',()=>{
+   fallbackCopy.textContent='The latest Windows installer is downloading. Once installation finishes, return to this page and select Open in Secure Exam Browser.';
  });
 })();
 </script>
