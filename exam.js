@@ -920,11 +920,20 @@ async function claimExamSessionLock() {
 
         if (error) {
             console.error('❌ Session claim RPC failed:', error);
-            showToast(
-                '⚠️ Could not verify the exam session. Please check your connection and try again.',
-                'error',
-                7000
-            );
+            const detail = String(error.message || '');
+            const deviceApprovalFailure = /computer is not approved|device registration|registered device/i.test(detail);
+            if (window.CNSEB && deviceApprovalFailure) {
+                showExamSessionLockOverlay(
+                    'Computer Approval Required',
+                    detail || 'This computer must be approved by your institution administrator before you can start the examination.'
+                );
+            } else {
+                showToast(
+                    '⚠️ ' + (detail || 'Could not verify the exam session. Please check your connection and try again.'),
+                    'error',
+                    7000
+                );
+            }
             return false;
         }
 
