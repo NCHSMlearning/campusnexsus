@@ -3179,64 +3179,77 @@ window.viewStudentProfile = async function(pid) {
                 : (attemptId ? 'Latest saved attempt' : 'Legacy result records');
             const examName = safe(examResult.data?.exam_name || ('Exam ' + numericExamId));
 
+            const writtenCount = reviewRows.filter(q => q.isSubjective).length;
+            const markedCount = reviewRows.filter(q => q.isSubjective && q.isSubjectiveGraded).length;
             let html = `
-                <div style="background:#F8FAFC;padding:16px;border-radius:12px;margin-bottom:16px;">
-                    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">
-                        <div><h3 style="margin:0;color:#0f172a;">${safe(studentName || 'Student')}</h3>
-                        <p style="color:#64748B;margin:5px 0;">${examName}</p><small style="color:#64748B;">${safe(attemptLabel)}</small></div>
-                        <button type="button" onclick="viewStudentProgress(${JSON.stringify(String(studentId))},${JSON.stringify(String(studentName || 'Student'))},${numericExamId})" style="padding:7px 11px;border:1px solid #cbd5e1;background:#fff;border-radius:8px;cursor:pointer;"><i class="fas fa-sync-alt"></i> Refresh</button>
-                    </div>
-                    <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin-top:14px;">
-                        <div style="background:#fff;padding:10px;border-radius:8px;text-align:center;"><strong style="font-size:1.3rem;color:#0A3D62;">${answeredCount}/${reviewRows.length}</strong><div style="font-size:.7rem;color:#64748B;">Answered</div></div>
-                        <div style="background:#fff;padding:10px;border-radius:8px;text-align:center;"><strong style="font-size:1.3rem;color:#15803d;">${correctCount}</strong><div style="font-size:.7rem;color:#64748B;">Correct</div></div>
-                        <div style="background:#fff;padding:10px;border-radius:8px;text-align:center;"><strong style="font-size:1.3rem;color:#b91c1c;">${wrongCount}</strong><div style="font-size:.7rem;color:#64748B;">Incorrect</div></div>
-                        <div style="background:#fff;padding:10px;border-radius:8px;text-align:center;"><strong style="font-size:1.3rem;color:#d97706;">${unansweredCount}</strong><div style="font-size:.7rem;color:#64748B;">Unanswered</div></div>
-                    </div>
+              <style>
+                .cn-mark-shell{color:#0f172a}
+                .cn-mark-top{background:linear-gradient(125deg,#092b49,#0b5570);color:#fff;border-radius:16px;padding:20px;margin-bottom:16px}
+                .cn-mark-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin-top:16px}
+                .cn-mark-stat{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.15);padding:11px;border-radius:11px}
+                .cn-question-card{background:#fff;border:1px solid #e2e8f0;border-radius:15px;padding:16px;margin:12px 0;box-shadow:0 3px 12px rgba(15,23,42,.04)}
+                .cn-question-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+                .cn-mark-pill{font-size:11px;font-weight:800;padding:5px 9px;border-radius:999px;background:#ecfdf5;color:#047857}
+                .cn-answer-box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:11px;padding:13px;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.6}
+                .cn-guide-box{background:#fffbeb;border:1px solid #fde68a;border-radius:11px;padding:13px;white-space:pre-wrap;line-height:1.55}
+                .cn-mark-field{width:100%;box-sizing:border-box;padding:11px 12px;border:1px solid #cbd5e1;border-radius:9px;font:inherit;background:#fff}
+                .cn-mark-field:focus{outline:0;border-color:#0b7190;box-shadow:0 0 0 3px rgba(11,113,144,.12)}
+                .cn-mark-footer{position:sticky;bottom:0;background:rgba(255,255,255,.97);backdrop-filter:blur(10px);border:1px solid #dbeafe;border-radius:13px;padding:13px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:16px;box-shadow:0 -5px 20px rgba(15,23,42,.06)}
+                @media(max-width:640px){.cn-mark-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.cn-question-card{padding:12px}.cn-mark-top{padding:15px}}
+              </style>
+              <div class="cn-mark-shell">
+                <section class="cn-mark-top">
+                  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
+                    <div><div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;opacity:.8;font-weight:800">Examination marking workspace</div>
+                    <h2 style="margin:6px 0 3px;font-size:21px;color:#fff">${examName}</h2>
+                    <div style="opacity:.88;font-size:13px">${safe(studentName || 'Student')} · ${safe(attemptLabel)}</div></div>
+                    <button type="button" onclick="viewStudentProgress(${JSON.stringify(String(studentId))},${JSON.stringify(String(studentName || 'Student'))},${numericExamId})" style="padding:9px 12px;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.12);color:#fff;border-radius:9px;cursor:pointer"><i class="fas fa-sync-alt"></i> Refresh</button>
+                  </div>
+                  <div class="cn-mark-stats">
+                    <div class="cn-mark-stat"><div style="font-size:22px;font-weight:800">${answeredCount}/${reviewRows.length}</div><div style="font-size:11px;opacity:.8">Answered</div></div>
+                    <div class="cn-mark-stat"><div style="font-size:22px;font-weight:800">${writtenCount}</div><div style="font-size:11px;opacity:.8">Written questions</div></div>
+                    <div class="cn-mark-stat"><div style="font-size:22px;font-weight:800">${markedCount}/${writtenCount}</div><div style="font-size:11px;opacity:.8">Written marked</div></div>
+                    <div class="cn-mark-stat"><div style="font-size:22px;font-weight:800">${unansweredCount}</div><div style="font-size:11px;opacity:.8">Unanswered</div></div>
+                  </div>
+                </section>
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin:12px 2px">
+                  <div><strong style="font-size:15px">Question-by-question review</strong><div style="font-size:12px;color:#64748b">Review the student's response against the lecturer's marking guide.</div></div>
+                  <span style="font-size:11px;color:#64748b">${reviewRows.length} questions</span>
                 </div>
-                <div style="max-height:52vh;overflow:auto;border:1px solid #E2E8F0;border-radius:10px;">
-                <table style="width:100%;min-width:700px;border-collapse:collapse;font-size:.82rem;">
-                    <thead style="position:sticky;top:0;background:#F1F5F9;z-index:1;"><tr>
-                        <th style="padding:10px;text-align:left;">Q#</th><th style="padding:10px;text-align:left;">Question & options</th>
-                        <th style="padding:10px;text-align:left;">Student answer</th><th style="padding:10px;text-align:left;">Correct answer</th>
-                        <th style="padding:10px;text-align:center;">Marks</th><th style="padding:10px;text-align:center;">Status</th>
-                    </tr></thead><tbody>`;
-
+            `;
             reviewRows.forEach(q => {
-                const optionsHtml = q.options.map(([letter, value]) =>
-                    '<div style="margin-top:3px;color:#64748b;">' + letter + '. ' + safe(value) + '</div>'
-                ).join('');
-                const status = q.isSubjective
-                    ? (q.isSubjectiveGraded ? '<strong style="color:#15803d;">Marked</strong>' : '<strong style="color:#b45309;">Awaiting marking</strong>')
-                    : (!q.isAnswered ? '<span style="color:#64748b;">Not answered</span>' : q.isCorrect ? '<strong style="color:#15803d;">Correct</strong>' : '<strong style="color:#b91c1c;">Incorrect</strong>');
-                const markingControls = q.isSubjective ? `
-                    <div style="margin-top:8px;padding:10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;">
-                      <div style="font-size:11px;font-weight:800;color:#475569;margin-bottom:4px;">MARKING GUIDE</div>
-                      <div style="white-space:pre-wrap;color:#334155;font-size:12px;">${safe(q.markingKey || 'No marking key supplied for this question.')}</div>
-                      <label style="display:block;font-size:11px;font-weight:700;margin-top:8px;">Marks awarded (max ${safe(q.totalMarks)})</label>
-                      <input class="subjective-mark-input" data-question-id="${safe(q.id)}" type="number" min="0" max="${Number(q.totalMarks)||1}" step="1" value="${Number(q.marks)||0}" style="width:100%;max-width:130px;padding:7px;border:1px solid #cbd5e1;border-radius:7px;">
-                      <label style="display:block;font-size:11px;font-weight:700;margin-top:8px;">Lecturer feedback</label>
-                      <textarea class="subjective-feedback-input" data-question-id="${safe(q.id)}" rows="2" maxlength="4000" style="width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:7px;">${safe(q.feedback)}</textarea>
-                    </div>` : '';
-                html += `<tr style="border-bottom:1px solid #E2E8F0;vertical-align:top;">
-                    <td style="padding:10px;font-weight:700;">${safe(q.number)}</td>
-                    <td style="padding:10px;white-space:normal;min-width:230px;"><strong>${safe(q.text)}</strong>${optionsHtml}${markingControls}</td>
-                    <td style="padding:10px;white-space:pre-wrap;min-width:180px;">${q.isAnswered ? safe(q.selectedText) : '<span style="color:#94a3b8;">—</span>'}</td>
-                    <td style="padding:10px;text-align:center;">${q.isSubjective ? 'Lecturer assessed' : safe(q.correctText || '—')}</td>
-                    <td style="padding:10px;text-align:center;">${safe(q.marks)} / ${safe(q.totalMarks)}</td>
-                    <td style="padding:10px;text-align:center;">${status}</td>
-                </tr>`;
+              const status = q.isSubjective
+                ? (q.isSubjectiveGraded ? '<span class="cn-mark-pill">Marked</span>' : '<span class="cn-mark-pill" style="background:#fff7ed;color:#c2410c">Awaiting marking</span>')
+                : (!q.isAnswered ? '<span class="cn-mark-pill" style="background:#f1f5f9;color:#64748b">Not answered</span>' : q.isCorrect ? '<span class="cn-mark-pill">Correct</span>' : '<span class="cn-mark-pill" style="background:#fef2f2;color:#b91c1c">Incorrect</span>');
+              const guide = q.markingKey || q.correctText || 'No marking guide has been provided.';
+              const options = q.options.map(([letter,value]) => '<div style="font-size:12px;color:#64748b;margin-top:4px">'+letter+'. '+safe(value)+'</div>').join('');
+              html += `
+                <article class="cn-question-card">
+                  <div class="cn-question-head">
+                    <div style="display:flex;align-items:center;gap:9px"><span style="width:31px;height:31px;border-radius:9px;background:#e0f2fe;color:#075985;display:grid;place-items:center;font-weight:800">${safe(q.number)}</span><div><strong style="font-size:14px">${q.isSubjective ? (q.type==='short_answer'?'Short answer':'Long answer') : 'Question'}</strong><div style="font-size:11px;color:#64748b">${safe(q.totalMarks)} marks available</div></div></div>
+                    ${status}
+                  </div>
+                  <div style="font-weight:700;line-height:1.5;margin-bottom:9px">${safe(q.text)}</div>
+                  ${options}
+                  <div style="font-size:11px;font-weight:800;color:#64748b;letter-spacing:.06em;margin:14px 0 6px">STUDENT RESPONSE</div>
+                  <div class="cn-answer-box">${q.isAnswered ? safe(q.selectedText) : '<span style="color:#94a3b8">No answer submitted</span>'}</div>
+                  ${q.isSubjective ? `
+                    <div style="font-size:11px;font-weight:800;color:#92400e;letter-spacing:.06em;margin:14px 0 6px">MARKING GUIDE / MODEL ANSWER</div>
+                    <div class="cn-guide-box">${safe(guide)}</div>
+                    <div style="display:grid;grid-template-columns:minmax(110px,.35fr) minmax(0,1fr);gap:10px;margin-top:13px">
+                      <label style="font-size:12px;font-weight:700">Marks awarded<input class="subjective-mark-input cn-mark-field" data-question-id="${safe(q.id)}" type="number" min="0" max="${Number(q.totalMarks)||1}" step="1" value="${Number(q.marks)||0}" style="margin-top:6px"></label>
+                      <label style="font-size:12px;font-weight:700">Lecturer feedback<textarea class="subjective-feedback-input cn-mark-field" data-question-id="${safe(q.id)}" rows="2" maxlength="4000" placeholder="Give feedback to the student…" style="margin-top:6px;resize:vertical">${safe(q.feedback)}</textarea></label>
+                    </div>` : `
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:12px;font-size:12px;color:#64748b"><span>Correct answer: <strong>${safe(q.correctText || '—')}</strong></span><strong>${safe(q.marks)} / ${safe(q.totalMarks)} marks</strong></div>`}
+                </article>`;
             });
-
-            if (!reviewRows.length) html += '<tr><td colspan="6" style="padding:24px;text-align:center;color:#64748b;">No questions found for this exam.</td></tr>';
-            html += '</tbody></table></div>';
-            const subjectiveCount = reviewRows.filter(q => q.isSubjective).length;
-            if (subjectiveCount && attemptId && ['PENDING_REVIEW','SUBMITTED','COMPLETED'].includes(String(latestAttempt?.status || 'PENDING_REVIEW').toUpperCase())) {
-                html += `<div style="display:flex;gap:10px;align-items:center;justify-content:flex-end;flex-wrap:wrap;margin-top:14px;padding:14px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;">
-                  <span style="margin-right:auto;color:#1e3a8a;font-size:12px;">${subjectiveCount} written question(s) · Save marks to update the attempt total. Results remain unreleased.</span>
-                  <button type="button" onclick="saveSubjectiveExamMarks(${JSON.stringify(String(studentId))},${numericExamId},${JSON.stringify(String(attemptId))})" style="padding:10px 16px;border:0;border-radius:8px;background:#0A3D62;color:#fff;font-weight:700;cursor:pointer;">Save written-question marks</button>
+            if (writtenCount && attemptId) {
+              html += `
+                <div class="cn-mark-footer">
+                  <div><strong style="font-size:13px">Written-answer assessment</strong><div style="font-size:11px;color:#64748b">${markedCount} of ${writtenCount} written questions marked · Results are not released by saving.</div></div>
+                  <button type="button" onclick="saveSubjectiveExamMarks(${JSON.stringify(String(studentId))},${numericExamId},${JSON.stringify(String(attemptId))})" style="padding:12px 17px;border:0;border-radius:10px;background:#0b5570;color:#fff;font-weight:800;cursor:pointer"><i class="fas fa-save"></i> Save marking</button>
                 </div>`;
             }
-
             if (!gradeRows.length) {
                 html += '<p style="margin-top:12px;padding:12px;background:#fff7ed;color:#9a3412;border-radius:8px;">No per-question answer records were returned for this attempt. The attempt may have a final score without saved question-level responses, or access to the answer records may be restricted.</p>';
             }
