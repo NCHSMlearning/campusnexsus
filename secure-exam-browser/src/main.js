@@ -89,8 +89,19 @@ function createWindow() {
   mainWindow.on('blur', () => sendDeviceEvent('application_focus_lost'));
   mainWindow.on('focus', () => sendDeviceEvent('application_focus_returned'));
 
-  mainWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  // Dashboard cards may use target="_blank". Keep trusted Campus Nexus
+  // navigation inside the protected app instead of silently denying clicks.
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    const examTarget = extractExamUrl([url]);
+    if (examTarget) setImmediate(() => loadExam(examTarget));
+    else if (isTrusted(url)) setImmediate(() => {
+      if (mainWindow && !mainWindow.isDestroyed()) mainWindow.loadURL(url);
+    });
+    return { action: 'deny' };
+  });
   mainWindow.webContents.on('will-navigate', (event, url) => {
+    const examTarget = extractExamUrl([url]);
+    if (examTarget) { event.preventDefault(); loadExam(examTarget); return; }
     if (!isTrusted(url)) event.preventDefault();
   });
   mainWindow.webContents.on('will-attach-webview', event => event.preventDefault());
