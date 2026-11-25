@@ -196,66 +196,70 @@ app.whenReady().then(() => {
     architecture: process.arch, strictMode: STRICT,
     displayCount: screen.getAllDisplays().length
   }));
-  async function confirmClose(mode) {
-    if (exitInProgress) return false;
-    const isLogout = mode === 'logout';
-    const result = await dialog.showMessageBox(mainWindow && !mainWindow.isDestroyed() ? mainWindow : undefined, {
-      type: 'warning',
-      title: isLogout ? 'Logout of Campus Nexus?' : 'Exit Campus Nexus Secure Exam Browser?',
-      message: isLogout
-        ? 'You will be logged out and the application will close completely.'
-        : 'The application will close completely and return you to the desktop.',
-      detail: isLogout
-        ? 'Your Campus Nexus sign-in session on this app will be cleared. Any unfinished examination will not be submitted.'
-        : 'Your sign-in session will be kept for your next launch. Make sure you have submitted your examination before exiting.',
-      buttons: ['Cancel', isLogout ? 'Logout and Close' : 'Exit Application'],
-      defaultId: 0, cancelId: 0, noLink: true
-    });
-    if (result.response !== 1) return false;
+  // Use an in-app confirmation rather than a native modal hidden behind kiosk.
+  ipcMain.handle('cnseb:request-exit', async () => {
+    if (quitting) return { ok: true };
     exitInProgress = true;
     quitting = true;
-    if (isLogout) {
-      try {
-        await session.fromPartition('persist:cnseb-exam').clearStorageData({
-          storages: ['cookies', 'localstorage', 'indexdb', 'serviceworkers', 'cachestorage']
-        });
-      } catch (error) {
-        console.error('[CN-SEB] Could not clear sign-in state on logout:', error);
-      }
+    setTimeout(() => app.exit(0), 150);
+    return { ok: true };
+  });
+  ipcMain.handle('cnseb:request-logout', async () => {
+    if (quitting) return { ok: true };
+    exitInProgress = true;
+    try {
+      const examSession = session.fromPartition('persist:cnseb-exam');
+      await Promise.race([
+        examSession.clearStorageData({ storages: ['cookies', 'localstorage', 'indexdb', 'serviceworkers', 'cachestorage'] }),
+        new Promise(resolve => setTimeout(resolve, 7000))
+      ]);
+      await examSession.clearCache().catch(() => {});
+    } catch (error) {
+      console.error('[CN-SEB] Logout cleanup warning:', error);
+    } finally {
+      quitting = true;
+      setTimeout(() => app.exit(0), 150);
     }
-    app.quit();
-    return true;
-  }
-  ipcMain.handle('cnseb:request-exit', () => confirmClose('exit'));
-  ipcMain.handle('cnseb:request-logout', () => confirmClose('logout'));
+    return { ok: true };
+  });
+  ipcMain.handle('cnseb:install-update', () => {
+    if (!app.isPackaged) return { ok: false, reason: 'not-packaged' };
+    autoUpdater.quitAndInstall(true, true);
+    return { ok: true };
+  });
   createWindow();
 
-  // Updates are downloaded in the background and installed only after the
-  // student exits the app; an active examination is never forcibly restarted.
+  // Check for updates at startup and periodically. Download silently, then
+  // let the student choose when to restart into the new version.
   if (app.isPackaged) {
     autoUpdater.autoDownload = true;
     autoUpdater.autoInstallOnAppQuit = true;
     autoUpdater.allowPrerelease = false;
-    autoUpdater.on('error', error => console.error('[CN-SEB] Update check failed:', error.message));
-    autoUpdater.on('update-available', info => console.log('[CN-SEB] Update available:', info.version));
-    autoUpdater.on('update-not-available', info => console.log('[CN-SEB] App is up to date:', info.version));
-    autoUpdater.on('update-downloaded', async info => {
-      console.log('[CN-SEB] Update downloaded; it will install after the app is closed.');
-      if (updateNoticeShown || !mainWindow || mainWindow.isDestroyed()) return;
-      updateNoticeShown = true;
-      await dialog.showMessageBox(mainWindow, {
-        type: 'info',
-        title: 'Campus Nexus update ready',
-        message: 'A new Secure Exam Browser update has been downloaded.',
-        detail: 'It will install automatically after you close the application. Your current examination will not be interrupted.',
-        buttons: ['Continue']
-      });
+    autoUpdater.on('checking-for-update', () => {
+      if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('cnseb:update-status', { state: 'checking' });
     });
-    const checkForUpdates = () => autoUpdater.checkForUpdatesAndNotify().catch(error =>
-      console.error('[CN-SEB] Could not check for updates:', error.message)
-    );
-    setTimeout(checkForUpdates, 15000);
-    setInterval(checkForUpdates, 6 * 60 * 60 * 1000);
+    autoUpdater.on('update-available', info => {
+      console.log('[CN-SEB] Update available:', info.version);
+      if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('cnseb:update-status', { state: 'downloading', version: info.version });
+    });
+    autoUpdater.on('update-not-available', info => {
+      console.log('[CN-SEB] App is up to date:', info.version);
+      if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('cnseb:update-status', { state: 'current', version: info.version });
+    });
+    autoUpdater.on('download-progress', progress => {
+      if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('cnseb:update-status', { state: 'progress', percent: Math.round(progress.percent || 0) });
+    });
+    autoUpdater.on('update-downloaded', info => {
+      console.log('[CN-SEB] Update downloaded:', info.version);
+      if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('cnseb:update-status', { state: 'ready', version: info.version });
+    });
+    autoUpdater.on('error', error => {
+      console.error('[CN-SEB] Update check failed:', error.message);
+      if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('cnseb:update-status', { state: 'error', message: 'Could not check for updates. Check your internet connection.' });
+    });
+    const checkForUpdates = () => autoUpdater.checkForUpdates().catch(error => console.error('[CN-SEB] Update check failed:', error.message));
+    setTimeout(checkForUpdates, 5000);
+    setInterval(checkForUpdates, 60 * 60 * 1000);
   }
 
   app.on('activate', () => {
