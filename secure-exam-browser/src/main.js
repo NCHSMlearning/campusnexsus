@@ -220,7 +220,7 @@ app.whenReady().then(() => {
     ['media','camera','microphone'].includes(permission) &&
     isTrusted(requestingOrigin || webContents.getURL())
   ));
-  ipcMain.handle('cnseb:brand-logo-url', () => pathToFileURL(path.join(__dirname, '../build/campus-nexus-original-logo.webp')).href);
+  ipcMain.handle('cnseb:brand-logo-url', () => 'https://campusnexus.co.ke/images/campus-nexus-original-logo.webp');
   ipcMain.handle('cnseb:update-state', () => updateState);
   ipcMain.handle('cnseb:redeem-auth-handoff', async (event) => {
     const frameUrl = event.senderFrame?.url || '';
