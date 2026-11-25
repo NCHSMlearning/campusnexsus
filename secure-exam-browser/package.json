@@ -1,6 +1,6 @@
 {
   "name": "campus-nexus-secure-exam-browser",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "private": true,
   "description": "Windows desktop client for Campus Nexus secure examinations",
   "main": "src/main.js",
@@ -24,7 +24,14 @@
     "files": [
       "src/**/*",
       "build/**/*",
-      "package.json"
+      "package.json",
+      "!**/*.map",
+      "!**/*.md",
+      "!**/*.ts",
+      "!**/*.d.ts",
+      "!**/test/**",
+      "!**/tests/**",
+      "!**/__tests__/**"
     ],
     "win": {
       "target": [
@@ -59,6 +66,11 @@
         "repo": "campusnexsus",
         "releaseType": "release"
       }
+    ],
+    "asar": true,
+    "compression": "maximum",
+    "electronLanguages": [
+      "en-US"
     ]
   },
   "dependencies": {
