@@ -70,6 +70,25 @@ function createWindow() {
     }
   });
 
+  const sendDeviceEvent = (eventType, details = {}) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('cnseb:device-event', {
+        eventType, details, timestamp: new Date().toISOString()
+      });
+    }
+  };
+  screen.on('display-added', (_event, display) => sendDeviceEvent('external_display_added', {
+    displayId: display.id, bounds: display.bounds, scaleFactor: display.scaleFactor
+  }));
+  screen.on('display-removed', (_event, display) => sendDeviceEvent('external_display_removed', {
+    displayId: display.id
+  }));
+  screen.on('display-metrics-changed', (_event, display, changedMetrics) => sendDeviceEvent('display_metrics_changed', {
+    displayId: display.id, changedMetrics
+  }));
+  mainWindow.on('blur', () => sendDeviceEvent('application_focus_lost'));
+  mainWindow.on('focus', () => sendDeviceEvent('application_focus_returned'));
+
   mainWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   mainWindow.webContents.on('will-navigate', (event, url) => {
     if (!isTrusted(url)) event.preventDefault();
