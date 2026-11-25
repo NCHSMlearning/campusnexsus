@@ -1314,8 +1314,7 @@ async function loadLobbyData() {
             const questionResult = await sb
                 .from('exam_questions')
                 .select('id', { count: 'exact', head: true })
-                .eq('exam_id', parseInt(AppState.examId))
-                .eq('institution_id', AppState.institutionId);
+                .eq('exam_id', parseInt(AppState.examId));
 
             if (questionResult.error) throw questionResult.error;
             const count = Number(questionResult.count || 0);
