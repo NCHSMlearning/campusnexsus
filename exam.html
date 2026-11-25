@@ -8,8 +8,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
-<link href="/images/campus-nexus-original-logo.webp?v=1" rel="icon" sizes="192x192" type="image/png"/>
-<link href="/images/campus-nexus-original-logo.webp?v=1" rel="icon" sizes="512x512" type="image/png"/>
+<link href="/images/campus-nexus-original-logo.webp?v=1" rel="icon" sizes="192x192" type="image/webp"/>
+<link href="/images/campus-nexus-original-logo.webp?v=1" rel="icon" sizes="512x512" type="image/webp"/>
 <link href="/images/campus-nexus-original-logo.webp?v=1" rel="apple-touch-icon"/>
 
 <title>Campus Nexus | Secure Online Examination</title>
@@ -2092,6 +2092,127 @@ body{
 }
 </style>
 
+
+<style id="campus-nexus-exam-modern-polish-v23">
+/* Campus Nexus secure exam — refined visual system */
+:root{
+ --cn-ink:#102c46;--cn-navy:#082c4c;--cn-blue:#0879d1;--cn-teal:#0a9b91;
+ --cn-line:#dce8ef;--cn-muted:#6d8295;--cn-glass:rgba(255,255,255,.86);
+ --cn-elev:0 22px 64px rgba(7,39,66,.10);
+}
+.site-header{height:76px;padding-inline:clamp(16px,4vw,56px);background:linear-gradient(112deg,#061e35 0%,#083e62 58%,#07576a 100%);box-shadow:0 8px 30px rgba(3,28,49,.16)}
+.brand-mark{width:46px;height:46px;border:1px solid rgba(255,255,255,.55);border-radius:14px}
+.brand-copy strong{font-size:16px;letter-spacing:-.35px}
+.secure-badge{font-size:10px;letter-spacing:.25px}
+#lobbyContainer{min-height:calc(100dvh - 76px);background:radial-gradient(ellipse at 82% 5%,rgba(15,174,176,.12),transparent 30%),radial-gradient(ellipse at 7% 28%,rgba(8,121,209,.10),transparent 28%),linear-gradient(145deg,#f7fbfe 0%,#edf5fa 52%,#f5fafb 100%)}
+#lobbyContainer.welcome-screen .lobby-wrap{width:min(1160px,calc(100% - 44px));padding:clamp(24px,4vw,54px) 0}
+#lobbyContainer.welcome-screen .welcome-hero{position:relative;isolation:isolate;overflow:hidden;display:grid!important;grid-template-columns:minmax(0,1.12fr) minmax(270px,.88fr)!important;gap:26px 34px;padding:clamp(26px,4.3vw,56px)!important;border:1px solid rgba(197,220,234,.9);border-radius:30px;background:linear-gradient(130deg,rgba(255,255,255,.98),rgba(241,250,252,.96));box-shadow:0 28px 80px rgba(8,48,76,.11)}
+#lobbyContainer.welcome-screen .welcome-hero:after{content:"";position:absolute;z-index:-1;width:420px;height:420px;right:-190px;top:-240px;border-radius:50%;background:radial-gradient(circle,rgba(17,173,176,.17),rgba(8,121,209,.035) 65%,transparent 70%)}
+#lobbyContainer.welcome-screen .welcome-main{max-width:690px}
+#lobbyContainer.welcome-screen .eyebrow{background:#e9f6fb;border-color:#cfe9f3;color:#0878a8;font-size:9px;letter-spacing:1.35px;padding:9px 13px}
+#lobbyContainer.welcome-screen .welcome-kicker{font-size:9px;letter-spacing:1.5px;color:#0b8f8a;font-weight:900;margin:8px 0 12px}
+#lobbyContainer.welcome-screen .welcome-main h1{font-size:clamp(38px,5.2vw,66px)!important;letter-spacing:-2.8px;line-height:.99;color:#082c4c;margin:0 0 15px}
+#lobbyContainer.welcome-screen .welcome-main h1 em{font-style:normal;background:linear-gradient(95deg,#0879d1,#079b91);-webkit-background-clip:text;background-clip:text;color:transparent}
+#lobbyContainer.welcome-screen .welcome-description{font-size:clamp(13px,1.25vw,15px)!important;line-height:1.75;color:#62798d;max-width:610px}
+#lobbyContainer.welcome-screen .welcome-trust{display:flex;flex-wrap:wrap;gap:9px;margin:23px 0 18px}
+#lobbyContainer.welcome-screen .welcome-trust>div{display:flex;align-items:center;gap:8px;padding:9px 11px;border:1px solid #dfebf0;border-radius:12px;background:rgba(255,255,255,.78);font-size:9px;color:#6a8091}
+#lobbyContainer.welcome-screen .welcome-trust>div i{font-size:14px;color:#0b9b8d}
+#lobbyContainer.welcome-screen .welcome-trust>div strong{color:#183c57}
+#lobbyContainer.welcome-screen .welcome-visual{min-height:290px;border-radius:24px;border:1px solid #cfe5ed;background:radial-gradient(circle at 50% 38%,#fff 0%,#f0fbfc 52%,#dff2f6 100%);box-shadow:inset 0 1px 0 #fff,0 16px 36px rgba(9,71,100,.08)}
+#lobbyContainer.welcome-screen .welcome-visual-screen{width:76%;min-height:205px;border:6px solid #103e60;border-radius:19px;transform:rotate(-2deg);box-shadow:0 24px 46px rgba(8,43,70,.19)}
+#lobbyContainer.welcome-screen .welcome-visual-shield{width:52px;height:52px;border-radius:17px;background:linear-gradient(145deg,#0879d1,#08a18e)}
+#lobbyContainer.welcome-screen .welcome-visual-lock{width:46px;height:46px;border-radius:15px;background:linear-gradient(145deg,#0b9b8e,#0879d1)}
+#lobbyContainer.welcome-screen .welcome-journey{max-width:720px;margin:22px 0 20px;gap:7px}
+#lobbyContainer.welcome-screen .welcome-journey>div{gap:9px}
+#lobbyContainer.welcome-screen .welcome-journey b{width:36px;height:36px;color:#fff;background:linear-gradient(145deg,#0879d1,#0a9c91);box-shadow:0 5px 14px rgba(8,121,209,.18)}
+#lobbyContainer.welcome-screen .welcome-journey span{font-size:9px;color:#35566d}
+#lobbyContainer.welcome-screen .welcome-journey>i{color:#8daebb}
+#lobbyContainer.welcome-screen .welcome-begin-btn{min-width:240px;min-height:54px;border:0;border-radius:14px;background:linear-gradient(105deg,#0879d1,#087f9e 60%,#079b8e);box-shadow:0 12px 26px rgba(8,121,170,.25);font-size:12px;font-weight:900;letter-spacing:.2px;transition:transform .18s ease,box-shadow .18s ease}
+#lobbyContainer.welcome-screen .welcome-begin-btn:hover{transform:translateY(-2px);box-shadow:0 17px 30px rgba(8,121,170,.3)}
+#lobbyContainer.welcome-screen .exam-hero-card{grid-column:1/-1;margin:0!important;padding:20px 22px;border:1px solid #dbe9ef;border-radius:20px;background:rgba(255,255,255,.88);box-shadow:0 12px 32px rgba(7,46,74,.055)}
+#lobbyContainer.welcome-screen .exam-hero-top h2{font-size:20px}
+#lobbyContainer.welcome-screen .exam-metrics{gap:10px}
+#lobbyContainer.welcome-screen .metric{border-radius:14px;background:#f8fbfd;border-color:#e1ebf0}
+#lobbyContainer.welcome-screen .exam-extra-details>div{border-radius:12px;background:#f8fbfd}
+#lobbyContainer.welcome-screen .student-card,#lobbyContainer.welcome-screen .lobby-readiness,#lobbyContainer.welcome-screen .steps,#lobbyContainer.welcome-screen .step-content,#lobbyContainer.welcome-screen .lobby-aside{display:none!important}
+/* The three preparation screens share a clear stepper and generous card layout. */
+#lobbyContainer.stage-1,#lobbyContainer.stage-2,#lobbyContainer.stage-3{padding-bottom:28px}
+#lobbyContainer.stage-1 .lobby-wrap,#lobbyContainer.stage-2 .lobby-wrap,#lobbyContainer.stage-3 .lobby-wrap{width:min(1040px,calc(100% - 40px));padding:28px 0 38px}
+#lobbyContainer.stage-1 .steps,#lobbyContainer.stage-2 .steps,#lobbyContainer.stage-3 .steps{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:0 0 18px}
+#lobbyContainer .step{position:relative;min-width:0;min-height:72px;padding:12px 14px;border:1px solid #dce8ef;border-radius:15px;background:rgba(255,255,255,.82);box-shadow:0 5px 16px rgba(7,44,72,.035);transition:all .2s ease}
+#lobbyContainer .step.active{border-color:#83c9e0;background:linear-gradient(135deg,#edf8fd,#f1fbfa);box-shadow:0 8px 22px rgba(8,121,170,.10)}
+#lobbyContainer .step.completed{border-color:#b8e3d0;background:#f1fbf6}
+#lobbyContainer .step-number{width:30px;height:30px;border-radius:10px;background:#eaf2f7;color:#42647b;font-weight:900}
+#lobbyContainer .step.active .step-number{background:linear-gradient(145deg,#0879d1,#0a9b91);color:#fff}
+#lobbyContainer .step.completed .step-number{background:#16885d;color:#fff}
+#lobbyContainer .step-copy strong{font-size:10px;color:#183b56}
+#lobbyContainer .step-copy span{font-size:8px;color:#75899a}
+#lobbyContainer .step-content{border:1px solid #dce8ef;border-radius:22px;background:rgba(255,255,255,.96);box-shadow:0 20px 55px rgba(7,44,72,.08);padding:clamp(22px,3.5vw,38px);min-height:0}
+#lobbyContainer .step-content h3{font-size:clamp(23px,3vw,30px);letter-spacing:-.8px;color:#0a3150}
+#lobbyContainer .step-content>p{font-size:13px;line-height:1.6;color:#6d8295}
+#lobbyContainer .instruction{border:1px solid #e0eaf0;border-radius:13px;background:#f9fcfd}
+#lobbyContainer .terms-box{border:1px solid #cfe4ec;border-radius:15px;background:linear-gradient(110deg,#f1f9fc,#f1fbf8)}
+#lobbyContainer .camera-preview{border:1px solid #c9dfe8;border-radius:18px;background:#0b2439;overflow:hidden}
+#lobbyContainer .camera-info{border:1px solid #dce8ef;border-radius:17px;background:#f9fcfd}
+#lobbyContainer .ready-card{border:1px solid #dce8ef;border-radius:22px;background:linear-gradient(150deg,#fff,#f5fbfc);box-shadow:0 14px 38px rgba(7,44,72,.07);padding:clamp(22px,4vw,38px)}
+#lobbyContainer .ready-icon{box-shadow:0 8px 22px rgba(17,153,103,.18)}
+#lobbyContainer .ready-item{border:1px solid #e0eee8;border-radius:12px;background:#f8fcfa}
+#lobbyContainer .action-row .btn{min-height:48px;border-radius:12px;font-weight:800}
+#lobbyContainer .action-row .btn-primary{background:linear-gradient(105deg,#0879d1,#078d9d);box-shadow:0 8px 20px rgba(8,121,170,.16)}
+#lobbyContainer .action-row .btn-success{background:linear-gradient(105deg,#11885d,#0b9c86);box-shadow:0 8px 20px rgba(17,136,93,.18)}
+#lobbyContainer.stage-3 .welcome-hero{display:none!important}
+#lobbyContainer.stage-3 .student-card{display:grid!important}
+#lobbyContainer.stage-3 .lobby-readiness{display:block!important}
+#lobbyContainer.stage-3 .student-card,#lobbyContainer.stage-3 .lobby-readiness{margin-bottom:12px}
+@media(max-width:760px){
+ .site-header{height:64px;padding-inline:13px}
+ .brand-mark{width:39px;height:39px;border-radius:11px}
+ .brand-copy strong{font-size:13px}
+ .brand-copy small{font-size:8px}
+ .secure-badge{padding:7px 9px;font-size:8px;gap:5px}
+ #lobbyContainer{min-height:calc(100dvh - 64px)}
+ #lobbyContainer.welcome-screen .lobby-wrap{width:calc(100% - 20px);padding:14px 0 22px}
+ #lobbyContainer.welcome-screen .welcome-hero{display:flex!important;flex-direction:column;align-items:stretch;gap:16px;padding:21px 15px!important;border-radius:22px}
+ #lobbyContainer.welcome-screen .welcome-main{order:1}
+ #lobbyContainer.welcome-screen .welcome-main h1{font-size:clamp(36px,10vw,48px)!important;letter-spacing:-1.8px}
+ #lobbyContainer.welcome-screen .welcome-description{font-size:12px!important}
+ #lobbyContainer.welcome-screen .welcome-trust{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin:15px 0}
+ #lobbyContainer.welcome-screen .welcome-trust>div{justify-content:center;flex-direction:column;text-align:center;gap:5px;padding:8px 4px;font-size:7px}
+ #lobbyContainer.welcome-screen .welcome-trust>div i{font-size:13px}
+ #lobbyContainer.welcome-screen .welcome-visual{order:2;width:100%;min-height:190px}
+ #lobbyContainer.welcome-screen .welcome-visual-screen{width:66%;min-height:145px}
+ #lobbyContainer.welcome-screen .welcome-journey{order:3;gap:3px;margin:13px 0}
+ #lobbyContainer.welcome-screen .welcome-journey>div{flex-direction:column;text-align:center;gap:5px;flex:1}
+ #lobbyContainer.welcome-screen .welcome-journey b{width:28px;height:28px;font-size:10px}
+ #lobbyContainer.welcome-screen .welcome-journey span{font-size:7px}
+ #lobbyContainer.welcome-screen .welcome-journey>i{font-size:8px}
+ #lobbyContainer.welcome-screen .welcome-begin-btn{order:4;width:100%;min-height:50px}
+ #lobbyContainer.welcome-screen .exam-hero-card{padding:14px 12px}
+ #lobbyContainer.welcome-screen .exam-hero-top{align-items:flex-start}
+ #lobbyContainer.welcome-screen .exam-hero-top h2{font-size:16px}
+ #lobbyContainer.welcome-screen .proctored-pill{padding:6px 8px;font-size:8px}
+ #lobbyContainer.welcome-screen .metric{min-height:66px;padding:9px 8px}
+ #lobbyContainer.welcome-screen .metric strong{font-size:17px}
+ #lobbyContainer.welcome-screen .metric>span{font-size:7px}
+ #lobbyContainer.welcome-screen .exam-extra-details{grid-template-columns:1fr}
+ #lobbyContainer.stage-1 .lobby-wrap,#lobbyContainer.stage-2 .lobby-wrap,#lobbyContainer.stage-3 .lobby-wrap{width:calc(100% - 20px);padding:14px 0 24px}
+ #lobbyContainer.stage-1 .steps,#lobbyContainer.stage-2 .steps,#lobbyContainer.stage-3 .steps{grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
+ #lobbyContainer .step{min-height:61px;padding:7px 4px;display:flex;flex-direction:column;justify-content:center;text-align:center;gap:5px;border-radius:11px}
+ #lobbyContainer .step-number{width:25px;height:25px;font-size:9px}
+ #lobbyContainer .step-copy strong{font-size:7px;line-height:1.2}
+ #lobbyContainer .step-copy span{display:none}
+ #lobbyContainer .step-content{padding:18px 14px;border-radius:17px}
+ #lobbyContainer .instructions,#lobbyContainer .camera-layout{grid-template-columns:1fr}
+ #lobbyContainer .instruction{min-height:0;padding:12px}
+ #lobbyContainer .camera-preview{min-height:210px}
+ #lobbyContainer .action-row{flex-wrap:wrap;gap:8px}
+ #lobbyContainer .action-row .btn{flex:1 1 100%}
+ #lobbyContainer.stage-3 .student-card{grid-template-columns:auto minmax(0,1fr)!important}
+ #lobbyContainer.stage-3 .student-program{grid-column:1/-1;text-align:left!important}
+}
+@media(prefers-reduced-motion:reduce){#lobbyContainer *,#lobbyContainer *:before,#lobbyContainer *:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+</style>
+
 </head>
 
 <body>
@@ -2649,7 +2770,7 @@ body{
 })();
 </script>
 <script src="/js/exam-supabase.js?v=20261122-shared-client"></script>
-<script src="exam.js?v=20261125-exam-lobby-redesign-v22"></script>
+<script src="exam.js?v=20261125-ultramodern-v23"></script>
 
 <script>
 /* ============================================================
