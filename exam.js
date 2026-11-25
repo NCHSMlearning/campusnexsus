@@ -5688,10 +5688,15 @@ document.addEventListener('DOMContentLoaded', async function() {
     const { data: authData, error: authError } = await sb.auth.getUser();
     const authUser = authData && authData.user;
     if (authError || !authUser || !authUser.id) {
-        console.warn('No verified Supabase session; returning to the Campus Nexus student examination centre.');
-        // Keep unauthenticated visitors inside Campus Nexus. The student examination
-        // centre will send them to the local exam login and preserve its own session flow.
-        window.location.replace('/studentexam');
+        console.warn('No verified Supabase session; opening the in-app exam login and preserving the selected examination.');
+        // The browser and installed Electron app have separate Supabase storage.
+        // Never transfer browser tokens. Authenticate in the app, then return to
+        // this exact exam URL (including exam_id and the one-time retake flag).
+        const returnPath = window.location.pathname + window.location.search;
+        const loginUrl = new URL('/examlogin', window.location.origin);
+        loginUrl.searchParams.set('redirect', returnPath);
+        loginUrl.searchParams.set('source', 'secure-exam-browser');
+        window.location.replace(loginUrl.pathname + loginUrl.search);
         return;
     }
     const studentId = authUser.id;
