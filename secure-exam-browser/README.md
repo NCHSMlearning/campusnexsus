@@ -52,14 +52,15 @@ A normal Windows desktop app cannot safely or reliably terminate arbitrary runni
 
 For institution-owned devices, deploy strict mode only alongside a managed Windows kiosk account and Windows Assigned Access / Shell Launcher configuration. Use App Control for Business (WDAC) or AppLocker to allow-list the approved exam client and required Windows components. Pilot policies on dedicated test devices first; never apply them to personal or staff computers. Maintain an invigilator/admin recovery account and documented exit/recovery process.
 
-The current client does **not** install or change Windows policies, kill processes, disable security tools, or modify the registry. It must not be described as tamper-proof. Strict mode is a kiosk presentation layer until the institution's managed Windows policy is separately provisioned.
+The exam page now keeps attempt-scoped local drafts and synchronizes them to a server-side, session-validated draft table; the final grading/submission RPC remains authoritative. Display and application-focus changes are forwarded as proctoring events. The current client does **not** install or change Windows policies, kill processes, disable security tools, or modify the registry. It must not be described as tamper-proof. Strict mode is a kiosk presentation layer until the institution's managed Windows policy is separately provisioned.
 
 ## Integration contract
 
 The student examination cards now route the Open Exam action through `/secure-exam-browser.html`. That page explains the Windows app download and launches the installed client with the `campusnexus-seb://` protocol. The app accepts only HTTPS exam URLs on `campusnexus.co.ke/exam.html`, then opens the existing exam engine so institution detection, Supabase authentication and submission remain authoritative. Students may use the browser fallback only where their institution permits it. A small on-screen badge identifies the CN-SEB mode. The preload bridge exposes only:
 
 - `CNSEB.getDeviceInfo()`
-- `CNSEB.requestExit()`
+- `CNSEB.requestExit()` and `CNSEB.requestLogout()`
+- `CNSEB.onSecurityEvent(callback)` for display and application focus events
 - `CNSEB.onExitBlocked(callback)`
 
 No Supabase service-role key or privileged secret belongs in this desktop client. Device registration, exam launch authorization and audit events must be validated by trusted server-side code. The client-reported mode is informational and must not be treated as proof of device compliance.
