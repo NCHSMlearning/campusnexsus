@@ -1160,7 +1160,7 @@ function applyExamInstitutionBranding(institution) {
     const name = String(institution?.name || institution?.institution_name || 'Your Institution').trim();
     const code = String(institution?.school_code || institution?.short_code || '').trim();
     const logo = String(institution?.logo_url || '').trim();
-    const safeLogo = /^https:\/\//i.test(logo) ? logo : '/images/campus-nexus-logo.png';
+    const safeLogo = /^https:\/\//i.test(logo) ? logo : '/images/campus-nexus-original-logo.webp?v=1';
 
     const logoIds = ['institutionBrandLogo', 'examInstitutionLogo', 'institutionHeroImage', 'institutionCampusImage'];
     logoIds.forEach(id => {
@@ -1168,7 +1168,7 @@ function applyExamInstitutionBranding(institution) {
         if (image) {
             image.src = safeLogo;
             image.alt = name + ' logo';
-            image.onerror = () => { image.onerror = null; image.src = '/images/campus-nexus-logo.png'; };
+            image.onerror = () => { image.onerror = null; image.src = '/images/campus-nexus-original-logo.webp?v=1'; };
         }
     });
 
@@ -5650,7 +5650,7 @@ class StealthProctor {
 // ============================================================
 // PROCTORING LOGS
 // ============================================================
-async async function logProctoringEvent(eventType, details, severity = 'info') {
+async function logProctoringEvent(eventType, details, severity = 'info') {
     try {
         const { error } = await sb.from('exam_proctoring_logs').insert({
             student_id: AppState.studentId,
