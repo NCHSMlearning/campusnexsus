@@ -1,6 +1,6 @@
 {
   "name": "campus-nexus-secure-exam-browser",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "private": true,
   "description": "Windows desktop client for Campus Nexus secure examinations",
   "main": "src/main.js",
@@ -23,13 +23,15 @@
     },
     "files": [
       "src/**/*",
+      "build/**/*",
       "package.json"
     ],
     "win": {
       "target": [
         "nsis",
         "portable"
-      ]
+      ],
+      "icon": "build/campus-nexus.ico"
     },
     "nsis": {
       "oneClick": false,
