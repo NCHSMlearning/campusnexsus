@@ -97,7 +97,7 @@ function createWindow() {
   mainWindow.webContents.on('before-input-event', (event, input) => {
     const key = input.key.toLowerCase();
     const blocked = input.type === 'keyDown' && (
-      (input.control && ['r','w','t','n','l','p','s'].includes(key)) ||
+      (input.control && ['r','w','t','n','l','p','s','c','v','x'].includes(key)) ||
       (input.alt && ['left','right','f4','tab'].includes(key)) ||
       key === 'f5' || key === 'f11' || key === 'f12' ||
       (input.control && input.shift && ['i','j','c'].includes(key))
