@@ -1407,7 +1407,7 @@ function goToStep(step) {
     AppState.currentStep = requestedStep;
     const lobby = document.getElementById('lobbyContainer');
     if (lobby) {
-        lobby.classList.remove('stage-1', 'stage-2', 'stage-3');
+        lobby.classList.remove('welcome-screen', 'stage-1', 'stage-2', 'stage-3');
         lobby.classList.add('stage-' + requestedStep);
     }
     for (let i = 1; i <= 4; i++) {
@@ -1432,6 +1432,16 @@ function goToStep(step) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
     return true;
 }
+
+// Welcome landing page -> first required examination stage.
+function beginExamJourney() {
+    const start = document.getElementById('beginExamJourneyBtn');
+    if (start) start.disabled = true;
+    const moved = goToStep(1);
+    if (!moved && start) start.disabled = false;
+    return moved;
+}
+window.beginExamJourney = beginExamJourney;
 
 // ============================================================
 // updateStartButton
@@ -5827,7 +5837,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     initDomRefs();
     loadLobbyData();
     console.log('📝 Exam Lobby loaded. Exam ID:', AppState.examId, 'Student ID:', AppState.studentId);
-    goToStep(1);
+    const lobby = document.getElementById('lobbyContainer');
+    if (lobby) {
+        lobby.classList.remove('stage-1', 'stage-2', 'stage-3');
+        lobby.classList.add('welcome-screen');
+    }
     if (retakeRequestedByUrl) {
         console.log('🔄 RETAKE REQUEST ACTIVE - only DB authorization can create a new attempt');
     }
