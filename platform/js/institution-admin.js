@@ -202,8 +202,16 @@ async function loadCNSEBInstitutionMonitor(){
   if(body)body.innerHTML=rows.map(row=>{
    const version=String(row.user_agent||"").match(/CampusNexus-SEB\/([^ |]+)/)?.[1]||"Browser / unknown";
    const last=row.last_heartbeat?new Date(row.last_heartbeat).toLocaleString():"Unknown";
-   return '<tr><td><b style="color:'+(row.is_active?'#168154':'#b45309')+'">'+(row.is_active?'Active':'Stale')+'</b></td><td>'+esc(row.exam_title||("Exam "+row.exam_id))+'</td><td style="font-family:monospace">'+esc(String(row.student_id||"").slice(0,8))+'…</td><td>'+esc(version)+'</td><td>'+esc(last)+'</td></tr>';
+   const examTitle=esc(row.exam_title||("Exam "+row.exam_id)),studentLabel=esc(String(row.student_id||"").slice(0,8))+'…';
+   const watch=row.is_active&&row.student_id&&row.exam_id?'<button type="button" data-ia-cnseb-watch="'+esc(row.student_id)+'" data-ia-cnseb-exam="'+Number(row.exam_id)+'" data-ia-cnseb-student-label="'+studentLabel+'" data-ia-cnseb-exam-label="'+examTitle+'" class="ia-secondary-btn" style="padding:6px 9px">Watch live</button>':'—';
+   return '<tr><td><b style="color:'+(row.is_active?'#168154':'#b45309')+'">'+(row.is_active?'Active':'Stale')+'</b></td><td>'+examTitle+'</td><td style="font-family:monospace">'+studentLabel+'</td><td>'+esc(version)+'</td><td>'+esc(last)+'</td><td>'+watch+'</td></tr>';
   }).join("")||'<tr><td colspan="5" class="ia-empty">No Secure Exam Browser sessions found.</td></tr>';
+  body?.querySelectorAll("[data-ia-cnseb-watch]")?.forEach(button=>button.addEventListener("click",async()=>{
+   try{
+    if(!window.CNSEBLiveViewer)throw new Error("Live camera viewer is not loaded. Refresh the page and try again.");
+    await window.CNSEBLiveViewer.open({client:state.db,studentId:button.dataset.iaCnsebWatch,examId:Number(button.dataset.iaCnsebExam),studentName:button.dataset.iaCnsebStudentLabel,examName:button.dataset.iaCnsebExamLabel});
+   }catch(error){message(error.message||"Live camera could not be opened.",true);}
+  }));
   const updated=$("iaCnsebUpdated");if(updated)updated.textContent="Updated "+new Date(data.generated_at||Date.now()).toLocaleString()+" · scoped to "+(state.institution?.name||"this institution");
  }catch(error){
   console.warn("[CN-SEB institution monitor]",error);
