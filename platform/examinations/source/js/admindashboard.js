@@ -3010,14 +3010,21 @@ window.viewStudentProfile = async function(pid) {
     // 📝 VIEW STUDENT PROGRESS
     // ============================================
     // Rubric format: one line per criterion, e.g. 2|hand hygiene;hand washing
-function calculateRubricProvisionalMark(answer, key, maximum) {
- const body=String(answer||'').trim().toLocaleLowerCase().replace(/\\s+/g,' ').replace(/[.,;:!?]+/g,' ').trim();
- const rows=String(key||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
- if(!body||!rows.length)return {configured:false,score:0,criteria:[]};
- const criteria=rows.map(line=>{ const m=line.match(/^(\d+(?:\.\d+)?)\s*[|:]\s*(.+)$/); if(!m)return null; const marks=Number(m[1]); const terms=m[2].split(/[;；]/).map(x=>x.trim().toLocaleLowerCase()).filter(Boolean); if(!(marks>0)||!terms.length)return null; const found=terms.find(term=>body.includes(term)); return {marks:marks,matched:!!found,matchedTerm:found||''}; }).filter(Boolean);
- if(criteria.length){const score=criteria.filter(x=>x.matched).reduce((sum,x)=>sum+x.marks,0);return {configured:true,score:Math.min(Math.max(0,Number(maximum)||0),score),criteria:criteria,method:'structured_rubric'};}
- const normalizedKey=rows.join(' ').toLocaleLowerCase().replace(/\\s+/g,' ').replace(/[.,;:!?]+/g,' ').trim();
- if(normalizedKey&&body===normalizedKey){const max=Math.max(0,Number(maximum)||0);return {configured:true,score:max,criteria:[{marks:max,matched:true,matchedTerm:'Exact model-answer match'}],method:'exact_model_answer'};}
+function calculateRubricProvisionalMark(answer, key, maximum, rubric) {
+ const normalize = value => String(value || '').toLocaleLowerCase().normalize('NFKC').replace(/[^\\p{L}\\p{N}]+/gu,' ').trim().replace(/\\s+/g,' ');
+ const body=normalize(answer), max=Math.max(0,Number(maximum)||0);
+ if(!body)return {configured:false,score:0,criteria:[],method:'manual_review'};
+ let criteria=[];
+ try { const parsed=Array.isArray(rubric)?rubric:(typeof rubric==='string'?JSON.parse(rubric||'[]'):[]); if(Array.isArray(parsed)&&parsed.length)criteria=parsed.map(item=>({marks:Number(item.marks),terms:(item.accepted||[]).map(normalize).filter(Boolean)})).filter(x=>x.marks>0&&x.terms.length); } catch(_){}
+ if(criteria.length){
+   const results=criteria.map(item=>{const found=item.terms.find(term=>(' '+body+' ').includes(' '+term+' '));return {marks:item.marks,matched:!!found,matchedTerm:found||''};});
+   return {configured:true,score:Math.min(max,results.filter(x=>x.matched).reduce((sum,x)=>sum+x.marks,0)),criteria:results,method:'lecturer_rubric'};
+ }
+ const rows=String(key||'').split(/\\r?\\n/).map(x=>x.trim()).filter(Boolean);
+ const structured=rows.map(line=>{const m=line.match(/^(\\d+(?:\\.\\d+)?)\\s*[|:]\\s*(.+)$/);if(!m)return null;return {marks:Number(m[1]),terms:m[2].split(/[;；]/).map(normalize).filter(Boolean)};}).filter(x=>x&&x.marks>0&&x.terms.length);
+ if(structured.length){const results=structured.map(item=>{const found=item.terms.find(term=>(' '+body+' ').includes(' '+term+' '));return {marks:item.marks,matched:!!found,matchedTerm:found||''};});return {configured:true,score:Math.min(max,results.filter(x=>x.matched).reduce((sum,x)=>sum+x.marks,0)),criteria:results,method:'structured_key'};}
+ const normalizedKey=normalize(rows.join(' '));
+ if(normalizedKey&&body===normalizedKey)return {configured:true,score:max,criteria:[{marks:max,matched:true,matchedTerm:'Exact model-answer match'}],method:'exact_model_answer'};
  return {configured:false,score:0,criteria:[],method:'manual_review'};
 }
 
@@ -3179,7 +3186,7 @@ window.viewStudentProgress = async function(studentId, studentName, examId) {
                     isCorrect,
                     marks: row?.marks ?? row?.marks_obtained ?? 0,
                     totalMarks: q.marks ?? 1,
-                    provisional: calculateRubricProvisionalMark(selected, q.marking_key || '', q.marks ?? 1)
+                    provisional: calculateRubricProvisionalMark(selected, q.marking_key || '', q.marks ?? 1, q.marking_rubric)
                 };
             });
 
