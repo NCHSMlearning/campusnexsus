@@ -19,7 +19,7 @@ async function boot(){
   const sessionResult=await withTimeout(sb.auth.getSession(),"Secure sign-in check");
   const session=sessionResult?.data?.session,sessionError=sessionResult?.error;
   if(sessionError) throw sessionError;
-  if(!session?.user){window.location.replace("/login?redirect=%2Fadminexams%2F");return}
+  if(!session?.user){window.location.replace("/examlogin.html?redirect=%2Fexams");return}
   authUser=session.user;
   $("bootMessage").textContent="Checking your institution access…";
   const [memberResult,superResult,profileResult]=await withTimeout(Promise.all([
@@ -390,7 +390,7 @@ function bind(){
 
  $("refreshRetakes").addEventListener("click",loadRetakes);$("refreshLiveStudents").addEventListener("click",loadLiveStudents);$("refreshLiveFeed").addEventListener("click",loadLiveFeed);
  $("studentSearch").addEventListener("input",()=>{const q=$("studentSearch").value.toLowerCase(),rows=(window.__examStudentRows||[]).filter(s=>[s.full_name,s.email,s.admission_number,s.student_id,s.program].some(v=>String(v||"").toLowerCase().includes(q)));$("studentsTable").innerHTML=rows.map(s=>'<tr><td>'+escapeHTML(s.full_name||"Student")+'</td><td>'+escapeHTML(s.admission_number||s.student_id||"—")+'</td><td>'+escapeHTML(s.program||"—")+'</td><td>'+escapeHTML(s.block||"—")+'</td><td>'+escapeHTML(s.intake_year||"—")+'</td><td>'+escapeHTML(s.status||"—")+'</td></tr>').join("")||'<tr><td colspan="6">No matching students.</td></tr>'});
- $("changePasswordBtn").addEventListener("click",changePassword);$("signOutOtherBtn").addEventListener("click",async()=>{await sb.auth.signOut();window.location.replace("/login")});
+ $("changePasswordBtn").addEventListener("click",changePassword);$("signOutOtherBtn").addEventListener("click",async()=>{await sb.auth.signOut();window.location.replace("/examlogin.html")});
 
  $("markStudent").addEventListener("change",renderStudentMarks);$("saveMarkBtn").addEventListener("click",saveManualMark);
  $("logoutBtn").addEventListener("click",async()=>{await sb.auth.signOut();window.location.replace("/login")});
