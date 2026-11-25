@@ -59,6 +59,13 @@ jobs:
           if ((Get-Item "build/campus-nexus.ico").Length -lt 1000) { throw "Campus Nexus icon generation failed." }
       - name: Install dependencies
         run: npm install
+      - name: Validate JavaScript syntax
+        shell: pwsh
+        run: |
+          node --check src/main.js
+          node --check src/preload.js
+          node --check ../exam.js
+          node --check ../platform/js/campus-nexus-dashboard-filter.js
       - name: Build Windows installer and portable app
         # Prevent electron-builder from trying to publish itself with GH_TOKEN.
         # The next step publishes the generated files using GITHUB_TOKEN.
