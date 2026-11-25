@@ -29,17 +29,20 @@ function isValidExamUrl(value) {
   } catch { return false; }
 }
 
-function extractExamUrl(args) {
+function extractLaunch(args) {
   for (const arg of args || []) {
     if (typeof arg !== 'string' || !arg.toLowerCase().startsWith(PROTOCOL)) continue;
     try {
       const deepLink = new URL(arg);
       const candidate = deepLink.searchParams.get('url');
-      if (isValidExamUrl(candidate)) return candidate;
+      const code = deepLink.searchParams.get('code');
+      if (isValidExamUrl(candidate)) return { url: candidate, code: /^[a-f0-9]{64}$/.test(code || '') ? code : null };
     } catch { /* Ignore invalid protocol arguments. */ }
   }
   return null;
 }
+
+function extractExamUrl(args) { return extractLaunch(args)?.url || null; }
 
 function isTrusted(url) {
   try {
@@ -180,10 +183,13 @@ function createWindow() {
 
 if (!app.requestSingleInstanceLock()) app.quit();
 else {
-  const initialLaunch = extractLaunch(process.argv);\n  pendingExamUrl = initialLaunch?.url || null;\n  pendingHandoffCode = initialLaunch?.code || null;
+  const initialLaunch = extractLaunch(process.argv);
+  pendingExamUrl = initialLaunch?.url || null;
+  pendingHandoffCode = initialLaunch?.code || null;
   app.on('second-instance', (_event, commandLine) => {
-    const target = extractExamUrl(commandLine);
-    if (target) pendingExamUrl = target;
+    const launch = extractLaunch(commandLine);
+    const target = launch?.url || null;
+    if (target) { pendingExamUrl = target; pendingHandoffCode = launch.code || null; }
     if (mainWindow) {
       if (mainWindow.isMinimized()) mainWindow.restore();
       mainWindow.focus();
@@ -192,9 +198,11 @@ else {
   });
   app.on('open-url', (event, url) => {
     event.preventDefault();
-    const target = extractExamUrl([url]);
+    const launch = extractLaunch([url]);
+    const target = launch?.url || null;
     if (target) {
       pendingExamUrl = target;
+      pendingHandoffCode = launch.code || null;
       if (mainWindow) loadExam(target);
     }
   });
@@ -213,7 +221,28 @@ app.whenReady().then(() => {
     isTrusted(requestingOrigin || webContents.getURL())
   ));
   ipcMain.handle('cnseb:brand-logo-url', () => pathToFileURL(path.join(__dirname, '../build/campus-nexus-original-logo.webp')).href);
-  ipcMain.handle('cnseb:update-state', () => updateState);\n  ipcMain.handle('cnseb:redeem-auth-handoff', async (event) => {\n    const frameUrl = event.senderFrame?.url || '';\n    if (!isValidExamUrl(frameUrl)) return { ok: false, error: 'Authentication handoff is only available on the verified exam page.' };\n    const code = pendingHandoffCode;\n    if (!code) return { ok: false, unavailable: true };\n    pendingHandoffCode = null;\n    try {\n      const response = await fetch(HANDOFF_ENDPOINT, {\n        method: 'POST', headers: { 'Content-Type': 'application/json', apikey: SUPABASE_ANON_KEY },\n        body: JSON.stringify({ action: 'redeem', code }), signal: AbortSignal.timeout(12000)\n      });\n      const payload = await response.json().catch(() => ({}));\n      if (!response.ok || !payload.token_hash || !payload.exam_id) return { ok: false, error: payload.error || 'Secure sign-in could not be completed. Return to the student portal and launch again.' };\n      const current = new URL(frameUrl);\n      if (current.searchParams.get('exam_id') !== String(payload.exam_id)) return { ok: false, error: 'This sign-in code does not belong to the selected examination.' };\n      return { ok: true, token_hash: payload.token_hash, type: 'magiclink', exam_id: String(payload.exam_id) };\n    } catch (error) {\n      console.error('[CN-SEB] Authentication handoff failed:', error.message);\n      return { ok: false, error: 'Unable to connect to secure sign-in. Check the internet connection and relaunch the examination.' };\n    }\n  });
+  ipcMain.handle('cnseb:update-state', () => updateState);
+  ipcMain.handle('cnseb:redeem-auth-handoff', async (event) => {
+    const frameUrl = event.senderFrame?.url || '';
+    if (!isValidExamUrl(frameUrl)) return { ok: false, error: 'Authentication handoff is only available on the verified exam page.' };
+    const code = pendingHandoffCode;
+    if (!code) return { ok: false, unavailable: true };
+    pendingHandoffCode = null;
+    try {
+      const response = await fetch(HANDOFF_ENDPOINT, {
+        method: 'POST', headers: { 'Content-Type': 'application/json', apikey: SUPABASE_ANON_KEY },
+        body: JSON.stringify({ action: 'redeem', code }), signal: AbortSignal.timeout(12000)
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || !payload.token_hash || !payload.exam_id) return { ok: false, error: payload.error || 'Secure sign-in could not be completed. Return to the student portal and launch again.' };
+      const current = new URL(frameUrl);
+      if (current.searchParams.get('exam_id') !== String(payload.exam_id)) return { ok: false, error: 'This sign-in code does not belong to the selected examination.' };
+      return { ok: true, token_hash: payload.token_hash, type: 'magiclink', exam_id: String(payload.exam_id) };
+    } catch (error) {
+      console.error('[CN-SEB] Authentication handoff failed:', error.message);
+      return { ok: false, error: 'Unable to connect to secure sign-in. Check the internet connection and relaunch the examination.' };
+    }
+  });
   ipcMain.on('cnseb:is-kiosk', event => {
     event.returnValue = !!(mainWindow && !mainWindow.isDestroyed() && mainWindow.isKiosk() && mainWindow.isFullScreen());
   });
