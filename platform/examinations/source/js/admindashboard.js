@@ -3251,7 +3251,7 @@ window.viewStudentProgress = async function(studentId, studentName, examId) {
                     <div class="cn-guide-box">${safe(guide)}</div>
                     ${q.provisional.configured ? '<div style="margin-top:8px;padding:9px;background:#eff6ff;color:#1e40af;border-radius:8px;font-size:12px"><strong>Rule-based first mark: '+q.provisional.score+'/'+safe(q.totalMarks)+'</strong> · '+q.provisional.criteria.filter(c=>c.matched).length+' criteria matched. Countercheck before saving.</div>' : '<div style="margin-top:8px;color:#9a3412;font-size:12px">No exact model-answer match or structured rubric detected; manual marking required.</div>'}
                     <div style="display:grid;grid-template-columns:minmax(110px,.35fr) minmax(0,1fr);gap:10px;margin-top:13px">
-                      <label style="font-size:12px;font-weight:700">Marks awarded<input class="subjective-mark-input cn-mark-field" data-question-id="${safe(q.id)}" type="number" min="0" max="${Number(q.totalMarks)||1}" step="1" value="${q.isSubjectiveGraded ? Number(q.marks)||0 : (q.provisional.configured ? q.provisional.score : Number(q.marks)||0)}" style="margin-top:6px"></label>
+                      <label style="font-size:12px;font-weight:700">Marks awarded<input class="subjective-mark-input cn-mark-field" data-question-id="${safe(q.id)}" data-question-type="${safe(q.type)}" type="number" min="0" max="${Number(q.totalMarks)||1}" step="1" value="${q.isSubjectiveGraded ? Number(q.marks)||0 : (q.provisional.configured ? q.provisional.score : Number(q.marks)||0)}" style="margin-top:6px"></label>
                       <label style="font-size:12px;font-weight:700">Lecturer feedback<textarea class="subjective-feedback-input cn-mark-field" data-question-id="${safe(q.id)}" rows="2" maxlength="4000" placeholder="Give feedback to the student…" style="margin-top:6px;resize:vertical">${safe(q.feedback)}</textarea></label>
                     </div>` : `
                     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:12px;font-size:12px;color:#64748b"><span>Correct answer: <strong>${safe(q.correctText || '—')}</strong></span><strong>${safe(q.marks)} / ${safe(q.totalMarks)} marks</strong></div>`}
@@ -3277,40 +3277,35 @@ window.viewStudentProgress = async function(studentId, studentName, examId) {
     // Lecturer-controlled marking for short and long written answers.
     window.saveSubjectiveExamMarks = async function(studentId, examId, attemptId) {
         const modalContent = document.getElementById('modalContent');
-        const markInputs = [...(modalContent?.querySelectorAll('.subjective-mark-input') || [])];
-        if (!markInputs.length) { showToast('No written questions are available to mark.', 'warning'); return; }
-        const marks = {};
-        const feedback = {};
-        for (const input of markInputs) {
-            const qid = input.dataset.questionId;
-            const value = Number(input.value);
-            const max = Number(input.max);
-            if (!Number.isFinite(value) || value < 0 || value > max) {
-                input.focus();
-                showToast('Check marks: each score must be between zero and the question maximum.', 'error');
-                return;
-            }
-            marks[qid] = value;
-            const feedbackInput = modalContent.querySelector('.subjective-feedback-input[data-question-id="' + qid + '"]');
-            feedback[qid] = feedbackInput?.value || '';
+        const inputs = [...(modalContent?.querySelectorAll('.subjective-mark-input') || [])];
+        if (!inputs.length) { showToast('No written questions are available to mark.', 'warning'); return; }
+        const groups = { short: { marks:{}, feedback:{} }, long: { marks:{}, feedback:{} } };
+        for (const input of inputs) {
+            const id=input.dataset.questionId, type=String(input.dataset.questionType||'').toLowerCase();
+            const value=Number(input.value), max=Number(input.max);
+            if (!Number.isFinite(value)||value<0||value>max||!Number.isInteger(value)) { input.focus(); showToast('Enter a whole-number mark within the question maximum.', 'error'); return; }
+            const group=['short_answer','fill_blank'].includes(type)?groups.short:groups.long;
+            group.marks[id]=value;
+            group.feedback[id]=modalContent.querySelector('.subjective-feedback-input[data-question-id="'+id+'"]')?.value||'';
         }
-        const button = modalContent.querySelector('button[onclick*="saveSubjectiveExamMarks"]');
-        if (button) { button.disabled = true; button.textContent = 'Saving marks…'; }
+        const button=modalContent.querySelector('button[onclick*="saveSubjectiveExamMarks"]');
+        if(button){button.disabled=true;button.textContent='Saving marks…';}
         try {
-            const { data, error } = await sb.rpc('grade_subjective_exam_attempt', {
-                p_student_id: studentId,
-                p_exam_id: Number(examId),
-                p_attempt_id: attemptId,
-                p_marks: marks,
-                p_feedback: feedback
-            });
-            if (error) throw error;
-            showToast('Written answers marked. Total: ' + data.totalScore + '/' + data.totalMarks + ' (' + data.percentage + '%). ' + (data.pendingQuestions ? data.pendingQuestions + ' question(s) remain unmarked.' : 'All written questions are marked.'), 'success');
-            await window.viewStudentProgress(studentId, 'Student', examId);
-        } catch (error) {
-            console.error('Subjective marking failed:', error);
-            showToast('Could not save written marks: ' + (error.message || error), 'error');
-            if (button) { button.disabled = false; button.textContent = 'Save written-question marks'; }
+            let data=null;
+            for (const [key,group] of Object.entries(groups)) {
+                if (!Object.keys(group.marks).length) continue;
+                const {data:result,error}=await sb.rpc(key==='short'?'grade_short_answer_exam_attempt':'grade_long_answer_exam_attempt',{
+                    p_student_id:studentId,p_exam_id:Number(examId),p_attempt_id:attemptId,p_marks:group.marks,p_feedback:group.feedback
+                });
+                if(error)throw error;
+                data=result;
+            }
+            showToast('Written answers saved. Total: '+data.totalScore+'/'+data.totalMarks+' ('+data.percentage+'%). '+(data.pendingQuestions?data.pendingQuestions+' question(s) remain unmarked.':'All written questions are marked; results remain pending approval.'),'success');
+            await window.viewStudentProgress(studentId,'Student',examId);
+        } catch(error) {
+            console.error('Subjective marking failed:',error);
+            showToast('Could not save written marks: '+(error.message||error),'error');
+            if(button){button.disabled=false;button.textContent='Save written-question marks';}
         }
     };
 
