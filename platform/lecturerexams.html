@@ -1935,7 +1935,7 @@
                     '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:11px;color:#64748b;margin-bottom:12px;">' +
                     '<span>' + (snap ? 'Snapshot: ' + lecturerCameraEscape(new Date(snap.timestamp).toLocaleTimeString('en-KE')) : 'Awaiting first snapshot') + '</span>' +
                     '<span>' + (alertTotal ? 'Review alerts' : 'No recent alerts') + '</span></div>' +
-                    '<button type="button" onclick="openLecturerCameraView(' + JSON.stringify(String(row.student_id)) + ',' + Number(row.exam_id) + ',' + JSON.stringify(name) + ',' + JSON.stringify(examName) + ')" style="width:100%;padding:9px 12px;border:0;border-radius:8px;background:#0b3552;color:#fff;font-weight:700;cursor:pointer;"><i class="fas fa-video"></i> View camera &amp; evidence</button></div></article>';
+                    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"><button type="button" onclick="openLecturerCameraView(' + JSON.stringify(String(row.student_id)) + ',' + Number(row.exam_id) + ',' + JSON.stringify(name) + ',' + JSON.stringify(examName) + ')" style="padding:9px 8px;border:0;border-radius:8px;background:#e8f0f7;color:#0b3552;font-weight:700;cursor:pointer;"><i class="fas fa-images"></i> Evidence</button><button type="button" onclick="window.CNSEBLiveViewer.open({client:sb,studentId:' + JSON.stringify(String(row.student_id)) + ',examId:' + Number(row.exam_id) + ',studentName:' + JSON.stringify(name) + ',examName:' + JSON.stringify(examName) + '})" style="padding:9px 8px;border:0;border-radius:8px;background:#0b6b67;color:#fff;font-weight:700;cursor:pointer;"><i class="fas fa-video"></i> Watch live</button></div></div></article>';
             }).join('');
             loading.hidden = true;
         } catch (error) {
@@ -2834,5 +2834,6 @@ window.viewLecturerStudentProgress = async function(studentId, studentName, exam
 <script src="/platform/js/academic-structure.js?v=20261123-tenant-structure-v1" defer></script>
 <script src="/platform/js/lecturer-exam-builder-v11.js?v=20261124-written-marking-v2" defer></script>
 <script src="/js/campus-nexus-code-guard.js?v=20261124-global-guard-v1" defer></script>
+<script src="/platform/js/cnseb-live-viewer.js?v=20261125-live-viewer-v1" defer></script>
 </body>
 </html>
