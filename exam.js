@@ -4375,7 +4375,7 @@ async function captureSnapshot() {
     } catch (uploadError) {}
 
     try {
-        await sb.from('exam_proctoring_logs').insert({
+        const { error } = await sb.from('exam_proctoring_logs').insert({
             institution_id: AppState.institutionId,
             student_id: AppState.studentId,
             exam_id: parseInt(AppState.examId),
@@ -5587,7 +5587,7 @@ class StealthProctor {
 // ============================================================
 // PROCTORING LOGS
 // ============================================================
-async function logProctoringEvent(eventType, details, severity = 'info') {
+async async function logProctoringEvent(eventType, details, severity = 'info') {
     try {
         await sb.from('exam_proctoring_logs').insert({
             student_id: AppState.studentId,
@@ -5600,8 +5600,9 @@ async function logProctoringEvent(eventType, details, severity = 'info') {
             device_info: navigator.userAgent,
             timestamp: new Date().toISOString()
         });
+        if (error) console.warn('Failed to log proctoring event:', error.message, { eventType, examId: AppState.examId, institutionId: AppState.institutionId });
     } catch (e) {
-        console.warn('Failed to log proctoring event:', e);
+        console.warn('Failed to log proctoring event:', e?.message || e);
     }
 }
 
