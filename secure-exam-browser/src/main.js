@@ -3,6 +3,9 @@
 const { app, BrowserWindow, session, ipcMain, screen, dialog } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const path = require('node:path');
+const fs = require('node:fs');
+const crypto = require('node:crypto');
+const os = require('node:os');
 const { pathToFileURL } = require('node:url');
 
 const EXAM_ORIGIN = 'https://campusnexus.co.ke';
@@ -21,6 +24,25 @@ let pendingHandoffCode = null;
 let updateState = { state: 'checking' };
 let exitInProgress = false;
 let examMode = false;
+let deviceInstallId = null;
+let deviceRegistration = null;
+
+function loadDeviceIdentity() {
+  const directory = app.getPath('userData');
+  fs.mkdirSync(directory, { recursive: true });
+  const identityPath = path.join(directory, 'device-identity.json');
+  let saved = {};
+  try { saved = JSON.parse(fs.readFileSync(identityPath, 'utf8')); } catch (_) {}
+  deviceInstallId = /^[0-9a-f-]{36}$/i.test(saved.installId || '') ? saved.installId : crypto.randomUUID();
+  deviceRegistration = saved.registration && typeof saved.registration.id === 'string' ? saved.registration : null;
+  fs.writeFileSync(identityPath, JSON.stringify({ installId: deviceInstallId, registration: deviceRegistration }, null, 2), { mode: 0o600 });
+}
+
+function saveDeviceRegistration(registration) {
+  deviceRegistration = registration;
+  const identityPath = path.join(app.getPath('userData'), 'device-identity.json');
+  fs.writeFileSync(identityPath, JSON.stringify({ installId: deviceInstallId, registration: deviceRegistration }, null, 2), { mode: 0o600 });
+}
 
 function isValidExamUrl(value) {
   try {
@@ -266,6 +288,7 @@ else {
 }
 
 app.whenReady().then(() => {
+  loadDeviceIdentity();
   app.setName('Campus Nexus Secure Exam Browser');
   if (process.platform === 'win32') app.setAppUserModelId('co.ke.campusnexus.secureexam');
   app.setAsDefaultProtocolClient('campusnexus-seb');
@@ -288,10 +311,16 @@ app.whenReady().then(() => {
     try {
       const response = await fetch(HANDOFF_ENDPOINT, {
         method: 'POST', headers: { 'Content-Type': 'application/json', apikey: SUPABASE_ANON_KEY },
-        body: JSON.stringify({ action: 'redeem', code }), signal: AbortSignal.timeout(12000)
+        body: JSON.stringify({
+          action: 'redeem', code, device_install_id: deviceInstallId,
+          device_name: os.hostname(), platform: process.platform,
+          app_version: app.getVersion(),
+          device_details: { platform: process.platform, architecture: process.arch }
+        }), signal: AbortSignal.timeout(12000)
       });
       const payload = await response.json().catch(() => ({}));
-      if (!response.ok || !payload.token_hash || !payload.exam_id) return { ok: false, error: payload.error || 'Secure sign-in could not be completed. Return to the student portal and launch again.' };
+      if (!response.ok || !payload.token_hash || !payload.exam_id || !payload.device_registration_id) return { ok: false, error: payload.error || 'Secure sign-in could not be completed. Return to the student portal and launch again.' };
+      saveDeviceRegistration({ id: payload.device_registration_id, status: payload.device_approval_status || 'pending', institutionId: payload.institution_id || null });
       const current = new URL(frameUrl);
       if (current.searchParams.get('exam_id') !== String(payload.exam_id)) return { ok: false, error: 'This sign-in code does not belong to the selected examination.' };
       return { ok: true, token_hash: payload.token_hash, type: 'magiclink', exam_id: String(payload.exam_id) };
@@ -306,6 +335,8 @@ app.whenReady().then(() => {
   ipcMain.handle('cnseb:device-info', () => ({
     appVersion: app.getVersion(), platform: process.platform,
     architecture: process.arch, strictMode: STRICT,
+    deviceInstallId, deviceRegistrationId: deviceRegistration?.id || null,
+    deviceApprovalStatus: deviceRegistration?.status || 'not_registered',
     kioskRuntime: !!(mainWindow && !mainWindow.isDestroyed() && mainWindow.isKiosk() && mainWindow.isFullScreen()),
     deviceTrust: 'unverified', managedWindowsPolicyRequired: true,
     displayCount: screen.getAllDisplays().length
