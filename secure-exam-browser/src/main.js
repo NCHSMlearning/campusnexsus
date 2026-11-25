@@ -312,6 +312,7 @@ app.whenReady().then(() => {
   }));
   // Use an in-app confirmation rather than a native modal hidden behind kiosk.
   ipcMain.handle('cnseb:request-exit', async () => {
+    if (examMode) return { ok: false, reason: 'exam-active', message: 'Submit or complete the examination before exiting the secure browser.' };
     if (quitting) return { ok: true };
     exitInProgress = true;
     quitting = true;
@@ -319,6 +320,7 @@ app.whenReady().then(() => {
     return { ok: true };
   });
   ipcMain.handle('cnseb:request-logout', async () => {
+    if (examMode) return { ok: false, reason: 'exam-active', message: 'Submit or complete the examination before logging out.' };
     if (quitting) return { ok: true };
     exitInProgress = true;
     try {
@@ -350,6 +352,7 @@ app.whenReady().then(() => {
   });
   ipcMain.handle('cnseb:install-update', () => {
     if (!app.isPackaged) return { ok: false, reason: 'not-packaged' };
+    if (examMode) return { ok: false, reason: 'exam-active', message: 'Updates cannot be installed during an active examination. The update will remain ready until the examination is complete.' };
     autoUpdater.quitAndInstall(true, true);
     return { ok: true };
   });
