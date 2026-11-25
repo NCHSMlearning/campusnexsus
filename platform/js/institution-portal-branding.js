@@ -195,6 +195,35 @@
         ".lecturer-dashboard-hero h2,.lecturer-dashboard-hero p{color:#fff!important}" +
         ".lecturer-hero-tag{border-color:" + accent + "!important;color:" + primary + "!important}" +
         ".lecturer-hero-icon{background:" + accent + "!important;color:" + primary + "!important}" : "");
+    /* Apply the institution palette to the complete workspace, not only its navigation. */
+    style.textContent +=
+      ":root{--cn-primary:"+primary+";--cn-secondary:"+secondary+";--cn-accent:"+accent+
+      ";--cn-accent-1:"+colors[3]+";--cn-accent-2:"+colors[4]+";--cn-accent-3:"+colors[5]+
+      ";--cn-page-bg:#f4f7fb;--cn-surface:#fff;--cn-text:#172b43;--cn-muted:#64748b;"+
+      "--cn-border:color-mix(in srgb,"+primary+" 16%,#dbe4ee)}"+
+      "body{color:var(--cn-text)}"+
+      "main, .main-content, .content-wrapper, .dashboard-content, .page-content, .workspace-content{color:var(--cn-text)}"+
+      "h1,h2,h3,h4,.page-title,.section-title,.dashboard-title,.card-title,.panel-title{color:"+primary+"}"+
+      "p,.description,.subtitle,.helper-text,.text-muted,.muted{color:var(--cn-muted)}"+
+      ".stat-card,.metric-card,.dashboard-card,.content-card,.section-card,.panel,.card,.module-card,.quick-action-card,.widget-card,.table-container,.chart-container{border-color:var(--cn-border)}"+
+      ".stat-card,.metric-card,.dashboard-card,.content-card,.section-card,.panel,.card,.module-card,.quick-action-card,.widget-card{background-color:#fff}"+
+      ".stat-card .icon,.metric-card .icon,.stat-icon,.metric-icon,.card-icon,.section-icon{background:color-mix(in srgb,"+secondary+" 12%,white);color:"+secondary+"}"+
+      ".stat-card .value,.metric-card .value,.stat-value,.metric-value,.kpi-value{color:"+primary+"}"+
+      ".section-heading,.section-header,.panel-heading,.card-header{border-color:var(--cn-border)}"+
+      ".section-heading .icon,.section-header .icon,.panel-heading .icon{color:"+secondary+"}"+
+      "a:not(.sidebar-menu a):not(.ia-nav-item){color:"+secondary+"}"+
+      "button:not(.sidebar-menu button):not(.ia-nav-item),.btn,.button{accent-color:"+secondary+"}"+
+      ".btn-primary,.primary-button,.primary-btn,.button-primary,.submit-button,.action-primary{background:"+primary+"!important;border-color:"+primary+"!important;color:#fff!important}"+
+      ".btn-secondary,.secondary-button,.button-secondary,.outline-button{border-color:"+secondary+"!important;color:"+secondary+"!important}"+
+      ".badge,.status-badge,.chip,.tag{border-color:color-mix(in srgb,"+accent+" 42%,white)}"+
+      "thead th,.data-table thead th,.table thead th{background:color-mix(in srgb,"+primary+" 8%,white);color:"+primary+";border-color:var(--cn-border)}"+
+      "table td,table th,.table td,.table th{border-color:var(--cn-border)}"+
+      "input:focus,select:focus,textarea:focus,.form-control:focus{border-color:"+secondary+"!important;box-shadow:0 0 0 3px color-mix(in srgb,"+secondary+" 18%,transparent)!important;outline:none}"+
+      "input[type=checkbox],input[type=radio],progress{accent-color:"+secondary+"}"+
+      ".progress-bar,.progress-fill,.completion-fill{background:"+secondary+"}"+
+      ".tab.active,.nav-tabs .active,.filter-chip.active,.segmented-control .active{color:"+primary+";border-color:"+secondary+";background:color-mix(in srgb,"+secondary+" 10%,white)}"+
+      ".empty-state .icon,.empty-state i{color:"+secondary+"}"+
+      "@media(prefers-reduced-motion:no-preference){.btn,.button,.card,.module-card{transition:border-color .18s ease,box-shadow .18s ease,background-color .18s ease}}";
     if (!style.parentNode) (document.head || document.documentElement).appendChild(style);
 
     document.querySelectorAll(".nchsm-pwa-install,[data-pwa-install],#installBtn,#installButton")
