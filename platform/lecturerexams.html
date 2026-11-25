@@ -1632,7 +1632,7 @@
                     <td style="text-align:center; font-weight:600; color:${parseFloat(pct) >= 60 ? '#059669' : '#DC2626'};">${pct}%</td>
                     <td style="text-align:center;">${statusHtml}</td>
                     <td style="text-align:center;white-space:nowrap;">
-                        ${isLecturerOwnExam(r.exam_info) ? `<button type="button" onclick="viewLecturerStudentProgress('${String(r.student_id).replace(/'/g,"\\'")}', '${String(r.student?.full_name||'Unknown').replace(/'/g,"\\'")}', ${Number(r.exam_id)})" style="background:#0A3D62;color:#fff;border:0;padding:6px 10px;border-radius:6px;cursor:pointer;font-size:.65rem;font-weight:700;margin:2px;"><i class="fas fa-chart-line"></i> View Progress</button>` : ''}
+                        ${isLecturerOwnExam(r.exam_info) ? `<button type="button" onclick="viewLecturerStudentProgress(${lecturerInlineArg(r.student_id)}, ${lecturerInlineArg(r.student?.full_name||'Unknown')}, ${Number(r.exam_id)})" style="background:#0A3D62;color:#fff;border:0;padding:6px 10px;border-radius:6px;cursor:pointer;font-size:.65rem;font-weight:700;margin:2px;"><i class="fas fa-chart-line"></i> View Progress</button>` : ''}
                         ${isReset || isInProgress ? `
                             <button class="btn-reset-exam" disabled><i class="fas fa-clock"></i> ${isReset ? 'Continue Ready' : 'In Progress'}</button>
                         ` : `
@@ -2046,6 +2046,8 @@
         lecturerCameraExam = null;
     };
 
+    const lecturerInlineArg = value => JSON.stringify(String(value ?? '')).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+
     // ============================================================
     // RESET STUDENT EXAM
     // ============================================================
@@ -2319,7 +2321,7 @@ window.viewLecturerStudentProgress = async function(studentId, studentName, exam
             if (modalContent) modalContent.innerHTML = html;
         } catch (error) {
             console.error('Student progress load failed:', error);
-            if (modalContent) modalContent.innerHTML = `<div style="padding:18px;background:#fef2f2;color:#991b1b;border-radius:10px;"><strong>Unable to load student progress</strong><p>${safe(error?.message || error)}</p><button type="button" onclick="viewLecturerStudentProgress(${JSON.stringify(String(studentId || ''))},${JSON.stringify(String(studentName || 'Student'))},${Number(examId) || 0})" style="padding:8px 12px;border:0;border-radius:7px;background:#991b1b;color:#fff;">Retry</button></div>`;
+            if (modalContent) modalContent.innerHTML = `<div style="padding:18px;background:#fef2f2;color:#991b1b;border-radius:10px;"><strong>Unable to load student progress</strong><p>${safe(error?.message || error)}</p><button type="button" onclick="viewLecturerStudentProgress(${safe(JSON.stringify(String(studentId || '')))},${safe(JSON.stringify(String(studentName || 'Student')))},${Number(examId) || 0})" style="padding:8px 12px;border:0;border-radius:7px;background:#991b1b;color:#fff;">Retry</button></div>`;
         }
     };
 
@@ -2866,7 +2868,7 @@ window.viewLecturerStudentProgress = async function(studentId, studentName, exam
 })();
 </script>
 
-<script src="/js/exam-coordinator.js?v=1" defer></script>
+<!-- Removed stale coordinator include: no coordinator module exists or is referenced by this portal. -->
 <script src="/js/nchsm-mobile-enhancements.js?v=7" defer></script> 
 <script>(function(){function updateLecturerClock(){const n=new Date();const e=document.getElementById('lecturerCommandDate');if(e)e.textContent=new Intl.DateTimeFormat('en-KE',{timeZone:'Africa/Nairobi',weekday:'short',day:'2-digit',month:'short',year:'numeric'}).format(n);}updateLecturerClock();})();</script>
 
