@@ -19,7 +19,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     const info = await ipcRenderer.invoke('cnseb:device-info');
     const container = document.createElement('div');
     const logo = document.createElement('img');
-    logo.src = 'https://campusnexus.co.ke/images/campus-nexus-original-logo.webp';
+    logo.src = await ipcRenderer.invoke('cnseb:brand-logo-url');
     logo.alt = 'Campus Nexus';
     Object.assign(logo.style, { width: '22px', height: '22px', objectFit: 'contain', borderRadius: '5px', background: '#fff', padding: '2px' });
 
