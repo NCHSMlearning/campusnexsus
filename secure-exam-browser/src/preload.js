@@ -3,6 +3,8 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('CNSEB', Object.freeze({
+  // This bridge exists only inside the desktop app; main.js enforces native kiosk mode.
+  isKiosk: () => true,
   getDeviceInfo: () => ipcRenderer.invoke('cnseb:device-info'),
   getUpdateState: () => ipcRenderer.invoke('cnseb:update-state'),
   checkForUpdates: () => ipcRenderer.invoke('cnseb:check-for-updates'),
