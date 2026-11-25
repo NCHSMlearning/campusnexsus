@@ -1947,6 +1947,39 @@ body{
  #lobbyContainer.stage-3 .student-program{grid-column:1/-1;text-align:left}
 }
 
+
+/* WELCOME LANDING SCREEN — displayed before the four required exam stages */
+#lobbyContainer.welcome-screen .lobby-wrap{display:block;width:min(1160px,calc(100% - 40px));padding:30px 0 38px}
+#lobbyContainer.welcome-screen .lobby-main{width:100%;max-width:none}
+#lobbyContainer.welcome-screen .welcome-hero{display:grid!important;grid-template-columns:minmax(0,1.1fr) minmax(260px,.9fr)!important;align-items:center;gap:22px 30px;padding:clamp(24px,4vw,48px)!important;min-height:0;border-radius:24px}
+#lobbyContainer.welcome-screen .welcome-main h1{font-size:clamp(36px,5vw,62px)!important;line-height:1.04}
+#lobbyContainer.welcome-screen .welcome-description{font-size:clamp(13px,1.4vw,16px)!important;max-width:650px;line-height:1.65}
+#lobbyContainer.welcome-screen .welcome-visual{min-height:270px}
+#lobbyContainer.welcome-screen .exam-hero-card{grid-column:1/-1;width:100%;margin:0!important}
+#lobbyContainer.welcome-screen .welcome-journey{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:24px 0 18px;max-width:760px}
+#lobbyContainer.welcome-screen .welcome-journey>div{display:flex;align-items:center;gap:8px;min-width:0}
+#lobbyContainer.welcome-screen .welcome-journey b{display:grid;place-items:center;width:34px;height:34px;flex:none;border-radius:50%;background:#e5f3fb;color:#0879d1;font-size:13px}
+#lobbyContainer.welcome-screen .welcome-journey span{font-size:10px;font-weight:800;line-height:1.35;color:#173b57}
+#lobbyContainer.welcome-screen .welcome-journey>i{color:#9ab9ca;font-size:12px}
+#lobbyContainer.welcome-screen .welcome-begin-btn{min-width:220px;min-height:50px;padding:14px 22px;font-size:13px;border-radius:12px;box-shadow:0 10px 24px rgba(8,121,209,.22)}
+#lobbyContainer.welcome-screen .student-card,#lobbyContainer.welcome-screen .lobby-readiness,#lobbyContainer.welcome-screen .steps,#lobbyContainer.welcome-screen .step-content{display:none!important}
+#lobbyContainer.welcome-screen .lobby-aside{display:none!important}
+#lobbyContainer.stage-1 .welcome-hero,#lobbyContainer.stage-2 .welcome-hero{display:none!important}
+#lobbyContainer.stage-1 .steps,#lobbyContainer.stage-2 .steps,#lobbyContainer.stage-3 .steps{display:grid!important}
+@media(max-width:760px){
+ #lobbyContainer.welcome-screen .lobby-wrap{width:calc(100% - 20px);padding:14px 0 24px}
+ #lobbyContainer.welcome-screen .welcome-hero{display:flex!important;flex-direction:column;align-items:stretch;gap:14px;padding:20px 15px!important}
+ #lobbyContainer.welcome-screen .welcome-main{order:1}
+ #lobbyContainer.welcome-screen .welcome-visual{order:2;min-height:180px;width:100%}
+ #lobbyContainer.welcome-screen .welcome-journey{gap:4px;margin:17px 0;flex-wrap:nowrap}
+ #lobbyContainer.welcome-screen .welcome-journey>div{flex-direction:column;text-align:center;gap:5px;flex:1}
+ #lobbyContainer.welcome-screen .welcome-journey b{width:27px;height:27px;font-size:10px}
+ #lobbyContainer.welcome-screen .welcome-journey span{font-size:7px}
+ #lobbyContainer.welcome-screen .welcome-journey>i{font-size:8px}
+ #lobbyContainer.welcome-screen .welcome-begin-btn{width:100%}
+ #lobbyContainer.welcome-screen .exam-hero-card{padding:13px}
+}
+
 </style>
 <style id="exam-lobby-refinement">
 /* CAMPUS NEXUS EXAM LOBBY REFINEMENT */
@@ -2089,6 +2122,18 @@ body{
           <div><i class="fa-solid fa-wifi"></i><span><strong>Connected</strong> Stable session</span></div>
           <div><i class="fa-solid fa-user-check"></i><span><strong>Verified</strong> Student access</span></div>
         </div>
+        <div class="welcome-journey" aria-label="Four examination stages">
+          <div><b>1</b><span>Terms &amp;<br>Instructions</span></div>
+          <i class="fa-solid fa-arrow-right"></i>
+          <div><b>2</b><span>Camera &amp;<br>Device Check</span></div>
+          <i class="fa-solid fa-arrow-right"></i>
+          <div><b>3</b><span>Ready to<br>Start</span></div>
+          <i class="fa-solid fa-arrow-right"></i>
+          <div><b>4</b><span>Examination</span></div>
+        </div>
+        <button type="button" id="beginExamJourneyBtn" class="btn btn-primary welcome-begin-btn" onclick="beginExamJourney()">
+          Begin Examination <i class="fa-solid fa-arrow-right"></i>
+        </button>
       </div>
 
       <div class="welcome-visual" aria-label="Secure digital examination checklist">
