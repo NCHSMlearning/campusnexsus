@@ -237,7 +237,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
         attemptId = summary.data?.[0]?.attempt_id || null;
       }
       if (!attemptId) throw new Error('No submitted attempt could be identified for this student.');
-      const answerQuery = db.from('exam_grades').select('id,question_id,marks,selected_answer,student_answer,answer,response,answer_text,attempt_id')
+      const answerQuery = db.from('exam_grades').select('id,question_id,marks,selected_answer,attempt_id')
         .eq('student_id', String(studentId)).eq('exam_id', numericExamId).eq('attempt_id', attemptId)
         .neq('question_id', sentinel);
       const answerResult = await answerQuery;
@@ -248,8 +248,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
         panel.innerHTML = '<strong style="color:#0f3b5b;">Written-answer marking</strong><p style="color:#64748b;margin:8px 0 0;">This assessment has no short-answer or long-answer questions requiring manual marking.</p>';
         return;
       }
-      const answerText = row => [row?.selected_answer,row?.student_answer,row?.answer,row?.response,row?.answer_text]
-        .find(value => value != null && String(value).trim() !== '') ?? '';
+      const answerText = row => row?.selected_answer != null ? String(row.selected_answer) : '';
       panel.innerHTML = '<div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px;"><div><h3 style="margin:0;color:#0f3b5b;">Written-answer marking & remarking</h3><p style="margin:4px 0;color:#64748b;font-size:12px;">Review the lecturer key, award marks, and save. Saving does not publish revised results.</p></div><span style="font-size:11px;color:#64748b;">Attempt #' + esc(attempt?.attempt_number || 1) + '</span></div>';
       questions.forEach((q, index) => {
         const row = answers.get(String(q.id));
