@@ -80,19 +80,29 @@ jobs:
           Copy-Item $installer.FullName "dist/Campus-Nexus-Secure-Exam-Browser-Setup.exe" -Force
           Copy-Item $portable.FullName "dist/Campus-Nexus-Secure-Exam-Browser-Portable.exe" -Force
       - name: Publish stable Windows downloads
-        uses: softprops/action-gh-release@v2
+        shell: pwsh
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: cnseb-latest
-          name: Campus Nexus Secure Exam Browser – Latest
-          prerelease: false
-          make_latest: true
-          overwrite_files: true
-          files: |
-            secure-exam-browser/dist/Campus-Nexus-Secure-Exam-Browser-Setup.exe
-            secure-exam-browser/dist/Campus-Nexus-Secure-Exam-Browser-Portable.exe
-            secure-exam-browser/dist/*-Setup-*.exe
-            secure-exam-browser/dist/*-Portable-*.exe
-            secure-exam-browser/dist/latest.yml
-            secure-exam-browser/dist/*.blockmap
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $ErrorActionPreference = "Stop"
+          $tag = "cnseb-latest"
+          $dist = "secure-exam-browser/dist"
+          $files = @(
+            "$dist/Campus-Nexus-Secure-Exam-Browser-Setup-0.3.3.exe",
+            "$dist/Campus-Nexus-Secure-Exam-Browser-Portable-0.3.3.exe",
+            "$dist/Campus-Nexus-Secure-Exam-Browser-Setup.exe",
+            "$dist/Campus-Nexus-Secure-Exam-Browser-Portable.exe",
+            "$dist/Campus-Nexus-Secure-Exam-Browser-Setup-0.3.3.exe.blockmap",
+            "$dist/latest.yml"
+          )
+          foreach ($file in $files) {
+            if (-not (Test-Path $file)) { throw "Required release asset missing: $file" }
+          }
+          gh release view $tag --repo "$env:GITHUB_REPOSITORY" | Out-Null
+          foreach ($file in $files) {
+            Write-Host "Uploading release asset sequentially: $file"
+            gh release upload $tag $file --clobber --repo "$env:GITHUB_REPOSITORY"
+            if ($LASTEXITCODE -ne 0) { throw "Upload failed for $file" }
+          }
+          gh release edit $tag --title "Campus Nexus Secure Exam Browser – Latest" --prerelease=false --latest --repo "$env:GITHUB_REPOSITORY"
+          if ($LASTEXITCODE -ne 0) { throw "Could not finalize the stable release." }
