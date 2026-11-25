@@ -75,6 +75,7 @@
     const code = String(institution.school_code || institution.short_code || "").trim();
     const identity = code ? name + " (" + code + ")" : name;
     const pageKind = /lecturerexams/.test(path) ? "Lecturer Examination Workspace" :
+      /adminexams|examinations\/source\/adminexams/.test(path) ? "Examination Command Centre" :
       /studentexam|student-exams/.test(path) ? "Student Examination Centre" : "Student Portal";
     const title = identity + " · " + pageKind;
     const colors = palette(institution);
@@ -119,6 +120,9 @@
       setText(".sidebar-header .brand-text h2", name);
       setText(".sidebar-header .brand-text>small", "Lecturer Examination Workspace");
       setText(".command-brand-copy p", "Lecturer Examination Workspace • " + name);
+    } else if (/adminexams|examinations\/source\/adminexams/.test(path)) {
+      setText(".sidebar-header .brand-text h2", name);
+      setText(".sidebar-header .brand-text>small", "Examination Command Centre");
     }
     setText("#institution-name", name);
     setText("#institution-portal-label", "STUDENT PORTAL");
