@@ -1301,6 +1301,7 @@ async function loadLobbyData() {
 
         {
             AppState.examData = exam;
+            startExamScheduleCountdown();
             console.log('✅ Exam loaded:', exam.title);
             
             if (DOM.examTitleLobby) DOM.examTitleLobby.textContent = exam.title || exam.exam_name || 'Exam';
@@ -1410,8 +1411,122 @@ function goToStep(step) {
 // ============================================================
 // updateStartButton
 // ============================================================
+// ============================================================
+// SCHEDULED EXAM GATE + LIVE COUNTDOWN
+// exam_date and exam_start_time are stored as the institution's
+// local examination schedule. Campus Nexus institutions use EAT.
+// ============================================================
+let examScheduleTimer = null;
+let examScheduledStartAt = null;
+let examScheduleReached = false;
+
+function getScheduledExamStart(exam) {
+    if (!exam || !exam.exam_date) return null;
+    const date = String(exam.exam_date).slice(0, 10);
+    const time = String(exam.exam_start_time || exam.start_time || '00:00:00').trim();
+    if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(date) || !/^\\d{2}:\\d{2}(:\\d{2})?$/.test(time)) return null;
+    // Kenya/EAT is UTC+03:00. Using an explicit offset avoids relying on
+    // the Windows computer's configured time zone.
+    const hhmmss = time.length === 5 ? time + ':00' : time;
+    const instant = new Date(date + 'T' + hhmmss + '+03:00');
+    return Number.isNaN(instant.getTime()) ? null : instant;
+}
+
+function formatExamCountdown(ms) {
+    const seconds = Math.max(0, Math.ceil(ms / 1000));
+    const days = Math.floor(seconds / 86400);
+    const hours = Math.floor((seconds % 86400) / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    const clock = [hours, minutes, secs].map(v => String(v).padStart(2, '0')).join(':');
+    return days > 0 ? days + 'd ' + clock : clock;
+}
+
+function ensureExamSchedulePanel() {
+    let panel = document.getElementById('examScheduleCountdown');
+    if (panel) return panel;
+    const readyCard = document.querySelector('#stepContent3 .ready-card');
+    if (!readyCard) return null;
+    panel = document.createElement('div');
+    panel.id = 'examScheduleCountdown';
+    panel.setAttribute('role', 'status');
+    panel.setAttribute('aria-live', 'polite');
+    panel.style.cssText = 'margin:16px 0 4px;padding:14px 16px;border:1px solid #bfdbfe;border-radius:14px;background:linear-gradient(135deg,#eff6ff,#f0fdfa);text-align:center;color:#123b5a;';
+    const label = document.createElement('div');
+    label.id = 'examScheduleLabel';
+    label.style.cssText = 'font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#2563a5;';
+    label.textContent = 'EXAMINATION STARTS IN';
+    const timer = document.createElement('div');
+    timer.id = 'examScheduleTimer';
+    timer.style.cssText = 'font-size:clamp(24px,4vw,32px);font-weight:900;letter-spacing:.04em;margin:5px 0;color:#082f55;font-variant-numeric:tabular-nums;';
+    timer.textContent = '--:--:--';
+    const detail = document.createElement('div');
+    detail.id = 'examScheduleDetail';
+    detail.style.cssText = 'font-size:11px;color:#58738b;';
+    detail.textContent = 'Checking examination start time…';
+    panel.append(label, timer, detail);
+    const actionRow = readyCard.querySelector('.action-row');
+    if (actionRow) readyCard.insertBefore(panel, actionRow);
+    else readyCard.appendChild(panel);
+    return panel;
+}
+
+function updateExamScheduleGate() {
+    const exam = AppState.examData || {};
+    examScheduledStartAt = getScheduledExamStart(exam);
+    const panel = ensureExamSchedulePanel();
+    if (!examScheduledStartAt) {
+        examScheduleReached = true;
+        if (panel) panel.style.display = 'none';
+        if (window.CNSEB && typeof window.CNSEB.setExamScheduleStatus === 'function') {
+            window.CNSEB.setExamScheduleStatus({ state: 'available' });
+        }
+        return true;
+    }
+    const remaining = examScheduledStartAt.getTime() - Date.now();
+    examScheduleReached = remaining <= 0;
+    if (panel) {
+        panel.style.display = 'block';
+        const label = document.getElementById('examScheduleLabel');
+        const timer = document.getElementById('examScheduleTimer');
+        const detail = document.getElementById('examScheduleDetail');
+        if (examScheduleReached) {
+            if (label) label.textContent = 'EXAMINATION IS NOW OPEN';
+            if (timer) timer.textContent = '00:00:00';
+            if (detail) detail.textContent = 'The scheduled start time has arrived. Complete your checks and start when ready.';
+        } else {
+            if (label) label.textContent = 'EXAMINATION STARTS IN';
+            if (timer) timer.textContent = formatExamCountdown(remaining);
+            if (detail) detail.textContent = 'Scheduled for ' + examScheduledStartAt.toLocaleString('en-KE', {
+                timeZone: 'Africa/Nairobi', weekday: 'short', day: 'numeric', month: 'short',
+                hour: '2-digit', minute: '2-digit', hour12: true
+            }) + ' (East Africa Time)';
+        }
+    }
+    if (window.CNSEB && typeof window.CNSEB.setExamScheduleStatus === 'function') {
+        window.CNSEB.setExamScheduleStatus(examScheduleReached
+            ? { state: 'available' }
+            : { state: 'countdown', remaining: formatExamCountdown(remaining), startsAt: examScheduledStartAt.toISOString() });
+    }
+    return examScheduleReached;
+}
+
+function startExamScheduleCountdown() {
+    if (examScheduleTimer) clearInterval(examScheduleTimer);
+    updateExamScheduleGate();
+    examScheduleTimer = setInterval(() => {
+        const opened = updateExamScheduleGate();
+        if (opened && examScheduleTimer) {
+            clearInterval(examScheduleTimer);
+            examScheduleTimer = null;
+        }
+        updateStartButton();
+    }, 1000);
+}
+
 function updateStartButton() {
-    const ready = AppState.termsAgreed && AppState.cameraWorking && AppState.faceVerified;
+    const scheduleReady = updateExamScheduleGate();
+    const ready = AppState.termsAgreed && AppState.cameraWorking && AppState.faceVerified && scheduleReady;
     
     if (DOM.startExamBtn) {
         DOM.startExamBtn.disabled = !ready;
@@ -1622,6 +1737,10 @@ window.testCamera = async function() {
 // START EXAM
 // ============================================================
 window.startExam = async function() {
+    if (!updateExamScheduleGate()) {
+        showToast('This examination has not reached its scheduled start time yet. Please wait for the countdown.', 'info', 5000);
+        return;
+    }
     if (!AppState.cameraWorking || !AppState.termsAgreed || !AppState.faceVerified) {
         showToast('Please complete all steps first', 'warning');
         return;
