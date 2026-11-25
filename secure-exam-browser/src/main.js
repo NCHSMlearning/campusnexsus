@@ -6,7 +6,7 @@ const path = require('node:path');
 
 const EXAM_ORIGIN = 'https://campusnexus.co.ke';
 const DEFAULT_EXAM_URL = `${EXAM_ORIGIN}/exam.html?client=cnseb`;
-// Packaged Windows builds launch in strict kiosk mode by default. Use --standard only for controlled testing.
+// Packaged Windows builds always launch in strict kiosk mode.
 const STRICT = app.isPackaged || process.argv.includes('--strict');
 const PROTOCOL = 'campusnexus-seb:';
 let mainWindow;
@@ -40,11 +40,6 @@ function isTrusted(url) {
     const parsed = new URL(url);
     return parsed.protocol === 'https:' && parsed.hostname === 'campusnexus.co.ke';
   } catch { return false; }
-}
-
-function blockExternalNavigation() {
-  // A secure exam client must never launch an external browser or application.
-  // All popups are denied below; external links remain inside the exam boundary.
 }
 
 function loadExam(url) {
