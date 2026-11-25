@@ -302,6 +302,8 @@ async function editQuestion(questionId) {
         document.getElementById('correctAnswer').value = data.correct_answer || '';
         const markingKeyInput = document.getElementById('questionMarkingKey');
         if (markingKeyInput) markingKeyInput.value = data.marking_key || '';
+        const rubricInput = document.getElementById('questionMarkingRubric');
+        if (rubricInput) rubricInput.value = JSON.stringify(data.marking_rubric || [], null, 2);
         const maxCharsInput = document.getElementById('maxChars');
         if (maxCharsInput) maxCharsInput.value = data.max_chars || data.max_characters || 5000;
         document.getElementById('questionMarks').value = data.marks || 1;
@@ -377,6 +379,14 @@ async function saveQuestion(e) {
     const marks = parseInt(document.getElementById('questionMarks')?.value) || 1;
     const maxChars = parseInt(document.getElementById('maxChars')?.value) || 5000;
     const markingKey = document.getElementById('questionMarkingKey')?.value?.trim() || '';
+    const rubricText = document.getElementById('questionMarkingRubric')?.value?.trim() || '[]';
+    let markingRubric = [];
+    try { markingRubric = JSON.parse(rubricText); } catch (_) { showToast('Marking rubric must be valid JSON.', 'warning'); return; }
+    if (!Array.isArray(markingRubric)) { showToast('Marking rubric must be a JSON array of criteria.', 'warning'); return; }
+    for (const criterion of markingRubric) {
+        if (!Number.isFinite(Number(criterion?.marks)) || Number(criterion.marks) < 0 || !Array.isArray(criterion.accepted) || !criterion.accepted.length || criterion.accepted.some(x => typeof x !== 'string' || !x.trim())) { showToast('Each rubric criterion needs marks and at least one accepted answer phrase.', 'warning'); return; }
+    }
+    if (markingRubric.reduce((sum, criterion) => sum + Number(criterion.marks), 0) > Number(document.getElementById('questionMarks')?.value || 0)) { showToast('Rubric marks cannot exceed the question maximum.', 'warning'); return; }
 
     // Validation - Question text is always required
     if (!questionText) {
@@ -405,6 +415,7 @@ async function saveQuestion(e) {
         question_text: questionText,
         marks: marks,
         marking_key: markingKey || null,
+        marking_rubric: markingRubric,
         updated_at: new Date().toISOString()
     };
 
