@@ -63,7 +63,8 @@ window.addEventListener('DOMContentLoaded', async () => {
       justifyContent: 'flex-end', gap: '8px', minWidth: '0'
     });
     const sessionStatus = document.createElement('span');
-    sessionStatus.textContent = info.strictMode ? 'Protected session' : 'Monitored session';
+    sessionStatus.textContent = info.kioskRuntime ? 'Desktop app · kiosk window' : 'Desktop app · monitored window';
+sessionStatus.title = 'App-level kiosk presentation only. Institution-managed Windows compliance is not verified by this client.';
     sessionStatus.style.cssText = 'color:#a9d8e8;font-size:11px;padding:5px 7px';
     const updateStatus = document.createElement('span');
     updateStatus.textContent = 'Checking for updates…';
