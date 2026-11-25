@@ -2084,15 +2084,10 @@ window.viewLecturerStudentProgress = async function(studentId, studentName, exam
         const safe = value => String(value == null ? '' : value).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
         const sentinel = '00000000-0000-0000-0000-000000000000';
         const answerValue = row => {
-            // Some exam writers populate more than one legacy answer field.
-            // Prefer the first NON-EMPTY value so an empty selected_answer does
-            // not hide a valid student_answer/answer/response.
-            const candidates = [
-                row?.selected_answer, row?.answer,
-                row?.response, row?.answer_text, row?.selected_option,
-                row?.answer_value
-            ];
-            return candidates.find(value => value !== null && value !== undefined && String(value).trim() !== '') ?? '';
+            // exam_grades stores the submitted per-question response in selected_answer.
+            // Keep this aligned with the live schema; legacy alias columns do not exist.
+            return row?.selected_answer !== null && row?.selected_answer !== undefined
+                ? row.selected_answer : '';
         };
         const normalize = value => String(value ?? '').trim().toUpperCase().replace(/[()\s.\-_:]/g, '');
         const optionKeyMatches = (value, letter, optionText) => {
