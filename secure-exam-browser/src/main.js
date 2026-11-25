@@ -6,6 +6,9 @@ const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 
 const EXAM_ORIGIN = 'https://campusnexus.co.ke';
+const SUPABASE_URL = 'https://irahplkvocaakjxuisto.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_5Cg5FFudf03UnmOXGNGMHQ_uK9S-uQX';
+const HANDOFF_ENDPOINT = `${SUPABASE_URL}/functions/v1/cnseb-auth-handoff`;
 const DEFAULT_EXAM_URL = `${EXAM_ORIGIN}/exam.html?client=cnseb`;
 // Packaged Windows builds always launch in strict kiosk mode.
 const STRICT = app.isPackaged || process.argv.includes('--strict');
@@ -13,6 +16,7 @@ const PROTOCOL = 'campusnexus-seb:';
 let mainWindow;
 let quitting = false;
 let pendingExamUrl = null;
+let pendingHandoffCode = null;
 let updateState = { state: 'checking' };
 let exitInProgress = false;
 
@@ -176,7 +180,7 @@ function createWindow() {
 
 if (!app.requestSingleInstanceLock()) app.quit();
 else {
-  pendingExamUrl = extractExamUrl(process.argv);
+  const initialLaunch = extractLaunch(process.argv);\n  pendingExamUrl = initialLaunch?.url || null;\n  pendingHandoffCode = initialLaunch?.code || null;
   app.on('second-instance', (_event, commandLine) => {
     const target = extractExamUrl(commandLine);
     if (target) pendingExamUrl = target;
@@ -209,7 +213,7 @@ app.whenReady().then(() => {
     isTrusted(requestingOrigin || webContents.getURL())
   ));
   ipcMain.handle('cnseb:brand-logo-url', () => pathToFileURL(path.join(__dirname, '../build/campus-nexus-original-logo.webp')).href);
-  ipcMain.handle('cnseb:update-state', () => updateState);
+  ipcMain.handle('cnseb:update-state', () => updateState);\n  ipcMain.handle('cnseb:redeem-auth-handoff', async (event) => {\n    const frameUrl = event.senderFrame?.url || '';\n    if (!isValidExamUrl(frameUrl)) return { ok: false, error: 'Authentication handoff is only available on the verified exam page.' };\n    const code = pendingHandoffCode;\n    if (!code) return { ok: false, unavailable: true };\n    pendingHandoffCode = null;\n    try {\n      const response = await fetch(HANDOFF_ENDPOINT, {\n        method: 'POST', headers: { 'Content-Type': 'application/json', apikey: SUPABASE_ANON_KEY },\n        body: JSON.stringify({ action: 'redeem', code }), signal: AbortSignal.timeout(12000)\n      });\n      const payload = await response.json().catch(() => ({}));\n      if (!response.ok || !payload.token_hash || !payload.exam_id) return { ok: false, error: payload.error || 'Secure sign-in could not be completed. Return to the student portal and launch again.' };\n      const current = new URL(frameUrl);\n      if (current.searchParams.get('exam_id') !== String(payload.exam_id)) return { ok: false, error: 'This sign-in code does not belong to the selected examination.' };\n      return { ok: true, token_hash: payload.token_hash, type: 'magiclink', exam_id: String(payload.exam_id) };\n    } catch (error) {\n      console.error('[CN-SEB] Authentication handoff failed:', error.message);\n      return { ok: false, error: 'Unable to connect to secure sign-in. Check the internet connection and relaunch the examination.' };\n    }\n  });
   ipcMain.on('cnseb:is-kiosk', event => {
     event.returnValue = !!(mainWindow && !mainWindow.isDestroyed() && mainWindow.isKiosk() && mainWindow.isFullScreen());
   });
