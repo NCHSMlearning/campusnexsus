@@ -2218,7 +2218,7 @@ window.viewLecturerStudentProgress = async function(studentId, studentName, exam
             const writtenRows = reviewRows.filter(q => q.isWritten);
             const markedWritten = writtenRows.filter(q => q.isMarked).length;
             const canMark = !!attemptId && latestAttempt && ['PENDING_REVIEW','SUBMITTED','COMPLETED'].includes(String(latestAttempt.status || '').toUpperCase());
-            let html = \`
+            let html = `
                 <style>
                   .lecturer-marking-workspace{color:#10243a}
                   .lecturer-marking-hero{padding:18px;border-radius:15px;background:linear-gradient(120deg,#102f50,#0b6172);color:#fff;margin-bottom:14px}
@@ -2235,56 +2235,56 @@ window.viewLecturerStudentProgress = async function(studentId, studentName, exam
                   <div class="lecturer-marking-hero">
                     <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start">
                       <div><div style="font-size:11px;opacity:.78;font-weight:800;letter-spacing:.1em">LECTURER MARKING WORKSPACE</div>
-                      <h3 style="margin:5px 0;color:#fff;font-size:20px">\${safe(studentName || 'Student')}</h3>
-                      <div style="opacity:.9">\${examName} · \${safe(attemptLabel)}</div></div>
-                      <button type="button" onclick="viewLecturerStudentProgress(\${JSON.stringify(String(studentId))},\${JSON.stringify(String(studentName || 'Student'))},\${numericExamId})" style="padding:8px 11px;border:1px solid rgba(255,255,255,.45);background:rgba(255,255,255,.12);color:#fff;border-radius:8px;cursor:pointer"><i class="fas fa-sync-alt"></i> Refresh</button>
+                      <h3 style="margin:5px 0;color:#fff;font-size:20px">${safe(studentName || 'Student')}</h3>
+                      <div style="opacity:.9">${examName} · ${safe(attemptLabel)}</div></div>
+                      <button type="button" onclick="viewLecturerStudentProgress(${JSON.stringify(String(studentId))},${JSON.stringify(String(studentName || 'Student'))},${numericExamId})" style="padding:8px 11px;border:1px solid rgba(255,255,255,.45);background:rgba(255,255,255,.12);color:#fff;border-radius:8px;cursor:pointer"><i class="fas fa-sync-alt"></i> Refresh</button>
                     </div>
-                    <div style="margin-top:12px;font-size:13px">Current calculated score: <strong>\${earnedScore} / \${possibleScore}</strong></div>
+                    <div style="margin-top:12px;font-size:13px">Current calculated score: <strong>${earnedScore} / ${possibleScore}</strong></div>
                   </div>
                   <div class="lecturer-marking-metrics">
-                    <div class="lecturer-marking-metric"><strong style="font-size:21px;color:#0b5570">\${answeredCount}/\${reviewRows.length}</strong><div style="font-size:11px;color:#64748b">Answered</div></div>
-                    <div class="lecturer-marking-metric"><strong style="font-size:21px;color:#15803d">\${writtenRows.length}</strong><div style="font-size:11px;color:#64748b">Written questions</div></div>
-                    <div class="lecturer-marking-metric"><strong style="font-size:21px;color:#0b5570">\${markedWritten}</strong><div style="font-size:11px;color:#64748b">Written marked</div></div>
-                    <div class="lecturer-marking-metric"><strong style="font-size:21px;color:#d97706">\${writtenRows.length-markedWritten}</strong><div style="font-size:11px;color:#64748b">Awaiting marking</div></div>
-                  </div>\`;
+                    <div class="lecturer-marking-metric"><strong style="font-size:21px;color:#0b5570">${answeredCount}/${reviewRows.length}</strong><div style="font-size:11px;color:#64748b">Answered</div></div>
+                    <div class="lecturer-marking-metric"><strong style="font-size:21px;color:#15803d">${writtenRows.length}</strong><div style="font-size:11px;color:#64748b">Written questions</div></div>
+                    <div class="lecturer-marking-metric"><strong style="font-size:21px;color:#0b5570">${markedWritten}</strong><div style="font-size:11px;color:#64748b">Written marked</div></div>
+                    <div class="lecturer-marking-metric"><strong style="font-size:21px;color:#d97706">${writtenRows.length-markedWritten}</strong><div style="font-size:11px;color:#64748b">Awaiting marking</div></div>
+                  </div>`;
             reviewRows.forEach(q => {
                 const optionsHtml = q.options.map(([letter,value]) => '<div style="margin-top:4px;color:#64748b">'+letter+'. '+safe(value)+'</div>').join('');
                 const status = q.isWritten
                     ? (q.isMarked ? '<span style="color:#15803d;font-weight:800">Marked</span>' : '<span style="color:#b45309;font-weight:800">Awaiting marking</span>')
                     : (!q.isAnswered ? '<span style="color:#64748b">Not answered</span>' : q.isCorrect ? '<span style="color:#15803d;font-weight:800">Correct</span>' : '<span style="color:#b91c1c;font-weight:800">Incorrect</span>');
-                html += \`
+                html += `
                   <article class="lecturer-marking-card">
                     <div class="lecturer-marking-card-head">
-                      <div><span style="font-size:11px;color:#64748b;font-weight:800">QUESTION \${safe(q.number)} · \${safe(q.type.replace(/_/g,' ').toUpperCase())}</span><div style="font-weight:800;margin-top:4px">\${safe(q.text)}</div></div>
-                      <div>\${status}</div>
+                      <div><span style="font-size:11px;color:#64748b;font-weight:800">QUESTION ${safe(q.number)} · ${safe(q.type.replace(/_/g,' ').toUpperCase())}</span><div style="font-weight:800;margin-top:4px">${safe(q.text)}</div></div>
+                      <div>${status}</div>
                     </div>
                     <div class="lecturer-marking-columns">
                       <div class="lecturer-marking-panel"><div style="font-size:10px;font-weight:800;color:#64748b;margin-bottom:6px">STUDENT RESPONSE</div>
-                        <div style="white-space:pre-wrap;line-height:1.55">\${q.isAnswered ? safe(q.selectedText) : '<span style="color:#94a3b8">No response submitted</span>'}</div>\${optionsHtml}
+                        <div style="white-space:pre-wrap;line-height:1.55">${q.isAnswered ? safe(q.selectedText) : '<span style="color:#94a3b8">No response submitted</span>'}</div>${optionsHtml}
                       </div>
                       <div class="lecturer-marking-panel"><div style="font-size:10px;font-weight:800;color:#64748b;margin-bottom:6px">MARKING GUIDE / MODEL ANSWER</div>
-                        <div style="white-space:pre-wrap;line-height:1.5">\${safe(q.correctText || 'No marking guide supplied')}</div>
+                        <div style="white-space:pre-wrap;line-height:1.5">${safe(q.correctText || 'No marking guide supplied')}</div>
                       </div>
                     </div>
-                    \${q.isWritten ? \`
+                    ${q.isWritten ? `
                       <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-top:12px">
                         <label style="font-size:12px;font-weight:800">Award marks
-                          <input class="lecturer-subjective-mark" data-question-id="\${safe(q.id)}" type="number" min="0" max="\${safe(q.totalMarks)}" step="0.5" value="\${safe(q.marks)}" \${canMark ? '' : 'disabled'} style="display:block;width:130px;margin-top:5px;padding:10px;border:1px solid #cbd8e4;border-radius:9px;font-size:17px;font-weight:800">
+                          <input class="lecturer-subjective-mark" data-question-id="${safe(q.id)}" type="number" min="0" max="${safe(q.totalMarks)}" step="1" value="${safe(q.marks)}" ${canMark ? '' : 'disabled'} style="display:block;width:130px;margin-top:5px;padding:10px;border:1px solid #cbd8e4;border-radius:9px;font-size:17px;font-weight:800">
                         </label>
-                        <span style="font-size:12px;color:#64748b;padding-bottom:10px">Maximum: \${safe(q.totalMarks)} marks</span>
+                        <span style="font-size:12px;color:#64748b;padding-bottom:10px">Maximum: ${safe(q.totalMarks)} marks</span>
                       </div>
                       <label style="display:block;margin-top:9px;font-size:12px;font-weight:800">Lecturer feedback
-                        <textarea class="lecturer-subjective-feedback" data-question-id="\${safe(q.id)}" rows="2" maxlength="4000" placeholder="Give feedback to the student…" \${canMark ? '' : 'disabled'} style="display:block;width:100%;box-sizing:border-box;margin-top:5px;padding:10px;border:1px solid #cbd8e4;border-radius:9px">\${safe(q.feedback)}</textarea>
-                      </label>\` : \`
-                      <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:11px;font-size:12px;color:#64748b"><span>Correct answer: <strong>\${safe(q.correctText || '—')}</strong></span><strong>\${safe(q.marks)} / \${safe(q.totalMarks)} marks</strong></div>\`}
-                  </article>\`;
+                        <textarea class="lecturer-subjective-feedback" data-question-id="${safe(q.id)}" rows="2" maxlength="4000" placeholder="Give feedback to the student…" ${canMark ? '' : 'disabled'} style="display:block;width:100%;box-sizing:border-box;margin-top:5px;padding:10px;border:1px solid #cbd8e4;border-radius:9px">${safe(q.feedback)}</textarea>
+                      </label>` : `
+                      <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:11px;font-size:12px;color:#64748b"><span>Correct answer: <strong>${safe(q.correctText || '—')}</strong></span><strong>${safe(q.marks)} / ${safe(q.totalMarks)} marks</strong></div>`}
+                  </article>`;
             });
             if (writtenRows.length && canMark) {
-                html += \`
+                html += `
                   <div class="lecturer-marking-savebar">
-                    <div><strong style="font-size:13px">Written-answer assessment</strong><div style="font-size:11px;color:#64748b">\${markedWritten} of \${writtenRows.length} written questions marked. Saving does not publish results.</div></div>
-                    <button type="button" onclick="saveLecturerSubjectiveMarks(\${JSON.stringify(String(studentId))},\${numericExamId},\${JSON.stringify(String(attemptId))})" style="padding:12px 17px;border:0;border-radius:10px;background:#0b5570;color:#fff;font-weight:800;cursor:pointer"><i class="fas fa-save"></i> Save marking</button>
-                  </div>\`;
+                    <div><strong style="font-size:13px">Written-answer assessment</strong><div style="font-size:11px;color:#64748b">${markedWritten} of ${writtenRows.length} written questions marked. Saving does not publish results.</div></div>
+                    <button type="button" onclick="saveLecturerSubjectiveMarks(${JSON.stringify(String(studentId))},${numericExamId},${JSON.stringify(String(attemptId))})" style="padding:12px 17px;border:0;border-radius:10px;background:#0b5570;color:#fff;font-weight:800;cursor:pointer"><i class="fas fa-save"></i> Save marking</button>
+                  </div>`;
             } else if (writtenRows.length) {
                 html += '<p style="padding:12px;background:#fff7ed;color:#9a3412;border-radius:8px">Written answers can only be marked after a submitted attempt is available.</p>';
             }
@@ -2305,8 +2305,8 @@ window.viewLecturerStudentProgress = async function(studentId, studentName, exam
         const marks = {}, feedback = {};
         for (const input of inputs) {
             const id = input.dataset.questionId, value = Number(input.value), max = Number(input.max);
-            if (!Number.isFinite(value) || value < 0 || value > max || Math.round(value * 2) !== value * 2) {
-                input.focus(); showToast('Enter a valid mark between zero and the maximum, in 0.5 increments.', 'error'); return;
+            if (!Number.isFinite(value) || value < 0 || value > max || !Number.isInteger(value)) {
+                input.focus(); showToast('Enter a valid mark between zero and the maximum, as a whole number.', 'error'); return;
             }
             marks[id] = value;
             const note = modalContent.querySelector('.lecturer-subjective-feedback[data-question-id="' + id + '"]');
