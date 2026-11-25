@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld('CNSEB', Object.freeze({
   // This bridge exists only inside the desktop app; main.js enforces native kiosk mode.
   isKiosk: () => ipcRenderer.sendSync('cnseb:is-kiosk'),
   getDeviceInfo: () => ipcRenderer.invoke('cnseb:device-info'),
+  redeemAuthHandoff: () => ipcRenderer.invoke('cnseb:redeem-auth-handoff'),
   getUpdateState: () => ipcRenderer.invoke('cnseb:update-state'),
   checkForUpdates: () => ipcRenderer.invoke('cnseb:check-for-updates'),
   requestExit: () => ipcRenderer.invoke('cnseb:request-exit'),
