@@ -1304,18 +1304,28 @@ async function loadLobbyData() {
             startExamScheduleCountdown();
             console.log('✅ Exam loaded:', exam.title);
             
-            if (DOM.examTitleLobby) DOM.examTitleLobby.textContent = exam.title || exam.exam_name || 'Exam';
-            if (DOM.examDuration) DOM.examDuration.textContent = exam.duration_minutes || 30;
-            if (DOM.examPassMark) DOM.examPassMark.textContent = exam.pass_mark || 60;
+            const displayExamName = exam.exam_name || exam.title || exam.name || 'Examination';
+            if (DOM.examTitleLobby) DOM.examTitleLobby.textContent = displayExamName;
+            if (DOM.examDuration) DOM.examDuration.textContent = exam.duration_minutes ?? '—';
+            if (DOM.examPassMark) DOM.examPassMark.textContent = exam.pass_mark ?? '—';
 
-            const { data: qData } = await sb
+            // Use the database's exact count instead of relying on the returned
+            // row array (which may be empty when a head-only count is requested).
+            const questionResult = await sb
                 .from('exam_questions')
-                .select('id', { count: 'exact' })
-                .eq('exam_id', parseInt(AppState.examId));
+                .select('id', { count: 'exact', head: true })
+                .eq('exam_id', parseInt(AppState.examId))
+                .eq('institution_id', AppState.institutionId);
 
-            const count = qData ? qData.length : 0;
+            if (questionResult.error) throw questionResult.error;
+            const count = Number(questionResult.count || 0);
             if (DOM.examQuestions) DOM.examQuestions.textContent = count;
             if (DOM.totalSpan) DOM.totalSpan.textContent = count;
+            if (count < 1) {
+                const startButton = document.getElementById('startExamBtn');
+                if (startButton) startButton.disabled = true;
+                throw new Error('This examination has no questions available yet. Please contact your lecturer or institution administrator.');
+            }
         }
 
         await checkRetakeStatus();
@@ -1944,7 +1954,7 @@ async function initExam() {
         }
         {
             const exam = examResult.data;
-            if (DOM.examTitle) DOM.examTitle.textContent = exam.exam_name || 'Examination';
+            if (DOM.examTitle) DOM.examTitle.textContent = exam.exam_name || exam.title || exam.name || 'Examination';
             AppState.duration = exam.duration_minutes || 30;
         }
 
