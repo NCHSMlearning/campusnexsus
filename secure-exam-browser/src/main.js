@@ -13,6 +13,7 @@ let mainWindow;
 let quitting = false;
 let pendingExamUrl = null;
 let updateNoticeShown = false;
+let exitInProgress = false;
 
 function isValidExamUrl(value) {
   try {
@@ -55,7 +56,7 @@ function createWindow() {
     autoHideMenuBar: true, kiosk: true, fullscreen: true, fullscreenable: true, frame: false,
     resizable: false, maximizable: false, minimizable: false, closable: !STRICT,
     titleBarStyle: 'hidden',
-    skipTaskbar: true, alwaysOnTop: true,
+    skipTaskbar: false, alwaysOnTop: true,
     title: 'Campus Nexus | Secure Examination',
     icon: path.join(__dirname, '../build/campus-nexus.ico'),
     backgroundColor: '#071d33',
@@ -125,7 +126,15 @@ function createWindow() {
   });
   const initialTarget = pendingExamUrl || DEFAULT_EXAM_URL;
   pendingExamUrl = null;
-  loadExam(initialTarget);
+  // Display a branded native startup screen first, then initialize the exam portal.
+  mainWindow.loadFile(path.join(__dirname, 'splash.html')).then(() => {
+    mainWindow.webContents.once('did-finish-load', () => {
+      if (!quitting && mainWindow && !mainWindow.isDestroyed()) loadExam(initialTarget);
+    });
+  }).catch(error => {
+    console.error('[CN-SEB] Startup screen failed:', error);
+    loadExam(initialTarget);
+  });
 }
 
 if (!app.requestSingleInstanceLock()) app.quit();
@@ -151,6 +160,8 @@ else {
 }
 
 app.whenReady().then(() => {
+  app.setName('Campus Nexus Secure Exam Browser');
+  if (process.platform === 'win32') app.setAppUserModelId('co.ke.campusnexus.secureexam');
   app.setAsDefaultProtocolClient('campusnexus-seb');
   const examSession = session.fromPartition('persist:cnseb-exam');
   examSession.setPermissionRequestHandler((webContents, permission, callback) => {
@@ -165,9 +176,29 @@ app.whenReady().then(() => {
     architecture: process.arch, strictMode: STRICT,
     displayCount: screen.getAllDisplays().length
   }));
-  ipcMain.on('cnseb:request-exit', () => {
-    if (!STRICT) app.quit();
-    else if (mainWindow) mainWindow.webContents.send('cnseb:exit-blocked');
+  ipcMain.handle('cnseb:request-exit', async () => {
+    if (exitInProgress) return false;
+    const result = await dialog.showMessageBox(mainWindow && !mainWindow.isDestroyed() ? mainWindow : undefined, {
+      type: 'warning',
+      title: 'Exit Campus Nexus Secure Exam Browser?',
+      message: 'Do you want to exit the examination application and return to the desktop?',
+      detail: 'Make sure you have submitted your examination before exiting. Exiting here does not submit an unfinished examination.',
+      buttons: ['Cancel', 'Exit to Desktop'],
+      defaultId: 0,
+      cancelId: 0,
+      noLink: true
+    });
+    if (result.response !== 1) return false;
+    exitInProgress = true;
+    quitting = true;
+    try {
+      // Clear this app's site login so the next launch starts at the sign-in flow.
+      await session.fromPartition('persist:cnseb-exam').clearStorageData({ storages: ['cookies', 'localstorage'] });
+    } catch (error) {
+      console.error('[CN-SEB] Could not clear sign-in state on exit:', error);
+    }
+    app.quit();
+    return true;
   });
   createWindow();
 
