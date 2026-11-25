@@ -13,7 +13,7 @@ const PROTOCOL = 'campusnexus-seb:';
 let mainWindow;
 let quitting = false;
 let pendingExamUrl = null;
-let updateNoticeShown = false;
+let updateState = { state: 'checking' };
 let exitInProgress = false;
 
 function isValidExamUrl(value) {
@@ -191,6 +191,7 @@ app.whenReady().then(() => {
     isTrusted(requestingOrigin || webContents.getURL())
   ));
   ipcMain.handle('cnseb:brand-logo-url', () => pathToFileURL(path.join(__dirname, '../build/campus-nexus-original-logo.webp')).href);
+  ipcMain.handle('cnseb:update-state', () => updateState);
   ipcMain.handle('cnseb:device-info', () => ({
     appVersion: app.getVersion(), platform: process.platform,
     architecture: process.arch, strictMode: STRICT,
@@ -229,6 +230,11 @@ app.whenReady().then(() => {
       : { state: 'available' };
     mainWindow.webContents.send('cnseb:toolbar-schedule', safe);
   });
+  ipcMain.handle('cnseb:check-for-updates', async () => {
+    if (!app.isPackaged) return { ok: false, reason: 'not-packaged' };
+    try { await autoUpdater.checkForUpdates(); return { ok: true }; }
+    catch (error) { return { ok: false, reason: error.message }; }
+  });
   ipcMain.handle('cnseb:install-update', () => {
     if (!app.isPackaged) return { ok: false, reason: 'not-packaged' };
     autoUpdater.quitAndInstall(true, true);
@@ -236,41 +242,57 @@ app.whenReady().then(() => {
   });
   createWindow();
 
-  // Check for updates at startup and periodically. Download silently, then
-  // let the student choose when to restart into the new version.
+  // Always check the published GitHub release as soon as the packaged app starts.
+  // Downloads are silent; installation waits until the student chooses Update now
+  // or closes the app, so an active examination is never interrupted.
   if (app.isPackaged) {
     autoUpdater.autoDownload = true;
     autoUpdater.autoInstallOnAppQuit = true;
     autoUpdater.allowPrerelease = false;
-    autoUpdater.on('checking-for-update', () => {
-      if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('cnseb:update-status', { state: 'checking' });
-    });
+    const publishUpdateState = payload => {
+      updateState = { ...payload, checkedAt: new Date().toISOString() };
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('cnseb:update-status', updateState);
+      }
+    };
+    autoUpdater.on('checking-for-update', () => publishUpdateState({ state: 'checking' }));
     autoUpdater.on('update-available', info => {
       console.log('[CN-SEB] Update available:', info.version);
-      if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('cnseb:update-status', { state: 'downloading', version: info.version });
+      publishUpdateState({ state: 'downloading', version: info.version });
     });
     autoUpdater.on('update-not-available', info => {
       console.log('[CN-SEB] App is up to date:', info.version);
-      if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('cnseb:update-status', { state: 'current', version: info.version });
+      publishUpdateState({ state: 'current', version: info.version });
     });
-    autoUpdater.on('download-progress', progress => {
-      if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('cnseb:update-status', { state: 'progress', percent: Math.round(progress.percent || 0) });
-    });
+    autoUpdater.on('download-progress', progress => publishUpdateState({
+      state: 'progress', percent: Math.round(progress.percent || 0)
+    }));
     autoUpdater.on('update-downloaded', info => {
       console.log('[CN-SEB] Update downloaded:', info.version);
-      if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('cnseb:update-status', { state: 'ready', version: info.version });
+      publishUpdateState({ state: 'ready', version: info.version });
     });
     autoUpdater.on('error', error => {
       console.error('[CN-SEB] Update check failed:', error.message);
-      if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('cnseb:update-status', { state: 'error', message: 'Could not check for updates. Check your internet connection.' });
+      publishUpdateState({
+        state: 'error',
+        message: 'Update check failed. Check your internet connection and try again.'
+      });
     });
-    const checkForUpdates = () => autoUpdater.checkForUpdates().catch(error => console.error('[CN-SEB] Update check failed:', error.message));
-    setTimeout(checkForUpdates, 5000);
+    const checkForUpdates = () => {
+      if (quitting) return;
+      publishUpdateState({ state: 'checking' });
+      autoUpdater.checkForUpdates().catch(error => {
+        console.error('[CN-SEB] Update check failed:', error.message);
+      });
+    };
+    // Run immediately on every app launch, then refresh the release feed every hour.
+    checkForUpdates();
     setInterval(checkForUpdates, 60 * 60 * 1000);
   }
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    if (app.isPackaged) autoUpdater.checkForUpdates().catch(error => console.error('[CN-SEB] Update recheck failed:', error.message));
   });
 });
 
