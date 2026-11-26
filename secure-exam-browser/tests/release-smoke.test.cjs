@@ -79,3 +79,20 @@ test('exam attempt configuration snapshots are immutable and exclude marking sec
   assert.doesNotMatch(migration, /'correct_answer'|'marking_key'|'marking_rubric'/i);
   assert.match(migration, /revoke all on public\.exam_attempt_configuration_snapshots from public, anon, authenticated/i);
 });
+
+
+test('CN-SEB stores attempt-scoped local answer backups using operating-system encryption', () => {
+  const main = read('secure-exam-browser/src/main.js');
+  const preload = read('secure-exam-browser/src/preload.js');
+  const exam = read('exam.js');
+  assert.match(main, /safeStorage\.isEncryptionAvailable\(\)/);
+  assert.match(main, /safeStorage\.encryptString/);
+  assert.match(main, /safeStorage\.decryptString/);
+  assert.match(main, /encrypted-attempt-drafts/);
+  assert.match(main, /isTrustedExamSender/);
+  assert.match(preload, /saveEncryptedDraft/);
+  assert.match(preload, /loadEncryptedDraft/);
+  assert.match(preload, /clearEncryptedDraft/);
+  assert.match(exam, /Restore the encrypted desktop vault before reading the browser-local fallback/);
+  assert.match(exam, /clearEncryptedDraft/);
+});
