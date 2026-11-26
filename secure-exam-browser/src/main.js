@@ -52,7 +52,7 @@ async function writeEncryptedDraft(event, payload) {
   const serialized = JSON.stringify(payload.data);
   if (Buffer.byteLength(serialized, 'utf8') > 100000) return { ok: false, reason: 'draft-too-large' };
   const file = encryptedDraftPath(examId, studentId, attemptId);
-  encryptedDraftWriteQueue = encryptedDraftWriteQueue.then(async () => {
+  encryptedDraftWriteQueue = encryptedDraftWriteQueue.catch(() => {}).then(async () => {
     let vault = { version: 1, examId, studentId, attemptId, records: {} };
     try {
       const encrypted = fs.readFileSync(file);
