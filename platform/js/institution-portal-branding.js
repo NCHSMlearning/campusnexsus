@@ -318,27 +318,9 @@
     const user = auth && auth.data && auth.data.user;
     if (auth.error || !user) return;
 
-    /* Lecturer Exams authenticates through examlogin.js and carries a verified,
-       user-bound institution handoff into this tab. Prefer that same tenant
-       context before falling back to the standard portal profile lookup. */
-    if (/lecturerexams/.test(String(location.pathname || "").toLowerCase())) {
-      let handoff = null;
-      try {
-        handoff = JSON.parse(sessionStorage.getItem("campusNexusExamLecturerAuth") ||
-          localStorage.getItem("campusNexusExamLecturerAuth") || "null");
-      } catch (_) {}
-      if (handoff && handoff.user_id === user.id && handoff.institution_id) {
-        const lecturerInstitution = await supabase.from("institutions")
-          .select("id,name,short_code,school_code,logo_url,primary_color,secondary_color,brand_colors,status")
-          .eq("id", handoff.institution_id).maybeSingle();
-        if (lecturerInstitution.error) throw lecturerInstitution.error;
-        if (lecturerInstitution.data &&
-            String(lecturerInstitution.data.status || "").toLowerCase() !== "suspended") {
-          apply(lecturerInstitution.data);
-          return;
-        }
-      }
-    }
+    /* Resolve the institution exactly like Admin Exams and the other authenticated
+       portals: the signed-in user's server-side profile is the tenant authority.
+       Do not select a tenant from sessionStorage, localStorage, or URL values. */
 
     const profileResult = await supabase.from("consolidated_user_profiles_table")
       .select("institution_id,role").eq("user_id", user.id).maybeSingle();
