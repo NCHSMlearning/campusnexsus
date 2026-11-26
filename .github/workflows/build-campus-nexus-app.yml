@@ -11,7 +11,7 @@ on:
       - ".github/workflows/build-campus-nexus-app.yml"
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: campus-nexus-android-${{ github.ref }}
@@ -89,3 +89,12 @@ jobs:
           path: campus-nexus-app/android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
+
+      - name: Publish preview APK release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: campus-nexus-app-v1.0.0-preview
+          name: Campus Nexus App 1.0.0 (Android Preview)
+          prerelease: true
+          make_latest: false
+          files: campus-nexus-app/android/app/build/outputs/apk/debug/app-debug.apk
