@@ -3,10 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta http-equiv="refresh" content="0;url=/platform/lecturerexams.html">
+<meta name="robots" content="noindex">
 <title>Lecturer Exams | Campus Nexus</title>
-<script>location.replace('/platform/lecturerexams.html'+location.search+location.hash);</script>
+<script>
+(function () {
+  var target = new URL('/platform/lecturerexams/', window.location.origin);
+  target.search = window.location.search;
+  target.hash = window.location.hash;
+  window.location.replace(target.toString());
+})();
+</script>
 </head>
-<body><p>Opening the <a href="/platform/lecturerexams.html">Lecturer Exams dashboard</a>…</p><script src="/js/campus-nexus-code-guard.js?v=20261124-global-guard-v1" defer></script>
-</body>
+<body><p>Opening the <a href="/platform/lecturerexams/">Lecturer Exams dashboard</a>…</p></body>
 </html>
