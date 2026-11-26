@@ -417,15 +417,26 @@ app.whenReady().then(() => {
     displayCount: screen.getAllDisplays().length
   }));
   // Use an in-app confirmation rather than a native modal hidden behind kiosk.
-  ipcMain.handle('cnseb:exam-submission-complete', async (event) => {
+  ipcMain.handle('cnseb:exam-submission-complete', async (event, exitAction = 'exit-exam') => {
     const frameUrl = event.senderFrame?.url || '';
     if (!isValidExamUrl(frameUrl) || !examMode || quitting) return { ok: false };
-    // The renderer emits this only after the existing exam submission pipeline
-    // has saved answers, recorded the grade and released the server-side lock.
+    if (!['exit-exam', 'exit-app'].includes(exitAction)) return { ok: false, reason: 'invalid-exit-action' };
+
+    // This IPC is accepted only after exam.js has completed its normal
+    // submission pipeline: answers and grade saved, attempt submitted and
+    // server-side device/session lock released.
     exitInProgress = true;
-    quitting = true;
-    setTimeout(() => app.exit(0), 350);
-    return { ok: true };
+    if (exitAction === 'exit-app') {
+      quitting = true;
+      setTimeout(() => app.exit(0), 350);
+      return { ok: true, action: 'exit-app' };
+    }
+
+    // "Exit examination" ends the attempt but leaves CN-SEB available for
+    // the next authorised exam. It does not sign the student out.
+    quitting = false;
+    showWelcome('Your examination has been submitted successfully. You may close the app or wait for your next examination.');
+    return { ok: true, action: 'exit-exam' };
   });
   ipcMain.handle('cnseb:request-exit', async () => {
     if (examMode) return { ok: false, reason: 'exam-active', message: 'Submit or complete the examination before exiting the secure browser.' };
