@@ -1,0 +1,49 @@
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const root = path.resolve(__dirname, '..', '..');
+const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
+
+test('release version is 1.3.x', () => {
+  const pkg = JSON.parse(read('secure-exam-browser/package.json'));
+  assert.match(pkg.version, /^1\.3\.\d+$/);
+});
+
+test('active exam exposes separate submit-exam and close-app actions', () => {
+  const preload = read('secure-exam-browser/src/preload.js');
+  const main = read('secure-exam-browser/src/main.js');
+  assert.match(preload, /Exit examination/);
+  assert.match(preload, /Exit app/);
+  assert.match(preload, /submit-exam/);
+  assert.match(preload, /submit-close-app/);
+  assert.match(main, /exit-exam/);
+  assert.match(main, /exit-app/);
+  assert.match(main, /cnseb:exam-submission-complete/);
+});
+
+test('exit action is bridged to the secure submission pipeline', () => {
+  const preload = read('secure-exam-browser/src/preload.js');
+  const exam = read('exam.js');
+  assert.match(preload, /cnseb:request-submit-exam/);
+  assert.match(exam, /cnseb:request-submit-exam/);
+  assert.match(exam, /cnseb:exam-submission-complete/);
+  assert.match(exam, /cnseb:exam-submission-failed/);
+  assert.match(exam, /cnseb_submit_exam_attempt_secure/);
+});
+
+test('answer drafts remain local and retry after connectivity returns', () => {
+  const exam = read('exam.js');
+  assert.match(exam, /saveToLocalStorage/);
+  assert.match(exam, /scheduleAnswerDraftSyncRetry/);
+  assert.match(exam, /window\.addEventListener\('online'/);
+  assert.match(exam, /get_exam_attempt_answer_drafts/);
+});
+
+test('secure attempt is prepared before device session is claimed', () => {
+  const exam = read('exam.js');
+  const start = exam.indexOf('window.startExam = async function');
+  assert.notEqual(start, -1);
+  const body = exam.slice(start, start + 14000);
+  assert.ok(body.indexOf('getOrCreateCurrentAttempt()') < body.indexOf('claimExamSessionLock()'));
+});
