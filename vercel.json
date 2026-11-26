@@ -15,12 +15,12 @@
     },
     {
       "source": "/adminexams/",
-      "destination": "/platform/examinations/source/adminexams.html",
+      "destination": "/platform/examinations/source/adminexams/",
       "permanent": true
     },
     {
       "source": "/adminexams/index.html",
-      "destination": "/platform/examinations/source/adminexams.html",
+      "destination": "/platform/examinations/source/adminexams/",
       "permanent": true
     },
     {
@@ -55,12 +55,12 @@
     },
     {
       "source": "/lecturerexams",
-      "destination": "/platform/lecturerexams.html",
+      "destination": "/platform/lecturerexams/",
       "permanent": true
     },
     {
       "source": "/lecturerexams/",
-      "destination": "/platform/lecturerexams.html",
+      "destination": "/platform/lecturerexams/",
       "permanent": true
     },
     {
@@ -82,11 +82,11 @@
   "rewrites": [
     {
       "source": "/adminexams",
-      "destination": "/platform/examinations/source/adminexams.html"
+      "destination": "/platform/examinations/source/adminexams/"
     },
     {
       "source": "/adminexams/",
-      "destination": "/platform/examinations/source/adminexams.html"
+      "destination": "/platform/examinations/source/adminexams/"
     },
     {
       "source": "/adminexams.html",
