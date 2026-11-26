@@ -38,10 +38,16 @@
       named.accent1 || named.accent || named.gold || named.tertiary,
       named.accent2, named.accent3, named.accent4
     ];
+    /* Match the Platform Super Admin institution-login branding precedence:
+       primary_color and secondary_color are the authoritative first two colours;
+       the remaining four colours come from the saved six-colour brand palette. */
     return defaults.map((fallback, index) => {
-      const legacy = index === 0 ? institution.primary_color :
-        index === 1 ? institution.secondary_color : null;
-      return validColor(values[index], validColor(legacy, fallback));
+      const configured = index === 0
+        ? (institution.primary_color || values[index])
+        : index === 1
+          ? (institution.secondary_color || values[index])
+          : values[index];
+      return validColor(configured, fallback);
     });
   }
 
