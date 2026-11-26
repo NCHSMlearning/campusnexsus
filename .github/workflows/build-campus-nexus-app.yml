@@ -9,6 +9,7 @@ on:
       - "platform/student.html"
       - "platform/js/campus-nexus-app-install.js"
       - "images/logo-icon.png"
+      - "images/campus-nexus-original-logo.webp"
       - ".github/workflows/build-campus-nexus-app.yml"
 
 permissions:
@@ -62,7 +63,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y imagemagick
           mkdir -p assets www/assets
-          cp ../images/logo-icon.png www/assets/campus-nexus-logo.png
+          cp ../images/campus-nexus-original-logo.webp www/assets/campus-nexus-logo.webp
+          test -s www/assets/campus-nexus-logo.webp
           # Use the official high-resolution Campus Nexus emblem for the launcher icon.
           magick ../images/logo-icon.png -crop 1024x820+0+0 +repage -trim +repage -resize 820x820 -background '#062B57' -gravity center -extent 1024x1024 assets/icon-only.png
           # Keep the complete official wordmark on the launch screen.
@@ -81,11 +83,11 @@ jobs:
           marker = "    defaultConfig {"
           if marker not in gradle:
               raise SystemExit("Android defaultConfig block not found")
-          gradle = gradle.replace(marker, marker + '\n        versionCode 2\n        versionName "1.2.0"', 1)
+          gradle = gradle.replace(marker, marker + '\n        versionCode 3\n        versionName "1.2.1"', 1)
           path.write_text(gradle)
           PY
-          grep -q 'versionCode 2' android/app/build.gradle
-          grep -q 'versionName "1.2.0"' android/app/build.gradle
+          grep -q 'versionCode 3' android/app/build.gradle
+          grep -q 'versionName "1.2.1"' android/app/build.gradle
 
       - name: Sync Capacitor Android project
         run: npx cap sync android
@@ -142,24 +144,24 @@ jobs:
           chmod +x gradlew
           ./gradlew --no-daemon assembleRelease
           cd ..
-          cp android/app/build/outputs/apk/release/app-release.apk android/app/build/outputs/apk/release/Campus-Nexus-App-1.2.0.apk
-          test -s android/app/build/outputs/apk/release/Campus-Nexus-App-1.2.0.apk
-          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose android/app/build/outputs/apk/release/Campus-Nexus-App-1.2.0.apk
+          cp android/app/build/outputs/apk/release/app-release.apk android/app/build/outputs/apk/release/Campus-Nexus-App-1.2.1.apk
+          test -s android/app/build/outputs/apk/release/Campus-Nexus-App-1.2.1.apk
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose android/app/build/outputs/apk/release/Campus-Nexus-App-1.2.1.apk
           rm -f android/app/campus-nexus-release.keystore
 
       - name: Upload signed Android release APK
         uses: actions/upload-artifact@v4
         with:
-          name: Campus-Nexus-App-1.2.0-Android-Release
-          path: campus-nexus-app/android/app/build/outputs/apk/release/Campus-Nexus-App-1.2.0.apk
+          name: Campus-Nexus-App-1.2.1-Android-Release
+          path: campus-nexus-app/android/app/build/outputs/apk/release/Campus-Nexus-App-1.2.1.apk
           if-no-files-found: error
           retention-days: 30
 
       - name: Publish signed Android release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: campus-nexus-app-v1.2.0
-          name: Campus Nexus App 1.2.0 (Android Release)
+          tag_name: campus-nexus-app-v1.2.1
+          name: Campus Nexus App 1.2.1 (Android Release)
           prerelease: false
           make_latest: true
-          files: campus-nexus-app/android/app/build/outputs/apk/release/Campus-Nexus-App-1.2.0.apk
+          files: campus-nexus-app/android/app/build/outputs/apk/release/Campus-Nexus-App-1.2.1.apk
