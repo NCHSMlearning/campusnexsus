@@ -39,6 +39,7 @@
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/config.js?v=20261125-cnseb-handoff"></script>
+<script src="/js/exam-supabase.js?v=20261126-cnseb-session-fix"></script>
 <script>
 (function(){
  const params=new URLSearchParams(location.search);
@@ -94,8 +95,12 @@
    openButton.addEventListener('click',event=>{event.preventDefault();fallbackCopy.textContent='Preparing a one-time secure sign-in for this examination…';issueAndLaunch().catch(error=>{fallbackCopy.textContent=error.message||'Secure launch failed. Return to the student portal and try again.';});});
  }
  async function issueAndLaunch(){
-   if(!window.sb?.auth)throw new Error('Secure sign-in is unavailable. Refresh this page and try again.');
-   const {data:{session},error}=await window.sb.auth.getSession();
+   const authClient=window.examSupabase||window.sb;
+   if(!authClient?.auth)throw new Error('Secure sign-in is unavailable. Refresh this page and try again.');
+   // The student examination portal authenticates with the dedicated
+   // campus-nexus-exam-auth storage key. Reuse that exact client here so
+   // the secure handoff sees the session created by the student portal.
+   const {data:{session},error}=await authClient.auth.getSession();
    if(error||!session?.access_token)throw new Error('Your student browser session has expired. Sign in to the student portal again.');
    const examId=new URL(examUrl).searchParams.get('exam_id');
    if(!examId)throw new Error('The selected examination ID is missing. Return to your student portal and reopen the exam.');
