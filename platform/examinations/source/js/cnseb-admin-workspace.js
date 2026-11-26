@@ -31,6 +31,7 @@
     const wrapped = function (tab) {
       original.call(this, tab);
       setWorkspaceTitle(tab);
+      if (tab === 'cnsebOverview') loadOverview();
       if (tab === 'cnsebDevices') loadDevices();
       if (tab === 'cnsebSessions') loadSessions();
       if (tab === 'cnsebAlerts') loadAlerts();
@@ -56,7 +57,46 @@
     const { data: profile } = await client.from('consolidated_user_profiles_table')
       .select('institution_id,role').eq('user_id', user.id).maybeSingle();
     institutionId = profile?.institution_id || null;
-    await Promise.all([loadDevices(), loadSessions(), loadAlerts(), loadAudit()]);
+    await Promise.all([loadOverview(), loadDevices(), loadSessions(), loadAlerts(), loadAudit()]);
+  }
+
+  async function loadOverview() {
+    if (!client) return;
+    const status = document.getElementById('cnsebWorkspaceStatus');
+    const readiness = document.getElementById('cnsebReadinessMessage');
+    const values = {
+      registered_devices: 'cnsebRegisteredDevices',
+      active_sessions: 'cnsebActiveSessions',
+      app_installations: 'cnsebInstallations',
+      open_security_events: 'cnsebOpenEvents'
+    };
+    Object.values(values).forEach(id => {
+      const node = document.getElementById(id);
+      if (node) node.textContent = '…';
+    });
+    if (status) status.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Checking monitoring services';
+    const { data, error } = await client.rpc('cnseb_admin_get_overview', {
+      p_institution_id: institutionId
+    });
+    if (error) {
+      Object.values(values).forEach(id => {
+        const node = document.getElementById(id);
+        if (node) node.textContent = '—';
+      });
+      if (status) status.innerHTML = '<i class="fas fa-triangle-exclamation"></i> Monitoring unavailable';
+      if (readiness) readiness.textContent = 'The monitoring service could not return live metrics. Check the administrator session and the CN-SEB monitoring RPC permissions, then refresh.';
+      console.error('CN-SEB overview metrics failed:', error);
+      return;
+    }
+    Object.entries(values).forEach(([field, id]) => {
+      const node = document.getElementById(id);
+      if (node) node.textContent = Number(data?.[field] ?? 0).toLocaleString();
+    });
+    if (status) status.innerHTML = '<i class="fas fa-circle"></i> Live monitoring connected';
+    if (readiness) {
+      const generated = data?.generated_at ? new Date(data.generated_at) : new Date();
+      readiness.textContent = 'Metrics are live and institution-scoped. Active sessions use a 90-second heartbeat window; app installations count registered CN-SEB clients, not installer downloads. Last updated ' + generated.toLocaleString('en-KE', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Africa/Nairobi' }) + ' (Kenya time).';
+    }
   }
 
   function deviceHost() { return document.getElementById('cnsebDeviceTableHost'); }
@@ -194,6 +234,7 @@
     document.head.appendChild(style);
     const refresh = document.getElementById('cnsebDevicesRefresh');
     refresh?.addEventListener('click', loadDevices);
+    document.getElementById('cnsebOverviewRefresh')?.addEventListener('click', loadOverview);
     document.getElementById('cnsebSessionsRefresh')?.addEventListener('click', loadSessions);
     document.getElementById('cnsebAlertsRefresh')?.addEventListener('click', loadAlerts);
     document.getElementById('cnsebAuditRefresh')?.addEventListener('click', loadAudit);
@@ -207,6 +248,7 @@
       window.switchTab(tab);
       return true;
     },
+    refreshOverview: loadOverview,
     refreshDevices: loadDevices,
     refreshSessions: loadSessions
   });
