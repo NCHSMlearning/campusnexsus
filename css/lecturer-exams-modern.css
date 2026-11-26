@@ -212,7 +212,7 @@ body{overflow-x:hidden}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
 
 /* High-specificity final corrections: override legacy admin dashboard rules */
-body #sidebar.sidebar{width:260px!important;max-width:260px!important;min-width:260px!important;background:linear-gradient(180deg,#061f3e 0%,#092b50 65%,#07365b 100%)!important}
+body #sidebar.sidebar{width:260px!important;max-width:260px!important;min-width:260px!important;background:linear-gradient(180deg,var(--cn-institution-primary,#061f3e) 0%,color-mix(in srgb,var(--cn-institution-primary,#061f3e) 78%,var(--cn-institution-secondary,#092b50)) 65%,var(--cn-institution-secondary,#07365b) 100%)!important}
 body #sidebar .sidebar-header{height:112px!important;min-height:112px!important;padding:10px 13px!important;display:flex!important;align-items:center!important;overflow:hidden!important}
 body #sidebar .sidebar-brand{height:90px!important;max-height:90px!important;display:flex!important;align-items:center!important;gap:10px!important;padding:0!important}
 body #sidebar .brand-crest{width:58px!important;height:72px!important;min-width:58px!important;max-width:58px!important;flex:0 0 58px!important;display:flex!important;align-items:center!important;justify-content:center!important;overflow:hidden!important;background:transparent!important}
