@@ -47,3 +47,23 @@ test('secure attempt is prepared before device session is claimed', () => {
   const body = exam.slice(start, start + 14000);
   assert.ok(body.indexOf('getOrCreateCurrentAttempt()') < body.indexOf('claimExamSessionLock()'));
 });
+
+
+test('secure exam heartbeat remains active until final submission and session release', () => {
+  const exam = read('exam.js');
+  const submit = exam.indexOf('async function executeSubmissionWithLoading');
+  const body = exam.slice(submit, submit + 12000);
+  const heartbeatStop = body.indexOf('clearInterval(AppState.heartbeatInterval)');
+  const serverSubmit = body.indexOf('await calculateAndSaveGrade()');
+  const release = body.indexOf('await releaseExamSessionLock()');
+  assert.ok(serverSubmit > 0, 'server submission call must exist');
+  assert.ok(release > serverSubmit, 'session release must follow successful server submission');
+  assert.ok(heartbeatStop > release, 'heartbeat must not stop before the server submission and release');
+});
+
+test('CN-SEB submission only reports completion after server-side submission returns', () => {
+  const exam = read('exam.js');
+  const body = exam.slice(exam.indexOf('async function executeSubmissionWithLoading'), exam.indexOf('function showSubmissionProgress'));
+  assert.ok(body.indexOf('await calculateAndSaveGrade()') < body.indexOf('cnseb:exam-submission-complete'));
+  assert.ok(body.indexOf('await saveAllAnswersToDatabase()') < body.indexOf('await calculateAndSaveGrade()'));
+});

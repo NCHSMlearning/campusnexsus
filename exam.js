@@ -3504,7 +3504,10 @@ async function executeSubmissionWithLoading() {
         await yieldToBrowser();
         if (AppState.timerInterval) clearInterval(AppState.timerInterval);
         if (AppState.countdownInterval) clearInterval(AppState.countdownInterval);
-        if (AppState.heartbeatInterval) clearInterval(AppState.heartbeatInterval);
+        // Keep the server heartbeat alive while the final answer payload is
+        // being persisted. The secure submission RPC rejects sessions whose
+        // last heartbeat is older than 90 seconds; stopping it before uploads
+        // made slow connections fail even when the student remained present.
         if (AppState.saveProgressInterval) clearInterval(AppState.saveProgressInterval);
         if (AppState.snapshotInterval) clearInterval(AppState.snapshotInterval);
         if (AppState.questionTimerInterval) clearInterval(AppState.questionTimerInterval);
@@ -3534,6 +3537,10 @@ async function executeSubmissionWithLoading() {
         // Release the server-side one-tab/device lock before redirecting.
         updateSubmissionProgress('🔓 Closing exam session...');
         await releaseExamSessionLock();
+        if (AppState.heartbeatInterval) {
+            clearInterval(AppState.heartbeatInterval);
+            AppState.heartbeatInterval = null;
+        }
 
         updateSubmissionProgress('🧹 Cleaning up...');
         await yieldToBrowser();
