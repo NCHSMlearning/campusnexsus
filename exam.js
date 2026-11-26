@@ -2675,26 +2675,73 @@ async function saveAnswerToDatabase(questionId, answer) {
     return true;
 }
 
+let answerDraftSyncInFlight = false;
+let answerDraftRetryTimer = null;
+let answerDraftRetryAttempt = 0;
+
+function scheduleAnswerDraftSyncRetry() {
+    if (answerDraftRetryTimer || !navigator.onLine || !AppState.sessionClaimed ||
+        AppState.sessionLost || !AppState.isExamActive || !AppState.attemptId) return;
+    const delay = Math.min(30000, 1500 * (2 ** Math.min(answerDraftRetryAttempt, 5)));
+    answerDraftRetryAttempt++;
+    answerDraftRetryTimer = setTimeout(async () => {
+        answerDraftRetryTimer = null;
+        await flushAnswerDraftsToServer();
+    }, delay);
+}
+
 async function flushAnswerDraftsToServer() {
-    if (!navigator.onLine) return false;
+    if (!navigator.onLine || !AppState.sessionClaimed || AppState.sessionLost) return false;
+    if (answerDraftSyncInFlight) return false;
+    answerDraftSyncInFlight = true;
     for (const [questionId, timer] of answerDraftTimers.entries()) {
         clearTimeout(timer);
         answerDraftTimers.delete(questionId);
     }
     const entries = Object.entries(AppState.answers || {});
-    if (!entries.length) return true;
-    let allSaved = true;
-    for (const [questionId, answer] of entries) {
-        try {
-            await persistAnswerDraft(questionId, answer);
-        } catch (error) {
-            allSaved = false;
-            console.warn('Could not flush answer draft before submission:', questionId, error);
-        }
+    if (!entries.length) {
+        answerDraftSyncInFlight = false;
+        return true;
     }
-    setAnswerSyncStatus(allSaved ? 'All answers saved to Campus Nexus' : 'Some answers remain locally saved; final submission will retry', allSaved ? 'saved' : 'pending');
-    return allSaved;
+    let allSaved = true;
+    try {
+        for (const [questionId, answer] of entries) {
+            try {
+                await persistAnswerDraft(questionId, answer);
+            } catch (error) {
+                allSaved = false;
+                console.warn('Could not flush answer draft; it remains in the local recovery queue:', questionId, error);
+            }
+        }
+        if (allSaved) {
+            answerDraftRetryAttempt = 0;
+            if (answerDraftRetryTimer) clearTimeout(answerDraftRetryTimer);
+            answerDraftRetryTimer = null;
+            setAnswerSyncStatus('All answers saved to Campus Nexus', 'saved');
+        } else {
+            setAnswerSyncStatus('Answers are safe on this device · retrying server sync', 'pending');
+        }
+        return allSaved;
+    } finally {
+        answerDraftSyncInFlight = false;
+        if (!allSaved) scheduleAnswerDraftSyncRetry();
+    }
 }
+
+// A restored connection immediately drains the local answer queue. A short
+// delay lets Supabase Auth and the live-session heartbeat reconnect first.
+window.addEventListener('online', () => {
+    if (answerDraftRetryTimer) clearTimeout(answerDraftRetryTimer);
+    answerDraftRetryTimer = setTimeout(() => {
+        answerDraftRetryTimer = null;
+        flushAnswerDraftsToServer();
+    }, 1800);
+});
+window.addEventListener('offline', () => {
+    if (answerDraftRetryTimer) clearTimeout(answerDraftRetryTimer);
+    answerDraftRetryTimer = null;
+    setAnswerSyncStatus('Internet interrupted · answers remain saved on this device', 'pending');
+});
 
 async function loadSavedAnswers() {
     if (!AppState.attemptId) return;
