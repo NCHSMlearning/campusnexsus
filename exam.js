@@ -3496,9 +3496,11 @@ async function executeSubmissionWithLoading() {
 
         if (DOM.submissionProgress) DOM.submissionProgress.classList.remove('active');
         showCompletionCertificate();
+        window.dispatchEvent(new Event('cnseb:exam-submission-complete'));
 
     } catch (error) {
         console.error('❌ Submission error:', error);
+        window.dispatchEvent(new Event('cnseb:exam-submission-failed'));
         if (DOM.submissionProgress) DOM.submissionProgress.classList.remove('active');
         showToast('❌ Submission failed: ' + (error && error.message ? error.message : 'Please try again or contact the academic office.'), 'error', 9000);
 
