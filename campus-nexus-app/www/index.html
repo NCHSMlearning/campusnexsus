@@ -1,16 +1,67 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#062b57">
-<title>Campus Nexus</title>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#071f3b"><title>Welcome to Campus Nexus</title>
 <style>
-html,body{margin:0;width:100%;height:100%;background:#062b57;color:#fff;font-family:Arial,sans-serif}
-main{height:100%;display:grid;place-content:center;text-align:center;gap:12px}
-.brand{font-size:28px;font-weight:800;letter-spacing:-.6px}
-.sub{font-size:13px;color:#c7d9ed}
-</style>
-</head>
-<body><main><div class="brand">Campus Nexus</div><div class="sub">Connecting to your campus portal…</div></main></body>
-</html>
+:root{color-scheme:dark;--navy:#071f3b;--blue:#1688d4;--teal:#11a69a;--gold:#f2bd4b}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--navy);color:#fff}
+body{min-height:100svh;overflow-x:hidden;background:radial-gradient(ellipse at 5% 5%,#167ab755,transparent 36%),radial-gradient(ellipse at 95% 88%,#0e9b8c38,transparent 36%),linear-gradient(145deg,#06172d,#0a3154 55%,#071d35);padding:calc(env(safe-area-inset-top) + 22px) 22px calc(env(safe-area-inset-bottom) + 24px);display:flex;justify-content:center;align-items:center}
+body:before{content:"";position:fixed;width:340px;height:340px;border:1px solid #ffffff12;border-radius:50%;top:-190px;right:-120px;box-shadow:0 0 0 36px #ffffff08,0 0 0 76px #ffffff05;pointer-events:none}
+main{width:min(100%,460px);position:relative;z-index:1}
+.brand{text-align:center;margin-bottom:30px}.logo-wrap{width:112px;height:112px;margin:0 auto 18px;padding:13px;border-radius:32px;background:linear-gradient(145deg,#fff,#eaf3fa);box-shadow:0 18px 55px #0005,0 0 0 1px #ffffff55;display:grid;place-items:center}
+.logo-wrap img{width:100%;height:100%;object-fit:contain}.brand h1{font-size:30px;letter-spacing:-1.1px;margin:0;font-weight:850}.brand h1 span{color:#62c4ef}.brand p{color:#b8cce0;font-size:13px;line-height:1.6;margin:9px 0 0}
+.card{padding:27px 23px;border-radius:25px;border:1px solid #ffffff24;background:linear-gradient(145deg,#ffffff17,#ffffff0b);box-shadow:0 22px 70px #0004;backdrop-filter:blur(18px)}
+.eyebrow{font-size:10px;letter-spacing:1.7px;font-weight:800;color:#74d6d0;margin:0 0 10px}.card h2{font-size:22px;letter-spacing:-.5px;margin:0 0 8px}.hint{font-size:12px;line-height:1.6;color:#b6c9dc;margin:0 0 22px}
+label{display:block;font-size:11px;font-weight:750;color:#d8e7f4;margin:0 0 9px}.field{height:55px;display:flex;align-items:center;gap:12px;padding:0 15px;border:1px solid #a7c4dc55;border-radius:13px;background:#061a30aa}.field span{font-size:19px;color:#71c9e9}.field input{width:100%;border:0;outline:0;background:transparent;color:#fff;font-size:18px;font-weight:750;letter-spacing:4px}.field input::placeholder{font-size:13px;letter-spacing:0;color:#8fa9bf;font-weight:500}
+button,select{font:inherit}.primary{width:100%;height:53px;margin-top:16px;border:0;border-radius:13px;background:linear-gradient(100deg,#1388d4,#0c9c9a);color:#fff;font-weight:850;font-size:14px;box-shadow:0 10px 25px #087f9c44}.primary:disabled{opacity:.65}
+.status{min-height:19px;margin:12px 0 0;color:#c4d8e8;font-size:11px;line-height:1.5}.status.error{color:#ffb5b5}
+.school{display:none;align-items:center;gap:12px;padding:13px;margin-top:16px;border-radius:14px;background:#ffffff12;border:1px solid #ffffff20}.school.show{display:flex}.school img,.monogram{width:48px;height:48px;border-radius:11px;object-fit:contain;background:#fff;padding:4px}.school strong{display:block;font-size:13px}.school small{display:block;color:#b6ccdf;margin-top:4px;font-size:10px}
+.portal{display:none;margin-top:20px}.portal.show{display:block}.portal select{width:100%;height:54px;border:1px solid #8ab8d255;border-radius:13px;background:#071f3b;color:#fff;padding:0 13px;font-size:14px;font-weight:700;outline:none}.portal select option{background:#071f3b;color:#fff}
+.footer{text-align:center;color:#91abc2;font-size:10px;margin:22px 0 0}.footer b{color:#d5e8f5}
+@media(max-height:700px){body{align-items:flex-start}.brand{margin-bottom:20px}.logo-wrap{width:78px;height:78px;border-radius:23px;margin-bottom:12px}.brand h1{font-size:25px}.card{padding:22px 20px}}
+</style></head>
+<body><main>
+<header class="brand"><div class="logo-wrap"><img src="assets/campus-nexus-logo.webp" alt="Campus Nexus logo"></div><h1>Campus <span>Nexus</span></h1><p>Your institution. Your learning. One connected campus.</p></header>
+<section class="card">
+<p class="eyebrow">WELCOME TO YOUR CAMPUS</p><h2>Let's get you started</h2><p class="hint">Enter your institution code to securely connect to your campus. We'll prepare the right portal for you.</p>
+<form id="schoolForm"><label for="schoolCode">Institution code</label><div class="field"><span>⌂</span><input id="schoolCode" name="schoolCode" type="text" inputmode="numeric" autocomplete="off" maxlength="3" placeholder="Enter 3-digit code" required></div><button class="primary" id="verifyBtn" type="submit">Verify institution <span aria-hidden="true">→</span></button></form>
+<p class="status" id="status" role="status" aria-live="polite"></p>
+<div class="school" id="schoolCard"><div id="schoolLogo"></div><div><strong id="schoolName"></strong><small id="schoolCodeLabel"></small></div></div>
+<div class="portal" id="portalPicker"><label for="portalType">Where would you like to go?</label><select id="portalType"><option value="">Choose a portal</option><option value="lms">Learning Management System (LMS)</option><option value="exam">Examination Portal</option></select><button class="primary" id="openPortal" type="button">Continue to portal →</button></div>
+</section><p class="footer">Secure institutional access · Powered by <b>Campus Nexus</b></p>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function(){
+ const SUPABASE_URL="https://irahplkvocaakjxuisto.supabase.co",KEY="sb_publishable_5Cg5FFudf03UnmOXGNGMHQ_uK9S-uQX";
+ const $=id=>document.getElementById(id);let selected=null,busy=false;
+ function say(t,error){$("status").textContent=t||"";$("status").classList.toggle("error",!!error)}
+ $("schoolCode").addEventListener("input",()=>{const el=$("schoolCode");el.value=el.value.replace(/\\D/g,"").slice(0,3);selected=null;$("schoolCard").classList.remove("show");$("portalPicker").classList.remove("show");say("")});
+ $("schoolForm").addEventListener("submit",async e=>{
+  e.preventDefault();if(busy)return;const code=$("schoolCode").value.trim();if(!/^\\d{3}$/.test(code)){say("Please enter your 3-digit institution code.",true);return}
+  busy=true;const btn=$("verifyBtn");btn.disabled=true;btn.textContent="Verifying…";say("Securely checking your institution code…");
+  try{
+   if(!window.supabase?.createClient)throw new Error("Secure verification is unavailable. Check your connection and try again.");
+   const client=window.cnGateClient||(window.cnGateClient=window.supabase.createClient(SUPABASE_URL,KEY,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false,storageKey:"cn-app-school-lookup"}}));
+   const {data,error}=await client.rpc("resolve_institution_registration_context",{p_code:code,p_host:null});
+   if(error)throw new Error("We could not verify that code. Please try again.");
+   const found=Array.isArray(data)?data[0]:data;if(!found?.institution_id||!found?.school_code)throw new Error("That code was not recognised or the institution is inactive.");
+   selected=found;$("schoolName").textContent=found.institution_name||"Your Institution";$("schoolCodeLabel").textContent="Institution code: "+found.school_code;
+   const logo=$("schoolLogo");logo.replaceChildren();
+   if(found.logo_url&&/^https:\\/\\//i.test(found.logo_url)){const img=document.createElement("img");img.src=found.logo_url;img.alt=$("schoolName").textContent+" logo";logo.append(img)}
+   else{const mark=document.createElement("span");mark.className="monogram";mark.textContent=String(found.institution_name||"IN").split(/\\s+/).slice(0,2).map(x=>x[0]).join("").toUpperCase();mark.style.cssText="display:grid;place-items:center;background:#0b4965;color:#fff;font-weight:800";logo.append(mark)}
+   $("schoolCard").classList.add("show");$("portalPicker").classList.add("show");say("Institution verified. Select the portal you want to open.");
+   try{localStorage.setItem("campus_nexus_school_code",String(found.school_code));localStorage.setItem("campus_nexus_institution_context",JSON.stringify({institution_id:found.institution_id,institution_name:found.institution_name,school_code:found.school_code}))}catch(_){}
+  }catch(err){selected=null;$("schoolCard").classList.remove("show");$("portalPicker").classList.remove("show");say(err.message||"Verification failed.",true)}
+  finally{busy=false;btn.disabled=false;btn.innerHTML='Verify institution <span aria-hidden="true">→</span>'}
+ });
+ $("openPortal").addEventListener("click",()=>{
+  if(!selected){say("Verify your institution first.",true);return}
+  const type=$("portalType").value;if(!type){say("Choose LMS or Examination Portal to continue.",true);return}
+  const code=encodeURIComponent(String(selected.school_code));
+  const target=type==="exam"?"https://campusnexus.co.ke/examlogin.html?school_code="+code:"https://campusnexus.co.ke/platform/login.html?school_code="+code+"&source=android-app";
+  window.location.href=target;
+ });
+})();
+</script></body></html>
