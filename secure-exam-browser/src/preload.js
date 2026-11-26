@@ -116,6 +116,36 @@ sessionStatus.title = 'App-level kiosk presentation only. Institution-managed Wi
     // not a fixed/floating overlay over examination content.
     const mount = document.body || document.documentElement;
     mount.insertBefore(bar, mount.firstChild);
+    if (info.kioskRuntime) {
+      // During an active exam, hide the ordinary application toolbar. Keep
+      // only the controlled bottom exit action visible to the candidate.
+      bar.style.display = 'none';
+      const examExit = makeButton('Exit examination', '#a92d2d');
+      examExit.id = 'cnseb-exam-exit';
+      examExit.setAttribute('aria-label', 'Submit examination and exit');
+      Object.assign(examExit.style, {
+        position: 'fixed', right: '18px', bottom: '14px', zIndex: '2147483646',
+        minHeight: '34px', padding: '7px 13px', borderRadius: '10px',
+        boxShadow: '0 4px 18px rgba(0,0,0,.28)', opacity: '.92'
+      });
+      document.body.appendChild(examExit);
+      examExit.addEventListener('click', () => openConfirm('submit-exit'));
+      document.addEventListener('cnseb:exam-submission-complete', async () => {
+        examExit.textContent = 'Submission saved · Closing…';
+        examExit.disabled = true;
+        try { await ipcRenderer.invoke('cnseb:exam-submission-complete'); }
+        catch (error) { console.error('[CN-SEB] Could not finish after submission:', error); }
+      });
+      document.addEventListener('cnseb:exam-submission-failed', () => {
+        busy = false;
+        examExit.disabled = false;
+        examExit.textContent = 'Exit examination';
+        message.textContent = 'Submission could not be completed. Your exam remains open; please retry or contact the invigilator.';
+        confirm.disabled = false;
+        cancel.disabled = false;
+        confirm.textContent = 'Retry submission';
+      });
+    }
 
     const shade = document.createElement('div');
     Object.assign(shade.style, {
@@ -149,11 +179,13 @@ sessionStatus.title = 'App-level kiosk presentation only. Institution-managed Wi
     function openConfirm(nextMode) {
       if (busy) return;
       mode = nextMode;
-      heading.textContent = nextMode === 'logout' ? 'Log out of Campus Nexus?' : 'Exit Secure Exam Browser?';
+      heading.textContent = nextMode === 'logout' ? 'Log out of Campus Nexus?' : nextMode === 'submit-exit' ? 'Submit examination and exit?' : 'Exit Secure Exam Browser?';
       message.textContent = nextMode === 'logout'
         ? 'This clears the saved sign-in for this app and closes it. Any unfinished examination will not be submitted.'
-        : 'The app will close and return you to the desktop. Your sign-in will be kept for your next launch. Submit your examination first.';
-      confirm.textContent = nextMode === 'logout' ? 'Log out and close' : 'Exit application';
+        : nextMode === 'submit-exit'
+          ? 'Your examination will be submitted immediately. All saved answers will be sent, the result will be recorded and the exam session will be closed before the app exits. This cannot be undone.'
+          : 'The app will close and return you to the desktop. Your sign-in will be kept for your next launch. Submit your examination first.';
+      confirm.textContent = nextMode === 'logout' ? 'Log out and close' : nextMode === 'submit-exit' ? 'Submit exam & exit' : 'Exit application';
       confirm.style.background = nextMode === 'logout' ? '#a65b12' : '#a92d2d';
       shade.style.display = 'flex';
     }
@@ -168,10 +200,26 @@ sessionStatus.title = 'App-level kiosk presentation only. Institution-managed Wi
       busy = true;
       confirm.disabled = true;
       cancel.disabled = true;
-      confirm.textContent = mode === 'logout' ? 'Clearing sign-in…' : 'Closing app…';
+      confirm.textContent = mode === 'logout' ? 'Clearing sign-in…' : mode === 'submit-exit' ? 'Submitting examination…' : 'Closing app…';
       message.textContent = mode === 'logout'
         ? 'Your saved app sign-in is being cleared. Please keep this window open.'
-        : 'Campus Nexus Secure Exam Browser is closing.';
+        : mode === 'submit-exit'
+          ? 'Saving answers, recording your result and closing the examination session. Do not turn off this computer.'
+          : 'Campus Nexus Secure Exam Browser is closing.';
+      if (mode === 'submit-exit') {
+        try {
+          if (typeof window.submitExam !== 'function') throw new Error('The examination submission service is not ready. Please wait and try again.');
+          window.submitExam(true);
+          confirm.textContent = 'Submission in progress…';
+          message.textContent = 'Your answers are being saved and your result is being recorded. The app will close only after successful submission.';
+          return;
+        } catch (error) {
+          busy = false; confirm.disabled = false; cancel.disabled = false;
+          confirm.textContent = 'Retry submission';
+          message.textContent = error.message || 'Could not start exam submission.';
+          return;
+        }
+      }
       try {
         const action = mode === 'logout' ? 'cnseb:request-logout' : 'cnseb:request-exit';
         const result = await Promise.race([
