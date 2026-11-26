@@ -60,7 +60,8 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y imagemagick
-          mkdir -p assets
+          mkdir -p assets www/assets
+          cp ../images/campus-nexus-original-logo.webp www/assets/campus-nexus-logo.webp
           magick ../images/campus-nexus-original-logo.webp -background white -gravity center -resize 1024x1024 -extent 1024x1024 assets/icon-only.png
           magick -size 2732x2732 xc:'#062B57' assets/splash.png
           magick assets/icon-only.png -resize 1200x1200 -gravity center -background '#062B57' -extent 2732x2732 assets/splash.png
