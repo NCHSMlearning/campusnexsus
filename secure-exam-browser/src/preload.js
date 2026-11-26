@@ -123,20 +123,22 @@ sessionStatus.title = 'App-level kiosk presentation only. Institution-managed Wi
       const examExit = makeButton('Exit examination', '#a92d2d');
       examExit.id = 'cnseb-exam-exit';
       examExit.setAttribute('aria-label', 'Submit examination and exit');
+      examExit.style.display = 'none';
       Object.assign(examExit.style, {
         position: 'fixed', right: '18px', bottom: '14px', zIndex: '2147483646',
         minHeight: '34px', padding: '7px 13px', borderRadius: '10px',
         boxShadow: '0 4px 18px rgba(0,0,0,.28)', opacity: '.92'
       });
       document.body.appendChild(examExit);
+      document.addEventListener('cnseb:exam-started', () => { examExit.style.display = 'inline-flex'; });
       examExit.addEventListener('click', () => openConfirm('submit-exit'));
-      window.addEventListener('cnseb:exam-submission-complete', async () => {
+      document.addEventListener('cnseb:exam-submission-complete', async () => {
         examExit.textContent = 'Submission saved · Closing…';
         examExit.disabled = true;
         try { await ipcRenderer.invoke('cnseb:exam-submission-complete'); }
         catch (error) { console.error('[CN-SEB] Could not finish after submission:', error); }
       });
-      window.addEventListener('cnseb:exam-submission-failed', () => {
+      document.addEventListener('cnseb:exam-submission-failed', () => {
         busy = false;
         examExit.disabled = false;
         examExit.textContent = 'Exit examination';
@@ -208,8 +210,7 @@ sessionStatus.title = 'App-level kiosk presentation only. Institution-managed Wi
           : 'Campus Nexus Secure Exam Browser is closing.';
       if (mode === 'submit-exit') {
         try {
-          if (typeof window.submitExam !== 'function') throw new Error('The examination submission service is not ready. Please wait and try again.');
-          window.submitExam(true);
+          document.dispatchEvent(new Event('cnseb:request-submit-exam'));
           confirm.textContent = 'Submission in progress…';
           message.textContent = 'Your answers are being saved and your result is being recorded. The app will close only after successful submission.';
           return;
