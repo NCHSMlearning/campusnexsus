@@ -90,11 +90,13 @@
    };
    setTimeout(()=>{
      launchStatus();
-     issueAndLaunch().catch(error=>{console.error('[CN-SEB] Secure launch handoff failed:',error);fallbackCopy.textContent=error.message||'Secure sign-in could not be prepared. Return to the student portal and try again.';});
+     issueAndLaunch().catch(error=>{window.__cnsebLaunchRequested=false;console.error('[CN-SEB] Secure launch handoff failed:',error);fallbackCopy.textContent=error.message||'Secure sign-in could not be prepared. Return to the student portal and try again.';});
    },650);
-   openButton.addEventListener('click',event=>{event.preventDefault();fallbackCopy.textContent='Preparing a one-time secure sign-in for this examination…';issueAndLaunch().catch(error=>{fallbackCopy.textContent=error.message||'Secure launch failed. Return to the student portal and try again.';});});
+   openButton.addEventListener('click',event=>{event.preventDefault();fallbackCopy.textContent='Preparing a one-time secure sign-in for this examination…';issueAndLaunch().catch(error=>{window.__cnsebLaunchRequested=false;fallbackCopy.textContent=error.message||'Secure launch failed. Return to the student portal and try again.';});});
  }
  async function issueAndLaunch(){
+   if(window.__cnsebLaunchRequested)return;
+   window.__cnsebLaunchRequested=true;
    const examId=new URL(examUrl).searchParams.get('exam_id');
    if(!examId)throw new Error('The selected examination ID is missing. Return to your student portal and reopen the exam.');
    // Prefer the one-time key issued from the student's live portal session.
