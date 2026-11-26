@@ -77,16 +77,17 @@ jobs:
           chmod +x gradlew
           ./gradlew --no-daemon assembleDebug
 
-      - name: Verify APK
+      - name: Name branded APK
         run: |
-          test -s android/app/build/outputs/apk/debug/app-debug.apk
-          ls -lh android/app/build/outputs/apk/debug/app-debug.apk
+          cp android/app/build/outputs/apk/debug/app-debug.apk android/app/build/outputs/apk/debug/Campus-Nexus-App-1.0.0.apk
+          test -s android/app/build/outputs/apk/debug/Campus-Nexus-App-1.0.0.apk
+          ls -lh android/app/build/outputs/apk/debug/Campus-Nexus-App-1.0.0.apk
 
       - name: Upload Android preview APK
         uses: actions/upload-artifact@v4
         with:
           name: Campus-Nexus-App-1.0.0-Android-Preview
-          path: campus-nexus-app/android/app/build/outputs/apk/debug/app-debug.apk
+          path: campus-nexus-app/android/app/build/outputs/apk/debug/Campus-Nexus-App-1.0.0.apk
           if-no-files-found: error
           retention-days: 30
 
@@ -97,4 +98,4 @@ jobs:
           name: Campus Nexus App 1.0.0 (Android Preview)
           prerelease: true
           make_latest: false
-          files: campus-nexus-app/android/app/build/outputs/apk/debug/app-debug.apk
+          files: campus-nexus-app/android/app/build/outputs/apk/debug/Campus-Nexus-App-1.0.0.apk
