@@ -435,6 +435,7 @@ app.whenReady().then(() => {
     // "Exit examination" ends the attempt but leaves CN-SEB available for
     // the next authorised exam. It does not sign the student out.
     quitting = false;
+    exitInProgress = false;
     showWelcome('Your examination has been submitted successfully. You may close the app or wait for your next examination.');
     return { ok: true, action: 'exit-exam' };
   });
