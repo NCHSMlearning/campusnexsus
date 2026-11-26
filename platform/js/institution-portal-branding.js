@@ -306,11 +306,9 @@
   }
 
   async function resolve(forceRefresh) {
-    const authenticatedInstitution = window.CURRENT_INSTITUTION;
-    if (!forceRefresh && authenticatedInstitution && authenticatedInstitution.id) {
-      apply(authenticatedInstitution);
-      return;
-    }
+    /* Always resolve branding from the authenticated user's server-side
+       profile and the current institutions row. CURRENT_INSTITUTION is only a
+       display cache and may contain stale colours after Super Admin edits. */
 
     const supabase = client();
     if (!supabase) return;
