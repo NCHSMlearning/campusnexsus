@@ -31,7 +31,7 @@
    <div class="mobile-note" id="mobile-note"><i class="fa-solid fa-mobile-screen-button"></i> The desktop application is for Windows. On a phone or tablet, use the browser-based exam option if your institution permits it.</div>
    <div class="steps-heading"><strong>How to get started</strong><span>It only takes a moment</span></div>
    <div class="steps"><div class="step"><div class="step-top"><span class="step-num">01</span><b>Download</b></div><p>Get the latest Windows installer directly from Campus Nexus. No GitHub account or ZIP file is needed.</p></div><div class="step"><div class="step-top"><span class="step-num">02</span><b>Install</b></div><p>Open the downloaded installer and follow the on-screen setup instructions.</p></div><div class="step"><div class="step-top"><span class="step-num">03</span><b>Return &amp; launch</b></div><p>Come back to this page and choose “Open in Secure Exam Browser” to start your assessment.</p></div></div>
-   <div class="status-line"><i class="fa-solid fa-circle-info"></i><span id="fallback-copy">If the secure application is not installed yet, download and install it first. Your exam link remains available in this session.</span></div>
+   <div id="activation-key-panel" style="display:none;margin-top:18px;padding:16px 18px;border:1px solid #cbdce8;border-radius:14px;background:#f4f9fc"><strong style="display:block;color:#0b3552;margin-bottom:7px">Your one-time activation key</strong><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><code id="activation-key-value" style="font-size:18px;font-weight:800;letter-spacing:.16em;color:#073b58;background:#e5f0f7;padding:10px 12px;border-radius:8px"></code><button type="button" id="copy-activation-key" class="btn secondary" style="padding:10px 14px">Copy key</button></div><p style="margin:8px 0 0;color:#526b7e;font-size:12px">This key is single-use and expires after 60 seconds. Use it only if you open Secure Exam Browser manually.</p></div>\n   <div class="status-line"><i class="fa-solid fa-circle-info"></i><span id="fallback-copy">If the secure application is not installed yet, download and install it first. Your exam link remains available in this session.</span></div>
    <div class="browser-link"><a id="browser-fallback" href="#">Continue in web browser (if allowed by your institution)</a></div>
   </section>
  </main>
@@ -103,7 +103,13 @@
    const payload=await response.json().catch(()=>({}));
    if(!response.ok||!payload.code)throw new Error(payload.error||'Could not create the secure exam handoff.');
    openButton.href=launchBase+'&code='+encodeURIComponent(payload.code);
-   fallbackCopy.textContent='Your secure sign-in is ready. Windows will ask to open Campus Nexus Secure Exam Browser.';
+   document.getElementById('activation-key-value').textContent=payload.code;
+   document.getElementById('activation-key-panel').style.display='block';
+   document.getElementById('copy-activation-key').addEventListener('click',async()=>{
+     try{await navigator.clipboard.writeText(payload.code);document.getElementById('copy-activation-key').textContent='Copied';}
+     catch(_){fallbackCopy.textContent='Copy the activation key shown above manually. It expires after 60 seconds.';}
+   });
+   fallbackCopy.textContent='Your secure sign-in is ready. Windows will ask to open Campus Nexus Secure Exam Browser. If you open the app manually, use the activation key shown here within 60 seconds.';
    window.location.href=openButton.href;
  }
  downloadButton.addEventListener('click',()=>{
