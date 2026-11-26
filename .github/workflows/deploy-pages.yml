@@ -136,7 +136,7 @@ jobs:
               changed = False
               has_protection = re.search(r'<script[^>]+src=["\'][^"\']*/code-protection\.js(?:\?[^"\']*)?["\']', html, re.I)
               if not has_protection:
-                  html = re.sub(r"</head>", protection + "\\n</head>", html, count=1, flags=re.I) if re.search(r"</head>", html, re.I) else protection + html
+                  html = re.sub(r"</head>", protection + "\n</head>", html, count=1, flags=re.I) if re.search(r"</head>", html, re.I) else protection + html
                   changed = True
               canonical_pages = {
                   "examlogin.html",
@@ -145,7 +145,7 @@ jobs:
               }
               relative_path = page.as_posix().lstrip("./")
               if relative_path not in canonical_pages and "data-cn-clean-url-router" not in html:
-                  html = re.sub(r"</head>", clean_urls + "\\n</head>", html, count=1, flags=re.I) if re.search(r"</head>", html, re.I) else clean_urls + html
+                  html = re.sub(r"</head>", clean_urls + "\n</head>", html, count=1, flags=re.I) if re.search(r"</head>", html, re.I) else clean_urls + html
                   changed = True
               if changed:
                   page.write_text(html, encoding="utf-8")
