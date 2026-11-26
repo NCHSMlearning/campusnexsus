@@ -586,3 +586,40 @@ body #sidebar .sidebar-menu a:hover{
  background:color-mix(in srgb,var(--cn-institution-secondary,#0f766e) 22%,transparent)!important;
 }
 body #sidebar .menu-label{color:color-mix(in srgb,var(--cn-institution-secondary,#0f766e) 55%,white)!important}
+
+
+/* Lecturer navigation now mirrors the Institution Admin / Exam Command Centre sidebar. */
+body #sidebar.sidebar{
+ background:linear-gradient(180deg,
+   var(--cn-institution-primary,#0a3d62) 0%,
+   color-mix(in srgb,var(--cn-institution-primary,#0a3d62) 78%,#ffffff) 70%,
+   color-mix(in srgb,var(--cn-institution-primary,#0a3d62) 58%,var(--cn-institution-secondary,#0f766e)) 100%
+ )!important;
+}
+body #sidebar .sidebar-header{
+ background:color-mix(in srgb,var(--cn-institution-primary,#0a3d62) 24%,#061f3e)!important;
+ border-bottom:1px solid rgba(255,255,255,.14)!important;
+}
+body #sidebar .sidebar-menu a{
+ color:rgba(255,255,255,.88)!important;
+ border-radius:10px!important;
+}
+body #sidebar .sidebar-menu a i{color:rgba(255,255,255,.72)!important}
+body #sidebar .sidebar-menu a:hover{
+ background:rgba(255,255,255,.12)!important;color:#fff!important;
+}
+body #sidebar .sidebar-menu a.active,
+body #sidebar .sidebar-menu a.active:hover{
+ background:#06284a!important;
+ color:var(--cn-institution-primary,#f00068)!important;
+ box-shadow:inset 3px 0 var(--cn-institution-gold,var(--cn-institution-color-3,#f5bd3d))!important;
+ font-weight:800!important;
+}
+body #sidebar .sidebar-menu a.active i{color:var(--cn-institution-primary,#f00068)!important}
+body #sidebar .menu-label{color:rgba(255,255,255,.68)!important}
+body #sidebar .sidebar-footer{
+ background:rgba(255,255,255,.12)!important;
+ border-top:1px solid rgba(255,255,255,.18)!important;
+}
+body #sidebar .user-card{background:rgba(255,255,255,.14)!important;border-color:rgba(255,255,255,.2)!important}
+body #sidebar .logout-btn-sidebar{background:rgba(255,255,255,.12)!important;color:rgba(255,255,255,.8)!important}
