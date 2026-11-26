@@ -3,11 +3,41 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "redirects": [
-    { "source": "/lecturerexams", "destination": "/platform/lecturerexams.html", "permanent": true },
-    { "source": "/lecturerexams/", "destination": "/platform/lecturerexams.html", "permanent": true },
-    { "source": "/lecturerexams/index.html", "destination": "/platform/lecturerexams.html", "permanent": true },
-    { "source": "/adminexams/login", "destination": "/examlogin.html", "permanent": true },
-    { "source": "/adminexams/login.html", "destination": "/examlogin.html", "permanent": true }
+    {
+      "source": "/examlogin/",
+      "destination": "/examlogin.html",
+      "permanent": true
+    },
+    {
+      "source": "/examlogin/index.html",
+      "destination": "/examlogin.html",
+      "permanent": true
+    },
+    {
+      "source": "/lecturerexams",
+      "destination": "/platform/lecturerexams.html",
+      "permanent": true
+    },
+    {
+      "source": "/lecturerexams/",
+      "destination": "/platform/lecturerexams.html",
+      "permanent": true
+    },
+    {
+      "source": "/lecturerexams/index.html",
+      "destination": "/platform/lecturerexams.html",
+      "permanent": true
+    },
+    {
+      "source": "/adminexams/login",
+      "destination": "/examlogin.html",
+      "permanent": true
+    },
+    {
+      "source": "/adminexams/login.html",
+      "destination": "/examlogin.html",
+      "permanent": true
+    }
   ],
   "rewrites": [
     {
