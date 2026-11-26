@@ -21,7 +21,7 @@ The workflow verifies that every required asset is present on the `cnseb-latest`
 ## Requirements
 
 - Windows 10/11 (64-bit recommended)
-- Node.js 20+ and npm (for local development/build)
+- Node.js 22+ and npm (for local development/build)
 - Network access to `https://campusnexus.co.ke`
 - Camera/microphone permission for proctored examinations
 
@@ -54,7 +54,7 @@ The secure client now blocks a broad set of keyboard shortcuts at both the Elect
 
 For institution-owned devices, deploy strict mode only alongside a managed Windows kiosk account and Windows Assigned Access / Shell Launcher configuration. Use App Control for Business (WDAC) or AppLocker to allow-list the approved exam client and required Windows components. Pilot policies on dedicated test devices first; never apply them to personal or staff computers. Maintain an invigilator/admin recovery account and documented exit/recovery process.
 
-The exam page now keeps attempt-scoped local drafts and synchronizes them to a server-side, session-validated draft table; the final grading/submission RPC remains authoritative. Display and application-focus changes are forwarded as proctoring events. The current client does **not** install or verify Windows policies, kill processes, disable security tools, or modify the registry. It must not be described as tamper-proof. A fullscreen/kiosk response from Electron is only an app-runtime fact. It does not prove the device is institution-owned, enrolled, or compliant.
+The exam page keeps attempt-scoped drafts in browser storage and, in the packaged Windows app, mirrors them to an OS-encrypted local vault using Electron safeStorage. The vault is bound to exam, student and attempt IDs, restored before server draft reconciliation, and cleared after confirmed submission. Server-side, session-validated drafts remain authoritative; the final grading/submission RPC remains authoritative. Display and application-focus changes are forwarded as proctoring events. The current client does **not** install or verify Windows policies, kill processes, disable security tools, or modify the registry. It must not be described as tamper-proof. A fullscreen/kiosk response from Electron is only an app-runtime fact. It does not prove the device is institution-owned, enrolled, or compliant.
 
 ## Integration contract
 

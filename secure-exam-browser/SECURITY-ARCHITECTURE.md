@@ -28,6 +28,7 @@ The desktop shell is a client-side enforcement layer, not the authority for iden
 ## Answer durability and monitoring
 
 - Every answer is saved locally immediately and debounced to the authenticated server draft RPC.
+- Packaged CN-SEB additionally mirrors attempt-scoped draft records into an OS-encrypted vault using Electron `safeStorage` (Windows DPAPI). The vault is bound to exam, student and attempt IDs, restored before server reconciliation, and cleared after confirmed server submission. If OS encryption is unavailable, the client retains the existing browser-local and server-draft paths and does not claim encrypted backup.
 - Server drafts are scoped to the signed-in student, active attempt, question, exam and live-session token.
 - On reconnect/reload, server drafts are reconciled with the local attempt-scoped copy; final submission still sends the complete answer map to the secure grading RPC.
 - External-display changes and app focus loss/return are recorded as proctoring events when the exam page is active.
