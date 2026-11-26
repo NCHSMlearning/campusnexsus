@@ -69,8 +69,11 @@ jobs:
           node --check src/main.js
           node --check src/preload.js
           node --check ../exam.js
+          node --check ../js/student-exams.js
           node --check ../platform/js/campus-nexus-dashboard-filter.js
           node --check ../platform/examinations/source/js/cnseb-admin-workspace.js
+      - name: Run Secure Exam Browser regression tests
+        run: npm test
       - name: Build Windows installer and portable app
         # Prevent electron-builder from trying to publish itself with GH_TOKEN.
         # The next step publishes the generated files using GITHUB_TOKEN.
