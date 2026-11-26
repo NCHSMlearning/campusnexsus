@@ -337,7 +337,11 @@ app.whenReady().then(() => {
       });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok || !payload.token_hash || !payload.exam_id || !payload.device_registration_id) {
-        return { ok: false, error: payload.error || 'This activation key is invalid, expired or has already been used.' };
+        const reason = payload.error || '';
+        const message = /expired|already used/i.test(reason)
+          ? 'This key has already been used or expired. Do not reuse it. Return to the student examination centre, click Enter Online Exam again to generate a fresh key, then launch the app.'
+          : (reason || 'This activation key could not be verified. Return to the student examination centre and request a new key.');
+        return { ok: false, error: message };
       }
       saveDeviceRegistration({ id: payload.device_registration_id, status: payload.device_approval_status || 'pending', institutionId: payload.institution_id || null });
       if (payload.device_approval_status !== 'approved') {
