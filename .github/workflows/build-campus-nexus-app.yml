@@ -47,6 +47,9 @@ jobs:
       - name: Run app configuration tests
         run: npm test
 
+      - name: Create Android project
+        run: npx cap add android
+
       - name: Generate official Campus Nexus Android icons
         run: |
           sudo apt-get update
@@ -58,9 +61,6 @@ jobs:
           test -s assets/icon-only.png
           test -s assets/splash.png
           npx capacitor-assets generate --android
-
-      - name: Create Android project
-        run: npx cap add android
 
       - name: Sync Capacitor Android project
         run: npx cap sync android
