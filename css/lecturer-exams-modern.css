@@ -573,3 +573,16 @@ body .tab-content .pagination button{min-width:34px;min-height:34px}
  body .tab-content>div[style*="background: white"]{padding:14px!important}
  body .tab-content .exam-filter-panel,body .tab-content .results-filter-panel{padding:13px!important}
 }
+
+
+/* Tenant palette must win over legacy hard-coded sidebar accents. */
+body #sidebar .sidebar-menu a.active{
+ background:color-mix(in srgb,var(--cn-institution-gold,var(--cn-institution-color-3,#d4a017)) 22%,transparent)!important;
+ color:var(--cn-institution-gold,var(--cn-institution-color-3,#d4a017))!important;
+ box-shadow:inset 3px 0 var(--cn-institution-gold,var(--cn-institution-color-3,#d4a017))!important;
+}
+body #sidebar .sidebar-menu a.active i{color:var(--cn-institution-gold,var(--cn-institution-color-3,#d4a017))!important}
+body #sidebar .sidebar-menu a:hover{
+ background:color-mix(in srgb,var(--cn-institution-secondary,#0f766e) 22%,transparent)!important;
+}
+body #sidebar .menu-label{color:color-mix(in srgb,var(--cn-institution-secondary,#0f766e) 55%,white)!important}
