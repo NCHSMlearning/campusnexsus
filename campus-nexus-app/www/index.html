@@ -37,9 +37,9 @@ button,select{font:inherit}.primary{width:100%;height:53px;margin-top:16px;borde
  const SUPABASE_URL="https://irahplkvocaakjxuisto.supabase.co",KEY="sb_publishable_5Cg5FFudf03UnmOXGNGMHQ_uK9S-uQX";
  const $=id=>document.getElementById(id);let selected=null,busy=false;
  function say(t,error){$("status").textContent=t||"";$("status").classList.toggle("error",!!error)}
- $("schoolCode").addEventListener("input",()=>{const el=$("schoolCode");el.value=el.value.replace(/\\D/g,"").slice(0,3);selected=null;$("schoolCard").classList.remove("show");$("portalPicker").classList.remove("show");say("")});
+ $("schoolCode").addEventListener("input",()=>{const el=$("schoolCode");el.value=el.value.replace(/\D/g,"").slice(0,3);selected=null;$("schoolCard").classList.remove("show");$("portalPicker").classList.remove("show");say("")});
  $("schoolForm").addEventListener("submit",async e=>{
-  e.preventDefault();if(busy)return;const code=$("schoolCode").value.trim();if(!/^\\d{3}$/.test(code)){say("Please enter your 3-digit institution code.",true);return}
+  e.preventDefault();if(busy)return;const code=$("schoolCode").value.trim();if(!/^\d{3}$/.test(code)){say("Please enter your 3-digit institution code.",true);return}
   busy=true;const btn=$("verifyBtn");btn.disabled=true;btn.textContent="Verifying…";say("Securely checking your institution code…");
   try{
    if(!window.supabase?.createClient)throw new Error("Secure verification is unavailable. Check your connection and try again.");
@@ -49,7 +49,7 @@ button,select{font:inherit}.primary{width:100%;height:53px;margin-top:16px;borde
    const found=Array.isArray(data)?data[0]:data;if(!found?.institution_id||!found?.school_code)throw new Error("That code was not recognised or the institution is inactive.");
    selected=found;$("schoolName").textContent=found.institution_name||"Your Institution";$("schoolCodeLabel").textContent="Institution code: "+found.school_code;
    const logo=$("schoolLogo");logo.replaceChildren();
-   if(found.logo_url&&/^https:\\/\\//i.test(found.logo_url)){const img=document.createElement("img");img.src=found.logo_url;img.alt=$("schoolName").textContent+" logo";logo.append(img)}
+   if(found.logo_url&&/^https:\/\//i.test(found.logo_url)){const img=document.createElement("img");img.src=found.logo_url;img.alt=$("schoolName").textContent+" logo";logo.append(img)}
    else{const mark=document.createElement("span");mark.className="monogram";mark.textContent=String(found.institution_name||"IN").split(/\\s+/).slice(0,2).map(x=>x[0]).join("").toUpperCase();mark.style.cssText="display:grid;place-items:center;background:#0b4965;color:#fff;font-weight:800";logo.append(mark)}
    $("schoolCard").classList.add("show");$("portalPicker").classList.add("show");say("Institution verified. Select the portal you want to open.");
    try{localStorage.setItem("campus_nexus_school_code",String(found.school_code));localStorage.setItem("campus_nexus_institution_context",JSON.stringify({institution_id:found.institution_id,institution_name:found.institution_name,school_code:found.school_code}))}catch(_){}
