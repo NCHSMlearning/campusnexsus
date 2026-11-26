@@ -137,7 +137,7 @@ jobs:
           test -f code-protection.js
           test -f platform/institution-admin/index.html
           test -f exams/index.html
-          grep -Eq 'src="(/[^" ]*/)?code-protection\.js' platform/institution-admin/index.html
+          grep -Eq 'src="/[^"]*code-protection\.js' platform/institution-admin/index.html
           echo "Clean URLs and global right-click protection are included in the Pages artifact."
       - name: Apply official Campus Nexus logo throughout the website
         run: |
