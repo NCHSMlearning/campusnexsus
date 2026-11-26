@@ -255,6 +255,18 @@ function getStorageKey(key) {
 function saveToLocalStorage(key, data) {
     try {
         localStorage.setItem(getStorageKey(key), JSON.stringify(data));
+        // CN-SEB mirrors each attempt-scoped draft into OS-protected encrypted storage.
+        // The normal web/browser fallback remains unchanged when the desktop bridge is absent.
+        if (window.CNSEB && typeof window.CNSEB.saveEncryptedDraft === 'function' &&
+            AppState.examId && AppState.studentId && AppState.attemptId &&
+            (/^draft_[0-9a-f-]{36}$/i.test(String(key)) || ['progress', 'flagged'].includes(key))) {
+            window.CNSEB.saveEncryptedDraft({
+                examId: String(AppState.examId), studentId: String(AppState.studentId),
+                attemptId: String(AppState.attemptId), key, data
+            }).then(result => {
+                if (!result?.ok) console.warn('[CN-SEB] Encrypted local backup was not confirmed:', result?.reason || 'unknown');
+            }).catch(error => console.warn('[CN-SEB] Encrypted local backup failed:', error));
+        }
         return true;
     } catch (e) { return false; }
 }
@@ -2746,6 +2758,21 @@ window.addEventListener('offline', () => {
 async function loadSavedAnswers() {
     if (!AppState.attemptId) return;
     let loaded = 0;
+    // Restore the encrypted desktop vault before reading the browser-local fallback.
+    if (window.CNSEB && typeof window.CNSEB.loadEncryptedDraft === 'function') {
+        try {
+            const vault = await window.CNSEB.loadEncryptedDraft({
+                examId: String(AppState.examId), studentId: String(AppState.studentId),
+                attemptId: String(AppState.attemptId)
+            });
+            if (vault?.ok) {
+                for (const [key, value] of Object.entries(vault.records || {})) {
+                    if (!(/^draft_[0-9a-f-]{36}$/i.test(key) || ['progress', 'flagged'].includes(key))) continue;
+                    localStorage.setItem(getStorageKey(key), JSON.stringify(value));
+                }
+            }
+        } catch (error) { console.warn('[CN-SEB] Encrypted attempt recovery failed; trying local/server drafts:', error); }
+    }
     (AppState.questions || []).forEach((question) => {
         const draft = loadFromLocalStorage(`draft_${question.id}`);
         if (draft && draft.attemptId === AppState.attemptId && draft.answer != null) {
