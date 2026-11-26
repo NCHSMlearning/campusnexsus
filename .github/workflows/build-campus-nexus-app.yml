@@ -1,0 +1,85 @@
+name: Build Campus Nexus Android App
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "campus-nexus-app/**"
+      - "platform/student.html"
+      - "platform/js/campus-nexus-app-install.js"
+      - ".github/workflows/build-campus-nexus-app.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: campus-nexus-android-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: campus-nexus-app
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Install Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run app configuration tests
+        run: npm test
+
+      - name: Generate official Campus Nexus Android icons
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y imagemagick
+          mkdir -p assets
+          magick ../images/campus-nexus-original-logo.webp -background white -gravity center -resize 1024x1024 -extent 1024x1024 assets/icon-only.png
+          magick -size 2732x2732 xc:'#062B57' assets/splash.png
+          magick assets/icon-only.png -resize 1200x1200 -gravity center -background '#062B57' -extent 2732x2732 assets/splash.png
+          test -s assets/icon-only.png
+          test -s assets/splash.png
+          npx capacitor-assets generate --android
+
+      - name: Create Android project
+        run: npx cap add android
+
+      - name: Sync Capacitor Android project
+        run: npx cap sync android
+
+      - name: Build installable preview APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew --no-daemon assembleDebug
+
+      - name: Verify APK
+        run: |
+          test -s android/app/build/outputs/apk/debug/app-debug.apk
+          ls -lh android/app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Upload Android preview APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Campus-Nexus-App-1.0.0-Android-Preview
+          path: campus-nexus-app/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 30

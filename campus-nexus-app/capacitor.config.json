@@ -1,0 +1,24 @@
+{
+  "appId": "co.ke.campusnexus.app",
+  "appName": "Campus Nexus",
+  "webDir": "www",
+  "server": {
+    "url": "https://campusnexus.co.ke/platform/login.html?source=android-app",
+    "cleartext": false,
+    "allowNavigation": [
+      "campusnexus.co.ke",
+      "www.campusnexus.co.ke"
+    ]
+  },
+  "android": {
+    "allowMixedContent": false,
+    "webContentsDebuggingEnabled": false
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 1800,
+      "backgroundColor": "#062B57",
+      "showSpinner": false
+    }
+  }
+}
