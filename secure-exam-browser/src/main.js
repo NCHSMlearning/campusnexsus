@@ -72,7 +72,8 @@ async function writeEncryptedDraft(event, payload) {
   catch (error) { console.error('[CN-SEB] Encrypted draft write failed:', error.message); return { ok: false, reason: 'write-failed' }; }
 }
 
-function readEncryptedDraft(event, payload) {
+async function readEncryptedDraft(event, payload) {
+  await encryptedDraftWriteQueue;
   if (!isTrustedExamSender(event) || !safeStorage.isEncryptionAvailable()) return { ok: false, reason: 'secure-storage-unavailable' };
   const examId = String(payload?.examId || ''), studentId = String(payload?.studentId || ''), attemptId = String(payload?.attemptId || '');
   if (!/^\\d+$/.test(examId) || !/^[0-9a-f-]{36}$/i.test(studentId) || !/^[0-9a-f-]{36}$/i.test(attemptId)) return { ok: false, reason: 'invalid-draft-scope' };
@@ -387,7 +388,7 @@ app.whenReady().then(() => {
   ipcMain.handle('cnseb:brand-logo-url', () => 'https://campusnexus.co.ke/images/campus-nexus-original-logo.webp');
   ipcMain.handle('cnseb:update-state', () => updateState);
   ipcMain.handle('cnseb:encrypted-draft-save', (event, payload) => writeEncryptedDraft(event, payload));
-  ipcMain.handle('cnseb:encrypted-draft-load', (event, payload) => readEncryptedDraft(event, payload));
+  ipcMain.handle('cnseb:encrypted-draft-load', async (event, payload) => readEncryptedDraft(event, payload));
   ipcMain.handle('cnseb:encrypted-draft-clear', (event, payload) => clearEncryptedDraft(event, payload));
   ipcMain.handle('cnseb:show-welcome-message', (_event, message) => {
     if (mainWindow && !mainWindow.isDestroyed() && !examMode) mainWindow.webContents.send('cnseb:welcome-message', String(message || '').slice(0, 300));
