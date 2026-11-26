@@ -389,8 +389,8 @@ app.whenReady().then(() => {
       if (!response.ok || !payload.token_hash || !payload.exam_id || !payload.device_registration_id) return { ok: false, error: payload.error || 'Secure sign-in could not be completed. Return to the student portal and launch again.' };
       saveDeviceRegistration({ id: payload.device_registration_id, status: payload.device_approval_status || 'pending', institutionId: payload.institution_id || null });
       if (payload.device_approval_status !== 'approved') {
-        setImmediate(() => loadExam(DEFAULT_EXAM_URL + '&device_pending=1'));
-        return { ok: false, error: 'This computer has been registered and is awaiting institution administrator approval. You can sign in again after approval.' };
+        showWelcome('This computer has been registered and is awaiting institution administrator approval. Please try launching your examination again after approval.');
+        return { ok: false, error: 'This computer is awaiting institution administrator approval.' };
       }
       const current = new URL(frameUrl);
       if (current.searchParams.get('exam_id') !== String(payload.exam_id)) return { ok: false, error: 'This sign-in code does not belong to the selected examination.' };
