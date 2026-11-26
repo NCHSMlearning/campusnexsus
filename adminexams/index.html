@@ -4,9 +4,15 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="robots" content="noindex">
-  <meta http-equiv="refresh" content="0;url=/exams">
-  <title>Examination Management | Campus Nexus</title>
-  <script>window.location.replace('/exams'+window.location.search+window.location.hash);</script>
+  <meta http-equiv="cache-control" content="no-store">
+  <title>Admin Exams | Campus Nexus</title>
+  <script>
+    // This directory is the legacy public entry point for the real Admin Exams
+    // workspace. Never send administrators to the separate /exams access page.
+    window.location.replace('/platform/examinations/source/adminexams.html' + window.location.search + window.location.hash);
+  </script>
 </head>
-<body><p>Opening the official examination workspace… <a href="/exams">Continue</a></p></body>
+<body>
+  <p>Opening Admin Exams… <a href="/platform/examinations/source/adminexams.html">Continue to Admin Exams</a></p>
+</body>
 </html>
