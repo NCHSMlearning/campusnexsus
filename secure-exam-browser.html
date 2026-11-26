@@ -115,10 +115,10 @@
    if(!/^[A-HJ-NP-Z2-9]{12}$/.test(code))throw new Error('The activation key is invalid. Return to the examination centre and try again.');
    openButton.href=launchBase+'&code='+encodeURIComponent(code);
    document.getElementById('activation-key-value').textContent=code;
-   document.getElementById('activation-key-panel').style.display='block';
+   document.getElementById('activation-key-panel').style.display='none';
    const copyButton=document.getElementById('copy-activation-key');
    copyButton.onclick=async()=>{try{await navigator.clipboard.writeText(code);copyButton.textContent='Copied';}catch(_){fallbackCopy.textContent='Select and copy the activation key shown above. It expires after 60 seconds.';}};
-   fallbackCopy.textContent='Your one-time activation key is ready. The app will open automatically; if needed, copy the key and enter it in Campus Nexus Secure Exam Browser within 60 seconds.';
+   fallbackCopy.textContent='Secure activation key created. Connecting to Campus Nexus Secure Exam Browser and opening your examination automatically…';
    setTimeout(()=>{window.location.href=openButton.href;},1400);
  }
  downloadButton.addEventListener('click',()=>{
