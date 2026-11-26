@@ -8,6 +8,7 @@ on:
       - "campus-nexus-app/**"
       - "platform/student.html"
       - "platform/js/campus-nexus-app-install.js"
+      - "images/logo-icon.png"
       - ".github/workflows/build-campus-nexus-app.yml"
 
 permissions:
@@ -61,10 +62,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y imagemagick
           mkdir -p assets www/assets
-          cp ../images/campus-nexus-original-logo.webp www/assets/campus-nexus-logo.webp
-          magick ../images/campus-nexus-original-logo.webp -background white -gravity center -resize 1024x1024 -extent 1024x1024 assets/icon-only.png
-          magick -size 2732x2732 xc:'#062B57' assets/splash.png
-          magick assets/icon-only.png -resize 1200x1200 -gravity center -background '#062B57' -extent 2732x2732 assets/splash.png
+          cp ../images/logo-icon.png www/assets/campus-nexus-logo.png
+          # Use the official high-resolution Campus Nexus emblem for the launcher icon.
+          magick ../images/logo-icon.png -crop 1024x820+0+0 +repage -trim +repage -resize 820x820 -background '#062B57' -gravity center -extent 1024x1024 assets/icon-only.png
+          # Keep the complete official wordmark on the launch screen.
+          magick ../images/logo-icon.png -resize 1800x1800 -gravity center -background white -extent 2732x2732 assets/splash.png
           test -s assets/icon-only.png
           test -s assets/splash.png
           npx capacitor-assets generate --android
