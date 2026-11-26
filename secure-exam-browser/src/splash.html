@@ -1,19 +1,63 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Campus Nexus Secure Exam Browser</title>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Welcome to Safe Exam Browser | Campus Nexus</title>
 <style>
-*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;background:#071d33;color:#fff;font-family:Segoe UI,Arial,sans-serif}
-body{display:grid;place-items:center}.panel{text-align:center;padding:32px;max-width:520px}
-.logo{width:92px;height:92px;object-fit:contain;background:#fff;border-radius:22px;padding:10px;box-shadow:0 12px 40px #0005}
-h1{font-size:25px;margin:24px 0 8px}.sub{color:#b8c9d9;font-size:14px}.status{margin:28px auto 0;display:flex;align-items:center;justify-content:center;gap:10px;color:#8ee0c0;font-size:13px}
-.spinner{width:16px;height:16px;border:2px solid #41637e;border-top-color:#2dd4bf;border-radius:50%;animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:Segoe UI,Arial,sans-serif;background:#071d33;color:#fff}
+body{min-height:100vh;display:grid;place-items:center;padding:34px;background:radial-gradient(circle at 80% 15%,#124b68 0,transparent 34%),linear-gradient(135deg,#06182b,#0b2d49)}
+main{width:min(760px,100%);padding:42px 48px;border:1px solid #2c536d;border-radius:26px;background:rgba(9,35,57,.94);box-shadow:0 28px 90px #0006}
+.brand{display:flex;align-items:center;gap:13px;color:#b7d5e6;font-weight:700;letter-spacing:.08em;font-size:12px}
+.brand img{width:48px;height:48px;object-fit:contain;padding:5px;background:#fff;border-radius:12px}
+.tag{display:inline-flex;gap:8px;align-items:center;margin-top:34px;padding:8px 12px;border:1px solid #28617a;border-radius:99px;color:#9ce6d7;font-size:12px;font-weight:700}
+h1{font-size:clamp(30px,5vw,44px);line-height:1.12;margin:18px 0 12px;letter-spacing:-.03em}
+.lead{color:#c0d2df;font-size:16px;line-height:1.65;max-width:590px;margin:0}
+.form{margin-top:34px;padding:24px;border:1px solid #2c536d;border-radius:18px;background:#0c2a43}
+label{display:block;margin-bottom:11px;font-size:13px;font-weight:700;color:#e8f4fb}
+.inputrow{display:flex;gap:10px}
+input{min-width:0;flex:1;height:54px;padding:0 16px;border:1px solid #55748b;border-radius:10px;background:#061c30;color:#fff;font:700 17px/1 Segoe UI,Arial,sans-serif;letter-spacing:.16em;text-transform:uppercase;outline:none}
+input:focus{border-color:#34c6d8;box-shadow:0 0 0 3px #34c6d822}
+button{height:54px;padding:0 22px;border:0;border-radius:10px;background:#16a6a5;color:#032333;font-weight:800;font-size:14px;cursor:pointer}
+button:disabled{opacity:.55;cursor:wait}
+.hint{margin:12px 0 0;color:#a9c2d2;font-size:12px;line-height:1.6}
+#status{min-height:24px;margin:14px 0 0;color:#ffce8a;font-size:13px;line-height:1.5}
+.divider{display:flex;align-items:center;gap:14px;margin:25px 0 14px;color:#7596aa;font-size:11px;text-transform:uppercase;letter-spacing:.13em}
+.divider:before,.divider:after{content:"";height:1px;flex:1;background:#31546b}
+.linknote{color:#c0d2df;font-size:13px;line-height:1.6;margin:0}
+footer{margin-top:26px;color:#7596aa;font-size:11px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+@media(max-width:620px){body{padding:16px}main{padding:26px 20px}.inputrow{flex-direction:column}button{width:100%}}
 </style>
 </head>
-<body><main class="panel">
-<img class="logo" src="https://campusnexus.co.ke/images/campus-nexus-original-logo.webp" alt="Campus Nexus">
-<h1>Campus Nexus</h1><div class="sub">Secure Examination Browser</div>
-<div class="status"><span class="spinner"></span><span>Initializing secure examination environment…</span></div>
-</main></body></html>
+<body><main>
+<div class="brand"><img src="https://campusnexus.co.ke/images/campus-nexus-original-logo.webp" alt="Campus Nexus"><span>CAMPUS NEXUS <span style="color:#36c3d1">/</span> SECURE EXAMINATION</span></div>
+<div class="tag">● SECURE EXAM ENVIRONMENT</div>
+<h1>Welcome to Safe Exam Browser</h1>
+<p class="lead">Enter your examination activation key to continue to your exam. If you already have an examination link, open it directly from Google Chrome or your student examination dashboard.</p>
+<section class="form">
+<label for="activation-key">Examination activation key</label>
+<div class="inputrow"><input id="activation-key" type="text" maxlength="12" minlength="12" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="XXXXXXXXXXXX" aria-describedby="key-hint"><button id="activate" type="button">Continue to exam <span aria-hidden="true">→</span></button></div>
+<p class="hint" id="key-hint">Keys are single-use and expire. Get your key from the student examination centre.</p>
+<p id="status" role="status" aria-live="polite"></p>
+</section>
+<div class="divider">OR</div>
+<p class="linknote"><strong>Have an exam link?</strong> Return to Chrome and click your examination link. Choose <strong>Open Campus Nexus Secure Exam Browser</strong> when Windows asks. The app will open the selected exam automatically.</p>
+<footer><span>Campus Nexus · Secure Examination</span><span id="version">Initializing device…</span></footer>
+</main>
+<script>
+(() => {
+ const input=document.getElementById('activation-key'),button=document.getElementById('activate'),status=document.getElementById('status');
+ const alphabet=/^[A-HJ-NP-Z2-9]{12}$/;
+ input.addEventListener('input',()=>{input.value=input.value.toUpperCase().replace(/[^A-HJ-NP-Z2-9]/g,'').slice(0,12);status.textContent='';});
+ async function activate(){
+  const code=input.value.trim().toUpperCase();
+  if(!alphabet.test(code)){status.textContent='Enter the complete 12-character activation key.';input.focus();return;}
+  if(!window.CNSEB?.activateWithKey){status.textContent='Secure activation is unavailable. Restart the application and try again.';return;}
+  button.disabled=true;button.textContent='Verifying key…';status.textContent='Checking your exam assignment and this device…';
+  try{const result=await window.CNSEB.activateWithKey(code);if(!result?.ok)throw new Error(result?.error||'Activation could not be completed.');status.style.color='#9ce6d7';status.textContent='Activation successful. Opening your examination…';}
+  catch(error){status.style.color='#ffce8a';status.textContent=error.message||'Activation failed. Please try again.';button.disabled=false;button.textContent='Continue to exam →';}
+ }
+ button.addEventListener('click',activate);input.addEventListener('keydown',e=>{if(e.key==='Enter')activate();});
+ window.CNSEB?.getDeviceInfo?.().then(info=>{document.getElementById('version').textContent='Version '+(info?.appVersion||'')+' · '+(info?.platform||'').toUpperCase();}).catch(()=>{});
+ window.CNSEB?.onWelcomeMessage?.(message=>{status.textContent=message;});
+})();
+</script></body></html>

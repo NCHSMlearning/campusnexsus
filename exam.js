@@ -5836,6 +5836,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     const { data: authData, error: authError } = await sb.auth.getUser();
     const authUser = authData && authData.user;
     if (authError || !authUser || !authUser.id) {
+        if (window.CNSEB && typeof window.CNSEB.returnToWelcome === 'function') {
+            console.warn('[CN-SEB] No verified session in desktop app; returning to activation screen.');
+            await window.CNSEB.returnToWelcome();
+            return;
+        }
         console.warn('No verified Supabase session; opening the in-app exam login and preserving the selected examination.');
         // The browser and installed Electron app have separate Supabase storage.
         // Never transfer browser tokens. Authenticate in the app, then return to

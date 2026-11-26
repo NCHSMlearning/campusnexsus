@@ -49,7 +49,9 @@ Deno.serve(async (req: Request) => {
         profile.institution_id !== exam.institution_id) {
       return json({ error: "This examination is not authorised for your active student account and institution." }, 403);
     }
-    const code = hex(crypto.getRandomValues(new Uint8Array(32)));
+    const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    const random = crypto.getRandomValues(new Uint8Array(12));
+    const code = Array.from(random, value => alphabet[value & 31]).join("");
     const { error: insertError } = await admin.rpc("cnseb_create_auth_handoff", {
       p_code_hash: await sha256(code), p_user_id: user.id, p_exam_id: String(examId)
     });
@@ -63,7 +65,7 @@ Deno.serve(async (req: Request) => {
   if (body.action === "redeem") {
     const code = String(body.code || "");
     const installId = String(body.device_install_id || "");
-    if (!/^[a-f0-9]{64}$/.test(code)) return json({ error: "Invalid or expired handoff" }, 400);
+    if (!/^[A-HJ-NP-Z2-9]{12}$/.test(code)) return json({ error: "Invalid or expired activation key" }, 400);
     if (!/^[0-9a-f-]{36}$/i.test(installId)) return json({ error: "Secure device identity is unavailable. Restart the desktop app and launch again." }, 400);
     const { data: rows, error } = await admin.rpc("cnseb_redeem_auth_handoff", { p_code_hash: await sha256(code) });
     const row = Array.isArray(rows) ? rows[0] : null;

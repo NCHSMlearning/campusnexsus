@@ -12,7 +12,7 @@ const EXAM_ORIGIN = 'https://campusnexus.co.ke';
 const SUPABASE_URL = 'https://irahplkvocaakjxuisto.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_5Cg5FFudf03UnmOXGNGMHQ_uK9S-uQX';
 const HANDOFF_ENDPOINT = `${SUPABASE_URL}/functions/v1/cnseb-auth-handoff`;
-const DEFAULT_EXAM_URL = `${EXAM_ORIGIN}/examlogin.html?client=cnseb`;
+const DEFAULT_EXAM_URL = `${EXAM_ORIGIN}/exam.html?client=cnseb`;
 // Packaged Windows builds always launch in strict kiosk mode.
 const STRICT = app.isPackaged || process.argv.includes('--strict');
 const PROTOCOL = 'campusnexus-seb:';
@@ -21,6 +21,7 @@ let quitting = false;
 let pendingExamUrl = null;
 let currentExamUrl = null;
 let pendingHandoffCode = null;
+let pendingRedeemedHandoff = null;
 let updateState = { state: 'checking', installedVersion: app.getVersion(), latestVersion: null, lastCheckedAt: null };
 let exitInProgress = false;
 let examMode = false;
@@ -60,7 +61,7 @@ function extractLaunch(args) {
       const deepLink = new URL(arg);
       const candidate = deepLink.searchParams.get('url');
       const code = deepLink.searchParams.get('code');
-      if (isValidExamUrl(candidate)) return { url: candidate, code: /^[a-f0-9]{64}$/.test(code || '') ? code : null };
+      if (isValidExamUrl(candidate)) return { url: candidate, code: /^[A-HJ-NP-Z2-9]{12}$/.test(String(code || '').toUpperCase()) ? String(code).toUpperCase() : null };
     } catch { /* Ignore invalid protocol arguments. */ }
   }
   return null;
@@ -107,8 +108,19 @@ function applyWindowMode(url) {
   }
 }
 
+function showWelcome(message = '') {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  examMode = false;
+  currentExamUrl = null;
+  applyWindowMode('file://welcome');
+  mainWindow.loadFile(path.join(__dirname, 'splash.html')).then(() => {
+    if (message) mainWindow.webContents.send('cnseb:welcome-message', message);
+  }).catch(error => console.error('[CN-SEB] Could not return to welcome screen:', error));
+}
+
 function loadExam(url) {
-  const target = isTrusted(url) ? url : DEFAULT_EXAM_URL;
+  const target = isValidExamUrl(url) ? url : null;
+  if (!target) { showWelcome('Open your exam from the student portal or enter an activation key.'); return; }
   if (isValidExamUrl(target)) currentExamUrl = target;
   if (mainWindow && !mainWindow.isDestroyed()) {
     applyWindowMode(target);
@@ -203,7 +215,8 @@ function createWindow() {
     if (!quitting && mainWindow && !mainWindow.isDestroyed()) {
       // Recover the same in-progress exam after a renderer crash; never send a
       // student back to the generic login page and silently drop the attempt.
-      loadExam(currentExamUrl || pendingExamUrl || DEFAULT_EXAM_URL);
+      if (currentExamUrl || pendingExamUrl) loadExam(currentExamUrl || pendingExamUrl);
+      else showWelcome();
     }
   });
   const enforceKioskDisplay = () => {
@@ -250,9 +263,9 @@ function createWindow() {
   const resolveStartupDestination = () => {
     if (splashResolved || quitting || !mainWindow || mainWindow.isDestroyed()) return;
     splashResolved = true;
-    const target = pendingExamUrl || initialTarget || DEFAULT_EXAM_URL;
+    const target = pendingExamUrl || initialTarget;
     pendingExamUrl = null;
-    loadExam(target);
+    if (target) loadExam(target);
   };
   mainWindow.webContents.once('did-finish-load', resolveStartupDestination);
   mainWindow.loadFile(path.join(__dirname, 'splash.html')).catch(error => {
@@ -306,9 +319,59 @@ app.whenReady().then(() => {
   ));
   ipcMain.handle('cnseb:brand-logo-url', () => 'https://campusnexus.co.ke/images/campus-nexus-original-logo.webp');
   ipcMain.handle('cnseb:update-state', () => updateState);
+  ipcMain.handle('cnseb:show-welcome-message', (_event, message) => {
+    if (mainWindow && !mainWindow.isDestroyed() && !examMode) mainWindow.webContents.send('cnseb:welcome-message', String(message || '').slice(0, 300));
+    return { ok: true };
+  });
+  ipcMain.handle('cnseb:activate-with-key', async (_event, suppliedCode) => {
+    const code = String(suppliedCode || '').trim().toUpperCase();
+    if (!/^[A-HJ-NP-Z2-9]{12}$/.test(code)) return { ok: false, error: 'Enter the 12-character activation key supplied for your examination.' };
+    if (!deviceInstallId) return { ok: false, error: 'Secure device identity is unavailable. Restart the application and try again.' };
+    try {
+      const response = await fetch(HANDOFF_ENDPOINT, {
+        method: 'POST', headers: { 'Content-Type': 'application/json', apikey: SUPABASE_ANON_KEY },
+        body: JSON.stringify({ action: 'redeem', code, device_install_id: deviceInstallId,
+          device_name: os.hostname(), platform: process.platform, app_version: app.getVersion(),
+          device_details: { platform: process.platform, architecture: process.arch } }),
+        signal: AbortSignal.timeout(12000)
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || !payload.token_hash || !payload.exam_id || !payload.device_registration_id) {
+        return { ok: false, error: payload.error || 'This activation key is invalid, expired or has already been used.' };
+      }
+      saveDeviceRegistration({ id: payload.device_registration_id, status: payload.device_approval_status || 'pending', institutionId: payload.institution_id || null });
+      if (payload.device_approval_status !== 'approved') {
+        return { ok: false, pendingApproval: true, error: 'This computer has been registered and is awaiting institution administrator approval. Please try again after approval.' };
+      }
+      pendingRedeemedHandoff = { ok: true, token_hash: payload.token_hash, type: 'magiclink', exam_id: String(payload.exam_id) };
+      const target = new URL('/exam.html', EXAM_ORIGIN);
+      target.searchParams.set('exam_id', String(payload.exam_id));
+      target.searchParams.set('client', 'cnseb');
+      loadExam(target.href);
+      return { ok: true };
+    } catch (error) {
+      console.error('[CN-SEB] Activation failed:', error.message);
+      return { ok: false, error: 'Could not verify the activation key. Check the internet connection and try again.' };
+    }
+  });
+  ipcMain.handle('cnseb:return-to-welcome', (event) => {
+    const frameUrl = event.senderFrame?.url || '';
+    if (!isValidExamUrl(frameUrl)) return { ok: false };
+    pendingRedeemedHandoff = null;
+    pendingHandoffCode = null;
+    showWelcome('Your secure session could not be verified. Launch the exam again from the student portal or enter a new activation key.');
+    return { ok: true };
+  });
   ipcMain.handle('cnseb:redeem-auth-handoff', async (event) => {
     const frameUrl = event.senderFrame?.url || '';
     if (!isValidExamUrl(frameUrl)) return { ok: false, error: 'Authentication handoff is only available on the verified exam page.' };
+    const current = new URL(frameUrl);
+    if (pendingRedeemedHandoff) {
+      const ready = pendingRedeemedHandoff;
+      if (current.searchParams.get('exam_id') !== String(ready.exam_id)) return { ok: false, error: 'The activation key does not belong to this examination.' };
+      pendingRedeemedHandoff = null;
+      return ready;
+    }
     const code = pendingHandoffCode;
     if (!code) return { ok: false, unavailable: true };
     pendingHandoffCode = null;

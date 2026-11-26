@@ -7,6 +7,14 @@ contextBridge.exposeInMainWorld('CNSEB', Object.freeze({
   isKiosk: () => ipcRenderer.sendSync('cnseb:is-kiosk'),
   getDeviceInfo: () => ipcRenderer.invoke('cnseb:device-info'),
   redeemAuthHandoff: () => ipcRenderer.invoke('cnseb:redeem-auth-handoff'),
+  activateWithKey: code => ipcRenderer.invoke('cnseb:activate-with-key', code),
+  returnToWelcome: () => ipcRenderer.invoke('cnseb:return-to-welcome'),
+  onWelcomeMessage: callback => {
+    if (typeof callback !== 'function') return () => {};
+    const listener = (_event, message) => callback(message);
+    ipcRenderer.on('cnseb:welcome-message', listener);
+    return () => ipcRenderer.removeListener('cnseb:welcome-message', listener);
+  },
   getUpdateState: () => ipcRenderer.invoke('cnseb:update-state'),
   checkForUpdates: () => ipcRenderer.invoke('cnseb:check-for-updates'),
   requestExit: () => ipcRenderer.invoke('cnseb:request-exit'),
@@ -108,43 +116,6 @@ sessionStatus.title = 'App-level kiosk presentation only. Institution-managed Wi
     // not a fixed/floating overlay over examination content.
     const mount = document.body || document.documentElement;
     mount.insertBefore(bar, mount.firstChild);
-
-    // The login page was designed to fill the browser viewport. Account for the
-    // native app toolbar so its two-column layout fits without a second page
-    // scrollbar on normal desktop displays.
-    if (location.hostname === 'campusnexus.co.ke' && location.pathname.toLowerCase() === '/examlogin.html') {
-      const layoutFix = document.createElement('style');
-      layoutFix.id = 'cnseb-desktop-login-layout';
-      layoutFix.textContent = `
-        :root { --cnseb-toolbar-height: 64px; }
-        html, body { min-height: 100%; }
-        .exam-login-shell {
-          min-height: calc(100svh - var(--cnseb-toolbar-height)) !important;
-          grid-template-columns: minmax(0,1.02fr) minmax(420px,.98fr) !important;
-        }
-        .exam-login-visual {
-          min-height: calc(100svh - var(--cnseb-toolbar-height)) !important;
-          padding: clamp(22px,3.2vw,54px) !important;
-        }
-        .login-wrap { padding: 16px 22px !important; }
-        .login-wrap .brand { margin-bottom: 13px !important; }
-        .login-wrap .brand-mark { width: 58px !important; height: 58px !important; margin-bottom: 8px !important; }
-        .login-wrap .card { padding: 23px 25px 20px !important; }
-        .login-wrap .foot { margin-top: 11px !important; }
-        @media (max-height: 760px) {
-          .login-wrap { padding-top: 9px !important; padding-bottom: 9px !important; }
-          .login-wrap .brand { margin-bottom: 8px !important; }
-          .login-wrap .brand-mark { width: 48px !important; height: 48px !important; }
-          .login-wrap .card { padding: 17px 22px 15px !important; }
-          .login-wrap .card .field { margin: 11px 0 !important; }
-          .login-wrap .foot { margin-top: 7px !important; }
-        }
-        @media (max-width: 900px) {
-          .exam-login-shell { grid-template-columns: minmax(0,1fr) minmax(360px,.95fr) !important; }
-        }
-      `;
-      document.head.appendChild(layoutFix);
-    }
 
     const shade = document.createElement('div');
     Object.assign(shade.style, {
