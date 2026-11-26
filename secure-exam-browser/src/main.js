@@ -417,6 +417,16 @@ app.whenReady().then(() => {
     displayCount: screen.getAllDisplays().length
   }));
   // Use an in-app confirmation rather than a native modal hidden behind kiosk.
+  ipcMain.handle('cnseb:exam-submission-complete', async (event) => {
+    const frameUrl = event.senderFrame?.url || '';
+    if (!isValidExamUrl(frameUrl) || !examMode || quitting) return { ok: false };
+    // The renderer emits this only after the existing exam submission pipeline
+    // has saved answers, recorded the grade and released the server-side lock.
+    exitInProgress = true;
+    quitting = true;
+    setTimeout(() => app.exit(0), 350);
+    return { ok: true };
+  });
   ipcMain.handle('cnseb:request-exit', async () => {
     if (examMode) return { ok: false, reason: 'exam-active', message: 'Submit or complete the examination before exiting the secure browser.' };
     if (quitting) return { ok: true };
