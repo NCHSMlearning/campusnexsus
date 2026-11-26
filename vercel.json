@@ -3,9 +3,6 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "redirects": [
-    { "source": "/adminexams", "destination": "/exams", "permanent": true },
-    { "source": "/adminexams/", "destination": "/exams", "permanent": true },
-    { "source": "/adminexams/index.html", "destination": "/exams", "permanent": true },
     { "source": "/lecturerexams", "destination": "/platform/lecturerexams.html", "permanent": true },
     { "source": "/lecturerexams/", "destination": "/platform/lecturerexams.html", "permanent": true },
     { "source": "/lecturerexams/index.html", "destination": "/platform/lecturerexams.html", "permanent": true },
@@ -13,6 +10,18 @@
     { "source": "/adminexams/login.html", "destination": "/examlogin.html", "permanent": true }
   ],
   "rewrites": [
+    {
+      "source": "/adminexams",
+      "destination": "/platform/examinations/source/adminexams.html"
+    },
+    {
+      "source": "/adminexams/",
+      "destination": "/platform/examinations/source/adminexams.html"
+    },
+    {
+      "source": "/adminexams.html",
+      "destination": "/platform/examinations/source/adminexams.html"
+    },
     {
       "source": "/institution-admin",
       "destination": "/platform/institution-admin"
