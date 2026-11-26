@@ -67,3 +67,15 @@ test('CN-SEB submission only reports completion after server-side submission ret
   assert.ok(body.indexOf('await calculateAndSaveGrade()') < body.indexOf('cnseb:exam-submission-complete'));
   assert.ok(body.indexOf('await saveAllAnswersToDatabase()') < body.indexOf('await calculateAndSaveGrade()'));
 });
+
+test('exam attempt configuration snapshots are immutable and exclude marking secrets', () => {
+  const migration = read('platform/database/migrations/20261126203000_cnseb_immutable_exam_attempt_snapshots.sql');
+  assert.match(migration, /after insert on public\.exam_attempts/i);
+  assert.match(migration, /snapshot_sha256/);
+  assert.match(migration, /extensions\.digest\(v_payload::text, 'sha256'\)/);
+  assert.match(migration, /before update or delete on public\.exam_attempt_configuration_snapshots/i);
+  assert.match(migration, /question_text/);
+  assert.match(migration, /option_a/);
+  assert.doesNotMatch(migration, /'correct_answer'|'marking_key'|'marking_rubric'/i);
+  assert.match(migration, /revoke all on public\.exam_attempt_configuration_snapshots from public, anon, authenticated/i);
+});
