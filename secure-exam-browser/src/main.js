@@ -45,7 +45,7 @@ async function writeEncryptedDraft(event, payload) {
   const studentId = String(payload?.studentId || '');
   const attemptId = String(payload?.attemptId || '');
   const key = String(payload?.key || '');
-  if (!/^\\d+$/.test(examId) || !/^[0-9a-f-]{36}$/i.test(studentId) ||
+  if (!/^\d+$/.test(examId) || !/^[0-9a-f-]{36}$/i.test(studentId) ||
       !/^[0-9a-f-]{36}$/i.test(attemptId) || !/^(draft_[0-9a-f-]{36}|progress|flagged)$/i.test(key)) {
     return { ok: false, reason: 'invalid-draft-scope' };
   }
@@ -76,7 +76,7 @@ async function readEncryptedDraft(event, payload) {
   await encryptedDraftWriteQueue;
   if (!isTrustedExamSender(event) || !safeStorage.isEncryptionAvailable()) return { ok: false, reason: 'secure-storage-unavailable' };
   const examId = String(payload?.examId || ''), studentId = String(payload?.studentId || ''), attemptId = String(payload?.attemptId || '');
-  if (!/^\\d+$/.test(examId) || !/^[0-9a-f-]{36}$/i.test(studentId) || !/^[0-9a-f-]{36}$/i.test(attemptId)) return { ok: false, reason: 'invalid-draft-scope' };
+  if (!/^\d+$/.test(examId) || !/^[0-9a-f-]{36}$/i.test(studentId) || !/^[0-9a-f-]{36}$/i.test(attemptId)) return { ok: false, reason: 'invalid-draft-scope' };
   try {
     const vault = JSON.parse(safeStorage.decryptString(fs.readFileSync(encryptedDraftPath(examId, studentId, attemptId))));
     if (vault.version !== 1 || vault.examId !== examId || vault.studentId !== studentId || vault.attemptId !== attemptId) return { ok: false, reason: 'scope-mismatch' };
@@ -90,7 +90,7 @@ async function readEncryptedDraft(event, payload) {
 async function clearEncryptedDraft(event, payload) {
   if (!isTrustedExamSender(event)) return { ok: false, reason: 'untrusted-sender' };
   const examId = String(payload?.examId || ''), studentId = String(payload?.studentId || ''), attemptId = String(payload?.attemptId || '');
-  if (!/^\\d+$/.test(examId) || !/^[0-9a-f-]{36}$/i.test(studentId) || !/^[0-9a-f-]{36}$/i.test(attemptId)) return { ok: false, reason: 'invalid-draft-scope' };
+  if (!/^\d+$/.test(examId) || !/^[0-9a-f-]{36}$/i.test(studentId) || !/^[0-9a-f-]{36}$/i.test(attemptId)) return { ok: false, reason: 'invalid-draft-scope' };
   await encryptedDraftWriteQueue;
   try { fs.rmSync(encryptedDraftPath(examId, studentId, attemptId), { force: true }); return { ok: true }; }
   catch (error) { return { ok: false, reason: 'clear-failed' }; }
