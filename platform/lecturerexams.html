@@ -84,13 +84,33 @@
     </style>
 <script src="/platform/js/campus-nexus-module-access.js?v=20261120-entitlements-v3" defer></script>
 <script src="/code-protection.js?v=20261121-global-v4" defer></script>
-<style id="lecturer-mobile-navigation-fix">@media(max-width:1000px){body{overflow-x:hidden}.sidebar{position:fixed!important;top:0!important;left:0!important;bottom:0!important;height:100dvh!important;width:min(280px,86vw)!important;max-width:86vw!important;transform:translateX(-105%)!important;transition:transform .24s ease!important;z-index:1005!important;overflow:hidden!important}.sidebar.open{transform:translateX(0)!important}.sidebar-scroll{overflow-y:auto!important;overscroll-behavior:contain!important}.sidebar-overlay{display:none!important;position:fixed!important;inset:0!important;background:rgba(2,14,28,.56)!important;z-index:1000!important}.sidebar-overlay.active{display:block!important}.main-content{margin-left:0!important;width:100%!important;max-width:100%!important;min-width:0!important}.command-topbar .mobile-toggle{display:inline-flex!important;align-items:center!important;justify-content:center!important;flex:0 0 40px!important;width:40px!important;height:40px!important;min-width:40px!important;visibility:visible!important;opacity:1!important;z-index:1010!important}}@media(max-width:600px){.command-topbar{display:flex!important;flex-direction:row!important;align-items:center!important;gap:8px!important;min-height:68px!important}.command-brand{min-width:0!important;flex:1 1 auto!important}.command-brand-copy h1{white-space:normal!important;font-size:clamp(14px,4vw,17px)!important}.command-brand-copy p{display:none!important}.command-topbar .header-actions{display:flex!important;width:auto!important;flex:0 0 auto!important;gap:8px!important}.command-topbar .admin-profile,.command-topbar .lecturer-command-date{display:none!important}}</style></head>
+<style id="lecturer-mobile-navigation-fix">@media(max-width:1000px){body{overflow-x:hidden}.sidebar{position:fixed!important;top:0!important;left:0!important;bottom:0!important;height:100dvh!important;width:min(280px,86vw)!important;max-width:86vw!important;transform:translateX(-105%)!important;transition:transform .24s ease!important;z-index:1005!important;overflow:hidden!important}.sidebar.open{transform:translateX(0)!important}.sidebar-scroll{overflow-y:auto!important;overscroll-behavior:contain!important}.sidebar-overlay{display:none!important;position:fixed!important;inset:0!important;background:rgba(2,14,28,.56)!important;z-index:1000!important}.sidebar-overlay.active{display:block!important}.main-content{margin-left:0!important;width:100%!important;max-width:100%!important;min-width:0!important}.command-topbar .mobile-toggle{display:inline-flex!important;align-items:center!important;justify-content:center!important;flex:0 0 40px!important;width:40px!important;height:40px!important;min-width:40px!important;visibility:visible!important;opacity:1!important;z-index:1010!important}}@media(max-width:600px){.command-topbar{display:flex!important;flex-direction:row!important;align-items:center!important;gap:8px!important;min-height:68px!important}.command-brand{min-width:0!important;flex:1 1 auto!important}.command-brand-copy h1{white-space:normal!important;font-size:clamp(14px,4vw,17px)!important}.command-brand-copy p{display:none!important}.command-topbar .header-actions{display:flex!important;width:auto!important;flex:0 0 auto!important;gap:8px!important}.command-topbar .admin-profile,.command-topbar .lecturer-command-date{display:none!important}}</style>
+<style id="cn-lecturer-reduced-repetition">
+/* One institution identity in the sidebar; command bar identifies the workspace. */
+.sidebar-header .brand-text h2{font-size:clamp(13px,1.05vw,17px)!important;line-height:1.2!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:175px}
+.sidebar-header .brand-text small{font-size:9px!important;letter-spacing:.08em!important}
+.command-brand .command-cap{flex:0 0 52px!important;width:52px!important;height:52px!important;border-radius:15px!important}
+.command-brand .command-cap img{display:none!important}
+.command-brand .command-brand-copy h1{font-size:clamp(18px,1.35vw,24px)!important;letter-spacing:-.035em}
+.command-brand .command-brand-copy p{font-size:11px!important;opacity:.82}
+.lecturer-overview-heading{display:flex;align-items:center;gap:17px;padding:19px 22px;margin:0 0 19px;border:1px solid var(--lx-line,#dce8f2);border-radius:17px;background:linear-gradient(110deg,#fff 0%,#f4f9fc 100%);box-shadow:0 8px 24px rgba(16,43,72,.045)}
+.lecturer-overview-mark{width:46px;height:46px;flex:0 0 46px;display:grid;place-items:center;border-radius:14px;background:color-mix(in srgb,var(--cn-institution-primary,#0b4167) 10%,white);color:var(--cn-institution-primary,#0b4167);font-size:19px}
+.lecturer-overview-heading>div:nth-child(2){min-width:0;flex:1}
+.lecturer-overview-eyebrow{display:block;margin-bottom:4px;color:var(--cn-institution-secondary,#0f766e);font-size:9px;font-weight:850;letter-spacing:.13em}
+.lecturer-overview-heading h2{margin:0!important;color:#173650!important;font-size:clamp(18px,1.45vw,23px)!important;font-weight:800!important;letter-spacing:-.04em}
+.lecturer-overview-heading p{margin:4px 0 0!important;color:#71869b!important;font-size:11px!important}
+.lecturer-overview-context{display:flex;align-items:center;gap:8px;padding:9px 12px;border:1px solid #e2eaf1;border-radius:11px;background:#fff;color:#557087;font-size:10px;font-weight:750;white-space:nowrap}
+.lecturer-overview-context i{color:var(--cn-institution-secondary,#0f766e)}
+@media(max-width:640px){.lecturer-overview-heading{padding:14px;gap:11px}.lecturer-overview-context{display:none}.lecturer-overview-mark{width:39px;height:39px;flex-basis:39px}}
+</style>
+
+</head>
 <body>
 
     <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 
     <div class="sidebar" id="sidebar">
-        <div class="sidebar-header"><div class="sidebar-brand"><div class="brand-crest"><img src="/favicon.svg" alt="Campus Nexus"></div><div class="brand-text"><h2>Campus Nexus</h2><small>Lecturer Examination Workspace</small></div></div></div>
+        <div class="sidebar-header"><div class="sidebar-brand"><div class="brand-crest"><img src="/favicon.svg" alt="Institution logo"></div><div class="brand-text"><h2>Institution</h2><small>LECTURER WORKSPACE</small></div></div></div>
 
         <div class="sidebar-scroll">
             <div class="menu-section">
@@ -158,10 +178,10 @@
         </div>
 
         <section id="dashboard" class="tab-content active">
-            <div class="lecturer-dashboard-hero">
-                <div class="lecturer-hero-icon"><i class="fas fa-th-large"></i></div>
-                <div><h2>Examination Dashboard</h2><p><i class="fas fa-chart-line"></i> Create, manage and monitor your assessments, examinations and student performance</p></div>
-                <div class="lecturer-hero-tag"><i class="fas fa-shield-alt"></i> Lecturer Workspace</div>
+            <div class="lecturer-overview-heading">
+                <div class="lecturer-overview-mark"><i class="fas fa-chart-line"></i></div>
+                <div><span class="lecturer-overview-eyebrow">OVERVIEW</span><h2>Good to see you, <span id="lecturerOverviewGreeting">Lecturer</span></h2><p>Your assessments, learner outcomes and live activity at a glance.</p></div>
+                <div class="lecturer-overview-context"><i class="fas fa-graduation-cap"></i><span>Teaching workspace</span></div>
             </div>
 
             <div class="stats-grid lecturer-analytics-stats" id="dashboardStats">
