@@ -74,7 +74,9 @@ if (typeof supabase !== 'undefined') {
     try {
         // Create the Supabase client
         const isExamDashboard = /^\/(?:adminexams|lecturerexams)(?:\/|$)/i.test(window.location.pathname || '') || /^\/platform\/lecturerexams(?:\.html)?$/i.test(window.location.pathname || '');
-        const supabaseClient = supabase.createClient(
+        const supabaseClient = (isExamDashboard && window.examSupabase)
+            ? window.examSupabase
+            : supabase.createClient(
             window.APP_CONFIG.SUPABASE_URL,
             window.APP_CONFIG.SUPABASE_PUBLISHABLE_KEY,
             {
