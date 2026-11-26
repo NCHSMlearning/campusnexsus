@@ -109,25 +109,10 @@ jobs:
               created += 1
 
           protection = '<script src="/code-protection.js" defer></script>'
-          clean_urls = """<script data-cn-clean-url-router>
-          (function(){
-            if(window.top!==window.self)return;
-            var p=window.location.pathname;
-            // These are canonical destinations. Their directory routes are
-            // compatibility aliases which intentionally redirect back here.
-            // Rewriting these .html URLs to /folder/ would create redirect loops.
-            var canonical = new Set([
-              '/examlogin.html',
-              '/exams.html',
-              '/platform/examinations/source/adminexams.html'
-            ]);
-            if(/\.html$/i.test(p) && !canonical.has(p)){
-              var u=new URL(window.location.href);
-              u.pathname=p.replace(/\.html$/i,'')+'/';
-              window.location.replace(u.toString());
-            }
-          })();
-          </script>"""
+          # Clean URLs are provided by the generated directory/index.html pages.
+          # Do not add client-side .html -> /folder/ redirects: they create
+          # redirect chains/loops for legacy aliases and nested dashboard routes.
+          clean_urls = ""
           injected = 0
           for page in root.rglob("*.html"):
               if ".git" in page.parts or "node_modules" in page.parts:
@@ -144,13 +129,10 @@ jobs:
                   "platform/examinations/source/adminexams.html"
               }
               relative_path = page.as_posix().lstrip("./")
-              if relative_path not in canonical_pages and "data-cn-clean-url-router" not in html:
-                  html = re.sub(r"</head>", clean_urls + "\n</head>", html, count=1, flags=re.I) if re.search(r"</head>", html, re.I) else clean_urls + html
-                  changed = True
               if changed:
                   page.write_text(html, encoding="utf-8")
                   injected += 1
-          print(f"Generated {created} clean route folders; ensured global protection and loop-safe clean-URL handling in {injected} HTML pages.")
+          print(f"Generated {created} clean route folders and ensured global code protection in {injected} HTML pages.")
           PY
           test -f code-protection.js
           test -f platform/institution-admin/index.html
