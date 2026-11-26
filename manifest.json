@@ -1,19 +1,25 @@
 {
-  "name": "CampusNexus — Digital Systems. Built Around You.",
-  "short_name": "CampusNexus",
-  "description": "Education platforms, business systems and custom software built around your organization.",
-  "start_url": "/",
+  "name": "Campus Nexus",
+  "short_name": "Campus Nexus",
+  "description": "One connected campus for students, lecturers and institution administrators.",
+  "start_url": "/app-download.html?source=pwa",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "theme_color": "#062b57",
-  "background_color": "#f5f9fd",
+  "theme_color": "#071f3b",
+  "background_color": "#071f3b",
   "icons": [
     {
-      "src": "/favicon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "/images/campus-nexus-original-logo.webp",
+      "sizes": "192x192",
+      "type": "image/webp",
       "purpose": "any"
+    },
+    {
+      "src": "/images/campus-nexus-original-logo.webp",
+      "sizes": "512x512",
+      "type": "image/webp",
+      "purpose": "any maskable"
     }
   ]
 }
