@@ -1,6 +1,6 @@
 'use strict';
 
-const { app, BrowserWindow, session, ipcMain, screen, dialog } = require('electron');
+const { app, BrowserWindow, session, ipcMain, screen, dialog, Menu } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const path = require('node:path');
 const fs = require('node:fs');
@@ -97,7 +97,8 @@ function applyWindowMode(url) {
     mainWindow.setKiosk(false);
     mainWindow.setFullScreen(false);
     mainWindow.setAlwaysOnTop(false);
-    mainWindow.setMenuBarVisibility(true);
+    // Keep the native Windows title bar, but never expose Electron's website-style menu.
+    mainWindow.setMenuBarVisibility(false);
     if (typeof mainWindow.setClosable === 'function') mainWindow.setClosable(true);
     if (typeof mainWindow.setMinimizable === 'function') mainWindow.setMinimizable(true);
     if (typeof mainWindow.setResizable === 'function') mainWindow.setResizable(true);
@@ -120,7 +121,7 @@ function createWindow() {
     show: false,
     // Login and administration use a normal desktop window. Strict kiosk
     // is enabled only after an examination URL is opened.
-    autoHideMenuBar: false, kiosk: false, fullscreen: false, fullscreenable: true, frame: true,
+    autoHideMenuBar: true, kiosk: false, fullscreen: false, fullscreenable: true, frame: true,
     resizable: true, maximizable: true, minimizable: true, closable: true,
     skipTaskbar: false, alwaysOnTop: false,
     title: 'Campus Nexus | Secure Examination',
@@ -289,6 +290,9 @@ else {
 
 app.whenReady().then(() => {
   loadDeviceIdentity();
+  // This is a dedicated examination client, not a browser shell. Remove the
+  // default File/Edit/View/Window/Help menu while retaining native window controls.
+  Menu.setApplicationMenu(null);
   app.setName('Campus Nexus Secure Exam Browser');
   if (process.platform === 'win32') app.setAppUserModelId('co.ke.campusnexus.secureexam');
   app.setAsDefaultProtocolClient('campusnexus-seb');

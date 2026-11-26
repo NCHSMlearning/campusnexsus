@@ -39,28 +39,29 @@ window.addEventListener('DOMContentLoaded', async () => {
     const bar = document.createElement('header');
     bar.id = 'cnseb-app-header';
     Object.assign(bar.style, {
-      position: 'relative', display: 'flex', flexWrap: 'wrap', alignItems: 'center',
-      justifyContent: 'space-between', gap: '10px', width: '100%',
-      padding: '10px 16px', margin: '0', boxSizing: 'border-box',
-      background: '#071d33', color: '#fff', borderBottom: '3px solid #19b6d5',
-      font: '600 12px/1.3 Segoe UI,Arial,sans-serif'
+      position: 'relative', display: 'flex', flexWrap: 'nowrap', alignItems: 'center',
+      justifyContent: 'space-between', gap: '12px', width: '100%', height: '64px',
+      minHeight: '64px', maxHeight: '64px', overflow: 'hidden',
+      padding: '8px 18px', margin: '0', boxSizing: 'border-box', flex: '0 0 64px',
+      background: '#071d33', color: '#fff', borderBottom: '2px solid #19b6d5',
+      font: '600 11px/1.25 Segoe UI,Arial,sans-serif'
     });
 
     const brand = document.createElement('div');
-    Object.assign(brand.style, { display:'flex', alignItems:'center', gap:'10px', minWidth:'0', padding:'2px 6px' });
+    Object.assign(brand.style, { display:'flex', alignItems:'center', gap:'9px', minWidth:'0', flex:'0 0 auto', padding:'2px 4px' });
     const brandLogo = document.createElement('img');
     brandLogo.src = 'https://campusnexus.co.ke/images/campus-nexus-original-logo.webp';
     brandLogo.alt = 'Campus Nexus';
-    Object.assign(brandLogo.style, { width:'32px', height:'32px', objectFit:'contain', borderRadius:'8px', background:'#fff', padding:'3px', flex:'0 0 auto' });
+    Object.assign(brandLogo.style, { width:'30px', height:'30px', objectFit:'contain', borderRadius:'7px', background:'#fff', padding:'3px', flex:'0 0 auto' });
     const brandText = document.createElement('span');
     brandText.textContent = 'CAMPUS NEXUS  /  SECURE EXAM';
-    Object.assign(brandText.style, { fontWeight:'850', letterSpacing:'.55px', whiteSpace:'nowrap' });
+    Object.assign(brandText.style, { fontWeight:'850', letterSpacing:'.45px', whiteSpace:'nowrap', fontSize:'12px' });
     brand.append(brandLogo, brandText);
 
     const statusGroup = document.createElement('div');
     Object.assign(statusGroup.style, {
       display: 'flex', flexWrap: 'wrap', alignItems: 'center',
-      justifyContent: 'flex-end', gap: '8px', minWidth: '0'
+      justifyContent: 'flex-end', gap: '6px', minWidth: '0', flex: '1 1 auto', flexWrap: 'nowrap', overflow: 'hidden'
     });
     const sessionStatus = document.createElement('span');
     sessionStatus.textContent = info.kioskRuntime ? 'Desktop app · kiosk window' : 'Desktop app · monitored window';
@@ -72,7 +73,7 @@ sessionStatus.title = 'App-level kiosk presentation only. Institution-managed Wi
     versionStatus.style.cssText = 'color:#d9eaf2;font-size:11px;padding:5px 7px';
     const updateStatus = document.createElement('span');
     updateStatus.textContent = 'Checking for updates…';
-    updateStatus.style.cssText = 'color:#b8d7e5;font-size:11px;padding:5px 7px';
+    updateStatus.style.cssText = 'color:#b8d7e5;font-size:10px;padding:5px 6px;max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
     statusGroup.append(sessionStatus, versionStatus, updateStatus);
 
     function makeButton(label, background) {
@@ -107,6 +108,43 @@ sessionStatus.title = 'App-level kiosk presentation only. Institution-managed Wi
     // not a fixed/floating overlay over examination content.
     const mount = document.body || document.documentElement;
     mount.insertBefore(bar, mount.firstChild);
+
+    // The login page was designed to fill the browser viewport. Account for the
+    // native app toolbar so its two-column layout fits without a second page
+    // scrollbar on normal desktop displays.
+    if (location.hostname === 'campusnexus.co.ke' && location.pathname.toLowerCase() === '/examlogin.html') {
+      const layoutFix = document.createElement('style');
+      layoutFix.id = 'cnseb-desktop-login-layout';
+      layoutFix.textContent = `
+        :root { --cnseb-toolbar-height: 64px; }
+        html, body { min-height: 100%; }
+        .exam-login-shell {
+          min-height: calc(100svh - var(--cnseb-toolbar-height)) !important;
+          grid-template-columns: minmax(0,1.02fr) minmax(420px,.98fr) !important;
+        }
+        .exam-login-visual {
+          min-height: calc(100svh - var(--cnseb-toolbar-height)) !important;
+          padding: clamp(22px,3.2vw,54px) !important;
+        }
+        .login-wrap { padding: 16px 22px !important; }
+        .login-wrap .brand { margin-bottom: 13px !important; }
+        .login-wrap .brand-mark { width: 58px !important; height: 58px !important; margin-bottom: 8px !important; }
+        .login-wrap .card { padding: 23px 25px 20px !important; }
+        .login-wrap .foot { margin-top: 11px !important; }
+        @media (max-height: 760px) {
+          .login-wrap { padding-top: 9px !important; padding-bottom: 9px !important; }
+          .login-wrap .brand { margin-bottom: 8px !important; }
+          .login-wrap .brand-mark { width: 48px !important; height: 48px !important; }
+          .login-wrap .card { padding: 17px 22px 15px !important; }
+          .login-wrap .card .field { margin: 11px 0 !important; }
+          .login-wrap .foot { margin-top: 7px !important; }
+        }
+        @media (max-width: 900px) {
+          .exam-login-shell { grid-template-columns: minmax(0,1fr) minmax(360px,.95fr) !important; }
+        }
+      `;
+      document.head.appendChild(layoutFix);
+    }
 
     const shade = document.createElement('div');
     Object.assign(shade.style, {
