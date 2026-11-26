@@ -120,29 +120,50 @@ sessionStatus.title = 'App-level kiosk presentation only. Institution-managed Wi
       // During an active exam, hide the ordinary application toolbar. Keep
       // only the controlled bottom exit action visible to the candidate.
       bar.style.display = 'none';
-      const examExit = makeButton('Exit examination', '#a92d2d');
-      examExit.id = 'cnseb-exam-exit';
-      examExit.setAttribute('aria-label', 'Submit examination and exit');
-      examExit.style.display = 'none';
-      Object.assign(examExit.style, {
-        position: 'fixed', right: '18px', bottom: '14px', zIndex: '2147483646',
-        minHeight: '34px', padding: '7px 13px', borderRadius: '10px',
-        boxShadow: '0 4px 18px rgba(0,0,0,.28)', opacity: '.92'
+      const exitExamButton = makeButton('Exit examination', '#9b3b32');
+      exitExamButton.id = 'cnseb-exam-exit';
+      exitExamButton.setAttribute('aria-label', 'Submit examination and return to secure browser');
+      const exitAppButton = makeButton('Exit app', '#742b2b');
+      exitAppButton.id = 'cnseb-app-exit';
+      exitAppButton.setAttribute('aria-label', 'Submit examination and close Secure Exam Browser');
+      [exitExamButton, exitAppButton].forEach(button => {
+        button.style.display = 'none';
+        Object.assign(button.style, {
+          position: 'fixed', bottom: '14px', zIndex: '2147483646',
+          minHeight: '38px', padding: '8px 14px', borderRadius: '10px',
+          boxShadow: '0 4px 18px rgba(0,0,0,.28)', opacity: '.96'
+        });
+        document.body.appendChild(button);
       });
-      document.body.appendChild(examExit);
-      document.addEventListener('cnseb:exam-started', () => { examExit.style.display = 'inline-flex'; });
-      examExit.addEventListener('click', () => openConfirm('submit-exit'));
+      exitExamButton.style.right = '160px';
+      exitAppButton.style.right = '18px';
+      let pendingExitAction = 'exit-exam';
+      document.addEventListener('cnseb:exam-started', () => {
+        exitExamButton.style.display = 'inline-flex';
+        exitAppButton.style.display = 'inline-flex';
+      });
+      exitExamButton.addEventListener('click', () => openConfirm('submit-exam'));
+      exitAppButton.addEventListener('click', () => openConfirm('submit-close-app'));
       document.addEventListener('cnseb:exam-submission-complete', async () => {
-        examExit.textContent = 'Submission saved · Closing…';
-        examExit.disabled = true;
-        try { await ipcRenderer.invoke('cnseb:exam-submission-complete'); }
-        catch (error) { console.error('[CN-SEB] Could not finish after submission:', error); }
+        [exitExamButton, exitAppButton].forEach(button => {
+          button.textContent = 'Submission saved · Finishing…';
+          button.disabled = true;
+        });
+        try {
+          const result = await ipcRenderer.invoke('cnseb:exam-submission-complete', pendingExitAction);
+          if (!result || !result.ok) throw new Error('The app could not complete the selected exit action.');
+        } catch (error) {
+          console.error('[CN-SEB] Could not finish after submission:', error);
+          document.dispatchEvent(new Event('cnseb:exam-submission-failed'));
+        }
       });
       document.addEventListener('cnseb:exam-submission-failed', () => {
         busy = false;
-        examExit.disabled = false;
-        examExit.textContent = 'Exit examination';
-        message.textContent = 'Submission could not be completed. Your exam remains open; please retry or contact the invigilator.';
+        [exitExamButton, exitAppButton].forEach((button, index) => {
+          button.disabled = false;
+          button.textContent = index === 0 ? 'Exit examination' : 'Exit app';
+        });
+        message.textContent = 'Submission could not be completed. Your exam remains open; please retry. The app will not close until your submission is confirmed.';
         confirm.disabled = false;
         cancel.disabled = false;
         confirm.textContent = 'Retry submission';
@@ -181,13 +202,17 @@ sessionStatus.title = 'App-level kiosk presentation only. Institution-managed Wi
     function openConfirm(nextMode) {
       if (busy) return;
       mode = nextMode;
-      heading.textContent = nextMode === 'logout' ? 'Log out of Campus Nexus?' : nextMode === 'submit-exit' ? 'Submit examination and exit?' : 'Exit Secure Exam Browser?';
+      heading.textContent = nextMode === 'logout' ? 'Log out of Campus Nexus?' : nextMode === 'submit-exam' ? 'Submit examination and return?' : nextMode === 'submit-close-app' ? 'Submit examination and close the app?' : nextMode === 'exit' ? 'Exit Secure Exam Browser?' : 'Log out of Campus Nexus?';
       message.textContent = nextMode === 'logout'
         ? 'This clears the saved sign-in for this app and closes it. Any unfinished examination will not be submitted.'
-        : nextMode === 'submit-exit'
-          ? 'Your examination will be submitted immediately. All saved answers will be sent, the result will be recorded and the exam session will be closed before the app exits. This cannot be undone.'
-          : 'The app will close and return you to the desktop. Your sign-in will be kept for your next launch. Submit your examination first.';
-      confirm.textContent = nextMode === 'logout' ? 'Log out and close' : nextMode === 'submit-exit' ? 'Submit exam & exit' : 'Exit application';
+        : nextMode === 'submit-exam'
+          ? 'Your answers and result will be submitted, then the examination will close and the Secure Exam Browser will return to its welcome screen.'
+          : nextMode === 'submit-close-app'
+            ? 'Your answers and result will be submitted first. Only after the server confirms submission will the entire Secure Exam Browser close.'
+            : nextMode === 'exit'
+              ? 'The app will close and return you to the desktop. Your sign-in will be kept for your next launch.'
+              : 'This clears the saved sign-in for this app and closes it.';
+      confirm.textContent = nextMode === 'logout' ? 'Log out and close' : nextMode === 'submit-exam' ? 'Submit & exit examination' : nextMode === 'submit-close-app' ? 'Submit & close app' : 'Exit application';
       confirm.style.background = nextMode === 'logout' ? '#a65b12' : '#a92d2d';
       shade.style.display = 'flex';
     }
@@ -202,14 +227,15 @@ sessionStatus.title = 'App-level kiosk presentation only. Institution-managed Wi
       busy = true;
       confirm.disabled = true;
       cancel.disabled = true;
-      confirm.textContent = mode === 'logout' ? 'Clearing sign-in…' : mode === 'submit-exit' ? 'Submitting examination…' : 'Closing app…';
+      confirm.textContent = mode === 'logout' ? 'Clearing sign-in…' : (mode === 'submit-exam' || mode === 'submit-close-app') ? 'Submitting examination…' : 'Closing app…';
       message.textContent = mode === 'logout'
         ? 'Your saved app sign-in is being cleared. Please keep this window open.'
         : mode === 'submit-exit'
           ? 'Saving answers, recording your result and closing the examination session. Do not turn off this computer.'
           : 'Campus Nexus Secure Exam Browser is closing.';
-      if (mode === 'submit-exit') {
+      if (mode === 'submit-exam' || mode === 'submit-close-app') {
         try {
+          pendingExitAction = mode === 'submit-close-app' ? 'exit-app' : 'exit-exam';
           document.dispatchEvent(new Event('cnseb:request-submit-exam'));
           confirm.textContent = 'Submission in progress…';
           message.textContent = 'Your answers are being saved and your result is being recorded. The app will close only after successful submission.';
