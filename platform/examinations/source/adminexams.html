@@ -1590,14 +1590,14 @@ body{background:var(--exam-canvas);color:var(--exam-ink)}
 </section>
         <!-- Secure Exam Browser operations: same Admin Exams workspace -->
         <section id="cnsebOverview" class="tab-content" style="display:none;">
-          <div class="cnseb-hero"><div><span class="cnseb-kicker">CAMPUS NEXUS SECURE EXAM BROWSER</span><h2>Examination Security Command Centre</h2><p>Monitor registered devices, secure exam sessions and examination security events from this administration workspace.</p></div><span class="cnseb-status"><i class="fas fa-circle"></i> Connected workspace</span></div>
+          <div class="cnseb-hero"><div><span class="cnseb-kicker">CAMPUS NEXUS SECURE EXAM BROWSER</span><h2>Examination Security Command Centre</h2><p>Monitor registered devices, secure exam sessions and examination security events from this administration workspace.</p></div><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span class="cnseb-status" id="cnsebWorkspaceStatus"><i class="fas fa-circle-notch fa-spin"></i> Connecting monitoring</span><button id="cnsebOverviewRefresh" type="button" class="cnseb-action" style="background:#ffffff18;border:1px solid #ffffff45"><i class="fas fa-rotate"></i> Refresh</button></div></div>
           <div class="cnseb-metric-grid">
-            <article class="cnseb-metric"><span>Registered devices</span><strong id="cnsebRegisteredDevices">—</strong><small>Awaiting device registry service</small></article>
-            <article class="cnseb-metric"><span>Active sessions</span><strong id="cnsebActiveSessions">—</strong><small>Awaiting live session telemetry</small></article>
-            <article class="cnseb-metric"><span>App installations</span><strong id="cnsebInstallations">—</strong><small>Counted after first device registration</small></article>
-            <article class="cnseb-metric"><span>Open security events</span><strong id="cnsebOpenEvents">—</strong><small>Awaiting secure event feed</small></article>
+            <article class="cnseb-metric"><span>Registered devices</span><strong id="cnsebRegisteredDevices">—</strong><small>All registered student computers</small></article>
+            <article class="cnseb-metric"><span>Active sessions</span><strong id="cnsebActiveSessions">—</strong><small>Heartbeat received within 90 seconds</small></article>
+            <article class="cnseb-metric"><span>App installations</span><strong id="cnsebInstallations">—</strong><small>Registered CN-SEB clients, not downloads</small></article>
+            <article class="cnseb-metric"><span>Open security events</span><strong id="cnsebOpenEvents">—</strong><small>Unread examination security events</small></article>
           </div>
-          <div class="cnseb-panel"><h3><i class="fas fa-circle-info"></i> Monitoring readiness</h3><p>The dashboard interface is connected to the existing Admin Exams workspace. Live device counts, IP addresses, app versions and session states will appear after the device registry and server-side heartbeat/event services are deployed. Installer downloads will not be counted as installations.</p></div>
+          <div class="cnseb-panel"><h3><i class="fas fa-circle-info"></i> Monitoring readiness</h3><p id="cnsebReadinessMessage" aria-live="polite">Connecting to the server-authorised monitoring service…</p></div>
           <div class="cnseb-panel"><h3>Security model</h3><div class="cnseb-readiness"><span><i class="fas fa-check"></i> Existing exam engine retained</span><span><i class="fas fa-check"></i> Existing role-based exam login retained</span><span><i class="fas fa-lock"></i> Device trust must be verified server-side</span><span><i class="fas fa-shield-halved"></i> Institution-scoped access required</span></div></div>
         </section>
         <section id="cnsebDevices" class="tab-content" style="display:none;">
