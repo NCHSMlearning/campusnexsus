@@ -4,6 +4,46 @@
   "trailingSlash": false,
   "redirects": [
     {
+      "source": "/examlogin",
+      "destination": "/examlogin.html",
+      "permanent": true
+    },
+    {
+      "source": "/exams/",
+      "destination": "/exams.html",
+      "permanent": true
+    },
+    {
+      "source": "/adminexams/",
+      "destination": "/platform/examinations/source/adminexams.html",
+      "permanent": true
+    },
+    {
+      "source": "/adminexams/index.html",
+      "destination": "/platform/examinations/source/adminexams.html",
+      "permanent": true
+    },
+    {
+      "source": "/admin-exams",
+      "destination": "/adminexams",
+      "permanent": true
+    },
+    {
+      "source": "/admin-exams/",
+      "destination": "/adminexams",
+      "permanent": true
+    },
+    {
+      "source": "/adminexams/login/",
+      "destination": "/examlogin.html",
+      "permanent": true
+    },
+    {
+      "source": "/adminexams/login/index.html",
+      "destination": "/examlogin.html",
+      "permanent": true
+    },
+    {
       "source": "/examlogin/",
       "destination": "/examlogin.html",
       "permanent": true
@@ -67,10 +107,6 @@
     {
       "source": "/exams",
       "destination": "/exams.html"
-    },
-    {
-      "source": "/admin-exams",
-      "destination": "/platform/examinations"
     }
   ],
   "headers": [
