@@ -287,11 +287,20 @@
                         </select>
                     </div>
                     <div class="exam-filter-field">
+                        <label for="examProgramFilter">Programme</label>
+                        <select id="examProgramFilter" onchange="applyExamFilters()"><option value="all">All programmes</option></select>
+                    </div>
+                    <div class="exam-filter-field">
+                        <label for="examBlockFilter">Block / Term</label>
+                        <select id="examBlockFilter" onchange="applyExamFilters()"><option value="all">All blocks / terms</option></select>
+                    </div>
+                    <div class="exam-filter-field">
                         <label for="examSortFilter">Sort by</label>
                         <select id="examSortFilter" onchange="applyExamFilters()">
-                            <option value="newest">Newest first</option>
+                            <option value="newest">Recently updated</option>
                             <option value="oldest">Oldest first</option>
                             <option value="name">Name A–Z</option>
+                            <option value="date">Exam date</option>
                         </select>
                     </div>
                 </div>
@@ -305,11 +314,13 @@
                     <table id="examsTable" style="width: 100%; border-collapse: collapse; font-size: 13px;">
                         <thead>
                             <tr style="background: #f8fafc; border-bottom: 2px solid #e5e7eb;">
-                                <th style="padding: 10px 14px; text-align: left; font-weight: 600; color: #475569;">Exam Name</th>
-                                <th style="padding: 10px 14px; text-align: center; font-weight: 600; color: #475569;">Type</th>
-                                <th style="padding: 10px 14px; text-align: center; font-weight: 600; color: #475569;">Created By</th>
-                                <th style="padding: 10px 14px; text-align: center; font-weight: 600; color: #475569;">Status</th>
-                                <th style="padding: 10px 14px; text-align: center; font-weight: 600; color: #475569; min-width: 100px;">Actions</th>
+                                <th style="padding:14px 16px;text-align:left;">Assessment</th>
+                                <th style="padding:14px 16px;text-align:left;">Unit / Programme</th>
+                                <th style="padding:14px 16px;text-align:center;">Schedule</th>
+                                <th style="padding:14px 16px;text-align:center;">Duration / Marks</th>
+                                <th style="padding:14px 16px;text-align:center;">Created By</th>
+                                <th style="padding:14px 16px;text-align:center;">Status</th>
+                                <th style="padding:14px 16px;text-align:center;min-width:130px;">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="examsBody"></tbody>
@@ -318,6 +329,40 @@
                 </div>
             </div>
         
+
+<style id="lx-my-exams-v2">
+#myExams .exam-filter-grid{grid-template-columns:repeat(4,minmax(145px,1fr))!important}
+#myExams .exam-filter-field:first-child{grid-column:span 2}
+#myExams #examsTable{min-width:1120px}
+#myExams #examsTable td{vertical-align:middle}
+#myExams .lx-exam-title{font-size:12px;font-weight:800;color:#173650;line-height:1.4}
+#myExams .lx-exam-sub{font-size:10px;color:#8192a4;margin-top:4px;line-height:1.45}
+#myExams .lx-center{text-align:center}
+#myExams .lx-owner-me{color:#059669;font-weight:800;font-size:11px}
+#myExams .lx-owner-other{color:#8192a4;font-size:11px}
+#myExams .lx-actions{white-space:nowrap}
+#myExams .lx-exam-action{display:inline-flex;align-items:center;gap:5px;margin:2px;padding:7px 9px;border:1px solid #dce6ef;border-radius:8px;background:#fff;color:#31536f;font-size:10px;font-weight:800;cursor:pointer}
+#myExams .lx-exam-action:hover{border-color:var(--cn-institution-secondary,#0f766e);color:var(--cn-institution-primary,#0b4167);background:#f5fafc}
+#myExams .lx-exam-edit{background:var(--cn-institution-primary,#0b4167);border-color:var(--cn-institution-primary,#0b4167);color:#fff}
+#myExams .lx-exam-edit:hover{color:#fff;filter:brightness(1.08)}
+.lx-details-overlay{display:none;position:fixed;inset:0;z-index:10050;background:rgba(6,25,43,.58);backdrop-filter:blur(5px);padding:18px;align-items:center;justify-content:center}
+.lx-details-overlay.open{display:flex}
+.lx-details-card{width:min(720px,100%);max-height:88vh;overflow:auto;background:#fff;border-radius:20px;box-shadow:0 28px 90px rgba(0,0,0,.25)}
+.lx-details-head{display:flex;justify-content:space-between;align-items:center;padding:20px 24px;background:linear-gradient(110deg,var(--cn-institution-primary,#0b4167),var(--cn-institution-secondary,#0f766e));color:#fff}
+.lx-details-head span{font-size:9px;letter-spacing:.14em;font-weight:850;opacity:.8}
+.lx-details-head h2{margin:5px 0 0;font-size:19px}
+.lx-details-head button{width:34px;height:34px;border:1px solid #ffffff55;border-radius:10px;background:#ffffff18;color:#fff;font-size:22px;cursor:pointer}
+.lx-details-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:20px}
+.lx-detail-item{padding:12px;border:1px solid #e5edf4;border-radius:11px;background:#fbfdff;min-width:0}
+.lx-detail-item span{display:block;color:#8292a2;font-size:9px;text-transform:uppercase;letter-spacing:.08em;font-weight:800;margin-bottom:5px}
+.lx-detail-item strong{display:block;color:#203b54;font-size:12px;overflow-wrap:anywhere;white-space:pre-wrap}
+.lx-detail-item:last-child{grid-column:1/-1}
+.lx-details-foot{display:flex;justify-content:flex-end;padding:0 20px 20px}
+.lx-details-foot button{padding:9px 16px;border:0;border-radius:9px;background:var(--cn-institution-primary,#0b4167);color:#fff;font-weight:750}
+@media(max-width:900px){#myExams .exam-filter-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}#myExams .exam-filter-field:first-child{grid-column:1/-1}}
+@media(max-width:560px){#myExams .exam-filter-grid{grid-template-columns:1fr!important}.lx-details-grid{grid-template-columns:1fr;padding:14px}.lx-detail-item:last-child{grid-column:auto}.lx-details-head{padding:16px}}
+</style>
+
             <style id="lecturer-exams-command-centre-polish">
               /* Bring the lecturer exam workspace into the same visual language as Admin Exams. */
               #myExams{color:#10243a}
@@ -418,6 +463,15 @@
             </style>
 </section>
 
+
+        <div id="lecturerExamDetailsModal" class="lx-details-overlay" aria-hidden="true">
+            <div class="lx-details-card" role="dialog" aria-modal="true" aria-labelledby="lxDetailsTitle">
+                <div class="lx-details-head"><div><span>ASSESSMENT INFORMATION</span><h2 id="lxDetailsTitle">Assessment details</h2></div>
+                <button type="button" onclick="closeLecturerExamDetails()" aria-label="Close details">&times;</button></div>
+                <div class="lx-details-grid" data-details-content></div>
+                <div class="lx-details-foot"><button type="button" onclick="closeLecturerExamDetails()">Close</button></div>
+            </div>
+        </div>
 
         <!-- Lecturer exam edit form: opens from the selected table row -->
         <div id="lecturerExamEditModal" class="lecturer-edit-overlay" aria-hidden="true">
@@ -1060,18 +1114,24 @@
         loading.style.display = 'block';
         try {
             await resolveLecturerOwnerIdentity();
-            // Filter by program, not by created_by
-            let q = sb.from('exams').select('*').order('id', { ascending: false });
+            // Explicit tenant boundary first; RLS remains the authoritative second layer.
+            if (!lecturerInstitutionId) throw new Error('Institution context is missing. Please sign in again using your institution code.');
+            let q = sb.from('exams').select('*')
+                .eq('institution_id', lecturerInstitutionId)
+                .order('updated_at', { ascending: false, nullsFirst: false })
+                .order('id', { ascending: false });
             if (lecturerProgram) q = q.eq('target_program', lecturerProgram);
-            const { data } = await q;
+            const { data, error } = await q;
+            if (error) throw error;
             lecturerExams = data || [];
+            populateExamFacetFilters();
             displayExams();
             loading.style.display = 'none';
         } catch (e) {
             console.error('Error loading lecturer exams:', e);
             lecturerExams = [];
             const tbody = document.getElementById('examsBody');
-            if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:28px;color:#b91c1c;">Unable to load exams. Please refresh and try again.</td></tr>';
+            if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:28px;color:#b91c1c;">Unable to load exams. Please refresh and try again.</td></tr>';
             if (loading) {
                 loading.style.display = 'none';
                 loading.innerHTML = '<i class="fas fa-exclamation-circle"></i> Unable to load exams';
@@ -1111,58 +1171,71 @@
         }
     }
 
-    function applyExamFilters() {
-        const search = (document.getElementById('examSearchFilter')?.value || '').trim().toLowerCase();
-        const owner = document.getElementById('examOwnerFilter')?.value || 'all';
-        const type = document.getElementById('examTypeFilter')?.value || 'all';
-        const status = document.getElementById('examStatusFilter')?.value || 'all';
-        const sort = document.getElementById('examSortFilter')?.value || 'newest';
+    function populateExamFacetFilters() {
+        const fill = (id, values, label) => {
+            const select = document.getElementById(id);
+            if (!select) return;
+            const current = select.value || 'all';
+            const unique = [...new Set(values.map(v => String(v || '').trim()).filter(Boolean))]
+                .sort((a,b) => a.localeCompare(b, undefined, {numeric:true,sensitivity:'base'}));
+            select.innerHTML = '<option value="all">' + label + '</option>' +
+                unique.map(v => '<option value="' + v.replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])) + '">' +
+                v.replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])) + '</option>').join('');
+            if (unique.includes(current)) select.value = current;
+        };
+        const rows = Array.isArray(lecturerExams) ? lecturerExams : [];
+        fill('examProgramFilter', rows.map(e => e.target_program || e.program_type), 'All programmes');
+        fill('examBlockFilter', rows.map(e => [e.block, e.block_term].filter(Boolean).join(' · ')), 'All blocks / terms');
+    }
 
+    function applyExamFilters() {
+        const value = id => document.getElementById(id)?.value || 'all';
+        const search = (document.getElementById('examSearchFilter')?.value || '').trim().toLowerCase();
+        const owner = value('examOwnerFilter'), type = value('examTypeFilter');
+        const status = value('examStatusFilter'), sort = value('examSortFilter');
+        const program = value('examProgramFilter'), block = value('examBlockFilter');
         const all = Array.isArray(lecturerExams) ? lecturerExams : [];
         const mineCount = all.filter(isLecturerOwnExam).length;
         const othersCount = all.length - mineCount;
-        const countAll = document.getElementById('examCountAll');
-        const countMine = document.getElementById('examCountMine');
-        const countOthers = document.getElementById('examCountOthers');
-        if (countAll) countAll.textContent = all.length;
-        if (countMine) countMine.textContent = mineCount;
-        if (countOthers) countOthers.textContent = othersCount;
-
+        const set = (id,n) => { const el=document.getElementById(id); if(el) el.textContent=n; };
+        set('examCountAll',all.length); set('examCountMine',mineCount); set('examCountOthers',othersCount);
         const filtered = all.filter(e => {
             const mine = isLecturerOwnExam(e);
             const examName = String(e.exam_name || e.title || '').toLowerCase();
             const examType = String(e.exam_type || 'Exam').toLowerCase();
             const examStatus = String(e.status || 'draft').trim().toLowerCase().replace(/[ -]+/g, '_');
-            const searchMatches = !search || examName.includes(search) || examType.includes(search) || examStatus.includes(search);
+            const searchable = [examName,examType,examStatus,e.course_name,e.course_code,e.target_program,e.program_type,e.block,e.block_term,e.intake_year].join(' ').toLowerCase();
+            const searchMatches = !search || searchable.includes(search);
             const ownerMatches = owner === 'all' || (owner === 'mine' && mine) || (owner === 'others' && !mine);
             const typeMatches = type === 'all' || (type === 'cat' && examType.includes('cat')) || (type === 'exam' && !examType.includes('cat'));
             const statusMatches = status === 'all' ||
-                (status === 'published' && ['published', 'released'].includes(examStatus)) ||
-                (status === 'draft' && ['draft', 'pending', 'unpublished'].includes(examStatus)) ||
-                (status === 'active' && ['active', 'in_progress', 'ongoing', 'started'].includes(examStatus)) ||
-                (status === 'completed' && ['completed', 'closed', 'ended', 'submitted'].includes(examStatus));
-            return searchMatches && ownerMatches && typeMatches && statusMatches;
+                (status === 'published' && (['published','released'].includes(examStatus) || e.is_published === true)) ||
+                (status === 'draft' && (['draft','pending','unpublished'].includes(examStatus) || e.is_published === false)) ||
+                (status === 'active' && ['active','in_progress','ongoing','started'].includes(examStatus)) ||
+                (status === 'completed' && ['completed','closed','ended','submitted'].includes(examStatus));
+            const programMatches = program === 'all' || String(e.target_program || e.program_type || '') === program;
+            const blockValue = [e.block,e.block_term].filter(Boolean).join(' · ');
+            const blockMatches = block === 'all' || blockValue === block;
+            return searchMatches && ownerMatches && typeMatches && statusMatches && programMatches && blockMatches;
         });
-
-        const examTimestamp = exam => {
-            const raw = exam.exam_date || exam.updated_at || exam.created_at;
-            const dateOnly = /^\\d{4}-\\d{2}-\\d{2}$/.test(String(raw || ''));
-            const time = raw ? new Date(dateOnly ? String(raw) + 'T12:00:00+03:00' : raw).getTime() : NaN;
-            return Number.isFinite(time) ? time : Number(exam.id || 0);
+        const timestamp = e => {
+            const raw = e.exam_date || e.updated_at || e.created_at;
+            const parsed = raw ? new Date(raw).getTime() : NaN;
+            return Number.isFinite(parsed) ? parsed : Number(e.id || 0);
         };
-        filtered.sort((a, b) => {
-            if (sort === 'name') return String(a.exam_name || a.title || '').localeCompare(String(b.exam_name || b.title || ''), undefined, { sensitivity: 'base' });
-            if (sort === 'oldest') return examTimestamp(a) - examTimestamp(b);
-            return examTimestamp(b) - examTimestamp(a);
+        filtered.sort((a,b) => {
+            if (sort === 'name') return String(a.exam_name || a.title || '').localeCompare(String(b.exam_name || b.title || ''),undefined,{sensitivity:'base'});
+            if (sort === 'oldest') return timestamp(a)-timestamp(b);
+            if (sort === 'date') return (a.exam_date ? new Date(a.exam_date).getTime() : Infinity) - (b.exam_date ? new Date(b.exam_date).getTime() : Infinity);
+            return timestamp(b)-timestamp(a);
         });
-
-        const summary = document.getElementById('examFilterSummary');
-        if (summary) summary.textContent = `Showing ${filtered.length} of ${all.length} exams${owner === 'mine' ? ' · Your exams' : owner === 'others' ? ' · Other lecturers' : ''}`;
+        const summary=document.getElementById('examFilterSummary');
+        if(summary) summary.textContent='Showing '+filtered.length+' of '+all.length+' assessments'+(owner==='mine'?' · Your assessments':owner==='others'?' · Other lecturers':'');
         renderExamRows(filtered);
     }
 
     function resetExamFilters() {
-        const defaults = { examSearchFilter: '', examOwnerFilter: 'all', examTypeFilter: 'all', examStatusFilter: 'all', examSortFilter: 'newest' };
+        const defaults = { examSearchFilter: '', examOwnerFilter: 'all', examTypeFilter: 'all', examStatusFilter: 'all', examProgramFilter: 'all', examBlockFilter: 'all', examSortFilter: 'newest' };
         Object.entries(defaults).forEach(([id, value]) => {
             const el = document.getElementById(id);
             if (el) el.value = value;
@@ -1178,35 +1251,70 @@
         const tbody = document.getElementById('examsBody');
         if (!tbody) return;
         if (!exams.length) {
-            const hasAnyExams = Array.isArray(lecturerExams) && lecturerExams.length > 0;
-            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:34px 18px;color:#64748b;">
-                <i class="fas fa-${hasAnyExams ? 'filter' : 'folder-open'}" style="display:block;font-size:24px;margin-bottom:10px;color:#94a3b8;"></i>
-                <strong style="display:block;color:#334155;margin-bottom:5px;">${hasAnyExams ? 'No exams match these filters' : 'No exams found in your program'}</strong>
-                <span style="font-size:12px;">${hasAnyExams ? 'Try changing your search or reset the filters.' : 'Department exams will appear here when available.'}</span>
-            </td></tr>`;
+            const hasAny = Array.isArray(lecturerExams) && lecturerExams.length > 0;
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:38px 18px;color:#64748b;">' +
+                '<i class="fas fa-' + (hasAny?'filter':'folder-open') + '" style="display:block;font-size:25px;margin-bottom:10px;color:#94a3b8"></i>' +
+                '<strong style="display:block;color:#334155;margin-bottom:5px">' + (hasAny?'No assessments match these filters':'No assessments found for your programme') + '</strong>' +
+                '<span style="font-size:12px">' + (hasAny?'Adjust your filters or reset the search.':'Assessments assigned to your institution and programme will appear here.') + '</span></td></tr>';
             return;
         }
+        const safe = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
         tbody.innerHTML = exams.map(e => {
             const mine = isLecturerOwnExam(e);
-            const examName = String(e.exam_name || e.title || 'Untitled exam');
-            const examType = String(e.exam_type || 'Exam');
-            const examStatus = String(e.status || 'draft');
-            const normalizedStatus = examStatus.trim().toLowerCase().replace(/[ -]+/g, '_');
-            const statusClass = ['published', 'released', 'active', 'ongoing', 'in_progress', 'started'].includes(normalizedStatus) ? 'active' : ['completed', 'closed', 'ended', 'submitted'].includes(normalizedStatus) ? 'completed' : 'pending';
-            const safe = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+            const examName = e.exam_name || e.title || 'Untitled assessment';
+            const type = e.exam_type || 'Examination';
+            const rawStatus = String(e.status || 'draft');
+            const status = rawStatus.toLowerCase().replace(/[ -]+/g,'_');
+            const published = e.is_published === true || ['published','released'].includes(status);
+            const active = ['active','ongoing','in_progress','started'].includes(status);
+            const completed = ['completed','closed','ended','submitted'].includes(status);
+            const badge = published ? 'active' : completed ? 'completed' : 'pending';
+            const unit = [e.course_code,e.course_name || e.course_name].filter(Boolean).join(' · ') || (e.unit_catalog_id ? 'Unit ID '+e.unit_catalog_id : 'Unit not specified');
+            const programme = e.target_program || e.program_type || 'Programme not specified';
+            const block = [e.block,e.block_term].filter(Boolean).join(' · ');
+            const date = e.exam_date ? new Date(e.exam_date+'T00:00:00').toLocaleDateString(undefined,{day:'2-digit',month:'short',year:'numeric'}) : 'Not scheduled';
+            const time = e.exam_start_time ? String(e.exam_start_time).slice(0,5) : '';
+            const duration = e.duration_minutes ? e.duration_minutes+' min' : 'Duration —';
+            const marks = e.total_marks ?? e.marks_out_of ?? '—';
+            const creator = mine ? 'You' : 'Other lecturer';
             const actions = mine
-                ? `<button type="button" onclick="openLecturerExamEdit('${safe(e.id)}')" style="background:#059669;color:#fff;border:0;padding:7px 12px;border-radius:7px;cursor:pointer;font-size:11px;font-weight:700;margin-right:5px;"><i class="fas fa-pen"></i> Edit</button>`
-                : '<span class="btn-view-only"><i class="fas fa-eye"></i> View Only</span>';
-            return `
-                <tr>
-                    <td style="padding:12px 14px;"><strong>${safe(examName)}</strong> ${!mine ? '<span title="Created by another lecturer" style="font-size:10px;color:#94a3b8;">🔒</span>' : ''}</td>
-                    <td style="text-align:center;padding:12px 14px;"><span class="status-badge ${examType.toUpperCase().includes('CAT') ? 'pending' : 'active'}">${safe(examType)}</span></td>
-                    <td style="text-align:center;padding:12px 14px;">${mine ? '<span style="color:#059669;font-weight:600;">You</span>' : '<span style="color:#94a3b8;">Other lecturer</span>'}</td>
-                    <td style="text-align:center;padding:12px 14px;"><span class="status-badge ${statusClass}">${safe(examStatus)}</span></td>
-                    <td style="text-align:center;padding:12px 14px;white-space:nowrap;">${actions}</td>
-                </tr>
-            `;
+                ? '<button type="button" class="lx-exam-action lx-exam-edit" data-exam-id="'+safe(e.id)+'"><i class="fas fa-pen"></i><span>Edit</span></button>'
+                : '<span class="btn-view-only"><i class="fas fa-eye"></i> View only</span>';
+            const detail = '<button type="button" class="lx-exam-action lx-exam-details" data-exam-id="'+safe(e.id)+'"><i class="fas fa-arrow-up-right-from-square"></i><span>Details</span></button>';
+            return '<tr data-exam-id="'+safe(e.id)+'">' +
+                '<td><div class="lx-exam-title">'+safe(examName)+'</div><div class="lx-exam-sub">'+safe(type)+(e.is_main_exam?' · Main exam':'')+'</div></td>' +
+                '<td><div class="lx-exam-title">'+safe(unit)+'</div><div class="lx-exam-sub">'+safe(programme)+(block?' · '+safe(block):'')+'</div></td>' +
+                '<td class="lx-center"><div class="lx-exam-title">'+safe(date)+'</div><div class="lx-exam-sub">'+safe(time || 'Time TBA')+'</div></td>' +
+                '<td class="lx-center"><div class="lx-exam-title">'+safe(duration)+'</div><div class="lx-exam-sub">'+safe(marks)+' marks · Pass '+safe(e.pass_mark ?? '—')+'</div></td>' +
+                '<td class="lx-center"><span class="'+(mine?'lx-owner-me':'lx-owner-other')+'">'+creator+'</span></td>' +
+                '<td class="lx-center"><span class="status-badge '+badge+'">'+safe(rawStatus.replace(/_/g,' '))+'</span>'+(e.approval_status && e.approval_status!=='approved'?'<div class="lx-exam-sub">Approval: '+safe(e.approval_status)+'</div>':'')+'</td>' +
+                '<td class="lx-center lx-actions">'+detail+actions+'</td></tr>';
         }).join('');
+        tbody.querySelectorAll('.lx-exam-edit').forEach(button => button.addEventListener('click', () => openLecturerExamEdit(button.dataset.examId)));
+        tbody.querySelectorAll('.lx-exam-details').forEach(button => button.addEventListener('click', () => openLecturerExamDetails(button.dataset.examId)));
+    }
+
+    function openLecturerExamDetails(examId) {
+        const e = lecturerExams.find(item => String(item.id) === String(examId));
+        if (!e) return;
+        const safe = value => String(value ?? '—').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+        const modal = document.getElementById('lecturerExamDetailsModal');
+        if (!modal) return;
+        const rows = [
+            ['Assessment',e.exam_name || e.title],['Type',e.exam_type],['Programme',e.target_program || e.program_type],
+            ['Unit',e.course_name || e.course_code || (e.unit_catalog_id ? 'Unit '+e.unit_catalog_id : null)],
+            ['Block / Term',[e.block,e.block_term].filter(Boolean).join(' / ')],['Intake year',e.intake_year],
+            ['Exam date',e.exam_date],['Start time',e.exam_start_time],['Duration',e.duration_minutes ? e.duration_minutes+' minutes' : null],
+            ['Total marks',e.total_marks ?? e.marks_out_of],['Pass mark',e.pass_mark],['Approval',e.approval_status],['Status',e.status],
+            ['Instructions',e.instructions || e.description]
+        ];
+        modal.querySelector('[data-details-content]').innerHTML = rows.map(([label,value]) =>
+            '<div class="lx-detail-item"><span>'+safe(label)+'</span><strong>'+safe(value)+'</strong></div>').join('');
+        modal.classList.add('open'); modal.setAttribute('aria-hidden','false');
+    }
+    function closeLecturerExamDetails() {
+        const modal=document.getElementById('lecturerExamDetailsModal');
+        if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
     }
 
     function openLecturerExamEdit(examId) {
