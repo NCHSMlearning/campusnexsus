@@ -54,7 +54,7 @@ footer{margin-top:26px;color:#7596aa;font-size:11px;display:flex;justify-content
   if(!window.CNSEB?.activateWithKey){status.textContent='Secure activation is unavailable. Restart the application and try again.';return;}
   button.disabled=true;button.textContent='Verifying key…';status.textContent='Checking your exam assignment and this device…';
   try{const result=await window.CNSEB.activateWithKey(code);if(!result?.ok)throw new Error(result?.error||'Activation could not be completed.');status.style.color='#9ce6d7';status.textContent='Activation successful. Opening your examination…';}
-  catch(error){status.style.color='#ffce8a';status.textContent=error.message||'Activation failed. Please try again.';button.disabled=false;button.textContent='Continue to exam →';}
+  catch(error){status.style.color='#ffce8a';status.textContent=error.message||'Activation failed. Please try again.';button.disabled=false;button.textContent='Try another key';}
  }
  button.addEventListener('click',activate);input.addEventListener('keydown',e=>{if(e.key==='Enter')activate();});
  window.CNSEB?.getDeviceInfo?.().then(info=>{document.getElementById('version').textContent='Version '+(info?.appVersion||'')+' · '+(info?.platform||'').toUpperCase();}).catch(()=>{});
