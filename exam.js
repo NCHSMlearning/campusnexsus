@@ -3564,6 +3564,18 @@ async function executeSubmissionWithLoading() {
         // Release the server-side one-tab/device lock before redirecting.
         updateSubmissionProgress('🔓 Closing exam session...');
         await releaseExamSessionLock();
+        // Once the server has confirmed final submission, remove the OS-encrypted
+        // offline copy. If cleanup fails, the submitted attempt remains authoritative.
+        if (window.CNSEB && typeof window.CNSEB.clearEncryptedDraft === 'function') {
+            try {
+                await window.CNSEB.clearEncryptedDraft({
+                    examId: String(AppState.examId), studentId: String(AppState.studentId),
+                    attemptId: String(AppState.attemptId)
+                });
+            } catch (vaultCleanupError) {
+                console.warn('[CN-SEB] Could not clear submitted encrypted draft:', vaultCleanupError);
+            }
+        }
         if (AppState.heartbeatInterval) {
             clearInterval(AppState.heartbeatInterval);
             AppState.heartbeatInterval = null;
