@@ -95,27 +95,29 @@
    openButton.addEventListener('click',event=>{event.preventDefault();fallbackCopy.textContent='Preparing a one-time secure sign-in for this examination…';issueAndLaunch().catch(error=>{fallbackCopy.textContent=error.message||'Secure launch failed. Return to the student portal and try again.';});});
  }
  async function issueAndLaunch(){
-   const authClient=window.examSupabase||window.sb;
-   if(!authClient?.auth)throw new Error('Secure sign-in is unavailable. Refresh this page and try again.');
-   // The student examination portal authenticates with the dedicated
-   // campus-nexus-exam-auth storage key. Reuse that exact client here so
-   // the secure handoff sees the session created by the student portal.
-   const {data:{session},error}=await authClient.auth.getSession();
-   if(error||!session?.access_token)throw new Error('Your student browser session has expired. Sign in to the student portal again.');
    const examId=new URL(examUrl).searchParams.get('exam_id');
    if(!examId)throw new Error('The selected examination ID is missing. Return to your student portal and reopen the exam.');
-   const response=await fetch(window.APP_CONFIG.SUPABASE_URL+'/functions/v1/cnseb-auth-handoff',{method:'POST',headers:{'Content-Type':'application/json','apikey':window.APP_CONFIG.SUPABASE_PUBLISHABLE_KEY,'Authorization':'Bearer '+session.access_token},body:JSON.stringify({action:'issue',exam_id:examId})});
-   const payload=await response.json().catch(()=>({}));
-   if(!response.ok||!payload.code)throw new Error(payload.error||'Could not create the secure exam handoff.');
-   openButton.href=launchBase+'&code='+encodeURIComponent(payload.code);
-   document.getElementById('activation-key-value').textContent=payload.code;
+   // Prefer the one-time key issued from the student's live portal session.
+   let code=params.get('activation_key')||'';
+   if(!code){
+     const authClient=window.examSupabase;
+     if(!authClient?.auth)throw new Error('Examination sign-in is unavailable. Return to the student examination centre and try again.');
+     const {data:{session},error}=await authClient.auth.getSession();
+     if(error||!session?.access_token)throw new Error('No active student session was found. Return to the student examination centre and try again.');
+     const cfg=window.EXAM_SUPABASE_CONFIG||{};
+     const response=await fetch(cfg.url+'/functions/v1/cnseb-auth-handoff',{method:'POST',headers:{'Content-Type':'application/json','apikey':cfg.publishableKey,'Authorization':'Bearer '+session.access_token},body:JSON.stringify({action:'issue',exam_id:examId})});
+     const payload=await response.json().catch(()=>({}));
+     if(!response.ok||!payload.code)throw new Error(payload.error||'Could not create the secure exam activation key.');
+     code=payload.code;
+   }
+   if(!/^[A-HJ-NP-Z2-9]{12}$/.test(code))throw new Error('The activation key is invalid. Return to the examination centre and try again.');
+   openButton.href=launchBase+'&code='+encodeURIComponent(code);
+   document.getElementById('activation-key-value').textContent=code;
    document.getElementById('activation-key-panel').style.display='block';
-   document.getElementById('copy-activation-key').addEventListener('click',async()=>{
-     try{await navigator.clipboard.writeText(payload.code);document.getElementById('copy-activation-key').textContent='Copied';}
-     catch(_){fallbackCopy.textContent='Copy the activation key shown above manually. It expires after 60 seconds.';}
-   });
-   fallbackCopy.textContent='Your secure sign-in is ready. Windows will ask to open Campus Nexus Secure Exam Browser. If you open the app manually, use the activation key shown here within 60 seconds.';
-   window.location.href=openButton.href;
+   const copyButton=document.getElementById('copy-activation-key');
+   copyButton.onclick=async()=>{try{await navigator.clipboard.writeText(code);copyButton.textContent='Copied';}catch(_){fallbackCopy.textContent='Select and copy the activation key shown above. It expires after 60 seconds.';}};
+   fallbackCopy.textContent='Your one-time activation key is ready. The app will open automatically; if needed, copy the key and enter it in Campus Nexus Secure Exam Browser within 60 seconds.';
+   setTimeout(()=>{window.location.href=openButton.href;},1400);
  }
  downloadButton.addEventListener('click',()=>{
    fallbackCopy.textContent='The latest Windows installer is downloading. Once installation finishes, return to this page and select Open in Secure Exam Browser.';
