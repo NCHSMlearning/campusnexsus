@@ -107,8 +107,8 @@
       host.innerHTML = '<div class="cnseb-empty"><i class="fas fa-desktop"></i><strong>No active or recent sessions</strong><span>Validated exam sessions will appear here while candidates are sitting examinations.</span></div>';
       return;
     }
-    host.innerHTML = '<div style="overflow:auto"><table style="width:100%;min-width:650px;border-collapse:collapse"><thead><tr><th>Student</th><th>Exam</th><th>Started</th><th>Last heartbeat</th><th>Status</th></tr></thead><tbody>' +
-      rows.map(s=>'<tr><td>'+esc(s.student_id)+'</td><td>'+esc(s.exam_title||s.exam_id)+'</td><td>'+esc(s.claimed_at||'—')+'</td><td>'+esc(s.last_heartbeat||'—')+'</td><td><b>'+(s.is_active?'Active':'Stale')+'</b></td></tr>').join('') +
+    host.innerHTML = '<div style="overflow:auto"><table style="width:100%;min-width:650px;border-collapse:collapse"><thead><tr><th>Student</th><th>Exam</th><th>Started</th><th>Last heartbeat</th><th>Status</th><th>Action</th></tr></thead><tbody>' +
+      rows.map(s=>'<tr><td>'+esc(s.student_id)+'</td><td>'+esc(s.exam_title||s.exam_id)+'</td><td>'+esc(s.claimed_at||'—')+'</td><td>'+esc(s.last_heartbeat||'—')+'</td><td><b>'+(s.is_active?'Active':'Stale')+'</b></td><td><button class="cnseb-action cnseb-danger" data-release-session="1" data-student-id="'+esc(s.student_id)+'" data-exam-id="'+esc(s.exam_id)+'">Release</button></td></tr>').join('') +
       '</tbody></table></div>';
   }
 
@@ -154,6 +154,22 @@
   }
 
   document.addEventListener('click', async event => {
+    const release = event.target.closest('[data-release-session][data-student-id][data-exam-id]');
+    if (release && client && !release.disabled) {
+      if (!window.confirm('Release this examination session? The student will need to relaunch from the approved computer.')) return;
+      release.disabled = true;
+      const { error } = await client.rpc('cnseb_admin_release_exam_session', {
+        p_student_id: release.dataset.studentId,
+        p_exam_id: Number(release.dataset.examId)
+      });
+      if (error) {
+        window.alert('Session release failed: ' + error.message);
+        release.disabled = false;
+      } else {
+        await loadSessions();
+      }
+      return;
+    }
     const button = event.target.closest('[data-device-action][data-device-id]');
     if (!button || !client || button.disabled) return;
     const nextStatus = button.dataset.deviceAction;
