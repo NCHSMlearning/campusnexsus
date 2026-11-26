@@ -2618,13 +2618,24 @@ function setAnswerSyncStatus(message, state = 'pending') {
 
 async function persistAnswerDraft(questionId, answer) {
     if (!AppState.attemptId || !AppState.sessionToken) throw new Error('The active exam session is not ready.');
-    const { data, error } = await sb.rpc('save_exam_attempt_answer_draft', {
+    const draftArgs = {
         p_attempt_id: AppState.attemptId,
         p_exam_id: parseInt(AppState.examId, 10),
         p_question_id: questionId,
         p_answer: answer == null ? '' : String(answer),
         p_session_token: AppState.sessionToken
-    });
+    };
+    if (window.CNSEB) {
+        const device = await window.CNSEB.getDeviceInfo();
+        if (!device?.deviceRegistrationId || device.deviceApprovalStatus !== 'approved') {
+            throw new Error('This computer is not currently approved for this examination.');
+        }
+        draftArgs.p_device_registration_id = device.deviceRegistrationId;
+    }
+    const { data, error } = await sb.rpc(
+        window.CNSEB ? 'cnseb_save_exam_attempt_answer_draft' : 'save_exam_attempt_answer_draft',
+        draftArgs
+    );
     if (error) throw error;
     if (!data || data.saved !== true) throw new Error('The server did not confirm the answer draft.');
     return true;
@@ -3765,7 +3776,7 @@ async function calculateAndSaveGrade() {
         answers[String(questionId)] = answer == null ? '' : String(answer);
     });
 
-    const { data, error } = await sb.rpc('submit_exam_attempt_secure', {
+    const submitArgs = {
         p_student_id: AppState.studentId,
         p_exam_id: parseInt(AppState.examId, 10),
         p_attempt_id: AppState.attemptId,
@@ -3773,7 +3784,19 @@ async function calculateAndSaveGrade() {
         p_attempt_number: Number(AppState.attemptNumber) || 1,
         p_is_retake: AppState.isRetake === true,
         p_retake_count: Number(AppState.retakeCount) || 0
-    });
+    };
+    let submitRpc = 'submit_exam_attempt_secure';
+    if (window.CNSEB) {
+        const device = await window.CNSEB.getDeviceInfo();
+        if (!device?.deviceRegistrationId || device.deviceApprovalStatus !== 'approved' ||
+            !AppState.sessionClaimed || AppState.sessionLost || !AppState.sessionToken) {
+            throw new Error('Secure device or examination session verification failed. Your answers remain saved; reconnect or contact the examination administrator.');
+        }
+        submitRpc = 'cnseb_submit_exam_attempt_secure';
+        submitArgs.p_session_token = AppState.sessionToken;
+        submitArgs.p_device_registration_id = device.deviceRegistrationId;
+    }
+    const { data, error } = await sb.rpc(submitRpc, submitArgs);
     if (error) {
         console.error('Server-side exam grading failed:', error);
         throw error;
