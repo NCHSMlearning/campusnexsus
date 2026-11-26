@@ -173,7 +173,7 @@ form.addEventListener('submit',async e=>{
    sessionStorage.setItem('campusNexusExamAdminAuth',JSON.stringify(adminVerification));
    localStorage.setItem('campusNexusExamAdminAuth',JSON.stringify(adminVerification));
    show('Administrator verified. Opening the examination dashboard…','info');
-   location.replace('/adminexams/');
+   location.replace('/adminexams');
    return;
   }
   throw new Error('This account is not authorised for the examination portal. Use your institution administrator or student login.');
