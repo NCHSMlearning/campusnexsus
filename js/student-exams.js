@@ -553,5 +553,38 @@ $('search-input').addEventListener('input',render);$('status-filter').addEventLi
 $('logout-btn').addEventListener('click',async()=>{const btn=$('logout-btn');if(btn)btn.disabled=true;try{if(state.client){const {error}=await state.client.auth.signOut({scope:'local'});if(error)console.warn('Exam portal sign-out warning:',error.message)}}finally{try{localStorage.removeItem('currentUserId');localStorage.removeItem('studentEmail')}catch(_){}location.replace('/examlogin')}});
 let studentExamBootPromise=null;
 function bootStudentExamDashboard(){if(studentExamBootPromise)return studentExamBootPromise;const panel=$('exam-panel');if(panel)panel.innerHTML='<div class="loading-state"><span class="spinner"></span><p>Connecting to your institution…</p></div>';studentExamBootPromise=withTimeout(()=>init(),60000,'The student examination dashboard could not finish loading. Check your connection and tap Try again.').catch(e=>{console.error('[Student Examinations] Dashboard boot failed:',e);if(panel)panel.innerHTML='<div class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><p>'+esc(e.message||'Unable to load your examinations.')+'</p><button class="secondary-btn" id="student-exam-retry" type="button">Try again</button></div>';const retry=$('student-exam-retry');if(retry)retry.addEventListener('click',()=>{studentExamBootPromise=null;bootStudentExamDashboard();});});return studentExamBootPromise;}
+// Issue the activation key from the authenticated student portal before leaving this origin.
+document.addEventListener('click',async event=>{
+ const anchor=event.target?.closest?.('a[href*="/secure-exam-browser.html?exam_url="]');
+ if(!anchor)return;
+ event.preventDefault();
+ if(anchor.dataset.cnsebLaunching==='1')return;
+ anchor.dataset.cnsebLaunching='1';
+ const original=anchor.innerHTML;
+ anchor.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Preparing secure exam…';
+ try{
+  const client=state.client||window.examSupabase;
+  if(!client?.auth)throw new Error('The examination sign-in service is not ready. Refresh the examination centre.');
+  const {data,error}=await client.auth.getSession();
+  if(error)throw error;
+  const session=data?.session;
+  if(!session?.access_token)throw new Error('Your student session is not active. Please sign in again.');
+  const destination=new URL(anchor.href,location.origin);
+  const examDestination=destination.searchParams.get('exam_url');
+  const examId=examDestination?new URL(examDestination).searchParams.get('exam_id'):null;
+  if(!examId)throw new Error('The examination ID is missing. Refresh your examination list.');
+  const cfg=window.EXAM_SUPABASE_CONFIG;
+  if(!cfg?.url||!cfg?.publishableKey)throw new Error('Examination service configuration is unavailable. Refresh this page.');
+  const response=await fetch(cfg.url+'/functions/v1/cnseb-auth-handoff',{method:'POST',headers:{'Content-Type':'application/json','apikey':cfg.publishableKey,'Authorization':'Bearer '+session.access_token},body:JSON.stringify({action:'issue',exam_id:examId})});
+  const payload=await response.json().catch(()=>({}));
+  if(!response.ok||!payload.code)throw new Error(payload.error||'The secure activation key could not be created.');
+  destination.searchParams.set('activation_key',payload.code);
+  location.assign(destination.toString());
+ }catch(error){
+  console.error('[CN-SEB] Activation key issue failed:',error);
+  notify(error.message||'Could not prepare the secure examination. Please try again.');
+  anchor.innerHTML=original;anchor.dataset.cnsebLaunching='0';
+ }
+},{capture:true});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bootStudentExamDashboard,{once:true});else bootStudentExamDashboard();
 })();
