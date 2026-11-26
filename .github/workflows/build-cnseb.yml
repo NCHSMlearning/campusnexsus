@@ -6,12 +6,10 @@ on:
     paths:
       - "secure-exam-browser/**"
       - "exam.js"
-      - "secure-exam-browser.html"
       - "platform/examinations/source/adminexams.html"
       - "platform/examinations/source/js/cnseb-admin-workspace.js"
       - "supabase/functions/cnseb-auth-handoff/**"
       - "platform/database/migrations/*cnseb*"
-      - ".github/workflows/build-cnseb.yml"
     branches: [main]
 
 permissions:
