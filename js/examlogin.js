@@ -15,8 +15,8 @@ const nextPath=(role)=>{
  }
  if(role==='student')return '/studentexam.html';
  if(['lecturer','instructor','teacher'].includes(role))return '/platform/lecturerexams.html';
- // One institution-admin examination workspace is served at /exams.
- return '/exams';
+ // Institution and platform administrators use the existing Admin Exams dashboard.
+ return '/adminexams';
 };
 function clientReady(){const c=window.examSupabase;if(c&&typeof c.auth?.signInWithPassword==='function')return c;throw new Error(window.__EXAM_CONFIG_ERROR__||'The examination sign-in service is unavailable. Refresh and try again.')}
 function initials(name){return String(name||'School').trim().split(/\s+/).slice(0,2).map(x=>x[0]||'').join('').toUpperCase()||'SC'}
