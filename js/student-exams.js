@@ -111,7 +111,7 @@ function onlineHref(exam){
   // target=_blank links back into the same protected window.
   if(window.CNSEB && typeof window.CNSEB.getDeviceInfo==='function') return url.href;
   // Ordinary browsers still use the installation/protocol hand-off page.
-  return '/secure-exam-browser/?exam_url='+encodeURIComponent(url.href);
+  return '/secure-exam-browser.html?exam_url='+encodeURIComponent(url.href);
  }catch(_){return ''}
 }
 function dateLabel(exam){const d=startsAt(exam);return d?d.toLocaleString('en-KE',{timeZone:'Africa/Nairobi',dateStyle:'medium',timeStyle:'short'})+' Kenya time (UTC+3)':'Schedule to be confirmed'}
