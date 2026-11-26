@@ -1,6 +1,6 @@
 'use strict';
 
-const { app, BrowserWindow, session, ipcMain, screen, dialog, Menu } = require('electron');
+const { app, BrowserWindow, session, ipcMain, screen, dialog, Menu, safeStorage } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const path = require('node:path');
 const fs = require('node:fs');
@@ -27,6 +27,73 @@ let exitInProgress = false;
 let examMode = false;
 let deviceInstallId = null;
 let deviceRegistration = null;
+let encryptedDraftWriteQueue = Promise.resolve();
+
+function encryptedDraftPath(examId, studentId, attemptId) {
+  const identity = [String(examId), String(studentId), String(attemptId)].join(':');
+  const name = crypto.createHash('sha256').update(identity).digest('hex');
+  return path.join(app.getPath('userData'), 'encrypted-attempt-drafts', `${name}.bin`);
+}
+
+function isTrustedExamSender(event) {
+  return isValidExamUrl(event.senderFrame?.url || '');
+}
+
+async function writeEncryptedDraft(event, payload) {
+  if (!isTrustedExamSender(event) || !safeStorage.isEncryptionAvailable()) return { ok: false, reason: 'secure-storage-unavailable' };
+  const examId = String(payload?.examId || '');
+  const studentId = String(payload?.studentId || '');
+  const attemptId = String(payload?.attemptId || '');
+  const key = String(payload?.key || '');
+  if (!/^\\d+$/.test(examId) || !/^[0-9a-f-]{36}$/i.test(studentId) ||
+      !/^[0-9a-f-]{36}$/i.test(attemptId) || !/^(draft_[0-9a-f-]{36}|progress|flagged)$/i.test(key)) {
+    return { ok: false, reason: 'invalid-draft-scope' };
+  }
+  const serialized = JSON.stringify(payload.data);
+  if (Buffer.byteLength(serialized, 'utf8') > 100000) return { ok: false, reason: 'draft-too-large' };
+  const file = encryptedDraftPath(examId, studentId, attemptId);
+  encryptedDraftWriteQueue = encryptedDraftWriteQueue.then(async () => {
+    let vault = { version: 1, examId, studentId, attemptId, records: {} };
+    try {
+      const encrypted = fs.readFileSync(file);
+      vault = JSON.parse(safeStorage.decryptString(encrypted));
+      if (vault.examId !== examId || vault.studentId !== studentId || vault.attemptId !== attemptId || vault.version !== 1) {
+        vault = { version: 1, examId, studentId, attemptId, records: {} };
+      }
+    } catch (_) {}
+    vault.records[key] = payload.data;
+    const encrypted = safeStorage.encryptString(JSON.stringify(vault));
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    const temporary = `${file}.${process.pid}.tmp`;
+    fs.writeFileSync(temporary, encrypted, { mode: 0o600 });
+    fs.renameSync(temporary, file);
+  });
+  try { await encryptedDraftWriteQueue; return { ok: true }; }
+  catch (error) { console.error('[CN-SEB] Encrypted draft write failed:', error.message); return { ok: false, reason: 'write-failed' }; }
+}
+
+function readEncryptedDraft(event, payload) {
+  if (!isTrustedExamSender(event) || !safeStorage.isEncryptionAvailable()) return { ok: false, reason: 'secure-storage-unavailable' };
+  const examId = String(payload?.examId || ''), studentId = String(payload?.studentId || ''), attemptId = String(payload?.attemptId || '');
+  if (!/^\\d+$/.test(examId) || !/^[0-9a-f-]{36}$/i.test(studentId) || !/^[0-9a-f-]{36}$/i.test(attemptId)) return { ok: false, reason: 'invalid-draft-scope' };
+  try {
+    const vault = JSON.parse(safeStorage.decryptString(fs.readFileSync(encryptedDraftPath(examId, studentId, attemptId))));
+    if (vault.version !== 1 || vault.examId !== examId || vault.studentId !== studentId || vault.attemptId !== attemptId) return { ok: false, reason: 'scope-mismatch' };
+    return { ok: true, records: vault.records || {} };
+  } catch (error) {
+    if (error.code !== 'ENOENT') console.warn('[CN-SEB] Encrypted draft recovery unavailable:', error.message);
+    return { ok: true, records: {} };
+  }
+}
+
+async function clearEncryptedDraft(event, payload) {
+  if (!isTrustedExamSender(event)) return { ok: false, reason: 'untrusted-sender' };
+  const examId = String(payload?.examId || ''), studentId = String(payload?.studentId || ''), attemptId = String(payload?.attemptId || '');
+  if (!/^\\d+$/.test(examId) || !/^[0-9a-f-]{36}$/i.test(studentId) || !/^[0-9a-f-]{36}$/i.test(attemptId)) return { ok: false, reason: 'invalid-draft-scope' };
+  await encryptedDraftWriteQueue;
+  try { fs.rmSync(encryptedDraftPath(examId, studentId, attemptId), { force: true }); return { ok: true }; }
+  catch (error) { return { ok: false, reason: 'clear-failed' }; }
+}
 
 function loadDeviceIdentity() {
   const directory = app.getPath('userData');
@@ -319,6 +386,9 @@ app.whenReady().then(() => {
   ));
   ipcMain.handle('cnseb:brand-logo-url', () => 'https://campusnexus.co.ke/images/campus-nexus-original-logo.webp');
   ipcMain.handle('cnseb:update-state', () => updateState);
+  ipcMain.handle('cnseb:encrypted-draft-save', (event, payload) => writeEncryptedDraft(event, payload));
+  ipcMain.handle('cnseb:encrypted-draft-load', (event, payload) => readEncryptedDraft(event, payload));
+  ipcMain.handle('cnseb:encrypted-draft-clear', (event, payload) => clearEncryptedDraft(event, payload));
   ipcMain.handle('cnseb:show-welcome-message', (_event, message) => {
     if (mainWindow && !mainWindow.isDestroyed() && !examMode) mainWindow.webContents.send('cnseb:welcome-message', String(message || '').slice(0, 300));
     return { ok: true };
