@@ -133,7 +133,7 @@
     setText("#iaTenantName", name);
     setText("#iaSchoolCode", code ? "School code " + code : "Institution workspace");
     if (/lecturerexams/.test(path)) {
-      setText(".command-brand-copy p", pageKind + " • " + name);
+      setText(".command-brand-copy p", "Assessments • Results • Student monitoring");
     }
     setText("#institution-name", name);
     setText("#institution-portal-label", "STUDENT PORTAL");
@@ -162,18 +162,8 @@
     const logoTargets = new Set(document.querySelectorAll(
       ".nchsm-header-logo img,[data-institution-logo] img,#institutionLogo img,.sidebar-header .brand-crest img"
     ));
-    document.querySelectorAll(".command-brand .command-cap,.command-brand .command-brand-icon").forEach(host => {
-      let image = host.querySelector("img[data-cn-institution-logo]");
-      if (!image) {
-        host.replaceChildren();
-        image = document.createElement("img");
-        image.dataset.cnInstitutionLogo = "true";
-        image.alt = name + " logo";
-        image.style.cssText = "display:block;width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain;border-radius:inherit";
-        host.appendChild(image);
-      }
-      logoTargets.add(image);
-    });
+    /* Keep the institution crest in the sidebar only. The top command bar
+       uses its own workspace icon to avoid repeating the same school logo. */
     logoTargets.forEach(image => {
       image.src = logo;
       image.alt = name + " logo";
