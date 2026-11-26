@@ -1860,28 +1860,21 @@ window.startExam = async function() {
     }
 
     // ========================================================
-    // SERVER-SIDE SINGLE-SESSION LOCK
-    // Claim this exam before any exam DB write.
-    // This applies to BOTH normal attempts and admin-authorized
-    // continuation/retake attempts.
+    // PREPARE THE AUTHENTICATED ATTEMPT BEFORE CLAIMING THE
+    // DEVICE-BOUND SESSION.
+    //
+    // cnseb_claim_exam_session requires a real IN_PROGRESS
+    // attempt_id. The previous order called the lock RPC while
+    // AppState.attemptId was still null, which produced:
+    // "A valid authenticated secure exam session is required".
+    // prepare_exam_attempt is itself authenticated and checks
+    // student identity, exam publication and retake authorization.
     // ========================================================
-    const sessionOk = await claimExamSessionLock();
-    if (!sessionOk) {
-        return;
-    }
-
     const cameraVideo = document.getElementById('cameraVideo');
     const detections = await fastDetectFace(cameraVideo);
     if (!detections || detections.length !== 1) {
         showToast('❌ Face verification failed. Please try again.', 'error');
         return;
-    }
-
-    try {
-        await markExamAttendance('in_progress');
-        AppState.attendanceRecorded = true;
-    } catch (e) {
-        console.warn('Could not mark attendance:', e);
     }
 
     try {
@@ -1894,11 +1887,22 @@ window.startExam = async function() {
         } else {
             showToast(msg, 'error', 6000);
         }
-
-        // The claim was made before attempt preparation. Do not leave
-        // a healthy session lock behind when the attempt cannot start.
-        await releaseExamSessionLock();
         return;
+    }
+
+    // Claim the live session only after the server has prepared the exact
+    // authenticated attempt. Both normal and authorised continuation flows
+    // use the same device-bound single-session lock.
+    const sessionOk = await claimExamSessionLock();
+    if (!sessionOk) {
+        return;
+    }
+
+    try {
+        await markExamAttendance('in_progress');
+        AppState.attendanceRecorded = true;
+    } catch (e) {
+        console.warn('Could not mark attendance:', e);
     }
 
     if (AppState.isRetake) {
