@@ -265,6 +265,18 @@
       ".tab.active,.nav-tabs .active,.filter-chip.active,.segmented-control .active{color:"+primary+";border-color:"+secondary+";background:color-mix(in srgb,"+secondary+" 10%,white)}"+
       ".empty-state .icon,.empty-state i{color:"+secondary+"}"+
       "@media(prefers-reduced-motion:no-preference){.btn,.button,.card,.module-card{transition:border-color .18s ease,box-shadow .18s ease,background-color .18s ease}}";
+
+    /* High-specificity tenant branding for Lecturer top bar and My Exams banner.
+       These rules intentionally override legacy inline-style/CSS theme remnants. */
+    style.textContent +=
+      "body .main-content>.top-header.command-topbar{background:linear-gradient(110deg,"+primary+" 0%,"+secondary+" 100%)!important;border:1px solid color-mix(in srgb,"+accent+" 35%,transparent)!important;color:#fff!important;box-shadow:0 8px 24px color-mix(in srgb,"+primary+" 18%,transparent)!important}"+
+      "body .main-content>.top-header.command-topbar .command-cap{background:"+accent+"!important;color:"+primary+"!important;border:1px solid color-mix(in srgb,"+accent+" 70%,white)!important}"+
+      "body .main-content>.top-header.command-topbar .command-brand-copy h1,body .main-content>.top-header.command-topbar .command-brand-copy p{color:#fff!important}"+
+      "body #myExams>.lecturer-exams-section-banner,body #myExams>div:first-child{background:linear-gradient(110deg,"+primary+" 0%,"+secondary+" 100%)!important;border:1px solid color-mix(in srgb,"+accent+" 35%,transparent)!important;box-shadow:0 10px 26px color-mix(in srgb,"+primary+" 16%,transparent)!important}"+
+      "body #myExams>.lecturer-exams-section-banner h2,body #myExams>div:first-child h2,body #myExams>.lecturer-exams-section-banner p,body #myExams>div:first-child p{color:#fff!important}"+
+      "body #myExams>.lecturer-exams-section-banner h2 i,body #myExams>div:first-child h2 i{color:"+accent+"!important}"+
+      "body #myExams .exam-filter-field input:focus,body #myExams .exam-filter-field select:focus{border-color:"+secondary+"!important;box-shadow:0 0 0 3px color-mix(in srgb,"+secondary+" 16%,transparent)!important}";
+
     if (!style.parentNode) (document.head || document.documentElement).appendChild(style);
 
     document.querySelectorAll(".nchsm-pwa-install,[data-pwa-install],#installBtn,#installButton")
