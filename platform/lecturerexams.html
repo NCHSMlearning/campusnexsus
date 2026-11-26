@@ -17,7 +17,7 @@
     <!-- These shared stylesheets live at the repository root, not under /platform/.
          Absolute paths prevent the browser from requesting /platform/css/... (404). -->
     <link rel="stylesheet" href="/platform/examinations/source/css/admindashboard.css?v=20261123-admin-layout-v3" />
-    <link rel="stylesheet" href="/css/lecturer-exams-modern.css?v=20261126-superadmin-brand-sync-v3" />
+    <link rel="stylesheet" href="/css/lecturer-exams-modern.css?v=20261126-ultra-modern-v4" />
     <link rel="stylesheet" href="/platform/examinations/source/css/admin-exams-modern.css?v=20261123-admin-command-centre-v1" />
     <style id="lecturer-admin-dashboard-parity">
       .sidebar-header .brand-text h2{font-family:Manrope,Inter,sans-serif!important;font-size:18px!important;line-height:1.1!important;color:#fff!important}
@@ -2892,5 +2892,59 @@ document.addEventListener('DOMContentLoaded',function(){
  }
 });
 </script>
+
+<script id="cn-lecturer-dashboard-interactions">
+(function(){
+  const destinations={
+    statTotalExams:{tab:"myExams",label:"View all assessments"},
+    statTotalStudents:{tab:"results",label:"View student results"},
+    statPassed:{tab:"results",label:"View passed student results"},
+    statLiveStudents:{tab:"liveStudents",label:"View live candidates"},
+    statPublishedExams:{tab:"myExams",label:"View published assessments"},
+    statDraftExams:{tab:"myExams",label:"View draft assessments"},
+    statGradedRecords:{tab:"results",label:"View graded records"},
+    statPassRate:{tab:"results",label:"View results and pass rate"}
+  };
+  function setup(){
+    Object.entries(destinations).forEach(([id,config])=>{
+      const card=document.getElementById(id)?.closest(".stat-card");
+      if(!card)return;
+      card.dataset.cnNavigateTab=config.tab;
+      card.setAttribute("role","link");
+      card.setAttribute("tabindex","0");
+      card.setAttribute("aria-label",config.label);
+      card.setAttribute("title",config.label);
+      card.classList.add("cn-stat-card-link");
+    });
+  }
+  function navigate(card){
+    const tab=card?.dataset?.cnNavigateTab;
+    if(!tab)return;
+    if(typeof window.switchTab==="function")window.switchTab(tab);
+    else document.querySelector('.sidebar-menu a[data-tab="'+tab+'"]')?.click();
+    if(tab==="myExams"){
+      const target=card.id==="statPublishedExams"?"published":
+        card.id==="statDraftExams"?"draft":"all";
+      const status=document.getElementById("examStatusFilter");
+      if(status&&target!=="all"){
+        status.value=target;
+        status.dispatchEvent(new Event("change",{bubbles:true}));
+      }
+    }
+  }
+  document.addEventListener("click",event=>{
+    const card=event.target.closest("#dashboardStats .stat-card[data-cn-navigate-tab]");
+    if(card)navigate(card);
+  });
+  document.addEventListener("keydown",event=>{
+    if((event.key==="Enter"||event.key===" ")&&event.target.matches("#dashboardStats .stat-card[data-cn-navigate-tab]")){
+      event.preventDefault();navigate(event.target);
+    }
+  });
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",setup,{once:true});
+  else setup();
+})();
+</script>
+
 </body>
 </html>
