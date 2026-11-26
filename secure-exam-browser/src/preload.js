@@ -130,13 +130,13 @@ sessionStatus.title = 'App-level kiosk presentation only. Institution-managed Wi
       });
       document.body.appendChild(examExit);
       examExit.addEventListener('click', () => openConfirm('submit-exit'));
-      document.addEventListener('cnseb:exam-submission-complete', async () => {
+      window.addEventListener('cnseb:exam-submission-complete', async () => {
         examExit.textContent = 'Submission saved · Closing…';
         examExit.disabled = true;
         try { await ipcRenderer.invoke('cnseb:exam-submission-complete'); }
         catch (error) { console.error('[CN-SEB] Could not finish after submission:', error); }
       });
-      document.addEventListener('cnseb:exam-submission-failed', () => {
+      window.addEventListener('cnseb:exam-submission-failed', () => {
         busy = false;
         examExit.disabled = false;
         examExit.textContent = 'Exit examination';
