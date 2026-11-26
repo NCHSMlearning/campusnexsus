@@ -16,6 +16,9 @@ contextBridge.exposeInMainWorld('CNSEB', Object.freeze({
     return () => ipcRenderer.removeListener('cnseb:welcome-message', listener);
   },
   getUpdateState: () => ipcRenderer.invoke('cnseb:update-state'),
+  saveEncryptedDraft: payload => ipcRenderer.invoke('cnseb:encrypted-draft-save', payload),
+  loadEncryptedDraft: payload => ipcRenderer.invoke('cnseb:encrypted-draft-load', payload),
+  clearEncryptedDraft: payload => ipcRenderer.invoke('cnseb:encrypted-draft-clear', payload),
   checkForUpdates: () => ipcRenderer.invoke('cnseb:check-for-updates'),
   requestExit: () => ipcRenderer.invoke('cnseb:request-exit'),
   requestLogout: () => ipcRenderer.invoke('cnseb:request-logout'),
