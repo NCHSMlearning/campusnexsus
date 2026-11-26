@@ -239,6 +239,19 @@
     document.getElementById('cnsebAlertsRefresh')?.addEventListener('click', loadAlerts);
     document.getElementById('cnsebAuditRefresh')?.addEventListener('click', loadAudit);
     initialise();
+
+    // Refresh operational signals while an administrator is viewing the
+    // monitoring workspace. Avoid background polling when the tab is hidden.
+    // RPCs remain institution-scoped and server-authorised.
+    window.setInterval(() => {
+      if (document.visibilityState !== 'visible' || !client) return;
+      loadOverview();
+      loadSessions();
+      const activeTab = document.querySelector('[data-tab].active, .tab-button.active');
+      const tabName = activeTab?.dataset?.tab || '';
+      if (tabName === 'cnsebAlerts') loadAlerts();
+      if (tabName === 'cnsebAudit') loadAudit();
+    }, 15000);
   });
 
   window.CampusNexusSecureBrowserWorkspace = Object.freeze({
