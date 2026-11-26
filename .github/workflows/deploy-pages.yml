@@ -16,7 +16,7 @@ permissions:
 
 concurrency:
   group: campusnexus-pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   deploy:
@@ -171,6 +171,19 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           path: .
+      # GitHub Pages occasionally returns a transient artifact-metadata 404
+      # immediately after upload. Keep the artifact in this run and retry the
+      # deployment rather than failing a good build.
       - name: Deploy to GitHub Pages
         id: deployment
+        continue-on-error: true
+        uses: actions/deploy-pages@v4
+      - name: Retry GitHub Pages deployment (1)
+        id: deployment_retry_1
+        if: steps.deployment.outcome == 'failure'
+        continue-on-error: true
+        uses: actions/deploy-pages@v4
+      - name: Retry GitHub Pages deployment (2)
+        id: deployment_retry_2
+        if: steps.deployment_retry_1.outcome == 'failure'
         uses: actions/deploy-pages@v4
