@@ -13,9 +13,12 @@ function withTimeout(promise,label,ms=15000){
   return Promise.race([Promise.resolve(promise),new Promise((_,reject)=>{timer=window.setTimeout(()=>reject(new Error(label+" timed out. Check your connection and reload the page.")),ms)})]).finally(()=>window.clearTimeout(timer));
 }
 async function boot(){
-  if(!window.supabase?.createClient) throw new Error("Authentication service is unavailable. Refresh and try again.");
+  $("bootMessage").textContent="Connecting to the examination sign-in service…";
+  // Reuse the exact Supabase client created by exam-supabase.js and used by examlogin.js.
+  // A second client with different credentials can never read the login session.
+  sb=window.examSupabase;
+  if(!sb?.auth?.getSession) throw new Error(window.__EXAM_CONFIG_ERROR__||"The shared examination sign-in service did not initialise. Refresh the page.");
   $("bootMessage").textContent="Checking your secure sign-in…";
-  sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,storageKey:"campus-nexus-exam-auth"}});
   const sessionResult=await withTimeout(sb.auth.getSession(),"Secure sign-in check");
   const session=sessionResult?.data?.session,sessionError=sessionResult?.error;
   if(sessionError) throw sessionError;
