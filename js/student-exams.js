@@ -329,7 +329,8 @@ async function loadExams(){
   const examIds=state.exams.map(e=>e.id);state.examResults={};
   if(examIds.length){
    const [attemptsResult,summaryResult,releasedResult]=await withTimeout(Promise.all([
-    state.client.from('exam_attempts').select('id,exam_id,attempt_number,status,started_at,submitted_at,updated_at').eq('student_id',state.user.id).in('exam_id',examIds).order('attempt_number',{ascending:false}),
+    state.client.from('exam_attempts').select('id,exam_id,attempt_number,status,started_at,submitted_at,updated_at')
+  .eq('institution_id', state.profile?.institution_id).eq('student_id',state.user.id).in('exam_id',examIds).order('attempt_number',{ascending:false}),
     state.client.from('exam_grades').select('id,exam_id,attempt_id,marks,total_score,score,total_marks,percentage,result_status,released,published,allow_retake,retake_unlocked,released_at,published_at,updated_at,question_id').eq('student_id',state.user.id).in('exam_id',examIds).eq('question_id','00000000-0000-0000-0000-000000000000').order('updated_at',{ascending:false}),
     state.client.from('released_exam_results').select('result_id,exam_id,released_at').eq('student_id',String(state.user.id)).in('exam_id',examIds)
    ]),15000,'Your examination status is taking too long to load. Tap Refresh to try again.');
@@ -391,7 +392,8 @@ async function loadAnnouncements(){
 }
 async function loadHistory(){
  const panel=$('history-panel');panel.innerHTML='<div class="loading-state"><span class="spinner"></span><p>Loading your examination history…</p></div>';
- const {data,error}=await state.client.from('exam_attempts').select('id,exam_id,attempt_number,status,started_at,submitted_at').eq('student_id',state.user.id).order('started_at',{ascending:false}).limit(30);
+ const {data,error}=await state.client.from('exam_attempts').select('id,exam_id,attempt_number,status,started_at,submitted_at')
+  .eq('institution_id', state.profile?.institution_id).eq('student_id',state.user.id).order('started_at',{ascending:false}).limit(30);
  if(error)throw error;state.history=data||[];renderDashboard();
  panel.innerHTML=state.history.length?'<div class="portal-list">'+state.history.map(a=>{const e=state.exams.find(x=>String(x.id)===String(a.exam_id));return '<article class="portal-list-item"><div class="portal-list-icon"><i class="fa-solid fa-file-circle-check"></i></div><div class="portal-list-copy"><b>'+esc(val(e?.title,e?.exam_name,'Examination'))+'</b><small>Attempt '+esc(a.attempt_number)+' · '+esc(a.submitted_at?'Submitted':'In progress')+'</small></div><div class="portal-list-date">'+esc(a.submitted_at?new Date(a.submitted_at).toLocaleString('en-KE',{dateStyle:'medium',timeStyle:'short'}):a.started_at?new Date(a.started_at).toLocaleString('en-KE',{dateStyle:'medium',timeStyle:'short'}):'')+'</div></article>'}).join('')+'</div>':'<div class="empty-state"><i class="fa-regular fa-folder-open"></i><p>You have no examination attempts yet.</p></div>';
 }
