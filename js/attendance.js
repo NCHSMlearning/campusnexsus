@@ -742,6 +742,7 @@
                 .from('student_unit_registrations')
                 .select('*')
                 .eq('student_id', studentId)
+            .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)
                 .eq('status', 'approved');
             if (error) throw error;
             approvedUnits = (data || []).map(u => ({
@@ -771,6 +772,7 @@
             const { data, error } = await supabase
                 .from('clinical_names')
                 .select('id, clinical_area_name, latitude, longitude, radius_meters, block_term, intake_year')
+            .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)
                 .eq('program', 'KRCHN')
                 .eq('intake_year', String(intakeYear).trim())
                 .eq('block_term', blockTerm.trim());
@@ -828,6 +830,7 @@
             let query = supabase
                 .from('scheduled_sessions')
                 .select('*')
+            .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)
                 .eq('status', 'active')
                 .eq('is_active', true)
                 .gte('session_date', new Date().toISOString().split('T')[0])
