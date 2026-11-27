@@ -1750,11 +1750,13 @@ function updateTranscriptSummary(attempted, earned, courses, cgpa) {
     // ============================================================
     // 19. DOWNLOAD FULL TRANSCRIPT
     // ============================================================
-    function downloadTranscriptPDF() {
-        const user = window.currentUserProfile || {};
+    async function downloadTranscriptPDF() {
+        const user = window.currentUserProfile || window.db?.currentUserProfile || {};
+        await ensureAcademicStructure(user);
         const userProgram = user.program || user.program_code || user.program_type || '';
         const isTVET = PROGRAM.isTVET(userProgram);
         const programType = PROGRAM.getProgramType(userProgram);
+        const institutionLogoHTML = institutionLogo ? `<img src="${escapeHtml(institutionLogo)}" alt="${escapeHtml(institutionName)} logo" crossorigin="anonymous">` : '';
         const institution = user.institution || window.CURRENT_INSTITUTION || {};
         const institutionName = institution.name || user.institution_name || document.documentElement.dataset.institutionName || 'Your Institution';
         const periodLabel = window.currentAcademicStructure?.singular || PROGRAM.getBlockLabel(userProgram);
@@ -1784,7 +1786,7 @@ function updateTranscriptSummary(attempted, earned, courses, cgpa) {
             const storedStatus = String(m.status || m.published_status || m.result_status || '').toUpperCase();
             const status = ['DISTINCTION','CREDIT','PASS','FAIL','PENDING','EXCELLENT','GOOD','SATISFACTORY'].includes(storedStatus)
                 ? storedStatus : (score !== null ? getGradingStatus(score, userProgram) : 'PENDING');
-            return `<tr><td>${i+1}</td><td>${escapeHtml(m.block || m.block_term || 'General')}</td><td>${escapeHtml(m.unit_code || getUnitCode(m.subject_name) || 'N/A')}</td><td>${escapeHtml(m.subject_name || 'N/A')}</td><td>${Number(m.credits || 3)}</td><td>${score === null ? 'Pending' : score.toFixed(1)}</td><td>${escapeHtml(grade)}</td><td>${points === null ? '—' : points.toFixed(1)}</td><td>${escapeHtml(status)}</td></tr>`;
+            return `<tr><td>${i+1}</td><td>${escapeHtml(getAcademicPeriod(m))}</td><td>${escapeHtml(m.unit_code || getUnitCode(m.subject_name) || 'N/A')}</td><td>${escapeHtml(m.subject_name || 'N/A')}</td><td>${Number(m.credits || 3)}</td><td>${score === null ? 'Pending' : score.toFixed(1)}</td><td>${escapeHtml(grade)}</td><td>${points === null ? '—' : points.toFixed(1)}</td><td>${escapeHtml(status)}</td></tr>`;
         }).join('');
         const gpa = calculateGPA(marksData);
         const w = window.open('', '_blank', 'width=1100,height=800');
@@ -1807,15 +1809,23 @@ function updateTranscriptSummary(attempted, earned, courses, cgpa) {
         console.log('📊 Downloading Provisional Academic Transcript (PORTRAIT)...');
 
         const user = window.currentUserProfile || window.db?.currentUserProfile || {};
-        const userProgram = user.program || '';
+        const userProgram = user.program || user.program_code || user.program_type || '';
+        await ensureAcademicStructure(user);
+        const institution = user.institution || window.CURRENT_INSTITUTION || {};
+        const institutionName = institution.name || user.institution_name || document.documentElement.dataset.institutionName || 'Your Institution';
+        const institutionLogo = institution.logo_url || institution.logo || user.institution_logo || user.logo_url || '';
+        const institutionMotto = institution.motto || user.institution_motto || '';
+        const institutionPhone = institution.phone || user.institution_phone || '';
+        const institutionEmail = institution.email || user.institution_email || '';
+        const academicPeriodLabel = window.currentAcademicStructure?.singular || PROGRAM.getBlockLabel(userProgram);
         const normalizedProgramCode = String(userProgram).trim().toUpperCase();
         const transcriptProgramName = normalizedProgramCode === 'KRCHN'
             ? 'Kenya Registered Community Health Nursing (KRCHN)'
             : userProgram;
         // Signature roles follow the student's program: KRCHN uses Nursing; all other programs use TVET.
-        const transcriptSchool = normalizedProgramCode === 'KRCHN' ? 'School of Nursing' : 'School of TVET';
+        const transcriptSchool = user.school_name || user.department || (normalizedProgramCode === 'KRCHN' ? 'School of Nursing' : 'Academic Department');
         const transcriptIntakeYear = user.intake_year || user.admission_year || '';
-        const transcriptCurrentBlock = user.current_block || user.block || '';
+        const transcriptCurrentBlock = academicPeriodLabel === 'Semester' ? (user.current_semester || user.semester || user.current_block || user.block || '') : academicPeriodLabel === 'Term' ? (user.current_term || user.term || user.current_block || user.block || '') : (user.current_block || user.block || user.current_semester || user.semester || '');
         // Ensure retake records are loaded even when the transcript is opened directly
         // without first visiting My Performance. Stored historical marks remain unchanged.
         const transcriptAdmission = user.admission_number || user.student_id || user.user_id;
@@ -2273,10 +2283,10 @@ function updateTranscriptSummary(attempted, earned, courses, cgpa) {
         <div class="transcript-top">
             <div class="header">
                 <div class="header-top">
-                    <img src="https://nchsm.co.ke/images/Logo_NCHSM.png" alt="NCHSM Logo" crossorigin="anonymous">
+                    ${institutionLogoHTML}
                     <div>
-                        <div class="school">NAKURU COLLEGE OF HEALTH SCIENCES AND MANAGEMENT</div>
-                        <div class="motto">"Excellence in Health Sciences Education"</div>
+                        <div class="school">${escapeHtml(institutionName).toUpperCase()}</div>
+                        ${institutionMotto ? `<div class="motto">${escapeHtml(institutionMotto)}</div>` : ""}
                     </div>
                 </div>
                 <div class="subtitle">PROVISIONAL ACADEMIC TRANSCRIPT</div>
@@ -2299,7 +2309,7 @@ function updateTranscriptSummary(attempted, earned, courses, cgpa) {
                 <div class="field"><span class="label">Program</span><span class="value">${escapeHtml(transcriptProgramName || 'N/A')}</span></div>
                 <div class="field"><span class="label">Academic Year</span><span class="value">${escapeHtml(academicYear)}</span></div>
                 <div class="field"><span class="label">Intake Year</span><span class="value">${escapeHtml(transcriptIntakeYear || 'N/A')}</span></div>
-                <div class="field"><span class="label">${isTVET ? 'Current Term' : 'Current Block'}</span><span class="value">${escapeHtml(transcriptCurrentBlock || 'N/A')}</span></div>
+                <div class="field"><span class="label">Current ${escapeHtml(academicPeriodLabel)}</span><span class="value">${escapeHtml(transcriptCurrentBlock || 'N/A')}</span></div>
             </div>
         </div>
 
@@ -2349,8 +2359,8 @@ function updateTranscriptSummary(attempted, earned, courses, cgpa) {
         </div>
 
         <div class="footer">
-            <p>Accredited &amp; Registered Institution | Committed to Academic Excellence | © 2026 Nakuru College of Health Sciences &amp; Management</p>
-            <p><strong>NCHSM</strong> · Tel: 0790 969 743 / 0722 351 791 · Email: <a href="mailto:info@nakurucollegeofhealth.ac.ke">info@nakurucollegeofhealth.ac.ke</a></p>
+            <p>Accredited &amp; Registered Institution | © ${new Date().getFullYear()} ${escapeHtml(institutionName)}</p>
+            <p><strong>${escapeHtml(institutionName)}</strong>${institutionPhone ? " · Tel: " + escapeHtml(institutionPhone) : ""}${institutionEmail ? " · Email: <a href=\"mailto:" + escapeHtml(institutionEmail) + "\">" + escapeHtml(institutionEmail) + "</a>" : ""}</p>
         </div>
 
         <div class="no-print">
