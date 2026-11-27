@@ -101,12 +101,10 @@
         // Student dashboards scroll inside #main-content, not window. Check every
         // scrollable ancestor so a gesture inside a scrolled panel cannot reload
         // the whole app just because window.scrollY remains zero.
-        var primaryScroller = document.getElementById('main-content') || root;
         for (var node = target && (target.nodeType === 1 ? target : target.parentElement); node && node !== document.body && node !== document.documentElement; node = node.parentElement) {
           var css = window.getComputedStyle(node);
           var scrollable = /(auto|scroll|overlay)/.test(css.overflowY) && node.scrollHeight > node.clientHeight + 1;
-          if (!scrollable) continue;
-          if (node !== primaryScroller || node.scrollTop > 1) return false;
+          if (scrollable && node.scrollTop > 1) return false;
         }
         return true;
       }
