@@ -67,29 +67,35 @@
             if (window.location.hash !== nextHash) window.history.replaceState(null, '', nextHash);
         } catch (_) {}
         
+        // Hash changes and delegated sidebar handlers can report the same
+        // destination more than once. Debounce duplicate activation so one tap
+        // cannot trigger multiple Supabase requests or redraws on mobile.
+        const now = Date.now();
+        window.__cnStudentTabLoadTimes = window.__cnStudentTabLoadTimes || Object.create(null);
+        const forceLoad = tabId === 'hub-timetable';
+        const lastLoad = window.__cnStudentTabLoadTimes[tabId] || 0;
+        if (!forceLoad && now - lastLoad < 1400) return;
+        window.__cnStudentTabLoadTimes[tabId] = now;
+
         setTimeout(() => {
-            if (tabId === 'hub-courses' && window.coursesModule?.loadCourses) window.coursesModule.loadCourses();
-            else if (tabId === 'hub-register' && window.unitRegistrationModule?.loadUnits) window.unitRegistrationModule.loadUnits();
-            else if (tabId === 'hub-exam-card' && window.examCardModule?.loadExamCard) window.examCardModule.loadExamCard();
-            else if (tabId === 'hub-lecture-card' && window.lectureCardModule?.loadLectureCard) window.lectureCardModule.loadLectureCard();
-            else if (tabId === 'academic-reports' && window.academicReportsModule?.loadReports) window.academicReportsModule.loadReports();
-            else if (tabId === 'profile' && window.profileModule?.loadProfile) window.profileModule.loadProfile();
-            else if (tabId === 'dashboard' && window.dashboardModule?.refreshAll) window.dashboardModule.refreshAll();
-            else if (tabId === 'cats' && window.examsModule?.loadExams) window.examsModule.loadExams();
-            else if (tabId === 'resources' && window.resourcesModule?.loadAllResources) window.resourcesModule.loadAllResources();
-            else if (tabId === 'nurseiq' && window.nurseiqModule?.loadQuestionBankCards) window.nurseiqModule.loadQuestionBankCards();
-            else if (tabId === 'finance' && typeof loadStudentFinance === 'function') {
-                setTimeout(loadStudentFinance, 300);
-            }
-            // ===== NEW: ENROLLMENT TAB =====
-            else if (tabId === 'enrollment' && typeof initEnrollment === 'function') {
-                setTimeout(initEnrollment, 300);
-            }
-            else if (tabId === 'hub-timetable' && typeof window.initStudentTimetable === 'function') {
-                setTimeout(() => window.initStudentTimetable({ force: true }), 150);
-            }
-            else if (tabId === 'student-blog' && window.studentBlogModule?.loadPosts) {
-                setTimeout(() => window.studentBlogModule.loadPosts(), 50);
+            try {
+                if (tabId === 'hub-courses' && window.coursesModule?.loadCourses) window.coursesModule.loadCourses();
+                else if (tabId === 'hub-register' && window.unitRegistrationModule?.loadUnits) window.unitRegistrationModule.loadUnits();
+                else if (tabId === 'hub-exam-card' && window.examCardModule?.loadExamCard) window.examCardModule.loadExamCard();
+                else if (tabId === 'hub-lecture-card' && window.lectureCardModule?.loadLectureCard) window.lectureCardModule.loadLectureCard();
+                else if (tabId === 'academic-reports' && window.academicReportsModule?.loadReports) window.academicReportsModule.loadReports();
+                else if (tabId === 'profile' && window.profileModule?.loadProfile) window.profileModule.loadProfile();
+                else if (tabId === 'dashboard' && window.dashboardModule?.refreshAll) window.dashboardModule.refreshAll();
+                else if (tabId === 'cats' && window.examsModule?.loadExams) window.examsModule.loadExams();
+                else if (tabId === 'resources' && window.resourcesModule?.loadAllResources) window.resourcesModule.loadAllResources();
+                else if (tabId === 'nurseiq' && window.nurseiqModule?.loadQuestionBankCards) window.nurseiqModule.loadQuestionBankCards();
+                else if (tabId === 'finance' && typeof loadStudentFinance === 'function') setTimeout(loadStudentFinance, 300);
+                else if (tabId === 'enrollment' && typeof initEnrollment === 'function') setTimeout(initEnrollment, 300);
+                else if (tabId === 'hub-timetable' && typeof window.initStudentTimetable === 'function') setTimeout(() => window.initStudentTimetable({ force: true }), 150);
+                else if (tabId === 'student-blog' && window.studentBlogModule?.loadPosts) setTimeout(() => window.studentBlogModule.loadPosts(), 50);
+            } catch (error) {
+                console.warn('[Student Navigation] Module load failed for ' + tabId, error);
+                delete window.__cnStudentTabLoadTimes[tabId];
             }
         }, 100);
     }
