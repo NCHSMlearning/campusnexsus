@@ -45,10 +45,28 @@
     var link = event.target && event.target.closest
       ? event.target.closest('.sidebar-nav-premium a[data-tab], .dropdown-submenu a[data-tab]')
       : null;
-    if (!link || !navigate(link.getAttribute('data-tab'))) return;
+    if (!link) return;
+    var destination = link.getAttribute('data-tab');
+    var anchor = (link.getAttribute('href') || '').replace(/^#/, '');
+    var scrollTarget = anchor && anchor !== destination ? document.getElementById(anchor) : null;
+    if (!destination || !navigate(destination)) {
+      if (!scrollTarget) return;
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      window.setTimeout(function () {
+        scrollTarget.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 80);
+      return;
+    }
     event.preventDefault();
     event.stopPropagation();
     event.stopImmediatePropagation();
+    if (scrollTarget) {
+      window.setTimeout(function () {
+        scrollTarget.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 80);
+    }
   }, true);
   window.addEventListener('hashchange', function () {
     var tabId = '';
