@@ -17,6 +17,8 @@
     if (!destination || !document.getElementById(destination)) return;
     var anchor = (link.getAttribute('href') || '').replace(/^#/, '');
     var scrollTarget = anchor && anchor !== destination ? document.getElementById(anchor) : null;
+    // If the primary controller is unavailable, leave the native link alone.
+    if (typeof window.showTab !== 'function') return;
     event.preventDefault();
     event.stopPropagation();
     event.stopImmediatePropagation();
