@@ -2165,7 +2165,7 @@ function updateTranscriptSummary(attempted, earned, courses, cgpa) {
             inset: 0;
             z-index: 0;
             pointer-events: none;
-            background-image: url("https://nchsm.co.ke/images/Logo_NCHSM.png");
+            background-image: ${institutionLogo ? 'url(\"' + escapeHtml(institutionLogo) + '\")' : 'none'};
             background-repeat: no-repeat;
             background-position: center 53%;
             background-size: 30% auto;
@@ -2670,16 +2670,16 @@ function updateTranscriptSummary(attempted, earned, courses, cgpa) {
                     }));
 
                     // Force the college logo to the canonical, same-site asset and wait for it before capture.
-                    const institutionalLogo = printWindow.document.querySelector('.header-top img');
-                    if (institutionalLogo) {
-                        institutionalLogo.src = 'https://nchsm.co.ke/images/Logo_NCHSM.png';
-                        institutionalLogo.crossOrigin = 'anonymous';
-                        institutionalLogo.style.display = 'block';
-                        institutionalLogo.style.visibility = 'visible';
-                        if (!institutionalLogo.complete || institutionalLogo.naturalWidth === 0) {
+                    const institutionalLogoElement = printWindow.document.querySelector('.header-top img');
+                    if (institutionalLogoElement && institutionLogo) {
+                        institutionalLogoElement.src = institutionLogo;
+                        institutionalLogoElement.crossOrigin = 'anonymous';
+                        institutionalLogoElement.style.display = 'block';
+                        institutionalLogoElement.style.visibility = 'visible';
+                        if (!institutionalLogoElement.complete || institutionalLogoElement.naturalWidth === 0) {
                             await new Promise(resolve => {
-                                institutionalLogo.addEventListener('load', resolve, { once: true });
-                                institutionalLogo.addEventListener('error', resolve, { once: true });
+                                institutionalLogoElement.addEventListener('load', resolve, { once: true });
+                                institutionalLogoElement.addEventListener('error', resolve, { once: true });
                                 setTimeout(resolve, 5000);
                             });
                         }
