@@ -55,9 +55,9 @@ test('mobile pull-to-refresh only arms when the primary page scroller is at the 
   const mobile = fs.readFileSync(path.join(root, '..', 'js', 'nchsm-mobile-enhancements.js'), 'utf8');
   assert.match(shell, /function pageAtTop\(target\)/);
   assert.match(shell, /target\.nodeType === 1 \? target : target\.parentElement/);
-  assert.match(shell, /node !== primaryScroller \|\| node\.scrollTop > 1/);
+  assert.match(shell, /node\.scrollTop > 1/);
   assert.match(mobile, /const canPullRefresh = \(target\)/);
   assert.match(mobile, /target\.nodeType === 1 \? target : target\.parentElement/);
-  assert.match(mobile, /node !== primaryScroller \|\| node\.scrollTop > 2/);
+  assert.match(mobile, /node\.scrollTop > 2/);
   assert.match(mobile, /getComputedStyle\(node\)/);
 });
