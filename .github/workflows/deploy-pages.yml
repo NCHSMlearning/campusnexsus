@@ -280,13 +280,13 @@ jobs:
               }
               for asset, version in asset_versions.items():
                   html = re.sub(
-                      r'(<script\\b[^>]*src=["\\']' + re.escape(asset) + r')(?:\\?v=[^"\\']*)?(["\\'])',
+                      r'(<script\b[^>]*src=["\']' + re.escape(asset) + r')(?:\?v=[^"\']*)?(["\'])',
                       lambda match, version=version: match.group(1) + "?v=" + version + match.group(2),
                       html,
                       flags=re.I,
                   )
               if "campus-nexus-app-shell.js" in html:
-                  html = re.sub(r'<script src="/campus-nexus-app-shell\.js\\?v=[^"]+" defer></script>', tag, html)
+                  html = re.sub(r'<script src="/campus-nexus-app-shell\.js\?v=[^"]+" defer></script>', tag, html)
                   page.write_text(html, encoding="utf-8")
                   continue
               if re.search(r"</head>", html, re.I):
