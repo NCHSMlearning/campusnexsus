@@ -172,6 +172,7 @@ jobs:
           set -euo pipefail
           python3 - <<'PY'
           import json
+          import os
           import pathlib
           import shutil
           import urllib.request
@@ -187,7 +188,10 @@ jobs:
           if not apk:
               raise SystemExit("Latest published Campus Nexus release has no APK asset; refusing to publish a broken download link.")
 
-          target = pathlib.Path("downloads/Campus-Nexus-App.apk")
+          # Use the absolute repository workspace so the APK is guaranteed to
+          # land at the GitHub Pages artifact root, regardless of shell cwd.
+          workspace = pathlib.Path(os.environ["GITHUB_WORKSPACE"]).resolve()
+          target = workspace / "downloads" / "Campus-Nexus-App.apk"
           target.parent.mkdir(parents=True, exist_ok=True)
           download_request = urllib.request.Request(apk["browser_download_url"], headers={"User-Agent": "CampusNexus-Website-Deployment"})
           with urllib.request.urlopen(download_request, timeout=180) as response, target.open("wb") as output:
@@ -195,9 +199,12 @@ jobs:
 
           if not target.exists() or target.stat().st_size < 1_000_000:
               raise SystemExit("APK mirror download is missing or unexpectedly small.")
-          print(f"Staged {apk['name']} ({target.stat().st_size} bytes) from release {release['tag_name']} at /downloads/Campus-Nexus-App.apk")
+          print(f"Staged {apk['name']} ({target.stat().st_size} bytes) from release {release['tag_name']} at {target}")
+          print(f"Workspace root: {workspace}")
           PY
-          test -s downloads/Campus-Nexus-App.apk
+          test -s "$GITHUB_WORKSPACE/downloads/Campus-Nexus-App.apk"
+          test "$(stat -c%s "$GITHUB_WORKSPACE/downloads/Campus-Nexus-App.apk")" -gt 1000000
+          echo "Verified APK exists at the absolute website root: $GITHUB_WORKSPACE/downloads/Campus-Nexus-App.apk"
       - name: Upload complete static website
         uses: actions/upload-pages-artifact@v3
         with:
