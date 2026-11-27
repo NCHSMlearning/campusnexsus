@@ -274,8 +274,8 @@ jobs:
           gradle = gradle.replace(marker, marker + '\n        versionCode 12\n        versionName "1.3.0"', 1)
           path.write_text(gradle)
           PY
-          grep -q 'versionCode 11' android/app/build.gradle
-          grep -q 'versionName "1.2.9"' android/app/build.gradle
+          grep -q 'versionCode 12' android/app/build.gradle
+          grep -q 'versionName "1.3.0"' android/app/build.gradle
 
       - name: Sync Capacitor Android project
         run: npx cap sync android
@@ -377,14 +377,14 @@ jobs:
           cd ..
           cp android/app/build/outputs/apk/release/app-release.apk android/app/build/outputs/apk/release/Campus-Nexus-App-1.3.0.apk
           test -s android/app/build/outputs/apk/release/Campus-Nexus-App-1.3.0.apk
-          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose android/app/build/outputs/apk/release/Campus-Nexus-App-1.2.9.apk
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose android/app/build/outputs/apk/release/Campus-Nexus-App-1.3.0.apk
           rm -f android/app/campus-nexus-release.keystore
 
       - name: Upload signed Android release APK
         uses: actions/upload-artifact@v4
         with:
-          name: Campus-Nexus-App-1.2.9-Android-Release
-          path: campus-nexus-app/android/app/build/outputs/apk/release/Campus-Nexus-App-1.2.9.apk
+          name: Campus-Nexus-App-1.3.0-Android-Release
+          path: campus-nexus-app/android/app/build/outputs/apk/release/Campus-Nexus-App-1.3.0.apk
           if-no-files-found: error
           retention-days: 30
 
@@ -395,5 +395,5 @@ jobs:
           name: Campus Nexus App 1.3.0 (Android Release)
           prerelease: false
           make_latest: true
-          files: campus-nexus-app/android/app/build/outputs/apk/release/Campus-Nexus-App-1.2.9.apk
+          files: campus-nexus-app/android/app/build/outputs/apk/release/Campus-Nexus-App-1.3.0.apk
           body: "versionCode: 12\nAndroid in-app updates with SHA-256 verification."
