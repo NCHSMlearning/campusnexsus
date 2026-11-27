@@ -32,6 +32,7 @@
         constructor() {
             // State
             this.approvedUnits = [];
+            this.pendingUnits = [];
             this.userProfile = null;
             this.loaded = false;
             this.userBlock = null;
@@ -405,12 +406,13 @@
                     .select('*')
                     .eq('student_id', actualUserId)
                     .eq('institution_id', this.userProfile?.institution_id)
-                    .eq('status', 'approved')
+                    .in('status', ['approved', 'pending'])
                     .order('created_at', { ascending: false });
-                
                 if (error) throw error;
                 
-                this.approvedUnits = data || [];
+                const registrations = data || [];
+                this.approvedUnits = registrations.filter(u => String(u.status || '').toLowerCase() === 'approved');
+                this.pendingUnits = registrations.filter(u => String(u.status || '').toLowerCase() === 'pending');
                 console.log(`✅ Found ${this.approvedUnits.length} approved units`);
                 
                 const normalCount = this.approvedUnits.filter(u => u.reg_type === 'Normal' || !u.reg_type).length;
@@ -614,7 +616,9 @@
                         supp: hasSupplementary 
                     });
                     
-                    if (this.approvedUnits.length === 0) {
+                    if (this.approvedUnits.length === 0 && this.pendingUnits.length > 0) {
+                        this.showPendingApprovalMessage();
+                    } else if (this.approvedUnits.length === 0) {
                         this.showNoUnitsMessage();
                     } else if (!hasNormal && hasRetake && !hasSupplementary) {
                         this.displayRetakeExamCard();
@@ -1335,6 +1339,29 @@
             }
         }
         
+        showPendingApprovalMessage() {
+            if (!this.examCardContent) return;
+            const count = this.pendingUnits.length;
+            const unitList = this.pendingUnits.slice(0, 8).map(unit =>
+                '<li><strong>' + this.cleanText(unit.unit_code || '') + '</strong> — ' +
+                this.cleanText(unit.unit_name || unit.unit_code || 'Registered unit') + '</li>'
+            ).join('');
+            this.examCardContent.innerHTML = `
+                <section class="exam-card-pending-approval" style="max-width:900px;margin:20px auto;padding:28px;border:1px solid #f3d08a;border-left:5px solid #d97706;border-radius:14px;background:#fffbeb;color:#78350f;">
+                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+                        <span style="font-size:28px;" aria-hidden="true">⏳</span>
+                        <div><h3 style="margin:0 0 4px;color:#92400e;">Unit registration submitted</h3>
+                        <p style="margin:0;color:#92400e;">Your examination card will be available after approval.</p></div>
+                    </div>
+                    <p style="margin:10px 0;">You have <strong>${count}</strong> unit(s) awaiting approval. The examination card is generated only from approved registrations.</p>
+                    <ul style="margin:12px 0;padding-left:22px;line-height:1.8;">${unitList}</ul>
+                    ${count > 8 ? '<p>And ' + (count - 8) + ' more unit(s).</p>' : ''}
+                    <button type="button" onclick="window.examCardModule?.loadExamCard()" style="margin-top:12px;padding:10px 18px;border:0;border-radius:8px;background:#92400e;color:white;font-weight:600;cursor:pointer;">
+                        <i class="fas fa-sync-alt"></i> Check approval status
+                    </button>
+                </section>`;
+        }
+
         showNoUnitsMessage() {
             if (this.examCardContent) {
                 const hasCompleted = Array.isArray(this.completedUnits) && this.completedUnits.length > 0;
