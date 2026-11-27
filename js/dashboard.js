@@ -2427,6 +2427,7 @@ class DashboardModule {
             const { data: futureClasses, error } = await this.sb
                 .from('timetables')
                 .select('*')
+                .eq('institution_id', this.userProfile?.institution_id)
                 .eq('block', studentBlock)
                 .gte('class_date', todayDate)
                 .order('class_date', { ascending: true })
