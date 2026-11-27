@@ -6769,12 +6769,11 @@ body.dark-mode #ol-research-correction-modal .ol-research-editor-page{background
 <div style="background: white; border-radius: 12px; padding: 20px; border: 1px solid #e5e7eb; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; align-items: end;">
 <div>
-<label style="font-weight: 600; font-size: 13px; color: #475569; display: block; margin-bottom: 4px;">
-<i class="fas fa-calendar"></i> Select Semester:
+<label id="semester-filter-label" style="font-weight: 600; font-size: 13px; color: #475569; display: block; margin-bottom: 4px;">
+<i class="fas fa-calendar"></i> Select Academic Period:
                     </label>
 <select id="semester-filter" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0; background: #f8fafc; font-size: 14px;">
-<option value="2024-2025">2024/2025 - Semester 2</option>
-<option value="2024-2025-1">2024/2025 - Semester 1</option>
+<option value="">All Academic Periods</option>
 </select>
 </div>
 <div>
@@ -6796,7 +6795,7 @@ body.dark-mode #ol-research-correction-modal .ol-research-editor-page{background
 <!-- GPA Summary Cards -->
 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 25px;">
 <div style="background: white; border-radius: 12px; padding: 20px; border-left: 4px solid #0A3D62; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
-<div style="font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px;">Semester GPA</div>
+<div id="period-gpa-label" style="font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px;">Academic Period GPA</div>
 <div id="semester-gpa" style="font-size: 28px; font-weight: 700; color: #0A3D62; margin-top: 4px;">0.00</div>
 <div id="semester-grade" style="font-size: 13px; color: #059669; font-weight: 600;">-</div>
 </div>
