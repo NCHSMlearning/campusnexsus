@@ -365,7 +365,8 @@ class ProfileModule {
     // 📥 LOAD PROFILE
     // ============================================================
     
-    async loadProfile() {
+    async loadProfile()
+        if (window.waitForStudentPortalContext) await window.waitForStudentPortalContext(); {
         this.showStatus('Loading profile...', 'info');
 
         try {
