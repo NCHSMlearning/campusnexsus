@@ -135,7 +135,8 @@
     async function fetchUnitCodes() {
         try {
             const { data, error } = await withAcademicTimeout(
-                window.db.supabase.from('units_catalog').select('unit_name, unit_code'),
+                window.db.supabase.from('units_catalog').select('unit_name, unit_code')
+            .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id),
                 10000,
                 'Unit catalogue request'
             );
@@ -236,6 +237,7 @@
                 window.db.supabase.from('student_retakes')
                     .select('*')
                     .eq('admission_number', admissionNumber)
+            .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)
                     .order('attempt_number', { ascending: true }),
                 10000,
                 'Retake records request'
@@ -636,6 +638,7 @@
                         supabase.from('student_marks')
                             .select('*')
                             .eq('admission_number', admissionNumber)
+            .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)
                             .eq('published', true)
                             .eq('approval_status', 'approved')
                             .order('published_at', { ascending: false }),
@@ -651,6 +654,7 @@
                         supabase.from('student_marks')
                             .select('*')
                             .eq('student_id', authUserId)
+            .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)
                             .eq('published', true)
                             .eq('approval_status', 'approved')
                             .order('published_at', { ascending: false }),
