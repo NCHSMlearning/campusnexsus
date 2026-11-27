@@ -5,7 +5,7 @@
 // NO DEMO DATA - ONLY REAL DATA FROM DATABASE
 // RETAKE SUMMARY REMOVED FROM PROVISIONAL ACADEMIC TRANSCRIPT DOWNLOAD
 // ACADEMIC YEAR MAPPING: KRCHN (3 years), TVET Cert (1 year), TVET Diploma (2 years)
-// "Proceed to next block" message on transcript
+// "Proceed to next academic period" message on transcript
 // ============================================================
 (function() {
     'use strict';
@@ -1423,12 +1423,15 @@
     // ============================================================
     // 16. YEARLY REPORT
     // ============================================================
-    function loadYearlyReport() {
+    async function loadYearlyReport() {
         const user = window.currentUserProfile || window.db?.currentUserProfile || {};
-        const program = user.program || '';
+        const program = user.program || user.program_code || user.program_type || '';
+        await ensureAcademicStructure(user);
+        if (!myMarksData?.length) await loadMyMarks();
         const selectedYear = document.getElementById('year-filter')?.value || '';
-        let grades = (currentGrades.length ? currentGrades : myMarksData)
-            .map(m => normalizeAcademicMark(m, program));
+        const sourceMarks = (myMarksData && myMarksData.length) ? myMarksData : currentGrades;
+        let grades = (sourceMarks || []).map(m => normalizeAcademicMark(m, program));
+        populateAcademicYearFilter(grades);
 
         if (selectedYear && grades.length) {
             const matched = grades.filter(g => String(g.academic_year || g.year || '').includes(String(selectedYear)));
@@ -1486,18 +1489,21 @@
     }
 
     // 17. FULL TRANSCRIPT WITH "PROCEED TO NEXT BLOCK" MESSAGE
-// Message appears AFTER block summary (at bottom of each block)
+// Message appears AFTER academic period summary (at bottom of each period)
 // ============================================================
-function loadTranscript() {
+async function loadTranscript() {
     const tbody = document.getElementById('transcript-table-body');
     if (!tbody) return;
-    
-    const user = window.currentUserProfile || {};
-    const userProgram = user.program || '';
+
+    const user = window.currentUserProfile || window.db?.currentUserProfile || {};
+    const userProgram = user.program || user.program_code || user.program_type || '';
+    await ensureAcademicStructure(user);
+    if (!myMarksData?.length && !currentGrades?.length) await loadMyMarks();
     const intakeYear = parseInt(user.intake_year) || new Date().getFullYear();
     
     document.getElementById('student-name-display').textContent = user.full_name || 'Student';
-    document.getElementById('program-display').textContent = userProgram || 'KRCHN';
+    const programDisplay = document.getElementById('program-display');
+    if (programDisplay) programDisplay.textContent = userProgram || 'Not assigned';
     document.getElementById('student-id-display').textContent = user.student_id || 'N/A';
     
     let marksData = [];
@@ -1530,7 +1536,9 @@ function loadTranscript() {
         }
         groupedByBlock[block].push(m);
     });
-    const blockNames = Object.keys(groupedByBlock).sort();
+    const periodNames = Object.keys(groupedByBlock).sort((a, b) => getPeriodSequence(a) - getPeriodSequence(b) || a.localeCompare(b));
+    const periodLabel = window.currentAcademicStructure?.singular || PROGRAM.getBlockLabel(userProgram);
+    const periodPlural = window.currentAcademicStructure?.plural || periodLabel + 's';
     
     let totalCreditsAttempted = 0;
     let totalCreditsEarned = 0;
@@ -1546,7 +1554,7 @@ function loadTranscript() {
     // ✅ Build transcript HTML
     let html = '';
     
-    blockNames.forEach((block) => {
+    periodNames.forEach((block) => {
         const blockMarks = groupedByBlock[block] || [];
         const blockTotal = blockMarks.length;
         const blockPassed = blockMarks.filter(m => {
@@ -1585,7 +1593,7 @@ function loadTranscript() {
             progressionMessage = `Passed — Proceed to ${nextBlockName} · ${blockAcademicYear.label}`;
             messageColor = '#059669';
         } else if (allPassed && !hasNextBlock && blockMarks.length > 0) {
-            progressionMessage = `All blocks completed — Ready for Graduation · ${blockAcademicYear.label}`;
+            progressionMessage = `All ${periodPlural.toLowerCase()} completed — Ready for Graduation · ${blockAcademicYear.label}`;
             messageColor = '#4C1D95';
         } else if (!allPassed && blockMarks.length > 0) {
             const failedCount = blockMarks.filter(m => {
@@ -1614,7 +1622,7 @@ function loadTranscript() {
         html += `
             <tr style="background: #1E559B; color: white; font-weight: 700;">
                 <td colspan="6" style="padding: 8px 12px; text-align: center; font-size: 12px;">
-                    <i class="fas fa-folder-open"></i> ${escapeHtml(block)} 
+                    <i class="fas fa-folder-open"></i> ${escapeHtml(periodLabel)}: ${escapeHtml(block)} 
                     <span style="font-size: 10px; opacity: 0.8; margin-left: 10px;">
                         (${blockTotal} courses · GPA: ${blockGPA.toFixed(2)} · Pass: ${blockPassRate}% · ${blockAcademicYear.display})
                     </span>
@@ -1668,7 +1676,7 @@ function loadTranscript() {
         html += `
             <tr style="background: #f1f5f9; border-top: 2px solid #1E559B;">
                 <td colspan="3" style="padding: 4px 10px; font-size: 10px; color: #64748b;">
-                    <strong>Block Summary:</strong> ${blockPassed}/${blockTotal} passed (${blockPassRate}%) · GPA: ${blockGPA.toFixed(2)}
+                    <strong>${escapeHtml(periodLabel)} Summary:</strong> ${blockPassed}/${blockTotal} passed (${blockPassRate}%) · GPA: ${blockGPA.toFixed(2)}
                 </td>
                 <td colspan="3" style="padding: 4px 10px; font-size: 10px; color: #64748b; text-align: right;">
                     ${blockAcademicYear.display}
