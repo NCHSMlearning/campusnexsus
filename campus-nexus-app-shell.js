@@ -470,7 +470,7 @@
     }
     var home = findLink([/dashboard/i,/^home$/i]) || (isStudent ? null : null);
     var learning = findLink([/my units/i,/courses/i,/learning/i,/lms/i]);
-    var exams = findLink([/exam|cat/i]);
+    var exams = findLink([/exam|cat|assess/i]);
     var profile = findLink([/^profile$/i,/my account/i,/account settings/i]);
 
     function routeButton(title, icon, link, fallback, activeTest) {
