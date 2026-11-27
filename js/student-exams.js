@@ -504,8 +504,12 @@ async function init(){
     root.style.setProperty(key,values[index]);
    });
   root.dataset.institutionPortal='true';
+  root.dataset.institutionId=String(institution.id || p.institution_id || '');
   root.dataset.institutionName=institutionName;
   root.dataset.institutionCode=val(institution.school_code,institution.short_code,'');
+  window.CURRENT_INSTITUTION_ID=String(institution.id || p.institution_id || '');
+  window.currentInstitutionId=window.CURRENT_INSTITUTION_ID;
+  window.CURRENT_INSTITUTION=institution;
   document.title=institutionName+' | Student Examinations';
  
  } catch(brandingError) {
