@@ -66,7 +66,7 @@ async function workspaceLoad(k){
    if(result.error)throw result.error;
    const tickets=result.data||[],ids=[...new Set(tickets.map(t=>t.student_id).filter(Boolean))],names={};
    if(ids.length){
-    const profiles=await api.db.from("consolidated_user_profiles_table").select("user_id,full_name,admission_number").eq("institution_id",api.institutionId).in("user_id",ids);
+    const profiles=await api.db.from("consolidated_user_profiles_table").select("user_id,full_name").eq("institution_id",api.institutionId).in("user_id",ids);
     if(profiles.error)console.warn("[Helpdesk] Requester names unavailable:",profiles.error.message);
     (profiles.data||[]).forEach(p=>names[p.user_id]=p.full_name||p.admission_number||"Student");
    }
