@@ -140,8 +140,10 @@
         const numeric = raw.match(/^(?:(?:semester|term|block)\s*)?(\d+)$/i);
         if (numeric) {
             const expected = type.toLowerCase() + ' ' + numeric[1];
-            const configured = periods.find(period => String(period.name).toLowerCase() === expected ||
-                new RegExp('(?:^|\\s)' + numeric[1] + '.test(String(period.name)));
+            const configured = periods.find(period => {
+                const name = String(period.name).toLowerCase();
+                return name === expected || name.endsWith(' ' + numeric[1]);
+            });
             if (configured) return configured.name;
         }
         return raw;
