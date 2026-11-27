@@ -36,7 +36,7 @@
       async function check(show) {
         if (busy) return; busy = true; control.disabled = true; control.textContent = 'Checking for updates…';
         try {
-          var response = await fetch('/app-update.json?check=' + Date.now(), {cache:'no-store'});
+          var response = await fetch('https://campusnexus.co.ke/app-update.json?check=' + Date.now(), {cache:'no-store'});
           if (!response.ok) throw new Error('Update service is temporarily unavailable.');
           var meta = await response.json(); var installed = await updater.getAppInfo(); latest = meta;
           if (Number(meta.versionCode) > Number(installed.versionCode)) {
@@ -56,7 +56,7 @@
         if (!window.confirm('Campus Nexus ' + latest.version + ' is available. Download and install it now?')) return;
         control.disabled = true; control.textContent = 'Downloading update…';
         try {
-          var result = await updater.installUpdate({url:new URL(latest.apkUrl, location.origin).href, sha256:latest.sha256});
+          var result = await updater.installUpdate({url:new URL(latest.apkUrl, 'https://campusnexus.co.ke').href, sha256:latest.sha256});
           if (result && result.permissionRequired) {
             control.textContent = 'Allow install permission, then check again';
             window.alert('Allow Campus Nexus to install updates in Android settings. Return to the app and tap Check for updates again.');

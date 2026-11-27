@@ -39,20 +39,64 @@
   var busy = false;
   var currentVersion = 'latest';
   fetch('/app-update.json?check='+Date.now(),{cache:'no-store'}).then(function(r){if(!r.ok)throw new Error('metadata');return r.json();}).then(function(m){currentVersion=m.version;button.setAttribute('download','Campus-Nexus-App-'+m.version+'.apk');var meta=document.getElementById('appVersionMeta');if(meta)meta.innerHTML='Version '+m.version+' · Application ID: co.ke.campusnexus.app<br>Official signed Android release · Separate from Campus Nexus Secure Exam Browser.';}).catch(function(){var meta=document.getElementById('appVersionMeta');if(meta)meta.textContent='Version information is temporarily unavailable. The APK download is still available.';});
+  function resetButton() {
+    busy = false;
+    button.removeAttribute('aria-busy');
+    button.removeAttribute('aria-disabled');
+    button.disabled = false;
+    if (label) label.textContent = 'Download Android App';
+  }
+  function failDownload(message) {
+    if (status) status.textContent = message || 'The download could not start. Please try again.';
+    resetButton();
+  }
   button.addEventListener('click', function (event) {
-    if (busy) { event.preventDefault(); return; }
+    event.preventDefault();
+    if (busy) return;
     busy = true;
+    button.disabled = true;
     button.setAttribute('aria-busy', 'true');
     button.setAttribute('aria-disabled', 'true');
-    if (label) label.textContent = 'Starting secure download…';
-    if (status) status.textContent = 'Preparing Campus Nexus Android '+currentVersion+'. Your browser should show the APK download shortly.';
-    window.setTimeout(function () {
-      busy = false;
-      button.removeAttribute('aria-busy');
-      button.removeAttribute('aria-disabled');
-      if (label) label.textContent = 'Download Android App';
-      if (status) status.textContent = 'If the download did not appear in your notifications or Downloads folder, tap the button to try again.';
-    }, 12000);
+    if (label) label.textContent = 'Connecting…';
+    if (status) status.textContent = 'Connecting securely to Campus Nexus…';
+
+    var request = new XMLHttpRequest();
+    request.open('GET', button.href, true);
+    request.responseType = 'blob';
+    request.timeout = 180000;
+    request.onprogress = function (progress) {
+      if (!status) return;
+      if (progress.lengthComputable && progress.total > 0) {
+        var percent = Math.round((progress.loaded / progress.total) * 100);
+        if (label) label.textContent = 'Downloading… ' + percent + '%';
+        status.textContent = 'Downloading the signed Android app… ' + percent + '%';
+      } else {
+        if (label) label.textContent = 'Downloading…';
+        status.textContent = 'Downloading the signed Android app…';
+      }
+    };
+    request.onload = function () {
+      if (request.status < 200 || request.status >= 300 || !request.response || request.response.size < 1000000) {
+        failDownload('The APK could not be verified or downloaded. Please try again.');
+        return;
+      }
+      var objectUrl = URL.createObjectURL(request.response);
+      var downloadLink = document.createElement('a');
+      downloadLink.href = objectUrl;
+      downloadLink.download = button.getAttribute('download') || 'Campus-Nexus-App.apk';
+      downloadLink.style.display = 'none';
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      downloadLink.remove();
+      window.setTimeout(function () { URL.revokeObjectURL(objectUrl); }, 60000);
+      if (status) status.textContent = 'Download started successfully. Check your browser notifications or Downloads folder.';
+      if (label) label.textContent = 'Download started';
+      window.setTimeout(resetButton, 2200);
+    };
+    request.onerror = function () { failDownload('Network error. Check your connection and tap to try again.'); };
+    request.ontimeout = function () { failDownload('The download took too long. Please try again.'); };
+    request.onabort = function () { failDownload('The download was cancelled. You can try again.'); };
+    request.send();
   });
 })();
 </script>

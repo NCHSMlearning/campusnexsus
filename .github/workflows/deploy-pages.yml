@@ -11,6 +11,8 @@ on:
       # App-related changes must finish the signed Android build first.
       # The successful Android workflow_run below then performs the website deployment.
       - 'campus-nexus-app/**'
+      - 'app/**'
+      - 'app-download.html'
       - 'campus-nexus-app-shell.js'
       - 'platform/student.html'
       - 'platform/login.html'
@@ -306,7 +308,21 @@ jobs:
         if: steps.deployment.outcome == 'success' || steps.deployment_retry_1.outcome == 'success' || steps.deployment_retry_2.outcome == 'success'
         run: |
           set -euo pipefail
-          release_url="https://github.com/NCHSMlearning/campusnexsus/releases/download/campus-nexus-app-v1.2.8/Campus-Nexus-App-1.2.8.apk"
+          python3 - <<'PY'
+          import json, pathlib, re
+          metadata = json.loads(pathlib.Path("app-update.json").read_text())
+          version = str(metadata.get("version", ""))
+          tag = str(metadata.get("releaseTag", ""))
+          if not re.fullmatch(r"\\d+\\.\\d+\\.\\d+", version):
+              raise SystemExit("Generated app-update.json has an invalid version.")
+          if tag != "campus-nexus-app-v" + version:
+              raise SystemExit("Generated app-update.json release tag does not match its version.")
+          pathlib.Path("/tmp/cn-release-url").write_text(
+              f"https://github.com/NCHSMlearning/campusnexsus/releases/download/{tag}/Campus-Nexus-App-{version}.apk"
+          )
+          print(f"Verifying current signed release: {tag}")
+          PY
+          release_url="$(cat /tmp/cn-release-url)"
           echo "Checking official signed APK release asset."
           curl --fail --location --silent --show-error --retry 3 "$release_url" -D /tmp/cn-release-headers.txt -o /tmp/Campus-Nexus-App-release.apk
           test -s /tmp/Campus-Nexus-App-release.apk
@@ -337,3 +353,35 @@ jobs:
           else
             echo "::warning::Campus Nexus mirror is not currently reachable; official signed release download remains verified."
           fi
+      - name: Verify deployed app update manifest and APK mirror
+        if: steps.deployment.outcome == 'success' || steps.deployment_retry_1.outcome == 'success' || steps.deployment_retry_2.outcome == 'success'
+        run: |
+          set -euo pipefail
+          manifest_url="https://campusnexus.co.ke/app-update.json?verify=$(date +%s)"
+          curl --fail --location --silent --show-error --retry 5 --retry-delay 5 "$manifest_url" -o /tmp/cn-app-update.json
+          python3 - <<'PY'
+          import hashlib, json, pathlib, re
+          data = json.loads(pathlib.Path("/tmp/cn-app-update.json").read_text())
+          required = ("version", "versionCode", "apkUrl", "sha256", "releaseTag")
+          missing = [key for key in required if not data.get(key)]
+          if missing:
+              raise SystemExit("Public update manifest is missing: " + ", ".join(missing))
+          if not re.fullmatch(r"\\d+\\.\\d+\\.\\d+", str(data["version"])):
+              raise SystemExit("Public update manifest has an invalid version.")
+          if not re.fullmatch(r"[0-9a-fA-F]{64}", str(data["sha256"])):
+              raise SystemExit("Public update manifest has an invalid SHA-256 checksum.")
+          if not str(data["apkUrl"]).startswith("/downloads/"):
+              raise SystemExit("Public update manifest APK URL must remain on the Campus Nexus domain.")
+          if data["releaseTag"] != "campus-nexus-app-v" + str(data["version"]):
+              raise SystemExit("Public update manifest version and release tag do not match.")
+          print("PUBLIC UPDATE MANIFEST VERIFIED: " + str(data["version"]) + " (versionCode " + str(data["versionCode"]) + ")")
+          pathlib.Path("/tmp/cn-expected-sha256").write_text(str(data["sha256"]).lower())
+          pathlib.Path("/tmp/cn-apk-url").write_text("https://campusnexus.co.ke" + str(data["apkUrl"]))
+          PY
+          curl --fail --location --silent --show-error --retry 5 --retry-delay 5 "$(cat /tmp/cn-apk-url)" -o /tmp/cn-public-update.apk
+          actual_sha="$(sha256sum /tmp/cn-public-update.apk | awk '{print $1}')"
+          expected_sha="$(cat /tmp/cn-expected-sha256)"
+          test "$actual_sha" = "$expected_sha"
+          test "$(stat -c%s /tmp/cn-public-update.apk)" -gt 1000000
+          test "$(head -c 2 /tmp/cn-public-update.apk | od -An -tx1 | tr -d ' \\n')" = "504b"
+          echo "PUBLIC UPDATE APK VERIFIED: Campus Nexus domain, valid APK payload and matching SHA-256."
