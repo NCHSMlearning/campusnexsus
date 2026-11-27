@@ -797,6 +797,7 @@ async saveProgressToDatabase() {
                 const { data: existing, error: checkError } = await supabase
                     .from('nurseiq_attempts')
                     .select('id')
+                .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)
                     .eq('student_id', this.userId)
                     .maybeSingle();
                 
@@ -2760,6 +2761,7 @@ async saveProgressToDatabase() {
             const attemptsResult = await supabase
                 .from('exam_attempts')
                 .select('id, attempt_number, status, is_retake, started_at, submitted_at, score, percentage, total_marks, updated_at')
+                    .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)
                 .eq('student_id', this.userId)
                 .eq('exam_id', exam.examId)
                 .order('attempt_number', { ascending: false })
