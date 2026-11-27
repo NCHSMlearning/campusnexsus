@@ -3,8 +3,8 @@
 Separate Android portal client. It is not the Campus Nexus Secure Exam Browser (CN-SEB).
 
 - Android application ID: `co.ke.campusnexus.app`
-- App version: `1.0.0`
-- Opens the production Campus Nexus portal login over HTTPS.
+- App version: `1.2.7`
+- Opens the production Campus Nexus portal login over HTTPS and activates the native app navigation experience across supported role portals.
 - Existing Supabase authentication and role-based portal authorization remain authoritative.
 - Supports student, lecturer, institution administrator and superadmin portal routes available to the signed-in account.
 - Secure examination lockdown remains a separate CN-SEB product.
