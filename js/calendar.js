@@ -313,6 +313,7 @@ async function loadCalendarTimetable() {
         const { data: timetable, error } = await supabase
             .from('timetables')
             .select('*')
+            .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)
             .eq('block', studentBlock)
             .order('week_number', { ascending: true })
             .order('day_of_week', { ascending: true })
@@ -877,6 +878,7 @@ async function fetchEventsFromDatabase() {
         const { data: calendarEvents, error } = await supabase
             .from('calendar_events')
             .select('*')
+            .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)
             .or(`target_program.eq.${userProgram},target_program.eq.General`)
             .or(`target_block.eq.${userBlock},target_block.is.null`)
             .order('event_date', { ascending: true });
