@@ -212,6 +212,7 @@ jobs:
         run: |
           set -euo pipefail
           test -s campus-nexus-app-shell.js
+          node --check campus-nexus-app-shell.js
           python3 - <<'PY'
           from pathlib import Path
           import re
