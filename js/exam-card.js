@@ -297,7 +297,12 @@
                 (/^#[0-9a-f]{3,8}$/i.test(secondary) ? secondary : '#0f766e') +
                 '" stroke-width="5"/><text x="64" y="77" text-anchor="middle" font-family="Arial" font-size="42" font-weight="700" fill="#fff">' +
                 initials + '</text></svg>';
-            return { name, logoUrl: logoUrl || 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg) };
+            return {
+                name,
+                logoUrl: logoUrl || 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg),
+                primary,
+                secondary
+            };
         }
 
         // ============================================
@@ -711,7 +716,7 @@
             
             const html = `
                 <div class="exam-card-wrapper" id="exam-card-print-area">
-                    <div class="exam-card-compact" role="region" aria-label="Examination Card">
+                    <div class="exam-card-compact" role="region" aria-label="Examination Card" style="--cn-exam-primary:${this.getInstitutionBranding().primary};--cn-exam-secondary:${this.getInstitutionBranding().secondary};">
                         <!-- Header -->
                         <div class="card-header">
                             <img src="${this.getInstitutionBranding().logoUrl}" alt="${this.cleanText(this.getInstitutionBranding().name)} logo" class="card-logo" onerror="this.style.display='none'">
@@ -869,7 +874,7 @@
             
             const html = `
                 <div class="exam-card-wrapper" id="exam-card-print-area">
-                    <div class="exam-card-compact">
+                    <div class="exam-card-compact" style="--cn-exam-primary:${this.getInstitutionBranding().primary};--cn-exam-secondary:${this.getInstitutionBranding().secondary};">
                         <div class="card-header" style="background:linear-gradient(135deg,#dc2626,#b91c1c);">
                             <img src="${this.getInstitutionBranding().logoUrl}" alt="${this.cleanText(this.getInstitutionBranding().name)} logo" class="card-logo" onerror="this.style.display='none'">
                             <div class="header-text">
@@ -1446,7 +1451,7 @@
                 
                 /* Header */
                 .card-header { 
-                    background: linear-gradient(135deg, #1e3a5f, #2c5a8c); 
+                    background: linear-gradient(135deg, var(--cn-exam-primary, #1e3a5f), var(--cn-exam-secondary, #2c5a8c)); 
                     color: white; 
                     padding: 15px 20px; 
                     display: flex; 
@@ -1827,7 +1832,7 @@
 
             const toolbar = document.createElement('div');
             toolbar.style.cssText = 'flex:0 0 auto;display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;padding:12px;background:#1e3a5f;color:#fff;font:600 13px Arial,sans-serif;';
-            toolbar.innerHTML = '<span style="margin-right:8px">Exam Card Preview</span><button type="button" data-action="download" style="border:0;border-radius:7px;padding:10px 16px;background:#1f5796;color:#fff;font-weight:700">⬇ Download PDF</button><button type="button" data-action="print" style="border:0;border-radius:7px;padding:10px 16px;background:#fff;color:#1e293b;font-weight:700">Print</button><button type="button" data-action="close" style="border:0;border-radius:7px;padding:10px 16px;background:#e2e8f0;color:#1e293b;font-weight:700">Close</button>';
+            toolbar.innerHTML = '<span style="margin-right:8px">Exam Card Preview</span><button type="button" data-action="download" style="border:0;border-radius:7px;padding:10px 16px;background:var(--cn-exam-primary, #1f5796);color:#fff;font-weight:700">⬇ Download PDF</button><button type="button" data-action="print" style="border:0;border-radius:7px;padding:10px 16px;background:#fff;color:#1e293b;font-weight:700">Print</button><button type="button" data-action="close" style="border:0;border-radius:7px;padding:10px 16px;background:#e2e8f0;color:#1e293b;font-weight:700">Close</button>';
 
             const frame = document.createElement('iframe');
             frame.title = 'A4 Examination Card';
@@ -1968,28 +1973,28 @@ body{padding:5mm!important;overflow:visible!important}
 @media screen and (max-width:600px){body{padding:10px}.exam-card-wrapper{min-width:680px}}
 /* NCHSM transcript-matched visual theme: navy blue, pale blue, white and restrained red. */
 .exam-card-compact,.exam-card-compact *{font-family:Arial,sans-serif;color:#000;font-weight:700;text-shadow:none}
-.exam-card-compact{background:#fff!important;border:1.5px solid #1f5796!important;color:#000!important}
+.exam-card-compact{background:#fff!important;border:1.5px solid var(--cn-exam-primary, #1f5796)!important;color:#000!important}
 .exam-card-compact .card-header{background:#fff!important;color:#000!important;border-bottom:3px solid #9dbbd4!important;position:relative}
 .exam-card-compact .card-header:after{content:"";position:absolute;left:0;bottom:-3px;width:22%;height:3px;background:#b83a42}
 .exam-card-compact .card-logo{background:#fff!important;border:1px solid #d5e2ed}
-.exam-card-compact .institution{color:#1f5796!important;font-weight:800!important}
-.exam-card-compact .card-title{display:inline-flex;align-items:center;background:#1f5796!important;color:#fff!important;padding:5px 12px;border-radius:4px;font-weight:800!important;letter-spacing:.6px}
+.exam-card-compact .institution{color:var(--cn-exam-primary, #1f5796)!important;font-weight:800!important}
+.exam-card-compact .card-title{display:inline-flex;align-items:center;background:var(--cn-exam-primary, #1f5796)!important;color:#fff!important;padding:5px 12px;border-radius:4px;font-weight:800!important;letter-spacing:.6px}
 .exam-card-compact .card-title *{color:#fff!important}
 .exam-card-compact .card-subtitle{color:#000!important}
 .exam-card-compact .status-badge{background:#dceaf5!important;color:#000!important;border:1px solid #b8cde0;border-radius:4px}
-.exam-card-compact .info-grid{background:#edf4fa!important;border:1px solid #c7d9e8!important;border-left:4px solid #1f5796!important}
+.exam-card-compact .info-grid{background:#edf4fa!important;border:1px solid #c7d9e8!important;border-left:4px solid var(--cn-exam-primary, #1f5796)!important}
 .exam-card-compact .info-item,.exam-card-compact .info-label{color:#000!important}
 .exam-card-compact .units-table{background:#fff!important}
-.exam-card-compact .units-table th{background:#1f5796!important;color:#fff!important;border-color:#174675!important;font-weight:800!important}
+.exam-card-compact .units-table th{background:var(--cn-exam-primary, #1f5796)!important;color:#fff!important;border-color:var(--cn-exam-secondary, #174675)!important;font-weight:800!important}
 .exam-card-compact .units-table th *{color:#fff!important}
 .exam-card-compact .units-table td{background:#fff!important;color:#000!important;border-bottom:1px solid #cbd8e3!important}
 .exam-card-compact .units-table tbody tr:nth-child(even):not(.total-row):not(.compressed-row) td{background:#f6f9fc!important}
-.exam-card-compact .total-row td{background:#e5eff7!important;color:#000!important;border-top:2px solid #1f5796!important}
+.exam-card-compact .total-row td{background:#e5eff7!important;color:#000!important;border-top:2px solid var(--cn-exam-primary, #1f5796)!important}
 .exam-card-compact .signatures-row{background:#fff!important;border-top:1px solid #b8cde0!important}
 .exam-card-compact .signature,.exam-card-compact .signature div{color:#000!important}
 .exam-card-compact .signature-line,.exam-card-compact .sign-line,.exam-card-compact .signature-line-inline{border-color:#000!important}
 .exam-card-compact .card-footer{background:#f5f9fc!important;border-top:2px solid #b8cde0!important}
-.exam-card-compact .rules-header{color:#1f5796!important;font-weight:800!important}
+.exam-card-compact .rules-header{color:var(--cn-exam-primary, #1f5796)!important;font-weight:800!important}
 .exam-card-compact .rule-item,.exam-card-compact .student-declaration,.exam-card-compact .student-label,.exam-card-compact .student-date,.exam-card-compact .signature-cell span{color:#000!important}
 .exam-card-compact .student-section{border-top:1px dashed #b8cde0!important}
 .exam-card-compact .student-sign-line{color:#000!important}
@@ -1997,9 +2002,9 @@ body{padding:5mm!important;overflow:visible!important}
 .exam-card-compact [style*="background:#dc2626"],.exam-card-compact [style*="background: #dc2626"],.exam-card-compact [style*="background:linear-gradient(135deg,#dc2626"]{background:#dceaf5!important;color:#000!important}
 .exam-card-compact [style*="color:white"],.exam-card-compact [style*="color: white"]{color:#000!important}
 @media print{
- .exam-card-compact{border-color:#1f5796!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+ .exam-card-compact{border-color:var(--cn-exam-primary, #1f5796)!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
  .exam-card-compact .card-header{background:#fff!important}
- .exam-card-compact .card-title,.exam-card-compact .units-table th{background:#1f5796!important;color:#fff!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+ .exam-card-compact .card-title,.exam-card-compact .units-table th{background:var(--cn-exam-primary, #1f5796)!important;color:#fff!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
  .exam-card-compact .info-grid,.exam-card-compact .units-table tbody tr:nth-child(even):not(.total-row):not(.compressed-row) td,.exam-card-compact .total-row td,.exam-card-compact .card-footer{ -webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
 }
 /* Final print corrections: prevent clipped header/footer and split numeric cells. */
