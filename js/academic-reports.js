@@ -31,7 +31,7 @@
         },
         
         getBlockOptions: function(programCode) {
-            if (window.currentAcademicStructure?.periods?.length) return window.currentAcademicStructure.periods.map(x => x.name);
+            if (window.currentAcademicStructure) return (window.currentAcademicStructure.periods || []).map(x => x.name);
             if (this.isTVET(programCode)) {
                 return ['Introductory', 'Term 1', 'Term 2', 'Term 3', 'Term 4', 'Term 5', 'Term 6', 'Final'];
             }
@@ -1877,7 +1877,7 @@ function updateTranscriptSummary(attempted, earned, courses, cgpa) {
         if (!blockFilter || blockFilter.toLowerCase() === 'all') {
             const availableBlocks = [...new Set(marks.map(m => m.block || m.block_term || m.term).filter(Boolean))];
             if (availableBlocks.length) {
-                availableBlocks.sort((a, b) => blockOrder(a) - blockOrder(b));
+                availableBlocks.sort((a, b) => getPeriodSequence(a) - getPeriodSequence(b) || blockOrder(a) - blockOrder(b));
                 blockFilter = availableBlocks[availableBlocks.length - 1];
                 marks = marks.filter(m => normalizeBlock(m.block || m.block_term || m.term) === normalizeBlock(blockFilter));
             }
@@ -2063,10 +2063,7 @@ function updateTranscriptSummary(attempted, earned, courses, cgpa) {
                     </tr>`;
             });
 
-            const sortedMarks = [...marks].sort((a, b) => {
-                const blockOrder = {'Introductory':0,'Block 1':1,'Block 2':2,'Block 3':3,'Block 4':4,'Block 5':5,'Final':6,'Term 1':1,'Term 2':2,'Term 3':3,'Term 4':4,'Term 5':5,'Term 6':6};
-                return (blockOrder[a.block] || 0) - (blockOrder[b.block] || 0);
-            });
+            const sortedMarks = [...marks].sort((a, b) => getPeriodSequence(a.block) - getPeriodSequence(b.block));
             const graphLabels = sortedMarks.map(m => m.unit_code || getUnitCode(m.subject_name) || 'N/A');
             const graphData = sortedMarks.map(m => {
                 const g = m.grade || m.published_grade || m.final_grade || '';
@@ -3230,11 +3227,15 @@ const chartCanvas = printWindow.document.querySelector('.chart-container canvas'
         const blockFilter = document.getElementById('my_marks_block_filter');
         const yearFilter = document.getElementById('my_marks_year_filter');
         const searchInput = document.getElementById('my_marks_search');
+        const semesterFilter = document.getElementById('semester-filter');
+        const academicYearFilter = document.getElementById('year-filter');
         
         if (subjectFilter) subjectFilter.addEventListener('change', filterMyMarks);
         if (blockFilter) blockFilter.addEventListener('change', filterMyMarks);
         if (yearFilter) yearFilter.addEventListener('change', filterMyMarks);
         if (searchInput) searchInput.addEventListener('input', filterMyMarks);
+        if (semesterFilter) semesterFilter.addEventListener('change', loadSemesterReport);
+        if (academicYearFilter) academicYearFilter.addEventListener('change', loadYearlyReport);
         
         const refreshBtn = document.getElementById('refresh-report');
         if (refreshBtn) {
