@@ -185,8 +185,8 @@ class MessagesSystem {
     // ==========================================
     // LOAD MESSAGES
     // ==========================================
-    async loadMessages()
-        if (window.waitForStudentPortalContext) await window.waitForStudentPortalContext(); {
+    async loadMessages() {
+        if (window.waitForStudentPortalContext) await window.waitForStudentPortalContext();
         console.log('📨 Loading messages...');
         
         const supabaseClient = this.getSupabaseClient();
