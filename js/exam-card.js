@@ -5,7 +5,7 @@
     'use strict';
     
     const CONFIG = {
-        LOGO_URL: 'https://raw.githubusercontent.com/NCHSMlearning/e-learning/main/images/Logo_NCHSM.png',
+        LOGO_URL: '',
         DEFAULT_CREDITS: 3,
         LOAD_DELAY: 500,
         DB_TIMEOUT: 10000,
@@ -281,6 +281,25 @@
             });
         }
         
+        // Resolve branding only from the authenticated tenant profile.
+        getInstitutionBranding() {
+            const profile = this.userProfile || window.currentUserProfile || window.db?.currentUserProfile || {};
+            const institution = profile.institution || window.CURRENT_INSTITUTION || {};
+            const name = String(institution.name || profile.institution_name ||
+                document.documentElement.dataset.institutionName || 'Your Institution').trim();
+            const safeLogo = value => /^(https:\/\/|\/)/i.test(String(value || '').trim()) ? String(value).trim() : '';
+            const logoUrl = safeLogo(institution.logo_url || profile.logo_url);
+            const primary = String(institution.primary_color || getComputedStyle(document.documentElement).getPropertyValue('--cn-institution-primary') || '#0b3552').trim();
+            const secondary = String(institution.secondary_color || getComputedStyle(document.documentElement).getPropertyValue('--cn-institution-secondary') || '#0f766e').trim();
+            const initials = name.split(/\s+/).filter(Boolean).slice(0,2).map(part => part.charAt(0)).join('').toUpperCase() || 'IN';
+            const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128"><rect width="128" height="128" rx="20" fill="' +
+                (/^#[0-9a-f]{3,8}$/i.test(primary) ? primary : '#0b3552') + '"/><circle cx="64" cy="64" r="53" fill="none" stroke="' +
+                (/^#[0-9a-f]{3,8}$/i.test(secondary) ? secondary : '#0f766e') +
+                '" stroke-width="5"/><text x="64" y="77" text-anchor="middle" font-family="Arial" font-size="42" font-weight="700" fill="#fff">' +
+                initials + '</text></svg>';
+            return { name, logoUrl: logoUrl || 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg) };
+        }
+
         // ============================================
         // USER PROFILE MANAGEMENT
         // ============================================
@@ -360,6 +379,7 @@
                             .from('consolidated_user_profiles_table')
                             .select('user_id')
                             .eq('student_id', this.userProfile.student_id)
+                            .eq('institution_id', this.userProfile?.institution_id)
                             .maybeSingle();
                         if (userData?.user_id) actualUserId = userData.user_id;
                     }
@@ -376,6 +396,7 @@
                     .from('student_unit_registrations')
                     .select('*')
                     .eq('student_id', actualUserId)
+                    .eq('institution_id', this.userProfile?.institution_id)
                     .eq('status', 'approved')
                     .order('created_at', { ascending: false });
                 
@@ -412,14 +433,14 @@
                 let rows = [];
                 if (admissionNumber) {
                     const result = await supabase.from('student_marks').select('*')
-                        .eq('admission_number', admissionNumber).eq('published', true)
+                        .eq('admission_number', admissionNumber).eq('institution_id', this.userProfile?.institution_id).eq('published', true)
                         .eq('approval_status', 'approved').order('published_at', { ascending: false });
                     if (result.error) throw result.error;
                     rows = result.data || [];
                 }
                 if (!rows.length && authUserId) {
                     const result = await supabase.from('student_marks').select('*')
-                        .eq('student_id', authUserId).eq('published', true)
+                        .eq('student_id', authUserId).eq('institution_id', this.userProfile?.institution_id).eq('published', true)
                         .eq('approval_status', 'approved').order('published_at', { ascending: false });
                     if (result.error) throw result.error;
                     rows = result.data || [];
@@ -690,9 +711,9 @@
                     <div class="exam-card-compact" role="region" aria-label="Examination Card">
                         <!-- Header -->
                         <div class="card-header">
-                            <img src="${CONFIG.LOGO_URL}" alt="NCHSM Logo" class="card-logo" onerror="this.style.display='none'">
+                            <img src="${this.getInstitutionBranding().logoUrl}" alt="${this.cleanText(this.getInstitutionBranding().name)} logo" class="card-logo" onerror="this.style.display='none'">
                             <div class="header-text">
-                                <div class="institution">NAKURU COLLEGE OF HEALTH SCIENCES AND MANAGEMENT</div>
+                                <div class="institution">${this.cleanText(this.getInstitutionBranding().name)}</div>
                                 <div class="card-title">
                                     EXAMINATION CARD
                                     ${studentTypeBadge}
@@ -847,9 +868,9 @@
                 <div class="exam-card-wrapper" id="exam-card-print-area">
                     <div class="exam-card-compact">
                         <div class="card-header" style="background:linear-gradient(135deg,#dc2626,#b91c1c);">
-                            <img src="${CONFIG.LOGO_URL}" alt="NCHSM Logo" class="card-logo" onerror="this.style.display='none'">
+                            <img src="${this.getInstitutionBranding().logoUrl}" alt="${this.cleanText(this.getInstitutionBranding().name)} logo" class="card-logo" onerror="this.style.display='none'">
                             <div class="header-text">
-                                <div class="institution">NAKURU COLLEGE OF HEALTH SCIENCES AND MANAGEMENT</div>
+                                <div class="institution">${this.cleanText(this.getInstitutionBranding().name)}</div>
                                 <div class="card-title">
                                     RETAKE EXAMINATION CARD
                                     <span style="background:#dc2626;color:white;padding:2px 12px;border-radius:12px;font-size:11px;font-weight:600;">RET</span>
@@ -1036,6 +1057,7 @@
                     .from('past_exam_records')
                     .select('*')
                     .eq('student_id', userId)
+                    .eq('institution_id', this.userProfile?.institution_id)
                     .order('created_at', { ascending: false })
                     .limit(10);
                 
