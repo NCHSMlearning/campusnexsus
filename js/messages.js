@@ -693,7 +693,8 @@ class MessagesSystem {
                     is_read: true, 
                     read_at: new Date().toISOString() 
                 })
-                .eq('id', messageId);
+                .eq('id', messageId)
+                .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id);
             
             if (error) throw error;
             
