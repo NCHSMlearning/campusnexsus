@@ -2094,8 +2094,8 @@ class ResourcesModule {
     // ============================================================
     // RESOURCE LOADING
     // ============================================================
-    async loadResources()
-        if (window.waitForStudentPortalContext) await window.waitForStudentPortalContext(); {
+    async loadResources() {
+        if (window.waitForStudentPortalContext) await window.waitForStudentPortalContext();
         if (this.isLoading) return;
         this.detectUserProgram();
         if (!this.userProfile) await this.getUserProfile();
