@@ -420,7 +420,12 @@ async function initializeApp() {
                 ? `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=4C1D95&color=fff&size=100&bold=true`
                 : 'https://ui-avatars.com/api/?name=Student&background=4C1D95&color=fff&size=100&bold=true';
 
-            const finalPhotoUrl = profilePhotoUrl || fallbackAvatar;
+            // Database photo fields are storage object paths, not browser URLs.
+            // Never assign a private Storage path directly to img.src. The
+            // Profile module resolves it through a signed URL after auth.
+            const finalPhotoUrl = /^https?:\/\//i.test(profilePhotoUrl)
+                ? profilePhotoUrl
+                : fallbackAvatar;
 
             const photo = document.getElementById('header-profile-photo');
             if (photo) {
