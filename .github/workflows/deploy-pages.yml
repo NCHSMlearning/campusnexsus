@@ -272,6 +272,15 @@ jobs:
           grep -qi "application/vnd.android.package-archive" /tmp/cn-release-headers.txt
           echo "OFFICIAL RELEASE VERIFIED: HTTP download succeeded; size=$size bytes; APK signature=$signature; Android package MIME type confirmed."
 
+          # Public-facing download page must never expose repository or release-host URLs.
+          curl --fail --location --silent --show-error --retry 3 "https://campusnexus.co.ke/app-download" -o /tmp/cn-app-download.html
+          if grep -Eiq 'github\\.com|githubusercontent|NCHSMlearning|campusnexsus' /tmp/cn-app-download.html; then
+            echo "::error::Public app-download page exposes a repository reference."
+            exit 1
+          fi
+          grep -Fq 'href="/downloads/Campus-Nexus-App.apk?v=1.2.6"' /tmp/cn-app-download.html
+          echo "PUBLIC DOWNLOAD PAGE VERIFIED: no GitHub/repository references; download points to Campus Nexus domain."
+
           # The custom-domain mirror is optional. A Pages/CDN 404 must not
           # invalidate the known-good signed release asset.
           mirror_url="https://campusnexus.co.ke/downloads/Campus-Nexus-App.apk?v=1.2.6"
