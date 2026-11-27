@@ -167,7 +167,7 @@ jobs:
           test -s images/campus-nexus-original-logo.webp
           grep -q 'brand-global.js' index.html
           echo "Official Campus Nexus logo branding is included in the Pages artifact."
-      - name: Stage latest signed Android APK on Campus Nexus domain
+      - name: Stage pinned signed Android APK on Campus Nexus domain
         run: |
           set -euo pipefail
           python3 - <<'PY'
@@ -177,34 +177,63 @@ jobs:
           import shutil
           import urllib.request
 
-          api = "https://api.github.com/repos/NCHSMlearning/campusnexsus/releases/latest"
+          tag = "campus-nexus-app-v1.2.6"
+          expected_name = "Campus-Nexus-App-1.2.6.apk"
+          api = f"https://api.github.com/repos/NCHSMlearning/campusnexus/releases/tags/{tag}"
           headers = {"Accept": "application/vnd.github+json", "User-Agent": "CampusNexus-Website-Deployment"}
           request = urllib.request.Request(api, headers=headers)
           with urllib.request.urlopen(request, timeout=60) as response:
               release = json.load(response)
 
-          assets = release.get("assets", [])
-          apk = next((item for item in assets if item.get("name", "").startswith("Campus-Nexus-App-") and item.get("name", "").endswith(".apk")), None)
+          apk = next((item for item in release.get("assets", []) if item.get("name") == expected_name), None)
           if not apk:
-              raise SystemExit("Latest published Campus Nexus release has no APK asset; refusing to publish a broken download link.")
+              raise SystemExit(f"Pinned release {tag} does not contain {expected_name}; refusing to publish a stale or missing APK.")
 
-          # Use the absolute repository workspace so the APK is guaranteed to
-          # land at the GitHub Pages artifact root, regardless of shell cwd.
           workspace = pathlib.Path(os.environ["GITHUB_WORKSPACE"]).resolve()
-          target = workspace / "downloads" / "Campus-Nexus-App.apk"
-          target.parent.mkdir(parents=True, exist_ok=True)
+          target_dir = workspace / "downloads"
+          target_dir.mkdir(parents=True, exist_ok=True)
+          target = target_dir / expected_name
           download_request = urllib.request.Request(apk["browser_download_url"], headers={"User-Agent": "CampusNexus-Website-Deployment"})
           with urllib.request.urlopen(download_request, timeout=180) as response, target.open("wb") as output:
               shutil.copyfileobj(response, output)
 
           if not target.exists() or target.stat().st_size < 1_000_000:
-              raise SystemExit("APK mirror download is missing or unexpectedly small.")
-          print(f"Staged {apk['name']} ({target.stat().st_size} bytes) from release {release['tag_name']} at {target}")
-          print(f"Workspace root: {workspace}")
+              raise SystemExit("Pinned APK mirror is missing or unexpectedly small.")
+          signature = target.open("rb").read(2)
+          if signature != b"PK":
+              raise SystemExit("Pinned download is not a valid APK/ZIP payload.")
+          print(f"Staged exact release {tag}: {expected_name} ({target.stat().st_size} bytes)")
           PY
-          test -s "$GITHUB_WORKSPACE/downloads/Campus-Nexus-App.apk"
-          test "$(stat -c%s "$GITHUB_WORKSPACE/downloads/Campus-Nexus-App.apk")" -gt 1000000
-          echo "Verified APK exists at the absolute website root: $GITHUB_WORKSPACE/downloads/Campus-Nexus-App.apk"
+          test -s "$GITHUB_WORKSPACE/downloads/Campus-Nexus-App-1.2.6.apk"
+          test "$(stat -c%s "$GITHUB_WORKSPACE/downloads/Campus-Nexus-App-1.2.6.apk")" -gt 1000000
+          echo "Verified the exact versioned Campus Nexus APK at the website root."
+
+      - name: Inject native Campus Nexus app navigation
+        run: |
+          set -euo pipefail
+          test -s campus-nexus-app-shell.js
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          tag = '<script src="/campus-nexus-app-shell.js?v=1.2.6" defer></script>'
+          changed = 0
+          for page in Path(".").rglob("*.html"):
+              if ".git" in page.parts or "node_modules" in page.parts:
+                  continue
+              html = page.read_text(encoding="utf-8")
+              if "campus-nexus-app-shell.js" in html:
+                  continue
+              if re.search(r"</head>", html, re.I):
+                  html = re.sub(r"</head>", tag + "\\n</head>", html, count=1, flags=re.I)
+              else:
+                  html = tag + html
+              page.write_text(html, encoding="utf-8")
+              changed += 1
+          print(f"Enabled native-only app navigation on {changed} HTML pages. The script exits immediately in normal browsers.")
+          PY
+          grep -q 'campus-nexus-app-shell.js' platform/student.html
+          echo "Native app navigation injection verified."
+
       - name: Upload complete static website
         uses: actions/upload-pages-artifact@v3
         with:
@@ -229,7 +258,7 @@ jobs:
         if: steps.deployment.outcome == 'success' || steps.deployment_retry_1.outcome == 'success' || steps.deployment_retry_2.outcome == 'success'
         run: |
           set -euo pipefail
-          url="https://campusnexus.co.ke/downloads/Campus-Nexus-App.apk"
+          url="https://campusnexus.co.ke/downloads/Campus-Nexus-App-1.2.6.apk"
           echo "Checking public APK URL: $url"
           curl --fail --location --silent --show-error --retry 8 --retry-all-errors --retry-delay 10 "$url" -o /tmp/Campus-Nexus-App.apk
           test -s /tmp/Campus-Nexus-App.apk
