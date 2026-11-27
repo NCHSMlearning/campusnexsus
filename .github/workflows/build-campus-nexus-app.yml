@@ -7,7 +7,8 @@ on:
     paths:
       - "campus-nexus-app/**"
       - "campus-nexus-app-shell.js"
-      - "platform/student.html"\n      - "platform/login.html"
+      - "platform/student.html"
+      - "platform/login.html"
       - "examlogin.html"
       - "platform/js/campus-nexus-app-install.js"
       - "images/logo-icon.png"
