@@ -179,7 +179,7 @@ jobs:
 
           tag = "campus-nexus-app-v1.2.6"
           expected_name = "Campus-Nexus-App-1.2.6.apk"
-          api = f"https://api.github.com/repos/NCHSMlearning/campusnexus/releases/tags/{tag}"
+          api = f"https://api.github.com/repos/NCHSMlearning/campusnexsus/releases/tags/{tag}"
           headers = {"Accept": "application/vnd.github+json", "User-Agent": "CampusNexus-Website-Deployment"}
           request = urllib.request.Request(api, headers=headers)
           with urllib.request.urlopen(request, timeout=60) as response:
