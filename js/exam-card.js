@@ -720,9 +720,7 @@
                 </div>`;
             }
             
-            const studentTypeBadge = isTVET ? 
-                `<span style="background: #f59e0b; color: #78350f; padding: 2px 10px; border-radius: 12px; font-size: 10px; font-weight: 600; margin-left: 10px;">TVET</span>` :
-                `<span style="background: #2563eb; color: white; padding: 2px 10px; border-radius: 12px; font-size: 10px; font-weight: 600; margin-left: 10px;">KRCHN</span>`;
+            const studentTypeBadge = `<span style="background:rgba(255,255,255,.18);color:inherit;padding:2px 10px;border-radius:12px;font-size:10px;font-weight:600;margin-left:10px;">${this.cleanText(programDisplay)}</span>`;
             
             const html = `
                 <div class="exam-card-wrapper" id="exam-card-print-area">
@@ -902,7 +900,7 @@
                             <div class="info-item"><span class="info-label">Name:</span> ${this.cleanText(student?.full_name || 'N/A')}</div>
                             <div class="info-item"><span class="info-label">REG NO.:</span> ${this.cleanText(student?.student_id || 'N/A')}</div>
                             <div class="info-item"><span class="info-label">Program:</span> ${this.cleanText(student?.program || 'N/A')}</div>
-                            <div class="info-item"><span class="info-label">Current Block:</span> <strong>${this.getBlockValue()}</strong></div>
+                            <div class="info-item"><span class="info-label">${this.getBlockLabel()}</span> <strong>${this.getBlockValue()}</strong></div>
                             <div class="info-item"><span class="info-label">Retake Units:</span> <strong>${retakeUnits.length}</strong></div>
                             <div class="info-item"><span class="info-label">Total Credits:</span> <strong>${totalCredits}</strong></div>
                             <div class="info-item"><span class="info-label">Exam Period:</span> ${this.getExamPeriod()}</div>
