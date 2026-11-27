@@ -5,7 +5,7 @@
 (function(global){
  'use strict';
  const cache=new Map(),clean=v=>String(v??'').trim(),valid=c=>c&&typeof c.from==='function';
- const normalizeType=v=>{const s=clean(v).toLowerCase();return s==='semester'?'Semester':s==='term'?'Term':'Block';};
+ const normalizeType=v=>{const s=clean(v).toLowerCase().replace(/[_-]+/g,' ');return /semester/.test(s)?'Semester':/term/.test(s)?'Term':'Block';};
  const labels=v=>{const singular=normalizeType(v);return {type:singular,singular,plural:singular==='Block'?'Blocks':singular==='Semester'?'Semesters':'Terms',lower:singular.toLowerCase(),pluralLower:singular==='Block'?'blocks':singular==='Semester'?'semesters':'terms'};};
  async function resolve(client,institutionId,programCode,options){
   if(!valid(client))throw Error('Academic structure database client is unavailable.');
