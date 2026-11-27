@@ -120,10 +120,6 @@
       var toggle=document.getElementById('mobile-toggle');
       if(toggle){
         toggle.setAttribute('aria-label','Open app menu');
-        toggle.addEventListener('click',function(){
-          var open=examSidebar.classList.contains('show');
-          if(scrim)scrim.classList.toggle('show',!open);
-        });
       }
       if(scrim)scrim.addEventListener('click',function(){examSidebar.classList.remove('show');});
       examSidebar.querySelectorAll('.exam-nav a').forEach(function(a){
