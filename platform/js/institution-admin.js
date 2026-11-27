@@ -200,7 +200,52 @@ async function loadStaff(){const data=await loadRows("lecturers","id,full_name,e
 function renderStaff(){const q=($("iaStaffSearch").value||"").toLowerCase();const data=state.rows.staff.filter(x=>[x.full_name,x.email,x.department,x.staff_id].some(v=>String(v||"").toLowerCase().includes(q)));$("iaStaffCount").textContent=data.length+" staff records";rows("iaStaff",data,5,(tr,x)=>{cell(tr,x.full_name,true);cell(tr,x.email);cell(tr,x.department);cell(tr,x.staff_id);cell(tr,statusLabel(x.status));});}
 async function loadAcademic(){const [p,c]=await Promise.all([loadRows("programs","id,program_name,program_code,category,duration_months,status",500),loadRows("courses","id,course_name,name,code,unit_code,target_program,block,status",500)]);rows("iaPrograms",p,5,(tr,x)=>{cell(tr,x.program_name,true);cell(tr,x.program_code);cell(tr,x.category||"—");cell(tr,x.duration_months?x.duration_months+" months":"—");cell(tr,statusLabel(x.status));});rows("iaCourses",c,5,(tr,x)=>{cell(tr,x.course_name||x.name,true);cell(tr,x.unit_code||x.code);cell(tr,x.target_program);cell(tr,x.block);cell(tr,statusLabel(x.status));});}
 async function loadExams(){const d=await loadRows("exams","id,title,exam_name,course_name,target_program,program_type,block,exam_date,approval_status,is_published,status",500);rows("iaExams",d,6,(tr,x)=>{cell(tr,x.title||x.exam_name||x.course_name,true);cell(tr,x.target_program||x.program_type);cell(tr,x.block);cell(tr,x.exam_date);cell(tr,statusLabel(x.approval_status||x.status));cell(tr,x.is_published?"Published":"Not published");});}
-async function loadLearning(){const data=await loadRows("resources","id,title,file_name,unit_name,unit_code,target_program,category,approval_status,file_url,created_at",300);const body=$("iaResources");body.replaceChildren();if(!data.length){empty("iaResources",6,"No learning resources have been uploaded for this institution.");return;}data.forEach(x=>{const tr=document.createElement("tr");cell(tr,x.title||x.file_name,true);cell(tr,x.unit_name||x.unit_code);cell(tr,x.target_program);cell(tr,x.category);cell(tr,statusLabel(x.approval_status));const td=document.createElement("td");if(typeof x.file_url==="string"&&x.file_url.startsWith("https://")){const a=document.createElement("a");a.href=x.file_url;a.target="_blank";a.rel="noopener noreferrer";a.textContent="Open resource";a.className="ia-text-btn";td.append(a);}else td.textContent="No file link";tr.append(td);body.append(tr);});}
+async function loadLearning(){
+ const body=$("iaResources");if(!body)return;
+ body.replaceChildren();
+ // Resource management rollout currently covers Nakuru College (institution 101) only.
+ // Do not expose or imply resource support for institution 102 until its rollout is approved.
+ if(String(state.institutionId)!=="101"){
+  empty("iaResources",8,"Institutional resource management is not yet enabled for this institution. Current rollout: Nakuru College (ID 101).");
+  return;
+ }
+ body.innerHTML='<tr><td colspan="8" class="ia-empty">Loading Nakuru College resources…</td></tr>';
+ try{
+  // Select available row fields without relying on optional legacy columns.
+  const result=await state.db.from("resources").select("*")
+   .eq("institution_id",101).order("created_at",{ascending:false}).limit(500);
+  if(result.error)throw result.error;
+  const data=result.data||[];
+  if(!data.length){empty("iaResources",8,"No learning resources have been uploaded for Nakuru College.");return;}
+  body.replaceChildren();
+  const periodLabel=(row)=>{
+   const value=row.block??row.current_block??row.semester??row.current_semester??row.term??row.current_term??row.academic_period??row.period;
+   if(value==null||value==="")return "—";
+   const kind=row.block!=null||row.current_block!=null?"Block":row.semester!=null||row.current_semester!=null?"Semester":row.term!=null||row.current_term!=null?"Term":"Period";
+   return kind+" "+String(value);
+  };
+  data.forEach(x=>{
+   const tr=document.createElement("tr");
+   cell(tr,x.title||x.file_name||x.name||"Untitled resource",true);
+   cell(tr,x.unit_name||x.unit_code||x.course_name||"—");
+   cell(tr,x.target_program||x.program_type||x.program||"All programmes");
+   cell(tr,periodLabel(x));
+   cell(tr,x.intake_year??x.intake??"—");
+   cell(tr,x.category||x.resource_type||"General");
+   cell(tr,statusLabel(x.approval_status||x.status));
+   const td=document.createElement("td");
+   const url=x.file_url||x.resource_url||x.url||x.file_path;
+   if(typeof url==="string"&&/^https:\/\//i.test(url)){
+    const a=document.createElement("a");a.href=url;a.target="_blank";a.rel="noopener noreferrer";
+    a.textContent="Open resource";a.className="ia-text-btn";td.append(a);
+   }else td.textContent="No file link";
+   tr.append(td);body.append(tr);
+  });
+ }catch(error){
+  console.error("[Institution Admin Resources]",error);
+  empty("iaResources",8,"Unable to load institution resources: "+String(error.message||"Database request failed"));
+ }
+}
 async function loadAttendance(){const d=await loadRows("attendance","id,student_id,date,timestamp,course_or_rotation,status,marked_by",200);const ids=[...new Set(d.map(x=>x.student_id).filter(Boolean))];let names={};if(ids.length){const s=await state.db.from("students").select("id,full_name,admission_number").eq("institution_id",state.institutionId).in("id",ids);if(!s.error)(s.data||[]).forEach(x=>names[x.id]=x.full_name||x.admission_number||x.id);}rows("iaAttendance",d,5,(tr,x)=>{cell(tr,x.date||x.timestamp);cell(tr,names[x.student_id]||x.student_id);cell(tr,x.course_or_rotation);cell(tr,statusLabel(x.status));cell(tr,x.marked_by);});}
 async function loadCNSEBInstitutionMonitor(){
  const body=$("iaCnsebSessions");if(body)body.innerHTML='<tr><td colspan="5" class="ia-empty">Loading secure exam sessions…</td></tr>';
