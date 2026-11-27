@@ -1577,7 +1577,12 @@ class ProfileModule {
             profile_photo_url: existingProfile?.profile_photo_url || this.userProfile?.profile_photo_url || null,
             passport_url: existingProfile?.passport_url || this.userProfile?.passport_url || null,
             doc_kcse: existingProfile?.doc_kcse || 'pending',
-            doc_id: existingProfile?.doc_id || 'pending'
+            doc_id: existingProfile?.doc_id || 'pending',
+            // Preserve tenant scope on UPSERT. Omitting this column makes the
+            // INSERT candidate's institution_id NULL, which correctly fails
+            // the cn_module_entitlement_guard INSERT policy before conflict
+            // resolution. Never infer or replace the student's institution.
+            institution_id: existingProfile?.institution_id || this.userProfile?.institution_id || null
         };
         
         Object.keys(upsertData).forEach(key => {
