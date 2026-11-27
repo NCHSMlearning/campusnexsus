@@ -11,8 +11,8 @@
   const MODULES = [
     ["admin_exams", /admin exams|exam management|question bank|exam settings/i],
     ["proctoring", /proctor|invigilat|exam monitoring/i],
-    ["examinations", /exam|assessment|results|marks entry/i],
-    ["published_marks", /academic reports|published marks|grade report|marks statement/i],
+    ["examinations", /exam|assessment|marks entry/i],
+    ["published_marks", /academic reports|published marks|grade report|marks statement|my results|results/i],
     ["learning_management", /learning|course|resource|lesson|assignment|classroom|lms/i],
     ["timetable", /timetable|class schedule/i],
     ["academic_management", /academic|programme|program|unit|curriculum/i],
