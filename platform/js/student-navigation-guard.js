@@ -1,43 +1,10 @@
 (function () {
   'use strict';
+  // One navigation owner: student-navigation.js. This file only bridges
+  // delegated sidebar clicks to that controller and blocks duplicate handlers.
   function navigate(tabId) {
-    if (!tabId) return false;
-    var target = document.getElementById(tabId);
-    if (!target || !target.classList.contains('tab-content')) return false;
-    document.querySelectorAll('.tab-content').forEach(function (tab) {
-      var selected = tab === target;
-      tab.classList.toggle('active', selected);
-      tab.style.setProperty('display', selected ? 'block' : 'none', 'important');
-      if (selected) {
-        tab.removeAttribute('hidden');
-        tab.setAttribute('aria-hidden', 'false');
-      } else {
-        tab.setAttribute('hidden', '');
-        tab.setAttribute('aria-hidden', 'true');
-      }
-    });
-    document.querySelectorAll('.sidebar-nav-premium a[data-tab], .dropdown-submenu a[data-tab]').forEach(function (item) {
-      item.classList.toggle('active', item.getAttribute('data-tab') === tabId);
-    });
-    try {
-      localStorage.setItem('nchsm_current_tab', tabId);
-      var hash = '#' + encodeURIComponent(tabId);
-      if (location.hash !== hash) history.replaceState(null, '', hash);
-    } catch (_) {}
-    if (window.matchMedia && window.matchMedia('(max-width: 1023px)').matches) {
-      var sidebar = document.getElementById('sidebar');
-      var overlay = document.getElementById('overlay');
-      if (sidebar) sidebar.classList.remove('active', 'open');
-      if (overlay) overlay.classList.remove('active');
-      document.body.classList.remove('nchsm-nav-open');
-      document.body.style.overflow = '';
-    }
-    window.setTimeout(function () {
-      target.removeAttribute('hidden');
-      target.setAttribute('aria-hidden', 'false');
-      target.style.setProperty('display', 'block', 'important');
-      target.classList.add('active');
-    }, 0);
+    if (!tabId || typeof window.showTab !== 'function') return false;
+    window.showTab(tabId);
     return true;
   }
   window.nchsmNavigateToTab = navigate;
@@ -47,40 +14,15 @@
       : null;
     if (!link) return;
     var destination = link.getAttribute('data-tab');
+    if (!destination || !document.getElementById(destination)) return;
     var anchor = (link.getAttribute('href') || '').replace(/^#/, '');
     var scrollTarget = anchor && anchor !== destination ? document.getElementById(anchor) : null;
-    if (!destination || !navigate(destination)) {
-      if (!scrollTarget) return;
-      event.preventDefault();
-      event.stopPropagation();
-      event.stopImmediatePropagation();
-      window.setTimeout(function () {
-        scrollTarget.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 80);
-      return;
-    }
     event.preventDefault();
     event.stopPropagation();
     event.stopImmediatePropagation();
-    if (scrollTarget) {
-      window.setTimeout(function () {
-        scrollTarget.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 80);
-    }
+    navigate(destination);
+    if (scrollTarget) window.setTimeout(function () {
+      scrollTarget.scrollIntoView({ behavior: 'auto', block: 'start' });
+    }, 120);
   }, true);
-  window.addEventListener('hashchange', function () {
-    var tabId = '';
-    try { tabId = decodeURIComponent((location.hash || '').replace(/^#/, '')); } catch (_) {}
-    if (tabId) navigate(tabId);
-  });
-  function activateInitialHash() {
-    var tabId = '';
-    try { tabId = decodeURIComponent((location.hash || '').replace(/^#/, '')); } catch (_) {}
-    if (tabId) navigate(tabId);
-  }
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', activateInitialHash, { once: true });
-  } else {
-    activateInitialHash();
-  }
 })();
