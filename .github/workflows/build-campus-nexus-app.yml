@@ -58,6 +58,39 @@ jobs:
       - name: Create Android project
         run: npx cap add android
 
+      - name: Configure Android system bar insets for all app screens
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          matches = list(Path('android/app/src/main/java').rglob('MainActivity.java'))
+          if len(matches) != 1:
+              raise SystemExit(f'Expected one MainActivity.java, found {len(matches)}')
+          path = matches[0]
+          source = path.read_text()
+          if 'WindowCompat.setDecorFitsSystemWindows' not in source:
+              source = source.replace('import com.getcapacitor.BridgeActivity;', 'import com.getcapacitor.BridgeActivity;\\nimport android.graphics.Color;\\nimport android.os.Bundle;\\nimport androidx.core.view.WindowCompat;\\nimport androidx.core.view.WindowInsetsControllerCompat;')
+              source = source.rstrip()
+              if not source.endswith('}'):
+                  raise SystemExit('Unexpected MainActivity.java structure')
+              source = source[:-1] + '''
+              @Override
+              public void onCreate(Bundle savedInstanceState) {
+                  WindowCompat.setDecorFitsSystemWindows(getWindow(), true);
+                  getWindow().setStatusBarColor(Color.parseColor("#071F3B"));
+                  getWindow().setNavigationBarColor(Color.parseColor("#071F3B"));
+                  super.onCreate(savedInstanceState);
+                  WindowInsetsControllerCompat insets = WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
+                  insets.setAppearanceLightStatusBars(false);
+                  insets.setAppearanceLightNavigationBars(false);
+              }
+              }
+              '''
+              path.write_text(source)
+          assert 'WindowCompat.setDecorFitsSystemWindows' in path.read_text()
+          print(f'Configured status/navigation bar insets in {path}')
+          PY
       - name: Generate official Campus Nexus Android icons
         run: |
           sudo apt-get update
