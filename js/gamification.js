@@ -252,12 +252,27 @@
         async loadAttendancePoints() {
             if (!this.userId || !window.db?.supabase) return;
 
+            // Wait for the authenticated tenant context before querying. Never
+            // send institution_id=eq.undefined to PostgREST.
+            if (window.waitForStudentPortalContext) {
+                await window.waitForStudentPortalContext();
+            }
+            const profile = window.currentUserProfile || window.db?.currentUserProfile || this.userProfile || {};
+            const institutionId = String(
+                window.CURRENT_INSTITUTION_ID || profile.institution_id || ''
+            ).trim();
+            if (!institutionId) {
+                console.warn('Attendance points skipped: student institution context is not ready.');
+                this.realAttendancePoints = 0;
+                return;
+            }
+
             try {
                 const { data, error } = await window.db.supabase
                     .from('attendance')
                     .select('id')
                     .eq('student_id', String(this.userId))
-                    .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)
+                    .eq('institution_id', institutionId)
                     .eq('status', 'verified');
 
                 if (error) {
