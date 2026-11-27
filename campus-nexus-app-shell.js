@@ -4,10 +4,11 @@
     var cap = window.Capacitor;
     var nativeApp = !!(cap && typeof cap.isNativePlatform === 'function' && cap.isNativePlatform());
     var query = new URLSearchParams(window.location.search);
-    var appMode = nativeApp;
+    var standaloneMode = !!(window.matchMedia && (window.matchMedia('(display-mode: standalone)').matches || window.matchMedia('(display-mode: fullscreen)').matches)) || window.navigator.standalone === true;
+    var appMode = nativeApp || standaloneMode;
     var appModeCookie = /(?:^|;\\s*)cn_android_app_mode=1(?:;|$)/.test(document.cookie || '');
     try {
-      if (query.get('source') === 'android-app') {
+      if (query.get('source') === 'android-app' || nativeApp || standaloneMode) {
         localStorage.setItem('cn_android_app_mode', '1');
         document.cookie = 'cn_android_app_mode=1; Max-Age=31536000; Path=/; SameSite=Lax; Secure';
         appMode = true;
@@ -130,7 +131,7 @@
       nativeStyle.textContent = [
         'html.cn-native-exam-app,body.cn-native-exam-app{min-height:100%;overscroll-behavior-y:contain;background:#f2f6fb;-webkit-tap-highlight-color:transparent}',
         'body.cn-native-exam-app{padding:0!important;margin:0!important}',
-        'body.cn-native-exam-app .exam-main-wrap{margin-left:0!important;min-height:100dvh;padding-bottom:calc(76px + env(safe-area-inset-bottom))}',
+        'body.cn-native-exam-app .exam-main-wrap{margin-left:0!important;min-height:100dvh;padding-bottom:calc(104px + env(safe-area-inset-bottom))!important}',
         'body.cn-native-exam-app .exam-sidebar{z-index:1201!important;top:env(safe-area-inset-top)!important;bottom:0!important;height:auto!important;width:min(86vw,320px)!important;padding-top:20px!important;transform:translateX(-110%)!important;visibility:hidden;transition:transform .24s ease,visibility .24s ease;box-shadow:16px 0 42px rgba(3,24,44,.28)!important}',
         'body.cn-native-exam-app .exam-sidebar.show{transform:translateX(0)!important;visibility:visible}',
         'body.cn-native-exam-app .mobile-scrim{z-index:1200!important}',
@@ -143,7 +144,7 @@
         'body.cn-native-exam-app .secure-top{display:grid!important;place-items:center;width:38px;height:38px;padding:0!important;font-size:0!important;border:1px solid #dcefe8!important;background:#f0faf5!important}',
         'body.cn-native-exam-app .secure-top i{font-size:14px!important;margin:0!important}',
         'body.cn-native-exam-app .header-avatar{display:none!important}',
-        'body.cn-native-exam-app .exam-main{width:100%!important;max-width:none!important;margin:0!important;padding:17px 14px calc(24px + env(safe-area-inset-bottom))!important}',
+        'body.cn-native-exam-app .exam-main{width:100%!important;max-width:none!important;margin:0!important;padding:17px 14px calc(42px + env(safe-area-inset-bottom))!important}',
         'body.cn-native-exam-app .module-view{scroll-margin-top:78px}',
         'body.cn-native-exam-app .dashboard-welcome{border-radius:23px!important;box-shadow:0 13px 32px rgba(18,49,78,.13)!important}',
         'body.cn-native-exam-app .stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important;margin:13px 0 22px!important}',
@@ -267,7 +268,7 @@
       roleStyle.id = 'cn-native-role-style';
       roleStyle.textContent = [
         'html.cn-native-app,body.cn-native-app{min-height:100%;overscroll-behavior-y:contain;-webkit-tap-highlight-color:transparent;background:#f2f6fb}',
-        'body.cn-native-app{margin:0!important;padding-bottom:calc(78px + env(safe-area-inset-bottom))!important}',
+        'body.cn-native-app{margin:0!important;padding-bottom:calc(112px + env(safe-area-inset-bottom))!important}',
         'body.cn-native-app .ia-sidebar,body.cn-native-app #sidebar{position:fixed!important;z-index:1201!important;top:env(safe-area-inset-top)!important;bottom:0!important;height:auto!important;max-height:none!important;width:min(86vw,320px)!important;overflow-y:auto!important;transform:translateX(-110%);visibility:hidden;transition:transform .24s ease,visibility .24s ease;box-shadow:16px 0 42px rgba(3,24,44,.25)!important}',
         'body.cn-native-app .ia-sidebar.cn-app-open,body.cn-native-app #sidebar.cn-app-open{transform:translateX(0)!important;visibility:visible}',
         'body.cn-native-app .ia-main,body.cn-native-app .ia-content,body.cn-native-app main{margin-left:0!important;width:100%!important;max-width:none!important}',
@@ -381,7 +382,7 @@
     style.id = 'cn-native-app-style';
     style.textContent = [
       'html.cn-native-app,body.cn-native-app{min-height:100%;overscroll-behavior-y:contain}',
-      'body.cn-native-app{padding-bottom:calc(82px + env(safe-area-inset-bottom))!important}',
+      'body.cn-native-app{padding-bottom:calc(112px + env(safe-area-inset-bottom))!important}',
       '#cn-native-tabbar{position:fixed;z-index:2147483000;left:0;right:0;bottom:0;display:flex;align-items:stretch;justify-content:space-around;gap:4px;padding:9px 10px calc(9px + env(safe-area-inset-bottom));background:rgba(255,255,255,.97);border-top:1px solid #dfe8f1;box-shadow:0 -8px 28px rgba(8,35,61,.10);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);font-family:Inter,system-ui,sans-serif}',
       '#cn-native-tabbar .cn-tab{flex:1;min-width:0;min-height:52px;border:0;border-radius:13px;background:transparent;color:#728197;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font:700 10px Inter,system-ui,sans-serif;text-decoration:none;cursor:pointer;-webkit-tap-highlight-color:transparent}',
       '#cn-native-tabbar .cn-tab svg{width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}',
@@ -415,7 +416,7 @@
       style.textContent += [
         'body.cn-native-app #mobile-menu-toggle,body.cn-native-app .mobile-nav-toggle{display:none!important}',
         'body.cn-native-app #main-header{padding-top:calc(10px + env(safe-area-inset-top))!important}',
-        'body.cn-native-app #app-content{padding-bottom:calc(92px + env(safe-area-inset-bottom))!important}',
+        'body.cn-native-app #app-content{padding-bottom:calc(126px + env(safe-area-inset-bottom))!important}',
         'body.cn-native-app #cn-native-tabbar{min-height:68px!important}',
         'body.cn-native-app .main-content,body.cn-native-app #main-content{padding-bottom:18px!important}'
       ].join('');
