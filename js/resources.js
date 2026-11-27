@@ -84,7 +84,7 @@ class ResourcesModule {
         this.userProgramCode = 'KRCHN';
         this.userBlock = 'Introductory';
         this.userTerm = null;
-        this.userIntakeYear = 2025;
+        this.userIntakeYear = null;
         this.userId = null;
         this.isTVETStudent = false;
         this.userProfile = null;
@@ -188,7 +188,7 @@ class ResourcesModule {
         this.setupAudioEvents();
         this.setupSummaryEvents();
         this.detectUserProgram();
-        this.loadResources();
+        // Resource loading is deferred until the authenticated student context is ready.
         this.initWaveformCanvas();
     }
     
@@ -1896,7 +1896,7 @@ class ResourcesModule {
                 console.log(`✅ KRCHN Student: ${programCode}, Block: ${this.userBlock}`);
             }
             
-            this.userIntakeYear = profile.intake_year || profile.intake || 2025;
+            this.userIntakeYear = profile.intake_year || profile.intake || null;
             
             this.updateUIForProgram();
             this.updateBlockFilterOptions();
@@ -1932,7 +1932,7 @@ class ResourcesModule {
             
             const { data: profile, error } = await supabase
                 .from('consolidated_user_profiles_table')
-                .select('program, intake_year, block, full_name, role, student_id, term, program_type')
+                .select('program, intake_year, intake, block, full_name, role, student_id, term, program_type, institution_id, semester, semester_number')
                 .eq('user_id', user.id)
                 .maybeSingle();
             
@@ -2112,14 +2112,17 @@ class ResourcesModule {
         
         try {
             const isTVET = this.isTVETStudent || this.userProgram === 'tvet';
-            const intakeYear = this.userIntakeYear || 2025;
+            const profile = this.userProfile || window.currentUserProfile || {};
+            const institutionId = window.CURRENT_INSTITUTION_ID || profile.institution_id || window.currentUserProfile?.institution_id;
+            const intakeYear = profile.intake_year || profile.intake || this.userIntakeYear || null;
+            if (!institutionId) throw new Error('Your institution could not be identified. Please sign in again or contact your institution administrator.');
             
             let query = supabase
                 .from('resources')
                 .select('*')
-            .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)
-                .eq('intake', String(intakeYear))
+                .eq('institution_id', institutionId)
                 .order('created_at', { ascending: false });
+            if (intakeYear) query = query.eq('intake', String(intakeYear));
             
             if (isTVET) {
                 const studentProgram = this.userProfile?.program || '';
@@ -2790,7 +2793,9 @@ class ResourcesModule {
         this.applyFilters();
     }
     
-    retryLoad() { this.loadResources(); }
+    // Compatibility entry points used by the dashboard navigation and inline controls.
+    loadAllResources() { return this.loadResources(); }
+    retryLoad() { return this.loadResources(); }
     
     showToast(message, type = 'info') {
         const toast = document.getElementById('toast');
@@ -2820,11 +2825,11 @@ class ResourcesModule {
         await this.getUserProfile();
         
         let attempts = 0;
-        const maxAttempts = 30;
+        const maxAttempts = 40;
         
         const checkAndInit = async () => {
             attempts++;
-            const hasDb = window.db && window.db.supabase;
+            const hasDb = !!this.getSupabaseClient();
             const hasUserProfile = window.currentUserProfile || this.userProfile;
             
             if (hasDb && hasUserProfile) {
@@ -2834,7 +2839,7 @@ class ResourcesModule {
                 console.log(`⏳ Waiting for user profile... (attempt ${attempts}/${maxAttempts})`);
                 setTimeout(checkAndInit, 500);
             } else {
-                console.error('❌ Timeout waiting for user profile');
+                console.error('❌ Timeout waiting for user profile or database context');
                 if (this.resourcesGrid) {
                     this.resourcesGrid.innerHTML = `
                         <div style="grid-column:1/-1;text-align:center;padding:60px 20px;background:white;border-radius:12px;border:1px solid #e5e7eb;">
@@ -2871,11 +2876,16 @@ function initResourcesModule() {
         console.log('Resources grid not found');
         return null;
     }
-    if (resourcesModule) return resourcesModule;
+    if (resourcesModule) {
+        window.resourcesModule = resourcesModule;
+        window.loadStudentResources = () => resourcesModule.loadResources();
+        return resourcesModule;
+    }
     try {
         resourcesModule = new ResourcesModule();
         resourcesModule.initialize();
         window.resourcesModule = resourcesModule;
+        window.loadStudentResources = () => resourcesModule.loadResources();
         return resourcesModule;
     } catch (error) {
         console.error('Resources init error:', error);
