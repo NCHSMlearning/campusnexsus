@@ -235,7 +235,7 @@
         
         fetchProfileFromDB: async function() {
             try {
-                const supabase = window.db?.supabase;
+                const supabase = window.db?.supabase || window.supabase || window.supabaseClient;
                 if (!supabase) return null;
                 
                 const userId = window.db?.currentUserId || window.currentUser?.id;
@@ -288,7 +288,8 @@
         },
         
         getRegisteredUnits: async function() {
-            console.log('📚 Fetching registered units...');
+            console.log('📚 Fetching approved registered units for the current academic period...');
+            this.registeredUnits = [];
             
             // Try to get from unit registration module
             if (window.unitRegistrationModule && window.unitRegistrationModule.registeredUnits) {
