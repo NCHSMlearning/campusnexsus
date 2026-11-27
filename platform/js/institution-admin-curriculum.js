@@ -85,6 +85,8 @@
   const q=norm($("iaUnitRegistrationSearch")?.value);
   const rows=registrations.filter(r=>norm(r.status||"pending")===status&&(!q||[groupStudentName({first:r,profile:r._studentProfile}),r._studentProfile?.student_id,r._studentProfile?.admission_number,r._studentProfile?.email,r.unit_name,r.unit_code,r.program,r.block,r.term,r.academic_year].some(v=>norm(v).includes(q))));
   const groups=registrationGroups(rows);
+  const countNode=$(status==="pending"?"iaRegPendingGroups":status==="approved"?"iaRegApprovedGroups":"iaRegRejectedGroups");
+  if(countNode)countNode.textContent=groups.length+" student group"+(groups.length===1?"":"s");
   body.innerHTML=groups.length?groups.map(g=>renderRegistrationGroup(g,status)).join(""):'<tr><td colspan="6" class="ia-empty">No '+status+' registrations found.</td></tr>';
  }
  function renderRegistrations(){
