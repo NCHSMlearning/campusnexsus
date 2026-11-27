@@ -594,6 +594,7 @@
                     .from('student_unit_registrations')
                     .select('*')
                     .eq('student_id', this.studentId)
+                    .eq('institution_id', this.getInstitutionId())
                     .order('submitted_date', { ascending: false });
                 
                 if (error) throw error;
@@ -635,7 +636,8 @@ async loadAvailableUnits(supabase) {
         const { data: freshRegs, error: regError } = await supabase
             .from('student_unit_registrations')
             .select('unit_code, status')
-            .eq('student_id', this.studentId);
+            .eq('student_id', this.studentId)
+                    .eq('institution_id', this.getInstitutionId());
         
         if (regError) throw regError;
         
@@ -1207,6 +1209,7 @@ attachCheckboxEvents() {
                         .from('student_unit_registrations')
                         .select('id, status')
                         .eq('student_id', this.studentId)
+                    .eq('institution_id', this.getInstitutionId())
                         .eq('unit_code', code)
                         .maybeSingle();
                     
@@ -1465,7 +1468,8 @@ async loadEligibleUnits() {
         const { data: allRegs } = await supabase
             .from('student_unit_registrations')
             .select('unit_code, reg_type, status, id')
-            .eq('student_id', userId);
+            .eq('student_id', userId)
+                    .eq('institution_id', this.getInstitutionId());
         
         const registeredMap = {};
         allRegs?.forEach(r => {
@@ -1754,6 +1758,7 @@ async loadStudentSupplementaryRegistrations() {
             .from('student_unit_registrations')
             .select('*')
             .eq('student_id', this.studentId)
+                    .eq('institution_id', this.getInstitutionId())
             .in('reg_type', ['Supplementary', 'Retake'])
             .order('submitted_date', { ascending: false });
         
