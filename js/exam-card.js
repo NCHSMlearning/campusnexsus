@@ -95,7 +95,12 @@
                 this.academicStructure = null;
                 return null;
             }
-            this.academicStructure = await window.CampusAcademicStructure.resolve(client, institutionId, programCode, { refresh: true });
+            try {
+                this.academicStructure = await window.CampusAcademicStructure.resolve(client, institutionId, programCode, { refresh: true });
+            } catch (error) {
+                console.warn('Institution academic structure lookup failed; using the student profile period:', error);
+                this.academicStructure = null;
+            }
             this.userBlock = this.getBlockValue();
             return this.academicStructure;
         }
