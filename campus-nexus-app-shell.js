@@ -3,8 +3,20 @@
   function start() {
     var cap = window.Capacitor;
     var nativeApp = !!(cap && typeof cap.isNativePlatform === 'function' && cap.isNativePlatform());
+    var query = new URLSearchParams(window.location.search);
+    var appMode = nativeApp;
+    try {
+      if (query.get('source') === 'android-app') {
+        localStorage.setItem('cn_android_app_mode', '1');
+        appMode = true;
+      } else if (localStorage.getItem('cn_android_app_mode') === '1') {
+        appMode = true;
+      }
+    } catch (_) {
+      appMode = nativeApp || query.get('source') === 'android-app';
+    }
 
-    if (!nativeApp || document.getElementById('cn-native-tabbar')) return;
+    if (!appMode || document.getElementById('cn-native-tabbar')) return;
 
     // Dedicated native shell for the student examination centre. Reuse its
     // existing module links and handlers; this is navigation/UI only.
@@ -140,6 +152,126 @@
           }else if(typeof appPlugin.exitApp==='function'){appPlugin.exitApp();}
         });
       }
+      return;
+    }
+
+    // Role-aware mobile app shell for lecturer and institution-admin portals.
+    var iaNav = document.getElementById('iaNav');
+    var lecturerNav = document.getElementById('mainNav');
+    var roleNav = iaNav || lecturerNav;
+    if (roleNav) {
+      var isInstitutionAdmin = !!iaNav;
+      var roleBodyClass = isInstitutionAdmin ? 'cn-native-institution-app' : 'cn-native-lecturer-app';
+      document.documentElement.classList.add('cn-native-app', roleBodyClass);
+      document.body.classList.add('cn-native-app', roleBodyClass);
+      var roleMeta = document.querySelector('meta[name="viewport"]');
+      if (roleMeta && !/viewport-fit=cover/.test(roleMeta.content)) roleMeta.content += ',viewport-fit=cover';
+      var roleStyle = document.createElement('style');
+      roleStyle.id = 'cn-native-role-style';
+      roleStyle.textContent = [
+        'html.cn-native-app,body.cn-native-app{min-height:100%;overscroll-behavior-y:contain;-webkit-tap-highlight-color:transparent;background:#f2f6fb}',
+        'body.cn-native-app{margin:0!important;padding-bottom:calc(78px + env(safe-area-inset-bottom))!important}',
+        'body.cn-native-app .ia-sidebar,body.cn-native-app #sidebar{position:fixed!important;z-index:1201!important;top:env(safe-area-inset-top)!important;bottom:0!important;height:auto!important;max-height:none!important;width:min(86vw,320px)!important;overflow-y:auto!important;transform:translateX(-110%);visibility:hidden;transition:transform .24s ease,visibility .24s ease;box-shadow:16px 0 42px rgba(3,24,44,.25)!important}',
+        'body.cn-native-app .ia-sidebar.cn-app-open,body.cn-native-app #sidebar.cn-app-open{transform:translateX(0)!important;visibility:visible}',
+        'body.cn-native-app .ia-main,body.cn-native-app .ia-content,body.cn-native-app main{margin-left:0!important;width:100%!important;max-width:none!important}',
+        'body.cn-native-app .ia-main{padding-left:14px!important;padding-right:14px!important}',
+        'body.cn-native-app .ia-topbar,body.cn-native-app .topbar,body.cn-native-app header{scroll-margin-top:env(safe-area-inset-top)}',
+        'body.cn-native-app button,body.cn-native-app a{touch-action:manipulation}',
+        'body.cn-native-app input,body.cn-native-app select,body.cn-native-app textarea{font-size:16px!important}',
+        'body.cn-native-app .ia-view,body.cn-native-app [data-view-panel]{scroll-margin-top:76px}',
+        'body.cn-native-app .ia-nav-item,body.cn-native-app #mainNav a[data-tab]{min-height:46px}',
+        '#cn-native-tabbar{position:fixed!important;z-index:2147483000!important;left:0!important;right:0!important;bottom:0!important;display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;align-items:stretch!important;gap:3px!important;padding:7px 8px calc(7px + env(safe-area-inset-bottom))!important;background:rgba(255,255,255,.97)!important;border-top:1px solid #e3eaf1!important;box-shadow:0 -8px 28px rgba(8,35,61,.10)!important;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);font-family:Inter,system-ui,sans-serif}',
+        '#cn-native-tabbar .cn-tab{position:relative!important;min-width:0!important;min-height:54px!important;border:0!important;border-radius:14px!important;background:transparent!important;color:#8492a4!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:4px!important;font:700 9px Inter,system-ui,sans-serif!important;text-decoration:none!important;cursor:pointer!important}',
+        '#cn-native-tabbar .cn-tab svg{width:21px!important;height:21px!important;stroke:currentColor!important;fill:none!important;stroke-width:1.9!important;stroke-linecap:round!important;stroke-linejoin:round!important}',
+        '#cn-native-tabbar .cn-tab.active{color:#d41468!important;background:#fff0f6!important}',
+        '#cn-native-tabbar .cn-tab span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+        '#cn-native-tabbar .cn-tab:focus-visible{outline:3px solid #55b9e8;outline-offset:2px}',
+        '#cn-native-menu-scrim{position:fixed!important;z-index:1200!important;inset:0!important;background:rgba(3,18,34,.45)!important;backdrop-filter:blur(3px);display:none}',
+        '#cn-native-menu-scrim.show{display:block!important}',
+        '@media(min-width:681px){#cn-native-tabbar{max-width:640px!important;left:50%!important;right:auto!important;transform:translateX(-50%)!important;bottom:10px!important;border:1px solid #e3eaf1!important;border-radius:20px!important;padding-bottom:7px!important}}',
+        '@media(max-width:380px){#cn-native-tabbar .cn-tab{font-size:8px!important}}'
+      ].join('');
+      document.head.appendChild(roleStyle);
+
+      var configs = isInstitutionAdmin ? [
+        {key:'overview',label:'Home',icon:'<svg viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></svg>'},
+        {key:'students',label:'Students',icon:'<svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M10 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM20 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>'},
+        {key:'staff',label:'Staff',icon:'<svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M10 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM20 8v6M17 11h6"/></svg>'},
+        {key:'exams',label:'Exams',icon:'<svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>'},
+        {key:'reports',label:'Reports',icon:'<svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h17M7 15l4-4 3 2 6-7"/></svg>'}
+      ] : [
+        {key:'dashboard',label:'Home',icon:'<svg viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></svg>'},
+        {key:'my-courses',label:'Classes',icon:'<svg viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21zM4 5.5v13A2.5 2.5 0 0 1 6.5 16H20"/></svg>'},
+        {key:'my-students',label:'Students',icon:'<svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M10 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM20 21v-2a4 4 0 0 0-3-3.87"/></svg>'},
+        {key:'cats',label:'Assess',icon:'<svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>'},
+        {key:'profile',label:'Profile',icon:'<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>'}
+      ];
+      var tabBar = document.createElement('nav');
+      tabBar.id = 'cn-native-tabbar';
+      tabBar.setAttribute('aria-label', 'Campus Nexus app navigation');
+      var scrim = document.createElement('div');
+      scrim.id = 'cn-native-menu-scrim';
+      document.body.appendChild(scrim);
+      var drawer = isInstitutionAdmin ? document.getElementById('iaSidebar') : document.getElementById('sidebar');
+      function findRoleControl(key) {
+        return isInstitutionAdmin
+          ? roleNav.querySelector('.ia-nav-item[data-view="' + key + '"]')
+          : roleNav.querySelector('a[data-tab="' + key + '"]');
+      }
+      function syncRoleTabs() {
+        configs.forEach(function(item) {
+          var control = findRoleControl(item.key);
+          var active = !!control && (control.classList.contains('active') || control.getAttribute('aria-current') === 'page');
+          var tab = tabBar.querySelector('[data-key="' + item.key + '"]');
+          if (tab) tab.classList.toggle('active', active);
+        });
+      }
+      configs.forEach(function(item) {
+        var tab = document.createElement('button');
+        tab.type = 'button'; tab.className = 'cn-tab'; tab.dataset.key = item.key;
+        tab.innerHTML = item.icon + '<span></span>';
+        tab.querySelector('span').textContent = item.label;
+        tab.addEventListener('click', function() {
+          var control = findRoleControl(item.key);
+          if (control) control.click();
+          syncRoleTabs();
+          window.scrollTo({top:0,behavior:'smooth'});
+        });
+        tabBar.appendChild(tab);
+      });
+      var more = document.createElement('button');
+      more.type = 'button'; more.className = 'cn-tab'; more.innerHTML = '<svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg><span>More</span>';
+      more.addEventListener('click', function() {
+        if (!drawer) return;
+        var opened = drawer.classList.toggle('cn-app-open');
+        scrim.classList.toggle('show', opened);
+        more.setAttribute('aria-expanded', String(opened));
+      });
+      // Keep five destinations plus a More entry by replacing the fifth tab on narrow role layouts.
+      if (!isInstitutionAdmin) {
+        var profileTab = tabBar.lastElementChild;
+        if (profileTab) tabBar.removeChild(profileTab);
+      } else {
+        var reportsTab = tabBar.lastElementChild;
+        if (reportsTab) tabBar.removeChild(reportsTab);
+      }
+      tabBar.appendChild(more);
+      document.body.appendChild(tabBar);
+      scrim.addEventListener('click', function() {
+        if (drawer) drawer.classList.remove('cn-app-open');
+        scrim.classList.remove('show');
+      });
+      roleNav.addEventListener('click', function(event) {
+        var control = event.target.closest(isInstitutionAdmin ? '.ia-nav-item' : 'a[data-tab]');
+        if (control) {
+          window.setTimeout(syncRoleTabs, 0);
+          if (drawer) drawer.classList.remove('cn-app-open');
+          scrim.classList.remove('show');
+        }
+      });
+      var roleObserver = new MutationObserver(syncRoleTabs);
+      roleObserver.observe(roleNav, {subtree:true,attributes:true,attributeFilter:['class','aria-current']});
+      syncRoleTabs();
       return;
     }
 
