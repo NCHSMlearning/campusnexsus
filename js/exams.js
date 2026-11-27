@@ -575,6 +575,7 @@ applyDataFilter() {
                     supabase
                         .from('exams')
                         .select('*, course:course_id(course_name)')
+                    .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)
                         .eq('intake_year', this.intakeYear)
                         .eq('program_type', this.programType)
                         .order('exam_date', { ascending: true }),
@@ -583,11 +584,13 @@ applyDataFilter() {
                         .from('exam_grades')
                         .select('*')
                         .eq('student_id', this.userId)
+                    .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)
                         .eq('question_id', '00000000-0000-0000-0000-000000000000'),
                     
                     supabase
                         .from('released_exam_results')
                         .select('result_id')
+                    .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)
                 ]);
                 
                 const { data: exams, error: examsError } = examsResult;
