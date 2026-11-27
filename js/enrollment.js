@@ -259,8 +259,17 @@ async function initializeSessionReporting() {
             (nowYear + 2) + '/' + (nowYear + 3),
             academicYear
         ].filter(Boolean))];
-        yearSelect.innerHTML = '<option value="">-- Select Academic Year --</option>' +
-            years.map(y => '<option value="' + escapeHtml(y) + '">' + escapeHtml(y) + '</option>').join('');
+        yearSelect.replaceChildren();
+        const yearPlaceholder = document.createElement('option');
+        yearPlaceholder.value = '';
+        yearPlaceholder.textContent = '-- Select Academic Year --';
+        yearSelect.appendChild(yearPlaceholder);
+        years.forEach(y => {
+            const option = document.createElement('option');
+            option.value = y;
+            option.textContent = y;
+            yearSelect.appendChild(option);
+        });
         yearSelect.value = years.includes(selectedYear) ? selectedYear : '';
     }
 
@@ -723,28 +732,33 @@ async function approveSessionReport(reportId) {
         if (updateError) throw updateError;
 
         const studentId = report.student_id;
-        const programType = report.program_type || detectProgramType(report.program);
         const session = report.session;
+        const institutionId = report.institution_id || window.CURRENT_INSTITUTION_ID;
+        let structure = null;
+        if (window.CampusAcademicStructure?.resolve && institutionId && report.program) {
+            structure = await window.CampusAcademicStructure.resolve(
+                sb, institutionId, report.program, { refresh: true }
+            );
+        }
+        const periodType = structure?.type || (report.program_type === 'Nursing' ? 'Block' : 'Term');
+        const updateData = { updated_at: new Date().toISOString() };
 
-        let updateData = {};
-
-        if (programType === 'Nursing') {
-            updateData = { current_block: session, updated_at: new Date().toISOString() };
-        } else {
-            const parts = session.split(' - ');
+        // current_block remains the compatible storage field used by legacy
+        // student modules, while the selected session keeps its real label
+        // (e.g. Semester 2 rather than being rewritten as a Block).
+        if (periodType === 'Semester' || periodType === 'Block') {
+            updateData.current_block = session;
+        } else if (periodType === 'Term') {
+            const parts = String(session).split(' - ');
             if (parts.length === 2) {
-                updateData = {
-                    current_year: parts[0].trim(),
-                    current_term: parts[1].trim(),
-                    updated_at: new Date().toISOString()
-                };
+                updateData.current_year = parts[0].trim();
+                updateData.current_term = parts[1].trim();
             } else {
-                const yearMatch = session.match(/Year\s*(\d+)/i);
-                const termMatch = session.match(/Term\s*(\d+)/i);
-                if (yearMatch) updateData.current_year = `Year ${yearMatch[1]}`;
-                if (termMatch) updateData.current_term = `Term ${termMatch[1]}`;
-                updateData.updated_at = new Date().toISOString();
+                updateData.current_term = session;
+                const yearMatch = String(session).match(/Year\s*\d+/i);
+                if (yearMatch) updateData.current_year = yearMatch[0];
             }
+            updateData.current_block = session;
         }
 
         const { error: profileError } = await sb
@@ -760,13 +774,14 @@ async function approveSessionReport(reportId) {
             if (altError) throw altError;
         }
 
-        if (programType === 'Nursing') {
-            ENR_STATE.currentBlock = session;
-        } else {
-            const parts = session.split(' - ');
+        ENR_STATE.currentBlock = session;
+        if (periodType === 'Term') {
+            const parts = String(session).split(' - ');
             if (parts.length === 2) {
                 ENR_STATE.currentYear = parts[0].trim();
                 ENR_STATE.currentTerm = parts[1].trim();
+            } else {
+                ENR_STATE.currentTerm = session;
             }
         }
 
