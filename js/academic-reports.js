@@ -1255,6 +1255,10 @@
                 else if (currentPeriod && periods.includes(currentPeriod)) filter.value = currentPeriod;
             }
 
+            const filterLabel = document.getElementById('semester-filter-label');
+            if (filterLabel) filterLabel.textContent = 'Select ' + periodLabel + ':';
+            const gpaLabel = document.getElementById('period-gpa-label');
+            if (gpaLabel) gpaLabel.textContent = periodLabel + ' GPA';
             const selectedPeriod = filter?.value || '';
             const grades = selectedPeriod
                 ? allGrades.filter(grade => String(grade.block || '').toLowerCase() === selectedPeriod.toLowerCase())
