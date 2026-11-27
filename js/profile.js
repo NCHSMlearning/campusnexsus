@@ -365,8 +365,8 @@ class ProfileModule {
     // 📥 LOAD PROFILE
     // ============================================================
     
-    async loadProfile()
-        if (window.waitForStudentPortalContext) await window.waitForStudentPortalContext(); {
+    async loadProfile() {
+        if (window.waitForStudentPortalContext) await window.waitForStudentPortalContext();
         this.showStatus('Loading profile...', 'info');
 
         try {
@@ -1818,8 +1818,8 @@ class ProfileModule {
     // 🛡️ 2FA FUNCTIONS - STANDALONE (NO NCHSMLOGIN)
     // ============================================================
     
-    async check2FAStatus()
-        if (window.waitForStudentPortalContext) await window.waitForStudentPortalContext(); {
+    async check2FAStatus() {
+        if (window.waitForStudentPortalContext) await window.waitForStudentPortalContext();
         try {
             if (!this.userId) return false;
             
