@@ -211,10 +211,10 @@
                     // Fallback defaults
                     this.studentProfile = {
                         full_name: 'Student Name',
-                        student_id: 'NCHSM/2024/001',
-                        program: 'KRCHN',
-                        intake_year: '2024',
-                        block: 'Block 4'
+                        student_id: '',
+                        program: '',
+                        intake_year: '',
+                        block: ''
                     };
                     this.userProgram = '';
                     this.userBlock = '';
@@ -550,9 +550,9 @@
             const institutionLogo = institution.logo_url || student.logo_url || '';
             const primaryColor = institution.primary_color || getComputedStyle(document.documentElement).getPropertyValue('--cn-institution-primary').trim() || '#4C1D95';
             const programType = this.userProgram || student.program_type || 'Programme';
-            const studentName = student.full_name || student.name || 'Student Name';
+            const studentName = student.full_name || student.name || 'Not Available';
             const studentId = student.student_id || student.registration_number || student.id?.substring(0, 8) || 'N/A';
-            const intakeYear = student.intake_year || student.admission_year || '2024';
+            const intakeYear = student.intake_year || student.admission_year || 'Not Available';
             
             // Build units table rows
             let unitsRows = '';
@@ -703,7 +703,7 @@
                 <!DOCTYPE html>
                 <html>
                 <head>
-                    <title>NCHSM Lecture Card</title>
+                    <title>${this.escapeHtml((this.studentProfile?.institution_name || window.CURRENT_INSTITUTION?.name || "Institution") + " Lecture Card")}</title>
                     <meta charset="UTF-8">
                     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
                     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -718,7 +718,7 @@
                 <body>
                     ${cardContent.innerHTML}
                     <div style="text-align: center; margin-top: 20px; font-size: 10px; color: #94a3b8;" class="no-print">
-                        Printed on ${currentDate} | NCHSM Student Portal
+                        Printed on ${currentDate} | ${this.escapeHtml(this.studentProfile?.institution_name || window.CURRENT_INSTITUTION?.name || 'Student Portal')}
                     </div>
                 </body>
                 </html>
