@@ -5,8 +5,20 @@ on:
     # Secure Exam Browser source/build changes do not alter the website.
     # Keep those commits out of the Pages deployment workflow.
     paths-ignore:
+      # Secure Exam Browser source/build changes do not alter the website.
       - 'secure-exam-browser/**'
       - '.github/workflows/build-cnseb.yml'
+      # App-related changes must finish the signed Android build first.
+      # The successful Android workflow_run below then performs the website deployment.
+      - 'campus-nexus-app/**'
+      - 'campus-nexus-app-shell.js'
+      - 'platform/student.html'
+      - 'platform/login.html'
+      - 'examlogin.html'
+      - 'platform/js/campus-nexus-app-install.js'
+      - 'images/logo-icon.png'
+      - 'images/campus-nexus-original-logo.webp'
+      - '.github/workflows/build-campus-nexus-app.yml'
   workflow_dispatch:
   workflow_run:
     workflows: ["Build Campus Nexus Android App"]
