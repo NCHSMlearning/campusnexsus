@@ -207,8 +207,8 @@ jobs:
           print(f"Staged exact release {tag}: {expected_name} ({target.stat().st_size} bytes)")
           PY
           test -s "$GITHUB_WORKSPACE/downloads/Campus-Nexus-App.apk"
-          test "$(stat -c%s "$GITHUB_WORKSPACE/downloads/Campus-Nexus-App-1.2.6.apk")" -gt 1000000
-          echo "Verified the exact versioned Campus Nexus APK at the website root."
+          test "$(stat -c%s "$GITHUB_WORKSPACE/downloads/Campus-Nexus-App.apk")" -gt 1000000
+          echo "Verified the pinned v1.2.6 Campus Nexus APK at the established website download route."
 
       - name: Inject native Campus Nexus app navigation
         run: |
