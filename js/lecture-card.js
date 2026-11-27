@@ -290,6 +290,7 @@
                             .from('student_unit_registrations')
                             .select('*')
                             .eq('student_id', userId)
+            .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)
                             .eq('status', 'approved')
                             .order('submitted_date', { ascending: false });
                         
@@ -347,6 +348,7 @@
                 let query = supabase
                     .from('timetables')
                     .select('course_name, session_name, lecturer_name, venue, block')
+            .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)
                     .not('lecturer_name', 'is', null)
                     .neq('lecturer_name', '—')
                     .neq('lecturer_name', 'TBA (Pending)')
