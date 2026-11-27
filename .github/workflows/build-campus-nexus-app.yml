@@ -140,7 +140,7 @@ jobs:
           gradle = gradle.replace(marker, marker + '\n        versionCode 10\n        versionName "1.2.8"', 1)
           path.write_text(gradle)
           PY
-          grep -q 'versionCode 9' android/app/build.gradle
+          grep -q 'versionCode 10' android/app/build.gradle
           grep -q 'versionName "1.2.8"' android/app/build.gradle
 
       - name: Sync Capacitor Android project
