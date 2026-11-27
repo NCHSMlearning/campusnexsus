@@ -36,16 +36,20 @@
   if (!button) return;
   var label = document.getElementById('downloadLabel');
   var status = document.getElementById('downloadStatus');
-  var busy = false;\n  var currentVersion = 'latest';\n  fetch('/app-update.json?check='+Date.now(),{cache:'no-store'}).then(function(r){if(!r.ok)throw new Error('metadata');return r.json();}).then(function(m){currentVersion=m.version;button.setAttribute('download','Campus-Nexus-App-'+m.version+'.apk');var meta=document.getElementById('appVersionMeta');if(meta)meta.innerHTML='Version '+m.version+' · Application ID: co.ke.campusnexus.app<br>Official signed Android release · Separate from Campus Nexus Secure Exam Browser.';}).catch(function(){});
+  var busy = false;
+  var currentVersion = 'latest';
+  fetch('/app-update.json?check='+Date.now(),{cache:'no-store'}).then(function(r){if(!r.ok)throw new Error('metadata');return r.json();}).then(function(m){currentVersion=m.version;button.setAttribute('download','Campus-Nexus-App-'+m.version+'.apk');var meta=document.getElementById('appVersionMeta');if(meta)meta.innerHTML='Version '+m.version+' · Application ID: co.ke.campusnexus.app<br>Official signed Android release · Separate from Campus Nexus Secure Exam Browser.';}).catch(function(){});
   button.addEventListener('click', function (event) {
     if (busy) { event.preventDefault(); return; }
     busy = true;
-    button.setAttribute('aria-busy', 'true');\n    button.setAttribute('aria-disabled', 'true');
+    button.setAttribute('aria-busy', 'true');
+    button.setAttribute('aria-disabled', 'true');
     if (label) label.textContent = 'Starting secure download…';
     if (status) status.textContent = 'Preparing Campus Nexus Android '+currentVersion+'. Your browser should show the APK download shortly.';
     window.setTimeout(function () {
       busy = false;
-      button.removeAttribute('aria-busy');\n      button.removeAttribute('aria-disabled');
+      button.removeAttribute('aria-busy');
+      button.removeAttribute('aria-disabled');
       if (label) label.textContent = 'Download Android App';
       if (status) status.textContent = 'If the download did not appear in your notifications or Downloads folder, tap the button to try again.';
     }, 12000);
