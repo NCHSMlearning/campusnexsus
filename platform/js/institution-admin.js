@@ -173,6 +173,16 @@ async function loadWorkspaceDashboardStats(){
    if(total)total.textContent=error?"—":Number(count||0).toLocaleString("en-KE");
    if(detail)detail.textContent=error?"Statistics unavailable":status.active+" active · "+status.done+" completed · "+status.attention+" attention";
   });
+  // Helpdesk metrics must reflect real student support tickets, not generic workspace placeholders.
+  if(visible.includes("helpdesk")){
+   const ticketResult=await state.db.from("support_tickets").select("id,status,priority").eq("institution_id",state.institutionId).limit(10000);
+   if(ticketResult.error)throw ticketResult.error;
+   const tickets=ticketResult.data||[],open=tickets.filter(t=>!["resolved","closed"].includes(String(t.status||"open").toLowerCase())).length;
+   const done=tickets.length-open,attention=tickets.filter(t=>["urgent","high"].includes(String(t.priority||"").toLowerCase())&&!["resolved","closed"].includes(String(t.status||"open").toLowerCase())).length;
+   const total=$("wsDash-helpdesk"),detail=$("wsDash-helpdesk-detail");
+   if(total)total.textContent=tickets.length.toLocaleString("en-KE");
+   if(detail)detail.textContent=open+" open · "+done+" resolved/closed · "+attention+" priority";
+  }
   if(stamp)stamp.textContent="Updated just now · "+visible.length+" enabled modules";
  }catch(error){
   console.warn("Additional module statistics unavailable",error);
