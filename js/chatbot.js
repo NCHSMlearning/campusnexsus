@@ -10,6 +10,10 @@ class ChatbotAssistant {
         this.userId = null;
         this.userProfile = null;
         this.sb = null;
+        this.getSupabaseClient = () => {
+            const candidates = [window.db?.supabase, window.sb, window.supabaseClient, window.supabase];
+            return candidates.find(client => client && typeof client.from === 'function') || null;
+        };
         this.sessionId = null;
         this.conversationHistory = [];
         
@@ -69,6 +73,7 @@ class ChatbotAssistant {
     
     async loadCustomResponses() {
         try {
+            this.sb = this.getSupabaseClient();
             if (!this.sb) {
                 console.log('⏳ Waiting for Supabase to load custom responses...');
                 setTimeout(() => this.loadCustomResponses(), 1000);
@@ -120,7 +125,7 @@ class ChatbotAssistant {
         if (window.currentUserId) {
             this.userId = window.currentUserId;
             this.userProfile = window.currentUserProfile;
-            this.sb = window.db?.supabase || window.supabase;
+            this.sb = this.getSupabaseClient();
             console.log('🤖 Chatbot connected to user:', this.userId);
         }
         
