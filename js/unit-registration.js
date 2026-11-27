@@ -697,15 +697,25 @@ async loadAvailableUnits(supabase) {
         
         async loadMaxUnits(supabase) {
             try {
-                const { data, error } = await supabase
+                const institutionId = this.getInstitutionId();
+                if (!institutionId) throw new Error('Institution is not resolved.');
+                let { data, error } = await supabase
                     .from('app_settings')
                     .select('value')
                     .eq('key', 'max_units_per_trimester')
+                    .eq('institution_id', institutionId)
                     .maybeSingle();
-                
-                if (!error && data) {
-                    this.maxUnits = parseInt(data.value);
+                if (!error && !data) {
+                    const globalSetting = await supabase
+                        .from('app_settings')
+                        .select('value')
+                        .eq('key', 'max_units_per_trimester')
+                        .is('institution_id', null)
+                        .maybeSingle();
+                    data = globalSetting.data;
+                    error = globalSetting.error;
                 }
+                if (!error && data) this.maxUnits = parseInt(data.value);
             } catch (error) {
                 console.log('Using default max units: 15');
             }
