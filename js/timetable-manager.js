@@ -454,7 +454,7 @@
     const client = getSupabase();
     if (!client) throw new Error('Supabase client is not available yet.');
 
-    let query = client.from('timetables').select('*');
+    let query = client.from('timetables').select('*').eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id);
 
     if (block) {
       query = query.eq('block', block);
