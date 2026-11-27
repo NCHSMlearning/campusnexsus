@@ -1366,135 +1366,175 @@ attachCheckboxEvents() {
                 this.showError('Unable to verify unit registration status: ' + gateError.message, 'error');
                 return;
             }
+
             if (this.isSubmitting) {
                 this.showError('Please wait...', 'warning');
                 return;
             }
-            
-            const regType = this.regType?.value;
+
+            const regType = String(this.regType?.value || '').trim();
             if (!regType) {
                 this.showError('Select Registration Type', 'warning');
                 return;
             }
-            
-            const selectedCheckboxes = document.querySelectorAll('.unit-checkbox:checked');
-            const selectedCodes = Array.from(selectedCheckboxes).map(cb => cb.dataset.code);
-            
-            if (selectedCodes.length === 0) {
+
+            const selectedCheckboxes = Array.from(document.querySelectorAll('.unit-checkbox:checked'));
+            const selectedCodes = [...new Set(selectedCheckboxes
+                .map(cb => String(cb.dataset.code || '').trim())
+                .filter(Boolean))];
+
+            if (!selectedCodes.length) {
                 this.showError('No units selected', 'warning');
                 return;
             }
-            
+
             if (!confirm(`Submit ${selectedCodes.length} unit(s) for ${regType}?`)) return;
-            
+
             this.isSubmitting = true;
             if (this.submitBtn) {
                 this.submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
                 this.submitBtn.disabled = true;
             }
-            
+
             try {
                 const supabase = this.getSupabase();
                 if (!supabase) throw new Error('Database not available');
-                
-                // ✅ FIX: Check database directly for each unit
+
+                const institutionId = this.getInstitutionId();
+                const programCode = String(
+                    this.catalogProgramCode ||
+                    this.academicStructure?.program?.program_code ||
+                    this.programCode ||
+                    this.userProfile?.program_code ||
+                    this.userProfile?.program ||
+                    ''
+                ).trim().toUpperCase();
+
+                if (!institutionId) throw new Error('Your institution could not be identified. Please sign in again.');
+                if (!programCode) throw new Error('Your programme could not be identified from your student profile. Please contact the administrator.');
+
                 const alreadyRegistered = [];
                 const newUnits = [];
-                
+
                 for (const code of selectedCodes) {
-                    const { data: existing, error } = await supabase
+                    const { data: existing, error: existingError } = await supabase
                         .from('student_unit_registrations')
                         .select('id, status')
                         .eq('student_id', this.studentId)
-                    .eq('institution_id', this.getInstitutionId())
+                        .eq('institution_id', institutionId)
                         .eq('unit_code', code)
                         .maybeSingle();
-                    
-                    if (existing && (existing.status === 'pending' || existing.status === 'approved')) {
+
+                    if (existingError) throw existingError;
+
+                    const status = String(existing?.status || '').toLowerCase();
+                    if (existing && ['pending', 'approved'].includes(status)) {
                         alreadyRegistered.push(code);
                     } else {
                         newUnits.push(code);
                     }
                 }
-                
-                if (newUnits.length === 0) {
+
+                if (!newUnits.length) {
                     this.showError('All selected units are already registered.', 'warning');
-                    document.querySelectorAll('.unit-checkbox:checked').forEach(cb => cb.checked = false);
-                    this.updateSelectedCount();
                     return;
                 }
-                
-                // ✅ Refresh registered units count
+
                 await this.loadRegisteredUnits(supabase);
-                const currentTotal = this.registeredUnits.filter(u => u.status === 'pending' || u.status === 'approved').length;
-                
+                const currentTotal = this.registeredUnits.filter(u =>
+                    ['pending', 'approved'].includes(String(u.status || '').toLowerCase())
+                ).length;
+
                 if (newUnits.length + currentTotal > this.maxUnits) {
-                    this.showError(`You can only register up to ${this.maxUnits} units total.`, 'warning');
+                    this.showError(`You can only register up to ${this.maxUnits} units total. You currently have ${currentTotal}.`, 'warning');
                     return;
                 }
-                
-                const institutionId = this.getInstitutionId();
+
+                // Use the same resolved programme code used by the unit catalogue loader.
                 const { data: units, error: unitsError } = await supabase
                     .from('units_catalog')
                     .select('*')
                     .eq('institution_id', institutionId)
-                    .eq('program', String(this.programCode || '').trim().toUpperCase())
+                    .eq('program', programCode)
                     .in('unit_code', newUnits);
-                
+
                 if (unitsError) throw unitsError;
-                
-                // ✅ TVET fix
-                const academicYear = new Date().getFullYear().toString();
-                const isTVET = this.isTVETStudent || TVET_PROGRAMS.includes(this.programCode);
-                
+
+                const foundCodes = new Set((units || []).map(unit => String(unit.unit_code || '').trim()));
+                const missingCodes = newUnits.filter(code => !foundCodes.has(code));
+                if (missingCodes.length) {
+                    console.error('Selected units not found in the resolved programme catalogue:', {
+                        institutionId, programCode, missingCodes
+                    });
+                    throw new Error(
+                        `Could not match ${missingCodes.length} selected unit(s) to programme ${programCode}: ${missingCodes.join(', ')}. No registration was submitted. Refresh the unit list and try again.`
+                    );
+                }
+
+                const academicYear = new Date().getFullYear();
+                const isTVET = this.isTVETStudent || TVET_PROGRAMS.includes(programCode);
                 let term = this.getCurrentTerm();
                 if (isTVET) {
-                    term = this.userProfile?.block || 
-                           this.userProfile?.current_block || 
-                           this.userProfile?.term || 
-                           'Year 1 Term 1';
+                    term = this.userProfile?.block ||
+                        this.userProfile?.current_block ||
+                        this.userProfile?.term ||
+                        'Year 1 Term 1';
                 }
-                
+
+                const now = new Date().toISOString();
                 const registrations = units.map(unit => ({
                     student_id: this.studentId,
                     institution_id: institutionId,
                     unit_code: unit.unit_code,
                     unit_name: unit.unit_name,
-                    program: unit.program || this.programCode,
+                    program: unit.program || programCode,
                     block: unit.block || this.userProfile?.block || (isTVET ? 'Year 1 Term 1' : 'Introductory'),
                     reg_type: regType,
                     status: 'pending',
-                    submitted_date: new Date().toISOString(),
-                    created_at: new Date().toISOString(),
-                    updated_at: new Date().toISOString(),
+                    submitted_date: now,
+                    created_at: now,
+                    updated_at: now,
                     credits: unit.credits || 3,
                     intake_year: this.intakeYear,
-                    academic_year: parseInt(academicYear),
-                    term: term
+                    academic_year: academicYear,
+                    term
                 }));
-                
-                const { error } = await supabase
+
+                if (!registrations.length || registrations.length !== newUnits.length) {
+                    throw new Error('Registration was stopped because the selected units could not all be prepared. No records were submitted.');
+                }
+
+                // Request inserted rows back so success is based on database confirmation,
+                // not on the number of rows merely prepared in JavaScript.
+                const { data: insertedRows, error: insertError } = await supabase
                     .from('student_unit_registrations')
-                    .insert(registrations);
-                
-                if (error) {
-                    if (error.code === '23505') {
-                        // If duplicate, refresh and try to identify
+                    .insert(registrations)
+                    .select('id, unit_code');
+
+                if (insertError) {
+                    if (insertError.code === '23505') {
                         await this.loadRegisteredUnits(supabase);
-                        this.showError('This unit is already registered. Please refresh and check your registered units.', 'warning');
+                        this.showError('One or more units were registered already. Refresh your registered units and try again.', 'warning');
                         return;
                     }
-                    throw error;
+                    throw insertError;
                 }
-                
-                this.showSuccess(`${registrations.length} unit(s) submitted for ${regType} approval!`);
-                
-                document.querySelectorAll('.unit-checkbox:checked').forEach(cb => cb.checked = false);
+
+                const insertedCount = insertedRows?.length || 0;
+                if (insertedCount !== registrations.length) {
+                    throw new Error(`The database confirmed ${insertedCount} of ${registrations.length} submitted units. Please refresh your registrations and contact the administrator before retrying.`);
+                }
+
+                const alreadyNote = alreadyRegistered.length
+                    ? ` ${alreadyRegistered.length} already registered unit(s) were skipped.`
+                    : '';
+                this.showSuccess(`${insertedCount} unit(s) submitted for ${regType} approval!${alreadyNote}`);
+
+                document.querySelectorAll('.unit-checkbox:checked').forEach(cb => { cb.checked = false; });
                 if (this.selectAllCheckbox) this.selectAllCheckbox.checked = false;
                 this.updateSelectedCount();
-                
                 await this.loadUnits();
-                
+
             } catch (error) {
                 console.error('Error submitting registration:', error);
                 this.showError(`Failed to submit: ${error.message}`, 'error');
@@ -1502,11 +1542,11 @@ attachCheckboxEvents() {
                 this.isSubmitting = false;
                 if (this.submitBtn) {
                     this.submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit';
-                    this.submitBtn.disabled = false;
+                    this.submitBtn.disabled = !(await this.isUnitRegistrationOpen(false).catch(() => false));
                 }
             }
         }
-        
+
         // ============================================================
         // GET CURRENT TERM
         // ============================================================
