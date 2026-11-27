@@ -493,9 +493,17 @@
     var exams = findLink([/exam|cat|assess/i]);
     var profile = findLink([/^profile$/i,/my account/i,/account settings/i]);
 
+    function isSourceLinkAllowed(link) {
+      return !!link && !link.hidden &&
+        link.dataset.cnEntitlementHidden !== 'true' &&
+        link.getAttribute('aria-hidden') !== 'true' &&
+        !link.closest('[hidden]');
+    }
     function routeButton(title, icon, link, fallback, activeTest) {
       if (!link && !fallback) return null;
       var b = document.createElement(link && link.getAttribute('href') && link.getAttribute('href') !== '#' ? 'a' : 'button');
+      b._cnSourceLink = link || null;
+      b._cnFallback = fallback || null;
       b.className = 'cn-tab';
       b.setAttribute('aria-label', title);
       if (b.tagName === 'A') b.href = link.getAttribute('href');
@@ -504,6 +512,18 @@
       b.querySelector('span').textContent = title;
       if (activeTest && activeTest()) b.classList.add('active');
       b.addEventListener('click', function (ev) {
+        if (link && !isSourceLinkAllowed(link)) {
+          ev.preventDefault();
+          ev.stopPropagation();
+          return;
+        }
+        if (!link && fallback && /#cats(?:$|&)/.test(fallback) &&
+            window.CampusNexusModules && window.CampusNexusModules.ready &&
+            !window.CampusNexusModules.has('examinations')) {
+          ev.preventDefault();
+          ev.stopPropagation();
+          return;
+        }
         if (link) {
           var href = link.getAttribute('href') || '';
           if (href === '#' || href.indexOf('javascript:') === 0 || link.hasAttribute('data-tab')) {
@@ -538,6 +558,30 @@
     ].filter(Boolean);
 
     items.forEach(function (item) { bar.appendChild(item); });
+    function syncGenericTabs() {
+      items.forEach(function (item) {
+        var source = item._cnSourceLink;
+        var allowed = source ? isSourceLinkAllowed(source) : true;
+        if (!source && item._cnFallback && /#cats(?:$|&)/.test(item._cnFallback) &&
+            window.CampusNexusModules && window.CampusNexusModules.ready) {
+          allowed = window.CampusNexusModules.has('examinations');
+        }
+        item.hidden = !allowed;
+        item.disabled = !allowed && item.tagName === 'BUTTON';
+        item.setAttribute('aria-hidden', allowed ? 'false' : 'true');
+      });
+    }
+    syncGenericTabs();
+    if (window.MutationObserver) {
+      var genericNavObserver = new MutationObserver(syncGenericTabs);
+      if (sidebar) genericNavObserver.observe(sidebar, {
+        subtree:true, attributes:true,
+        attributeFilter:['hidden','aria-hidden','data-cn-entitlement-hidden']
+      });
+      genericNavObserver.observe(document.documentElement, {
+        attributes:true, attributeFilter:['data-cn-module-entitlements-ready']
+      });
+    }
     var more = document.createElement('button');
     more.type='button';more.className='cn-tab';more.setAttribute('aria-label','Open app menu');
     more.innerHTML=icons.menu+'<span>More</span>';
