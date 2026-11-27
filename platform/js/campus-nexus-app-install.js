@@ -3,7 +3,14 @@
 
   const APP_PAGE = '/app-download.html';
   const isAndroid = /Android/i.test(navigator.userAgent || '');
-  const isNativeApp = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());
+  const isNativeApp = (function () {
+    const cap = window.Capacitor;
+    const native = !!(cap && typeof cap.isNativePlatform === 'function' && cap.isNativePlatform());
+    let stored = false;
+    try { stored = localStorage.getItem('cn_android_app_mode') === '1' || /(?:^|;\\s*)cn_android_app_mode=1(?:;|$)/.test(document.cookie || ''); } catch (_) {}
+    const standalone = !!(window.matchMedia && (window.matchMedia('(display-mode: standalone)').matches || window.matchMedia('(display-mode: fullscreen)').matches)) || window.navigator.standalone === true;
+    return native || stored || standalone;
+  })();
   if (!isAndroid || isNativeApp) return;
 
   function addInstallPrompt() {
