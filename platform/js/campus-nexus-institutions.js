@@ -227,6 +227,11 @@
         .cn-product-exam{background:#eaf2ff;color:#1d4ed8}
         .cn-product-lms{background:#e7f7ef;color:#047857}
         .cn-product-none{background:#f1f5f9;color:#64748b}
+        .cn-product-controls{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+        .cn-product-toggle{border:1px solid #cbd5e1;border-radius:8px;padding:6px 9px;background:#fff;color:#334155;font-size:10px;font-weight:800;cursor:pointer}
+        .cn-product-toggle:hover{border-color:#0f766e;color:#0f766e}
+        .cn-product-toggle.is-enabled{border-color:#a7f3d0;background:#ecfdf5;color:#047857}
+        .cn-product-toggle:disabled{opacity:.6;cursor:wait}
         @media(max-width:760px){.cn-product-access-grid{grid-template-columns:1fr}}
         .cn-institution-modal{position:fixed;inset:0;z-index:10050;display:none;align-items:center;justify-content:center;padding:clamp(10px,3vw,28px);background:rgba(8,20,38,.68);backdrop-filter:blur(5px)}
         .cn-institution-modal.is-open{display:flex}
@@ -1042,6 +1047,11 @@
         ((i._modules || []).includes("learning_management") ? '<span class="cn-product-badge cn-product-lms">LMS</span>' : '') +
         '<span class="cn-product-badge cn-product-none">' + (i._modules || []).length + ' modules enabled</span>' +
         (!((i._modules || []).some(key => ["examinations","admin_exams","proctoring"].includes(key)) || (i._modules || []).includes("learning_management")) ? '<span class="cn-product-badge cn-product-none">No product selected</span>' : '') +
+        '<div class="cn-product-controls">' +
+        '<button type="button" class="cn-product-toggle ' + (["examinations","admin_exams","proctoring"].every(key => (i._modules || []).includes(key)) ? "is-enabled" : "") + '" data-product="' + esc(i.id) + '" data-kind="exams" data-enabled="' + (["examinations","admin_exams","proctoring"].every(key => (i._modules || []).includes(key)) ? "true" : "false") + '">' +
+        (["examinations","admin_exams","proctoring"].every(key => (i._modules || []).includes(key)) ? "Disable Exam Login" : "Enable Exam Login") + '</button>' +
+        '<button type="button" class="cn-product-toggle ' + ((i._modules || []).includes("learning_management") ? "is-enabled" : "") + '" data-product="' + esc(i.id) + '" data-kind="lms" data-enabled="' + ((i._modules || []).includes("learning_management") ? "true" : "false") + '">' +
+        ((i._modules || []).includes("learning_management") ? "Disable LMS Login" : "Enable LMS Login") + '</button></div>' +
         '</div></td>' +
         '<td>' + esc(i.contact_email || "—") + '</td><td>' + (portalUrl ? '<a href="' + esc(portalUrl) + '" target="_blank" rel="noopener">' + (i.portal_mode === "custom_website" ? "Open institution portal" : "Campus Nexus login") + '</a>' : 'Login portal not configured') +
         (registrationUrl ? '<br><a href="' + esc(registrationUrl) + '" target="_blank" rel="noopener">Registration</a><button class="cn-row-action" type="button" data-copy-registration="' + esc(i.id) + '">Copy</button>' : '') + '</td>' +
@@ -1061,6 +1071,32 @@
       if (!item?.school_code) return;
       try { await navigator.clipboard.writeText(String(item.school_code)); notify("School code copied.","success"); }
       catch (_) { notify(String(item.school_code),"info"); }
+    }));
+    host.querySelectorAll("[data-product]").forEach(button => button.addEventListener("click", async () => {
+      const item = institutions.find(i => i.id === button.dataset.product);
+      if (!item || button.disabled) return;
+      const kind = button.dataset.kind;
+      const enabled = button.dataset.enabled !== "true";
+      const productName = kind === "exams" ? "Exam Login" : "LMS Login";
+      const action = enabled ? "enable" : "disable";
+      if (!window.confirm(action.charAt(0).toUpperCase() + action.slice(1) + " " + productName + " for " + item.name + "?")) return;
+      button.disabled = true;
+      button.textContent = enabled ? "Enabling…" : "Disabling…";
+      try {
+        const {data,error} = await sb.rpc("platform_set_institution_product_access", {
+          p_institution_id: item.id, p_product: kind, p_enabled: enabled
+        });
+        if (error) throw error;
+        if (!data?.success || data.institution_id !== item.id || data.product !== kind || data.enabled !== enabled) {
+          throw new Error("The server did not confirm the product access change.");
+        }
+        notify(productName + " " + (enabled ? "enabled" : "disabled") + " for " + item.name + ".", "success");
+        await loadInstitutions();
+      } catch (error) {
+        notify(error.message || "Unable to change product access.", "error");
+        button.disabled = false;
+        button.textContent = enabled ? "Enable " + (kind === "exams" ? "Exam" : "LMS") + " Login" : "Disable " + (kind === "exams" ? "Exam" : "LMS") + " Login";
+      }
     }));
     host.querySelectorAll("[data-edit]").forEach(button => button.addEventListener("click", () => {
       const item = institutions.find(i => i.id === button.dataset.edit);
@@ -1188,7 +1224,6 @@
     const enabledModules = [...document.querySelectorAll('input[name="cnModule"]:checked')].map(x => x.value);
     const examSelected = $("cnProductExam")?.checked;
     const lmsSelected = $("cnProductLms")?.checked;
-    if (!examSelected && !lmsSelected) return notify("Select at least one product: Examination Dashboard, LMS, or both.", "error");
     setBusy(true);
     try {
       if (selectedLogoFile) {
