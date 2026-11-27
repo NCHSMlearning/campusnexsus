@@ -73,7 +73,7 @@ jobs:
           test -s assets/splash.png
           # Capacitor Assets 3.0.5 may leave the default template launcher icons in place.
           # Remove template launcher resources before generating the official Campus Nexus icons.
-          find android/app/src/main/res -type f \\( -name 'ic_launcher*.png' -o -name 'ic_launcher*.xml' \\) -delete
+          find android/app/src/main/res -type f -name 'ic_launcher*' -delete
           npx capacitor-assets generate --android
           # Fail the build if the generated Android launcher icons are missing.
           test -s android/app/src/main/res/mipmap-mdpi/ic_launcher.png
