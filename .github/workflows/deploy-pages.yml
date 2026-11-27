@@ -21,6 +21,7 @@ on:
       - 'images/logo-icon.png'
       - 'images/campus-nexus-original-logo.webp'
       - '.github/workflows/build-campus-nexus-app.yml'
+      - '.github/workflows/deploy-pages.yml'
   workflow_dispatch:
   workflow_run:
     workflows: ["Build Campus Nexus Android App"]
