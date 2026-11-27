@@ -1574,11 +1574,34 @@ class ProfileModule {
             if (upsertData[key] === undefined) delete upsertData[key];
         });
         
-        const { error } = await supabase
+        const institutionId = String(
+            upsertData.institution_id ||
+            window.CURRENT_INSTITUTION_ID ||
+            window.db?.currentUserProfile?.institution_id ||
+            window.currentUserProfile?.institution_id ||
+            ''
+        ).trim();
+        if (!institutionId) {
+            throw new Error('Your institution could not be verified. Please sign in again before saving your profile.');
+        }
+
+        // This is an existing authenticated student's profile. UPDATE it
+        // directly instead of UPSERT, which also invokes INSERT RLS checks
+        // and can reject a valid self-edit under tenant security policies.
+        const { data: savedRows, error } = await supabase
             .from('consolidated_user_profiles_table')
-            .upsert(upsertData, { onConflict: 'user_id' });
-        
+            .update({ ...upsertData, institution_id: institutionId })
+            .eq('user_id', this.userId)
+            .eq('institution_id', institutionId)
+            .select('user_id,institution_id,full_name,phone,alt_phone,date_of_birth,gender,national_id,address,guardian_name,guardian_phone');
+
         if (error) throw error;
+        if (!savedRows?.length) {
+            throw new Error('No profile was updated. Your institution access may have changed. Please refresh and sign in again.');
+        }
+        this.userProfile = { ...this.userProfile, ...savedRows[0] };
+        window.currentUserProfile = this.userProfile;
+        if (window.db) window.db.currentUserProfile = this.userProfile;
     }
     
     onSaveSuccess() {
