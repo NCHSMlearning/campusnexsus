@@ -12,6 +12,35 @@
  const notify=(m,t="info")=>{if(typeof window.showNotification==="function")window.showNotification(m,t);else if(typeof window.showFeedback==="function")window.showFeedback(m,t);else alert(m);};
  const val=(o,...keys)=>{for(const k of keys){if(o?.[k]!==undefined&&o[k]!==null&&o[k]!=="")return o[k];}return "—";};
  const date=v=>{if(!v)return "—";const d=new Date(v);return Number.isNaN(d.getTime())?esc(v):d.toLocaleDateString();};
+ const kenyaInputToIso=value=>{
+  if(!value)return null;
+  const d=new Date(value+":00+03:00");
+  if(Number.isNaN(d.getTime()))throw new Error("Enter a valid date and time.");
+  return d.toISOString();
+ };
+ const isoToKenyaInput=value=>{
+  if(!value)return "";
+  const d=new Date(value);if(Number.isNaN(d.getTime()))return "";
+  return d.toLocaleString("sv-SE",{timeZone:"Africa/Nairobi",hour12:false}).replace(" ","T").slice(0,16);
+ };
+ const currentSchedule=()=>({
+  opens:kenyaInputToIso($("iaUnitRegistrationOpensAt")?.value||""),
+  closes:kenyaInputToIso($("iaUnitRegistrationClosesAt")?.value||"")
+ });
+ function renderUnitRegistrationControl(data){
+  const status=$("iaUnitRegistrationControlStatus"),toggle=$("iaUnitRegistrationToggle");
+  const open=data?.is_open===true,manualOpen=data?.manual_open!==false,statusKey=data?.status|| (open?"open":"manually_closed");
+  const labels={open:"Unit registration is OPEN",scheduled:"Registration is SCHEDULED",deadline_passed:"Registration deadline has PASSED",manually_closed:"Unit registration is MANUALLY CLOSED",closed:"Unit registration is CLOSED"};
+  if(status){status.textContent=labels[statusKey]||"Unit registration is CLOSED";status.dataset.state=open?"open":"closed";}
+  if(toggle){toggle.checked=manualOpen;toggle.disabled=false;toggle.setAttribute("aria-label",manualOpen?"Manually close unit registration":"Manually open unit registration");}
+  const opens=$("iaUnitRegistrationOpensAt"),closes=$("iaUnitRegistrationClosesAt");
+  if(opens)opens.value=isoToKenyaInput(data?.opens_at);
+  if(closes)closes.value=isoToKenyaInput(data?.closes_at);
+  const hint=$("iaUnitRegistrationControlHint");
+  if(hint)hint.textContent=statusKey==="scheduled"?"Registration is scheduled to open at the selected Kenya time.":open?"Students can submit new unit registrations until the closing deadline.":"Students cannot submit new unit registrations. Existing records and approvals remain available.";
+  const note=$("iaUnitRegistrationScheduleNote");
+  if(note)note.textContent=data?.opens_at||data?.closes_at?"Schedule saved. All displayed dates and times use Kenya time (EAT, UTC+3).":"Set an opening date and/or closing deadline. Leave a field blank for no restriction on that side of the window.";
+ }
  async function loadUnitRegistrationControl(){
   const status=$("iaUnitRegistrationControlStatus"),toggle=$("iaUnitRegistrationToggle");
   if(status)status.textContent="Checking registration access…";
@@ -19,32 +48,42 @@
   try{
    const {data,error}=await db().rpc("get_my_unit_registration_control");
    if(error)throw error;
-   const open=data?.is_open!==false;
-   if(status){status.textContent=open?"Unit registration is OPEN":"Unit registration is CLOSED";status.dataset.state=open?"open":"closed";}
-   if(toggle){toggle.checked=open;toggle.disabled=false;toggle.setAttribute("aria-label",open?"Close unit registration":"Open unit registration");}
-   const hint=$("iaUnitRegistrationControlHint");
-   if(hint)hint.textContent=open?"Students can submit new unit registrations.":"Students cannot submit new unit registrations. Existing records and approvals remain available.";
+   renderUnitRegistrationControl(data||{});
   }catch(e){
    if(status)status.textContent="Unable to read registration status";
    if(toggle)toggle.disabled=true;
    notify("Could not load unit registration controls: "+e.message,"error");
   }
  }
- async function saveUnitRegistrationControl(isOpen){
+ async function persistUnitRegistrationControl(isOpen,showSuccess=true){
   const toggle=$("iaUnitRegistrationToggle"),status=$("iaUnitRegistrationControlStatus");
   if(toggle)toggle.disabled=true;
   try{
-   const {data,error}=await db().rpc("set_my_unit_registration_control",{p_is_open:isOpen,p_closed_message:"Unit registration is currently closed. Please contact your institution administrator."});
+   const schedule=currentSchedule();
+   if(schedule.opens&&schedule.closes&&new Date(schedule.closes)<=new Date(schedule.opens))throw new Error("The closing deadline must be later than the opening date and time.");
+   const {data,error}=await db().rpc("set_my_unit_registration_control",{
+    p_is_open:isOpen,
+    p_closed_message:"Unit registration is currently closed. Please contact your institution administrator.",
+    p_opens_at:schedule.opens,
+    p_closes_at:schedule.closes
+   });
    if(error)throw error;
-   if(status){status.textContent=data?.is_open?"Unit registration is OPEN":"Unit registration is CLOSED";status.dataset.state=data?.is_open?"open":"closed";}
-   const hint=$("iaUnitRegistrationControlHint");
-   if(hint)hint.textContent=data?.is_open?"Students can submit new unit registrations.":"Students cannot submit new unit registrations. Existing records and approvals remain available.";
-   notify(data?.is_open?"Unit registration opened for your institution.":"Unit registration closed for your institution.","success");
+   renderUnitRegistrationControl(data||{});
+   if(showSuccess)notify(data?.status==="scheduled"?"Registration schedule saved. Student registration will open automatically.":data?.is_open?"Unit registration settings saved.":"Unit registration is closed.","success");
   }catch(e){
-   if(toggle)toggle.checked=!isOpen;
-   notify("Unable to change unit registration access: "+e.message,"error");
+   notify("Unable to save unit registration settings: "+e.message,"error");
    await loadUnitRegistrationControl();
   }finally{if(toggle)toggle.disabled=false;}
+ }
+ async function saveUnitRegistrationSchedule(){
+  const button=$("iaUnitRegistrationSaveSchedule");
+  if(button){button.disabled=true;button.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Saving schedule…';}
+  try{
+   const schedule=currentSchedule();
+   if(schedule.opens&&schedule.closes&&new Date(schedule.closes)<=new Date(schedule.opens))throw new Error("The closing deadline must be later than the opening date and time.");
+   await persistUnitRegistrationControl(true,true);
+  }catch(e){notify(e.message,"error");}
+  finally{if(button){button.disabled=false;button.innerHTML='<i class="fa-solid fa-calendar-check"></i> Save registration schedule';}}
  }
  async function loadCatalog(){
   const body=$("iaUnitCatalogRows");if(body)body.innerHTML='<tr><td colspan="6" class="ia-empty">Loading unit catalogue…</td></tr>';
@@ -193,7 +232,9 @@
   $("iaUnitCatalogSearch")?.addEventListener("input",renderCatalog);
   $("iaUnitCatalogProgram")?.addEventListener("change",renderCatalog);
   $("iaUnitRegistrationRefresh")?.addEventListener("click",()=>{loadRegistrations();loadUnitRegistrationControl();});
-  $("iaUnitRegistrationToggle")?.addEventListener("change",e=>saveUnitRegistrationControl(!!e.target.checked));
+  $("iaUnitRegistrationToggle")?.addEventListener("change",e=>persistUnitRegistrationControl(!!e.target.checked,true));
+  $("iaUnitRegistrationSaveSchedule")?.addEventListener("click",saveUnitRegistrationSchedule);
+  $("iaUnitRegistrationClearSchedule")?.addEventListener("click",async()=>{const o=$("iaUnitRegistrationOpensAt"),c=$("iaUnitRegistrationClosesAt");if(o)o.value="";if(c)c.value="";await persistUnitRegistrationControl(true,true);});
   $("iaUnitRegistrationSearch")?.addEventListener("input",renderRegistrations);
   ["iaRegFilterProgramme","iaRegFilterAcademicYear","iaRegFilterIntake","iaRegFilterBlock","iaRegFilterTerm"].forEach(id=>$(id)?.addEventListener("change",renderRegistrations));
   $("iaRegFiltersReset")?.addEventListener("click",clearRegistrationFilters);
