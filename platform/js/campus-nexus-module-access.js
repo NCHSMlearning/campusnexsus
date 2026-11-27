@@ -124,17 +124,41 @@
       window.CampusNexusModules = { ready:true, isPlatformAdmin:true, enabled:new Set(["*"]), has:()=>true, require:()=>true };
       return;
     }
+    // The student's authenticated profile is the tenant authority. Student accounts
+    // are not necessarily rows in institution_users, so that table must never be
+    // used as a reason to grant wildcard module access.
+    const profileResult = await sb.from("consolidated_user_profiles_table")
+      .select("institution_id,role,status,login_enabled")
+      .eq("user_id", auth.user.id).maybeSingle();
+    if (profileResult.error) {
+      console.error("[Campus Nexus] Could not verify the signed-in user's institution:", profileResult.error);
+      showBlocked(null, "Your institution could not be verified. Please sign in again or contact your institution administrator.");
+      return;
+    }
+    const profile = profileResult.data;
+    const profileInstitutionId = String(profile?.institution_id || "").trim();
+    if (profileInstitutionId) {
+      window.CURRENT_INSTITUTION_ID = profileInstitutionId;
+      window.currentInstitutionId = profileInstitutionId;
+      document.documentElement.dataset.institutionId = profileInstitutionId;
+    }
+
     const memberships = await sb.from("institution_users").select("institution_id,status")
-      .eq("user_id",auth.user.id).eq("status","active");
+      .eq("user_id", auth.user.id).eq("status", "active");
     if (memberships.error) {
-      console.error("[Campus Nexus] Could not verify institution membership:",memberships.error);
+      console.error("[Campus Nexus] Could not verify institution membership:", memberships.error);
+      showBlocked(null, "Your institution access could not be verified. Please reload or contact your institution administrator.");
       return;
     }
-    if (!(memberships.data || []).length) {
-      // Legacy single-institution accounts are not assigned tenant module subscriptions.
-      window.CampusNexusModules = { ready:true, legacy:true, enabled:new Set(["*"]), has:()=>true, require:()=>true };
+    if (!profileInstitutionId && !(memberships.data || []).length) {
+      showBlocked(null, "This account is not linked to an institution. Contact your institution administrator.");
       return;
     }
+    if (profile && (!["approved", "active"].includes(String(profile.status || "").toLowerCase()) || profile.login_enabled === false)) {
+      showBlocked(null, "Your student account is not currently approved for portal access.");
+      return;
+    }
+
     const entitlements = await sb.rpc("current_user_module_entitlements");
     if (entitlements.error || !Array.isArray(entitlements.data)) {
       console.error("[Campus Nexus] Module entitlement lookup failed:",entitlements.error);
@@ -142,6 +166,10 @@
       return;
     }
     const enabled = new Set(entitlements.data.map(x => String(x).toLowerCase()));
+    if (!enabled.size) {
+      showBlocked(null, "Your institution has not enabled any portal modules for this account. Contact your institution administrator.");
+      return;
+    }
     enabled.delete("library"); // The library service is not yet implemented for tenant accounts.
     window.CampusNexusModules = {
       ready:true, legacy:false, enabled,
