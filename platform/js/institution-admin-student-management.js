@@ -167,5 +167,6 @@
   window.toggleAllSMCheckboxes=type=>{const suffix=type==="admissions"?"Admissions":type==="change-program"?"Change":type==="readmission"?"Readmission":"SessionReports";const master=$("smSelectAll"+suffix);const bodyId=type==="admissions"?"smAdmissionsBody":type==="change-program"?"smChangeProgramBody":type==="readmission"?"smReadmissionBody":"smSessionReportsBody";$(bodyId)?.querySelectorAll('input[type="checkbox"]').forEach(cb=>cb.checked=!!master?.checked);};
   window.refreshStudentDirectory=()=>{window.CampusInstitutionAdmin?.refresh?.();};
   const bootStudentManagement=()=>{if($("smAdmissionsBody"))window.refreshStudentManagement();};
+  document.querySelectorAll('#iaNav [data-view="students"],[data-open-view="students"]').forEach(link=>link.addEventListener("click",()=>{window.refreshStudentManagement();}));
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",bootStudentManagement,{once:true});else bootStudentManagement();
 })();
