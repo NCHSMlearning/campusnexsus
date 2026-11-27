@@ -113,7 +113,8 @@ function updateStats(){
   var set=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v};
   set('ol-stat-assigned',as.length);set('ol-stat-due',due);set('ol-stat-submitted',sub.length);set('ol-stat-average',avg.length?(Math.round(avg.reduce(function(x,y){return x+y},0)/avg.length)+'%'):'—');
 }
-async function loadData(){
+async function loadData()
+        if (window.waitForStudentPortalContext) await window.waitForStudentPortalContext();{
   setError('');
   setContent('<div class="ol-loading"><i class="fas fa-spinner fa-spin"></i><strong>Connecting to Online Learning…</strong><span style="display:block;margin-top:6px;color:#64748b;font-size:12px">Restoring your secure student session</span></div>');
   var sb=client(),id=null;
