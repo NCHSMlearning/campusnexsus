@@ -1530,6 +1530,17 @@ attachCheckboxEvents() {
                     : '';
                 this.showSuccess(`${insertedCount} unit(s) submitted for ${regType} approval!${alreadyNote}`);
 
+                // Notify the examination-card module and other student-dashboard
+                // widgets immediately after the database confirms registration.
+                document.dispatchEvent(new CustomEvent('unitRegistrationReady', {
+                    detail: {
+                        studentId: this.studentId,
+                        institutionId,
+                        unitCodes: insertedRows.map(row => row.unit_code),
+                        status: 'pending'
+                    }
+                }));
+
                 document.querySelectorAll('.unit-checkbox:checked').forEach(cb => { cb.checked = false; });
                 if (this.selectAllCheckbox) this.selectAllCheckbox.checked = false;
                 this.updateSelectedCount();
