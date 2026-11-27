@@ -104,7 +104,8 @@ class StudentTicketSystem {
             const { data: tickets, error } = await supabaseClient
                 .from('support_tickets')
                 .select('id, ticket_number, subject, updated_at')
-                .eq('student_id', this.userId);
+                .eq('student_id', this.userId)
+            .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id);
             
             if (error) throw error;
             
@@ -532,6 +533,7 @@ class StudentTicketSystem {
                 .from('support_tickets')
                 .select('*')
                 .eq('student_id', userId)
+            .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)
                 .order('created_at', { ascending: false });
             
             if (error) throw error;
@@ -1117,6 +1119,7 @@ class StudentTicketSystem {
                 .from('support_tickets')
                 .update({ status: 'closed', closed_at: new Date().toISOString(), updated_at: new Date().toISOString() })
                 .eq('id', ticketId)
+            .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)
                 .eq('student_id', userId);
             
             if (error) throw error;
