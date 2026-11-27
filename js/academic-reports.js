@@ -1773,6 +1773,7 @@ function updateTranscriptSummary(attempted, earned, courses, cgpa) {
     async function downloadTranscriptPDF() {
         const user = window.currentUserProfile || window.db?.currentUserProfile || {};
         await ensureAcademicStructure(user);
+        if (!myMarksData?.length) await loadMyMarks();
         const userProgram = user.program || user.program_code || user.program_type || '';
         const isTVET = PROGRAM.isTVET(userProgram);
         const programType = PROGRAM.getProgramType(userProgram);
@@ -1830,6 +1831,7 @@ function updateTranscriptSummary(attempted, earned, courses, cgpa) {
         const user = window.currentUserProfile || window.db?.currentUserProfile || {};
         const userProgram = user.program || user.program_code || user.program_type || '';
         await ensureAcademicStructure(user);
+        if (!myMarksData?.length) await loadMyMarks();
         const institution = user.institution || window.CURRENT_INSTITUTION || {};
         const institutionName = institution.name || user.institution_name || document.documentElement.dataset.institutionName || 'Your Institution';
         const institutionLogo = institution.logo_url || institution.logo || user.institution_logo || user.logo_url || '';
