@@ -77,6 +77,8 @@ class ResourcesModule {
         this.currentYear = 'all';
         this.isLoading = false;
         this.supabaseClient = null;
+        this.academicStructure = null;
+        this.academicPeriodType = 'Block';
         
         // ===== Program Detection =====
         this.userProgram = 'krchn';
@@ -1859,65 +1861,84 @@ class ResourcesModule {
     // PROGRAM DETECTION
     // ============================================================
     detectUserProgram() {
-        console.log('🔍 Detecting user program...');
-        let profile = null;
-        if (window.currentUserProfile) profile = window.currentUserProfile;
-        else if (window.db?.currentUserProfile) profile = window.db.currentUserProfile;
-        else if (window.userProfile) profile = window.userProfile;
-        else if (window.profileModule?.userProfile) profile = window.profileModule.userProfile;
-        
-        if (!profile) {
-            try {
-                const savedProfile = localStorage.getItem('userProfile');
-                if (savedProfile) profile = JSON.parse(savedProfile);
-            } catch (e) {}
-        }
-        
-        if (profile) {
-            this.userProfile = profile;
-            this.userId = profile.user_id || profile.id || null;
-            const programCode = String(profile.program || profile.course || '').toUpperCase().trim();
-            
-            if (this.TVET_PROGRAMS.includes(programCode)) {
-                this.userProgram = 'tvet';
-                this.isTVETStudent = true;
-                this.userProgramDisplay = window.PROGRAM_DISPLAY_NAMES?.[programCode] || programCode || 'TVET Program';
-                this.userProgramCode = programCode;
-                this.userBlock = profile.block || 'Term1';
-                this.userTerm = null;
-                console.log(`✅ TVET Student: ${programCode}`);
-            } else {
-                this.userProgram = 'krchn';
-                this.isTVETStudent = false;
-                this.userProgramDisplay = 'KRCHN Nursing';
-                this.userProgramCode = 'KRCHN';
-                this.userBlock = profile.block || 'Introductory';
-                this.userTerm = null;
-                console.log(`✅ KRCHN Student: ${programCode}, Block: ${this.userBlock}`);
-            }
-            
-            this.userIntakeYear = profile.intake_year || profile.intake || null;
-            
-            this.updateUIForProgram();
-            this.updateBlockFilterOptions();
-            this.updateBlockDisplay();
-            return this.userProgram;
-        }
-        
-        this.userProgram = 'krchn';
-        this.isTVETStudent = false;
-        this.userProgramDisplay = 'KRCHN Nursing';
-        this.userProgramCode = 'KRCHN';
-        this.userBlock = 'Introductory';
-        this.userTerm = null;
-        this.userIntakeYear = 2025;
-        
+        const profile = window.currentUserProfile || window.db?.currentUserProfile ||
+            window.userProfile || window.profileModule?.userProfile || this.userProfile || null;
+
+        if (!profile) return null;
+
+        this.userProfile = profile;
+        this.userId = profile.user_id || profile.id || null;
+
+        const rawProgram = String(
+            profile.program || profile.program_code || profile.program_type || profile.course || ''
+        ).trim();
+        const normalized = rawProgram.toUpperCase();
+        const isNursing = ['NURSING', 'NURSING DEPARTMENT', 'SCHOOL OF NURSING', 'KRCHN',
+            'KRCHN NURSING', 'KENYA REGISTERED COMMUNITY HEALTH NURSING'].includes(normalized);
+
+        this.userProgramCode = isNursing ? 'KRCHN' : normalized;
+        this.isTVETStudent = this.TVET_PROGRAMS.includes(this.userProgramCode) ||
+            String(profile.program_type || '').toUpperCase() === 'TVET';
+        this.userProgram = this.isTVETStudent ? 'tvet' : (isNursing ? 'krchn' : 'institutional');
+        this.userProgramDisplay = profile.program_name ||
+            window.PROGRAM_DISPLAY_NAMES?.[this.userProgramCode] ||
+            (isNursing ? 'KRCHN Nursing' : (rawProgram || 'Your Programme'));
+
+        this.userIntakeYear = profile.intake_year || profile.year_of_intake || profile.intake || null;
+        this.academicStructure = window.currentAcademicStructure || this.academicStructure || null;
+        this.academicPeriodType = this.academicStructure?.type || (this.isTVETStudent ? 'Term' : 'Block');
+        this.userBlock = this.getStudentAcademicPeriod(profile);
+        this.userTerm = this.academicPeriodType === 'Term' ? this.userBlock : null;
+
         this.updateUIForProgram();
         this.updateBlockFilterOptions();
         this.updateBlockDisplay();
-        return 'krchn';
+        return this.userProgramCode;
     }
-    
+
+    getStudentAcademicPeriod(profile = this.userProfile || {}) {
+        const type = this.academicStructure?.type || this.academicPeriodType || 'Block';
+        const value = type === 'Semester'
+            ? (profile.current_semester ?? profile.semester ?? profile.current_block ?? profile.block)
+            : type === 'Term'
+                ? (profile.current_term ?? profile.term ?? profile.current_block ?? profile.block)
+                : (profile.current_block ?? profile.block ?? profile.current_semester ?? profile.semester ?? profile.current_term ?? profile.term);
+        return value === null || value === undefined ? '' : String(value).trim();
+    }
+
+    async resolveStudentAcademicStructure(supabase, institutionId) {
+        const profile = this.userProfile || window.currentUserProfile || {};
+        const programCode = this.userProgramCode || profile.program || profile.program_code || profile.program_type;
+        if (!window.CampusAcademicStructure?.resolve || !institutionId || !programCode) {
+            this.academicStructure = window.currentAcademicStructure || null;
+            this.academicPeriodType = this.academicStructure?.type || 'Block';
+            return this.academicStructure;
+        }
+
+        try {
+            this.academicStructure = await window.CampusAcademicStructure.resolve(
+                supabase, institutionId, programCode, { refresh: true }
+            );
+            // Use the institution's canonical programme code (e.g. DCHN rather than
+            // a legacy profile alias) when matching lecturer-uploaded resources.
+            if (this.academicStructure?.program?.program_code) {
+                this.userProgramCode = String(this.academicStructure.program.program_code).trim().toUpperCase();
+                this.userProgramDisplay = this.academicStructure.program.program_name ||
+                    this.userProgramDisplay;
+            }
+            this.academicPeriodType = this.academicStructure?.type || 'Block';
+            window.currentAcademicStructure = this.academicStructure;
+            this.userBlock = this.getStudentAcademicPeriod(profile);
+            this.userTerm = this.academicPeriodType === 'Term' ? this.userBlock : null;
+            return this.academicStructure;
+        } catch (error) {
+            console.warn('[Student Resources] Institution academic structure lookup failed:', error);
+            this.academicStructure = window.currentAcademicStructure || null;
+            this.academicPeriodType = this.academicStructure?.type || 'Block';
+            return this.academicStructure;
+        }
+    }
+
     async getUserProfile() {
         if (this.userProfile) return this.userProfile;
         if (window.currentUserProfile) return window.currentUserProfile;
@@ -1932,7 +1953,7 @@ class ResourcesModule {
             
             const { data: profile, error } = await supabase
                 .from('consolidated_user_profiles_table')
-                .select('program, intake_year, intake, block, full_name, role, student_id, term, program_type, institution_id, semester, semester_number')
+                .select('*')
                 .eq('user_id', user.id)
                 .maybeSingle();
             
@@ -1974,107 +1995,74 @@ class ResourcesModule {
     // UI UPDATES
     // ============================================================
     updateUIForProgram() {
-        const isTVET = this.isTVETStudent || this.userProgram === 'tvet';
-        
+        const periodType = this.academicStructure?.type || this.academicPeriodType || (this.isTVETStudent ? 'Term' : 'Block');
+        const periodValue = this.getStudentAcademicPeriod();
+        const periodLabel = periodType === 'Semester' ? 'Semester' : periodType === 'Term' ? 'Term' : 'Block';
+
         if (this.programDisplayBadge) {
-            if (isTVET) {
-                this.programDisplayBadge.style.background = '#1a7a5a';
-                this.programDisplayBadge.innerHTML = `<i class="fas fa-tools"></i> <span id="program-name-display">${this.userProgramDisplay || 'TVET Program'}</span>`;
-            } else {
-                this.programDisplayBadge.style.background = '#4C1D95';
-                this.programDisplayBadge.innerHTML = `<i class="fas fa-graduation-cap"></i> <span id="program-name-display">${this.userProgramDisplay || 'KRCHN Nursing'}</span>`;
-            }
+            this.programDisplayBadge.style.background = this.isTVETStudent ? '#1a7a5a' : '#4C1D95';
+            this.programDisplayBadge.innerHTML = `<i class="fas fa-graduation-cap"></i> <span id="program-name-display">${this.userProgramDisplay || 'Your Programme'}</span>`;
         }
-        
-        if (this.programNameDisplay) {
-            this.programNameDisplay.textContent = this.userProgramDisplay || (isTVET ? 'TVET Program' : 'KRCHN Nursing');
-        }
-        
+        if (this.programNameDisplay) this.programNameDisplay.textContent = this.userProgramDisplay || 'Your Programme';
+
         if (this.blockTermDisplay && this.blockTermValue) {
-            if (isTVET) {
-                const termNumber = this.userTerm || 1;
-                this.blockTermDisplay.style.background = '#fef3c7';
-                this.blockTermDisplay.style.color = '#78350f';
-                this.blockTermDisplay.innerHTML = `<i class="fas fa-calendar-alt"></i> <span id="block-term-value">Term ${termNumber}</span>`;
-                this.blockTermValue.textContent = `Term ${termNumber}`;
-            } else {
-                const blockName = this.userBlock || 'Introductory';
-                this.blockTermDisplay.style.background = '#dbeafe';
-                this.blockTermDisplay.style.color = '#1e40af';
-                this.blockTermDisplay.innerHTML = `<i class="fas fa-layer-group"></i> <span id="block-term-value">${blockName}</span>`;
-                this.blockTermValue.textContent = blockName;
-            }
+            this.blockTermDisplay.style.background = '#dbeafe';
+            this.blockTermDisplay.style.color = '#1e40af';
+            this.blockTermDisplay.innerHTML = `<i class="fas fa-calendar-alt"></i> <span id="block-term-value">${this.escapeHtml(periodValue || 'Not assigned')}</span>`;
+            this.blockTermValue.textContent = periodValue || 'Not assigned';
         }
-        
-        if (this.filterTitle) {
-            this.filterTitle.textContent = isTVET ? 'Filter by Term' : 'Filter by Block';
-        }
-        if (this.filterSubtitle) {
-            this.filterSubtitle.textContent = isTVET ? 'Select academic term to view materials' : 'Select academic block to view materials';
-        }
-        if (this.filterInfoText) {
-            this.filterInfoText.textContent = isTVET ? 'Select a term and click Refresh to load materials' : 'Select a block and click Refresh to load materials';
-        }
-        if (this.intakeYearValue) {
-            this.intakeYearValue.textContent = this.userIntakeYear || 2026;
-        }
+        if (this.filterTitle) this.filterTitle.textContent = 'Filter by ' + periodLabel;
+        if (this.filterSubtitle) this.filterSubtitle.textContent = 'Select your institution’s ' + periodLabel.toLowerCase() + ' to view materials';
+        if (this.filterInfoText) this.filterInfoText.textContent = 'Choose an academic ' + periodLabel.toLowerCase() + ' or view all available materials';
+        if (this.intakeYearValue) this.intakeYearValue.textContent = this.userIntakeYear || 'All intakes';
     }
-    
+
     updateBlockDisplay() {
         if (!this.studentCurrentBlock) return;
-        const isTVET = this.isTVETStudent || this.userProgram === 'tvet';
-        this.studentCurrentBlock.textContent = isTVET ? `Term ${this.userTerm || 1}` : this.userBlock || 'Introductory';
+        const periodType = this.academicStructure?.type || this.academicPeriodType || 'Block';
+        const value = this.getStudentAcademicPeriod() || 'Not assigned';
+        this.studentCurrentBlock.textContent = periodType + ': ' + value;
     }
-    
+
     updateBlockFilterOptions() {
         if (!this.blockFilter) return;
-        const isTVET = this.isTVETStudent || this.userProgram === 'tvet';
-        
-        this.blockFilter.innerHTML = '';
+        const structure = this.academicStructure;
+        const periodType = structure?.type || this.academicPeriodType || (this.isTVETStudent ? 'Term' : 'Block');
+        const periods = Array.isArray(structure?.periods) ? structure.periods : [];
+        const selectedPeriod = this.getStudentAcademicPeriod();
+
+        this.blockFilter.replaceChildren();
         const allOption = document.createElement('option');
         allOption.value = 'all';
-        allOption.textContent = isTVET ? '📚 All Terms' : '📚 All Blocks';
+        allOption.textContent = 'All ' + (structure?.plural || (periodType === 'Semester' ? 'Semesters' : periodType === 'Term' ? 'Terms' : 'Blocks'));
         this.blockFilter.appendChild(allOption);
-        
-        if (isTVET) {
-            const terms = ['term1', 'term2', 'term3', 'term4', 'term5', 'term6', 'final'];
-            const labels = ['📘 Term 1', '📗 Term 2', '📕 Term 3', '📙 Term 4', '📒 Term 5', '📓 Term 6', '🏆 Final Term'];
-            terms.forEach((term, index) => {
+
+        if (periods.length) {
+            periods.forEach(period => {
                 const option = document.createElement('option');
-                option.value = term;
-                option.textContent = labels[index];
+                option.value = 'period:' + period.name;
+                option.textContent = period.name;
                 this.blockFilter.appendChild(option);
             });
-            if (this.userTerm) {
-                const termKey = this.getTermKeyFromNumber(this.userTerm);
-                if (termKey) {
-                    this.blockFilter.value = termKey;
-                    this.currentBlockFilter = termKey;
-                }
-            }
+            const match = periods.find(period => period.name.toLowerCase() === String(selectedPeriod).toLowerCase());
+            if (match) this.blockFilter.value = 'period:' + match.name;
         } else {
-            const blocks = ['introductory', 'block1', 'block2', 'block3', 'block4', 'block5', 'final'];
-            const labels = ['🚀 Introductory', '📖 Block 1', '📗 Block 2', '📘 Block 3', '📙 Block 4', '📕 Block 5', '🏆 Final Block'];
-            blocks.forEach((block, index) => {
+            // Legacy compatibility when an institution has not configured program_blocks.
+            const isTerm = periodType === 'Term';
+            const mapping = isTerm ? this.TERM_MAPPING : this.BLOCK_MAPPING;
+            Object.entries(mapping).filter(([key]) => key !== 'all').forEach(([key, names]) => {
                 const option = document.createElement('option');
-                option.value = block;
-                option.textContent = labels[index];
+                option.value = key;
+                option.textContent = names[0];
                 this.blockFilter.appendChild(option);
-            });
-            if (this.userBlock) {
-                const userBlockLower = this.userBlock.toLowerCase();
-                for (const [key, keywords] of Object.entries(this.BLOCK_MAPPING)) {
-                    if (keywords.some(k => userBlockLower.includes(k.toLowerCase()))) {
-                        this.blockFilter.value = key;
-                        this.currentBlockFilter = key;
-                        break;
-                    }
+                if (selectedPeriod && names.some(name => selectedPeriod.toLowerCase().includes(name.toLowerCase()))) {
+                    this.blockFilter.value = key;
                 }
-            }
+            });
         }
         this.currentBlockFilter = this.blockFilter.value || 'all';
     }
-    
+
     getTermKeyFromNumber(termNumber) {
         const map = { 1: 'term1', 2: 'term2', 3: 'term3', 4: 'term4', 5: 'term5', 6: 'term6', 7: 'final' };
         return map[termNumber] || null;
@@ -2097,67 +2085,80 @@ class ResourcesModule {
     async loadResources() {
         if (window.waitForStudentPortalContext) await window.waitForStudentPortalContext();
         if (this.isLoading) return;
+
+        this.userProfile = window.currentUserProfile || window.db?.currentUserProfile || this.userProfile;
         this.detectUserProgram();
         if (!this.userProfile) await this.getUserProfile();
-        
+
         const supabase = this.getSupabaseClient();
         if (!supabase) {
-            this.showError('Database connection error');
+            this.showError('Database connection error. Please refresh and try again.');
             return;
         }
         if (!this.resourcesGrid) return;
-        
+
         this.isLoading = true;
         this.showSkeletonCards(6);
-        
+
         try {
-            const isTVET = this.isTVETStudent || this.userProgram === 'tvet';
             const profile = this.userProfile || window.currentUserProfile || {};
-            const institutionId = window.CURRENT_INSTITUTION_ID || profile.institution_id || window.currentUserProfile?.institution_id;
-            const intakeYear = profile.intake_year || profile.intake || this.userIntakeYear || null;
-            if (!institutionId) throw new Error('Your institution could not be identified. Please sign in again or contact your institution administrator.');
-            
+            const institutionId = String(
+                window.CURRENT_INSTITUTION_ID || profile.institution_id || window.currentInstitutionId || ''
+            ).trim();
+            if (!institutionId) {
+                throw new Error('Your institution could not be identified. Please sign in again or contact your institution administrator.');
+            }
+
+            await this.resolveStudentAcademicStructure(supabase, institutionId);
+            this.updateUIForProgram();
+            this.updateBlockFilterOptions();
+            this.updateBlockDisplay();
+
+            const programCode = String(
+                this.academicStructure?.program?.program_code || this.userProgramCode ||
+                profile.program || profile.program_type || ''
+            ).trim().toUpperCase();
+            if (!programCode) throw new Error('Your programme is missing from your student profile. Contact your institution administrator.');
+
+            const intakeYear = profile.intake_year || profile.year_of_intake || profile.intake || null;
             let query = supabase
                 .from('resources')
                 .select('*')
                 .eq('institution_id', institutionId)
+                .or(`program_type.eq.${programCode},target_program.eq.${programCode}`)
                 .order('created_at', { ascending: false });
-            if (intakeYear) query = query.eq('intake', String(intakeYear));
-            
-            if (isTVET) {
-                const studentProgram = this.userProfile?.program || '';
-                if (studentProgram && this.TVET_PROGRAMS.includes(studentProgram)) {
-                    query = query.eq('program_type', studentProgram);
-                } else {
-                    query = query.in('program_type', this.TVET_PROGRAMS);
-                }
-            } else {
-                query = query.eq('program_type', 'KRCHN');
-                if (this.userBlock && this.userBlock !== 'General') {
-                    const blockPattern = this.userBlock.toLowerCase();
-                    query = query.or(`block.ilike.%${blockPattern}%, block_term.ilike.%${blockPattern}%`);
-                }
+
+            // Intake is an optional scope in the resource catalogue. If the student
+            // profile has no intake value, do not silently substitute another year.
+            if (intakeYear !== null && intakeYear !== undefined && String(intakeYear).trim() !== '') {
+                query = query.eq('intake', String(intakeYear).trim());
             }
-            
+
             const { data: resources, error } = await query;
             if (error) throw error;
-            
-            this.allResources = resources || [];
-            console.log(`✅ Loaded ${this.allResources.length} resources`);
-            
+
+            this.allResources = Array.isArray(resources) ? resources : [];
+            console.info('[Student Resources] Loaded institution-scoped materials', {
+                institutionId,
+                programCode,
+                intake: intakeYear || 'all',
+                academicStructure: this.academicStructure?.type || 'legacy',
+                count: this.allResources.length
+            });
+
             this.updatePastPaperCount();
             this.populateFilters();
             this.applyFilters();
             this.updateDashboardResourceCount();
-            
         } catch (err) {
-            console.error('Error loading resources:', err);
-            this.showError(err.message);
+            console.error('[Student Resources] Resource loading failed:', err);
+            this.allResources = [];
+            this.showError(err?.message || 'Unable to load learning resources.');
         } finally {
             this.isLoading = false;
         }
     }
-    
+
     // ============================================================
     // FILTERS & RENDERING
     // ============================================================
@@ -2175,21 +2176,28 @@ class ResourcesModule {
         }
         
         if (this.currentBlockFilter !== 'all') {
-            const mapping = isTVET ? this.TERM_MAPPING : this.BLOCK_MAPPING;
-            const targetKeywords = mapping[this.currentBlockFilter] || [];
-            const termNumber = isTVET ? this.getTermNumberFromKey(this.currentBlockFilter) : null;
-            
-            filtered = filtered.filter(resource => {
-                if (isTVET && termNumber !== null) {
-                    if (resource.term === termNumber) return true;
-                    const resourceTerm = (resource.term_text || resource.term_name || resource.block_term || '').toString().toLowerCase();
-                    return targetKeywords.some(keyword => resourceTerm.includes(keyword.toLowerCase()));
-                }
-                const resourceBlock = (resource.block || resource.block_term || '').toString().toLowerCase();
-                return targetKeywords.some(keyword => resourceBlock.includes(keyword.toLowerCase()));
-            });
+            if (this.currentBlockFilter.startsWith('period:')) {
+                const selectedPeriod = this.currentBlockFilter.slice(7).trim().toLowerCase();
+                filtered = filtered.filter(resource => {
+                    const value = String(resource.block || resource.block_term || resource.term_text ||
+                        resource.term_name || resource.semester || '').trim().toLowerCase();
+                    return value === selectedPeriod;
+                });
+            } else {
+                const periodType = this.academicStructure?.type || this.academicPeriodType || 'Block';
+                const isTerm = periodType === 'Term';
+                const mapping = isTerm ? this.TERM_MAPPING : this.BLOCK_MAPPING;
+                const targetKeywords = mapping[this.currentBlockFilter] || [];
+                const termNumber = isTerm ? this.getTermNumberFromKey(this.currentBlockFilter) : null;
+                filtered = filtered.filter(resource => {
+                    if (isTerm && termNumber !== null && Number(resource.term) === termNumber) return true;
+                    const value = String(resource.block || resource.block_term || resource.term_text ||
+                        resource.term_name || resource.semester || '').toLowerCase();
+                    return targetKeywords.some(keyword => value.includes(keyword.toLowerCase()));
+                });
+            }
         }
-        
+
         const searchTerm = this.currentSearchTerm.toLowerCase();
         if (searchTerm) {
             filtered = filtered.filter(r => {
