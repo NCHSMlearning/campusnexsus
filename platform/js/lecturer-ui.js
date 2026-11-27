@@ -698,10 +698,10 @@ const LecturerUI = {
         
         // Update nav links - using #mainNav
         document.querySelectorAll('#mainNav a[data-tab]').forEach(link => {
-            link.classList.remove('active');
-            if (link.getAttribute('data-tab') === tabId) {
-                link.classList.add('active');
-            }
+            const selected = link.getAttribute('data-tab') === tabId;
+            link.classList.toggle('active', selected);
+            if (selected) link.setAttribute('aria-current', 'page');
+            else link.removeAttribute('aria-current');
         });
         
         // Update current tab
