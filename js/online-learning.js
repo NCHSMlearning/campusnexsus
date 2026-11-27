@@ -5,7 +5,7 @@
 'use strict';
 console.info('[NCHSM] online-learning.js initialized');
 
-var state={tab:'assignments',assignments:[],submissions:[],results:[],research:[],current:null,currentQuestions:[],file:null,bound:false,researchCurrent:null,researchFile:null};
+var state={moduleDisabled:false,tab:'assignments',assignments:[],submissions:[],results:[],research:[],current:null,currentQuestions:[],file:null,bound:false,researchCurrent:null,researchFile:null};
 
 function client(){
   var candidates=[window.db&&window.db.supabase,window.sb,window.supabaseClient,window.supabase];
@@ -114,6 +114,7 @@ function updateStats(){
   set('ol-stat-assigned',as.length);set('ol-stat-due',due);set('ol-stat-submitted',sub.length);set('ol-stat-average',avg.length?(Math.round(avg.reduce(function(x,y){return x+y},0)/avg.length)+'%'):'—');
 }
 async function loadData() {
+        if (state.moduleDisabled) return;
         if (window.waitForStudentPortalContext) await window.waitForStudentPortalContext();
   setError('');
   setContent('<div class="ol-loading"><i class="fas fa-spinner fa-spin"></i><strong>Connecting to Online Learning…</strong><span style="display:block;margin-top:6px;color:#64748b;font-size:12px">Restoring your secure student session</span></div>');
@@ -165,6 +166,7 @@ async function loadData() {
     render();
   }catch(e){
     if (e?.code === 'P0001' && /not enabled for this institution/i.test(e?.message || '')) {
+      state.moduleDisabled=true;
       setError('Online Learning is not enabled by your institution.');
       setContent('<div class="ol-empty"><i class="fas fa-lock"></i><strong>Online Learning is currently disabled</strong><br>Your institution administrator can enable this module in Manage Institutions.</div>');
       updateStats();
@@ -1749,7 +1751,7 @@ document.addEventListener('click',function(e){
 });
 window.NCHSMStudentOnlineLearning=window.NCHSMStudentOnlineLearning||{};
 window.NCHSMStudentOnlineLearning.load=function(){boot()};
-window.NCHSMStudentOnlineLearning.refresh=function(){return loadData()};
+window.NCHSMStudentOnlineLearning.refresh=function(){state.moduleDisabled=false;return loadData()};
 window.NCHSMStudentOnlineLearning.deleteSubmissionDocument=deleteSubmissionDocument;
 window.NCHSMStudentOnlineLearning.viewResult=viewResult;
 // Legacy inline handlers in the student portal call this function by its global name.
