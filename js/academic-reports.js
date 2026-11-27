@@ -1292,7 +1292,8 @@
             set('semester-grade', grades.length ? (PROGRAM.isTVET(program) ? getGradeFromGPATVET(periodGpa) : getGradeFromGPA(periodGpa)) : '-');
             set('cumulative-grade', allGrades.length ? (PROGRAM.isTVET(program) ? getGradeFromGPATVET(cumulativeGpa) : getGradeFromGPA(cumulativeGpa)) : '-');
             set('total-credits-earned', String(earnedCredits));
-            setAcademicSummary(periodGpa, '-', earnedCredits, cumulativeGpa);
+            const cumulativeGrade = allGrades.length ? (PROGRAM.isTVET(program) ? getGradeFromGPATVET(cumulativeGpa) : getGradeFromGPA(cumulativeGpa)) : '-';
+            setAcademicSummary(periodGpa, grades.length ? (PROGRAM.isTVET(program) ? getGradeFromGPATVET(periodGpa) : getGradeFromGPA(periodGpa)) : '-', earnedCredits, cumulativeGpa, cumulativeGrade);
 
             tbody.innerHTML = grades.map(grade => {
                 const gradeColor = getGradeColor(grade.grade);
@@ -1322,12 +1323,12 @@
         }
     }
 
-    function setAcademicSummary(gpa, grade, earnedCredits, cumulativeGpa = gpa) {
+    function setAcademicSummary(gpa, grade, earnedCredits, cumulativeGpa = gpa, cumulativeGrade = grade) {
         const ids = {
             'semester-gpa': Number(gpa || 0).toFixed(2),
             'semester-grade': grade || '-',
             'cumulative-gpa': Number(cumulativeGpa || 0).toFixed(2),
-            'cumulative-grade': grade || '-',
+            'cumulative-grade': cumulativeGrade || '-',
             'total-credits-earned': String(earnedCredits || 0)
         };
         Object.keys(ids).forEach(id => {
