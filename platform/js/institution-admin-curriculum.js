@@ -12,6 +12,40 @@
  const notify=(m,t="info")=>{if(typeof window.showNotification==="function")window.showNotification(m,t);else if(typeof window.showFeedback==="function")window.showFeedback(m,t);else alert(m);};
  const val=(o,...keys)=>{for(const k of keys){if(o?.[k]!==undefined&&o[k]!==null&&o[k]!=="")return o[k];}return "—";};
  const date=v=>{if(!v)return "—";const d=new Date(v);return Number.isNaN(d.getTime())?esc(v):d.toLocaleDateString();};
+ async function loadUnitRegistrationControl(){
+  const status=$("iaUnitRegistrationControlStatus"),toggle=$("iaUnitRegistrationToggle");
+  if(status)status.textContent="Checking registration access…";
+  if(toggle)toggle.disabled=true;
+  try{
+   const {data,error}=await db().rpc("get_my_unit_registration_control");
+   if(error)throw error;
+   const open=data?.is_open!==false;
+   if(status){status.textContent=open?"Unit registration is OPEN":"Unit registration is CLOSED";status.dataset.state=open?"open":"closed";}
+   if(toggle){toggle.checked=open;toggle.disabled=false;toggle.setAttribute("aria-label",open?"Close unit registration":"Open unit registration");}
+   const hint=$("iaUnitRegistrationControlHint");
+   if(hint)hint.textContent=open?"Students can submit new unit registrations.":"Students cannot submit new unit registrations. Existing records and approvals remain available.";
+  }catch(e){
+   if(status)status.textContent="Unable to read registration status";
+   if(toggle)toggle.disabled=true;
+   notify("Could not load unit registration controls: "+e.message,"error");
+  }
+ }
+ async function saveUnitRegistrationControl(isOpen){
+  const toggle=$("iaUnitRegistrationToggle"),status=$("iaUnitRegistrationControlStatus");
+  if(toggle)toggle.disabled=true;
+  try{
+   const {data,error}=await db().rpc("set_my_unit_registration_control",{p_is_open:isOpen,p_closed_message:"Unit registration is currently closed. Please contact your institution administrator."});
+   if(error)throw error;
+   if(status){status.textContent=data?.is_open?"Unit registration is OPEN":"Unit registration is CLOSED";status.dataset.state=data?.is_open?"open":"closed";}
+   const hint=$("iaUnitRegistrationControlHint");
+   if(hint)hint.textContent=data?.is_open?"Students can submit new unit registrations.":"Students cannot submit new unit registrations. Existing records and approvals remain available.";
+   notify(data?.is_open?"Unit registration opened for your institution.":"Unit registration closed for your institution.","success");
+  }catch(e){
+   if(toggle)toggle.checked=!isOpen;
+   notify("Unable to change unit registration access: "+e.message,"error");
+   await loadUnitRegistrationControl();
+  }finally{if(toggle)toggle.disabled=false;}
+ }
  async function loadCatalog(){
   const body=$("iaUnitCatalogRows");if(body)body.innerHTML='<tr><td colspan="6" class="ia-empty">Loading unit catalogue…</td></tr>';
   try{
@@ -158,7 +192,8 @@
   $("iaUnitCatalogRefresh")?.addEventListener("click",loadCatalog);
   $("iaUnitCatalogSearch")?.addEventListener("input",renderCatalog);
   $("iaUnitCatalogProgram")?.addEventListener("change",renderCatalog);
-  $("iaUnitRegistrationRefresh")?.addEventListener("click",loadRegistrations);
+  $("iaUnitRegistrationRefresh")?.addEventListener("click",()=>{loadRegistrations();loadUnitRegistrationControl();});
+  $("iaUnitRegistrationToggle")?.addEventListener("change",e=>saveUnitRegistrationControl(!!e.target.checked));
   $("iaUnitRegistrationSearch")?.addEventListener("input",renderRegistrations);
   ["iaRegFilterProgramme","iaRegFilterAcademicYear","iaRegFilterIntake","iaRegFilterBlock","iaRegFilterTerm"].forEach(id=>$(id)?.addEventListener("change",renderRegistrations));
   $("iaRegFiltersReset")?.addEventListener("click",clearRegistrationFilters);
@@ -171,9 +206,9 @@
    const b=e.target.closest("[data-unit-reg-action]");
    if(b){b.disabled=true;try{await decideRegistration(b.dataset.unitRegId,b.dataset.unitRegAction);notify("Unit registration "+b.dataset.unitRegAction+".","success");await loadRegistrations();}catch(err){notify("Unable to update registration: "+err.message,"error");}finally{b.disabled=false;}}
   });
-  window.addEventListener("campusnexus:institution-change",()=>{loadCatalog();loadRegistrations();});
+  window.addEventListener("campusnexus:institution-change",()=>{loadCatalog();loadRegistrations();loadUnitRegistrationControl();});
   window.addEventListener("campusnexus:curriculum-refresh",loadCatalog);
  }
- function start(){api=window.CampusInstitutionAdmin;if(!api?.db||!api?.institutionId){setTimeout(start,120);return;}bind();loadCatalog();loadRegistrations();}
+ function start(){api=window.CampusInstitutionAdmin;if(!api?.db||!api?.institutionId){setTimeout(start,120);return;}bind();loadCatalog();loadRegistrations();loadUnitRegistrationControl();}
  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",start,{once:true});else start();
 })();
