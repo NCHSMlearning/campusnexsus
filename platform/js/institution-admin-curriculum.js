@@ -80,16 +80,50 @@
   return '<tr class="ia-reg-group-row"><td><button type="button" class="ia-reg-expand" data-reg-group-toggle="'+id+'" aria-expanded="'+expanded+'"><i class="fa-solid fa-chevron-'+(expanded?"down":"right")+'"></i><span><b>'+esc(name)+'</b><small>'+esc(admission)+'</small></span></button></td><td>'+esc(val(r,"program"))+'</td><td>'+esc(period)+'</td><td><span class="ia-reg-unit-count">'+g.rows.length+' unit'+(g.rows.length===1?"":"s")+'</span></td><td>'+submitted+'</td><td><div class="ia-reg-actions">'+bulk+'<button type="button" class="ia-secondary-btn" data-reg-group-toggle="'+id+'">'+(expanded?"Hide units":"View units")+'</button></div></td></tr>'+
   (expanded?'<tr class="ia-reg-detail-row"><td colspan="6"><div class="ia-reg-unit-list">'+units+'</div></td></tr>':"");
  }
+ function selectedFilter(id){return norm($(id)?.value);}
+ function filteredRegistrationRows(status){
+  const q=norm($("iaUnitRegistrationSearch")?.value);
+  const program=selectedFilter("iaRegFilterProgramme"),year=selectedFilter("iaRegFilterAcademicYear"),intake=selectedFilter("iaRegFilterIntake"),block=selectedFilter("iaRegFilterBlock"),term=selectedFilter("iaRegFilterTerm");
+  return registrations.filter(r=>{
+   if(norm(r.status||"pending")!==status)return false;
+   if(program&&norm(r.program)!==program)return false;
+   if(year&&norm(r.academic_year)!==year)return false;
+   if(intake&&norm(r.intake_year)!==intake)return false;
+   if(block&&norm(r.block)!==block)return false;
+   if(term&&norm(r.term)!==term)return false;
+   return !q||[groupStudentName({first:r,profile:r._studentProfile}),r._studentProfile?.student_id,r._studentProfile?.admission_number,r._studentProfile?.email,r.unit_name,r.unit_code,r.program,r.block,r.term,r.academic_year,r.intake_year].some(v=>norm(v).includes(q));
+  });
+ }
+ function populateRegistrationFilters(){
+  const definitions=[
+   ["iaRegFilterProgramme","program","All programmes"],
+   ["iaRegFilterAcademicYear","academic_year","All academic years"],
+   ["iaRegFilterIntake","intake_year","All intakes"],
+   ["iaRegFilterBlock","block","All blocks"],
+   ["iaRegFilterTerm","term","All semesters / terms"]
+  ];
+  definitions.forEach(([id,key,placeholder])=>{
+   const el=$(id);if(!el)return;
+   const previous=el.value;
+   const values=[...new Set(registrations.map(r=>String(r[key]??"").trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true,sensitivity:"base"}));
+   el.innerHTML='<option value="">'+placeholder+'</option>'+values.map(v=>'<option value="'+esc(v)+'">'+esc(v)+'</option>').join("");
+   if(values.includes(previous))el.value=previous;
+  });
+ }
+ function clearRegistrationFilters(){
+  ["iaUnitRegistrationSearch","iaRegFilterProgramme","iaRegFilterAcademicYear","iaRegFilterIntake","iaRegFilterBlock","iaRegFilterTerm"].forEach(id=>{const el=$(id);if(el)el.value="";});
+  renderRegistrations();
+ }
  function renderRegistrationTable(status,targetId){
   const body=$(targetId);if(!body)return;
-  const q=norm($("iaUnitRegistrationSearch")?.value);
-  const rows=registrations.filter(r=>norm(r.status||"pending")===status&&(!q||[groupStudentName({first:r,profile:r._studentProfile}),r._studentProfile?.student_id,r._studentProfile?.admission_number,r._studentProfile?.email,r.unit_name,r.unit_code,r.program,r.block,r.term,r.academic_year].some(v=>norm(v).includes(q))));
+  const rows=filteredRegistrationRows(status);
   const groups=registrationGroups(rows);
   const countNode=$(status==="pending"?"iaRegPendingGroups":status==="approved"?"iaRegApprovedGroups":"iaRegRejectedGroups");
   if(countNode)countNode.textContent=groups.length+" student group"+(groups.length===1?"":"s");
   body.innerHTML=groups.length?groups.map(g=>renderRegistrationGroup(g,status)).join(""):'<tr><td colspan="6" class="ia-empty">No '+status+' registrations found.</td></tr>';
  }
  function renderRegistrations(){
+  populateRegistrationFilters();
   const count=s=>registrations.filter(r=>norm(r.status||"pending")===s).length;
   $("iaRegTotal").textContent=registrations.length;$("iaRegPending").textContent=count("pending");$("iaRegApproved").textContent=count("approved");$("iaRegRejected").textContent=count("rejected");
   renderRegistrationTable("pending","iaUnitRegistrationPendingRows");
@@ -126,6 +160,8 @@
   $("iaUnitCatalogProgram")?.addEventListener("change",renderCatalog);
   $("iaUnitRegistrationRefresh")?.addEventListener("click",loadRegistrations);
   $("iaUnitRegistrationSearch")?.addEventListener("input",renderRegistrations);
+  ["iaRegFilterProgramme","iaRegFilterAcademicYear","iaRegFilterIntake","iaRegFilterBlock","iaRegFilterTerm"].forEach(id=>$(id)?.addEventListener("change",renderRegistrations));
+  $("iaRegFiltersReset")?.addEventListener("click",clearRegistrationFilters);
   window.__iaExpandedRegistrationGroups=window.__iaExpandedRegistrationGroups||new Set();
   document.addEventListener("click",async e=>{
    const toggle=e.target.closest("[data-reg-group-toggle]");
