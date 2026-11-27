@@ -14,8 +14,16 @@
   const key=institution+'|'+code.toLowerCase();
   if(!options?.refresh&&cache.has(key))return cache.get(key);
   const task=(async()=>{
-   const {data:program,error}=await client.from('programs').select('id,institution_id,program_code,program_name,structure_type').eq('institution_id',institution).ilike('program_code',code).maybeSingle();
+   let {data:program,error}=await client.from('programs').select('id,institution_id,program_code,program_name,structure_type,status').eq('institution_id',institution).ilike('program_code',code).maybeSingle();
    if(error)throw error;
+   // Legacy student profiles may use an older programme code (e.g. KRCHN)
+   // while this institution's catalogue uses its sole configured code (e.g. DCHN).
+   // Only apply this fallback when exactly one active programme exists for the tenant.
+   if(!program){
+    const {data:activePrograms,error:fallbackError}=await client.from('programs').select('id,institution_id,program_code,program_name,structure_type,status').eq('institution_id',institution).eq('status','active');
+    if(fallbackError)throw fallbackError;
+    if((activePrograms||[]).length===1)program=activePrograms[0];
+   }
    if(!program)return {...labels('Block'),program:null,periods:[],institutionId:institution,programCode:code};
    const meta=labels(program.structure_type);
    const {data:rows,error:periodError}=await client.from('program_blocks').select('id,block_name,block_sequence,status').eq('institution_id',institution).eq('program_id',program.id).eq('status','active').order('block_sequence',{ascending:true});
