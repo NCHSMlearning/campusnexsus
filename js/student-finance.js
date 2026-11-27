@@ -249,32 +249,8 @@ function notifySuperAdmin(eventType, data) {
             window.handleStudentFinanceEvent(eventType, data);
         }
         
-        if (typeof supabase !== 'undefined' && supabase && typeof supabase.from === 'function') {
-            try {
-                const student = studentFinanceState.student || window.currentUserProfile || window.currentUser;
-                
-                supabase
-                    .from('admin_notifications')
-                    .insert([{
-                        notification_type: eventType,
-                        student_id: student?.user_id || student?.id || data?.studentId || 'unknown',
-                        student_name: student?.full_name || student?.name || data?.studentName || 'Unknown Student',
-                        details: typeof data === 'object' ? JSON.stringify(data) : String(data),
-                        is_read: false,
-                        timestamp: new Date().toISOString()
-                    }])
-                    .then(result => {
-                        if (result?.error) {
-                            console.warn('⚠️ Could not save notification:', result.error.message);
-                        }
-                    })
-                    .catch((error) => {
-                        console.warn('⚠️ Could not save notification:', error.message);
-                    });
-            } catch (error) {
-                console.warn('⚠️ Admin notification error:', error.message);
-            }
-        }
+        // Student clients must not insert directly into admin_notifications.
+        // Notify the in-page admin bridge; privileged notifications belong on the server.
         return true;
     } catch (error) {
         console.warn('⚠️ Could not notify admin:', error.message);
