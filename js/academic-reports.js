@@ -1300,7 +1300,7 @@
             set('semester-grade', grades.length ? (PROGRAM.isTVET(program) ? getGradeFromGPATVET(periodGpa) : getGradeFromGPA(periodGpa)) : '-');
             set('cumulative-grade', allGrades.length ? (PROGRAM.isTVET(program) ? getGradeFromGPATVET(cumulativeGpa) : getGradeFromGPA(cumulativeGpa)) : '-');
             set('total-credits-earned', String(earnedCredits));
-            setAcademicSummary(periodGpa, '-', earnedCredits);
+            setAcademicSummary(periodGpa, '-', earnedCredits, cumulativeGpa);
 
             tbody.innerHTML = grades.map(grade => {
                 const gradeColor = getGradeColor(grade.grade);
@@ -1330,11 +1330,11 @@
         }
     }
 
-    function setAcademicSummary(gpa, grade, earnedCredits) {
+    function setAcademicSummary(gpa, grade, earnedCredits, cumulativeGpa = gpa) {
         const ids = {
             'semester-gpa': Number(gpa || 0).toFixed(2),
             'semester-grade': grade || '-',
-            'cumulative-gpa': Number(gpa || 0).toFixed(2),
+            'cumulative-gpa': Number(cumulativeGpa || 0).toFixed(2),
             'cumulative-grade': grade || '-',
             'total-credits-earned': String(earnedCredits || 0)
         };
@@ -1345,8 +1345,8 @@
         const rank = document.getElementById('class-rank');
         const user = window.currentUserProfile || {};
         if (rank) rank.textContent = user.class_rank || user.rank || 'N/A';
-        window.currentCumulativeGPA = Number(gpa || 0);
-        document.dispatchEvent(new CustomEvent('academicGpaUpdated', {detail:{semesterGPA:Number(gpa||0),cumulativeGPA:Number(gpa||0),formatted:Number(gpa||0).toFixed(2)}}));
+        window.currentCumulativeGPA = Number(cumulativeGpa || 0);
+        document.dispatchEvent(new CustomEvent('academicGpaUpdated', {detail:{semesterGPA:Number(gpa||0),cumulativeGPA:Number(cumulativeGpa||0),formatted:Number(cumulativeGpa||0).toFixed(2)}}));
     }
 
     function createGradeChart(grades) {
