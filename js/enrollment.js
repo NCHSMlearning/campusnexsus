@@ -305,6 +305,8 @@ async function initializeSessionReporting() {
     if (sessionLabel) sessionLabel.textContent = 'Current ' + periodLabel + ' *';
     if (helpText) helpText.textContent = 'Select the ' + periodLabel.toLowerCase() + ' configured by your institution.';
     if (instructions) instructions.textContent = 'Report back to your current ' + periodLabel.toLowerCase() + ' for ' + getProgramDisplayName(program) + '.';
+    const reportTitle = safeGetElement('enrReportTitle');
+    if (reportTitle) reportTitle.textContent = 'Report Back to ' + periodLabel;
 
     if (autoDetect) {
         autoDetect.textContent = currentPeriod
