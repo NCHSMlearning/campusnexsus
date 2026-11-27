@@ -269,5 +269,10 @@ jobs:
           test "$size" -gt 1000000
           signature="$(head -c 2 /tmp/Campus-Nexus-App.apk | od -An -tx1 | tr -d ' \n')"
           test "$signature" = "504b"
-          echo "LIVE APK VERIFIED: HTTP download succeeded; size=$size bytes; ZIP/APK signature=$signature."
+          echo "LIVE APK MIRROR VERIFIED: HTTP download succeeded; size=$size bytes; ZIP/APK signature=$signature."
+          release_url="https://github.com/NCHSMlearning/campusnexsus/releases/download/campus-nexus-app-v1.2.6/Campus-Nexus-App-1.2.6.apk"
+          curl --fail --location --silent --show-error --retry 3 "$release_url" -D /tmp/cn-release-headers.txt -o /tmp/Campus-Nexus-App-release.apk
+          test "$(head -c 2 /tmp/Campus-Nexus-App-release.apk | od -An -tx1 | tr -d ' \\n')" = "504b"
+          grep -qi "application/vnd.android.package-archive" /tmp/cn-release-headers.txt
+          echo "OFFICIAL RELEASE ASSET VERIFIED: signed APK payload downloaded with Android package MIME type."
 
