@@ -5,22 +5,42 @@
 <title>My Examinations | Campus Nexus</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
-<link rel="stylesheet" href="/css/student-exams.css?v=20261127-profile-parity-v2">
+<link rel="stylesheet" href="/css/student-exams.css?v=20261127-profile-ui-v3">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="/js/exam-supabase.js?v=20261126-cnseb-key-issue-v3"></script><script src="/platform/js/academic-structure.js?v=20261123-tenant-structure-v1"></script>
 <script src="/platform/js/campus-nexus-module-access.js?v=20261120-entitlements-v3" defer></script>
 <script src="/code-protection.js?v=20261121-global-v4" defer></script>
 <style id="student-exam-profile-actions">.header-avatar.profile-link{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;color:inherit;cursor:pointer}.account-profile-link{display:flex;align-items:center;gap:10px;min-width:0;flex:1;color:inherit;text-decoration:none;border-radius:10px;padding:4px;transition:background .18s ease}.account-profile-link:hover,.account-profile-link:focus-visible{background:rgba(255,255,255,.09);outline:none}.profile-link-hint{display:block!important;font-size:10px!important;color:#9fc8e8!important;margin-top:3px}.account-profile-link .account-copy{min-width:0}</style><style id="student-profile-dashboard-style">
-.student-profile-hero{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:22px;margin:4px 0 20px;border-radius:16px;background:linear-gradient(120deg,#082f55,#0b6878);color:#fff}
-.student-profile-avatar{width:66px;height:66px;display:grid;place-items:center;border-radius:18px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.24);font-size:22px;font-weight:850}
-.student-profile-hero h2{margin:5px 0;font-size:22px;color:#fff}.student-profile-hero p{margin:0;color:#d9eaf4;font-size:13px}
-.profile-account-status{margin-left:auto;padding:7px 12px;border-radius:30px;background:rgba(255,255,255,.14);font-size:11px;font-weight:800}
-.student-profile-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
-.student-profile-field{min-width:0;padding:15px;border:1px solid #e4ebf2;border-radius:12px;background:#fff}
-.student-profile-field small{display:block;color:#7b8da0;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px}
-.student-profile-field strong{display:block;color:#173b58;font-size:14px;overflow-wrap:anywhere}
-.profile-privacy-note{margin-top:18px;color:#70849a;font-size:12px}
-@media(max-width:700px){.student-profile-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.profile-account-status{margin-left:0}}
-@media(max-width:420px){.student-profile-grid{grid-template-columns:1fr}.student-profile-hero{padding:16px}.student-profile-hero h2{font-size:18px}}
+#profile{overflow:hidden}
+#profile>.section-head{align-items:center;margin-bottom:22px}
+#profile .section-head .section-title-wrap h2{font-size:20px;color:#102b50}
+#profile .student-profile-hero{position:relative;display:flex;align-items:center;gap:24px;flex-wrap:wrap;padding:26px 30px;margin:0 0 18px;border-radius:18px;background:linear-gradient(115deg,#6538df 0%,#392ac5 48%,#1746b8 100%);color:#fff;overflow:hidden;min-height:150px}
+#profile .student-profile-hero:after{content:"";position:absolute;right:38px;top:14px;width:160px;height:130px;opacity:.12;background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 80'%3E%3Cpath fill='white' d='M50 4 2 25l48 21 39-17v25h6V25zM17 34v23c19 15 47 15 66 0V34L50 49z'/%3E%3C/svg%3E") center/contain no-repeat;pointer-events:none}
+#profile .student-profile-avatar{position:relative;z-index:1;width:104px;height:104px;flex:0 0 104px;display:grid;place-items:center;border-radius:17px;background:rgba(255,255,255,.18);border:3px solid rgba(255,255,255,.78);font-size:30px;font-weight:850;overflow:hidden}
+#profile .student-profile-hero>div:nth-child(2){position:relative;z-index:1;min-width:0}
+#profile .student-profile-hero .dashboard-eyebrow{color:#c9f7dc;font-weight:850;letter-spacing:.13em}
+#profile .student-profile-hero h2{margin:7px 0 5px;font-size:clamp(21px,2.5vw,30px);line-height:1.2;color:#fff}
+#profile .student-profile-hero p{margin:0;color:#e5eaff;font-size:14px}
+#profile .profile-account-status{position:relative;z-index:1;margin-left:auto;padding:8px 14px;border-radius:30px;background:rgba(255,255,255,.18);font-size:12px;font-weight:800;text-transform:capitalize}
+#profile .profile-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding:7px;margin:0 0 16px;border:1px solid #e0e7f3;border-radius:15px;background:#fff}
+#profile .profile-tab{display:flex;align-items:center;justify-content:center;gap:10px;min-height:50px;padding:10px 12px;border:1px solid transparent;border-radius:10px;background:transparent;color:#18345a;font:600 13px Inter,sans-serif;cursor:pointer;transition:background .18s,border-color .18s,color .18s}
+#profile .profile-tab i{font-size:16px;color:#4934d4}
+#profile .profile-tab:hover{background:#f4f2ff}
+#profile .profile-tab.active{background:#ebe8ff;border-color:#bcb2ff;color:#3421b9;box-shadow:inset 0 -3px 0 #5b3be5}
+#profile .profile-tab-panel{padding:20px;border:1px solid #e1e8f3;border-radius:16px;background:#fff;box-shadow:0 5px 20px rgba(20,45,85,.04)}
+#profile .profile-tab-panel[hidden]{display:none}
+#profile .profile-panel-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+#profile .profile-panel-heading h3{margin:0 0 4px;color:#142e54;font-size:16px}
+#profile .profile-panel-heading p{margin:0;color:#75849a;font-size:12px}
+#profile .profile-panel-count{white-space:nowrap;padding:6px 10px;border-radius:30px;background:#f0efff;color:#4934c7;font-size:11px;font-weight:800}
+#profile .student-profile-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+#profile .student-profile-field{display:flex;align-items:center;gap:12px;min-width:0;min-height:68px;padding:13px;border:1px solid #e3eaf5;border-radius:12px;background:linear-gradient(145deg,#fff,#f9fbff)}
+#profile .profile-field-icon{width:36px;height:36px;flex:0 0 36px;display:grid;place-items:center;border-radius:10px;background:#f0edff;color:#5135d5;font-size:15px}
+#profile .student-profile-field small{display:block;margin:0 0 5px;color:#72829a;font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
+#profile .student-profile-field strong{display:block;color:#142e54;font-size:13px;line-height:1.4;overflow-wrap:anywhere}
+#profile .profile-privacy-note{margin-top:16px;padding:12px 14px;border-radius:10px;background:#f5f8fc;color:#64758c;font-size:12px}
+@media(max-width:900px){#profile .student-profile-grid{grid-template-columns:repeat(2,minmax(0,1fr))}#profile .profile-tab{font-size:12px;gap:7px}}
+@media(max-width:620px){#profile>.section-head{align-items:flex-start}#profile .student-profile-hero{gap:14px;padding:18px;min-height:unset}#profile .student-profile-avatar{width:76px;height:76px;flex-basis:76px;border-radius:14px}#profile .profile-account-status{margin-left:0}#profile .profile-tabs{grid-template-columns:repeat(2,minmax(0,1fr))}#profile .profile-tab{justify-content:flex-start;min-height:44px}#profile .profile-tab-panel{padding:14px}#profile .student-profile-grid{grid-template-columns:1fr}}
+@media(max-width:390px){#profile .student-profile-hero h2{font-size:19px}#profile .section-head>div:last-child{width:100%}#profile .section-head>div:last-child button{flex:1}}
 </style></head>
 <body>
 <div class="exam-app">
@@ -70,7 +90,7 @@
 </section>
 <footer class="exam-footer"><span>© 2026 Campus Nexus</span><span><i class="fa-solid fa-lock"></i> Secure examination access</span><span>Learn <b>•</b> Prepare <b>•</b> Excel</span></footer>
 </main></div></div><div class="mobile-scrim" id="mobile-scrim"></div><div id="toast" class="toast" role="status"></div>
-<script src="/js/student-exams.js?v=20261127-lms-profile-parity-v2"></script>
+<script src="/js/student-exams.js?v=20261127-profile-ui-v3"></script>
 <script>
 (()=> {
  const side=document.getElementById('exam-sidebar');
