@@ -101,7 +101,7 @@ jobs:
           find "$RES" -type f -name 'ic_launcher*' -delete
           MARK="$(mktemp --suffix=.png)"
           # Crop the official blue-and-gold graduation-cap emblem, excluding the wordmark.
-          magick "$SOURCE" -crop 1024x860+0+0 +repage -trim +repage -resize 300x300 "$MARK"
+          magick "$SOURCE" -crop 1024x860+0+0 +repage -trim +repage -resize 270x270 "$MARK"
           mkdir -p "$RES/drawable" "$RES/mipmap-anydpi-v26" "$RES/values"
           magick "$MARK" -background none -gravity center -extent 432x432 "$RES/drawable/ic_launcher_foreground.png"
           cat > "$RES/values/ic_launcher_background.xml" <<'XML'
