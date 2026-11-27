@@ -194,7 +194,7 @@ jobs:
           workspace = pathlib.Path(os.environ["GITHUB_WORKSPACE"]).resolve()
           target_dir = workspace / "downloads"
           target_dir.mkdir(parents=True, exist_ok=True)
-          target = target_dir / expected_name
+          target = target_dir / "Campus-Nexus-App.apk"
           download_request = urllib.request.Request(apk["browser_download_url"], headers={"User-Agent": "CampusNexus-Website-Deployment"})
           with urllib.request.urlopen(download_request, timeout=180) as response, target.open("wb") as output:
               shutil.copyfileobj(response, output)
@@ -206,7 +206,7 @@ jobs:
               raise SystemExit("Pinned download is not a valid APK/ZIP payload.")
           print(f"Staged exact release {tag}: {expected_name} ({target.stat().st_size} bytes)")
           PY
-          test -s "$GITHUB_WORKSPACE/downloads/Campus-Nexus-App-1.2.6.apk"
+          test -s "$GITHUB_WORKSPACE/downloads/Campus-Nexus-App.apk"
           test "$(stat -c%s "$GITHUB_WORKSPACE/downloads/Campus-Nexus-App-1.2.6.apk")" -gt 1000000
           echo "Verified the exact versioned Campus Nexus APK at the website root."
 
@@ -261,7 +261,7 @@ jobs:
         if: steps.deployment.outcome == 'success' || steps.deployment_retry_1.outcome == 'success' || steps.deployment_retry_2.outcome == 'success'
         run: |
           set -euo pipefail
-          url="https://campusnexus.co.ke/downloads/Campus-Nexus-App-1.2.6.apk"
+          url="https://campusnexus.co.ke/downloads/Campus-Nexus-App.apk?v=1.2.6"
           echo "Checking public APK URL: $url"
           curl --fail --location --silent --show-error --retry 8 --retry-all-errors --retry-delay 10 "$url" -o /tmp/Campus-Nexus-App.apk
           test -s /tmp/Campus-Nexus-App.apk
