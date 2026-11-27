@@ -7332,25 +7332,23 @@ window.confirmReleaseResults = async function() {
         if (errorMessages.length) console.error('Release details:', errorMessages);
         alert(message);
 
-        // Notifications are sent only for results actually released in this run.
+        // Notify only students whose results were newly released in this action.
+        // The Edge Function verifies the caller, release ledger and institution scope.
         if (sendEmail && releaseData.length > 0) {
-            showToast(`📧 Sending ${releaseData.length} notification(s)...`, 'info');
-            let sent = 0;
-            let failed = 0;
-
-            for (const item of releaseData) {
-                try {
-                    const success = await sendSimpleReleaseNotification(item.student_id, item.exam_id, item.grade);
-                    if (success) sent++;
-                    else failed++;
-                    await new Promise(resolve => setTimeout(resolve, 300));
-                } catch (e) {
-                    failed++;
-                    console.error('Email error:', e);
-                }
+            showToast(`📧 Sending ${releaseData.length} result notification(s)...`, 'info');
+            try {
+                const { data: notice, error: noticeError } = await sb.functions.invoke(
+                    'exam-results-released-notification',
+                    { body: { result_ids: releaseData.map(item => String(item.grade.id)) } }
+                );
+                if (noticeError) throw noticeError;
+                if (!notice?.success) throw new Error(notice?.error || 'Notification delivery was not confirmed.');
+                const sent = Number(notice.sent || 0), failed = Number(notice.failed || 0), skipped = Number(notice.skipped || 0);
+                showToast(`📧 Results notices accepted: ${sent}; failed: ${failed}; skipped: ${skipped}`, failed ? 'warning' : 'success');
+            } catch (noticeError) {
+                console.error('Results notification request failed:', noticeError);
+                showToast('Results were released, but email notifications failed: ' + (noticeError.message || 'Unknown error'), 'error');
             }
-
-            showToast(`📧 ${sent} notification(s) sent, ${failed} failed`, sent > 0 ? 'success' : 'error');
         }
 
         closeReleaseModal();
