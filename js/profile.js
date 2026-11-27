@@ -706,7 +706,7 @@ class ProfileModule {
                 if (storageMatch) {
                     bucket = decodeURIComponent(storageMatch[1]);
                     objectPath = decodeURIComponent(storageMatch[2]);
-                } else if (/^https?:\\/\\//i.test(objectPath)) {
+                 } else if (/^https?:\/\//i.test(objectPath)) {
                     resolvedUrl = objectPath;
                 } else if (objectPath.startsWith('user-documents/')) {
                     bucket = 'user-documents';
@@ -764,7 +764,7 @@ class ProfileModule {
         if (storageMatch) {
             bucket = decodeURIComponent(storageMatch[1]);
             objectPath = decodeURIComponent(storageMatch[2]);
-        } else if (/^https?:\\/\\//i.test(objectPath)) {
+         } else if (/^https?:\/\//i.test(objectPath)) {
             return objectPath;
         } else if (objectPath.startsWith('user-documents/')) {
             bucket = 'user-documents';
