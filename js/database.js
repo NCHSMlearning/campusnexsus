@@ -945,7 +945,8 @@ class Database {
             const { data: grades, error } = await this.supabase
                 .from('exam_grades')
                 .select('*, exams:exam_id(unit_code, course_name, block_term, exam_name, program_type)')
-                .eq('student_id', this.currentUserId);
+                .eq('student_id', this.currentUserId)
+                .eq('institution_id', this.currentUserProfile?.institution_id || window.CURRENT_INSTITUTION_ID);
 
             if (error) throw error;
 
@@ -964,6 +965,7 @@ class Database {
                             .from('student_unit_registrations')
                             .select('id, status')
                             .eq('student_id', this.currentUserId)
+                            .eq('institution_id', this.currentUserProfile?.institution_id || window.CURRENT_INSTITUTION_ID)
                             .eq('unit_code', unitCode)
                             .in('reg_type', ['Supplementary', 'Resit', 'Retake'])
                             .maybeSingle();
@@ -1009,6 +1011,7 @@ class Database {
                 .from('student_unit_registrations')
                 .select('*')
                 .eq('student_id', this.currentUserId)
+                .eq('institution_id', this.currentUserProfile?.institution_id || window.CURRENT_INSTITUTION_ID)
                 .in('reg_type', ['Supplementary', 'Resit', 'Retake'])
                 .order('submitted_date', { ascending: false });
 
@@ -1083,6 +1086,7 @@ class Database {
                 .select('*')
                 .eq('id', registrationId)
                 .eq('student_id', this.currentUserId)
+                .eq('institution_id', this.currentUserProfile?.institution_id || window.CURRENT_INSTITUTION_ID)
                 .eq('status', 'approved')
                 .single();
 
@@ -1228,6 +1232,7 @@ class Database {
             const { data: courses, error } = await this.supabase
                 .from('courses')
                 .select('*')
+                .eq('institution_id', this.currentUserProfile?.institution_id || window.CURRENT_INSTITUTION_ID)
                 .or(programFilter)
                 .eq('intake_year', intakeYear)
                 .or(blockFilter)
@@ -1276,6 +1281,7 @@ class Database {
                     exam_link,
                     course_name
                 `)
+                .eq('institution_id', this.currentUserProfile?.institution_id || window.CURRENT_INSTITUTION_ID)
                 .or(`program_type.eq.${program},program_type.eq.General`)
                 .or(`block_term.eq.${block},block_term.is.null,block_term.eq.General`)
                 .eq('intake_year', intakeYear)
@@ -1298,6 +1304,7 @@ class Database {
                     graded_at
                 `)
                 .eq('student_id', studentId)
+                .eq('institution_id', this.currentUserProfile?.institution_id || window.CURRENT_INSTITUTION_ID)
                 .eq('question_id', '00000000-0000-0000-0000-000000000000')
                 .order('graded_at', { ascending: false });
 
@@ -1337,6 +1344,7 @@ class Database {
             const { data: areaData, error: areaError } = await this.supabase
                 .from('clinical_areas')
                 .select('id, name, latitude, longitude, block, program, intake_year')
+                .eq('institution_id', this.currentUserProfile?.institution_id || window.CURRENT_INSTITUTION_ID)
                 .ilike('program', program)
                 .ilike('intake_year', intakeYear)
                 .or(blockTerm ? `block.ilike.${blockTerm},block.is.null` : 'block.is.null');
@@ -1346,6 +1354,7 @@ class Database {
             const { data: nameData, error: nameError } = await this.supabase
                 .from('clinical_names')
                 .select('id, uuid, clinical_area_name, latitude, longitude, program, intake_year, block_term')
+                .eq('institution_id', this.currentUserProfile?.institution_id || window.CURRENT_INSTITUTION_ID)
                 .ilike('program', program)
                 .ilike('intake_year', intakeYear)
                 .or(blockTerm ? `block_term.ilike.${blockTerm},block_term.is.null` : 'block_term.is.null');
@@ -1385,6 +1394,7 @@ class Database {
         try {
             let query = this.supabase.from('courses_sections')
                 .select('id, name, code, latitude, longitude')
+                .eq('institution_id', this.currentUserProfile?.institution_id || window.CURRENT_INSTITUTION_ID)
                 .eq('program', program)
                 .eq('intake_year', intakeYear);
 
@@ -1507,6 +1517,7 @@ class Database {
             const { data: resources, error } = await this.supabase
                 .from('resources')
                 .select('id, title, file_path, file_url, program_type, block, intake, uploaded_by_name, created_at, description, file_type')
+                .eq('institution_id', this.currentUserProfile?.institution_id || window.CURRENT_INSTITUTION_ID)
                 .eq('program_type', program)
                 .eq('block', block)
                 .eq('intake', intakeYear)
@@ -1538,6 +1549,7 @@ class Database {
             const { data: personalMessages, error: personalError } = await this.supabase
                 .from('student_messages')
                 .select('*')
+                .eq('institution_id', this.currentUserProfile?.institution_id || window.CURRENT_INSTITUTION_ID)
                 .or(`recipient_id.eq.${this.currentUserId},recipient_program.eq.${program}`)
                 .order('created_at', { ascending: false });
 
@@ -1546,6 +1558,7 @@ class Database {
             const { data: notifications, error: notifError } = await this.supabase
                 .from('notifications')
                 .select('*')
+                .eq('institution_id', this.currentUserProfile?.institution_id || window.CURRENT_INSTITUTION_ID)
                 .or(`target_program.eq.${program},target_program.is.null`)
                 .order('created_at', { ascending: false });
 
@@ -1606,6 +1619,7 @@ class Database {
             const { data: events, error } = await this.supabase
                 .from('calendar_events')
                 .select('event_name, event_date, type, description, target_program, target_block, target_intake_year')
+                .eq('institution_id', this.currentUserProfile?.institution_id || window.CURRENT_INSTITUTION_ID)
                 .or(`target_program.eq.${program},target_program.eq.General`)
                 .or(`target_block.eq.${block},target_block.is.null`)
                 .eq('target_intake_year', intakeYear);
@@ -1649,6 +1663,7 @@ class Database {
                         block
                     )
                 `)
+                .eq('institution_id', this.currentUserProfile?.institution_id || window.CURRENT_INSTITUTION_ID)
                 .eq('is_active', true)
                 .eq('is_published', true);
 
