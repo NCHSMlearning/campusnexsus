@@ -575,7 +575,8 @@
     // ============================================================
     // 12. LOAD MY MARKS WITH HOLLOW STAR SUPPORT - NO DEMO DATA
     // ============================================================
-    async function loadMyMarks() {
+    async function loadMyMarks
+        if (window.waitForStudentPortalContext) await window.waitForStudentPortalContext();() {
         const tbody = document.getElementById('my_marks_table_body');
         if (!tbody) return;
         
