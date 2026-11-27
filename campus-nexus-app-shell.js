@@ -470,7 +470,7 @@
     }
     var home = findLink([/dashboard/i,/^home$/i]) || (isStudent ? null : null);
     var learning = findLink([/my units/i,/courses/i,/learning/i,/lms/i]);
-    var exams = findLink([/exams?.*results/i,/examination/i,/^exams?$/i]);
+    var exams = findLink([/exam|cat/i]);
     var profile = findLink([/^profile$/i,/my account/i,/account settings/i]);
 
     function routeButton(title, icon, link, fallback, activeTest) {
@@ -509,7 +509,7 @@
     bar.setAttribute('aria-label','Campus Nexus app navigation');
 
     var homeFallback = isStudent ? '/platform/student.html' : null;
-    var examsFallback = isStudent ? '/platform/student-exams.html' : null;
+    var examsFallback = isStudent ? '/platform/student.html#examinations' : null;
     var items = [
       routeButton('Home',icons.home,home,homeFallback,function(){return /student\.html$/.test(path) || /dashboard/i.test(path)}),
       routeButton(isLecturer?'Classes':'Learning',icons.learning,learning,null,function(){return !!learning && (learning.getAttribute('href')===path || learning.classList.contains('active'))}),
