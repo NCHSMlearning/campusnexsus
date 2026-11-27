@@ -138,11 +138,20 @@
       else if(/term/i.test(session)){patch.current_term=session;patch.term=session;}
       else if(/block/i.test(session)||/introductory/i.test(session)||/fqe/i.test(session)){patch.current_block=session;patch.block=session;}
       else throw new Error("The reported academic period could not be identified as a semester, term or block. The report remains pending.");
-      const profileUpdate=await client.from("consolidated_user_profiles_table").update(patch)
+      let profileUpdate=await client.from("consolidated_user_profiles_table").update(patch)
         .eq("user_id",previousProfile.user_id).eq("institution_id",institutionId).select("user_id");
-      if(profileUpdate.error)throw profileUpdate.error;
+      if(profileUpdate.error) {
+        // Some older institution schemas have only the canonical current_* column.
+        const canonical={updated_at:patch.updated_at};
+        if(/semester/i.test(session)) canonical.current_semester=session;
+        else if(/term/i.test(session)) canonical.current_term=session;
+        else canonical.current_block=session;
+        profileUpdate=await client.from("consolidated_user_profiles_table").update(canonical)
+          .eq("user_id",previousProfile.user_id).eq("institution_id",institutionId).select("user_id");
+        if(profileUpdate.error)throw profileUpdate.error;
+        profilePatch=canonical;
+      } else profilePatch=patch;
       if(!profileUpdate.data?.length)throw new Error("Student profile could not be updated. The report remains pending.");
-      profilePatch=patch;
     }
     const result=await client.from("session_reports").update({
       approval_status:decision,approved_at:new Date().toISOString(),
@@ -164,6 +173,19 @@
     else notify("Session report "+decision+" successfully, but email was not sent: "+emailResult.reason,"warning");
     return true;
   }
+  $("smSessionReportsBody")?.addEventListener("click",event=>{
+    const button=event.target.closest("[data-session-report-action]");
+    if(!button)return;
+    const id=button.dataset.id, decision=button.dataset.sessionReportAction;
+    if(!id||!["approved","rejected"].includes(decision))return;
+    button.disabled=true; button.textContent=decision==="approved"?"Approving…":"Rejecting…";
+    decideReport(id,decision).catch(error=>notify(error.message,"error")).finally(()=>{button.disabled=false;});
+  });
+  $("smSessionReportsBody")?.addEventListener("change",event=>{
+    if(!event.target.matches(".session-reports-checkbox"))return;
+    const count=selected("session-reports").length;
+    if($("smSessionReportsSelectedCount"))$("smSessionReportsSelectedCount").textContent=String(count);
+  });
   window.approveSessionReportAdmin=(id)=>decideReport(id,"approved").catch(e=>notify(e.message,"error"));
   window.rejectSessionReportAdmin=(id)=>decideReport(id,"rejected").catch(e=>notify(e.message,"error"));
   window.bulkApproveSessionReports=async()=>{const ids=selected("session-reports");if(!ids.length)return notify("Select at least one session report.","warning");if(!confirm("Approve "+ids.length+" selected session reports?"))return;let ok=0;for(const id of ids){try{if(await decideReport(id,"approved",false))ok++;}catch(e){console.error(e);}}notify(ok+" of "+ids.length+" reports approved.");await loadSessionReportsAdmin();};
