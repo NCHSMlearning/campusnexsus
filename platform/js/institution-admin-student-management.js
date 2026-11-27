@@ -93,25 +93,14 @@
     } catch(e) { console.error("[Institution Student Management] Session reports:",e); body.innerHTML='<tr><td colspan="8" style="padding:35px;text-align:center;color:#b91c1c">Could not load session reports: '+esc(e.message)+'</td></tr>'; }
   }
   async function sendSessionReportDecisionEmail(report, profile, decision) {
-    const recipient=String(profile?.email || report?.email || report?.student_email || "").trim();
-    if(!recipient) return {sent:false,reason:"Student email address is not available."};
     const client=db();
-    const sessionResult=await client.auth.getSession();
-    const token=sessionResult?.data?.session?.access_token;
-    if(sessionResult?.error || !token) return {sent:false,reason:"Administrator session is unavailable for email delivery."};
-    const approved=decision==="approved";
-    const safe=value=>esc(value||"—");
-    const subject=approved ? "Session report approved - Campus Nexus" : "Session report update - Campus Nexus";
-    const html='<div style="font-family:Arial,sans-serif;max-width:620px;margin:auto;padding:24px;color:#172033"><h2 style="color:'+(approved?'#047857':'#b91c1c')+'">'+(approved?'Session report approved':'Session report not approved')+'</h2><p>Dear '+safe(profile?.full_name||report?.student_name||'Student')+',</p><p>'+(approved?'Your session report has been approved by your institution. Your academic period has been updated accordingly.':'Your session report has been rejected by your institution. Please log in to Campus Nexus and contact your institution administrator for clarification or resubmission instructions.')+'</p><p><b>Programme:</b> '+safe(report?.program)+'<br><b>Reported period:</b> '+safe(report?.session)+'<br><b>Current status:</b> '+(approved?'Approved':'Rejected')+'</p><p>Log in to your Campus Nexus student portal to view your latest information.</p><p>Campus Nexus</p></div>';
-    try {
-      const response=await fetch('https://lwhtjozfsmbyihenfunw.supabase.co/functions/v1/send-email',{
-        method:'POST',
-        headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
-        body:JSON.stringify({to:recipient,subject,html,from:'Campus Nexus <info@campusnexus.co.ke>'})
-      });
-      const result=await response.json().catch(()=>({}));
-      return response.ok&&result.success?{sent:true}:{sent:false,reason:result.error||'Email service rejected the request.'};
-    } catch(error) { return {sent:false,reason:error.message||'Email service unavailable.'}; }
+    if(!client?.functions?.invoke)return {sent:false,reason:"Campus Nexus notification service is unavailable."};
+    const result=await client.functions.invoke("session-report-notification",{
+      body:{report_id:report.id,decision}
+    });
+    if(result.error)return {sent:false,reason:result.error.message||"Notification service request failed."};
+    if(!result.data?.success)return {sent:false,reason:result.data?.error||"Email provider did not accept the notification."};
+    return {sent:true,recipient:result.data.recipient||profile?.email||null};
   }
 
   async function decideReport(id, decision, confirmUser=true) {
