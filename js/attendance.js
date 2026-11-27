@@ -656,39 +656,45 @@
     // ============================================
 
     function showToast(message, type = 'success', duration = 3500) {
-        const existing = document.querySelector('.custom-toast');
-        if (existing) existing.remove();
+        // One shared top-right stack prevents attendance alerts from covering
+        // the mobile navigation or appearing at the bottom of the app.
+        let container = document.getElementById('cn-attendance-toast-stack');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'cn-attendance-toast-stack';
+            container.setAttribute('role', 'region');
+            container.setAttribute('aria-label', 'Notifications');
+            container.style.cssText = 'position:fixed;top:calc(env(safe-area-inset-top, 0px) + 78px);right:16px;left:auto;z-index:2147483000;display:flex;flex-direction:column;align-items:flex-end;gap:10px;width:min(420px,calc(100vw - 32px));max-height:calc(100dvh - 110px);overflow:hidden;pointer-events:none;';
+            document.body.appendChild(container);
+        }
 
         const toast = document.createElement('div');
         toast.className = 'custom-toast';
-        toast.style.cssText = `
-            position: fixed;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : type === 'warning' ? '#f59e0b' : '#4f46e5'};
-            color: white;
-            padding: 14px 28px;
-            border-radius: 16px;
-            font-size: 15px;
-            font-weight: 500;
-            z-index: 999997;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            max-width: 90%;
-            animation: slideUpToast 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-            font-family: 'Inter', system-ui, sans-serif;
-            pointer-events: none;
-        `;
-        const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : type === 'warning' ? '⚠️' : 'ℹ️';
-        toast.innerHTML = `<span style="font-size: 20px;">${icon}</span> ${message}`;
-        document.body.appendChild(toast);
-        setTimeout(() => {
-            toast.style.animation = 'slideDownToast 0.3s ease forwards';
-            setTimeout(() => toast.remove(), 300);
-        }, duration);
+        toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
+        toast.style.cssText = `position:relative;inset:auto;transform:none;width:100%;box-sizing:border-box;background:${type === 'success' ? '#059669' : type === 'error' ? '#dc2626' : type === 'warning' ? '#d97706' : '#4338ca'};color:#fff;padding:13px 16px;border-radius:14px;font-size:14px;line-height:1.45;font-weight:600;z-index:1;box-shadow:0 10px 28px rgba(15,23,42,.22);display:flex;align-items:flex-start;gap:10px;max-width:100%;font-family:Inter,system-ui,sans-serif;pointer-events:auto;overflow-wrap:anywhere;opacity:0;transform:translateX(12px);transition:opacity .2s ease,transform .2s ease;`;
+        const icon = document.createElement('span');
+        icon.setAttribute('aria-hidden', 'true');
+        icon.style.cssText = 'font-size:18px;line-height:1.2;flex:0 0 auto;';
+        icon.textContent = type === 'success' ? '✓' : type === 'error' ? '✕' : type === 'warning' ? '⚠' : 'ℹ';
+        const text = document.createElement('span');
+        text.style.cssText = 'min-width:0;flex:1;';
+        text.textContent = String(message ?? '');
+        const close = document.createElement('button');
+        close.type = 'button';
+        close.setAttribute('aria-label', 'Dismiss notification');
+        close.textContent = '×';
+        close.style.cssText = 'border:0;background:transparent;color:inherit;font-size:20px;line-height:1;cursor:pointer;padding:0 2px;flex:0 0 auto;';
+        close.addEventListener('click', () => toast.remove());
+        toast.append(icon, text, close);
+        container.appendChild(toast);
+        while (container.children.length > 4) container.firstElementChild.remove();
+        requestAnimationFrame(() => { toast.style.opacity = '1'; toast.style.transform = 'translateX(0)'; });
+        const removeTimer = window.setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateX(12px)';
+            window.setTimeout(() => toast.remove(), 220);
+        }, Math.max(1500, Number(duration) || 3500));
+        close.addEventListener('click', () => window.clearTimeout(removeTimer), { once: true });
     }
 
     // ============================================
