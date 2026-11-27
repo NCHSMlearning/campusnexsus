@@ -18,6 +18,7 @@
         studentProfile: null,
         registeredUnits: [],
         approvals: null,
+        academicStructure: null,
         
         init: function() {
             console.log('✅ Lecture Card Module ready');
@@ -198,8 +199,8 @@
                 
                 if (profile) {
                     this.studentProfile = profile;
-                    this.userProgram = profile.program || profile.course || 'KRCHN';
-                    this.userBlock = profile.block || profile.current_block || profile.term || 'Block 4';
+                    this.userProgram = profile.program || profile.program_code || profile.course || '';
+                    this.userBlock = profile.current_semester || profile.semester || profile.current_block || profile.block || profile.current_term || profile.term || '';
                     
                     // Check if TVET student
                     const tvetPrograms = ['DPOTT', 'DCH', 'DHRIT', 'DSL', 'DSW', 'DCJS', 'DHSS', 'DICT', 'DME',
@@ -215,8 +216,8 @@
                         intake_year: '2024',
                         block: 'Block 4'
                     };
-                    this.userProgram = 'KRCHN';
-                    this.userBlock = 'Block 4';
+                    this.userProgram = '';
+                    this.userBlock = '';
                     this.isTVETStudent = false;
                 }
                 
@@ -224,10 +225,10 @@
                 this.fetchProfileFromDB().then(dbProfile => {
                     if (dbProfile) {
                         this.studentProfile = { ...this.studentProfile, ...dbProfile };
-                        this.userProgram = dbProfile.program || this.userProgram;
-                        this.userBlock = dbProfile.block || dbProfile.current_block || this.userBlock;
+                        this.userProgram = dbProfile.program || dbProfile.program_code || this.userProgram;
+                        this.userBlock = dbProfile.current_semester || dbProfile.semester || dbProfile.current_block || dbProfile.block || dbProfile.current_term || dbProfile.term || this.userBlock;
                     }
-                    resolve();
+                    this.resolveAcademicStructure().finally(() => resolve());
                 }).catch(() => resolve());
             });
         },
@@ -253,6 +254,34 @@
             }
         },
         
+        resolveAcademicStructure: async function() {
+            const client = window.db?.supabase || window.supabase || window.supabaseClient;
+            const profile = this.studentProfile || {};
+            const institutionId = profile.institution_id || window.CURRENT_INSTITUTION_ID;
+            const programCode = profile.program || profile.program_code || this.userProgram;
+            if (client && institutionId && programCode && window.CampusAcademicStructure?.resolve) {
+                this.academicStructure = await window.CampusAcademicStructure.resolve(client, institutionId, programCode, { refresh: true });
+            }
+            const type = this.academicStructure?.type || 'Block';
+            this.userBlock = type === 'Semester'
+                ? (profile.current_semester || profile.semester || profile.current_block || profile.block || '')
+                : type === 'Term'
+                    ? (profile.current_term || profile.term || profile.current_block || profile.block || '')
+                    : (profile.current_block || profile.block || profile.current_semester || profile.semester || '');
+            return this.academicStructure;
+        },
+
+        getAcademicPeriodLabel: function() {
+            return this.academicStructure?.singular || (this.isTVETStudent ? 'Term' : 'Block');
+        },
+
+        getAcademicYearLabel: function() {
+            const profile = this.studentProfile || {};
+            if (profile.academic_year || profile.current_academic_year) return String(profile.academic_year || profile.current_academic_year);
+            const year = new Date().getFullYear();
+            return year + '/' + (year + 1);
+        },
+
         getStudentProfile: async function() {
             // Already loaded in getStudentInfo
             return this.studentProfile;
@@ -264,9 +293,11 @@
             // Try to get from unit registration module
             if (window.unitRegistrationModule && window.unitRegistrationModule.registeredUnits) {
                 const registered = window.unitRegistrationModule.registeredUnits;
-                const approvedUnits = registered.filter(u => 
-                    u.status === 'approved' && (u.block === this.userBlock || u.block === this.userTerm)
-                );
+                const approvedUnits = registered.filter(u => {
+                    if (String(u.status || '').toLowerCase() !== 'approved') return false;
+                    const period = String(u.block || u.semester || u.term || '').trim();
+                    return !this.userBlock || !period || period.toLowerCase() === String(this.userBlock).toLowerCase();
+                });
                 
                 if (approvedUnits && approvedUnits.length > 0) {
                     console.log('✅ Found approved units:', approvedUnits.length);
@@ -517,8 +548,13 @@
             const approvals = this.approvals || { allApproved: false, issued_date: new Date().toLocaleDateString('en-GB'), valid_block: this.userBlock };
             const currentYear = new Date().getFullYear();
             const nextYear = currentYear + 1;
-            const displayBlock = this.userBlock || student.block || 'Current Block';
-            const programType = this.isTVETStudent ? 'TVET' : 'KRCHN';
+            const displayBlock = this.userBlock || student.current_semester || student.semester || student.current_block || student.block || student.current_term || student.term || 'Not assigned';
+            const periodLabel = this.getAcademicPeriodLabel();
+            const institution = student.institution || window.CURRENT_INSTITUTION || {};
+            const institutionName = institution.name || student.institution_name || document.documentElement.dataset.institutionName || 'Your Institution';
+            const institutionLogo = institution.logo_url || student.logo_url || '';
+            const primaryColor = institution.primary_color || getComputedStyle(document.documentElement).getPropertyValue('--cn-institution-primary').trim() || '#4C1D95';
+            const programType = this.userProgram || student.program_type || 'Programme';
             const studentName = student.full_name || student.name || 'Student Name';
             const studentId = student.student_id || student.registration_number || student.id?.substring(0, 8) || 'N/A';
             const intakeYear = student.intake_year || student.admission_year || '2024';
@@ -562,14 +598,12 @@
                         <!-- Header -->
                         <div style="text-align: center; border-bottom: 2px solid #4C1D95; padding-bottom: 16px; margin-bottom: 20px;">
                             <div style="display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 4px;">
-                                <div style="width: 50px; height: 50px; border-radius: 50%; background: #4C1D95; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                                    <i class="fas fa-chalkboard" style="color: white; font-size: 24px;"></i>
-                                </div>
-                                <h2 style="color: #4C1D95; margin: 0; font-size: 22px; font-weight: 700;">NCHSM</h2>
+                                ${institutionLogo ? `<img src="${this.escapeHtml(institutionLogo)}" alt="${this.escapeHtml(institutionName)} logo" style="width:56px;height:56px;object-fit:contain;">` : `<div style="width:50px;height:50px;border-radius:50%;background:${primaryColor};display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-chalkboard" style="color:white;font-size:24px;"></i></div>`}
+                                <h2 style="color: ${primaryColor}; margin: 0; font-size: 22px; font-weight: 700;">${this.escapeHtml(institutionName)}</h2>
                             </div>
                             <h3 style="margin: 0; color: #0A3D62; font-size: 16px; font-weight: 600;">OFFICIAL LECTURE CARD</h3>
                             <p style="margin: 4px 0 0; color: #6b7280; font-size: 13px;">${currentYear}/${nextYear} ACADEMIC YEAR</p>
-                            <p style="margin: 4px 0 0; color: #4C1D95; font-weight: 600; font-size: 13px;">${programType} | BLOCK: <span style="font-weight: 700;">${this.escapeHtml(displayBlock)}</span></p>
+                            <p style="margin: 4px 0 0; color: #4C1D95; font-weight: 600; font-size: 13px;">${programType} | ${this.escapeHtml(periodLabel.toUpperCase())}: <span style="font-weight: 700;">${this.escapeHtml(displayBlock)}</span></p>
                         </div>
                         
                         <!-- Status Badge -->
@@ -589,7 +623,7 @@
                                 <div><strong style="font-size: 13px; color: #475569;">Reg No:</strong> <span style="font-size: 13px; color: #1e293b;">${this.escapeHtml(studentId)}</span></div>
                                 <div><strong style="font-size: 13px; color: #475569;">Program:</strong> <span style="font-size: 13px; color: #1e293b;">${this.escapeHtml(student.program || this.userProgram || 'KRCHN')}</span></div>
                                 <div><strong style="font-size: 13px; color: #475569;">Intake:</strong> <span style="font-size: 13px; color: #1e293b;">${this.escapeHtml(intakeYear)}</span></div>
-                                <div><strong style="font-size: 13px; color: #475569;">Current Block:</strong> <span style="font-size: 13px; color: #1e293b; font-weight: 600;">${this.escapeHtml(displayBlock)}</span></div>
+                                <div><strong style="font-size: 13px; color: #475569;">${this.escapeHtml(periodLabel)}:</strong> <span style="font-size: 13px; color: #1e293b; font-weight: 600;">${this.escapeHtml(displayBlock)}</span></div>
                                 <div><strong style="font-size: 13px; color: #475569;">Status:</strong> <span style="color: ${statusColor}; font-weight: 600;">${approvalStatus}</span></div>
                             </div>
                         </div>
@@ -621,7 +655,7 @@
                             <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; font-size: 13px;">
                                 <div><span style="color: #6b7280;">ISSUED:</span> <strong>${approvals.issued_date}</strong></div>
                                 <div><span style="color: #6b7280;">VALID FOR:</span> <strong>${this.escapeHtml(approvals.valid_block)}</strong></div>
-                                <div><span style="color: #6b7280;">Valid Until:</span> <strong>End of Block</strong></div>
+                                <div><span style="color: #6b7280;">Valid Until:</span> <strong>End of ${this.escapeHtml(periodLabel)}</strong></div>
                             </div>
                         </div>
                         
