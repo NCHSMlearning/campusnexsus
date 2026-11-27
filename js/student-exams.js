@@ -29,28 +29,38 @@ async function renderStudentProfile(){
  const admission=val(p.admission_number,p.student_id,p.reg_no,'—');
  const studentId=val(p.student_id,p.reg_no,p.admission_number,'—');
  const program=val(p.program,p.program_name,p.department,'—');
- const programType=val(p.program_type,p.course_type,p.category,'—');
+ const programType=val(p.program_type,p.course_type,p.category);
  const periodType=state.academicStructure?.singular||'Academic period';
- const periodValue=val(p.current_semester,p.semester,p.current_term,p.term,p.current_block,p.block_term,p.block,p.year_of_study,'Not assigned');
- const fields=[
-  ['Full name',fullName],['Email address',email],['Admission number',admission],['Student ID',studentId],
-  ['Programme',program],['Programme type',programType],
-  ['Intake year',val(p.intake_year,p.year_of_intake,p.intake,p.admission_year)],
-  ['Intake month',p.intake_month], [periodType,periodValue],['Year of study',p.year_of_study],
-  ['Phone number',val(p.phone,p.phone_number,p.mobile_number)],
-  ['Alternative phone',val(p.alt_phone,p.alternative_phone,p.secondary_phone)],
-  ['Date of birth',val(p.date_of_birth,p.dob)],['Gender',p.gender],
-  ['National ID',val(p.national_id,p.id_number)],['Address',val(p.address,p.residential_address)],
-  ['Guardian name',val(p.guardian_name,p.next_of_kin_name)],
-  ['Guardian phone',val(p.guardian_phone,p.next_of_kin_phone)],
-  ['Account status',p.status],
-  ['Login access',p.login_enabled===true?'Enabled':p.login_enabled===false?'Disabled':null]
- ].filter(([,v])=>v!==undefined&&v!==null&&String(v).trim()!=='');
- const initials=fullName.trim().split(' ').filter(Boolean).slice(0,2).map(x=>x[0]).join('').toUpperCase();
- const set=(id,v)=>{const el=$(id);if(el)el.textContent=String(v??'');};
- set('profile-avatar',initials||'ST');set('profile-full-name',fullName);
- set('profile-subtitle',[admission,program].filter(Boolean).join(' · '));
- set('profile-status',val(p.status,'Account active'));
+ const periodPlural=state.academicStructure?.plural||'Academic periods';
+ const periodValue=val(p.current_semester,p.semester,p.current_term,p.term,p.current_block,p.block_term,p.block,p.year_of_study);
+ const status=val(p.status,'Account status unavailable');
+ const lastLogin=user.last_sign_in_at?new Date(user.last_sign_in_at).toLocaleString():null;
+ const groups=[
+  {id:'details',label:'Profile Details',icon:'fa-user',fields:[
+   ['Full name',fullName,'fa-user'],['Email address',email,'fa-envelope'],['Admission number',admission,'fa-id-card'],
+   ['Student ID',studentId,'fa-barcode'],['Programme',program,'fa-graduation-cap'],['Programme type',programType,'fa-layer-group']
+  ]},
+  {id:'academic',label:'Academic Details',icon:'fa-graduation-cap',fields:[
+   ['Intake year',val(p.intake_year,p.year_of_intake,p.intake,p.admission_year),'fa-calendar'],
+   ['Intake month',p.intake_month,'fa-calendar-days'],[periodType,periodValue,'fa-layer-group'],
+   ['Year of study',p.year_of_study,'fa-book-open'],['Campus',p.campus_name||p.campus,'fa-building'],
+   ['Department',p.department,'fa-sitemap']
+  ]},
+  {id:'contact',label:'Contact & Guardian',icon:'fa-users',fields:[
+   ['Phone number',val(p.phone,p.phone_number,p.mobile_number),'fa-phone'],
+   ['Alternative phone',val(p.alt_phone,p.alternative_phone,p.secondary_phone),'fa-mobile-screen'],
+   ['Date of birth',val(p.date_of_birth,p.dob),'fa-calendar-day'],['Gender',p.gender,'fa-venus-mars'],
+   ['National ID',val(p.national_id,p.id_number),'fa-address-card'],['Address',val(p.address,p.residential_address),'fa-location-dot'],
+   ['Guardian name',val(p.guardian_name,p.next_of_kin_name),'fa-user-shield'],
+   ['Guardian phone',val(p.guardian_phone,p.next_of_kin_phone),'fa-phone-volume']
+  ]},
+  {id:'access',label:'Account & Access',icon:'fa-shield-halved',fields:[
+   ['Account status',status,'fa-circle-check'],
+   ['Login access',p.login_enabled===true?'Enabled':p.login_enabled===false?'Disabled':null,'fa-lock'],
+   ['Account role',p.role,'fa-user-tag'],['Last login',lastLogin,'fa-clock']
+  ]}
+ ].map(group=>({...group,fields:group.fields.filter(([,v])=>v!==undefined&&v!==null&&String(v).trim()!=='')})).filter(g=>g.fields.length);
+ const initials=fullName.trim().split(/\\s+/).filter(Boolean).slice(0,2).map(x=>x[0]).join('').toUpperCase();
  const avatar=$('profile-avatar');
  if(avatar){
   avatar.textContent=initials||'ST';
@@ -58,30 +68,28 @@ async function renderStudentProfile(){
   if(photo){
    try{
     let src=String(photo),bucket=p.profile_photo_url?'user-documents':'passports',path=src;
-    const marker='/storage/v1/object/';
-    const markerIndex=src.indexOf(marker);
-    if(markerIndex>=0){
-     const rest=src.slice(markerIndex+marker.length).split('?')[0].split('/');
-     if(rest.length>=2){bucket=decodeURIComponent(rest.shift());path=decodeURIComponent(rest.join('/'));src='';}
-    }else if(src.startsWith('http://')||src.startsWith('https://')){path='';}
-    else if(path.startsWith('user-documents/')){bucket='user-documents';path=path.slice('user-documents/'.length);}
+    const marker='/storage/v1/object/',markerIndex=src.indexOf(marker);
+    if(markerIndex>=0){const rest=src.slice(markerIndex+marker.length).split('?')[0].split('/');if(rest.length>=2){bucket=decodeURIComponent(rest.shift());path=decodeURIComponent(rest.join('/'));src='';}}
+    else if(src.startsWith('http://')||src.startsWith('https://'))path='';
+    else if(path.startsWith('user-documents/'))path=path.slice('user-documents/'.length);
     else if(path.startsWith('passports/')){bucket='passports';path=path.slice('passports/'.length);}
-    if(path&&state.client?.storage){
-     const {data,error}=await state.client.storage.from(bucket).createSignedUrl(path,3600);
-     if(error)throw error;src=data?.signedUrl||'';
-    }
-    if(src.startsWith('https://')||src.startsWith('http://')){
-     const image=document.createElement('img');image.alt=fullName+' profile photo';image.src=src;
-     image.style.cssText='width:100%;height:100%;object-fit:cover;border-radius:inherit';
-     image.onerror=()=>{avatar.textContent=initials||'ST';};
-     avatar.replaceChildren(image);avatar.style.overflow='hidden';
-    }
+    if(path&&state.client?.storage){const {data,error}=await state.client.storage.from(bucket).createSignedUrl(path,3600);if(error)throw error;src=data?.signedUrl||'';}
+    if(src.startsWith('https://')||src.startsWith('http://')){const image=document.createElement('img');image.alt=fullName+' profile photo';image.src=src;image.style.cssText='width:100%;height:100%;object-fit:cover;border-radius:inherit';image.onerror=()=>{avatar.textContent=initials||'ST';};avatar.replaceChildren(image);avatar.style.overflow='hidden';}
    }catch(photoError){console.warn('[Student Examinations] Profile photo could not be resolved:',photoError.message);}
   }
  }
+ setText('profile-full-name',fullName);
+ setText('profile-subtitle',[admission,program].filter(Boolean).join(' · '));
+ setText('profile-status',status);
  const content=$('student-profile-content');
- if(content)content.innerHTML='<div class="student-profile-grid">'+fields.map(([label,value])=>'<article class="student-profile-field"><small>'+esc(label)+'</small><strong>'+esc(value)+'</strong></article>').join('')+'</div>';
+ if(!content)return;
+ const active=content.dataset.activeProfileTab||'details';
+ const fieldMarkup=fields=>'<div class="student-profile-grid">'+fields.map(([label,value,icon])=>'<article class="student-profile-field"><span class="profile-field-icon"><i class="fa-solid '+esc(icon||'fa-circle-info')+'"></i></span><div><small>'+esc(label)+'</small><strong>'+esc(value)+'</strong></div></article>').join('')+'</div>';
+ content.innerHTML='<div class="profile-tabs" role="tablist" aria-label="Student profile sections">'+groups.map(g=>'<button type="button" class="profile-tab '+(g.id===active?'active':'')+'" role="tab" aria-selected="'+(g.id===active)+'" data-profile-tab="'+esc(g.id)+'"><i class="fa-solid '+esc(g.icon)+'"></i><span>'+esc(g.label)+'</span></button>').join('')+'</div>'+groups.map(g=>'<section class="profile-tab-panel" role="tabpanel" data-profile-panel="'+esc(g.id)+'" '+(g.id===active?'':'hidden')+'><div class="profile-panel-heading"><div><h3>'+esc(g.label)+'</h3><p>'+esc(g.id==='academic'?'Academic information registered by your institution.':g.id==='contact'?'Personal contact and next-of-kin information on record.':g.id==='access'?'Your examination account and sign-in permissions.':'Your registered student identity.')+'</p></div><span class="profile-panel-count">'+g.fields.length+' details</span></div>'+fieldMarkup(g.fields)+'</section>').join('');
+ if(!content.dataset.profileTabsBound){content.dataset.profileTabsBound='1';content.addEventListener('click',event=>{const button=event.target.closest('[data-profile-tab]');if(!button)return;const id=button.dataset.profileTab;content.dataset.activeProfileTab=id;content.querySelectorAll('[data-profile-tab]').forEach(tab=>{const selected=tab.dataset.profileTab===id;tab.classList.toggle('active',selected);tab.setAttribute('aria-selected',String(selected));});content.querySelectorAll('[data-profile-panel]').forEach(panel=>{panel.hidden=panel.dataset.profilePanel!==id;});});}
 }
+function setText(id,value){const el=$(id);if(el)el.textContent=String(value??'');}
+
 function notify(message){const el=$('toast');el.textContent=message;el.classList.add('show');clearTimeout(notify.timer);notify.timer=setTimeout(()=>el.classList.remove('show'),3200)}
 function isTvet(p){return /TVET|DIPLOMA|CERTIFICATE|ARTISAN/i.test(String(val(p.program_type,p.program,p.program_name,'')))}
 function studentBlock(p){return String(val(p.current_block,p.block_term,p.block,p.term,p.year_of_study,'General'))}
