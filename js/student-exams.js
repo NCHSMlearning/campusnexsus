@@ -25,11 +25,44 @@ document.querySelectorAll('.exam-nav a[data-module]').forEach(link=>{const on=li
 function renderStudentProfile(){
  const p=state.profile||{},user=state.user||{};
  const fullName=val(p.full_name,p.name,p.student_name,user.user_metadata?.full_name,user.email,'Student');
- const pairs=[['Full name',fullName],['Email address',user.email],['Admission number',val(p.admission_number,p.student_id)],['Student ID',p.student_id],['Programme',val(p.program,p.program_name,p.program_type)],['Programme type',p.program_type],['Intake year',val(p.intake_year,p.intake,p.admission_year)],['Intake month',p.intake_month],[state.academicStructure?.singular||'Current academic period',val(p.current_block,p.block_term,p.block,p.term)],['Year of study',p.year_of_study],['Phone number',val(p.phone_number,p.phone,p.mobile_number)],['Date of birth',val(p.date_of_birth,p.dob)],['Gender',p.gender],['Account status',p.status],['Login enabled',p.login_enabled===true?'Enabled':p.login_enabled===false?'Disabled':null]].filter(x=>x[1]!==undefined&&x[1]!==null&&String(x[1]).trim()!=='');
- const initials=fullName.split(/\\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase();
+ const email=val(p.email,user.email,'—');
+ const periodType=state.academicStructure?.singular||'Current academic period';
+ const periodValue=val(p.current_semester,p.semester,p.current_term,p.term,p.current_block,p.block_term,p.block,p.year_of_study);
+ const fields=[
+  ['Full name',fullName],
+  ['Email address',email],
+  ['Admission number',val(p.admission_number,p.student_id,p.reg_no)],
+  ['Student ID',val(p.student_id,p.reg_no,p.admission_number)],
+  ['Programme',val(p.program,p.program_name)],
+  ['Programme type',p.program_type],
+  ['Intake year',val(p.intake_year,p.year_of_intake,p.intake,p.admission_year)],
+  ['Intake month',p.intake_month],
+  [periodType,periodValue],
+  ['Year of study',p.year_of_study],
+  ['Phone number',val(p.phone,p.phone_number,p.mobile_number)],
+  ['Alternative phone',p.alt_phone],
+  ['Date of birth',val(p.date_of_birth,p.dob)],
+  ['Gender',p.gender],
+  ['National ID',p.national_id],
+  ['Address',p.address],
+  ['Guardian name',p.guardian_name],
+  ['Guardian phone',p.guardian_phone],
+  ['Account status',p.status],
+  ['Login access',p.login_enabled===true?'Enabled':p.login_enabled===false?'Disabled':null]
+ ].filter(([,value])=>value!==undefined&&value!==null&&String(value).trim()!=='');
+ const initials=fullName.split(/\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase();
  const set=(id,v)=>{const el=$(id);if(el)el.textContent=String(v??'');};
- set('profile-avatar',initials||'ST');set('profile-full-name',fullName);set('profile-subtitle',[val(p.admission_number,p.student_id,'Student account'),val(p.program,p.program_name,'Programme not assigned')].filter(Boolean).join(' · '));set('profile-status',val(p.status,'Account active'));
- const content=$('student-profile-content');if(content)content.innerHTML='<div class="student-profile-grid">'+pairs.map(([label,value])=>'<article class="student-profile-field"><small>'+esc(label)+'</small><strong>'+esc(value)+'</strong></article>').join('')+'</div>';
+ set('profile-avatar',initials||'ST');set('profile-full-name',fullName);
+ set('profile-subtitle',[val(p.admission_number,p.student_id,'Student account'),val(p.program,p.program_name,'Programme not assigned')].filter(Boolean).join(' · '));
+ set('profile-status',val(p.status,'Account active'));
+ const avatar=$('profile-avatar');
+ const photo=val(p.profile_photo_url,p.passport_url);
+ if(avatar&&photo&&/^https:\/\//i.test(String(photo))){
+  avatar.innerHTML='<img src="'+esc(photo)+'" alt="'+esc(fullName)+' profile photo" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">';
+  avatar.style.overflow='hidden';
+ }else if(avatar){avatar.textContent=initials||'ST';}
+ const content=$('student-profile-content');
+ if(content)content.innerHTML='<div class="student-profile-grid">'+fields.map(([label,value])=>'<article class="student-profile-field"><small>'+esc(label)+'</small><strong>'+esc(value)+'</strong></article>').join('')+'</div>';
 }
 function notify(message){const el=$('toast');el.textContent=message;el.classList.add('show');clearTimeout(notify.timer);notify.timer=setTimeout(()=>el.classList.remove('show'),3200)}
 function isTvet(p){return /TVET|DIPLOMA|CERTIFICATE|ARTISAN/i.test(String(val(p.program_type,p.program,p.program_name,'')))}
