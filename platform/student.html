@@ -1947,67 +1947,104 @@ body.dark-mode > #ol-research-modal > #ol-research-dialog .ol-rs-tool{background
 @media(prefers-reduced-motion:reduce){#profile *{scroll-behavior:auto!important;transition:none!important}}
 </style>
 
-<!-- Campus Nexus mobile touch scrolling repair -->
-<style id="cn-student-mobile-touch-scroll-v1">
+<!-- Campus Nexus mobile touch scrolling repair: use natural document scrolling on touch devices -->
+<style id="cn-student-mobile-touch-scroll-v2">
 @media (max-width: 1023px) {
   html, body {
     width:100%!important;
     max-width:100%!important;
     min-height:100%!important;
-    height:100%!important;
-    overflow:hidden!important;
-    overscroll-behavior:none!important;
+    height:auto!important;
+    overflow-x:hidden!important;
+    overflow-y:auto!important;
+    overscroll-behavior-y:auto!important;
+    -webkit-overflow-scrolling:touch!important;
   }
-  body { position:relative!important; }
+  html { touch-action:pan-y!important; }
+  body {
+    position:relative!important;
+    min-height:100dvh!important;
+    touch-action:pan-y!important;
+  }
   #app-content {
-    min-height:0!important;
-    height:100%!important;
+    min-height:calc(100dvh - 60px)!important;
+    height:auto!important;
+    max-height:none!important;
     overflow:visible!important;
   }
   #main-content.main {
-    position:fixed!important;
-    top:60px!important;
-    right:0!important;
-    bottom:0!important;
-    left:0!important;
+    position:relative!important;
+    inset:auto!important;
+    top:auto!important;
+    right:auto!important;
+    bottom:auto!important;
+    left:auto!important;
     width:100%!important;
     max-width:100%!important;
     height:auto!important;
-    min-height:0!important;
+    min-height:calc(100dvh - 60px)!important;
     max-height:none!important;
     margin:0!important;
-    padding:10px 12px max(28px,env(safe-area-inset-bottom))!important;
+    padding:10px 12px max(36px,env(safe-area-inset-bottom))!important;
     box-sizing:border-box!important;
-    overflow-x:hidden!important;
-    overflow-y:auto!important;
+    overflow:visible!important;
     -webkit-overflow-scrolling:touch!important;
-    overscroll-behavior-y:contain!important;
+    overscroll-behavior-y:auto!important;
     touch-action:pan-y!important;
     pointer-events:auto!important;
     transform:none!important;
   }
   #main-content.main > .tab-content {
+    display:block;
     min-height:0!important;
     height:auto!important;
     max-height:none!important;
     overflow:visible!important;
     touch-action:pan-y!important;
   }
-  #main-content.main :where(.tab-content,.section-card,.card,.panel,.content-section) {
+  #main-content.main :where(.tab-content,.section-card,.card,.panel,.content-section,.dashboard-card,.module-section) {
     touch-action:pan-y!important;
   }
-  #main-content.main :where(input,textarea,select,button,a,[role="button"],.nchsm-exam-table-scroll,.niq-table-wrap) {
-    touch-action:manipulation!important;
-  }
   #main-content.main :where(.nchsm-exam-table-scroll,.niq-table-wrap,[data-horizontal-scroll]) {
+    max-width:100%!important;
     overflow-x:auto!important;
+    overflow-y:auto!important;
     -webkit-overflow-scrolling:touch!important;
+    overscroll-behavior:contain!important;
     touch-action:pan-x pan-y!important;
   }
-  body.nchsm-nav-open #main-content.main { pointer-events:none!important; }
+  #main-content.main :where(input,textarea,select,button,a,[role="button"]) {
+    touch-action:manipulation;
+  }
+  body.nchsm-nav-open {
+    overflow:hidden!important;
+    overscroll-behavior:none!important;
+  }
+  body.nchsm-nav-open #main-content.main {
+    pointer-events:none!important;
+  }
+  #sidebar.sidebar-premium,
+  .sidebar-premium.sidebar {
+    overscroll-behavior:contain!important;
+    -webkit-overflow-scrolling:touch!important;
+  }
+  #sidebar .sidebar-nav-premium,
+  .sidebar-premium .sidebar-nav-premium {
+    min-height:0!important;
+    max-height:100%!important;
+    overflow-x:hidden!important;
+    overflow-y:auto!important;
+    -webkit-overflow-scrolling:touch!important;
+    overscroll-behavior:contain!important;
+    touch-action:pan-y!important;
+  }
 }
-@media (max-width: 640px) {
-  #main-content.main { padding-left:10px!important;padding-right:10px!important; }
+@media (max-width:640px) {
+  #main-content.main {
+    padding-left:10px!important;
+    padding-right:10px!important;
+    padding-bottom:max(42px,env(safe-area-inset-bottom))!important;
+  }
 }
 </style>
 </head>
