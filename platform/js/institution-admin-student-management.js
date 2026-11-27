@@ -88,7 +88,7 @@
       const status=$("smSessionReportStatusFilter")?.value||"all";
       const type=$("smSessionReportTypeFilter")?.value||"all";
       const list=state.reports.filter(r=>(!q||[r.student_name,r.student_id,r.program,r.session].some(v=>String(v||"").toLowerCase().includes(q)))&&(status==="all"||String(r.approval_status||"pending").toLowerCase()===status)&&(type==="all"||String(r.program_type||"").toLowerCase()===type.toLowerCase()));
-      body.innerHTML=list.length?list.map(r=>'<tr><td><input class="session-reports-checkbox" type="checkbox" data-id="'+esc(r.id)+'"></td><td><strong>'+esc(r.student_name||"Unknown student")+'</strong><small style="display:block;color:#64748b">'+esc(r.student_id||"")+'</small></td><td>'+esc(r.program||"—")+'</td><td>'+esc(r.session||"—")+'</td><td>'+esc(r.status||"Continuing")+'</td><td>'+date(r.submitted_at)+'</td><td>'+statusPill(r.approval_status||"pending")+'</td><td>'+(String(r.approval_status||"pending").toLowerCase()==="pending"?'<button onclick="approveSessionReportAdmin(\''+esc(r.id)+'\')">Approve</button> <button onclick="rejectSessionReportAdmin(\''+esc(r.id)+'\')">Reject</button>':'—')+'</td></tr>').join(""):'<tr><td colspan="8" style="padding:45px;text-align:center;color:#64748b">No session reports found for this institution.</td></tr>';
+      body.innerHTML=list.length?list.map(r=>'<tr><td><input class="session-reports-checkbox" type="checkbox" data-id="'+esc(r.id)+'"></td><td><strong>'+esc(r.student_name||"Unknown student")+'</strong><small style="display:block;color:#64748b">'+esc(r.student_id||"")+'</small></td><td>'+esc(r.program||"—")+'</td><td>'+esc(r.session||"—")+'</td><td>'+esc(r.status||"Continuing")+'</td><td>'+date(r.submitted_at)+'</td><td>'+statusPill(r.approval_status||"pending")+'</td><td>'+(String(r.approval_status||"pending").toLowerCase()==="pending"?'<button type="button" class="sm-report-action" style="background:#0d6efd;color:#fff;border:0;border-radius:6px;padding:7px 12px;font-weight:600;cursor:pointer;margin-right:4px" data-session-report-action="approved" data-id="'+esc(r.id)+'"><i class="fas fa-check"></i> Approve</button> <button type="button" class="sm-report-action" style="background:#dc3545;color:#fff;border:0;border-radius:6px;padding:7px 12px;font-weight:600;cursor:pointer" data-session-report-action="rejected" data-id="'+esc(r.id)+'"><i class="fas fa-times"></i> Reject</button>':'—')+'</td></tr>').join(""):'<tr><td colspan="8" style="padding:45px;text-align:center;color:#64748b">No session reports found for this institution.</td></tr>';
       updateCounts();
     } catch(e) { console.error("[Institution Student Management] Session reports:",e); body.innerHTML='<tr><td colspan="8" style="padding:35px;text-align:center;color:#b91c1c">Could not load session reports: '+esc(e.message)+'</td></tr>'; }
   }
@@ -170,6 +170,22 @@
     button.disabled=true; button.textContent=decision==="approved"?"Approving…":"Rejecting…";
     decideReport(id,decision).catch(error=>notify(error.message,"error")).finally(()=>{button.disabled=false;});
   });
+  $("smSelectAllSessionReports")?.addEventListener("change",event=>{
+    const checked=event.target.checked;
+    $("smSessionReportsBody")?.querySelectorAll(".session-reports-checkbox").forEach(box=>{box.checked=checked;});
+    const count=selected("session-reports").length;
+    if($("smSessionReportsSelectedCount"))$("smSessionReportsSelectedCount").textContent=String(count);
+  });
+  $("smSessionReportsBody")?.addEventListener("change",event=>{
+    if(event.target.matches(".session-reports-checkbox")){
+      const boxes=[...($("smSessionReportsBody")?.querySelectorAll(".session-reports-checkbox")||[])];
+      const selectedCount=boxes.filter(box=>box.checked).length;
+      const master=$("smSelectAllSessionReports");
+      if(master){master.checked=boxes.length>0&&selectedCount===boxes.length;master.indeterminate=selectedCount>0&&selectedCount<boxes.length;}
+      if($("smSessionReportsSelectedCount"))$("smSessionReportsSelectedCount").textContent=String(selectedCount);
+    }
+  });
+  /* Legacy count listener */
   $("smSessionReportsBody")?.addEventListener("change",event=>{
     if(!event.target.matches(".session-reports-checkbox"))return;
     const count=selected("session-reports").length;
