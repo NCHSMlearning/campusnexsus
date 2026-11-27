@@ -1171,6 +1171,8 @@ return;
 }
 
 const file = fileInput.files[0];
+const institutionId = String(this.lecturerProfile?.institution_id || window.CURRENT_INSTITUTION_ID || window.currentInstitutionId || '').trim();
+if (!institutionId) throw new Error('Your institution could not be identified. Please sign in again before publishing resources.');
 let uploadedMainPath = null;
 let uploadedPodcastPath = null;
 
@@ -1239,6 +1241,8 @@ const fileUrl = urlData?.publicUrl || '';
 // Build resource data
 
 const resourceData = {
+
+institution_id: institutionId,
 
 title: title,
 
@@ -1818,17 +1822,18 @@ const block = resourceData.block || resourceData.block_term;
 try {
 const { data: students, error } = await supabase
 .from('consolidated_user_profiles_table')
-.select('user_id, student_id, full_name, email, program, block')
+.select('user_id, student_id, full_name, email, program, program_type, block, current_block, semester, current_semester, term, current_term')
+.eq('institution_id', resourceData.institution_id)
 .eq('role', 'student')
 .eq('status', 'approved')
-.eq('program', program)
+.or(`program.eq.${program},program_type.eq.${program}`)
 .limit(500);
 
 if (error) throw error;
 
 const recipients = (students || []).filter(student =>
 student?.email &&
-String(student.block || '').trim().toLowerCase() === String(block || '').trim().toLowerCase()
+String(student.current_block || student.block || student.current_semester || student.semester || student.current_term || student.term || '').trim().toLowerCase() === String(block || '').trim().toLowerCase()
 );
 
 if (!recipients.length) {
