@@ -14,6 +14,8 @@ on:
       - 'app/**'
       - 'app-download.html'
       - 'campus-nexus-app-shell.js'
+      - 'js/nchsm-mobile-enhancements.js'
+      - 'sw.js'
       - 'platform/student.html'
       - 'platform/login.html'
       - 'examlogin.html'

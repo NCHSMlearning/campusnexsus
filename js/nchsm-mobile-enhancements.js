@@ -96,7 +96,7 @@
     // table, tab, drawer or card must scroll normally and must never refresh
     // the entire page while it is being scrolled.
     const primaryScroller = document.getElementById('main-content') || root;
-    for (let node = target && target.parentElement; node && node !== document.body && node !== document.documentElement; node = node.parentElement) {
+    for (let node = target && (target.nodeType === 1 ? target : target.parentElement); node && node !== document.body && node !== document.documentElement; node = node.parentElement) {
       const css = window.getComputedStyle(node);
       const scrollable = /(auto|scroll|overlay)/.test(css.overflowY) && node.scrollHeight > node.clientHeight + 1;
       if (scrollable && (node !== primaryScroller || node.scrollTop > 2)) return false;
