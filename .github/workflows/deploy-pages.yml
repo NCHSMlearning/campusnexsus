@@ -225,3 +225,17 @@ jobs:
         id: deployment_retry_2
         if: steps.deployment_retry_1.outcome == 'failure'
         uses: actions/deploy-pages@v4
+      - name: Verify live Campus Nexus APK download
+        if: steps.deployment.outcome == 'success' || steps.deployment_retry_1.outcome == 'success' || steps.deployment_retry_2.outcome == 'success'
+        run: |
+          set -euo pipefail
+          url="https://campusnexus.co.ke/downloads/Campus-Nexus-App.apk"
+          echo "Checking public APK URL: $url"
+          curl --fail --location --silent --show-error --retry 8 --retry-all-errors --retry-delay 10 "$url" -o /tmp/Campus-Nexus-App.apk
+          test -s /tmp/Campus-Nexus-App.apk
+          size="$(stat -c%s /tmp/Campus-Nexus-App.apk)"
+          test "$size" -gt 1000000
+          signature="$(head -c 2 /tmp/Campus-Nexus-App.apk | od -An -tx1 | tr -d ' \n')"
+          test "$signature" = "504b"
+          echo "LIVE APK VERIFIED: HTTP download succeeded; size=$size bytes; ZIP/APK signature=$signature."
+
