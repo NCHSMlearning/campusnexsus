@@ -141,7 +141,7 @@ jobs:
           path.write_text(gradle)
           PY
           grep -q 'versionCode 9' android/app/build.gradle
-          grep -q 'versionName "1.2.6"' android/app/build.gradle
+          grep -q 'versionName "1.2.7"' android/app/build.gradle
 
       - name: Sync Capacitor Android project
         run: npx cap sync android
@@ -242,15 +242,15 @@ jobs:
           ./gradlew --no-daemon assembleRelease
           cd ..
           cp android/app/build/outputs/apk/release/app-release.apk android/app/build/outputs/apk/release/Campus-Nexus-App-1.2.7.apk
-          test -s android/app/build/outputs/apk/release/Campus-Nexus-App-1.2.6.apk
-          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose android/app/build/outputs/apk/release/Campus-Nexus-App-1.2.6.apk
+          test -s android/app/build/outputs/apk/release/Campus-Nexus-App-1.2.7.apk
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose android/app/build/outputs/apk/release/Campus-Nexus-App-1.2.7.apk
           rm -f android/app/campus-nexus-release.keystore
 
       - name: Upload signed Android release APK
         uses: actions/upload-artifact@v4
         with:
           name: Campus-Nexus-App-1.2.7-Android-Release
-          path: campus-nexus-app/android/app/build/outputs/apk/release/Campus-Nexus-App-1.2.6.apk
+          path: campus-nexus-app/android/app/build/outputs/apk/release/Campus-Nexus-App-1.2.7.apk
           if-no-files-found: error
           retention-days: 30
 
@@ -261,4 +261,4 @@ jobs:
           name: Campus Nexus App 1.2.7 (Android Release)
           prerelease: false
           make_latest: true
-          files: campus-nexus-app/android/app/build/outputs/apk/release/Campus-Nexus-App-1.2.6.apk
+          files: campus-nexus-app/android/app/build/outputs/apk/release/Campus-Nexus-App-1.2.7.apk
