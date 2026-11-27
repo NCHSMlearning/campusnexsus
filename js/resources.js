@@ -2116,6 +2116,7 @@ class ResourcesModule {
             let query = supabase
                 .from('resources')
                 .select('*')
+            .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)
                 .eq('intake', String(intakeYear))
                 .order('created_at', { ascending: false });
             
