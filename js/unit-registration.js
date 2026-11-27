@@ -549,14 +549,95 @@
             }
         }
         
+        formatUnitRegistrationCountdown(milliseconds) {
+            const total = Math.max(0, Math.floor(milliseconds / 1000));
+            const days = Math.floor(total / 86400);
+            const hours = Math.floor((total % 86400) / 3600);
+            const minutes = Math.floor((total % 3600) / 60);
+            const seconds = total % 60;
+            const pad = value => String(value).padStart(2, '0');
+            return (days ? days + 'd ' : '') + pad(hours) + ':' + pad(minutes) + ':' + pad(seconds);
+        }
+
+        renderUnitRegistrationWindow(data) {
+            this.unitRegistrationWindowData = data || {};
+            this.unitRegistrationServerOffset = data?.server_now ? new Date(data.server_now).getTime() - Date.now() : 0;
+            const badge = document.getElementById('registration-status-badge');
+            const statusText = document.getElementById('regStatusText');
+            const closesText = document.getElementById('registration-closes-text');
+            const countdown = document.getElementById('registration-countdown');
+            const closedBanner = document.getElementById('registration-closed-banner');
+            const closedTitle = document.getElementById('registration-closed-title');
+            const closedMessage = document.getElementById('registration-closed-message');
+            const status = data?.status || (data?.is_open ? 'open' : 'manually_closed');
+            const isOpen = data?.is_open === true;
+            const opensAt = data?.opens_at ? new Date(data.opens_at).getTime() : null;
+            const closesAt = data?.closes_at ? new Date(data.closes_at).getTime() : null;
+            const kenyaDate = value => value ? new Date(value).toLocaleString('en-KE', {
+                timeZone: 'Africa/Nairobi', day: 'numeric', month: 'short', year: 'numeric',
+                hour: 'numeric', minute: '2-digit', hour12: true
+            }) + ' EAT' : '';
+
+            if (badge) {
+                badge.classList.remove('nchsm-status-loading', 'nchsm-status-open', 'nchsm-status-closed');
+                badge.classList.add(isOpen ? 'nchsm-status-open' : 'nchsm-status-closed');
+                badge.style.borderColor = isOpen ? '#86efac' : '#fecaca';
+                badge.style.background = isOpen ? '#f0fdf4' : '#fff7f7';
+            }
+            if (statusText) statusText.textContent = status === 'scheduled' ? 'Registration scheduled' : isOpen ? 'Registration is open' : 'Registration is closed';
+            if (closesText) {
+                if (status === 'scheduled') closesText.textContent = 'Opens ' + kenyaDate(data.opens_at);
+                else if (closesAt) closesText.textContent = 'Deadline: ' + kenyaDate(data.closes_at);
+                else if (opensAt && !isOpen) closesText.textContent = 'Opens ' + kenyaDate(data.opens_at);
+                else closesText.textContent = 'No closing deadline set';
+            }
+            if (closedBanner) closedBanner.hidden = isOpen;
+            if (closedTitle) closedTitle.textContent = status === 'scheduled' ? 'Unit registration has not opened yet' : status === 'deadline_passed' ? 'The unit registration deadline has passed' : 'Unit registration is currently closed';
+            if (closedMessage) closedMessage.textContent = status === 'scheduled'
+                ? 'You can select and submit units when the registration window opens.'
+                : data?.closed_message || 'The registration window has been closed by the Academic Administration.';
+            this.unitRegistrationOpen = isOpen;
+            this.unitRegistrationClosedMessage = data?.closed_message || 'Unit registration is currently closed. Please contact your institution administrator.';
+            if (this.submitBtn) this.submitBtn.disabled = !isOpen;
+
+            const updateCountdown = () => {
+                const now = Date.now() + (this.unitRegistrationServerOffset || 0);
+                const target = status === 'scheduled' ? opensAt : (isOpen && closesAt ? closesAt : null);
+                if (countdown) {
+                    if (target && target > now) {
+                        countdown.hidden = false;
+                        countdown.textContent = (status === 'scheduled' ? 'Opens in ' : 'Closes in ') + this.formatUnitRegistrationCountdown(target - now);
+                    } else if (status === 'deadline_passed') {
+                        countdown.hidden = false;
+                        countdown.textContent = 'Registration deadline passed';
+                    } else if (status === 'manually_closed') {
+                        countdown.hidden = false;
+                        countdown.textContent = 'Closed by institution';
+                    } else {
+                        countdown.hidden = true;
+                        countdown.textContent = '';
+                    }
+                }
+                const transitionDue = (status === 'scheduled' && opensAt && now >= opensAt) ||
+                    (isOpen && closesAt && now >= closesAt);
+                if (transitionDue && !this.unitRegistrationWindowTransitionHandled) {
+                    this.unitRegistrationWindowTransitionHandled = true;
+                    this.loadUnits().catch(error => console.warn('Registration window refresh failed:', error));
+                } else if (!transitionDue) {
+                    this.unitRegistrationWindowTransitionHandled = false;
+                }
+            };
+            updateCountdown();
+            if (!this.unitRegistrationCountdownTimer) this.unitRegistrationCountdownTimer = window.setInterval(updateCountdown, 1000);
+        }
+
         async isUnitRegistrationOpen(showMessage = true) {
             const supabase = this.getSupabase();
             if (!supabase) throw new Error('Database not available');
             const { data, error } = await supabase.rpc('get_my_unit_registration_control');
             if (error) throw error;
-            const isOpen = data?.is_open !== false;
-            this.unitRegistrationOpen = isOpen;
-            this.unitRegistrationClosedMessage = data?.closed_message || 'Unit registration is currently closed. Please contact your institution administrator.';
+            this.renderUnitRegistrationWindow(data || {});
+            const isOpen = data?.is_open === true;
             if (!isOpen && showMessage) this.showError(this.unitRegistrationClosedMessage, 'warning');
             return isOpen;
         }
