@@ -33,6 +33,7 @@
             // State
             this.approvedUnits = [];
             this.pendingUnits = [];
+            this.pendingApprovalPoll = null;
             this.userProfile = null;
             this.loaded = false;
             this.userBlock = null;
@@ -413,6 +414,16 @@
                 const registrations = data || [];
                 this.approvedUnits = registrations.filter(u => String(u.status || '').toLowerCase() === 'approved');
                 this.pendingUnits = registrations.filter(u => String(u.status || '').toLowerCase() === 'pending');
+                if (this.pendingUnits.length && !this.pendingApprovalPoll) {
+                    // Keep the card in sync when an administrator approves a
+                    // registration after the student has already opened the page.
+                    this.pendingApprovalPoll = window.setInterval(() => {
+                        if (this.pendingUnits.length && !this.isLoading) this.loadExamCard();
+                    }, 30000);
+                } else if (!this.pendingUnits.length && this.pendingApprovalPoll) {
+                    window.clearInterval(this.pendingApprovalPoll);
+                    this.pendingApprovalPoll = null;
+                }
                 console.log(`✅ Found ${this.approvedUnits.length} approved units`);
                 
                 const normalCount = this.approvedUnits.filter(u => u.reg_type === 'Normal' || !u.reg_type).length;
