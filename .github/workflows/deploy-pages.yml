@@ -167,6 +167,37 @@ jobs:
           test -s images/campus-nexus-original-logo.webp
           grep -q 'brand-global.js' index.html
           echo "Official Campus Nexus logo branding is included in the Pages artifact."
+      - name: Stage latest signed Android APK on Campus Nexus domain
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import pathlib
+          import shutil
+          import urllib.request
+
+          api = "https://api.github.com/repos/NCHSMlearning/campusnexsus/releases/latest"
+          headers = {"Accept": "application/vnd.github+json", "User-Agent": "CampusNexus-Website-Deployment"}
+          request = urllib.request.Request(api, headers=headers)
+          with urllib.request.urlopen(request, timeout=60) as response:
+              release = json.load(response)
+
+          assets = release.get("assets", [])
+          apk = next((item for item in assets if item.get("name", "").startswith("Campus-Nexus-App-") and item.get("name", "").endswith(".apk")), None)
+          if not apk:
+              raise SystemExit("Latest published Campus Nexus release has no APK asset; refusing to publish a broken download link.")
+
+          target = pathlib.Path("downloads/Campus-Nexus-App.apk")
+          target.parent.mkdir(parents=True, exist_ok=True)
+          download_request = urllib.request.Request(apk["browser_download_url"], headers={"User-Agent": "CampusNexus-Website-Deployment"})
+          with urllib.request.urlopen(download_request, timeout=180) as response, target.open("wb") as output:
+              shutil.copyfileobj(response, output)
+
+          if not target.exists() or target.stat().st_size < 1_000_000:
+              raise SystemExit("APK mirror download is missing or unexpectedly small.")
+          print(f"Staged {apk['name']} ({target.stat().st_size} bytes) from release {release['tag_name']} at /downloads/Campus-Nexus-App.apk")
+          PY
+          test -s downloads/Campus-Nexus-App.apk
       - name: Upload complete static website
         uses: actions/upload-pages-artifact@v3
         with:
