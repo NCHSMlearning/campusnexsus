@@ -377,9 +377,18 @@
       function syncRoleTabs() {
         configs.forEach(function(item) {
           var control = findRoleControl(item.key);
-          var active = !!control && (control.classList.contains('active') || control.getAttribute('aria-current') === 'page');
           var tab = tabBar.querySelector('[data-key="' + item.key + '"]');
-          if (tab) tab.classList.toggle('active', active);
+          var allowed = !!control && !control.hidden &&
+            control.dataset.cnEntitlementHidden !== 'true' &&
+            control.getAttribute('aria-hidden') !== 'true' &&
+            !control.closest('[hidden]');
+          var active = allowed && (control.classList.contains('active') || control.getAttribute('aria-current') === 'page');
+          if (tab) {
+            tab.hidden = !allowed;
+            tab.disabled = !allowed;
+            tab.setAttribute('aria-hidden', allowed ? 'false' : 'true');
+            tab.classList.toggle('active', active);
+          }
         });
       }
       configs.forEach(function(item) {
@@ -426,7 +435,7 @@
         }
       });
       var roleObserver = new MutationObserver(syncRoleTabs);
-      roleObserver.observe(roleNav, {subtree:true,attributes:true,attributeFilter:['class','aria-current']});
+      roleObserver.observe(roleNav, {subtree:true,attributes:true,attributeFilter:['class','aria-current','hidden','aria-hidden','data-cn-entitlement-hidden']});
       syncRoleTabs();
       return;
     }
