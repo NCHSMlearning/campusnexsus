@@ -257,7 +257,7 @@ async function initializeSessionReporting() {
             nowYear + '/' + (nowYear + 1),
             (nowYear + 1) + '/' + (nowYear + 2),
             (nowYear + 2) + '/' + (nowYear + 3),
-            academicYear
+            selectedYear
         ].filter(Boolean))];
         yearSelect.replaceChildren();
         const yearPlaceholder = document.createElement('option');
