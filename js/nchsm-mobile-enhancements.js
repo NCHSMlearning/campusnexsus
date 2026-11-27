@@ -3,6 +3,15 @@
   'use strict';
   if (window.__nchsmPerformanceReady) return;
   window.__nchsmPerformanceReady = true;
+  const isNativeCampusApp = (function () {
+    try {
+      const cap = window.Capacitor;
+      const native = !!(cap && typeof cap.isNativePlatform === 'function' && cap.isNativePlatform());
+      const appMode = localStorage.getItem('cn_android_app_mode') === '1' || /(?:^|;\\s*)cn_android_app_mode=1(?:;|$)/.test(document.cookie || '');
+      const standalone = !!(window.matchMedia && (window.matchMedia('(display-mode: standalone)').matches || window.matchMedia('(display-mode: fullscreen)').matches)) || window.navigator.standalone === true;
+      return native || appMode || standalone;
+    } catch (_) { return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()); }
+  })();
 
   const style = document.createElement('style');
   style.id = 'nchsm-performance-style';
@@ -36,6 +45,7 @@
     }
     .nchsm-refresh-button:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(7,35,55,.2); }
     .nchsm-refresh-button:active { transform: scale(.94); }
+    html.cn-native-app .nchsm-refresh-button,html.cn-native-app .nchsm-refresh-indicator{display:none!important;}
     @media print { .nchsm-refresh-indicator, .nchsm-refresh-button { display:none!important; } }
     @media (prefers-reduced-motion: reduce) {
       html { scroll-behavior: auto; }
@@ -50,7 +60,7 @@
   indicator.setAttribute('role', 'status');
   indicator.setAttribute('aria-live', 'polite');
   indicator.innerHTML = '<span class="nchsm-refresh-spinner" aria-hidden="true"></span><span>Release to refresh</span>';
-  document.body.appendChild(indicator);
+  if (!isNativeCampusApp) document.body.appendChild(indicator);
 
   const refreshButton = document.createElement('button');
   refreshButton.className = 'nchsm-refresh-button';
@@ -64,7 +74,7 @@
     refreshButton.innerHTML = '<span class="nchsm-refresh-spinner" aria-hidden="true"></span>';
     window.location.reload();
   });
-  document.body.appendChild(refreshButton);
+  if (!isNativeCampusApp) document.body.appendChild(refreshButton);
 
   let startY = 0, startX = 0, pulling = false, armed = false;
   const threshold = 86;
@@ -72,7 +82,7 @@
   const scrollTop = () => Math.max(window.scrollY || 0, document.documentElement.scrollTop || 0, document.body.scrollTop || 0);
 
   document.addEventListener('touchstart', function (event) {
-    if (event.touches.length !== 1 || scrollTop() > 2 || isEditable(event.target)) { pulling = false; return; }
+    if (isNativeCampusApp || event.touches.length !== 1 || scrollTop() > 2 || isEditable(event.target)) { pulling = false; return; }
     startY = event.touches[0].clientY;
     startX = event.touches[0].clientX;
     pulling = startY < 100;
@@ -142,12 +152,12 @@
 
     const INSTALL_FLAG = 'nchsm_pwa_installed_v1';
     const isStandalone = function () {
-      return window.matchMedia('(display-mode: standalone)').matches ||
+      return isNativeCampusApp || window.matchMedia('(display-mode: standalone)').matches ||
         window.matchMedia('(display-mode: fullscreen)').matches ||
         window.navigator.standalone === true;
     };
     const wasInstalled = function () {
-      try { return localStorage.getItem(INSTALL_FLAG) === '1'; }
+      try { return isNativeCampusApp || localStorage.getItem(INSTALL_FLAG) === '1'; }
       catch (error) { return false; }
     };
     const markInstalled = function () {
