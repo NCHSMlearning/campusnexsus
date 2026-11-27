@@ -1516,6 +1516,10 @@ async function loadTranscript() {
     document.getElementById('student-name-display').textContent = user.full_name || 'Student';
     const programDisplay = document.getElementById('program-display');
     if (programDisplay) programDisplay.textContent = userProgram || 'Not assigned';
+    const institution = user.institution || window.CURRENT_INSTITUTION || {};
+    const institutionName = institution.name || user.institution_name || document.documentElement.dataset.institutionName || 'Academic Institution';
+    const institutionNameEl = document.getElementById('transcript-institution-name');
+    if (institutionNameEl) institutionNameEl.textContent = institutionName;
     document.getElementById('student-id-display').textContent = user.student_id || 'N/A';
     
     let marksData = [];
