@@ -1149,6 +1149,7 @@ async saveProgressToDatabase() {
             const { data: catalogUnits, error: catalogError } = await supabase
                 .from('units_catalog')
                 .select('unit_code, unit_name, program, block')
+            .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)
                 .ilike('program', studentProgram)
                 .ilike('block', studentBlock)
                 .ilike('status', 'active');
@@ -1167,7 +1168,8 @@ async saveProgressToDatabase() {
 
             const { data: allQuestions, error } = await supabase
                 .from('medical_assessments')
-                .select(`*, unit:units_catalog!medical_assessments_unit_catalog_id_fkey(id, unit_code, unit_name, description, program, block)`)
+                .select(`*, unit:units_catalog!medical_assessments_unit_catalog_id_fkey(id, unit_code, unit_name, description, program, block)
+            .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)`)
                 .eq('is_active', true)
                 .eq('is_published', true)
                 .order('updated_at', { ascending: false });
@@ -1560,7 +1562,8 @@ async saveProgressToDatabase() {
             
             const { data: questions, error } = await supabase
                 .from('medical_assessments')
-                .select(`*, unit:units_catalog!medical_assessments_unit_catalog_id_fkey(id, unit_code, unit_name, description, program, block)`)
+                .select(`*, unit:units_catalog!medical_assessments_unit_catalog_id_fkey(id, unit_code, unit_name, description, program, block)
+            .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)`)
                 .eq('unit_catalog_id', courseId)
                 .eq('is_active', true)
                 .eq('is_published', true)
@@ -1578,6 +1581,7 @@ async saveProgressToDatabase() {
             const { data: catalogUnits, error: catalogError } = await supabase
                 .from('units_catalog')
                 .select('unit_code')
+            .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)
                 .ilike('program', studentProgram)
                 .ilike('block', studentBlock)
                 .ilike('status', 'active');
@@ -2445,10 +2449,12 @@ async saveProgressToDatabase() {
                     .from('exam_grades')
                     .select('*')
                     .eq('student_id', this.userId)
+            .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)
                     .eq('question_id', sentinel),
                 supabase
                     .from('released_exam_results')
                     .select('result_id')
+            .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)
             ]);
 
             const summaryGrades = gradesResult.data || [];
@@ -2468,7 +2474,8 @@ async saveProgressToDatabase() {
                 const { data: examRows, error: examError } = await supabase
                     .from('exams')
                     .select('*')
-                    .in('id', examIds);
+                    .in('id', examIds)
+            .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id);
 
                 if (!examError) exams = examRows || [];
             }
@@ -2774,6 +2781,7 @@ async saveProgressToDatabase() {
                 .from('exam_grades')
                 .select('*')
                 .eq('student_id', this.userId)
+            .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)
                 .eq('exam_id', exam.examId)
                 .neq('question_id', sentinel);
 
@@ -2781,6 +2789,7 @@ async saveProgressToDatabase() {
                 .from('exam_grades')
                 .select('*')
                 .eq('student_id', this.userId)
+            .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)
                 .eq('exam_id', exam.examId)
                 .eq('question_id', sentinel)
                 .order('updated_at', { ascending: false })
