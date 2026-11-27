@@ -46,7 +46,7 @@ async function renderStudentProfile(){
   ['Account status',p.status],
   ['Login access',p.login_enabled===true?'Enabled':p.login_enabled===false?'Disabled':null]
  ].filter(([,v])=>v!==undefined&&v!==null&&String(v).trim()!=='');
- const initials=fullName.split(/\\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase();
+ const initials=fullName.trim().split(' ').filter(Boolean).slice(0,2).map(x=>x[0]).join('').toUpperCase();
  const set=(id,v)=>{const el=$(id);if(el)el.textContent=String(v??'');};
  set('profile-avatar',initials||'ST');set('profile-full-name',fullName);
  set('profile-subtitle',[admission,program].filter(Boolean).join(' · '));
@@ -58,16 +58,19 @@ async function renderStudentProfile(){
   if(photo){
    try{
     let src=String(photo),bucket=p.profile_photo_url?'user-documents':'passports',path=src;
-    const match=src.match(/\\/storage\\/v1\\/object\\/(?:public|sign)\\/([^/]+)\\/(.+?)(?:\\?.*)?$/);
-    if(match){bucket=decodeURIComponent(match[1]);path=decodeURIComponent(match[2]);src='';}
-    else if(/^https?:\\/\\//i.test(src)){path='';}
-    else if(path.startsWith('user-documents/')){bucket='user-documents';path=path.slice(14);}
-    else if(path.startsWith('passports/')){bucket='passports';path=path.slice(10);}
+    const marker='/storage/v1/object/';
+    const markerIndex=src.indexOf(marker);
+    if(markerIndex>=0){
+     const rest=src.slice(markerIndex+marker.length).split('?')[0].split('/');
+     if(rest.length>=2){bucket=decodeURIComponent(rest.shift());path=decodeURIComponent(rest.join('/'));src='';}
+    }else if(src.startsWith('http://')||src.startsWith('https://')){path='';}
+    else if(path.startsWith('user-documents/')){bucket='user-documents';path=path.slice('user-documents/'.length);}
+    else if(path.startsWith('passports/')){bucket='passports';path=path.slice('passports/'.length);}
     if(path&&state.client?.storage){
      const {data,error}=await state.client.storage.from(bucket).createSignedUrl(path,3600);
      if(error)throw error;src=data?.signedUrl||'';
     }
-    if(src&&/^https?:\\/\\//i.test(src)){
+    if(src.startsWith('https://')||src.startsWith('http://')){
      const image=document.createElement('img');image.alt=fullName+' profile photo';image.src=src;
      image.style.cssText='width:100%;height:100%;object-fit:cover;border-radius:inherit';
      image.onerror=()=>{avatar.textContent=initials||'ST';};
