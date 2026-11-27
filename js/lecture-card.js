@@ -228,7 +228,7 @@
                         this.userProgram = dbProfile.program || dbProfile.program_code || this.userProgram;
                         this.userBlock = dbProfile.current_semester || dbProfile.semester || dbProfile.current_block || dbProfile.block || dbProfile.current_term || dbProfile.term || this.userBlock;
                     }
-                    this.resolveAcademicStructure().finally(() => resolve());
+                    this.resolveAcademicStructure().catch(error => console.warn('Academic structure lookup failed for lecture card:', error)).finally(() => resolve());
                 }).catch(() => resolve());
             });
         },
