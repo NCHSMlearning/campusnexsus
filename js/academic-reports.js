@@ -1756,7 +1756,6 @@ function updateTranscriptSummary(attempted, earned, courses, cgpa) {
         const userProgram = user.program || user.program_code || user.program_type || '';
         const isTVET = PROGRAM.isTVET(userProgram);
         const programType = PROGRAM.getProgramType(userProgram);
-        const institutionLogoHTML = institutionLogo ? `<img src="${escapeHtml(institutionLogo)}" alt="${escapeHtml(institutionName)} logo" crossorigin="anonymous">` : '';
         const institution = user.institution || window.CURRENT_INSTITUTION || {};
         const institutionName = institution.name || user.institution_name || document.documentElement.dataset.institutionName || 'Your Institution';
         const periodLabel = window.currentAcademicStructure?.singular || PROGRAM.getBlockLabel(userProgram);
@@ -1834,6 +1833,7 @@ function updateTranscriptSummary(attempted, earned, courses, cgpa) {
         }
         const isTVET = PROGRAM.isTVET(userProgram);
         const programType = PROGRAM.getProgramType(userProgram);
+        const institutionLogoHTML = institutionLogo ? `<img src="${escapeHtml(institutionLogo)}" alt="${escapeHtml(institutionName)} logo" crossorigin="anonymous">` : '';
 
         const selectedBlockFilter = document.getElementById('my_marks_block_filter')?.value || 'all';
         const blockLabelForTranscript = value => String(value || '').trim()
