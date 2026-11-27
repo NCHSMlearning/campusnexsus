@@ -504,6 +504,7 @@
       var b = document.createElement(link && link.getAttribute('href') && link.getAttribute('href') !== '#' ? 'a' : 'button');
       b._cnSourceLink = link || null;
       b._cnFallback = fallback || null;
+      b._cnActiveTest = typeof activeTest === 'function' ? activeTest : null;
       b.className = 'cn-tab';
       b.setAttribute('aria-label', title);
       if (b.tagName === 'A') b.href = link.getAttribute('href');
@@ -569,6 +570,10 @@
         item.hidden = !allowed;
         item.disabled = !allowed && item.tagName === 'BUTTON';
         item.setAttribute('aria-hidden', allowed ? 'false' : 'true');
+        var active = allowed && item._cnActiveTest && item._cnActiveTest();
+        item.classList.toggle('active', !!active);
+        if (active) item.setAttribute('aria-current', 'page');
+        else item.removeAttribute('aria-current');
       });
     }
     syncGenericTabs();
@@ -576,7 +581,7 @@
       var genericNavObserver = new MutationObserver(syncGenericTabs);
       if (sidebar) genericNavObserver.observe(sidebar, {
         subtree:true, attributes:true,
-        attributeFilter:['hidden','aria-hidden','data-cn-entitlement-hidden']
+        attributeFilter:['hidden','aria-hidden','data-cn-entitlement-hidden','class']
       });
       genericNavObserver.observe(document.documentElement, {
         attributes:true, attributeFilter:['data-cn-module-entitlements-ready']
