@@ -398,7 +398,7 @@
         tab.querySelector('span').textContent = item.label;
         tab.addEventListener('click', function() {
           var control = findRoleControl(item.key);
-          if (control) control.click();
+          if (control && !control.hidden && control.dataset.cnEntitlementHidden !== 'true' && !control.closest('[hidden]')) control.click();
           syncRoleTabs();
           window.scrollTo({top:0,behavior:'smooth'});
         });
