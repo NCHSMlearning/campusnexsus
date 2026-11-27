@@ -693,8 +693,8 @@ class ProfileModule {
         // 📱 MOBILE LABELS
         // ============================================
         const mobileLabels = {
-            'current-block-label-mobile': isTVET ? 'Current Term' : 'Current Block',
-            'completed-label-mobile-2': isTVET ? 'Terms' : 'Blocks'
+            'current-block-label-mobile': 'Current ' + periodType,
+            'completed-label-mobile-2': plural
         };
         
         Object.entries(mobileLabels).forEach(([id, text]) => {
