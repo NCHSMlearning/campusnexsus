@@ -612,7 +612,7 @@
         intake_year:get('intake_year'),intake_month:get('intake_month'),block:get('block'),current_block:get('current_block')||get('block'),
         year_of_study:get('year_of_study'),admission_date:get('admission_date')||null,admission_year:get('admission_year'),
         employment_date:get('employment_date')||null,doc_kcse:get('doc_kcse'),doc_id:get('doc_id'),
-        profile_photo_url:user.profile_photo_url||get('profile_photo_url'),passport_url:user.passport_url||get('passport_url'),qualifications:get('qualifications'),
+        profile_photo_url:get('profile_photo_url')||user.profile_photo_url||null,passport_url:get('passport_url')||user.passport_url||null,qualifications:get('qualifications'),
         specialization:get('specialization'),professional_bio:get('professional_bio'),role:get('role'),status:get('status'),
         login_enabled:get('login_enabled')==='true',updated_at:new Date().toISOString()
       };
@@ -639,10 +639,15 @@
         delete profileUpdate.login_enabled;
       }
       const {data,error}=await api.db.from('consolidated_user_profiles_table').update(profileUpdate)
-        .eq('user_id',user.user_id).eq('institution_id',api.institutionId).select('id,user_id');
+        .eq('user_id',user.user_id).eq('institution_id',api.institutionId).select('*');
       if(error)throw new Error([error.message,error.details,error.hint,error.code?'Code: '+error.code:null].filter(Boolean).join(' · '));
       if(!data?.length)throw new Error('The database did not confirm an updated row. Your institution session or update permission may have expired. No changes were confirmed.');
-      Object.assign(user,payload);
+      // The consolidated profile is canonical. The database trigger mirrors
+      // student identity and academic placement to the legacy students row.
+      const savedProfile=data[0];
+      Object.assign(user,savedProfile);
+      const directoryRow=state.rows.find(x=>x.user_id===user.user_id);
+      if(directoryRow)Object.assign(directoryRow,savedProfile);
       const editedEmail=String(get('email')||'').trim().toLowerCase();
       let emailNotice='';
       if(editedEmail&&editedEmail!==String(user.email||'').trim().toLowerCase()){
