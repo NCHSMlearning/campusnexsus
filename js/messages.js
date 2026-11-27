@@ -249,6 +249,7 @@ class MessagesSystem {
             let query = supabaseClient
                 .from('student_messages')
                 .select('*')
+            .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)
                 .order('created_at', { ascending: false })
                 .limit(50);
             
@@ -350,6 +351,7 @@ class MessagesSystem {
             const { data: newMessages, error } = await supabaseClient
                 .from('student_messages')
                 .select('id, is_read, created_at')
+            .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)
                 .eq('recipient_id', userId)
                 .eq('is_read', false)
                 .gt('created_at', lastTimestamp || new Date(0).toISOString())
@@ -792,7 +794,7 @@ class MessagesSystem {
             
             const { error } = await supabaseClient
                 .from('student_messages')
-                .insert([messageData]);
+                .insert([{ ...messageData, institution_id: window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id }]);
             
             if (error) throw error;
             
@@ -966,6 +968,7 @@ class MessagesSystem {
             const { data: templates, error } = await supabaseClient
                 .from('message_templates')
                 .select('*')
+            .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)
                 .eq('is_active', true)
                 .or(`target_program.eq.${userProfile?.program || 'General'},target_program.is.null`)
                 .order('name', { ascending: true });
