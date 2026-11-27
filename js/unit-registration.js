@@ -628,7 +628,21 @@
                 }
             };
             updateCountdown();
-            if (!this.unitRegistrationCountdownTimer) this.unitRegistrationCountdownTimer = window.setInterval(updateCountdown, 1000);
+            if (this.unitRegistrationCountdownTimer) window.clearInterval(this.unitRegistrationCountdownTimer);
+            this.unitRegistrationCountdownTimer = window.setInterval(updateCountdown, 1000);
+            if (!this.unitRegistrationStatusPollTimer) {
+                this.unitRegistrationStatusPollTimer = window.setInterval(async () => {
+                    try {
+                        const { data, error } = await this.getSupabase().rpc('get_my_unit_registration_control');
+                        if (error) throw error;
+                        const wasOpen = this.unitRegistrationOpen === true;
+                        this.renderUnitRegistrationWindow(data || {});
+                        if (wasOpen !== (data?.is_open === true)) await this.loadUnits();
+                    } catch (error) {
+                        console.warn('Unit registration status refresh failed:', error.message);
+                    }
+                }, 60000);
+            }
         }
 
         async isUnitRegistrationOpen(showMessage = true) {
