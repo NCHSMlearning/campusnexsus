@@ -59,6 +59,7 @@ button,select{font:inherit}.primary{width:100%;height:53px;margin-top:16px;borde
  $("openPortal").addEventListener("click",()=>{
   if(!selected){say("Verify your institution first.",true);return}
   const type=$("portalType").value;if(!type){say("Choose LMS or Examination Portal to continue.",true);return}
+  const continueBtn=$("openPortal");if(continueBtn.disabled)return;continueBtn.disabled=true;continueBtn.classList.add('is-busy');continueBtn.textContent='Preparing your portal…';say('Connecting you to your institution. Please wait.');
   const code=encodeURIComponent(String(selected.school_code));
   const target=type==="exam"?"https://campusnexus.co.ke/examlogin.html?school_code="+code+"&source=android-app":"https://campusnexus.co.ke/platform/login.html?school_code="+code+"&source=android-app";
   window.location.assign(target);
