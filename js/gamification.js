@@ -211,6 +211,7 @@
                     .from('nurseiq_attempts')
                     .select('*')
                     .eq('student_id', String(this.userId))
+                    .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)
                     .order('completed_at', { ascending: false });
 
                 if (attemptsError) throw attemptsError;
@@ -256,6 +257,7 @@
                     .from('attendance')
                     .select('id')
                     .eq('student_id', String(this.userId))
+                    .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)
                     .eq('status', 'verified');
 
                 if (error) {
@@ -879,6 +881,7 @@
                     .from('consolidated_user_profiles_table')
                     .select('user_id, full_name, gamification_points, nurseiq_points, login_count, attendance_streak, gamification_level, role, program, block')
                     .eq('role', 'student')
+                    .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)
                     .order('user_id', { ascending: true });
                 if (error) throw error;
 
