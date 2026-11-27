@@ -761,6 +761,7 @@
                     const countEl = document.getElementById('my_marks_count');
                     if (countEl) countEl.textContent = '0 results';
                     myMarksData = [];
+                    window.myMarksData = myMarksData;
                     myMarksFiltered = [];
                     return;
                 }
@@ -779,8 +780,10 @@
 
             if (marks && marks.length > 0) {
                 myMarksData = marks;
+                window.myMarksData = myMarksData;
             } else {
                 myMarksData = [];
+                window.myMarksData = myMarksData;
                 tbody.innerHTML = `
                     <tr>
                         <td colspan="6" style="text-align: center; padding: 60px 20px; color: #94a3b8;">
@@ -1501,8 +1504,8 @@ async function loadTranscript() {
     
     let marksData = [];
     
-    if (window.myMarksData && window.myMarksData.length > 0) {
-        marksData = window.myMarksData;
+    if (myMarksData && myMarksData.length > 0) {
+        marksData = myMarksData;
     } else if (currentGrades && currentGrades.length > 0) {
         marksData = currentGrades;
     } else {
@@ -1762,8 +1765,8 @@ function updateTranscriptSummary(attempted, earned, courses, cgpa) {
         const periodLabel = window.currentAcademicStructure?.singular || PROGRAM.getBlockLabel(userProgram);
         
         let marksData = [];
-        if (window.myMarksData && window.myMarksData.length > 0) {
-            marksData = window.myMarksData;
+        if (myMarksData && myMarksData.length > 0) {
+            marksData = myMarksData;
         } else if (currentGrades && currentGrades.length > 0) {
             marksData = currentGrades;
         } else {
