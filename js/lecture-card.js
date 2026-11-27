@@ -313,15 +313,16 @@
             
             // If no registered units from module, try fetching from database
             try {
-                const supabase = window.db?.supabase;
+                const supabase = window.db?.supabase || window.supabase || window.supabaseClient;
                 if (supabase) {
-                    const userId = window.db?.currentUserId || window.currentUser?.id;
+                    const userId = this.studentProfile?.user_id || this.studentProfile?.id || window.db?.currentUserId || window.currentUser?.id;
+                    const institutionId = this.studentProfile?.institution_id || window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id;
                     if (userId) {
                         const { data, error } = await supabase
                             .from('student_unit_registrations')
                             .select('*')
                             .eq('student_id', userId)
-            .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)
+            .eq('institution_id', institutionId)
                             .eq('status', 'approved')
                             .order('submitted_date', { ascending: false });
                         
@@ -345,28 +346,10 @@
                 console.warn('Could not fetch units from DB:', e);
             }
             
-            // If no registered units, get units from timetables for this block
-            if (this.allTimetableData && this.allTimetableData.length > 0) {
-                const uniqueCourses = new Map();
-                this.allTimetableData.forEach(item => {
-                    const courseName = item.course_name || item.session_name;
-                    if (courseName && !uniqueCourses.has(courseName)) {
-                        uniqueCourses.set(courseName, {
-                            name: courseName,
-                            code: this.extractUnitCode(courseName),
-                            credits: 3
-                        });
-                    }
-                });
-                
-                const unitsFromTimetable = Array.from(uniqueCourses.values());
-                console.log(`📋 Found ${unitsFromTimetable.length} units from timetable for ${this.userBlock}`);
-                this.registeredUnits = unitsFromTimetable;
-                return;
-            }
-            
-            console.log(`⚠️ No units found for block: ${this.userBlock}`);
+            // The lecture card is a registration/clearance document.
+            // Never substitute timetable subjects for approved registrations.
             this.registeredUnits = [];
+
         },
         
         buildLecturerMapFromTimetables: async function() {
