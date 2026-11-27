@@ -11795,10 +11795,11 @@ body.dark-mode #ol-research-correction-modal .ol-research-editor-page{background
 <!-- ===== 2️⃣ SECOND: Utilities and Helpers ===== -->
 <script src="/js/utils.js"></script>
 <script>/* Campus Nexus student.html owns authentication and boot sequencing. */window.__CAMPUS_NEXUS_STUDENT_BOOT__=true;</script>
-<script src="/js/ui.js?v=20261127-runtime-fix-v2"></script>
+<script src="/js/ui.js?v=20261127-runtime-fix-v3"></script>
 <script src="code-protection.js"></script>
 <!-- ===== 3️⃣ THIRD: Database (Depends on utils.js) ===== -->
 <script src="/js/database.js?v=20261124-student-db-recovery-v6"></script><script src="/platform/js/academic-structure.js?v=20261127-legacy-programme-map-v1"></script>
+<script src="/platform/js/student-auth-boot.js?v=20261127-tenant-context-gate-v1"></script>
 
 <!-- ===== 4️⃣ FOURTH: Core Modules ===== -->
 <script src="/js/gamification.js"></script>
@@ -11873,7 +11874,7 @@ body.dark-mode #ol-research-correction-modal .ol-research-editor-page{background
 <script src="/js/attendance.js?v=20261127-top-right-toast-v2"></script>
 <script src="/js/courses.js?v=20261123-tenant-structure-v1"></script>
 <script src="/js/exams.js?v=20261004-responsive-review"></script>
-<script src="/js/unit-registration.js?v=20261127-institution-programme-map-v2"></script>
+<script src="/js/unit-registration.js?v=20261127-profile-first-load-v3"></script>
 <script src="/js/resources.js"></script>
 <script src="/js/calendar.js"></script>
 <script src="/js/messages.js"></script>
@@ -11899,7 +11900,7 @@ body.dark-mode #ol-research-correction-modal .ol-research-editor-page{background
 <!-- ============================================================ -->
 <!-- INITIALIZATION SCRIPT                                         -->
 <!-- ============================================================ -->
-<script src="/platform/js/student-auth-boot.js?v=20261124-db-bootstrap-v9"></script>
+
 <!-- CURRENT BLOCK PROGRESS METRIC — visual-only sync from the authenticated profile -->
 <script>
 (function syncCurrentBlockMetric(){
