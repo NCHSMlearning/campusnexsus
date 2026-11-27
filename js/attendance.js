@@ -974,6 +974,7 @@
                 const { data: existing, error: existingError } = await supabase
                     .from('geo_attendance_logs')
                     .select('id, check_in_time, attendance_status, verification_source, is_verified')
+            .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)
                     .eq('user_id', sessionInfo.user_id)
                     .eq('session_id', sessionId)
                     .order('check_in_time', { ascending: false })
@@ -1179,6 +1180,7 @@
                 const { data, error } = await supabase
                     .from('geo_attendance_logs')
                     .select('*')
+            .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)
                     .eq('user_id', userId)
                     .order('check_in_time', { ascending: false });
 
@@ -1192,6 +1194,7 @@
                 const { data, error } = await supabase
                     .from('geo_attendance_logs')
                     .select('*')
+            .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)
                     .eq('registration_number', admissionNumber)
                     .order('check_in_time', { ascending: false });
 
@@ -1207,6 +1210,7 @@
                 const { data, error } = await supabase
                     .from('geo_attendance_logs')
                     .select('*')
+            .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)
                     .eq('student_name', studentName)
                     .order('check_in_time', { ascending: false });
 
@@ -1222,6 +1226,7 @@
                 const { data, error } = await supabase
                     .from('geo_attendance_logs')
                     .select('*')
+            .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)
                     .eq('student_id', admissionNumber)
                     .order('check_in_time', { ascending: false });
 
@@ -1237,6 +1242,7 @@
                 const { data, error } = await supabase
                     .from('geo_attendance_logs')
                     .select('*')
+            .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)
                     .eq('student_id', userId)
                     .order('check_in_time', { ascending: false });
 
@@ -1394,6 +1400,7 @@
             let query = supabase
                 .from('geo_attendance_logs')
                 .select('*')
+            .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)
                 .eq('student_id', studentId)
                 .order('check_in_time', { ascending: false });
 
@@ -1640,6 +1647,7 @@
             const { data, error } = await supabase
                 .from('geo_attendance_logs')
                 .select('*')
+            .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)
                 .eq('student_id', studentId)
                 .order('check_in_time', { ascending: false });
 
@@ -1821,6 +1829,7 @@
             const { data, error } = await supabase
                 .from('geo_attendance_logs')
                 .select('attendance_status, is_verified')
+            .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)
                 .eq('student_id', studentId)
                 .gte('check_in_time', today.toISOString());
 
@@ -2222,6 +2231,7 @@
                 const { data: deviceCheckins } = await supabase
                     .from('geo_attendance_logs')
                     .select('user_id, student_name')
+            .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)
                     .eq('session_id', attendanceSessionId)
                     .eq('device_fingerprint', deviceFingerprint)
                     .neq('user_id', userId);
@@ -2245,6 +2255,7 @@
                 const { data: deviceCheckins } = await supabase
                     .from('geo_attendance_logs')
                     .select('user_id, student_name')
+            .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)
                     .eq('device_fingerprint', deviceFingerprint)
                     .eq('target_name', selectedTarget.name)
                     .gte('check_in_time', `${today}T00:00:00.000Z`)
@@ -2345,6 +2356,7 @@
                 const { data: finalExisting, error: finalExistingError } = await supabase
                     .from('geo_attendance_logs')
                     .select('id, check_in_time, attendance_status, verification_source, is_verified')
+            .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)
                     .eq('user_id', userId)
                     .eq('session_id', attendanceSessionId)
                     .order('check_in_time', { ascending: false })
@@ -2381,6 +2393,7 @@
                 const { data: existing } = await supabase
                     .from('geo_attendance_logs')
                     .select('id, check_in_time')
+            .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)
                     .eq('user_id', userId)
                     .eq('target_name', selectedTarget.name)
                     .gte('check_in_time', `${today}T00:00:00.000Z`)
@@ -2408,6 +2421,7 @@
                 const { data: deviceClash2 } = await supabase
                     .from('geo_attendance_logs')
                     .select('id, user_id, student_name')
+            .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)
                     .eq('session_id', attendanceSessionId)
                     .eq('device_fingerprint', deviceFingerprint)
                     .neq('user_id', userId);
