@@ -168,6 +168,8 @@ jobs:
           grep -q 'brand-global.js' index.html
           echo "Official Campus Nexus logo branding is included in the Pages artifact."
       - name: Stage pinned signed Android APK on Campus Nexus domain
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           python3 - <<'PY'
@@ -180,7 +182,7 @@ jobs:
           tag = "campus-nexus-app-v1.2.6"
           expected_name = "Campus-Nexus-App-1.2.6.apk"
           api = f"https://api.github.com/repos/NCHSMlearning/campusnexsus/releases/tags/{tag}"
-          headers = {"Accept": "application/vnd.github+json", "User-Agent": "CampusNexus-Website-Deployment"}
+          headers = {"Accept": "application/vnd.github+json", "User-Agent": "CampusNexus-Website-Deployment", "Authorization": "Bearer " + os.environ["GITHUB_TOKEN"]}
           request = urllib.request.Request(api, headers=headers)
           with urllib.request.urlopen(request, timeout=60) as response:
               release = json.load(response)
