@@ -632,7 +632,8 @@ async function loadReviews() {
         let query = supabase
             .from('student_reviews')
             .select('*, student:student_id(full_name, program, block, profile_photo_url)')
-            .eq('status', 'approved');
+            .eq('status', 'approved')
+            .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id);
         
         if (!isStaffUser && userProgramType !== 'all') {
             console.log(`🔍 Auto-filtering reviews for: ${userProgramType}`);
@@ -852,6 +853,7 @@ async function loadSiteRating() {
             .from('student_reviews')
             .select('rating')
             .eq('status', 'approved')
+            .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)
             .eq('component_type', 'site');
         
         if (error) throw error;
@@ -898,7 +900,8 @@ async function updateReviewStats() {
         const { data: reviews, error } = await supabase
             .from('student_reviews')
             .select('rating, helpful_count, status')
-            .eq('status', 'approved');
+            .eq('status', 'approved')
+            .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id);
         
         if (error) throw error;
         
@@ -921,6 +924,7 @@ async function updateReviewStats() {
                 .from('student_reviews')
                 .select('id', { count: 'exact' })
                 .eq('student_id', userId)
+            .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)
                 .eq('status', 'pending');
             
             if (!pendingError) {
@@ -1068,7 +1072,7 @@ async function submitReview(e) {
         const { data, error } = await supabase
             .from('student_reviews')
             .insert([{
-                student_id: userId,
+                student_id: userId, institution_id: window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id,
                 component_type: component,
                 component_name: componentName || null,
                 rating: rating,
@@ -1870,6 +1874,7 @@ async function loadNewsletters() {
             .from('newsletters')
             .select('*')
             .eq('status', 'published')
+            .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)
             .order('sent_at', { ascending: false });
         
         if (error) throw error;
@@ -1978,6 +1983,7 @@ async function openNewsletter(newsletterId) {
             .from('newsletters')
             .select('*')
             .eq('id', newsletterId)
+            .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)
             .single();
         
         if (error) throw error;
