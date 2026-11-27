@@ -160,7 +160,7 @@
       showBlocked(null, "This account is not linked to an institution. Contact your institution administrator.");
       return;
     }
-    if (profile && (!["approved", "active"].includes(String(profile.status || "").toLowerCase()) || profile.login_enabled === false)) {
+    if (profile && String(profile.role || "").toLowerCase() === "student" && (!["approved", "active"].includes(String(profile.status || "").toLowerCase()) || profile.login_enabled === false)) {
       showBlocked(null, "Your student account is not currently approved for portal access.");
       return;
     }
