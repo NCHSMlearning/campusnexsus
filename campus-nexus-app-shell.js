@@ -509,7 +509,7 @@
     bar.setAttribute('aria-label','Campus Nexus app navigation');
 
     var homeFallback = isStudent ? '/platform/student.html' : null;
-    var examsFallback = isStudent ? '/platform/student.html#examinations' : null;
+    var examsFallback = isStudent ? '/platform/student.html#cats' : null;
     var items = [
       routeButton('Home',icons.home,home,homeFallback,function(){return /student\.html$/.test(path) || /dashboard/i.test(path)}),
       routeButton(isLecturer?'Classes':'Learning',icons.learning,learning,null,function(){return !!learning && (learning.getAttribute('href')===path || learning.classList.contains('active'))}),
