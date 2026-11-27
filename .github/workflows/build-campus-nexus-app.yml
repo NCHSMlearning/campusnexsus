@@ -61,6 +61,134 @@ jobs:
       - name: Create Android project
         run: npx cap add android
 
+
+      - name: Install native signed-APK update installer
+        run: |
+          set -euo pipefail
+          APP_JAVA="android/app/src/main/java/co/ke/campusnexus/app"
+          mkdir -p "$APP_JAVA" android/app/src/main/res/xml
+          cat > "$APP_JAVA/CampusNexusUpdaterPlugin.java" <<'JAVA'
+          package co.ke.campusnexus.app;
+          import android.content.Intent;
+          import android.content.pm.PackageInfo;
+          import android.net.Uri;
+          import android.os.Build;
+          import android.os.Environment;
+          import android.provider.Settings;
+          import androidx.core.content.FileProvider;
+          import com.getcapacitor.JSObject;
+          import com.getcapacitor.Plugin;
+          import com.getcapacitor.PluginCall;
+          import com.getcapacitor.PluginMethod;
+          import com.getcapacitor.annotation.CapacitorPlugin;
+          import java.io.File;
+          import java.io.FileOutputStream;
+          import java.io.InputStream;
+          import java.net.HttpURLConnection;
+          import java.net.URL;
+          import java.security.MessageDigest;
+
+          @CapacitorPlugin(name = "CampusNexusUpdater")
+          public class CampusNexusUpdaterPlugin extends Plugin {
+              @PluginMethod
+              public void getAppInfo(PluginCall call) {
+                  try {
+                      PackageInfo info = getContext().getPackageManager().getPackageInfo(getContext().getPackageName(), 0);
+                      JSObject result = new JSObject();
+                      result.put("versionName", info.versionName == null ? "0.0.0" : info.versionName);
+                      result.put("versionCode", Build.VERSION.SDK_INT >= 28 ? info.getLongVersionCode() : info.versionCode);
+                      result.put("packageName", getContext().getPackageName());
+                      call.resolve(result);
+                  } catch (Exception error) { call.reject("Unable to read installed Campus Nexus version.", error); }
+              }
+              @PluginMethod
+              public void installUpdate(PluginCall call) {
+                  String source = call.getString("url");
+                  String expectedSha = call.getString("sha256");
+                  if (source == null || expectedSha == null || !expectedSha.matches("(?i)[a-f0-9]{64}")) {
+                      call.reject("A verified update URL and SHA-256 checksum are required."); return;
+                  }
+                  try {
+                      Uri uri = Uri.parse(source);
+                      if (!"https".equalsIgnoreCase(uri.getScheme()) || !"campusnexus.co.ke".equalsIgnoreCase(uri.getHost())) {
+                          call.reject("Updates must be downloaded from the official Campus Nexus website."); return;
+                      }
+                      if (Build.VERSION.SDK_INT >= 26 && !getContext().getPackageManager().canRequestPackageInstalls()) {
+                          Intent settings = new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:" + getContext().getPackageName()));
+                          settings.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                          getContext().startActivity(settings);
+                          JSObject result = new JSObject(); result.put("permissionRequired", true); call.resolve(result); return;
+                      }
+                      new Thread(() -> downloadAndOpenInstaller(source, expectedSha, call), "CampusNexus-AppUpdater").start();
+                  } catch (Exception error) { call.reject("Unable to start the Campus Nexus updater.", error); }
+              }
+              private void downloadAndOpenInstaller(String source, String expectedSha, PluginCall call) {
+                  File output = null;
+                  try {
+                      HttpURLConnection connection = (HttpURLConnection) new URL(source).openConnection();
+                      connection.setConnectTimeout(20000); connection.setReadTimeout(60000);
+                      connection.setInstanceFollowRedirects(true);
+                      connection.setRequestProperty("User-Agent", "CampusNexus-Android-Updater");
+                      int status = connection.getResponseCode();
+                      if (status != HttpURLConnection.HTTP_OK || !"campusnexus.co.ke".equalsIgnoreCase(connection.getURL().getHost())) {
+                          throw new IllegalStateException("The official update download could not be verified.");
+                      }
+                      File directory = getContext().getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
+                      if (directory == null) throw new IllegalStateException("Device download storage is unavailable.");
+                      if (!directory.exists() && !directory.mkdirs()) throw new IllegalStateException("Unable to prepare update storage.");
+                      output = new File(directory, "Campus-Nexus-App-update.apk");
+                      MessageDigest digest = MessageDigest.getInstance("SHA-256");
+                      try (InputStream input = connection.getInputStream(); FileOutputStream file = new FileOutputStream(output)) {
+                          byte[] buffer = new byte[32768]; int count; long total = 0;
+                          while ((count = input.read(buffer)) != -1) {
+                              total += count;
+                              if (total > 180L * 1024L * 1024L) throw new IllegalStateException("Update package exceeds the allowed size.");
+                              digest.update(buffer, 0, count); file.write(buffer, 0, count);
+                          }
+                          file.getFD().sync();
+                      } finally { connection.disconnect(); }
+                      StringBuilder actual = new StringBuilder();
+                      for (byte value : digest.digest()) actual.append(String.format("%02x", value));
+                      if (!expectedSha.equalsIgnoreCase(actual.toString())) throw new SecurityException("Update checksum verification failed. The APK was not opened.");
+                      Uri apkUri = FileProvider.getUriForFile(getContext(), getContext().getPackageName() + ".fileprovider", output);
+                      Intent installer = new Intent(Intent.ACTION_VIEW);
+                      installer.setDataAndType(apkUri, "application/vnd.android.package-archive");
+                      installer.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                      getContext().startActivity(installer);
+                      JSObject result = new JSObject(); result.put("downloaded", true); result.put("installerOpened", true); call.resolve(result);
+                  } catch (Exception error) {
+                      if (output != null && output.exists()) output.delete();
+                      call.reject(error.getMessage() == null ? "Campus Nexus update failed." : error.getMessage(), error);
+                  }
+              }
+          }
+          JAVA
+          cat > android/app/src/main/res/xml/cn_file_paths.xml <<'XML'
+          <paths xmlns:android="http://schemas.android.com/apk/res/android">
+              <external-files-path name="campus_nexus_updates" path="Download/" />
+          </paths>
+          XML
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path("android/app/src/main/AndroidManifest.xml")
+          xml = path.read_text()
+          if "android.permission.REQUEST_INSTALL_PACKAGES" not in xml:
+              xml = xml.replace("<application", '<uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />\\n    <application', 1)
+          provider = """
+              <provider
+                  android:name="androidx.core.content.FileProvider"
+                  android:authorities="\${applicationId}.fileprovider"
+                  android:exported="false"
+                  android:grantUriPermissions="true">
+                  <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/cn_file_paths" />
+              </provider>
+          """
+          if "androidx.core.content.FileProvider" not in xml:
+              xml = xml.replace("</application>", provider + "\\n</application>", 1)
+          path.write_text(xml)
+          if "REQUEST_INSTALL_PACKAGES" not in xml or "cn_file_paths" not in xml:
+              raise SystemExit("Native updater manifest configuration failed.")
+          PY
       - name: Apply explicit Android edge-to-edge system bar insets
         run: |
           set -euo pipefail
@@ -85,6 +213,7 @@ jobs:
           source += """
               @Override
               public void onCreate(Bundle savedInstanceState) {
+                  registerPlugin(CampusNexusUpdaterPlugin.class);
                   WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
                   getWindow().setStatusBarColor(Color.parseColor("#071F3B"));
                   getWindow().setNavigationBarColor(Color.parseColor("#071F3B"));
@@ -141,8 +270,8 @@ jobs:
           gradle = gradle.replace(marker, marker + '\n        versionCode 10\n        versionName "1.2.8"', 1)
           path.write_text(gradle)
           PY
-          grep -q 'versionCode 10' android/app/build.gradle
-          grep -q 'versionName "1.2.8"' android/app/build.gradle
+          grep -q 'versionCode 11' android/app/build.gradle
+          grep -q 'versionName "1.2.9"' android/app/build.gradle
 
       - name: Sync Capacitor Android project
         run: npx cap sync android
@@ -242,24 +371,25 @@ jobs:
           chmod +x gradlew
           ./gradlew --no-daemon assembleRelease
           cd ..
-          cp android/app/build/outputs/apk/release/app-release.apk android/app/build/outputs/apk/release/Campus-Nexus-App-1.2.8.apk
-          test -s android/app/build/outputs/apk/release/Campus-Nexus-App-1.2.8.apk
-          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose android/app/build/outputs/apk/release/Campus-Nexus-App-1.2.8.apk
+          cp android/app/build/outputs/apk/release/app-release.apk android/app/build/outputs/apk/release/Campus-Nexus-App-1.2.9.apk
+          test -s android/app/build/outputs/apk/release/Campus-Nexus-App-1.2.9.apk
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose android/app/build/outputs/apk/release/Campus-Nexus-App-1.2.9.apk
           rm -f android/app/campus-nexus-release.keystore
 
       - name: Upload signed Android release APK
         uses: actions/upload-artifact@v4
         with:
-          name: Campus-Nexus-App-1.2.8-Android-Release
-          path: campus-nexus-app/android/app/build/outputs/apk/release/Campus-Nexus-App-1.2.8.apk
+          name: Campus-Nexus-App-1.2.9-Android-Release
+          path: campus-nexus-app/android/app/build/outputs/apk/release/Campus-Nexus-App-1.2.9.apk
           if-no-files-found: error
           retention-days: 30
 
       - name: Publish signed Android release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: campus-nexus-app-v1.2.8
-          name: Campus Nexus App 1.2.8 (Android Release)
+          tag_name: campus-nexus-app-v1.2.9
+          name: Campus Nexus App 1.2.9 (Android Release)
           prerelease: false
           make_latest: true
-          files: campus-nexus-app/android/app/build/outputs/apk/release/Campus-Nexus-App-1.2.8.apk
+          files: campus-nexus-app/android/app/build/outputs/apk/release/Campus-Nexus-App-1.2.9.apk
+          body: "versionCode: 11\nAndroid in-app updates with SHA-256 verification."
