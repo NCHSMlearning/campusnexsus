@@ -334,7 +334,7 @@ async function checkUserSession() {
         const role = String(profile.role || '').normalize('NFKC').toLowerCase().trim().replace(/[\s-]+/g, '_');
         currentAdmin.role = role;
         currentAdmin.program_scope = role === 'nursing_hod' ? 'KRCHN' : (role === 'tvet_hod' ? 'TVET' : null);
-        if (role === 'superadmin' || role === 'super_admin') { window.location.href = 'superadmin.html'; return false; }
+        if (role === 'superadmin' || role === 'super_admin') { window.location.replace('/platform/superadmin/' + window.location.search + window.location.hash); return false; }
         const allowedRoles = ['admin','administrator','hod','head_of_department','school_admin','nursing_hod','tvet_hod'];
         if (!allowedRoles.includes(role)) {
             showToast('This portal is restricted to authorised administrators and Heads of Department.', 'error');
