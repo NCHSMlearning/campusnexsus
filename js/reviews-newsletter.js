@@ -599,8 +599,8 @@ function refreshReviews() {
 // LOAD REVIEWS WITH AUTO PROGRAM FILTERING
 // ============================================
 
-async function loadReviews()
-        if (window.waitForStudentPortalContext) await window.waitForStudentPortalContext(); {
+async function loadReviews() {
+        if (window.waitForStudentPortalContext) await window.waitForStudentPortalContext();
     const grid = document.getElementById('reviewsGrid');
     if (!grid) return;
     
@@ -845,8 +845,8 @@ function renderReviews(reviews) {
 // LOAD SITE RATING
 // ============================================
 
-async function loadSiteRating()
-        if (window.waitForStudentPortalContext) await window.waitForStudentPortalContext(); {
+async function loadSiteRating() {
+        if (window.waitForStudentPortalContext) await window.waitForStudentPortalContext();
     try {
         const supabase = getSupabaseClient();
         if (!supabase || !await hasAuthenticatedReviewSession(supabase)) return;
@@ -894,8 +894,8 @@ async function loadSiteRating()
 // UPDATE REVIEW STATS
 // ============================================
 
-async function updateReviewStats()
-        if (window.waitForStudentPortalContext) await window.waitForStudentPortalContext(); {
+async function updateReviewStats() {
+        if (window.waitForStudentPortalContext) await window.waitForStudentPortalContext();
     try {
         const supabase = getSupabaseClient();
         if (!supabase || !await hasAuthenticatedReviewSession(supabase)) return;
