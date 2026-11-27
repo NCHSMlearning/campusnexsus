@@ -112,9 +112,7 @@
                 this.studentId = profile.user_id || profile.id;
                 this.updateUserData();
                 
-                this.fetchUnitCodes();
                 this.loadUnits();
-                this.loadSupplementaryData();
                 this.updateRegistrationLegend();
                 this.isInitialized = true;
                 return true;
@@ -171,6 +169,41 @@
             });
         }
         
+        // Fetch the authenticated student's authoritative tenant/programme record.
+        // Do not use cached/localStorage profile data to select a unit catalogue.
+        async loadAuthoritativeStudentProfile(supabase) {
+            const { data: authData, error: authError } = await supabase.auth.getUser();
+            if (authError) throw authError;
+            const authUser = authData?.user;
+            const userId = authUser?.id || this.studentId;
+            if (!userId) throw new Error('Student authentication could not be verified.');
+            const { data: profile, error } = await supabase
+                .from('consolidated_user_profiles_table')
+                .select('*')
+                .eq('user_id', userId)
+                .eq('role', 'student')
+                .maybeSingle();
+            if (error) throw error;
+            if (!profile || !profile.institution_id || !String(profile.program || '').trim()) {
+                throw new Error('Your student profile is missing its institution or programme. Contact your institution administrator.');
+            }
+            if (!['active', 'approved'].includes(String(profile.status || '').toLowerCase()) || profile.login_enabled === false) {
+                throw new Error('Your student account is not active for unit registration.');
+            }
+            this.userProfile = profile;
+            this.studentId = profile.user_id;
+            this.programCode = String(profile.program).trim().toUpperCase();
+            this.intakeYear = profile.intake_year || null;
+            this.isTVETStudent = ['DPOTT','DCH','DHRIT','DSL','DSW','DCJS','DHSS','DICT','DME','CPOTT','CCH','CHRIT','CPC','CSL','CSW','CCJS','CAG','CHSS','CICT','ACH','AAG','ASW','CCA','PTE','TVET'].includes(this.programCode);
+            window.currentUserProfile = profile;
+            if (window.db) window.db.currentUserProfile = profile;
+            console.info('[Unit Registration] Verified student profile:', {
+                userId: this.studentId, institutionId: profile.institution_id,
+                program: this.programCode, programLevel: profile.program_level || profile.program_type || null
+            });
+            return profile;
+        }
+
         // ============================================================
         // GET SUPABASE
         // ============================================================
@@ -202,8 +235,8 @@
                 if (!supabase) return {};
                 
                 const institutionId = this.getInstitutionId();
-                const programCode = String(this.programCode || '').trim().toUpperCase();
-                if (!institutionId || !programCode) {
+                const requestedProgramCode = String(this.userProfile?.program || this.programCode || '').trim().toUpperCase();
+                if (!institutionId || !requestedProgramCode) {
                     this.unitCodeCache = {};
                     console.warn('Unit code lookup skipped: institution/program not resolved.');
                     return this.unitCodeCache;
@@ -212,7 +245,8 @@
                     ? await window.CampusAcademicStructure.resolve(supabase, institutionId, requestedProgramCode, { refresh: true })
                     : null;
                 const programCode = String(structure?.program?.program_code || requestedProgramCode).trim().toUpperCase();
-                this.academicStructure = structure || this.academicStructure;
+                if (!structure?.program) throw new Error('No matching programme is configured for this institution.');
+                this.academicStructure = structure;
                 this.catalogProgramCode = programCode;
                 const { data, error } = await supabase
                     .from('units_catalog')
@@ -681,6 +715,12 @@
                     return;
                 }
                 
+                // Resolve the authenticated student's profile before ANY catalogue or
+                // registration query, so tenant and programme level cannot come from stale cache.
+                await this.loadAuthoritativeStudentProfile(supabase);
+                this.updateUserData();
+                this.catalogProgramCode = this.programCode;
+                await this.fetchUnitCodes();
                 // Existing registrations remain visible even while new registration is closed.
                 await this.loadRegisteredUnits(supabase);
                 const registrationOpen = await this.isUnitRegistrationOpen(false);
@@ -692,6 +732,7 @@
                 }
                 await this.loadMaxUnits(supabase);
                 await this.loadBlocks(supabase);
+                await this.loadSupplementaryData();
                 
                 // ✅ FIX: Await the async display function
                 await this.displayRegisteredUnits();
