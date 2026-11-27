@@ -3016,7 +3016,7 @@ body.dark-mode > #ol-research-modal > #ol-research-dialog .ol-rs-tool{background
   <h3 style="margin:0 0 6px;color:#0A3D62;font-size:17px;"><i class="fas fa-at" style="color:#0b6596;"></i> Login Username</h3>
   <p style="margin:0 0 14px;color:#64748b;font-size:13px;line-height:1.5;">Choose a unique username to sign in with your existing password. Your email login will continue to work.</p>
   <form id="username-settings-form" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-    <input id="account-username" type="text" minlength="3" maxlength="30" pattern="[A-Za-z0-9][A-Za-z0-9._-]{2,29}" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="e.g. kevin.tiongi" required style="flex:1;min-width:200px;padding:12px 14px;border:1px solid #cbd9e3;border-radius:8px;font-size:14px;">
+    <input id="account-username" type="text" minlength="3" maxlength="30" pattern="[A-Za-z0-9][A-Za-z0-9._\\-]{2,29}" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="e.g. kevin.tiongi" required style="flex:1;min-width:200px;padding:12px 14px;border:1px solid #cbd9e3;border-radius:8px;font-size:14px;">
     <button id="save-account-username" type="submit" style="padding:12px 18px;border:0;border-radius:8px;background:#0A3D62;color:white;font-weight:700;cursor:pointer;">Save username</button>
   </form>
   <p id="username-settings-message" role="status" aria-live="polite" style="margin:10px 0 0;font-size:13px;"></p>
@@ -11799,12 +11799,12 @@ body.dark-mode #ol-research-correction-modal .ol-research-editor-page{background
 <script src="code-protection.js"></script>
 <!-- ===== 3️⃣ THIRD: Database (Depends on utils.js) ===== -->
 <script src="/js/database.js?v=20261124-student-db-recovery-v6"></script><script src="/platform/js/academic-structure.js?v=20261127-legacy-programme-map-v1"></script>
-<script src="/platform/js/student-auth-boot.js?v=20261127-tenant-context-gate-v1"></script>
+<script src="/platform/js/student-auth-boot.js?v=20261127-photo-storage-url-v2"></script>
 
 <!-- ===== 4️⃣ FOURTH: Core Modules ===== -->
 <script src="/js/gamification.js"></script>
 <script src="/js/dashboard.js?v=20261123-tenant-structure-v1"></script>
-<script src="/js/profile.js?v=20261127-profile-save-v10"></script>
+<script src="/js/profile.js?v=20261127-profile-save-v11"></script>
 <script id="nchsm-username-settings">
 (function () {
   function initUsernameSettings() {
