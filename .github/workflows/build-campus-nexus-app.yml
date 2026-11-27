@@ -183,7 +183,7 @@ jobs:
                   <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/cn_file_paths" />
               </provider>
           """
-          if "androidx.core.content.FileProvider" not in xml:
+          if "cn_file_paths" not in xml:
               xml = xml.replace("</application>", provider + "\n</application>", 1)
           path.write_text(xml)
           if "REQUEST_INSTALL_PACKAGES" not in xml or "cn_file_paths" not in xml:
