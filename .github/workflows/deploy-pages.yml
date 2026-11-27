@@ -210,6 +210,17 @@ jobs:
           test "$(stat -c%s "$GITHUB_WORKSPACE/downloads/Campus-Nexus-App.apk")" -gt 1000000
           echo "Verified the pinned v1.2.6 Campus Nexus APK at the established website download route."
 
+      - name: Verify public /app route for GitHub Pages
+        run: |
+          set -euo pipefail
+          test -s app/index.html
+          if grep -Eiq 'github\\.com|githubusercontent|NCHSMlearning|campusnexsus' app/index.html; then
+            echo "::error::Public /app route contains a repository reference."
+            exit 1
+          fi
+          grep -Fq 'href="/downloads/Campus-Nexus-App.apk?v=1.2.6"' app/index.html
+          echo "Public /app route exists, is repository-neutral, and points to the Campus Nexus APK mirror."
+
       - name: Inject native Campus Nexus app navigation
         run: |
           set -euo pipefail
