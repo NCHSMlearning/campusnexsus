@@ -523,8 +523,7 @@ class ProfileModule {
         const programInput = document.getElementById('profile-program-input');
         if (programInput) programInput.value = p.program || '';
         
-        const isTVET = this.isTVETStudent();
-        const blockOrTerm = isTVET ? p.term || p.block : p.block || p.current_block;
+        const blockOrTerm = p.current_block || p.block || p.term || '';
         
         const blockInput = document.getElementById('profile-block-input');
         if (blockInput) blockInput.value = blockOrTerm || 'Introductory';
