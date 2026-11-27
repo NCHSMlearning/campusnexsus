@@ -317,7 +317,10 @@
             for (const source of sources) {
                 try {
                     const profile = source();
-                    if (profile && (profile.id || profile.user_id || profile.student_id)) return profile;
+                    const expectedInstitutionId = String(window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id || '').trim();
+                    const profileInstitutionId = String(profile?.institution_id || '').trim();
+                    if (profile && (profile.id || profile.user_id || profile.student_id) &&
+                        (!expectedInstitutionId || profileInstitutionId === expectedInstitutionId)) return profile;
                 } catch(e) {}
             }
             return null;
