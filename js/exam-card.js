@@ -410,8 +410,13 @@
                 if (error) throw error;
                 
                 const registrations = data || [];
-                this.approvedUnits = registrations.filter(u => String(u.status || '').toLowerCase() === 'approved');
-                this.pendingUnits = registrations.filter(u => String(u.status || '').toLowerCase() === 'pending');
+                const currentPeriod = String(this.getBlockValue() || '').trim().toLowerCase();
+                const periodRegistrations = registrations.filter(unit => {
+                    const unitPeriod = String(unit.block || unit.semester || unit.term || unit.academic_period || '').trim().toLowerCase();
+                    return !currentPeriod || currentPeriod === 'not assigned' || !unitPeriod || unitPeriod === currentPeriod;
+                });
+                this.approvedUnits = periodRegistrations.filter(u => String(u.status || '').toLowerCase() === 'approved');
+                this.pendingUnits = periodRegistrations.filter(u => String(u.status || '').toLowerCase() === 'pending');
                 if (this.pendingUnits.length && !this.pendingApprovalPoll) {
                     // Keep the card in sync when an administrator approves a
                     // registration after the student has already opened the page.
