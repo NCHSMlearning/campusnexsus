@@ -71,7 +71,7 @@
     // Touch-first pull-to-refresh for the Campus Nexus app shell.
     // It only arms at the top of the page and ignores form controls and active exams.
     (function installPullToRefresh() {
-      if (!('ontouchstart' in window) || document.getElementById('cn-pull-refresh')) return;
+      if (!('ontouchstart' in window) || document.getElementById('cn-pull-refresh') || /^\/platform\/student(?:\.html)?\/?$/i.test(location.pathname)) return;
       var style = document.createElement('style');
       style.id = 'cn-pull-refresh-style';
       style.textContent = [
@@ -270,7 +270,7 @@
           if(original)original.click();
           else location.hash='#'+t.module;
           syncTabs();
-          window.scrollTo({top:0,behavior:'smooth'});
+          window.scrollTo({top:0,behavior:'auto'});
         });
         tabNodes[t.module]=node;bar.appendChild(node);
       });
@@ -491,7 +491,7 @@
     var home = findLink([/dashboard/i,/^home$/i]) || (isStudent ? null : null);
     var learning = findLink([/my units/i,/courses/i,/learning/i,/lms/i]);
     var exams = findLink([/exam|cat|assess/i]);
-    var profile = findLink([/^profile$/i,/my account/i,/account settings/i]);
+    var services = findLink([/attendance/i,/finance/i,/clinical portfolio/i,/clinical placements/i]);
 
     function isSourceLinkAllowed(link) {
       return !!link && !link.hidden &&
@@ -542,7 +542,7 @@
       home:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></svg>',
       learning:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 8 9-5 9 5-9 5z"/><path d="m5 12 7 4 7-4M5 16l7 4 7-4"/></svg>',
       exams:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>',
-      profile:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>',
+      service:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>',
       menu:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>'
     };
     var bar = document.createElement('nav');
@@ -554,8 +554,8 @@
     var items = [
       routeButton('Home',icons.home,home,homeFallback,function(){return /student\.html$/.test(path) || /dashboard/i.test(path)}),
       routeButton(isLecturer?'Classes':'Learning',icons.learning,learning,null,function(){return !!learning && (learning.getAttribute('href')===path || learning.classList.contains('active'))}),
-      routeButton('Exams',icons.exams,exams,examsFallback,function(){return /exam/i.test(path)}),
-      routeButton('Profile',icons.profile,profile,null,function(){return !!profile && profile.classList.contains('active')})
+      routeButton('Exams',icons.exams,exams,examsFallback,function(){return /exam|cat/i.test(path)}),
+      routeButton('Services',icons.service,services,null,function(){return !!services && services.classList.contains('active')})
     ].filter(Boolean);
 
     items.forEach(function (item) { bar.appendChild(item); });
