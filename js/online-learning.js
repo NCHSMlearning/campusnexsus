@@ -237,7 +237,7 @@ async function deleteSubmissionDocument(id){
   if(!confirm('Delete this submitted document? You will be able to upload and submit a new document again.'))return;
   try{
     if(s.file_path){var rm=await sb.storage.from('assignment-submissions').remove([s.file_path]);if(rm.error)console.warn('Storage delete warning:',rm.error)}
-    var del=await sb.from('online_submissions').delete().eq('id',s.id).eq('student_id',studentId);
+    var del=await sb.from('online_submissions').delete().eq('id',s.id).eq('student_id',studentId).eq('institution_id',window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id);
     if(del.error)throw del.error;
     state.submissions=state.submissions.filter(function(x){return String(x.id)!==String(id)});
     state.results=state.submissions.filter(function(x){return !!x.result_released});
@@ -259,7 +259,7 @@ async function loadResearch(){
   var sb=client(),id=uid(); if(!sb||!id)return;
   var r=await sb.from('research_submissions')
     .select('id,student_id,research_group_id,version_number,title,submission_type,supervisor_name,abstract,status,document_name,document_path,feedback,reviewed_at,submitted_at,created_at,updated_at')
-    .eq('student_id',id).order('created_at',{ascending:false});
+    .eq('student_id',id).eq('institution_id',window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id).order('created_at',{ascending:false});
   if(r.error){console.error('Research load failed:',r.error);return;}
   state.research=r.data||[];
   if(state.tab==='research')renderResearch();
@@ -467,7 +467,7 @@ async function saveStudentResearchCloudDraft(manual){
   try{
     var now=new Date().toISOString();
     var saved=await sb.from('research_document_drafts').upsert({
-      research_submission_id:r.id,user_id:id,content_html:html,updated_at:now
+      institution_id:window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id,research_submission_id:r.id,user_id:id,content_html:html,updated_at:now
     },{onConflict:'research_submission_id,user_id'}).select('id,updated_at').single();
     if(saved.error)throw saved.error;
     studentResearchLastSaved=html;ed.dataset.dirty='0';
@@ -492,7 +492,7 @@ function scheduleStudentResearchCloudSave(delay){
 async function loadStudentResearchCloudDraft(r,editor){
   var sb=client(),id=uid();if(!sb||!id)return false;
   var q=await sb.from('research_document_drafts').select('content_html,updated_at')
-    .eq('research_submission_id',r.id).eq('user_id',id).maybeSingle();
+    .eq('research_submission_id',r.id).eq('user_id',id).eq('institution_id',window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id).maybeSingle();
   if(q.error){console.warn('[Student Research] Cloud draft lookup failed',q.error.message);return false}
   if(!q.data||!q.data.content_html)return false;
   var sourceTime=new Date(r.submitted_at||r.updated_at||r.created_at||0).getTime();
@@ -507,8 +507,8 @@ async function loadStudentResearchFeedback(r){
   var host=document.getElementById('ol-research-correction-feedback');if(!host)return;
   var sb=client();if(!sb)return;
   var [comments,suggestions]=await Promise.all([
-    sb.from('research_document_comments').select('id,author_name,selected_text,comment_text,status,created_at').eq('research_submission_id',r.id).order('created_at',{ascending:true}),
-    sb.from('research_document_suggestions').select('id,author_name,old_text,new_text,status,created_at').eq('research_submission_id',r.id).order('created_at',{ascending:true})
+    sb.from('research_document_comments').select('id,author_name,selected_text,comment_text,status,created_at').eq('research_submission_id',r.id).eq('institution_id',window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id).order('created_at',{ascending:true}),
+    sb.from('research_document_suggestions').select('id,author_name,old_text,new_text,status,created_at').eq('research_submission_id',r.id).eq('institution_id',window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id).order('created_at',{ascending:true})
   ]);
   var html='';
   if(!comments.error&&(comments.data||[]).length)html+='<h4>Supervisor comments</h4>'+(comments.data||[]).map(function(c){return '<article class="ol-rs-feedback-item"><b>'+esc(c.author_name||'Supervisor')+'</b><small>'+esc(fmtDateTime(c.created_at))+' · '+esc(c.status||'open')+'</small><blockquote>'+esc(c.selected_text||'')+'</blockquote><p>'+esc(c.comment_text||'')+'</p></article>'}).join('');
@@ -668,17 +668,17 @@ async function saveResearchCorrection(submit){
       submitted_at:new Date().toISOString(),
       created_at:new Date().toISOString()
     };
-    var ins=await sb.from('research_submissions').insert(payload).select().single();
+    var ins=await sb.from('research_submissions').insert({ ...payload, institution_id: window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id }).select().single();
     if(ins.error){
       await sb.storage.from('research-papers').remove([path]);
       throw ins.error;
     }
     var newDraft=await sb.from('research_document_drafts').upsert({
-      research_submission_id:ins.data.id,user_id:id,content_html:html,updated_at:now
+      institution_id:window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id,research_submission_id:ins.data.id,user_id:id,content_html:html,updated_at:now
     },{onConflict:'research_submission_id,user_id'});
     if(newDraft.error)console.warn('New correction draft seed failed:',newDraft.error.message);
     var version=await sb.from('research_document_draft_versions').insert({
-      draft_id:(await sb.from('research_document_drafts').select('id').eq('research_submission_id',ins.data.id).eq('user_id',id).single()).data?.id,
+      institution_id:window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id,draft_id:(await sb.from('research_document_drafts').select('id').eq('research_submission_id',ins.data.id).eq('user_id',id).eq('institution_id',window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id).single()).data?.id,
       research_submission_id:ins.data.id,user_id:id,version_number:next,content_html:html,word_count:studentResearchWordCount(html),label:'Submitted correction V'+next
     });
     if(version.error)console.warn('Submitted version history snapshot failed:',version.error.message);
@@ -741,10 +741,10 @@ async function submitCurrent(){
     var payload={assignment_id:a.id,student_id:id,status:'submitted',submitted_at:now,result_released:false,marks_obtained:null,percentage:null,feedback:null,answers:answers,file_path:path,file_name:state.file.name,file_type:state.file.type||'application/vnd.openxmlformats-officedocument.wordprocessingml.document',file_size:state.file.size,graded_by:null,graded_at:null,released_at:null,review_required:false};
     var result;
     if(existing){
-      var upd=await sb.from('online_submissions').update(payload).eq('id',existing.id).eq('student_id',id).select().single();
+      var upd=await sb.from('online_submissions').update({ ...payload, institution_id: window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id }).eq('id',existing.id).eq('student_id',id).eq('institution_id',window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id).select().single();
       if(upd.error)throw upd.error;result=upd.data;
     }else{
-      var ins=await sb.from('online_submissions').insert(payload).select().single();
+      var ins=await sb.from('online_submissions').insert({ ...payload, institution_id: window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id }).select().single();
       if(ins.error)throw ins.error;result=ins.data;
     }
     if(oldPath&&oldPath!==newPath){try{await sb.storage.from('assignment-submissions').remove([oldPath])}catch(ignore){}}
@@ -1289,7 +1289,7 @@ function researchEnsureUI(){
 async function loadResearch(){
   var db=researchClient(),id=researchUserId();if(!db||!id)return;
   researchEnsureUI();
-  var q=await db.from('research_submissions').select('id,student_id,research_group_id,version_number,title,submission_type,supervisor_name,abstract,status,document_name,document_path,feedback,reviewed_by,reviewed_at,submitted_at,created_at,updated_at').eq('student_id',id).order('created_at',{ascending:false});
+  var q=await db.from('research_submissions').select('id,student_id,research_group_id,version_number,title,submission_type,supervisor_name,abstract,status,document_name,document_path,feedback,reviewed_by,reviewed_at,submitted_at,created_at,updated_at').eq('student_id',id).eq('institution_id',window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id).order('created_at',{ascending:false});
   if(q.error){console.error('Research Papers load error:',q.error);return}
   state.research=q.data||[];
   if(state.tab==='research')renderResearch();
@@ -1482,7 +1482,7 @@ async function submitResearch(e){
   try{
     var path=id+'/'+Date.now()+'-'+f.name.replace(/[^a-zA-Z0-9._-]/g,'_');var up=await db.storage.from('research-papers').upload(path,f,{upsert:false,contentType:f.type||undefined});if(up.error)throw up.error;
     var row={student_id:id,research_group_id:existing?.research_group_id||null,version_number:version,title:title,submission_type:type,supervisor_name:supervisor,abstract:abstractText,status:'submitted',document_name:f.name,document_path:up.data.path,submitted_at:new Date().toISOString(),updated_at:new Date().toISOString(),created_at:new Date().toISOString()};
-    var ins=await db.from('research_submissions').insert(row).select().single();if(ins.error){await db.storage.from('research-papers').remove([up.data.path]);throw ins.error}
+    var ins=await db.from('research_submissions').insert({ ...row, institution_id: window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id }).select().single();if(ins.error){await db.storage.from('research-papers').remove([up.data.path]);throw ins.error}
     closeResearchModal();await loadResearch();state.tab='research';document.querySelectorAll('#hub-online-learning [data-ol-tab]').forEach(function(x){x.classList.toggle('active',x.dataset.olTab==='research')});renderResearch();alert(existing?'Your corrected research has been submitted to the lecturer for review.':'Your research paper has been submitted successfully.');
   }catch(e2){console.error('Research submission failed:',e2);alert('Research submission failed: '+(e2.message||e2))}
   finally{if(btn){btn.disabled=false;btn.innerHTML='<i class="fas fa-paper-plane"></i> Submit to Lecturer'}}
@@ -1630,7 +1630,7 @@ async function saveInlineResearchCorrection(){
     var upload=await db.storage.from('research-papers').upload(path,fileBlob,{contentType:isDocx?'application/vnd.openxmlformats-officedocument.wordprocessingml.document':'text/html',upsert:false});
     if(upload.error)throw upload.error;
     var payload={student_id:id,research_group_id:base.research_group_id||base.id,version_number:next,title:base.title,submission_type:'correction',supervisor_name:base.supervisor_name||null,abstract:base.abstract||null,status:'submitted',document_name:filename,document_path:upload.data.path,feedback:null,reviewed_by:null,reviewed_at:null,submitted_at:now,created_at:now,updated_at:now};
-    var ins=await db.from('research_submissions').insert(payload).select().single();
+    var ins=await db.from('research_submissions').insert({ ...payload, institution_id: window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id }).select().single();
     if(ins.error){try{await db.storage.from('research-papers').remove([path])}catch{};throw ins.error;}
     alert('Correction submitted to the lecturer for review as Version '+next+'.');
     await loadResearch();state.researchCurrent=ins.data;await openResearchViewer(ins.data.id,false);
