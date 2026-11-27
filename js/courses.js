@@ -278,6 +278,7 @@
                     .from('student_unit_registrations')
                     .select('*')
                     .eq('student_id', studentId)
+                .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)
                     .order('unit_code', { ascending: true });
 
                 if (regError) throw regError;
@@ -384,7 +385,8 @@
             try {
                 const { data, error } = await supabase
                     .from('courses')
-                    .select('*');
+                    .select('*')
+                .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id);
 
                 if (error) {
                     console.warn('⚠️ Course catalogue lookup failed:', error.message);
