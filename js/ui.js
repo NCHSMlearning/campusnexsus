@@ -1640,17 +1640,38 @@ class UIModule {
     // ============================================================
     
     showToast(message, type = 'info', duration = 3000) {
+        let container = document.getElementById('cn-global-toast-stack');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'cn-global-toast-stack';
+            container.setAttribute('role', 'region');
+            container.setAttribute('aria-label', 'Notifications');
+            container.style.cssText = 'position:fixed;top:calc(env(safe-area-inset-top, 0px) + 78px);right:16px;left:auto;z-index:2147483000;display:flex;flex-direction:column;align-items:flex-end;gap:10px;width:min(420px,calc(100vw - 32px));max-height:calc(100dvh - 110px);overflow:hidden;pointer-events:none;';
+            document.body.appendChild(container);
+        }
         const toast = document.createElement('div');
         toast.className = `custom-toast toast-${type}`;
-        toast.textContent = message.length > 100 ? message.substring(0, 100) + '...' : message;
-        toast.style.cssText = `position:fixed;bottom:20px;right:20px;background:${this.getToastColor(type)};color:white;padding:12px 20px;border-radius:8px;z-index:9999;box-shadow:0 4px 15px rgba(0,0,0,0.2);max-width:350px;font-size:14px;opacity:0;transform:translateY(20px);transition:all 0.3s ease`;
-        document.body.appendChild(toast);
-        setTimeout(() => { toast.style.opacity = '1'; toast.style.transform = 'translateY(0)'; }, 10);
-        setTimeout(() => {
+        toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
+        toast.style.cssText = `box-sizing:border-box;width:100%;background:${this.getToastColor(type)};color:white;padding:13px 16px;border-radius:12px;z-index:1;box-shadow:0 8px 24px rgba(0,0,0,.2);max-width:100%;font-size:14px;line-height:1.45;opacity:0;transform:translateX(12px);transition:all .2s ease;overflow-wrap:anywhere;pointer-events:auto;display:flex;align-items:center;gap:10px`;
+        const label = document.createElement('span');
+        label.style.flex = '1';
+        label.textContent = String(message ?? '').length > 180 ? String(message).substring(0, 180) + '…' : String(message ?? '');
+        const close = document.createElement('button');
+        close.type = 'button';
+        close.setAttribute('aria-label', 'Dismiss notification');
+        close.textContent = '×';
+        close.style.cssText = 'border:0;background:transparent;color:inherit;font-size:20px;cursor:pointer;padding:0 2px';
+        close.addEventListener('click', () => toast.remove());
+        toast.append(label, close);
+        container.appendChild(toast);
+        while (container.children.length > 4) container.firstElementChild.remove();
+        requestAnimationFrame(() => { toast.style.opacity = '1'; toast.style.transform = 'translateX(0)'; });
+        const timer = window.setTimeout(() => {
             toast.style.opacity = '0';
-            toast.style.transform = 'translateY(20px)';
-            setTimeout(() => toast.remove(), 300);
-        }, duration);
+            toast.style.transform = 'translateX(12px)';
+            window.setTimeout(() => toast.remove(), 220);
+        }, Math.max(1500, Number(duration) || 3000));
+        close.addEventListener('click', () => window.clearTimeout(timer), { once: true });
     }
     
     getToastColor(type) {
