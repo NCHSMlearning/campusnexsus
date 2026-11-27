@@ -240,24 +240,24 @@ jobs:
           chmod +x gradlew
           ./gradlew --no-daemon assembleRelease
           cd ..
-          cp android/app/build/outputs/apk/release/app-release.apk android/app/build/outputs/apk/release/Campus-Nexus-App-1.2.5.apk
-          test -s android/app/build/outputs/apk/release/Campus-Nexus-App-1.2.5.apk
-          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose android/app/build/outputs/apk/release/Campus-Nexus-App-1.2.5.apk
+          cp android/app/build/outputs/apk/release/app-release.apk android/app/build/outputs/apk/release/Campus-Nexus-App-1.2.6.apk
+          test -s android/app/build/outputs/apk/release/Campus-Nexus-App-1.2.6.apk
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose android/app/build/outputs/apk/release/Campus-Nexus-App-1.2.6.apk
           rm -f android/app/campus-nexus-release.keystore
 
       - name: Upload signed Android release APK
         uses: actions/upload-artifact@v4
         with:
-          name: Campus-Nexus-App-1.2.5-Android-Release
-          path: campus-nexus-app/android/app/build/outputs/apk/release/Campus-Nexus-App-1.2.5.apk
+          name: Campus-Nexus-App-1.2.6-Android-Release
+          path: campus-nexus-app/android/app/build/outputs/apk/release/Campus-Nexus-App-1.2.6.apk
           if-no-files-found: error
           retention-days: 30
 
       - name: Publish signed Android release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: campus-nexus-app-v1.2.5
-          name: Campus Nexus App 1.2.5 (Android Release)
+          tag_name: campus-nexus-app-v1.2.6
+          name: Campus Nexus App 1.2.6 (Android Release)
           prerelease: false
           make_latest: true
-          files: campus-nexus-app/android/app/build/outputs/apk/release/Campus-Nexus-App-1.2.5.apk
+          files: campus-nexus-app/android/app/build/outputs/apk/release/Campus-Nexus-App-1.2.6.apk
