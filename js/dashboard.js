@@ -1551,7 +1551,8 @@ class DashboardModule {
             const { data: logs, error } = await this.sb
                 .from('geo_attendance_logs')
                 .select('is_verified')
-                .eq('student_id', this.userId);
+                .eq('student_id', this.userId)
+                .eq('institution_id', this.userProfile?.institution_id);
             
             if (error) throw error;
             
@@ -1573,7 +1574,8 @@ class DashboardModule {
             const { data: registrations, error } = await this.sb
                 .from('student_unit_registrations')
                 .select('id, status')
-                .eq('student_id', this.userId);
+                .eq('student_id', this.userId)
+                .eq('institution_id', this.userProfile?.institution_id);
             
             if (error) throw error;
             
@@ -1592,7 +1594,8 @@ class DashboardModule {
         try {
             const { count, error } = await this.sb
                 .from('resources')
-                .select('*', { count: 'exact', head: true });
+                .select('*', { count: 'exact', head: true })
+                .eq('institution_id', this.userProfile?.institution_id);
             
             this.metrics.resources = count || 0;
         } catch (error) {
@@ -1699,7 +1702,8 @@ class DashboardModule {
             const { count: totalReviews, error: totalError } = await this.sb
                 .from('student_reviews')
                 .select('*', { count: 'exact', head: true })
-                .eq('status', 'approved');
+                .eq('status', 'approved')
+                .eq('institution_id', this.userProfile?.institution_id);
             
             if (totalError) throw totalError;
             
@@ -1790,6 +1794,7 @@ class DashboardModule {
             const { data: latestNews, error: newsError } = await this.sb
                 .from('newsletters')
                 .select('subject, sent_at')
+                .eq('institution_id', this.userProfile?.institution_id)
                 .order('sent_at', { ascending: false })
                 .limit(1);
             
@@ -1874,6 +1879,7 @@ class DashboardModule {
             const { data: exams, error } = await this.sb
                 .from('exams')
                 .select('*')
+                .eq('institution_id', this.userProfile.institution_id)
                 .eq('program_type', this.userProfile.program)
                 .eq('intake_year', this.userProfile.intake_year)
                 .or(`block.eq.${userBlock},block_term.eq.${userBlock}`)
@@ -2094,6 +2100,7 @@ class DashboardModule {
             const { data: announcements, error } = await this.sb
                 .from('announcements')
                 .select('*')
+                .eq('institution_id', this.userProfile?.institution_id)
                 .eq('is_active', true)
                 .eq('program', userProgram)
                 .eq('intake_year', userIntake)
@@ -2148,6 +2155,7 @@ class DashboardModule {
                 .from('consolidated_user_profiles_table')
                 .select('user_id, full_name, gamification_points, nurseiq_points, login_count, role')
                 .eq('role', 'student')
+                .eq('institution_id', this.userProfile?.institution_id)
                 .order('user_id', { ascending: true });
             if (error) throw error;
 
@@ -2236,6 +2244,7 @@ class DashboardModule {
                 .from('student_unit_registrations')
                 .select('unit_code, unit_name, status, completion_status, block, created_at')
                 .eq('student_id', this.userId)
+                .eq('institution_id', this.userProfile?.institution_id)
                 .order('created_at', { ascending: false });
             if (regError) throw regError;
 
@@ -2314,6 +2323,7 @@ class DashboardModule {
             let query = this.sb
                 .from('timetables')
                 .select('*')
+                .eq('institution_id', this.userProfile?.institution_id)
                 .gte('class_date', this.getKenyaNow().toISOString().split('T')[0])
                 .order('class_date', { ascending: true })
                 .order('start_time', { ascending: true })
