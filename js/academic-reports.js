@@ -648,7 +648,8 @@
             }
             
             const registrationNumber = user.admission_number || user.student_id || user.user_id;
-            const userProgram = user.program || '';
+            const userProgram = user.program || user.program_code || user.program_type || '';
+            await ensureAcademicStructure(user);
             
             const nameEl = document.getElementById('my_marks_student_name');
             if (nameEl) nameEl.textContent = user.full_name || 'Student';
@@ -669,7 +670,7 @@
             const headerEl = document.querySelector('#my_marks_table_body')?.closest('table')?.querySelector('th:nth-child(3)');
             if (headerEl) headerEl.textContent = blockLabel;
             
-            populateMyMarksBlockFilter(userProgram);
+            await populateMyMarksBlockFilter(userProgram);
             
             // ✅ FETCH RETAKE DATA
             await fetchStudentRetakeData(registrationNumber);
@@ -859,32 +860,28 @@
         }
     }
 
-    function populateMyMarksBlockFilter(program) {
+    async function populateMyMarksBlockFilter(program) {
         const filter = document.getElementById('my_marks_block_filter');
         if (!filter) return;
-        
-        const buildOptions = structure => {
-            const isTVET = PROGRAM.isTVET(program);
-            const label = structure?.plural || (isTVET ? 'Terms' : 'Blocks');
-            const options = structure?.periods?.length
-                ? structure.periods.map(x => x.name)
-                : PROGRAM.getBlockOptions(program);
-            filter.innerHTML = `<option value="all">All ${label}</option>`;
-            options.forEach(opt => {
-                const option = document.createElement('option');
-                option.value = opt;
-                option.textContent = opt;
-                filter.appendChild(option);
-            });
-        };
-        buildOptions(window.currentAcademicStructure || null);
         const profile = window.currentUserProfile || window.db?.currentUserProfile || {};
-        const client = window.sb || window.supabaseClient || window.db?.supabase;
-        if (!window.currentAcademicStructure && window.CampusAcademicStructure && client && profile.institution_id && program) {
-            window.CampusAcademicStructure.resolve(client, profile.institution_id, program)
-                .then(structure => { window.currentAcademicStructure = structure; buildOptions(structure); })
-                .catch(error => console.warn('[Academic Reports] Academic period lookup failed:', error.message));
-        }
+        const structure = await ensureAcademicStructure(profile);
+        const label = structure?.plural || PROGRAM.getBlockLabel(program) + 's';
+        const options = structure?.periods?.length
+            ? structure.periods.map(period => period.name)
+            : PROGRAM.getBlockOptions(program);
+        const selected = filter.value;
+        filter.replaceChildren();
+        const all = document.createElement('option');
+        all.value = 'all';
+        all.textContent = 'All ' + label;
+        filter.appendChild(all);
+        options.forEach(value => {
+            const option = document.createElement('option');
+            option.value = value;
+            option.textContent = value;
+            filter.appendChild(option);
+        });
+        if (selected && [...filter.options].some(option => option.value === selected)) filter.value = selected;
     }
 
     // ============================================================
