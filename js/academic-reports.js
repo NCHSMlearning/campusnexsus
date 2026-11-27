@@ -1428,10 +1428,10 @@
         const program = user.program || user.program_code || user.program_type || '';
         await ensureAcademicStructure(user);
         if (!myMarksData?.length) await loadMyMarks();
-        const selectedYear = document.getElementById('year-filter')?.value || '';
         const sourceMarks = (myMarksData && myMarksData.length) ? myMarksData : currentGrades;
         let grades = (sourceMarks || []).map(m => normalizeAcademicMark(m, program));
         populateAcademicYearFilter(grades);
+        const selectedYear = document.getElementById('year-filter')?.value || '';
 
         if (selectedYear && grades.length) {
             const matched = grades.filter(g => String(g.academic_year || g.year || '').includes(String(selectedYear)));
@@ -1571,7 +1571,10 @@ async function loadTranscript() {
         const blockPassRate = blockTotal > 0 ? Math.round((blockPassed / blockTotal) * 100) : 0;
         
         // ✅ Academic year for this block
-        const blockAcademicYear = PROGRAM.getAcademicYear(userProgram, block, intakeYear);
+        const storedAcademicYear = blockMarks.find(mark => mark.academic_year || mark.year)?.academic_year || blockMarks.find(mark => mark.academic_year || mark.year)?.year;
+        const blockAcademicYear = storedAcademicYear
+            ? { display: String(storedAcademicYear), label: 'Academic Year ' + String(storedAcademicYear) }
+            : PROGRAM.getAcademicYear(userProgram, block, intakeYear);
         
         // ✅ Check if all marks in this block are passing
         const allPassed = blockMarks.every(m => {
@@ -1580,19 +1583,19 @@ async function loadTranscript() {
         });
         
         // ✅ Get next block name
-        const blockIndex = blockNames.indexOf(block);
-        const nextBlockIndex = blockIndex + 1;
-        const hasNextBlock = nextBlockIndex < blockNames.length;
-        const nextBlockName = hasNextBlock ? blockNames[nextBlockIndex] : null;
+        const periodIndex = periodNames.indexOf(block);
+        const nextPeriodIndex = periodIndex + 1;
+        const hasNextPeriod = nextPeriodIndex < periodNames.length;
+        const nextBlockName = hasNextPeriod ? periodNames[nextPeriodIndex] : null;
         
         // ✅ Determine progression message for this block (appears AFTER summary)
         let progressionMessage = '';
         let messageColor = '#94a3b8';
         
-        if (allPassed && hasNextBlock && blockMarks.length > 0) {
+        if (allPassed && hasNextPeriod && blockMarks.length > 0) {
             progressionMessage = `Passed — Proceed to ${nextBlockName} · ${blockAcademicYear.label}`;
             messageColor = '#059669';
-        } else if (allPassed && !hasNextBlock && blockMarks.length > 0) {
+        } else if (allPassed && !hasNextPeriod && blockMarks.length > 0) {
             progressionMessage = `All ${periodPlural.toLowerCase()} completed — Ready for Graduation · ${blockAcademicYear.label}`;
             messageColor = '#4C1D95';
         } else if (!allPassed && blockMarks.length > 0) {
@@ -1757,9 +1760,12 @@ function updateTranscriptSummary(attempted, earned, courses, cgpa) {
     // ============================================================
     function downloadTranscriptPDF() {
         const user = window.currentUserProfile || {};
-        const userProgram = user.program || '';
+        const userProgram = user.program || user.program_code || user.program_type || '';
         const isTVET = PROGRAM.isTVET(userProgram);
         const programType = PROGRAM.getProgramType(userProgram);
+        const institution = user.institution || window.CURRENT_INSTITUTION || {};
+        const institutionName = institution.name || user.institution_name || document.documentElement.dataset.institutionName || 'Your Institution';
+        const periodLabel = window.currentAcademicStructure?.singular || PROGRAM.getBlockLabel(userProgram);
         
         let marksData = [];
         if (window.myMarksData && window.myMarksData.length > 0) {
@@ -1793,9 +1799,9 @@ function updateTranscriptSummary(attempted, earned, courses, cgpa) {
         if (!w) { alert('Please allow popups to generate the transcript.'); return; }
         w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Academic Transcript</title><style>
         body{font-family:Arial,sans-serif;margin:30px;color:#1e293b}h1{text-align:center;color:#1E559B;font-size:22px;margin:0}h2{text-align:center;font-size:16px;margin:5px 0 20px}.meta{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;border:1px solid #ddd;padding:12px;margin-bottom:20px}table{width:100%;border-collapse:collapse;font-size:11px}th{background:#1E559B;color:white;padding:8px;border:1px solid #ccc}td{padding:7px;border:1px solid #ddd}table tbody td:nth-child(3),table tbody td:nth-child(8),table tbody td:nth-child(3) *,table tbody td:nth-child(8) *{color:#000!important;font-weight:900!important;-webkit-text-fill-color:#000!important}.summary{margin-top:20px;font-weight:700}@media print{body{margin:12mm}.no-print{display:none}}</style></head><body>
-        <h1>Nakuru College of Health Sciences and Management</h1><h2>Academic Transcript</h2>
+        <h1>${escapeHtml(institutionName)}</h1><h2>Academic Transcript</h2>
         <div class="meta"><div><b>Student:</b> ${escapeHtml(user.full_name || 'Student')}</div><div><b>Admission:</b> ${escapeHtml(user.student_id || user.admission_number || 'N/A')}</div><div><b>Program:</b> ${escapeHtml(userProgram || 'N/A')}</div></div>
-        <table><thead><tr><th>#</th><th>Block/Term</th><th>Unit Code</th><th>Unit Name</th><th>Credits</th><th>Score</th><th>Grade</th><th>Grade Points</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table>
+        <table><thead><tr><th>#</th><th>${escapeHtml(periodLabel)}</th><th>Unit Code</th><th>Unit Name</th><th>Credits</th><th>Score</th><th>Grade</th><th>Grade Points</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table>
         <div class="summary">Cumulative GPA: ${gpa.toFixed(2)} &nbsp; | &nbsp; Units: ${marksData.length}</div>
         <div class="no-print" style="text-align:center;margin-top:25px"><button onclick="window.print()">Print / Save as PDF</button></div>
         </body></html>`);
