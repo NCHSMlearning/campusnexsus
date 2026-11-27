@@ -344,6 +344,7 @@ async function submitSessionReport() {
             .from('session_reports')
             .select('id, submitted_at, approval_status')
             .eq('student_id', studentId)
+            .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)
             .eq('academic_year', year)
             .eq('session', session);
 
@@ -415,7 +416,7 @@ async function submitSessionReport() {
 
         const { data, error } = await sb
             .from('session_reports')
-            .insert(reportData)
+            .insert({ ...reportData, institution_id: window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id })
             .select();
 
         if (error) {
@@ -537,6 +538,8 @@ async function loadSessionReports() {
             .from('session_reports')
             .select('*')
             .eq('student_id', studentId)
+            .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)
+            .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)
             .order('submitted_at', { ascending: false });
 
         if (error) throw error;
@@ -827,6 +830,7 @@ async function loadEnrollmentRequests() {
             .from('student_requests')
             .select('*')
             .eq('student_id', studentId)
+            .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)
             .order('created_at', { ascending: false });
 
         if (status !== 'all') {
@@ -1092,6 +1096,7 @@ async function loadEnrollmentHistory() {
             .from('student_requests')
             .select('*')
             .eq('student_id', studentId)
+            .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)
             .in('status', ['approved', 'rejected'])
             .order('updated_at', { ascending: false });
 
@@ -1477,7 +1482,7 @@ async function submitEnrollmentRequest() {
 
         const { data, error } = await sb
             .from('student_requests')
-            .insert(requestData)
+            .insert({ ...requestData, institution_id: window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id })
             .select();
 
         if (error) throw error;
