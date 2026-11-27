@@ -55,4 +55,14 @@
     try { tabId = decodeURIComponent((location.hash || '').replace(/^#/, '')); } catch (_) {}
     if (tabId) navigate(tabId);
   });
+  function activateInitialHash() {
+    var tabId = '';
+    try { tabId = decodeURIComponent((location.hash || '').replace(/^#/, '')); } catch (_) {}
+    if (tabId) navigate(tabId);
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', activateInitialHash, { once: true });
+  } else {
+    activateInitialHash();
+  }
 })();
