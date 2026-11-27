@@ -8307,6 +8307,29 @@ window.rejectAssessment = async function(examId) {
         await loadAssessmentApprovals(); await loadAllExams();
     } catch(error) { console.error(error); showAssessmentApprovalMessage(error.message||'Rejection failed.',true); alert(error.message||'Rejection failed.'); }
 };
+async function sendPublishedExamEmailNotice(examId) {
+    try {
+        const { data, error } = await sb.functions.invoke('exam-published-notification', {
+            body: { exam_id: Number(examId) }
+        });
+        if (error) throw error;
+        if (!data?.success) throw new Error(data?.error || 'Email notification was not confirmed.');
+        const sent = Number(data.sent || 0);
+        const failed = Number(data.failed || 0);
+        const skipped = Number(data.skipped || 0);
+        const eligible = Number(data.eligible || 0);
+        const message = sent
+            ? 'Email notices accepted for ' + sent + ' student(s).' + (failed ? ' ' + failed + ' failed.' : '') + (skipped ? ' ' + skipped + ' skipped.' : '')
+            : 'No new student emails sent (' + eligible + ' eligible; ' + skipped + ' skipped; ' + failed + ' failed).';
+        showAssessmentApprovalMessage(message, failed > 0);
+        return data;
+    } catch (error) {
+        console.error('Published examination email notification failed:', error);
+        showAssessmentApprovalMessage('Exam is published, but email notification failed: ' + (error.message || 'Unknown error') + '. You can retry from the notification log.', true);
+        return { success: false, error: error.message || String(error) };
+    }
+}
+
 window.publishApprovedAssessment = async function(examId) {
     try {
         getAssessmentReviewer();
@@ -8317,7 +8340,8 @@ window.publishApprovedAssessment = async function(examId) {
         const {data,error}=await sb.from('exams').update({is_published:true,status:'published',updated_at:new Date().toISOString()}).eq('id',examId).eq('approval_status','approved').eq('is_published',false).select('id');
         if(error) throw error;
         if(!data?.length) throw new Error('Publication not completed. Confirm it is approved and unpublished.');
-        showAssessmentApprovalMessage('Assessment published successfully.');
+        showAssessmentApprovalMessage('Assessment published successfully. Sending student email notices…');
+        await sendPublishedExamEmailNotice(examId);
         await loadAssessmentApprovals(); await loadAllExams();
     } catch(error) { console.error(error); showAssessmentApprovalMessage(error.message||'Publication failed.',true); alert(error.message||'Publication failed.'); }
 };
@@ -8338,7 +8362,10 @@ window.publishApprovedAssessment = async function(examId) {
             updated_at: new Date().toISOString()
         }).eq('id', examId);
         if (error) alert('Unable to update publication status: ' + error.message);
-        else { await loadAllExams(); await loadAssessmentApprovals(); }
+        else {
+            if (nextPublished) await sendPublishedExamEmailNotice(examId);
+            await loadAllExams(); await loadAssessmentApprovals();
+        }
     };
 
     window.openResetModal = function(examId, examName) {
