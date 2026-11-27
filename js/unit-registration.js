@@ -208,6 +208,12 @@
                     console.warn('Unit code lookup skipped: institution/program not resolved.');
                     return this.unitCodeCache;
                 }
+                const structure = window.CampusAcademicStructure?.resolve
+                    ? await window.CampusAcademicStructure.resolve(supabase, institutionId, requestedProgramCode, { refresh: true })
+                    : null;
+                const programCode = String(structure?.program?.program_code || requestedProgramCode).trim().toUpperCase();
+                this.academicStructure = structure || this.academicStructure;
+                this.catalogProgramCode = programCode;
                 const { data, error } = await supabase
                     .from('units_catalog')
                     .select('unit_name, unit_code')
@@ -762,7 +768,7 @@ async loadAvailableUnits(supabase) {
         
         // Build query for catalog - ONLY NORMAL UNITS
         const institutionId = this.getInstitutionId();
-        const programCode = String(this.programCode || '').trim().toUpperCase();
+        const programCode = String(this.catalogProgramCode || this.academicStructure?.program?.program_code || this.programCode || '').trim().toUpperCase();
         if (!institutionId || !programCode) {
             throw new Error('Your school or programme could not be resolved. Please sign out and sign in again.');
         }
@@ -845,8 +851,8 @@ async loadAvailableUnits(supabase) {
             try {
                 const profile = this.userProfile || window.currentUserProfile || window.db?.currentUserProfile || {};
                 const institutionId = this.getInstitutionId();
-                const programCode = String(profile.program || this.programCode || '').trim().toUpperCase();
-                if (!institutionId || !programCode) throw new Error('Institution and programme are required to load your academic periods.');
+                const requestedProgramCode = String(profile.program || this.programCode || '').trim().toUpperCase();
+                if (!institutionId || !requestedProgramCode) throw new Error('Institution and programme are required to load your academic periods.');
                 if (!window.CampusAcademicStructure?.resolve) {
                     throw new Error('The institution academic-structure settings could not be loaded.');
                 }
@@ -854,8 +860,10 @@ async loadAvailableUnits(supabase) {
                 // Always refresh the tenant/programme configuration so students see
                 // exactly the active Blocks, Semesters or Terms configured by their institution.
                 const structure = await window.CampusAcademicStructure.resolve(
-                    supabase, institutionId, programCode, { refresh: true }
+                    supabase, institutionId, requestedProgramCode, { refresh: true }
                 );
+                this.academicStructure = structure;
+                this.catalogProgramCode = String(structure?.program?.program_code || requestedProgramCode).trim().toUpperCase();
                 const periods = Array.isArray(structure?.periods) ? structure.periods : [];
                 const periodType = structure?.type || 'Block';
                 const plural = structure?.plural || (periodType === 'Semester' ? 'Semesters' : periodType === 'Term' ? 'Terms' : 'Blocks');
