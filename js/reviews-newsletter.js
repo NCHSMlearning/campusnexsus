@@ -845,7 +845,8 @@ function renderReviews(reviews) {
 // LOAD SITE RATING
 // ============================================
 
-async function loadSiteRating() {
+async function loadSiteRating()
+        if (window.waitForStudentPortalContext) await window.waitForStudentPortalContext(); {
     try {
         const supabase = getSupabaseClient();
         if (!supabase || !await hasAuthenticatedReviewSession(supabase)) return;
@@ -893,7 +894,8 @@ async function loadSiteRating() {
 // UPDATE REVIEW STATS
 // ============================================
 
-async function updateReviewStats() {
+async function updateReviewStats()
+        if (window.waitForStudentPortalContext) await window.waitForStudentPortalContext(); {
     try {
         const supabase = getSupabaseClient();
         if (!supabase || !await hasAuthenticatedReviewSession(supabase)) return;
