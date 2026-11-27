@@ -256,6 +256,8 @@ jobs:
                   continue
               html = page.read_text(encoding="utf-8")
               if "campus-nexus-app-shell.js" in html:
+                  html = re.sub(r'<script src="/campus-nexus-app-shell\\.js\\?v=[^"]+" defer></script>', tag, html)
+                  page.write_text(html, encoding="utf-8")
                   continue
               if re.search(r"</head>", html, re.I):
                   html = re.sub(r"</head>", tag + "\n</head>", html, count=1, flags=re.I)
