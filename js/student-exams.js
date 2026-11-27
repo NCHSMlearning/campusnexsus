@@ -60,7 +60,7 @@ async function renderStudentProfile(){
    ['Account role',p.role,'fa-user-tag'],['Last login',lastLogin,'fa-clock']
   ]}
  ].map(group=>({...group,fields:group.fields.filter(([,v])=>v!==undefined&&v!==null&&String(v).trim()!=='')})).filter(g=>g.fields.length);
- const initials=fullName.trim().split(/\\s+/).filter(Boolean).slice(0,2).map(x=>x[0]).join('').toUpperCase();
+ const initials=fullName.trim().split(' ').filter(Boolean).slice(0,2).map(x=>x[0]).join('').toUpperCase();
  const avatar=$('profile-avatar');
  if(avatar){
   avatar.textContent=initials||'ST';
