@@ -58,7 +58,74 @@ function workspaceDraw(k){
  body.replaceChildren();if(!rows.length){assessmentEmpty(body,8,"No records found for this institution.");return;}
  rows.forEach(x=>{const tr=document.createElement("tr");[x.title,x.reference_code,x.category,x.assigned_to,x.start_date,x.due_date,x.status].forEach(v=>assessmentCell(tr,v));const td=document.createElement("td");const edit=document.createElement("button");edit.type="button";edit.className="ia-text-btn";edit.textContent="Edit";edit.dataset.workspaceEdit=k;edit.dataset.id=x.id;const del=document.createElement("button");del.type="button";del.className="ia-danger-btn";del.textContent="Delete";del.dataset.workspaceDelete=k;del.dataset.id=x.id;td.append(edit,del);tr.append(td);body.append(tr);});
 }
-async function workspaceLoad(k){const def=workspaceDefinitions[k];if(!def)return;try{const {data,error}=await api.db.from("institution_workspace_records").select("id,module_key,title,reference_code,status,category,assigned_to,start_date,due_date,details,created_at,updated_at").eq("institution_id",api.institutionId).eq("module_key",def.key).order("created_at",{ascending:false}).limit(1000);if(error)throw error;workspaceCache[k]=data||[];workspaceDraw(k);}catch(error){workspaceNotify("Unable to load "+def.label+": "+error.message,true);}}
+async function workspaceLoad(k){
+ const def=workspaceDefinitions[k];if(!def)return;
+ try{
+  if(k==="helpdesk"){
+   const result=await api.db.from("support_tickets").select("*").eq("institution_id",api.institutionId).order("created_at",{ascending:false}).limit(1000);
+   if(result.error)throw result.error;
+   const tickets=result.data||[],ids=[...new Set(tickets.map(t=>t.student_id).filter(Boolean))],names={};
+   if(ids.length){
+    const profiles=await api.db.from("consolidated_user_profiles_table").select("user_id,full_name,admission_number").eq("institution_id",api.institutionId).in("user_id",ids);
+    if(profiles.error)console.warn("[Helpdesk] Requester names unavailable:",profiles.error.message);
+    (profiles.data||[]).forEach(p=>names[p.user_id]=p.full_name||p.admission_number||"Student");
+   }
+   workspaceCache.helpdesk=tickets.map(t=>({...t,requester_name:names[t.student_id]||"Student"}));
+   workspaceDrawHelpdesk();return;
+  }
+  const {data,error}=await api.db.from("institution_workspace_records").select("id,module_key,title,reference_code,status,category,assigned_to,start_date,due_date,details,created_at,updated_at").eq("institution_id",api.institutionId).eq("module_key",def.key).order("created_at",{ascending:false}).limit(1000);
+  if(error)throw error;workspaceCache[k]=data||[];workspaceDraw(k);
+ }catch(error){workspaceNotify("Unable to load "+def.label+": "+error.message,true);}
+}
+function workspaceDrawHelpdesk(){
+ const body=$("ws-helpdesk-rows");if(!body)return;
+ const q=($("ws-helpdesk-search")?.value||"").trim().toLowerCase();
+ const statusFilter=$("ws-helpdesk-status")?.value||"all";
+ const tickets=(workspaceCache.helpdesk||[]).filter(t=>{
+  const hay=[t.ticket_number,t.subject,t.category,t.status,t.priority,t.requester_name,t.description].join(" ").toLowerCase();
+  return (!q||hay.includes(q))&&(statusFilter==="all"||String(t.status||"open").toLowerCase()===statusFilter);
+ });
+ const all=workspaceCache.helpdesk||[];
+ const active=all.filter(t=>!["resolved","closed"].includes(String(t.status||"open").toLowerCase())).length;
+ const done=all.filter(t=>["resolved","closed"].includes(String(t.status||"").toLowerCase())).length;
+ const attention=all.filter(t=>["urgent","high"].includes(String(t.priority||"").toLowerCase())&&!["resolved","closed"].includes(String(t.status||"").toLowerCase())).length;
+ [["ws-helpdesk-total",all.length],["ws-helpdesk-active",active],["ws-helpdesk-done",done],["ws-helpdesk-attention",attention]].forEach(([id,n])=>{if($(id))$(id).textContent=Number(n).toLocaleString("en-KE");});
+ body.replaceChildren();
+ if(!tickets.length){assessmentEmpty(body,8,q||statusFilter!=="all"?"No matching support tickets.":"No support tickets have been submitted to this institution yet.");return;}
+ tickets.forEach(t=>{
+  const tr=document.createElement("tr");
+  [t.ticket_number||"—",t.requester_name,t.subject||"—",t.category||"General",t.priority||"normal",t.created_at?new Date(t.created_at).toLocaleString("en-KE",{timeZone:"Africa/Nairobi"}):"—"].forEach(v=>assessmentCell(tr,v));
+  const statusCell=document.createElement("td"),select=document.createElement("select");
+  select.className="ia-ticket-status";select.dataset.ticketStatus=t.id;
+  [["open","Open"],["assigned","Assigned"],["in_progress","In progress"],["waiting","Waiting"],["resolved","Resolved"],["closed","Closed"]].forEach(([v,label])=>{const o=document.createElement("option");o.value=v;o.textContent=label;o.selected=String(t.status||"open").toLowerCase()===v;select.append(o);});
+  statusCell.append(select);tr.append(statusCell);
+  const actions=document.createElement("td"),view=document.createElement("button");view.type="button";view.className="ia-text-btn";view.textContent="View / reply";view.dataset.ticketView=t.id;actions.append(view);tr.append(actions);body.append(tr);
+ });
+}
+async function workspaceTicketDetail(ticketId){
+ const ticket=(workspaceCache.helpdesk||[]).find(t=>String(t.id)===String(ticketId));if(!ticket)return;
+ const dialog=$("iaTicketDetailDialog")||document.body.appendChild(document.createElement("dialog"));dialog.id="iaTicketDetailDialog";dialog.className="ia-module-dialog";
+ dialog.innerHTML='<form method="dialog" class="ia-module-form"><div class="ia-module-form-head"><div><small>SUPPORT REQUEST · '+workspaceEscape(ticket.ticket_number||"")+'</small><h2>'+workspaceEscape(ticket.subject||"Support ticket")+'</h2></div><button type="button" class="ia-module-close" data-ticket-close>×</button></div><div class="ia-ticket-meta"><p><b>Requester:</b> '+workspaceEscape(ticket.requester_name)+'</p><p><b>Category:</b> '+workspaceEscape(ticket.category||"General")+' · <b>Priority:</b> '+workspaceEscape(ticket.priority||"normal")+'</p><p><b>Submitted:</b> '+workspaceEscape(ticket.created_at?new Date(ticket.created_at).toLocaleString("en-KE",{timeZone:"Africa/Nairobi"}):"—")+'</p></div><div class="ia-ticket-description"><b>Description</b><p>'+workspaceEscape(ticket.description||"No description provided.")+'</p></div><div class="ia-ticket-conversation" id="iaTicketConversation">Loading conversation…</div><label class="ia-form-field"><span>Reply to requester</span><textarea id="iaTicketReply" rows="4" maxlength="5000" placeholder="Type a helpful response…"></textarea></label><div class="ia-module-form-actions"><button type="button" class="ia-secondary-btn" data-ticket-close>Close</button><button type="button" class="ia-primary-btn" id="iaTicketSendReply">Send reply</button></div></form>';
+ dialog.querySelectorAll("[data-ticket-close]").forEach(b=>b.addEventListener("click",()=>dialog.close()));
+ dialog.showModal();
+ try{
+  const r=await api.db.from("ticket_conversations").select("id,ticket_id,author_id,message,created_at").eq("ticket_id",ticket.id).order("created_at",{ascending:true}).limit(500);
+  if(r.error)throw r.error;
+  const box=$("iaTicketConversation");
+  box.innerHTML=(r.data||[]).length?(r.data||[]).map(m=>'<article class="ia-ticket-message"><small>'+workspaceEscape(String(m.author_id)===String(api.user?.id)?"Institution support":"Requester")+' · '+workspaceEscape(m.created_at?new Date(m.created_at).toLocaleString("en-KE",{timeZone:"Africa/Nairobi"}):"")+'</small><p>'+workspaceEscape(m.message)+'</p></article>').join(""):'<p class="ia-empty">No replies yet.</p>';
+ }catch(error){$("iaTicketConversation").textContent="Conversation could not be loaded: "+error.message;}
+ $("iaTicketSendReply").addEventListener("click",async()=>{
+  const btn=$("iaTicketSendReply"),input=$("iaTicketReply"),message=String(input.value||"").trim();if(!message){workspaceNotify("Enter a reply before sending.",true);return;}
+  btn.disabled=true;btn.textContent="Sending…";
+  try{
+   const result=await api.db.from("ticket_conversations").insert({ticket_id:ticket.id,author_id:api.user?.id,message});
+   if(result.error)throw result.error;
+   await api.db.from("support_tickets").update({updated_at:new Date().toISOString()}).eq("id",ticket.id).eq("institution_id",api.institutionId);
+   input.value="";workspaceNotify("Reply sent to ticket "+(ticket.ticket_number||"")+".");dialog.close();await workspaceLoad("helpdesk");
+  }catch(error){workspaceNotify("Reply could not be sent: "+error.message,true);}
+  finally{btn.disabled=false;btn.textContent="Send reply";}
+ });
+}
 function workspaceForm(k,row){
  const def=workspaceDefinitions[k];let dialog=$("iaWorkspaceDialog");if(!dialog){dialog=document.createElement("dialog");dialog.id="iaWorkspaceDialog";dialog.className="ia-module-dialog";document.body.append(dialog);}
  const fields=def.fields.map(([key,label,type,options])=>{const value=key==="details"?(row?.details||""):row?.[key]??"";let input;if(type==="select")input='<select name="'+key+'">'+options.map(o=>'<option value="'+workspaceEscape(o)+'" '+(value===o?"selected":"")+'>'+workspaceEscape(o.replace(/_/g," "))+'</option>').join("")+'</select>';else if(type==="textarea")input='<textarea name="'+key+'" rows="3">'+workspaceEscape(value)+'</textarea>';else input='<input type="'+type+'" name="'+key+'" value="'+workspaceEscape(value)+'">';return '<label class="ia-form-field"><span>'+workspaceEscape(label)+'</span>'+input+'</label>';}).join("");
@@ -71,8 +138,9 @@ function workspaceForm(k,row){
  });
 }
 function setupExtendedWorkspaces(){
- Object.keys(workspaceDefinitions).forEach(k=>{const view=({"transcripts_certificates":"transcripts-certificates","quality_assurance":"quality-assurance","hostel_management":"hostel-management","transport_management":"transport-management","career_services":"career-services","asset_management":"asset-management","document_management":"document-management","admin_exams":"admin-exams"})[k]||k.replace(/_/g,"-");$(workspaceId(k,"search"))?.addEventListener("input",()=>workspaceDraw(k));document.querySelectorAll('[data-view="'+view+'"]').forEach(b=>b.addEventListener("click",()=>setTimeout(()=>workspaceLoad(k),100)));});
- document.addEventListener("click",async e=>{const create=e.target.closest("[data-workspace-create]");if(create){workspaceForm(create.dataset.workspaceCreate);return;}const edit=e.target.closest("[data-workspace-edit]");if(edit){const row=(workspaceCache[edit.dataset.workspaceEdit]||[]).find(x=>String(x.id)===edit.dataset.id);if(row)workspaceForm(edit.dataset.workspaceEdit,row);return;}const del=e.target.closest("[data-workspace-delete]");if(del){if(!confirm("Delete this institution record? This cannot be undone."))return;const def=workspaceDefinitions[del.dataset.workspaceDelete];const {error}=await api.db.from("institution_workspace_records").delete().eq("id",del.dataset.id).eq("institution_id",api.institutionId).eq("module_key",def.key);if(error)workspaceNotify("Delete failed: "+error.message,true);else{workspaceNotify("Record deleted.");await workspaceLoad(del.dataset.workspaceDelete);}return;}const refresh=e.target.closest("[data-workspace-refresh]");if(refresh){const k=Object.keys(workspaceDefinitions).find(key=>workspaceId(key,"rows")==="ws-"+refresh.dataset.workspaceRefresh+"-rows");if(k)await workspaceLoad(k);}});
+ Object.keys(workspaceDefinitions).forEach(k=>{const view=({"transcripts_certificates":"transcripts-certificates","quality_assurance":"quality-assurance","hostel_management":"hostel-management","transport_management":"transport-management","career_services":"career-services","asset_management":"asset-management","document_management":"document-management","admin_exams":"admin-exams"})[k]||k.replace(/_/g,"-");$(workspaceId(k,"search"))?.addEventListener("input",()=>k==="helpdesk"?workspaceDrawHelpdesk():workspaceDraw(k));document.querySelectorAll('[data-view="'+view+'"]').forEach(b=>b.addEventListener("click",()=>setTimeout(()=>workspaceLoad(k),100)));});
+ $("ws-helpdesk-status")?.addEventListener("change",workspaceDrawHelpdesk);
+ document.addEventListener("click",async e=>{const ticketView=e.target.closest("[data-ticket-view]");if(ticketView){workspaceTicketDetail(ticketView.dataset.ticketView);return;}const ticketStatus=e.target.closest("[data-ticket-status]");if(ticketStatus){const ticketId=ticketStatus.dataset.ticketStatus,newStatus=ticketStatus.value;ticketStatus.disabled=true;try{const result=await api.db.from("support_tickets").update({status:newStatus,updated_at:new Date().toISOString()}).eq("id",ticketId).eq("institution_id",api.institutionId);if(result.error)throw result.error;workspaceNotify("Ticket status updated.");await workspaceLoad("helpdesk");}catch(error){workspaceNotify("Ticket status could not be updated: "+error.message,true);await workspaceLoad("helpdesk");}return;}const create=e.target.closest("[data-workspace-create]");if(create){workspaceForm(create.dataset.workspaceCreate);return;}const edit=e.target.closest("[data-workspace-edit]");if(edit){const row=(workspaceCache[edit.dataset.workspaceEdit]||[]).find(x=>String(x.id)===edit.dataset.id);if(row)workspaceForm(edit.dataset.workspaceEdit,row);return;}const del=e.target.closest("[data-workspace-delete]");if(del){if(!confirm("Delete this institution record? This cannot be undone."))return;const def=workspaceDefinitions[del.dataset.workspaceDelete];const {error}=await api.db.from("institution_workspace_records").delete().eq("id",del.dataset.id).eq("institution_id",api.institutionId).eq("module_key",def.key);if(error)workspaceNotify("Delete failed: "+error.message,true);else{workspaceNotify("Record deleted.");await workspaceLoad(del.dataset.workspaceDelete);}return;}const refresh=e.target.closest("[data-workspace-refresh]");if(refresh){const k=Object.keys(workspaceDefinitions).find(key=>workspaceId(key,"rows")==="ws-"+refresh.dataset.workspaceRefresh+"-rows");if(k)await workspaceLoad(k);}});
 }
 
 const assessmentState={rows:[],control:null};
