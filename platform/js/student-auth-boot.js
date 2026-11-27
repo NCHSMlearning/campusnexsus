@@ -1,4 +1,9 @@
 window.app = { config: null, supabase: null, db: null, user: null, isInitialized: false };
+window.__studentPortalContextReady = window.__studentPortalContextReady || new Promise(resolve => { window.__resolveStudentPortalContext = resolve; });
+window.waitForStudentPortalContext = async function () {
+    if (window.currentUserProfile?.institution_id && window.CURRENT_INSTITUTION_ID) return window.currentUserProfile;
+    return await window.__studentPortalContextReady;
+};
 
 // Refresh-safe authentication: wait for Supabase's persisted session to restore.
 // On mobile/slow networks, token storage and refresh can take longer than a normal page load.
@@ -314,6 +319,11 @@ async function initializeApp() {
             document.documentElement.dataset.institutionId = studentInstitutionId;
             if (schoolCode) document.documentElement.dataset.institutionCode = schoolCode;
             console.info('[Student Portal] Authenticated institution resolved:', institution.name, schoolCode);
+            if (typeof window.__resolveStudentPortalContext === 'function') {
+                window.__resolveStudentPortalContext(authenticatedStudentProfile);
+                window.__resolveStudentPortalContext = null;
+            }
+            document.dispatchEvent(new CustomEvent('studentInstitutionReady', { detail: { userProfile: authenticatedStudentProfile, institution } }));
         } catch (institutionError) {
             console.error('[Student Portal] Could not resolve authenticated institution:', institutionError);
             showStudentPortalBootError(
