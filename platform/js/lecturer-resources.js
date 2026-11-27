@@ -735,6 +735,14 @@ return;
 }
 
 const userId = this.lecturerAssignmentId || this.resolvedLecturerId;
+const institutionId = String(this.lecturerProfile?.institution_id || window.CURRENT_INSTITUTION_ID || window.currentInstitutionId || '').trim();
+if (!institutionId) {
+    console.warn('⚠️ Skipping resources query: lecturer institution context is unavailable.');
+    this.resources = [];
+    this.updateCounts();
+    this.renderTable();
+    return;
+}
 
 // uploaded_by is a UUID column. Never send an invalid placeholder/string.
 if (!userId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(userId).trim())) {
@@ -749,6 +757,7 @@ if (!userId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-
 let query = supabase
     .from('resources')
     .select('*')
+    .eq('institution_id', institutionId)
     .eq('uploaded_by', userId)
     .order('created_at', { ascending: false });
 
@@ -1654,7 +1663,11 @@ async saveEdit() {
         const newFile = document.getElementById('edit_lecturer_resource_file')?.files?.[0];
         const newPodcast = document.getElementById('edit_lecturer_podcast_file')?.files?.[0];
 
+        const institutionId = String(this.lecturerProfile?.institution_id || window.CURRENT_INSTITUTION_ID || window.currentInstitutionId || '').trim();
+        if (!institutionId) throw new Error('Your institution could not be identified. Please sign in again before editing resources.');
+
         const updates = {
+            institution_id: institutionId,
             target_program: this.normalizeProgram(program) || 'KRCHN',
             program_type: this.normalizeProgram(program) || 'KRCHN',
             intake,
