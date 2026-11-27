@@ -48,12 +48,6 @@
         
         // ✅ Get year mapping for program
         getYearMapping: function(programCode, blockName) {
-            const code = String(programCode).toUpperCase().trim();
-            
-            // KRCHN annual structure:
-            // Year 1: Introductory + Block 1
-            // Year 2: Block 2 + Block 3
-            // Year 3: Block 4 + Block 5 + FQE (legacy "Final" is treated as FQE).
             const normalizedBlock = String(blockName || '').trim().toLowerCase();
             const nursingMapping = {
                 'introductory': { year: 0, label: 'Year 1' },
@@ -65,28 +59,22 @@
                 'fqe': { year: 2, label: 'Year 3' },
                 'final': { year: 2, label: 'Year 3' }
             };
-            return nursingMapping[normalizedBlock] || { year: 0, label: 'Year 1' };
-            
-            // TVET: Extract year from block name
-            const yearMatch = blockName.match(/Year\s+(\d+)/i);
+            if (nursingMapping[normalizedBlock]) return nursingMapping[normalizedBlock];
+            const yearMatch = String(blockName || '').match(/Year\\s+(\\d+)/i);
             if (yearMatch) {
-                const yearNum = parseInt(yearMatch[1]);
+                const yearNum = parseInt(yearMatch[1], 10);
+                return { year: Math.max(0, yearNum - 1), label: `Year ${yearNum}` };
+            }
+            const numMatch = String(blockName || '').match(/(?:block|term|semester)\\s*(\\d+)/i);
+            if (numMatch && this.isTVET(programCode)) {
+                const num = parseInt(numMatch[1], 10);
+                const yearNum = Math.max(1, Math.ceil(num / 3));
                 return { year: yearNum - 1, label: `Year ${yearNum}` };
             }
-            
-            // Default fallback
-            const numMatch = blockName.match(/\d+/);
-            if (numMatch) {
-                const num = parseInt(numMatch[0]);
-                if (num <= 1) return { year: 0, label: 'Year 1' };
-                if (num <= 3) return { year: 1, label: 'Year 2' };
-                return { year: 2, label: 'Year 3' };
-            }
-            
             return { year: 0, label: 'Year 1' };
         },
-        
-        // ✅ Get academic year range
+
+                // ✅ Get academic year range
         getAcademicYear: function(programCode, blockName, intakeYear) {
             const mapping = this.getYearMapping(programCode, blockName);
             const startYear = intakeYear + mapping.year;
@@ -114,6 +102,63 @@
             return allPassed;
         }
     };
+
+    // Resolve the institution's programme-specific academic calendar once,
+    // then reuse it for marks filters, semester reports and transcripts.
+    async function ensureAcademicStructure(profile) {
+        const user = profile || window.currentUserProfile || window.db?.currentUserProfile || {};
+        const program = user.program || user.program_code || user.program_type || '';
+        const institutionId = user.institution_id || window.CURRENT_INSTITUTION_ID || window.currentInstitutionId;
+        const client = window.db?.supabase || window.supabaseClient || window.sb || window.supabase;
+        if (!window.CampusAcademicStructure || !client || !institutionId || !program) return window.currentAcademicStructure || null;
+        const current = window.currentAcademicStructure;
+        if (current?.institutionId === String(institutionId) &&
+            String(current?.programCode || '').toLowerCase() === String(program).toLowerCase()) return current;
+        try {
+            const structure = await window.CampusAcademicStructure.resolve(client, institutionId, program, { refresh: true });
+            window.currentAcademicStructure = structure;
+            return structure;
+        } catch (error) {
+            console.warn('[Academic Reports] Institution academic structure could not be loaded:', error);
+            return current || null;
+        }
+    }
+
+    function getAcademicPeriod(mark) {
+        const type = window.currentAcademicStructure?.type || 'Block';
+        const values = type === 'Semester'
+            ? [mark?.semester, mark?.academic_period, mark?.block, mark?.block_term, mark?.term]
+            : type === 'Term'
+                ? [mark?.term, mark?.academic_period, mark?.block, mark?.block_term, mark?.semester]
+                : [mark?.block, mark?.academic_period, mark?.block_term, mark?.semester, mark?.term];
+        return String(values.find(value => value !== null && value !== undefined && String(value).trim()) || 'General').trim();
+    }
+
+    function getPeriodSequence(periodName) {
+        const periods = window.currentAcademicStructure?.periods || [];
+        const found = periods.findIndex(period => String(period.name).toLowerCase() === String(periodName || '').toLowerCase());
+        return found >= 0 ? found : Number.MAX_SAFE_INTEGER;
+    }
+
+    function populateAcademicYearFilter(marks) {
+        const filter = document.getElementById('year-filter');
+        if (!filter) return;
+        const years = [...new Set((marks || []).map(mark => String(mark.academic_year || mark.year || '').trim()).filter(Boolean))].sort();
+        const selected = filter.value;
+        filter.replaceChildren();
+        const all = document.createElement('option');
+        all.value = '';
+        all.textContent = 'All Academic Years';
+        filter.appendChild(all);
+        years.forEach(year => {
+            const option = document.createElement('option');
+            option.value = year;
+            option.textContent = year;
+            filter.appendChild(option);
+        });
+        if (selected && years.includes(selected)) filter.value = selected;
+        else if (years.length) filter.value = years[years.length - 1];
+    }
 
     // ============================================================
     // 2. UNIT CODE - FETCH FROM DATABASE
@@ -545,7 +590,10 @@
             cat2: assessments.cat2,
             final_exam: assessments.finalExam,
             total: score,
-            block: mark.block || mark.block_term || mark.term || 'General',
+            block: getAcademicPeriod(mark),
+            semester: mark.semester || '',
+            term: mark.term || '',
+            academic_period: mark.academic_period || '',
             academic_year: mark.academic_year || mark.year || ''
         };
     }
