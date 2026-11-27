@@ -59,38 +59,57 @@ jobs:
       - name: Create Android project
         run: npx cap add android
 
-      - name: Configure Android system bar insets for all app screens
+      - name: Apply explicit Android edge-to-edge system bar insets
         run: |
           set -euo pipefail
           python3 - <<'PY'
           from pathlib import Path
-          import re
-          matches = list(Path('android/app/src/main/java').rglob('MainActivity.java'))
+          matches = list(Path("android/app/src/main/java").rglob("MainActivity.java"))
           if len(matches) != 1:
-              raise SystemExit(f'Expected one MainActivity.java, found {len(matches)}')
+              raise SystemExit(f"Expected one MainActivity.java, found {len(matches)}")
           path = matches[0]
           source = path.read_text()
-          if 'WindowCompat.setDecorFitsSystemWindows' not in source:
-              source = source.replace('import com.getcapacitor.BridgeActivity;', 'import com.getcapacitor.BridgeActivity;\nimport android.graphics.Color;\nimport android.os.Bundle;\nimport androidx.core.view.WindowCompat;\nimport androidx.core.view.WindowInsetsControllerCompat;')
-              source = source.rstrip()
-              if not source.endswith('}'):
-                  raise SystemExit('Unexpected MainActivity.java structure')
-              source = source[:-1] + '''
+          imports = """import com.getcapacitor.BridgeActivity;
+          import android.graphics.Color;
+          import android.os.Bundle;
+          import android.view.View;
+          import androidx.core.graphics.Insets;
+          import androidx.core.view.ViewCompat;
+          import androidx.core.view.WindowCompat;
+          import androidx.core.view.WindowInsetsCompat;
+          import androidx.core.view.WindowInsetsControllerCompat;"""
+          source = source.replace("import com.getcapacitor.BridgeActivity;", imports)
+          source = source[:source.rfind("}")]
+          source += """
               @Override
               public void onCreate(Bundle savedInstanceState) {
-                  WindowCompat.setDecorFitsSystemWindows(getWindow(), true);
+                  WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
                   getWindow().setStatusBarColor(Color.parseColor("#071F3B"));
                   getWindow().setNavigationBarColor(Color.parseColor("#071F3B"));
                   super.onCreate(savedInstanceState);
-                  WindowInsetsControllerCompat insets = WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
-                  insets.setAppearanceLightStatusBars(false);
-                  insets.setAppearanceLightNavigationBars(false);
+                  getWindow().getDecorView().setBackgroundColor(Color.parseColor("#071F3B"));
+                  View content = findViewById(android.R.id.content);
+                  ViewCompat.setOnApplyWindowInsetsListener(content, (view, windowInsets) -> {
+                      Insets bars = windowInsets.getInsets(
+                          WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout()
+                      );
+                      view.setPadding(bars.left, bars.top, bars.right, bars.bottom);
+                      return WindowInsetsCompat.CONSUMED;
+                  });
+                  ViewCompat.requestApplyInsets(content);
+                  WindowInsetsControllerCompat controller =
+                      WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
+                  controller.setAppearanceLightStatusBars(false);
+                  controller.setAppearanceLightNavigationBars(false);
               }
-              }
-              '''
-              path.write_text(source)
-          assert 'WindowCompat.setDecorFitsSystemWindows' in path.read_text()
-          print(f'Configured status/navigation bar insets in {path}')
+          }
+          """
+          path.write_text(source)
+          check = path.read_text()
+          for required in ("WindowInsetsCompat.Type.systemBars()", "view.setPadding(bars.left, bars.top, bars.right, bars.bottom)", "WindowInsetsCompat.CONSUMED"):
+              if required not in check:
+                  raise SystemExit(f"Missing required Android inset handling: {required}")
+          print(f"Applied explicit system-bar padding to {path}")
           PY
       - name: Generate official Campus Nexus Android icons
         run: |
@@ -117,7 +136,7 @@ jobs:
           marker = "    defaultConfig {"
           if marker not in gradle:
               raise SystemExit("Android defaultConfig block not found")
-          gradle = gradle.replace(marker, marker + '\n        versionCode 7\n        versionName "1.2.5"', 1)
+          gradle = gradle.replace(marker, marker + '\n        versionCode 8\n        versionName "1.2.6"', 1)
           path.write_text(gradle)
           PY
           grep -q 'versionCode 7' android/app/build.gradle
