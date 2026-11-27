@@ -232,7 +232,7 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           import re
-          tag = '<script src="/campus-nexus-app-shell.js?v=1.2.8" defer></script>'
+          tag = '<script src="/campus-nexus-app-shell.js?v=1.2.9" defer></script>'
           changed = 0
           for page in Path(".").rglob("*.html"):
               if ".git" in page.parts or "node_modules" in page.parts:
