@@ -4,6 +4,16 @@
   "trailingSlash": true,
   "redirects": [
     {
+      "source": "/app-download",
+      "destination": "/app",
+      "permanent": true
+    },
+    {
+      "source": "/app-download/",
+      "destination": "/app",
+      "permanent": true
+    },
+    {
       "source": "/examlogin",
       "destination": "/examlogin.html",
       "permanent": true
@@ -80,6 +90,10 @@
     }
   ],
   "rewrites": [
+    {
+      "source": "/app",
+      "destination": "/app-download.html"
+    },
     {
       "source": "/adminexams",
       "destination": "/platform/examinations/source/adminexams/"
