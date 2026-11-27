@@ -11,7 +11,7 @@
 <script src="/platform/js/institution-admin.js?v=20261125-universal-brand-v2" defer></script><script src="/platform/js/academic-structure.js?v=20261123-tenant-structure-v1" defer></script>
 
 <script src="/platform/js/institution-admin-programs.js?v=20261124-add-unit-to-program-v1" defer></script>
-<script src="/platform/js/institution-admin-curriculum.js?v=20261127-grouped-registration-v3" defer></script>
+<script src="/platform/js/institution-admin-curriculum.js?v=20261127-registration-filters-v4" defer></script>
 <script src="/platform/js/institution-admin-modules.js?v=20261124-parity-v3" defer></script>
 <script src="/platform/js/institution-admin-results.js?v=20261124-superadmin-parity-v2" defer></script>
 <script src="/platform/js/institution-admin-analytics.js?v=20261124-superadmin-parity-v2" defer></script>
@@ -154,6 +154,18 @@
  #view-unit-registration .ia-reg-unit-main{flex-basis:calc(100% - 75px)}
  #view-unit-registration .ia-reg-unit-row .ia-reg-actions{flex-basis:100%}
 }
+</style>
+
+<style id="ia-unit-registration-filter-styles">
+#view-unit-registration .ia-reg-filter-grid{display:grid;grid-template-columns:repeat(5,minmax(130px,1fr)) auto;gap:12px;align-items:end;padding:0 22px 18px}
+#view-unit-registration .ia-reg-filter-grid label{display:flex;flex-direction:column;gap:6px;min-width:0}
+#view-unit-registration .ia-reg-filter-grid label span{font-size:10px;font-weight:800;letter-spacing:.04em;color:#64748b}
+#view-unit-registration .ia-reg-filter-grid select{width:100%;min-width:0;height:42px;padding:8px 10px;border:1px solid #d8e2ef;border-radius:10px;background:#fff;color:#243b53;font:12px Inter,system-ui;outline:none}
+#view-unit-registration .ia-reg-filter-grid select:focus,#view-unit-registration .ia-reg-search-panel input:focus{border-color:#3683bb;box-shadow:0 0 0 3px rgba(54,131,187,.12)}
+#view-unit-registration #iaRegFiltersReset{height:42px;white-space:nowrap}
+@media(max-width:1100px){#view-unit-registration .ia-reg-filter-grid{grid-template-columns:repeat(3,minmax(130px,1fr))}}
+@media(max-width:650px){#view-unit-registration .ia-reg-filter-grid{grid-template-columns:repeat(2,minmax(0,1fr));padding:0 15px 15px;gap:10px}#view-unit-registration .ia-reg-filter-grid label select{font-size:11px}#view-unit-registration #iaRegFiltersReset{grid-column:1/-1;width:100%}}
+@media(max-width:390px){#view-unit-registration .ia-reg-filter-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -980,7 +992,7 @@
 <section class="ia-view" id="view-unit-registration">
  <div class="ia-page-heading"><div><span class="ia-eyebrow">CURRICULUM · INSTITUTION WORKSPACE</span><h1>Unit Registration</h1><p>Review registrations grouped by student and academic period. Open a student to review units individually or approve the full group.</p></div><button class="ia-secondary-btn" id="iaUnitRegistrationRefresh"><i class="fa-solid fa-rotate"></i> Refresh</button></div>
  <div class="ia-stat-grid ia-report-grid"><article class="ia-stat-card"><small>Total unit registrations</small><strong id="iaRegTotal">—</strong></article><article class="ia-stat-card"><small>Pending units</small><strong id="iaRegPending">—</strong></article><article class="ia-stat-card"><small>Approved units</small><strong id="iaRegApproved">—</strong></article><article class="ia-stat-card"><small>Rejected units</small><strong id="iaRegRejected">—</strong></article></div>
- <div class="ia-panel ia-reg-search-panel"><div class="ia-panel-head"><div><h2>Find a student</h2><p>Search by name, admission number, email, unit or programme across all three lists.</p></div><input id="iaUnitRegistrationSearch" type="search" placeholder="Search student, admission, unit…"></div></div>
+ <div class="ia-panel ia-reg-search-panel"><div class="ia-panel-head"><div><h2>Find and filter registrations</h2><p>Filters apply to pending, approved and rejected lists together. Combine filters to narrow the results.</p></div><input id="iaUnitRegistrationSearch" type="search" placeholder="Search student, admission, email or unit…"></div><div class="ia-reg-filter-grid"><label><span>Programme</span><select id="iaRegFilterProgramme"><option value="">All programmes</option></select></label><label><span>Academic year</span><select id="iaRegFilterAcademicYear"><option value="">All academic years</option></select></label><label><span>Intake</span><select id="iaRegFilterIntake"><option value="">All intakes</option></select></label><label><span>Block</span><select id="iaRegFilterBlock"><option value="">All blocks</option></select></label><label><span>Semester / term</span><select id="iaRegFilterTerm"><option value="">All semesters / terms</option></select></label><button type="button" class="ia-secondary-btn" id="iaRegFiltersReset"><i class="fa-solid fa-rotate-left"></i> Clear filters</button></div></div>
  <div class="ia-reg-section ia-panel ia-table-panel"><div class="ia-reg-section-head"><div><span class="ia-reg-section-kicker">REQUIRES REVIEW</span><h2>Pending registrations</h2><p>Each student is grouped by programme and academic period. Expand a row to approve units individually or all together.</p></div><span class="ia-reg-section-count" id="iaRegPendingGroups">Pending</span></div><div class="ia-table-scroll"><table class="ia-reg-group-table"><thead><tr><th>Student</th><th>Programme</th><th>Academic period</th><th>Units</th><th>Last submitted</th><th>Actions</th></tr></thead><tbody id="iaUnitRegistrationPendingRows"><tr><td colspan="6" class="ia-empty">Loading pending registrations…</td></tr></tbody></table></div></div>
  <div class="ia-reg-section ia-panel ia-table-panel"><div class="ia-reg-section-head"><div><span class="ia-reg-section-kicker">COMPLETED REVIEW</span><h2>Approved registrations</h2><p>View each student's approved units grouped by semester, block and academic year.</p></div><span class="ia-reg-section-count" id="iaRegApprovedGroups">Approved</span></div><div class="ia-table-scroll"><table class="ia-reg-group-table"><thead><tr><th>Student</th><th>Programme</th><th>Academic period</th><th>Units approved</th><th>Last submitted</th><th>Details</th></tr></thead><tbody id="iaUnitRegistrationApprovedRows"><tr><td colspan="6" class="ia-empty">Loading approved registrations…</td></tr></tbody></table></div></div>
  <div class="ia-reg-section ia-panel ia-table-panel"><div class="ia-reg-section-head"><div><span class="ia-reg-section-kicker">NOT APPROVED</span><h2>Rejected registrations</h2><p>Review rejected unit requests and their recorded reasons where available.</p></div><span class="ia-reg-section-count" id="iaRegRejectedGroups">Rejected</span></div><div class="ia-table-scroll"><table class="ia-reg-group-table"><thead><tr><th>Student</th><th>Programme</th><th>Academic period</th><th>Units rejected</th><th>Last submitted</th><th>Details</th></tr></thead><tbody id="iaUnitRegistrationRejectedRows"><tr><td colspan="6" class="ia-empty">Loading rejected registrations…</td></tr></tbody></table></div></div>
