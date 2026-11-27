@@ -106,3 +106,31 @@ $$;
 REVOKE ALL ON FUNCTION public.set_my_unit_registration_control(boolean,text) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.set_my_unit_registration_control(boolean,text,timestamptz,timestamptz) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.set_my_unit_registration_control(boolean,text,timestamptz,timestamptz) TO authenticated;
+
+-- Preserve compatibility with older administrator pages: toggling access must not erase saved dates.
+CREATE OR REPLACE FUNCTION public.set_my_unit_registration_control(
+  p_is_open boolean,
+  p_closed_message text DEFAULT 'Unit registration is currently closed. Please contact your institution administrator.'
+)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = pg_catalog, public, private, auth
+AS $$
+DECLARE v_institution_id uuid; v_opens_at timestamptz; v_closes_at timestamptz;
+BEGIN
+  IF auth.uid() IS NULL THEN RAISE EXCEPTION 'Authentication required'; END IF;
+  SELECT p.institution_id INTO v_institution_id FROM public.consolidated_user_profiles_table p WHERE p.user_id=auth.uid() LIMIT 1;
+  IF v_institution_id IS NULL THEN
+    SELECT iu.institution_id INTO v_institution_id FROM public.institution_users iu
+    WHERE iu.user_id=auth.uid() AND lower(trim(iu.status))='active' AND lower(trim(iu.role))='institution_admin'
+    ORDER BY iu.created_at DESC NULLS LAST LIMIT 1;
+  END IF;
+  IF v_institution_id IS NULL OR NOT private.has_active_institution_admin_access(v_institution_id) THEN
+    RAISE EXCEPTION 'Only an active institution administrator can change unit registration access';
+  END IF;
+  SELECT opens_at,closes_at INTO v_opens_at,v_closes_at
+  FROM public.institution_unit_registration_controls WHERE institution_id=v_institution_id;
+  RETURN public.set_my_unit_registration_control(p_is_open,p_closed_message,v_opens_at,v_closes_at);
+END;
+$$;
+REVOKE ALL ON FUNCTION public.set_my_unit_registration_control(boolean,text) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.set_my_unit_registration_control(boolean,text) TO authenticated;
