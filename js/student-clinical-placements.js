@@ -299,8 +299,8 @@
       notify('Could not save preferences: ' + (error?.message || 'database rejected the submission') + '. Please contact ICT if this persists.', 'error');
     } finally { state.busy = false; render(); }
   }
-  async function load()
-        if (window.waitForStudentPortalContext) await window.waitForStudentPortalContext(); {
+  async function load() {
+        if (window.waitForStudentPortalContext) await window.waitForStudentPortalContext();
     const sb = client(), id = userId();
     if (!sb || !id) return renderError('Your authenticated student session is not ready. Please reopen this tab after the portal finishes loading.');
     try {
