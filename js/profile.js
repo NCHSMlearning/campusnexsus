@@ -422,6 +422,23 @@ class ProfileModule {
             window.currentUserProfile = this.userProfile;
             if (window.db) window.db.currentUserProfile = this.userProfile;
 
+            // Resolve the period terminology from this student's own
+            // institution + programme configuration (Block, Semester or Term).
+            this.academicStructure = null;
+            const academicClient = supabase;
+            if (window.CampusAcademicStructure && this.userProfile.institution_id && this.userProfile.program) {
+                try {
+                    this.academicStructure = await window.CampusAcademicStructure.resolve(
+                        academicClient,
+                        this.userProfile.institution_id,
+                        this.userProfile.program
+                    );
+                    window.currentAcademicStructure = this.academicStructure;
+                } catch (structureError) {
+                    console.warn('[Student Profile] Institution academic structure lookup failed; using legacy labels:', structureError.message);
+                }
+            }
+
             this.clearStatus();
             this.populateProfileForm();
             await this.loadProfilePhoto();
@@ -615,17 +632,40 @@ class ProfileModule {
     // 🏷️ UPDATE DYNAMIC LABELS (TVET vs Nursing)
     // ============================================================
     
+    getAcademicPeriodType() {
+        const configured = this.academicStructure?.type || window.currentAcademicStructure?.type;
+        if (configured === 'Semester' || configured === 'Term' || configured === 'Block') return configured;
+        return this.isTVETStudent() ? 'Term' : 'Block';
+    }
+
+    getAcademicPeriodNames() {
+        const configured = this.academicStructure?.periods || window.currentAcademicStructure?.periods;
+        if (Array.isArray(configured) && configured.length) return configured.map(period => String(period.name || '').trim()).filter(Boolean);
+        const type = this.getAcademicPeriodType();
+        return type === 'Semester'
+            ? ['Semester 1', 'Semester 2', 'Semester 3', 'Semester 4', 'Semester 5', 'Semester 6']
+            : type === 'Term'
+                ? ['Introductory', 'Term 1', 'Term 2', 'Term 3', 'Term 4', 'Term 5', 'Final']
+                : ['Introductory', 'Block 1', 'Block 2', 'Block 3', 'Block 4', 'Block 5', 'Final'];
+    }
+
+    getCurrentAcademicPeriod() {
+        const profile = this.userProfile || {};
+        return String(profile.current_block || profile.block || profile.term || '').trim();
+    }
+
     updateDynamicLabels() {
-        const isTVET = this.isTVETStudent();
+        const periodType = this.getAcademicPeriodType();
+        const plural = periodType === 'Semester' ? 'Semesters' : periodType === 'Term' ? 'Terms' : 'Blocks';
         
         // ============================================
         // 📊 DESKTOP LABELS
         // ============================================
         const desktopLabels = {
-            'block-label': isTVET ? 'Term' : 'Block',
-            'current-block-label': isTVET ? 'Current Term' : 'Current Block',
-            'completed-label': isTVET ? 'Terms Done' : 'Blocks Done',
-            'completed-label-2': isTVET ? 'Terms' : 'Blocks'
+            'block-label': periodType,
+            'current-block-label': 'Current ' + periodType,
+            'completed-label': plural + ' Done',
+            'completed-label-2': plural
         };
         
         Object.entries(desktopLabels).forEach(([id, text]) => {
@@ -638,7 +678,7 @@ class ProfileModule {
         // Update "Current Block" status text
         const currentStatusEl = document.getElementById('current-block-status');
         if (currentStatusEl) {
-            const currentBlock = this.userProfile?.block || this.userProfile?.current_block || (isTVET ? 'Term 1' : 'Introductory');
+            const currentBlock = this.getCurrentAcademicPeriod() || this.getAcademicPeriodNames()[0] || 'Not assigned';
             currentStatusEl.textContent = `Current: ${currentBlock}`;
         }
         
@@ -667,7 +707,7 @@ class ProfileModule {
         // Update mobile "Current Block" status text
         const currentStatusMobileEl = document.getElementById('current-block-status-mobile');
         if (currentStatusMobileEl) {
-            const currentBlock = this.userProfile?.block || this.userProfile?.current_block || (isTVET ? 'Term 1' : 'Introductory');
+            const currentBlock = this.getCurrentAcademicPeriod() || this.getAcademicPeriodNames()[0] || 'Not assigned';
             currentStatusMobileEl.textContent = `Current: ${currentBlock}`;
         }
         
@@ -678,7 +718,7 @@ class ProfileModule {
             progressTextMobileEl.textContent = `${progress}% Complete`;
         }
         
-        console.log(`🏷️ Labels updated: ${isTVET ? 'TVET (Terms)' : 'Nursing (Blocks)'}`);
+        console.log(`🏷️ Labels updated from institution configuration: ${periodType}`);
     }
     
     // ============================================================
@@ -1056,75 +1096,43 @@ class ProfileModule {
     // ============================================================
     
     getCurrentBlockNumber() {
-        const isTVET = this.isTVETStudent();
-        const currentBlock = this.userProfile?.block || this.userProfile?.current_block || (isTVET ? 'Term 1' : 'Introductory');
-        const blockOrder = isTVET ? {
-            'Introductory': 1, 'Term 1': 1, 'Term 2': 2, 'Term 3': 3,
-            'Term 4': 4, 'Term 5': 5, 'Term 6': 6, 'Final': 7
-        } : {
-            'Introductory': 1, 'Block 1': 2, 'Block 2': 3, 'Block 3': 4,
-            'Block 4': 5, 'Block 5': 6, 'Final': 7
-        };
-        return blockOrder[currentBlock] || 1;
+        const periods = this.getAcademicPeriodNames();
+        const current = this.getCurrentAcademicPeriod();
+        const index = periods.findIndex(name => name.toLowerCase() === current.toLowerCase());
+        return index >= 0 ? index + 1 : (current ? 1 : 0);
     }
     
     getCompletedBlocksCount() {
-        return this.getCurrentBlockNumber() - 1;
+        return Math.max(0, this.getCurrentBlockNumber() - 1);
     }
     
     getProgressPercent() {
-        return Math.round((this.getCompletedBlocksCount() / 7) * 100);
+        const total = this.getAcademicPeriodNames().length;
+        return total ? Math.round((this.getCompletedBlocksCount() / total) * 100) : 0;
     }
     
     updateBlockProgress() {
         if (!this.userProfile) return;
         
-        const isTVET = this.isTVETStudent();
-        const currentBlock = this.userProfile.block || this.userProfile.current_block || (isTVET ? 'Term 1' : 'Introductory');
+        const periods = this.getAcademicPeriodNames();
+        const periodType = this.getAcademicPeriodType();
+        const currentPeriod = this.getCurrentAcademicPeriod() || periods[0] || 'Not assigned';
+        const currentIndex = periods.findIndex(name => name.toLowerCase() === currentPeriod.toLowerCase());
+        const currentPeriodNumber = currentIndex >= 0 ? currentIndex + 1 : 0;
+        const completedCount = Math.max(0, currentPeriodNumber - 1);
+        const progressPercent = periods.length ? Math.round((completedCount / periods.length) * 100) : 0;
         
-        let blockOrder;
-        if (isTVET) {
-            blockOrder = {
-                'Introductory': 1, 'Term 1': 1, 'Term 2': 2, 'Term 3': 3,
-                'Term 4': 4, 'Term 5': 5, 'Term 6': 6, 'Final': 7
-            };
-        } else {
-            blockOrder = {
-                'Introductory': 1, 'Block 1': 2, 'Block 2': 3, 'Block 3': 4,
-                'Block 4': 5, 'Block 5': 6, 'Final': 7
-            };
-        }
+        if (this.blockProgressFill) this.blockProgressFill.style.width = `${progressPercent}%`;
+        if (this.blockProgressText) this.blockProgressText.textContent = `${progressPercent}% Complete`;
+        if (this.currentBlockStatus) this.currentBlockStatus.textContent = `Current: ${currentPeriod}`;
         
-        const totalBlocks = 7;
-        const currentBlockNumber = blockOrder[currentBlock] || 1;
-        const completedBlocksCount = currentBlockNumber - 1;
-        const progressPercent = Math.round((completedBlocksCount / totalBlocks) * 100);
+        if (this.blockProgressFillMobile) this.blockProgressFillMobile.style.width = `${progressPercent}%`;
+        if (this.blockProgressTextMobile) this.blockProgressTextMobile.textContent = `${progressPercent}% Complete`;
+        if (this.currentBlockStatusMobile) this.currentBlockStatusMobile.textContent = `Current: ${currentPeriod}`;
         
-        // Desktop progress
-        if (this.blockProgressFill) {
-            this.blockProgressFill.style.width = `${progressPercent}%`;
-        }
-        if (this.blockProgressText) {
-            this.blockProgressText.textContent = `${progressPercent}% Complete`;
-        }
-        if (this.currentBlockStatus) {
-            this.currentBlockStatus.textContent = `Current: ${currentBlock}`;
-        }
-        
-        // Mobile progress
-        if (this.blockProgressFillMobile) {
-            this.blockProgressFillMobile.style.width = `${progressPercent}%`;
-        }
-        if (this.blockProgressTextMobile) {
-            this.blockProgressTextMobile.textContent = `${progressPercent}% Complete`;
-        }
-        if (this.currentBlockStatusMobile) {
-            this.currentBlockStatusMobile.textContent = `Current: ${currentBlock}`;
-        }
-        
-        this.updateQuickStats(currentBlockNumber, completedBlocksCount, progressPercent);
-        this.updateBlockTimeline(currentBlock, isTVET);
-        this.updateCompletedBlocks(completedBlocksCount, isTVET);
+        this.updateQuickStats(currentPeriodNumber, completedCount, progressPercent);
+        this.updateBlockTimeline(currentPeriod, periodType);
+        this.updateCompletedBlocks(completedCount, periodType);
     }
     
     updateQuickStats(currentBlockNumber, completedBlocksCount, progressPercent) {
@@ -1137,30 +1145,17 @@ class ProfileModule {
         if (this.profileProgress) this.profileProgress.textContent = `${progress}%`;
     }
     
-    updateBlockTimeline(currentBlock, isTVET) {
-        // Desktop timeline
-        if (this.blockTimeline) {
-            this.blockTimeline.innerHTML = this.buildTimelineHTML(currentBlock, isTVET);
-        }
-        
-        // Mobile timeline
-        if (this.blockTimelineMobile) {
-            this.blockTimelineMobile.innerHTML = this.buildTimelineHTML(currentBlock, isTVET);
-        }
+    updateBlockTimeline(currentPeriod, periodType) {
+        if (this.blockTimeline) this.blockTimeline.innerHTML = this.buildTimelineHTML(currentPeriod, periodType);
+        if (this.blockTimelineMobile) this.blockTimelineMobile.innerHTML = this.buildTimelineHTML(currentPeriod, periodType);
     }
     
-    buildTimelineHTML(currentBlock, isTVET) {
-        let blocks;
-        if (isTVET) {
-            blocks = ['Introductory', 'Term 1', 'Term 2', 'Term 3', 'Term 4', 'Term 5', 'Final'];
-        } else {
-            blocks = ['Introductory', 'Block 1', 'Block 2', 'Block 3', 'Block 4', 'Block 5', 'Final'];
-        }
-        
-        const currentIndex = blocks.indexOf(currentBlock);
+    buildTimelineHTML(currentPeriod, periodType) {
+        const periods = this.getAcademicPeriodNames();
+        const currentIndex = periods.findIndex(name => name.toLowerCase() === String(currentPeriod).toLowerCase());
         
         let html = '';
-        blocks.forEach((block, index) => {
+        periods.forEach((period, index) => {
             let statusClass = 'upcoming';
             let icon = '⏳';
             if (index < currentIndex) {
@@ -1175,10 +1170,10 @@ class ProfileModule {
                 ${statusClass === 'completed' ? 'background: #d1fae5; color: #065f46;' : 
                   statusClass === 'current' ? 'background: #4C1D95; color: white;' : 
                   'background: #e2e8f0; color: #94a3b8;'}">
-                ${icon} ${block}
+                ${icon} ${period}
             </span>`;
             
-            if (index < blocks.length - 1) {
+            if (index < periods.length - 1) {
                 html += `<span class="block-connector ${index < currentIndex ? 'completed' : ''}" 
                     style="color: ${index < currentIndex ? '#10b981' : '#d1d5db'}; font-size: 12px;">➜</span>`;
             }
@@ -1186,27 +1181,13 @@ class ProfileModule {
         return html;
     }
     
-    updateCompletedBlocks(completedCount, isTVET) {
-        // Desktop
-        if (this.completedBlocksContainer) {
-            this.completedBlocksContainer.innerHTML = this.buildCompletedBlocksHTML(completedCount, isTVET);
-        }
-        
-        // Mobile
-        if (this.completedBlocksContainerMobile) {
-            this.completedBlocksContainerMobile.innerHTML = this.buildCompletedBlocksHTML(completedCount, isTVET);
-        }
+    updateCompletedBlocks(completedCount, periodType) {
+        if (this.completedBlocksContainer) this.completedBlocksContainer.innerHTML = this.buildCompletedBlocksHTML(completedCount, periodType);
+        if (this.completedBlocksContainerMobile) this.completedBlocksContainerMobile.innerHTML = this.buildCompletedBlocksHTML(completedCount, periodType);
     }
     
-    buildCompletedBlocksHTML(completedCount, isTVET) {
-        let blocks;
-        if (isTVET) {
-            blocks = ['Introductory', 'Term 1', 'Term 2', 'Term 3', 'Term 4', 'Term 5'];
-        } else {
-            blocks = ['Introductory', 'Block 1', 'Block 2', 'Block 3', 'Block 4', 'Block 5'];
-        }
-        
-        const completedBlocksList = blocks.slice(0, completedCount);
+    buildCompletedBlocksHTML(completedCount, periodType) {
+        const completedBlocksList = this.getAcademicPeriodNames().slice(0, completedCount);
         
         if (completedBlocksList.length === 0) {
             return '<span style="background: #e2e8f0; color: #64748b; padding: 4px 12px; border-radius: 12px; font-size: 12px;">None yet</span>';
