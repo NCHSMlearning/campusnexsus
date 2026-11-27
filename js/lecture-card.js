@@ -327,11 +327,15 @@
                         
                         if (!error && data && data.length > 0) {
                             console.log('✅ Found approved units from DB:', data.length);
-                            this.registeredUnits = data.map(unit => ({
+                            const periodUnits = data.filter(unit => {
+                                const period = String(unit.block || unit.semester || unit.term || '').trim();
+                                return !this.userBlock || !period || period.toLowerCase() === String(this.userBlock).toLowerCase();
+                            });
+                            this.registeredUnits = periodUnits.map(unit => ({
                                 name: unit.unit_name,
                                 code: unit.unit_code,
                                 credits: unit.credits || 3,
-                                block: unit.block
+                                block: unit.block || unit.semester || unit.term
                             }));
                             return;
                         }
@@ -519,23 +523,15 @@
                 hasData = true;
             }
             
-            // Also check if there are approved units in the registration module
-            if (window.unitRegistrationModule?.registeredUnits) {
-                const approved = window.unitRegistrationModule.registeredUnits.some(u => u.status === 'approved');
-                if (approved) hasData = true;
-            }
-            
-            // Check if timetables exist
-            if (this.allTimetableData && this.allTimetableData.length > 0) {
-                hasData = true;
-            }
-            
+            // Only approved unit registrations count as academic clearance.
+            // A timetable entry by itself must not mark the card as active.
+
             this.approvals = {
                 finance: hasData,
                 hod: hasData,
                 registrar: hasData,
                 issued_date: new Date().toLocaleDateString('en-GB'),
-                valid_block: this.userBlock || 'Current Block',
+                valid_block: this.userBlock || 'Not assigned',
                 allApproved: hasData
             };
             
@@ -546,8 +542,7 @@
             const student = this.studentProfile || {};
             const units = this.registeredUnits || [];
             const approvals = this.approvals || { allApproved: false, issued_date: new Date().toLocaleDateString('en-GB'), valid_block: this.userBlock };
-            const currentYear = new Date().getFullYear();
-            const nextYear = currentYear + 1;
+            const academicYearLabel = this.getAcademicYearLabel();
             const displayBlock = this.userBlock || student.current_semester || student.semester || student.current_block || student.block || student.current_term || student.term || 'Not assigned';
             const periodLabel = this.getAcademicPeriodLabel();
             const institution = student.institution || window.CURRENT_INSTITUTION || {};
@@ -602,7 +597,7 @@
                                 <h2 style="color: ${primaryColor}; margin: 0; font-size: 22px; font-weight: 700;">${this.escapeHtml(institutionName)}</h2>
                             </div>
                             <h3 style="margin: 0; color: #0A3D62; font-size: 16px; font-weight: 600;">OFFICIAL LECTURE CARD</h3>
-                            <p style="margin: 4px 0 0; color: #6b7280; font-size: 13px;">${currentYear}/${nextYear} ACADEMIC YEAR</p>
+                            <p style="margin: 4px 0 0; color: #6b7280; font-size: 13px;">${this.escapeHtml(academicYearLabel)} ACADEMIC YEAR</p>
                             <p style="margin: 4px 0 0; color: #4C1D95; font-weight: 600; font-size: 13px;">${programType} | ${this.escapeHtml(periodLabel.toUpperCase())}: <span style="font-weight: 700;">${this.escapeHtml(displayBlock)}</span></p>
                         </div>
                         
