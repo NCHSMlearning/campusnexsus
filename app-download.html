@@ -19,34 +19,15 @@
 <h1>Campus Nexus App</h1>
 <p>One app for your student, lecturer, institution administrator and superadmin portals. Sign in with your existing Campus Nexus account.</p>
 <!-- APK is mirrored into /downloads/ during Pages deployment; the public link never exposes repository URLs. -->
-<a id="apkDownload" class="download" href="/downloads/Campus-Nexus-App.apk?v=1.2.6" download="Campus-Nexus-App-1.2.6.apk">
+<a id="apkDownload" class="download" href="/downloads/Campus-Nexus-App-1.2.6.apk">
 <svg class="download-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>
-<span class="spinner" aria-hidden="true"></span>
-<span id="downloadLabel">Download Android APK</span>
+
+<span id="downloadLabel">Download Android App</span>
 </a>
-<p id="downloadStatus" class="hint" aria-live="polite">Version 1.2.6 includes the corrected launcher icon and explicit Android status/navigation bar insets. Your download starts directly from the official Campus Nexus website. No repository or third-party page is opened. If Android asks, allow your browser to install apps from this source, then open the downloaded APK.</p>
+<p id="downloadStatus" class="hint" aria-live="polite">Download the signed Campus Nexus Android app directly from this website. If your browser asks, allow downloads and then open the APK from your Downloads folder.</p>
 <div class="meta">Version 1.2.6 · Application ID: co.ke.campusnexus.app<br>Official signed Android release · Separate from Campus Nexus Secure Exam Browser.</div>
 <a class="back" href="/platform/login.html">Return to Campus Nexus login</a>
 </main>
-<script>
-(function(){
-  const button=document.getElementById('apkDownload');
-  const label=document.getElementById('downloadLabel');
-  const status=document.getElementById('downloadStatus');
-  if(!button||!label||!status)return;
-  let resetTimer;
-  button.addEventListener('click',function(){
-    button.setAttribute('aria-busy','true');
-    label.textContent='Starting download…';
-    status.textContent='Your download is being handed to the browser. If Chrome reports a failure, check your connection and tap Download APK again.';
-    clearTimeout(resetTimer);
-    resetTimer=window.setTimeout(function(){
-      button.removeAttribute('aria-busy');
-      label.textContent='Download APK again';
-      status.textContent='Tap to retry the official Campus Nexus APK download.';
-    },5000);
-  });
-})();
-</script>
+
 </body>
 </html>
