@@ -1710,7 +1710,8 @@ class DashboardModule {
             const { data: ratings, error: ratingError } = await this.sb
                 .from('student_reviews')
                 .select('rating')
-                .eq('status', 'approved');
+                .eq('status', 'approved')
+                .eq('institution_id', this.userProfile?.institution_id);
             
             if (ratingError) throw ratingError;
             
@@ -1726,6 +1727,7 @@ class DashboardModule {
                     .from('student_reviews')
                     .select('*', { count: 'exact', head: true })
                     .eq('student_id', this.userId)
+                    .eq('institution_id', this.userProfile?.institution_id)
                     .eq('status', 'pending');
                 if (pendingError) throw pendingError;
                 userPending = count || 0;
