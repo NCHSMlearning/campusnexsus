@@ -549,6 +549,18 @@
             }
         }
         
+        async isUnitRegistrationOpen(showMessage = true) {
+            const supabase = this.getSupabase();
+            if (!supabase) throw new Error('Database not available');
+            const { data, error } = await supabase.rpc('get_my_unit_registration_control');
+            if (error) throw error;
+            const isOpen = data?.is_open !== false;
+            this.unitRegistrationOpen = isOpen;
+            this.unitRegistrationClosedMessage = data?.closed_message || 'Unit registration is currently closed. Please contact your institution administrator.';
+            if (!isOpen && showMessage) this.showError(this.unitRegistrationClosedMessage, 'warning');
+            return isOpen;
+        }
+
         // ============================================================
         // LOAD UNITS - REGULAR REGISTRATION (FIXED)
         // ============================================================
@@ -568,9 +580,15 @@
                     return;
                 }
                 
-                // ✅ FIX: Always refresh registered units first
+                // Existing registrations remain visible even while new registration is closed.
                 await this.loadRegisteredUnits(supabase);
-                await this.loadAvailableUnits(supabase);
+                const registrationOpen = await this.isUnitRegistrationOpen(false);
+                if (this.submitBtn) this.submitBtn.disabled = !registrationOpen;
+                if (registrationOpen) {
+                    await this.loadAvailableUnits(supabase);
+                } else if (this.availableBody) {
+                    this.availableBody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:34px 18px;color:#b91c1c;"><i class="fas fa-lock" style="font-size:27px;display:block;margin-bottom:10px;"></i><strong>Unit registration is currently closed</strong><p style="margin:7px 0 0;color:#64748b;">' + this.escapeHtml(this.unitRegistrationClosedMessage) + '</p></td></tr>';
+                }
                 await this.loadMaxUnits(supabase);
                 await this.loadBlocks(supabase);
                 
@@ -1179,6 +1197,12 @@ attachCheckboxEvents() {
         // ============================================================
         
         async submitRegistration() {
+            try {
+                if (!(await this.isUnitRegistrationOpen(true))) return;
+            } catch (gateError) {
+                this.showError('Unable to verify unit registration status: ' + gateError.message, 'error');
+                return;
+            }
             if (this.isSubmitting) {
                 this.showError('Please wait...', 'warning');
                 return;
@@ -1987,6 +2011,12 @@ async loadStudentSupplementaryRegistrations() {
 // ============================================================
 
 async registerSupplementaryUnits() {
+    try {
+        if (!(await this.isUnitRegistrationOpen(true))) return;
+    } catch (gateError) {
+        this.showError('Unable to verify unit registration status: ' + gateError.message, 'error');
+        return;
+    }
     const regType = this.suppRegType?.value;
     if (!regType) {
         this.showError('Please select a registration type.', 'warning');
