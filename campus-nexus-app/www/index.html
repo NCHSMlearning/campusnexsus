@@ -18,7 +18,7 @@ button,select{font:inherit}.primary{width:100%;height:53px;margin-top:16px;borde
 .status{min-height:19px;margin:12px 0 0;color:#c4d8e8;font-size:11px;line-height:1.5}.status.error{color:#ffb5b5}
 .school{display:none;align-items:center;gap:12px;padding:13px;margin-top:16px;border-radius:14px;background:#ffffff12;border:1px solid #ffffff20}.school.show{display:flex}.school img,.monogram{width:48px;height:48px;border-radius:11px;object-fit:contain;background:#fff;padding:4px}.school strong{display:block;font-size:13px}.school small{display:block;color:#b6ccdf;margin-top:4px;font-size:10px}
 .portal{display:none;margin-top:20px}.portal.show{display:block}.portal select{width:100%;height:54px;border:1px solid #8ab8d255;border-radius:13px;background:#071f3b;color:#fff;padding:0 13px;font-size:14px;font-weight:700;outline:none}.portal select option{background:#071f3b;color:#fff}
-.footer{text-align:center;color:#91abc2;font-size:10px;margin:22px 0 0}.footer b{color:#d5e8f5}
+.footer{text-align:center;color:#91abc2;font-size:10px;margin:22px 0 0}.footer b{color:#d5e8f5}.update-check{display:block;margin:13px auto 0;padding:10px 16px;border:1px solid #ffffff35;border-radius:999px;background:#ffffff12;color:#d8eafa;font-size:11px;font-weight:750}.update-check:disabled{opacity:.65}
 @media(max-height:700px){body{align-items:flex-start}.brand{margin-bottom:20px}.logo-wrap{width:78px;height:78px;border-radius:23px;margin-bottom:12px}.brand h1{font-size:25px}.card{padding:22px 20px}}
 </style></head>
 <body><main>
@@ -29,7 +29,7 @@ button,select{font:inherit}.primary{width:100%;height:53px;margin-top:16px;borde
 <p class="status" id="status" role="status" aria-live="polite"></p>
 <div class="school" id="schoolCard"><div id="schoolLogo"></div><div><strong id="schoolName"></strong><small id="schoolCodeLabel"></small></div></div>
 <div class="portal" id="portalPicker"><label for="portalType">Where would you like to go?</label><select id="portalType"><option value="">Choose a portal</option><option value="lms">Learning Management System (LMS)</option><option value="exam">Examination Portal</option></select><button class="primary" id="openPortal" type="button">Continue to portal →</button></div>
-</section><p class="footer">Secure institutional access · Powered by <b>Campus Nexus</b></p>
+</section><p class="footer">Secure institutional access · Powered by <b>Campus Nexus</b></p><button class="update-check" id="appUpdateCheck" type="button">↻ Check for updates</button><p class="status" id="appUpdateStatus" role="status" aria-live="polite"></p>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -64,4 +64,38 @@ button,select{font:inherit}.primary{width:100%;height:53px;margin-top:16px;borde
   window.location.href=target;
  });
 })();
-</script></body></html>
+</script><script>(function(){
+ const button=document.getElementById('appUpdateCheck'),status=document.getElementById('appUpdateStatus');
+ const updater=window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.CampusNexusUpdater;
+ if(!button||!updater){if(button)button.hidden=true;return;}
+ let latest=null,busy=false;
+ async function check(show){
+  if(busy)return;busy=true;button.disabled=true;button.textContent='Checking…';
+  try{
+   const response=await fetch('/app-update.json?check='+Date.now(),{cache:'no-store'});
+   if(!response.ok)throw new Error('Update service is temporarily unavailable.');
+   const meta=await response.json();const installed=await updater.getAppInfo();latest=meta;
+   if(Number(meta.versionCode)>Number(installed.versionCode)){
+    status.textContent='Version '+meta.version+' is available. You have '+installed.versionName+'.';
+    button.textContent='Update available · v'+meta.version;button.dataset.available='1';
+   }else{
+    status.textContent='You are using the latest version ('+installed.versionName+').';
+    button.textContent='✓ App is up to date';button.dataset.available='0';
+    if(show)window.alert('Campus Nexus is up to date.');
+   }
+  }catch(error){status.textContent=error.message||'Could not check for updates.';button.textContent='↻ Try checking again';}
+  finally{busy=false;button.disabled=false;}
+ }
+ button.addEventListener('click',async()=>{
+  if(!latest||button.dataset.available!=='1'){await check(true);return;}
+  if(!window.confirm('Download and install Campus Nexus '+latest.version+'? Your account and data will remain unchanged.'))return;
+  button.disabled=true;button.textContent='Preparing update…';
+  try{
+   const result=await updater.installUpdate({url:new URL(latest.apkUrl,location.origin).href,sha256:latest.sha256});
+   if(result&&result.permissionRequired){status.textContent='Allow Campus Nexus to install updates, then return and tap Check for updates again.';button.textContent='Permission required';return;}
+   status.textContent='Update downloaded. Android will now ask you to confirm installation.';button.textContent='Opening installer…';
+  }catch(error){status.textContent=error.message||'Update could not be installed.';button.textContent='↻ Try update again';}
+  finally{button.disabled=false;}
+ });
+ check(false);
+})();</script></body></html>
