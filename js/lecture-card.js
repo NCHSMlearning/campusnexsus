@@ -210,7 +210,7 @@
                 } else {
                     // Fallback defaults
                     this.studentProfile = {
-                        full_name: 'Student Name',
+                        full_name: 'Not Available',
                         student_id: '',
                         program: '',
                         intake_year: '',
@@ -238,7 +238,7 @@
                 const supabase = window.db?.supabase || window.supabase || window.supabaseClient;
                 if (!supabase) return null;
                 
-                const userId = window.db?.currentUserId || window.currentUser?.id;
+                const userId = this.studentProfile?.user_id || window.db?.currentUserId || window.currentUser?.id || window.currentUserProfile?.user_id;
                 if (!userId) return null;
                 
                 const { data, error } = await supabase
@@ -575,14 +575,14 @@
                 <div class="official-lecture-card" style="max-width: 850px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); border: 1px solid #e5e7eb; overflow: hidden;">
                     <div style="padding: 24px;">
                         <!-- Header -->
-                        <div style="text-align: center; border-bottom: 2px solid #4C1D95; padding-bottom: 16px; margin-bottom: 20px;">
+                        <div style="text-align: center; border-bottom: 2px solid ${primaryColor}; padding-bottom: 16px; margin-bottom: 20px;">
                             <div style="display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 4px;">
                                 ${institutionLogo ? `<img src="${this.escapeHtml(institutionLogo)}" alt="${this.escapeHtml(institutionName)} logo" style="width:56px;height:56px;object-fit:contain;">` : `<div style="width:50px;height:50px;border-radius:50%;background:${primaryColor};display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-chalkboard" style="color:white;font-size:24px;"></i></div>`}
                                 <h2 style="color: ${primaryColor}; margin: 0; font-size: 22px; font-weight: 700;">${this.escapeHtml(institutionName)}</h2>
                             </div>
                             <h3 style="margin: 0; color: #0A3D62; font-size: 16px; font-weight: 600;">OFFICIAL LECTURE CARD</h3>
                             <p style="margin: 4px 0 0; color: #6b7280; font-size: 13px;">${this.escapeHtml(academicYearLabel)} ACADEMIC YEAR</p>
-                            <p style="margin: 4px 0 0; color: #4C1D95; font-weight: 600; font-size: 13px;">${programType} | ${this.escapeHtml(periodLabel.toUpperCase())}: <span style="font-weight: 700;">${this.escapeHtml(displayBlock)}</span></p>
+                            <p style="margin: 4px 0 0; color: ${primaryColor}; font-weight: 600; font-size: 13px;">${programType} | ${this.escapeHtml(periodLabel.toUpperCase())}: <span style="font-weight: 700;">${this.escapeHtml(displayBlock)}</span></p>
                         </div>
                         
                         <!-- Status Badge -->
