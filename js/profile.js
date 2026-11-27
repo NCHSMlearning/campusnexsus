@@ -395,21 +395,24 @@ class ProfileModule {
                 return null;
             }
 
-            const { data, error } = await supabase
+            const tenantId = String(
+                window.CURRENT_INSTITUTION_ID ||
+                window.db?.currentUserProfile?.institution_id ||
+                window.currentUserProfile?.institution_id ||
+                ''
+            ).trim();
+            let profileQuery = supabase
                 .from('consolidated_user_profiles_table')
                 .select('*')
-                .eq('user_id', this.userId)
-                .maybeSingle();
+                .eq('user_id', this.userId);
+            if (tenantId) profileQuery = profileQuery.eq('institution_id', tenantId);
+            const { data, error } = await profileQuery.maybeSingle();
 
-            // The auth bootstrap may already have loaded this exact student's
-            // profile. Use that verified in-memory row if the view read is
-            // temporarily blocked or returns no row, rather than rendering blank fields.
-            const cachedProfile = window.db?.currentUserProfile || window.currentUserProfile || null;
-            const cachedMatchesUser = cachedProfile &&
-                (!cachedProfile.user_id || cachedProfile.user_id === this.userId);
-
-            if (error && !cachedMatchesUser) throw error;
-            this.userProfile = data || (cachedMatchesUser ? cachedProfile : null);
+            // Always render the latest database row. A cached bootstrap profile
+            // may be older than an administrator's edit and must never mask a
+            // failed or empty authoritative read.
+            if (error) throw error;
+            this.userProfile = data || null;
 
             if (!this.userProfile) {
                 this.clearStatus();
@@ -2865,6 +2868,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const profileTab = document.getElementById('profile');
     if (profileTab) {
         profileObserver.observe(profileTab, { attributes: true, attributeFilter: ['style'] });
+    }
+});
+
+// Refresh the canonical profile whenever the student returns to the portal
+// while the Profile section is open. This picks up edits made by an admin
+// in another session without requiring the student to sign out.
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'visible') return;
+    const profileTab = document.getElementById('profile');
+    if (profileTab && profileTab.style.display !== 'none' && window.ProfileModuleInstance?.userId) {
+        window.ProfileModuleInstance.loadProfile();
+    }
+});
+window.addEventListener('focus', () => {
+    const profileTab = document.getElementById('profile');
+    if (profileTab && profileTab.style.display !== 'none' && window.ProfileModuleInstance?.userId) {
+        window.ProfileModuleInstance.loadProfile();
     }
 });
 
