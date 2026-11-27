@@ -34,6 +34,7 @@
             this.approvedUnits = [];
             this.pendingUnits = [];
             this.pendingApprovalPoll = null;
+            this.academicStructure = null;
             this.userProfile = null;
             this.loaded = false;
             this.userBlock = null;
@@ -70,22 +71,33 @@
         }
         
         getBlockLabel() {
-            return this.isTVET ? 'Current Term:' : 'Current Block:';
+            const structure = this.academicStructure || {};
+            return 'Current ' + (structure.singular || (this.isTVET ? 'Term' : 'Block')) + ':';
         }
-        
+
         getBlockValue() {
-            if (!this.userProfile) return 'N/A';
-            if (this.isTVET) {
-                return this.userProfile.term || 
-                       this.userProfile.current_term || 
-                       this.userProfile.block || 
-                       'Year 1 Term 1';
-            } else {
-                return this.userProfile.block || 
-                       this.userProfile.current_block || 
-                       this.userProfile.term || 
-                       'Introductory';
+            if (!this.userProfile) return 'Not assigned';
+            const type = this.academicStructure?.type || (this.isTVET ? 'Term' : 'Block');
+            const p = this.userProfile;
+            const value = type === 'Semester'
+                ? (p.current_semester || p.semester || p.current_block || p.block)
+                : type === 'Term'
+                    ? (p.current_term || p.term || p.current_block || p.block)
+                    : (p.current_block || p.block || p.current_semester || p.semester);
+            return String(value || 'Not assigned').trim();
+        }
+
+        async loadAcademicStructure() {
+            const client = window.db?.supabase || window.supabase || window.supabaseClient;
+            const institutionId = this.userProfile?.institution_id || window.CURRENT_INSTITUTION_ID;
+            const programCode = this.userProfile?.program || this.userProfile?.program_code || this.userProfile?.program_type;
+            if (!client || !institutionId || !programCode || !window.CampusAcademicStructure?.resolve) {
+                this.academicStructure = null;
+                return null;
             }
+            this.academicStructure = await window.CampusAcademicStructure.resolve(client, institutionId, programCode, { refresh: true });
+            this.userBlock = this.getBlockValue();
+            return this.academicStructure;
         }
         
         // ============================================
@@ -208,46 +220,28 @@
             });
         }
         
+        getAcademicYearLabel() {
+            const profile = this.userProfile || {};
+            const explicit = profile.academic_year || profile.current_academic_year || profile.study_year;
+            if (explicit) return String(explicit);
+            return String(new Date().getFullYear());
+        }
+
         getExamPeriod() {
-            const now = new Date();
-            const year = now.getFullYear();
-            const month = now.getMonth();
-            
-            if (month >= 2 && month <= 5) {
-                return `March - June ${year} (Trimester 1)`;
-            }
-            if (month >= 6 && month <= 9) {
-                return `July - October ${year} (Trimester 2)`;
-            }
-            return `November - February ${year}/${year + 1} (Trimester 3)`;
+            const period = this.getBlockValue();
+            const year = this.getAcademicYearLabel();
+            return period && period !== 'Not assigned' ? year + ' · ' + period : year + ' · Academic period not assigned';
         }
-        
+
         isExamOver() {
-            const now = new Date();
-            const currentMonth = now.getMonth();
-            const currentYear = now.getFullYear();
-            
-            const examEndDates = {
-                'Trimester 1': new Date(currentYear, 5, 30),
-                'Trimester 2': new Date(currentYear, 9, 30),
-                'Trimester 3': new Date(currentYear + 1, 1, 28)
-            };
-            
-            const period = this.getExamPeriod();
-            let endDate;
-            
-            if (period.includes('Trimester 1')) {
-                endDate = examEndDates['Trimester 1'];
-            } else if (period.includes('Trimester 2')) {
-                endDate = examEndDates['Trimester 2'];
-            } else {
-                endDate = examEndDates['Trimester 3'];
-            }
-            
-            return now > endDate;
+            const end = this.userProfile?.academic_period_end || this.userProfile?.semester_end_date || this.userProfile?.block_end_date || this.userProfile?.term_end_date;
+            if (!end) return false;
+            const parsed = new Date(end);
+            return !Number.isNaN(parsed.getTime()) && Date.now() > parsed.getTime();
         }
-        
+
         // ============================================
+        // LIBRARY LOADING        // ============================================
         // LIBRARY LOADING
         // ============================================
         
@@ -603,6 +597,7 @@
             this.showLoading();
             
             try {
+                await this.loadAcademicStructure();
                 const success = await this.loadApprovedUnitsFromDB();
                 if (success) {
                     await this.loadPublishedMarksFromDB();
@@ -664,7 +659,7 @@
             const examOver = this.isExamOver();
             
             const isTVET = this.isTVETStudent();
-            const blockLabel = isTVET ? 'Current Term:' : 'Current Block:';
+            const blockLabel = this.getBlockLabel();
             const blockValue = this.getBlockValue();
             const hodTitle = this.getHODTitle();
             
@@ -756,7 +751,7 @@
                             <div class="info-item"><span class="info-label">Total Credits:</span> <strong>${totalCredits}</strong></div>
                             <div class="info-item"><span class="info-label">Exam Period:</span> ${this.getExamPeriod()}</div>
                             <div class="info-item"><span class="info-label">Date Issued:</span> ${this.formatDate()}</div>
-                            <div class="info-item"><span class="info-label">Valid Until:</span> ${examOver ? 'Completed' : 'End of Exam Period'}</div>
+                            <div class="info-item"><span class="info-label">Valid Until:</span> ${examOver ? 'Completed' : 'End of ' + (this.academicStructure?.singular || 'Academic Period')}</div>
                         </div>
                         
                         <!-- Units Table -->
