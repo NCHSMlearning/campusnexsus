@@ -266,12 +266,25 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           import re
-          tag = '<script src="/campus-nexus-app-shell.js?v=1.3.1" defer></script>'
+          tag = '<script src="/campus-nexus-app-shell.js?v=1.3.2" defer></script>'
           changed = 0
           for page in Path(".").rglob("*.html"):
               if ".git" in page.parts or "node_modules" in page.parts:
                   continue
               html = page.read_text(encoding="utf-8")
+              # Refresh cache keys for the navigation fixes shipped in this release.
+              asset_versions = {
+                  "/platform/js/student-navigation-guard.js": "20261127-student-nav-v2",
+                  "/platform/js/lecturer-ui.js": "20261127-lecturer-nav-v2",
+                  "/platform/examinations/source/admin.js": "20261127-superadmin-route-v2",
+              }
+              for asset, version in asset_versions.items():
+                  html = re.sub(
+                      r'(<script\\b[^>]*src=["\\']' + re.escape(asset) + r')(?:\\?v=[^"\\']*)?(["\\'])',
+                      lambda match, version=version: match.group(1) + "?v=" + version + match.group(2),
+                      html,
+                      flags=re.I,
+                  )
               if "campus-nexus-app-shell.js" in html:
                   html = re.sub(r'<script src="/campus-nexus-app-shell\.js\\?v=[^"]+" defer></script>', tag, html)
                   page.write_text(html, encoding="utf-8")
