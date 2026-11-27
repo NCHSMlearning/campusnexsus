@@ -1168,8 +1168,8 @@ async saveProgressToDatabase() {
 
             const { data: allQuestions, error } = await supabase
                 .from('medical_assessments')
-                .select(`*, unit:units_catalog!medical_assessments_unit_catalog_id_fkey(id, unit_code, unit_name, description, program, block)
-            .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)`)
+                .select(`*, unit:units_catalog!medical_assessments_unit_catalog_id_fkey(id, unit_code, unit_name, description, program, block)`)
+                .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)
                 .eq('is_active', true)
                 .eq('is_published', true)
                 .order('updated_at', { ascending: false });
@@ -1562,8 +1562,8 @@ async saveProgressToDatabase() {
             
             const { data: questions, error } = await supabase
                 .from('medical_assessments')
-                .select(`*, unit:units_catalog!medical_assessments_unit_catalog_id_fkey(id, unit_code, unit_name, description, program, block)
-            .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)`)
+                .select(`*, unit:units_catalog!medical_assessments_unit_catalog_id_fkey(id, unit_code, unit_name, description, program, block)`)
+                .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)
                 .eq('unit_catalog_id', courseId)
                 .eq('is_active', true)
                 .eq('is_published', true)
