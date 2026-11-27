@@ -1383,7 +1383,7 @@ class UIModule {
                 if (storageMatch) {
                     bucket = decodeURIComponent(storageMatch[1]);
                     objectPath = decodeURIComponent(storageMatch[2]);
-                } else if (/^https?:\\/\\//i.test(objectPath)) {
+                } else if (/^https?:\/\//i.test(objectPath)) {
                     photoUrl = objectPath;
                 } else if (objectPath.startsWith('user-documents/')) {
                     bucket = 'user-documents';
