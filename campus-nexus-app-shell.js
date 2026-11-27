@@ -5,15 +5,17 @@
     var nativeApp = !!(cap && typeof cap.isNativePlatform === 'function' && cap.isNativePlatform());
     var query = new URLSearchParams(window.location.search);
     var appMode = nativeApp;
+    var appModeCookie = /(?:^|;\\s*)cn_android_app_mode=1(?:;|$)/.test(document.cookie || '');
     try {
       if (query.get('source') === 'android-app') {
         localStorage.setItem('cn_android_app_mode', '1');
+        document.cookie = 'cn_android_app_mode=1; Max-Age=31536000; Path=/; SameSite=Lax; Secure';
         appMode = true;
-      } else if (localStorage.getItem('cn_android_app_mode') === '1') {
+      } else if (localStorage.getItem('cn_android_app_mode') === '1' || appModeCookie) {
         appMode = true;
       }
     } catch (_) {
-      appMode = nativeApp || query.get('source') === 'android-app';
+      appMode = nativeApp || query.get('source') === 'android-app' || appModeCookie;
     }
 
     if (!appMode || document.getElementById('cn-native-tabbar')) return;
@@ -314,6 +316,15 @@
     var path = currentPath();
     var isStudent = /student/i.test(path) || !!findLink([/my units/i]);
     var isLecturer = /lecturer/i.test(path);
+    if (isStudent) {
+      style.textContent += [
+        'body.cn-native-app #mobile-menu-toggle,body.cn-native-app .mobile-nav-toggle{display:none!important}',
+        'body.cn-native-app #main-header{padding-top:calc(10px + env(safe-area-inset-top))!important}',
+        'body.cn-native-app #app-content{padding-bottom:calc(92px + env(safe-area-inset-bottom))!important}',
+        'body.cn-native-app #cn-native-tabbar{min-height:68px!important}',
+        'body.cn-native-app .main-content,body.cn-native-app #main-content{padding-bottom:18px!important}'
+      ].join('');
+    }
     var home = findLink([/dashboard/i,/^home$/i]) || (isStudent ? null : null);
     var learning = findLink([/my units/i,/courses/i,/learning/i,/lms/i]);
     var exams = findLink([/exams?.*results/i,/examination/i,/^exams?$/i]);
