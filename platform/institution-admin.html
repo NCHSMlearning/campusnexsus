@@ -11,7 +11,7 @@
 <script src="/platform/js/institution-admin.js?v=20261125-universal-brand-v2" defer></script><script src="/platform/js/academic-structure.js?v=20261123-tenant-structure-v1" defer></script>
 
 <script src="/platform/js/institution-admin-programs.js?v=20261124-add-unit-to-program-v1" defer></script>
-<script src="/platform/js/institution-admin-curriculum.js?v=20261127-student-name-responsive-v2" defer></script>
+<script src="/platform/js/institution-admin-curriculum.js?v=20261127-grouped-registration-v3" defer></script>
 <script src="/platform/js/institution-admin-modules.js?v=20261124-parity-v3" defer></script>
 <script src="/platform/js/institution-admin-results.js?v=20261124-superadmin-parity-v2" defer></script>
 <script src="/platform/js/institution-admin-analytics.js?v=20261124-superadmin-parity-v2" defer></script>
@@ -108,6 +108,53 @@
 }
 </style>
 
+
+<style id="ia-unit-registration-grouped-workspace">
+#view-unit-registration .ia-reg-search-panel{padding:0;margin-bottom:16px}
+#view-unit-registration .ia-reg-search-panel .ia-panel-head{padding:18px 22px;margin:0;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+#view-unit-registration .ia-reg-search-panel .ia-panel-head>div{flex:1 1 260px}
+#view-unit-registration .ia-reg-search-panel input{flex:0 1 330px;width:100%;min-height:44px;padding:10px 14px;border:1px solid #d8e2ef;border-radius:11px;font:12px Inter,system-ui}
+#view-unit-registration .ia-reg-section{padding:0;margin:0 0 18px;overflow:hidden}
+#view-unit-registration .ia-reg-section-head{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:20px 22px;border-bottom:1px solid #e8eef5}
+#view-unit-registration .ia-reg-section-head h2{margin:5px 0;color:#102f49;font-size:16px}
+#view-unit-registration .ia-reg-section-head p{margin:0;color:#718195;font-size:11px;line-height:1.5}
+#view-unit-registration .ia-reg-section-kicker{font-size:9px;font-weight:900;letter-spacing:.12em;color:#71849a}
+#view-unit-registration .ia-reg-section-count{flex:0 0 auto;padding:7px 11px;border-radius:30px;background:#f0f4fa;color:#334b65;font-size:10px;font-weight:800}
+#view-unit-registration .ia-reg-section:nth-of-type(4) .ia-reg-section-count{background:#e8f7ef;color:#166534}
+#view-unit-registration .ia-reg-group-table{width:100%;min-width:850px}
+#view-unit-registration .ia-reg-group-table td{vertical-align:middle}
+#view-unit-registration .ia-reg-expand{display:flex;align-items:center;gap:10px;border:0;background:transparent;padding:2px 0;text-align:left;color:#102f49;cursor:pointer;min-width:0}
+#view-unit-registration .ia-reg-expand>i{font-size:11px;color:#0f766e}
+#view-unit-registration .ia-reg-expand span{min-width:0}
+#view-unit-registration .ia-reg-expand b{display:block;font-size:12px}
+#view-unit-registration .ia-reg-expand small{display:block;margin-top:4px;color:#718195;font-size:10px}
+#view-unit-registration .ia-reg-unit-count{display:inline-flex;padding:5px 9px;border-radius:30px;background:#eef4fb;color:#26435d;font-size:10px;font-weight:800}
+#view-unit-registration .ia-reg-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+#view-unit-registration .ia-reg-actions button{padding:8px 10px;white-space:nowrap}
+#view-unit-registration .ia-reg-detail-row>td{padding:0!important;background:#f8fafc}
+#view-unit-registration .ia-reg-unit-list{padding:10px 18px 12px 48px}
+#view-unit-registration .ia-reg-unit-row{display:flex;align-items:center;gap:14px;padding:12px 10px;border-bottom:1px solid #e8edf3}
+#view-unit-registration .ia-reg-unit-row:last-child{border-bottom:0}
+#view-unit-registration .ia-reg-unit-main{flex:1;min-width:120px}
+#view-unit-registration .ia-reg-unit-main b{display:block;color:#19364d;font-size:11px}
+#view-unit-registration .ia-reg-unit-main small{display:block;margin-top:4px;color:#718195;font-size:10px}
+#view-unit-registration .ia-reg-unit-status{font-size:10px;font-weight:800;text-transform:capitalize;color:#64748b}
+#view-unit-registration .ia-reg-section:nth-of-type(4) .ia-reg-unit-status{color:#15803d}
+@media(max-width:900px){
+ #view-unit-registration .ia-reg-section .ia-table-scroll{overflow-x:auto}
+ #view-unit-registration .ia-reg-section-head{padding:16px}
+ #view-unit-registration .ia-reg-unit-list{padding-left:14px}
+}
+@media(max-width:560px){
+ #view-unit-registration .ia-reg-search-panel .ia-panel-head{padding:15px}
+ #view-unit-registration .ia-reg-search-panel input{flex:1 1 100%;max-width:none}
+ #view-unit-registration .ia-reg-section-head{align-items:flex-start}
+ #view-unit-registration .ia-reg-section-head p{max-width:260px}
+ #view-unit-registration .ia-reg-unit-row{align-items:flex-start;flex-wrap:wrap;gap:9px}
+ #view-unit-registration .ia-reg-unit-main{flex-basis:calc(100% - 75px)}
+ #view-unit-registration .ia-reg-unit-row .ia-reg-actions{flex-basis:100%}
+}
+</style>
 </head>
 <body>
 <div id="iaBoot" class="ia-boot"><div class="ia-boot-card"><div class="ia-brand-mark" id="iaBootLogo">CN</div><h1 id="iaBootTitle">Your Institution</h1><p id="iaBootMessage">Verifying your institution administrator access…</p>
@@ -931,10 +978,12 @@
  </div>
 </section>
 <section class="ia-view" id="view-unit-registration">
- <div class="ia-page-heading"><div><span class="ia-eyebrow">CURRICULUM · INSTITUTION WORKSPACE</span><h1>Unit Registration</h1><p>Review and process student unit registrations for this institution only.</p></div><button class="ia-secondary-btn" id="iaUnitRegistrationRefresh"><i class="fa-solid fa-rotate"></i> Refresh</button></div>
- <div class="ia-stat-grid ia-report-grid"><article class="ia-stat-card"><small>Total registrations</small><strong id="iaRegTotal">—</strong></article><article class="ia-stat-card"><small>Pending review</small><strong id="iaRegPending">—</strong></article><article class="ia-stat-card"><small>Approved</small><strong id="iaRegApproved">—</strong></article><article class="ia-stat-card"><small>Rejected</small><strong id="iaRegRejected">—</strong></article></div>
- <div class="ia-panel ia-table-panel"><div class="ia-panel-head"><div><h2>Student unit registrations & approvals</h2><p>Approve or reject pending registrations belonging to your institution.</p></div><input id="iaUnitRegistrationSearch" type="search" placeholder="Search student, unit, programme…"><select id="iaUnitRegistrationStatus"><option value="">All statuses</option><option value="pending">Pending</option><option value="approved">Approved</option><option value="rejected">Rejected</option></select></div>
- <div class="ia-table-scroll"><table><thead><tr><th>Student</th><th>Unit</th><th>Unit code</th><th>Programme</th><th>Academic period</th><th>Submitted</th><th>Status</th><th>Action</th></tr></thead><tbody id="iaUnitRegistrationRows"><tr><td colspan="8" class="ia-empty">Loading registrations…</td></tr></tbody></table></div></div>
+ <div class="ia-page-heading"><div><span class="ia-eyebrow">CURRICULUM · INSTITUTION WORKSPACE</span><h1>Unit Registration</h1><p>Review registrations grouped by student and academic period. Open a student to review units individually or approve the full group.</p></div><button class="ia-secondary-btn" id="iaUnitRegistrationRefresh"><i class="fa-solid fa-rotate"></i> Refresh</button></div>
+ <div class="ia-stat-grid ia-report-grid"><article class="ia-stat-card"><small>Total unit registrations</small><strong id="iaRegTotal">—</strong></article><article class="ia-stat-card"><small>Pending units</small><strong id="iaRegPending">—</strong></article><article class="ia-stat-card"><small>Approved units</small><strong id="iaRegApproved">—</strong></article><article class="ia-stat-card"><small>Rejected units</small><strong id="iaRegRejected">—</strong></article></div>
+ <div class="ia-panel ia-reg-search-panel"><div class="ia-panel-head"><div><h2>Find a student</h2><p>Search by name, admission number, email, unit or programme across all three lists.</p></div><input id="iaUnitRegistrationSearch" type="search" placeholder="Search student, admission, unit…"></div></div>
+ <div class="ia-reg-section ia-panel ia-table-panel"><div class="ia-reg-section-head"><div><span class="ia-reg-section-kicker">REQUIRES REVIEW</span><h2>Pending registrations</h2><p>Each student is grouped by programme and academic period. Expand a row to approve units individually or all together.</p></div><span class="ia-reg-section-count" id="iaRegPendingGroups">Pending</span></div><div class="ia-table-scroll"><table class="ia-reg-group-table"><thead><tr><th>Student</th><th>Programme</th><th>Academic period</th><th>Units</th><th>Last submitted</th><th>Actions</th></tr></thead><tbody id="iaUnitRegistrationPendingRows"><tr><td colspan="6" class="ia-empty">Loading pending registrations…</td></tr></tbody></table></div></div>
+ <div class="ia-reg-section ia-panel ia-table-panel"><div class="ia-reg-section-head"><div><span class="ia-reg-section-kicker">COMPLETED REVIEW</span><h2>Approved registrations</h2><p>View each student's approved units grouped by semester, block and academic year.</p></div><span class="ia-reg-section-count" id="iaRegApprovedGroups">Approved</span></div><div class="ia-table-scroll"><table class="ia-reg-group-table"><thead><tr><th>Student</th><th>Programme</th><th>Academic period</th><th>Units approved</th><th>Last submitted</th><th>Details</th></tr></thead><tbody id="iaUnitRegistrationApprovedRows"><tr><td colspan="6" class="ia-empty">Loading approved registrations…</td></tr></tbody></table></div></div>
+ <div class="ia-reg-section ia-panel ia-table-panel"><div class="ia-reg-section-head"><div><span class="ia-reg-section-kicker">NOT APPROVED</span><h2>Rejected registrations</h2><p>Review rejected unit requests and their recorded reasons where available.</p></div><span class="ia-reg-section-count" id="iaRegRejectedGroups">Rejected</span></div><div class="ia-table-scroll"><table class="ia-reg-group-table"><thead><tr><th>Student</th><th>Programme</th><th>Academic period</th><th>Units rejected</th><th>Last submitted</th><th>Details</th></tr></thead><tbody id="iaUnitRegistrationRejectedRows"><tr><td colspan="6" class="ia-empty">Loading rejected registrations…</td></tr></tbody></table></div></div>
 </section>
 <section class="ia-view" id="view-programs">
 <section id="programs" class="tab-content">
