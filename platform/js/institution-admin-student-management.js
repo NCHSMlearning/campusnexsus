@@ -92,6 +92,28 @@
       updateCounts();
     } catch(e) { console.error("[Institution Student Management] Session reports:",e); body.innerHTML='<tr><td colspan="8" style="padding:35px;text-align:center;color:#b91c1c">Could not load session reports: '+esc(e.message)+'</td></tr>'; }
   }
+  async function sendSessionReportDecisionEmail(report, profile, decision) {
+    const recipient=String(profile?.email || report?.email || report?.student_email || "").trim();
+    if(!recipient) return {sent:false,reason:"Student email address is not available."};
+    const client=db();
+    const sessionResult=await client.auth.getSession();
+    const token=sessionResult?.data?.session?.access_token;
+    if(sessionResult?.error || !token) return {sent:false,reason:"Administrator session is unavailable for email delivery."};
+    const approved=decision==="approved";
+    const safe=value=>esc(value||"—");
+    const subject=approved ? "Session report approved - Campus Nexus" : "Session report update - Campus Nexus";
+    const html='<div style="font-family:Arial,sans-serif;max-width:620px;margin:auto;padding:24px;color:#172033"><h2 style="color:'+(approved?'#047857':'#b91c1c')+'">'+(approved?'Session report approved':'Session report not approved')+'</h2><p>Dear '+safe(profile?.full_name||report?.student_name||'Student')+',</p><p>'+(approved?'Your session report has been approved by your institution. Your academic period has been updated accordingly.':'Your session report has been rejected by your institution. Please log in to Campus Nexus and contact your institution administrator for clarification or resubmission instructions.')+'</p><p><b>Programme:</b> '+safe(report?.program)+'<br><b>Reported period:</b> '+safe(report?.session)+'<br><b>Current status:</b> '+(approved?'Approved':'Rejected')+'</p><p>Log in to your Campus Nexus student portal to view your latest information.</p><p>Campus Nexus</p></div>';
+    try {
+      const response=await fetch('https://lwhtjozfsmbyihenfunw.supabase.co/functions/v1/send-email',{
+        method:'POST',
+        headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
+        body:JSON.stringify({to:recipient,subject,html,from:'Campus Nexus <info@campusnexus.co.ke>'})
+      });
+      const result=await response.json().catch(()=>({}));
+      return response.ok&&result.success?{sent:true}:{sent:false,reason:result.error||'Email service rejected the request.'};
+    } catch(error) { return {sent:false,reason:error.message||'Email service unavailable.'}; }
+  }
+
   async function decideReport(id, decision, confirmUser=true) {
     if(confirmUser&&!window.confirm((decision==="approved"?"Approve":"Reject")+" this student's session report?"))return false;
     const client=db(), institutionId=tenant();
@@ -102,18 +124,20 @@
     if(!report)throw new Error("Session report not found in this institution.");
     if(String(report.approval_status||"pending").toLowerCase()!=="pending")throw new Error("This report has already been reviewed.");
     let previousProfile=null, profilePatch=null;
-    if(decision==="approved"&&report.student_id&&report.session) {
+    if(report.student_id) {
       const profileResult=await client.from("consolidated_user_profiles_table")
-        .select("user_id,student_id,program,current_block,block,current_semester,semester,current_term,term,current_year,year,intake_year,admission_year")
+        .select("*")
         .eq("institution_id",institutionId).eq("student_id",report.student_id).maybeSingle();
       if(profileResult.error)throw profileResult.error;
       previousProfile=profileResult.data;
       if(!previousProfile)throw new Error("The matching student profile was not found in this institution. The report remains pending.");
+    }
+    if(decision==="approved"&&previousProfile&&report.session) {
       const session=String(report.session).trim(), patch={updated_at:new Date().toISOString()};
       if(/semester/i.test(session)){patch.current_semester=session;patch.semester=session;}
       else if(/term/i.test(session)){patch.current_term=session;patch.term=session;}
-      else {patch.current_block=session;patch.block=session;}
-      if(report.academic_year){const start=String(report.academic_year).split("/")[0].trim();if(start&&!previousProfile.intake_year)patch.intake_year=start;if(start&&!previousProfile.admission_year)patch.admission_year=start;}
+      else if(/block/i.test(session)||/introductory/i.test(session)||/fqe/i.test(session)){patch.current_block=session;patch.block=session;}
+      else throw new Error("The reported academic period could not be identified as a semester, term or block. The report remains pending.");
       const profileUpdate=await client.from("consolidated_user_profiles_table").update(patch)
         .eq("user_id",previousProfile.user_id).eq("institution_id",institutionId).select("user_id");
       if(profileUpdate.error)throw profileUpdate.error;
@@ -135,7 +159,9 @@
       throw new Error("The report was already reviewed or could not be updated. No approval was recorded.");
     }
     await loadSessionReportsAdmin();
-    notify("Session report "+decision+(decision==="approved"?" and student academic period updated.":"."),"success");
+    const emailResult=await sendSessionReportDecisionEmail(report,previousProfile,decision);
+    if(emailResult.sent) notify("Session report "+decision+(decision==="approved"?" and student academic period updated.":"; notification email sent."),"success");
+    else notify("Session report "+decision+" successfully, but email was not sent: "+emailResult.reason,"warning");
     return true;
   }
   window.approveSessionReportAdmin=(id)=>decideReport(id,"approved").catch(e=>notify(e.message,"error"));
