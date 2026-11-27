@@ -366,33 +366,54 @@ class ProfileModule {
     // ============================================================
     
     async loadProfile() {
-        if (!this.userId) {
-            console.warn('⚠️ No userId for profile load');
-            return;
-        }
-        
         this.showStatus('Loading profile...', 'info');
-        
+
         try {
             const supabase = this.getSupabaseClient();
             if (!supabase) {
-                this.showStatus('Database connection not available', 'error');
-                return;
+                this.showStatus('Database connection not available. Please refresh and try again.', 'error');
+                return null;
             }
-            
+
+            // Resolve the authenticated identity from the live Supabase session
+            // when the portal modules are still restoring their in-memory state.
+            if (!this.userId) {
+                const { data: authData, error: authError } = await supabase.auth.getUser();
+                if (authError) throw authError;
+                this.userId = authData?.user?.id || window.db?.currentUserId || window.currentUserId || null;
+            }
+            if (!this.userId) {
+                this.showStatus('Your student session is still loading. Please wait a moment and reopen Profile.', 'warning');
+                return null;
+            }
+
             const { data, error } = await supabase
                 .from('consolidated_user_profiles_table')
                 .select('*')
                 .eq('user_id', this.userId)
                 .maybeSingle();
-            
-            if (error) {
-                console.warn('Error loading profile:', error);
-                this.showStatus(`Error loading profile: ${error.message}`, 'error');
-                return;
+
+            // The auth bootstrap may already have loaded this exact student's
+            // profile. Use that verified in-memory row if the view read is
+            // temporarily blocked or returns no row, rather than rendering blank fields.
+            const cachedProfile = window.db?.currentUserProfile || window.currentUserProfile || null;
+            const cachedMatchesUser = cachedProfile &&
+                (!cachedProfile.user_id || cachedProfile.user_id === this.userId);
+
+            if (error && !cachedMatchesUser) throw error;
+            this.userProfile = data || (cachedMatchesUser ? cachedProfile : null);
+
+            if (!this.userProfile) {
+                this.clearStatus();
+                this.showStatus('No student profile record was returned for this account. Please contact your institution administrator.', 'error');
+                return null;
             }
-            
-            this.userProfile = data || {};
+
+            // Keep profile identity references in sync for the navigation and
+            // other student modules that consume the shared profile instance.
+            window.currentUserProfile = this.userProfile;
+            if (window.db) window.db.currentUserProfile = this.userProfile;
+
             this.clearStatus();
             this.populateProfileForm();
             await this.loadProfilePhoto();
@@ -400,13 +421,20 @@ class ProfileModule {
             this.updateBlockProgress();
             this.updateUIState('view');
             this.update2FAUI();
-            
-            console.log('✅ Profile loaded successfully');
-            
+
+            console.log('✅ Student profile loaded successfully');
+            return this.userProfile;
+
         } catch (error) {
             console.error('Load profile error:', error);
-            this.showStatus(`Error: ${error.message}`, 'error');
+            this.showStatus(`Unable to load your profile: ${error.message || 'Please try again.'}`, 'error');
+            return null;
         }
+    }
+
+    // Backwards-compatible method name used by the portal UI controller.
+    async loadProfileData() {
+        return this.loadProfile();
     }
     
     // ============================================================
@@ -2529,7 +2557,9 @@ function initProfileModule() {
     
     try {
         profileModule = new ProfileModule();
-        console.log('✅ ProfileModule instantiated');
+        window.profileModule = profileModule;
+        window.ProfileModuleInstance = profileModule;
+        console.log('✅ ProfileModule instantiated and registered globally');
         return profileModule;
     } catch (error) {
         console.error('❌ ProfileModule initialization error:', error);
