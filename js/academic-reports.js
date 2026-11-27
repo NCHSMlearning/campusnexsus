@@ -113,9 +113,10 @@
         if (!window.CampusAcademicStructure || !client || !institutionId || !program) return window.currentAcademicStructure || null;
         const current = window.currentAcademicStructure;
         if (current?.institutionId === String(institutionId) &&
-            String(current?.programCode || '').toLowerCase() === String(program).toLowerCase()) return current;
+            String(current?.requestedProgramCode || current?.programCode || '').toLowerCase() === String(program).toLowerCase()) return current;
         try {
             const structure = await window.CampusAcademicStructure.resolve(client, institutionId, program, { refresh: true });
+            structure.requestedProgramCode = program;
             window.currentAcademicStructure = structure;
             return structure;
         } catch (error) {
