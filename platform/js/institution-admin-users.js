@@ -638,9 +638,10 @@
         }catch(emailError){emailNotice=' Profile details were saved, but the login email was not changed: '+(emailError.message||'email update failed')+'.';}
       }
       if(approving){
+        await readApprovedState(api,user.user_id);
         const {data:emailData,error:emailError}=await api.db.functions.invoke('registration-approved-email',{body:{user_id:user.user_id}});
-        if(emailError)emailNotice=' Account approved, but the approval email could not be sent: '+(emailError.message||'email service error')+'.';
-        else if(emailData?.success===false)emailNotice=' Account approved, but the approval email was not sent: '+(emailData.message||'email service unavailable')+'.';
+        if(emailError)emailNotice=' Account approved, but the approval email could not be sent: '+(await approvalEmailError(emailError))+'.';
+        else if(emailData?.success!==true)emailNotice=' Account approved, but the approval email was not sent: '+(emailData?.error||emailData?.message||'email service unavailable')+'.';
         else emailNotice=' Approval email notification accepted for delivery.';
       }
       await load();
