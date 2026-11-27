@@ -1498,7 +1498,7 @@ class ProfileModule {
             if (this.pendingPhotoFile) {
                 await this.uploadPassportPhoto();
             } else {
-                this.onSaveSuccess();
+                await this.onSaveSuccess();
             }
             
         } catch (error) {
@@ -1604,14 +1604,15 @@ class ProfileModule {
         if (window.db) window.db.currentUserProfile = this.userProfile;
     }
     
-    onSaveSuccess() {
+    async onSaveSuccess() {
         if (this.photoObjectURL) {
             URL.revokeObjectURL(this.photoObjectURL);
             this.photoObjectURL = null;
         }
         this.pendingPhotoFile = null;
         if (this.passportFileInput) this.passportFileInput.value = '';
-        this.loadProfile();
+        const refreshedProfile = await this.loadProfile();
+        if (!refreshedProfile) throw new Error('Your changes were saved, but the updated profile could not be reloaded. Refresh the page to verify.');
         this.showStatus('Profile updated successfully!', 'success');
         this.updateUIState('view');
         
