@@ -20,6 +20,101 @@
 
     if (!appMode || document.getElementById('cn-native-tabbar')) return;
 
+    // Touch-first pull-to-refresh for the Campus Nexus app shell.
+    // It only arms at the top of the page and ignores form controls and active exams.
+    (function installPullToRefresh() {
+      if (!('ontouchstart' in window) || document.getElementById('cn-pull-refresh')) return;
+      var style = document.createElement('style');
+      style.id = 'cn-pull-refresh-style';
+      style.textContent = [
+        '#cn-pull-refresh{position:fixed;z-index:2147483646;top:calc(env(safe-area-inset-top) + 7px);left:50%;transform:translate(-50%,-150%);opacity:0;display:flex;align-items:center;gap:9px;padding:10px 16px;border-radius:999px;background:#092541;color:#fff;box-shadow:0 8px 24px rgba(5,25,45,.2);font:700 12px Inter,system-ui,sans-serif;pointer-events:none;transition:transform .16s ease,opacity .16s ease}',
+        '#cn-pull-refresh.visible{opacity:1;transform:translate(-50%,0)}',
+        '#cn-pull-refresh .cn-pull-icon{width:17px;height:17px;display:grid;place-items:center;font-size:17px;line-height:1}',
+        '#cn-pull-refresh.refreshing .cn-pull-icon{animation:cn-pull-spin .7s linear infinite}',
+        '@keyframes cn-pull-spin{to{transform:rotate(360deg)}}',
+        '@media(prefers-reduced-motion:reduce){#cn-pull-refresh,#cn-pull-refresh .cn-pull-icon{transition:none;animation:none}}'
+      ].join('');
+      document.head.appendChild(style);
+      var indicator = document.createElement('div');
+      indicator.id = 'cn-pull-refresh';
+      indicator.setAttribute('role','status');
+      indicator.setAttribute('aria-live','polite');
+      indicator.innerHTML = '<span class="cn-pull-icon" aria-hidden="true">↓</span><span class="cn-pull-label">Pull down to refresh</span>';
+      document.body.appendChild(indicator);
+
+      var startX = 0, startY = 0, distance = 0, tracking = false, pulling = false, hapticDone = false, refreshing = false;
+      var label = indicator.querySelector('.cn-pull-label');
+      var icon = indicator.querySelector('.cn-pull-icon');
+      var threshold = 88;
+      function pageAtTop() {
+        var root = document.scrollingElement || document.documentElement;
+        return (window.scrollY || root.scrollTop || 0) <= 1;
+      }
+      function blockedTarget(target) {
+        if (!target || !target.closest) return false;
+        return !!target.closest('input,textarea,select,button,a,[contenteditable="true"],[data-no-pull-refresh],.exam-taking,.exam-interface,[data-exam-active="true"]');
+      }
+      function hide() {
+        indicator.classList.remove('visible','refreshing');
+        indicator.style.transform = '';
+        label.textContent = 'Pull down to refresh';
+        icon.textContent = '↓';
+        distance = 0; tracking = false; pulling = false; hapticDone = false;
+      }
+      function haptic() {
+        try { if (navigator.vibrate) navigator.vibrate(22); } catch (_) {}
+      }
+      window.addEventListener('touchstart', function(e) {
+        if (refreshing || !e.touches || e.touches.length !== 1 || !pageAtTop() || blockedTarget(e.target)) {
+          tracking = false; return;
+        }
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+        distance = 0; tracking = true; pulling = false; hapticDone = false;
+      }, {passive:true});
+      window.addEventListener('touchmove', function(e) {
+        if (!tracking || refreshing || !e.touches || e.touches.length !== 1) return;
+        var dx = e.touches[0].clientX - startX;
+        var dy = e.touches[0].clientY - startY;
+        if (!pulling && (Math.abs(dx) > Math.abs(dy) || dy < 5)) {
+          if (Math.abs(dx) > 12 || dy < -8) tracking = false;
+          return;
+        }
+        if (!pageAtTop() || dy <= 0) { hide(); return; }
+        if (dy > 8) {
+          pulling = true;
+          e.preventDefault();
+          distance = Math.min(125, dy * 0.52);
+          indicator.classList.add('visible');
+          indicator.style.transform = 'translate(-50%,' + Math.max(0, distance - 55) + 'px)';
+          if (dy >= threshold) {
+            label.textContent = 'Release to refresh';
+            icon.textContent = '↻';
+            if (!hapticDone) { haptic(); hapticDone = true; }
+          } else {
+            label.textContent = 'Pull down to refresh';
+            icon.textContent = '↓';
+          }
+        }
+      }, {passive:false});
+      window.addEventListener('touchend', function() {
+        if (!tracking && !pulling) return;
+        if (pulling && distance >= threshold * 0.52) {
+          refreshing = true;
+          indicator.classList.add('visible','refreshing');
+          indicator.style.transform = 'translate(-50%,0)';
+          label.textContent = 'Refreshing…';
+          icon.textContent = '⟳';
+          if (!hapticDone) haptic();
+          try { if (navigator.vibrate) navigator.vibrate([18,35,18]); } catch (_) {}
+          window.setTimeout(function(){ window.location.reload(); }, 180);
+        } else {
+          hide();
+        }
+      }, {passive:true});
+      window.addEventListener('touchcancel', hide, {passive:true});
+    })();
+
     // Dedicated native shell for the student examination centre. Reuse its
     // existing module links and handlers; this is navigation/UI only.
     var examApp = document.querySelector('.exam-app');
