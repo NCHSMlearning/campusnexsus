@@ -21,6 +21,53 @@
 
     if (!appMode || document.getElementById('cn-native-tabbar')) return;
 
+    // Native APK updater: check the latest signed release without repeated manual downloads.
+    (function installAppUpdateControl() {
+      var updater = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.CampusNexusUpdater;
+      if (!updater || document.getElementById('cn-app-update-control')) return;
+      var control = document.createElement('button');
+      control.id = 'cn-app-update-control'; control.type = 'button';
+      control.textContent = '↻ Check for updates';
+      control.setAttribute('aria-label','Check Campus Nexus app for updates');
+      control.style.cssText = 'display:block;width:calc(100% - 24px);margin:12px;padding:12px 14px;border:1px solid #dce7f0;border-radius:12px;background:#f3f8fc;color:#0b3552;text-align:left;font:750 12px system-ui,sans-serif;cursor:pointer;';
+      var host = document.querySelector('#exam-sidebar .exam-nav') || document.getElementById('iaNav') || document.getElementById('mainNav') || document.querySelector('#sidebar nav') || document.getElementById('sidebar') || document.getElementById('iaSidebar') || document.getElementById('exam-sidebar');
+      if (host) host.appendChild(control);
+      var latest = null, busy = false;
+      async function check(show) {
+        if (busy) return; busy = true; control.disabled = true; control.textContent = 'Checking for updates…';
+        try {
+          var response = await fetch('/app-update.json?check=' + Date.now(), {cache:'no-store'});
+          if (!response.ok) throw new Error('Update service is temporarily unavailable.');
+          var meta = await response.json(); var installed = await updater.getAppInfo(); latest = meta;
+          if (Number(meta.versionCode) > Number(installed.versionCode)) {
+            control.textContent = '⬆ Update available · v' + meta.version; control.dataset.available = '1';
+            control.title = 'Install Campus Nexus ' + meta.version;
+          } else {
+            control.textContent = '✓ Check for updates'; control.dataset.available = '0';
+            if (show) window.alert('Campus Nexus is up to date (' + installed.versionName + ').');
+          }
+        } catch (error) {
+          control.textContent = '↻ Check for updates';
+          if (show) window.alert(error.message || 'Could not check for updates.');
+        } finally { busy = false; control.disabled = false; }
+      }
+      control.addEventListener('click', async function() {
+        if (!latest || control.dataset.available !== '1') { await check(true); return; }
+        if (!window.confirm('Campus Nexus ' + latest.version + ' is available. Download and install it now?')) return;
+        control.disabled = true; control.textContent = 'Downloading update…';
+        try {
+          var result = await updater.installUpdate({url:new URL(latest.apkUrl, location.origin).href, sha256:latest.sha256});
+          if (result && result.permissionRequired) {
+            control.textContent = 'Allow install permission, then check again';
+            window.alert('Allow Campus Nexus to install updates in Android settings. Return to the app and tap Check for updates again.');
+          } else control.textContent = 'Opening Android installer…';
+        } catch (error) {
+          control.textContent = '↻ Try update again'; window.alert(error.message || 'The update could not be installed.');
+        } finally { control.disabled = false; }
+      });
+      check(false);
+    })();
+
     // Touch-first pull-to-refresh for the Campus Nexus app shell.
     // It only arms at the top of the page and ignores form controls and active exams.
     (function installPullToRefresh() {
