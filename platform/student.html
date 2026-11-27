@@ -1898,6 +1898,54 @@ body.dark-mode > #ol-research-modal > #ol-research-dialog .ol-rs-tool{background
 <script src="/js/dashboard-maintenance.js?v=20261120-student-access-v2" defer></script>
 <script src="/platform/js/campus-nexus-module-access.js?v=20261120-entitlements-v3" defer></script>
 <script src="/campus-nexus-app-shell.js?v=1.3.1" defer></script>
+<style id="campus-nexus-student-profile-redesign">
+/* Campus Nexus student profile refresh */
+#profile{--cn-profile-ink:#102b46;--cn-profile-muted:#64748b;--cn-profile-line:#e4ebf3;--cn-profile-purple:#5422a5;--cn-profile-gold:#f5b51b;padding:clamp(12px,2vw,26px)!important;background:#f3f6fb!important;color:var(--cn-profile-ink)}
+#profile>div:first-of-type{background:linear-gradient(120deg,#092f52 0%,#124a72 58%,#3d247f 100%)!important;border-radius:18px!important;padding:clamp(18px,3vw,30px)!important;box-shadow:0 10px 28px rgba(8,40,72,.14)!important}
+#profile>div:first-of-type h2{letter-spacing:-.4px}
+#username-settings-card{border:1px solid var(--cn-profile-line)!important;border-radius:16px!important;padding:18px 20px!important;box-shadow:0 4px 16px rgba(20,48,78,.045)!important}
+#username-settings-card h3{font-size:16px!important}
+#profile-form{border:1px solid var(--cn-profile-line)!important;border-radius:18px!important;padding:clamp(14px,2.4vw,28px)!important;box-shadow:0 8px 28px rgba(20,48,78,.055)!important}
+#profile-form>div:first-child{gap:18px!important;padding-bottom:22px!important;margin-bottom:22px!important;border-bottom:1px solid var(--cn-profile-line)!important}
+#passport-preview{width:88px!important;height:88px!important;border:3px solid #fff!important;box-shadow:0 5px 18px rgba(40,20,80,.2)!important}
+#profile-name{font-size:clamp(19px,2.2vw,25px)!important;font-weight:750!important;letter-spacing:-.4px}
+#profile-form .desktop-layout{grid-template-columns:minmax(0,1.12fr) minmax(290px,.88fr)!important;gap:22px!important;align-items:start}
+#profile-form .desktop-layout>div>div{background:#fff;border:1px solid var(--cn-profile-line);border-radius:15px;padding:18px!important;margin-bottom:16px!important;box-shadow:0 3px 12px rgba(20,48,78,.035)}
+#profile-form .desktop-layout h4{font-size:15px!important;color:var(--cn-profile-ink)!important;border-bottom:1px solid var(--cn-profile-line)!important;padding-bottom:12px!important;margin-bottom:15px!important}
+#profile-form label{color:#43566c!important;font-size:12px!important;font-weight:650!important}
+#profile-form input:not([type=file]),#profile-form select,#profile-form textarea{min-height:44px;border-radius:10px!important;border:1px solid #dce5ef!important;background:#f8fafd!important;padding:10px 12px!important;box-sizing:border-box;max-width:100%;transition:border-color .18s,box-shadow .18s}
+#profile-form input:focus,#profile-form select:focus,#profile-form textarea:focus{outline:none!important;border-color:#7545bd!important;box-shadow:0 0 0 3px rgba(84,34,165,.10)!important}
+#profile-form .desktop-layout [style*="background: #f8fafc"],#profile-form .desktop-layout [style*="background:#f8fafc"]{background:#f8fafd!important}
+#profile-form .desktop-layout [id$="-badge"]{font-weight:650!important}
+#profile-form .mobile-layout{display:none!important}
+#cn-profile-section-nav{position:sticky;top:8px;z-index:15;display:flex;gap:8px;overflow-x:auto;padding:10px 2px 14px;margin:0 0 12px;scrollbar-width:thin;background:rgba(255,255,255,.94);backdrop-filter:blur(12px)}
+#cn-profile-section-nav button{white-space:nowrap;border:1px solid #e1e8f1;background:#fff;color:#42566e;border-radius:999px;padding:9px 14px;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 2px 7px rgba(20,48,78,.035)}
+#cn-profile-section-nav button:hover,#cn-profile-section-nav button:focus-visible{background:#f2ecfb;border-color:#c9b4eb;color:#4c1d95;outline:none}
+#profile .cn-profile-anchor{scroll-margin-top:85px}
+#profile-status{border-radius:10px!important}
+@media(max-width:900px){#profile-form .desktop-layout{grid-template-columns:1fr!important;gap:14px!important}}
+@media(max-width:767px){
+ #profile{padding:10px!important}
+ #profile>div:first-of-type{padding:17px!important;border-radius:14px!important;margin-bottom:14px!important}
+ #profile>div:first-of-type h2{font-size:20px!important}
+ #username-settings-card{padding:15px!important}
+ #username-settings-form{align-items:stretch!important}
+ #username-settings-form input{min-width:0!important;width:100%!important;flex-basis:100%!important}
+ #username-settings-form button{width:100%}
+ #profile-form{padding:13px!important;border-radius:14px!important}
+ #profile-form>div:first-child{gap:12px!important}
+ #passport-preview{width:72px!important;height:72px!important}
+ #profile-form .desktop-layout{display:none!important}
+ #profile-form .mobile-layout{display:block!important}
+ #profile-form .mobile-layout details{background:#fff!important;border:1px solid var(--cn-profile-line)!important;border-radius:13px!important;margin-bottom:11px!important}
+ #profile-form .mobile-layout summary{padding:14px!important;background:#f8fafd!important;font-size:13px!important}
+ #profile-form .mobile-layout details>div{padding:13px!important}
+ #profile-form .mobile-layout input,#profile-form .mobile-layout select{min-height:42px!important;width:100%!important;box-sizing:border-box!important;border-radius:9px!important}
+ #cn-profile-section-nav{top:0;padding:9px 0 12px}
+ #cn-profile-section-nav button{padding:9px 12px;font-size:11px}
+}
+@media(prefers-reduced-motion:reduce){#profile *{scroll-behavior:auto!important;transition:none!important}}
+</style>
 </head>
 <body>
 <!-- LOADING SCREEN -->
@@ -2857,6 +2905,13 @@ body.dark-mode > #ol-research-modal > #ol-research-dialog .ol-rs-tool{background
 </div>
 <!-- ========== PROFILE STATUS ========== -->
 <div id="profile-status" style="display: none; padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; font-size: 14px;"></div>
+<nav id="cn-profile-section-nav" aria-label="Profile sections">
+<button type="button" data-cn-profile-target="cn-profile-overview">Overview</button>
+<button type="button" data-cn-profile-target="cn-profile-personal">Personal Details</button>
+<button type="button" data-cn-profile-target="cn-profile-academic">Academic Records</button>
+<button type="button" data-cn-profile-target="cn-profile-documents">Documents</button>
+<button type="button" data-cn-profile-target="cn-profile-security">Security</button>
+</nav>
 <div id="username-settings-card" style="background:#fff;border:1px solid #dbe7ef;border-radius:12px;padding:20px;margin:0 0 20px;box-shadow:0 2px 8px rgba(10,61,98,.05);">
   <h3 style="margin:0 0 6px;color:#0A3D62;font-size:17px;"><i class="fas fa-at" style="color:#0b6596;"></i> Login Username</h3>
   <p style="margin:0 0 14px;color:#64748b;font-size:13px;line-height:1.5;">Choose a unique username to sign in with your existing password. Your email login will continue to work.</p>
@@ -3426,6 +3481,26 @@ body.dark-mode > #ol-research-modal > #ol-research-dialog .ol-rs-tool{background
             </button>
 </div>
 </form>
+<script id="campus-nexus-profile-navigation">
+(function(){
+ const root=document.getElementById('profile');
+ if(!root||root.dataset.cnProfileRedesignReady==='1')return;
+ root.dataset.cnProfileRedesignReady='1';
+ const findHeading=(label)=>Array.from(root.querySelectorAll('h3,h4,summary')).find(el=>el.textContent.trim().toLowerCase().includes(label));
+ const assign=(label,id)=>{const el=findHeading(label);if(!el)return null;const target=el.tagName==='SUMMARY'?el.parentElement:el.parentElement;target.id=id;target.classList.add('cn-profile-anchor');return target;};
+ assign('personal information','cn-profile-personal');
+ assign('guardian information','cn-profile-guardian');
+ assign('academic information','cn-profile-academic');
+ assign('academic progress','cn-profile-academic-progress');
+ const upload=findHeading('upload documents');if(upload){const card=upload.parentElement;card.id='cn-profile-documents';card.classList.add('cn-profile-anchor');}
+ const security=root.querySelector('.profile-security-section');if(security){security.id='cn-profile-security';security.classList.add('cn-profile-anchor');}
+ const overview=root.querySelector('#profile-form>div:first-child');if(overview){overview.id='cn-profile-overview';overview.classList.add('cn-profile-anchor');}
+ root.querySelectorAll('[data-cn-profile-target]').forEach(button=>button.addEventListener('click',()=>{
+  const target=document.getElementById(button.dataset.cnProfileTarget);
+  if(target)target.scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});
+ }));
+})();
+</script>
 </section>
 <!-- END PROFILE -->
 <!-- ==================== CALENDAR TAB ==================== -->
