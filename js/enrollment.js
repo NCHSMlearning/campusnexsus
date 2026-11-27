@@ -250,7 +250,7 @@ async function initializeSessionReporting() {
 
     const academicYear = String(profile.academic_year || profile.current_academic_year || '');
     const nowYear = new Date().getFullYear();
-    const selectedYear = academicYear || (nowYear + '/' + (nowYear + 1));
+    const selectedYear = academicYear ? (academicYear.includes('/') ? academicYear : academicYear + '/' + (Number(academicYear) + 1)) : (nowYear + '/' + (nowYear + 1));
     if (yearSelect) {
         const years = [...new Set([
             (nowYear - 1) + '/' + nowYear,
