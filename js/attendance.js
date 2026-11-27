@@ -656,25 +656,52 @@
     // ============================================
 
     function showToast(message, type = 'success', duration = 3500) {
-        // One shared top-right stack prevents attendance alerts from covering
-        // the mobile navigation or appearing at the bottom of the app.
+        // Compact, fixed top-right notification. Use a unique class so legacy
+        // .custom-toast rules cannot reposition or enlarge this message.
         let container = document.getElementById('cn-attendance-toast-stack');
         if (!container) {
             container = document.createElement('div');
             container.id = 'cn-attendance-toast-stack';
             container.setAttribute('role', 'region');
             container.setAttribute('aria-label', 'Notifications');
-            container.style.cssText = 'position:fixed;top:calc(env(safe-area-inset-top, 0px) + 78px);right:16px;left:auto;z-index:2147483000;display:flex;flex-direction:column;align-items:flex-end;gap:10px;width:min(420px,calc(100vw - 32px));max-height:calc(100dvh - 110px);overflow:hidden;pointer-events:none;';
+            const set = (el, styles) => Object.entries(styles).forEach(([key, value]) =>
+                el.style.setProperty(key, value, 'important'));
+            set(container, {
+                position: 'fixed', top: 'max(12px, env(safe-area-inset-top, 0px))',
+                right: '12px', left: 'auto', bottom: 'auto',
+                'z-index': '2147483000', display: 'flex',
+                'flex-direction': 'column', 'align-items': 'flex-end',
+                gap: '8px', width: 'min(310px, calc(100vw - 24px))',
+                'max-height': 'calc(100dvh - 24px)', overflow: 'hidden',
+                'pointer-events': 'none'
+            });
             document.body.appendChild(container);
         }
 
+        const palette = {
+            success: '#059669', error: '#dc2626',
+            warning: '#d97706', info: '#4338ca'
+        };
         const toast = document.createElement('div');
-        toast.className = 'custom-toast';
+        toast.className = 'cn-attendance-toast-card';
         toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
-        toast.style.cssText = `position:relative;inset:auto;transform:none;width:100%;box-sizing:border-box;background:${type === 'success' ? '#059669' : type === 'error' ? '#dc2626' : type === 'warning' ? '#d97706' : '#4338ca'};color:#fff;padding:13px 16px;border-radius:14px;font-size:14px;line-height:1.45;font-weight:600;z-index:1;box-shadow:0 10px 28px rgba(15,23,42,.22);display:flex;align-items:flex-start;gap:10px;max-width:100%;font-family:Inter,system-ui,sans-serif;pointer-events:auto;overflow-wrap:anywhere;opacity:0;transform:translateX(12px);transition:opacity .2s ease,transform .2s ease;`;
+        const set = (el, styles) => Object.entries(styles).forEach(([key, value]) =>
+            el.style.setProperty(key, value, 'important'));
+        set(toast, {
+            position: 'relative', inset: 'auto', transform: 'translateX(10px)',
+            width: '100%', 'max-width': '310px', 'min-width': '0',
+            'box-sizing': 'border-box', background: palette[type] || palette.info,
+            color: '#fff', padding: '9px 11px', 'border-radius': '10px',
+            'font-size': '13px', 'line-height': '1.35', 'font-weight': '500',
+            'z-index': '1', 'box-shadow': '0 5px 18px rgba(15,23,42,.16)',
+            display: 'flex', 'align-items': 'center', gap: '8px',
+            'font-family': 'Inter,system-ui,sans-serif',
+            'pointer-events': 'auto', 'overflow-wrap': 'anywhere',
+            opacity: '0', transition: 'opacity .18s ease, transform .18s ease'
+        });
         const icon = document.createElement('span');
         icon.setAttribute('aria-hidden', 'true');
-        icon.style.cssText = 'font-size:18px;line-height:1.2;flex:0 0 auto;';
+        icon.style.cssText = 'font-size:15px;line-height:1;flex:0 0 auto;';
         icon.textContent = type === 'success' ? '✓' : type === 'error' ? '✕' : type === 'warning' ? '⚠' : 'ℹ';
         const text = document.createElement('span');
         text.style.cssText = 'min-width:0;flex:1;';
@@ -683,18 +710,23 @@
         close.type = 'button';
         close.setAttribute('aria-label', 'Dismiss notification');
         close.textContent = '×';
-        close.style.cssText = 'border:0;background:transparent;color:inherit;font-size:20px;line-height:1;cursor:pointer;padding:0 2px;flex:0 0 auto;';
-        close.addEventListener('click', () => toast.remove());
+        close.style.cssText = 'border:0;background:transparent;color:inherit;font-size:18px;line-height:1;cursor:pointer;padding:0 2px;flex:0 0 auto;';
         toast.append(icon, text, close);
         container.appendChild(toast);
         while (container.children.length > 4) container.firstElementChild.remove();
-        requestAnimationFrame(() => { toast.style.opacity = '1'; toast.style.transform = 'translateX(0)'; });
-        const removeTimer = window.setTimeout(() => {
-            toast.style.opacity = '0';
-            toast.style.transform = 'translateX(12px)';
-            window.setTimeout(() => toast.remove(), 220);
+        requestAnimationFrame(() => {
+            toast.style.setProperty('opacity', '1', 'important');
+            toast.style.setProperty('transform', 'translateX(0)', 'important');
+        });
+        let removeTimer = window.setTimeout(() => {
+            toast.style.setProperty('opacity', '0', 'important');
+            toast.style.setProperty('transform', 'translateX(10px)', 'important');
+            window.setTimeout(() => toast.remove(), 200);
         }, Math.max(1500, Number(duration) || 3500));
-        close.addEventListener('click', () => window.clearTimeout(removeTimer), { once: true });
+        close.addEventListener('click', () => {
+            window.clearTimeout(removeTimer);
+            toast.remove();
+        });
     }
 
     // ============================================
