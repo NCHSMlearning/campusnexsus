@@ -164,6 +164,12 @@ async function loadData()
 
     render();
   }catch(e){
+    if (e?.code === 'P0001' && /not enabled for this institution/i.test(e?.message || '')) {
+      setError('Online Learning is not enabled by your institution.');
+      setContent('<div class="ol-empty"><i class="fas fa-lock"></i><strong>Online Learning is currently disabled</strong><br>Your institution administrator can enable this module in Manage Institutions.</div>');
+      updateStats();
+      return;
+    }
     console.error('Online Learning load failed:',e);
     setError('Online Learning could not load. Details: '+(e.message||e));
     setContent('<div class="ol-empty"><i class="fas fa-database"></i><strong>Learning data is not available yet</strong><br>Once the Online Learning database is configured, your assignments will appear here.</div>');
