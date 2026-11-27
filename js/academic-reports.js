@@ -1223,79 +1223,110 @@
     async function loadSemesterReport() {
         const tbody = document.getElementById('grades-table-body');
         if (!tbody) return;
-        tbody.innerHTML = `<tr><td colspan="6" style="padding:40px;text-align:center;color:#94a3b8;"><div class="loading-spinner"></div> Loading grades...</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" style="padding:40px;text-align:center;color:#94a3b8;"><div class="loading-spinner"></div> Loading academic results...</td></tr>`;
 
         try {
             const user = window.currentUserProfile || window.db?.currentUserProfile || {};
-            const program = user.program || '';
+            const program = user.program || user.program_code || user.program_type || '';
+            await ensureAcademicStructure(user);
             const admission = user.student_id || user.admission_number || user.user_id;
+            if ((!myMarksData || myMarksData.length === 0) && admission) await loadMyMarks();
 
-            if ((!myMarksData || myMarksData.length === 0) && admission) {
-                await loadMyMarks();
-            }
-
-            let grades = (myMarksData || []).map(m => normalizeAcademicMark(m, program));
-
-            const selected = document.getElementById('semester-filter')?.value || '';
-            if (selected && grades.length) {
-                const startYear = String(selected).split('-')[0];
-                const matched = grades.filter(g => {
-                    const y = String(g.academic_year || '').trim();
-                    return y === selected || y === `${startYear}/${Number(startYear) + 1}` || y.includes(startYear);
+            const allGrades = (myMarksData || []).map(mark => normalizeAcademicMark(mark, program));
+            const structure = window.currentAcademicStructure || {};
+            const periodLabel = structure.singular || PROGRAM.getBlockLabel(program);
+            const periodPlural = structure.plural || periodLabel + 's';
+            const filter = document.getElementById('semester-filter');
+            if (filter) {
+                const previous = filter.value;
+                const periods = (structure.periods || []).map(period => period.name);
+                filter.replaceChildren();
+                const all = document.createElement('option');
+                all.value = '';
+                all.textContent = 'All ' + periodPlural;
+                filter.appendChild(all);
+                periods.forEach(period => {
+                    const option = document.createElement('option');
+                    option.value = period;
+                    option.textContent = period;
+                    filter.appendChild(option);
                 });
-                if (matched.length) grades = matched;
+                const currentPeriod = structure.type === 'Semester'
+                    ? (user.current_semester || user.semester)
+                    : structure.type === 'Term'
+                        ? (user.current_term || user.term)
+                        : (user.current_block || user.block);
+                if (previous && periods.includes(previous)) filter.value = previous;
+                else if (currentPeriod && periods.includes(currentPeriod)) filter.value = currentPeriod;
             }
 
-            currentGrades = grades;
+            const selectedPeriod = filter?.value || '';
+            const grades = selectedPeriod
+                ? allGrades.filter(grade => String(grade.block || '').toLowerCase() === selectedPeriod.toLowerCase())
+                : allGrades;
+            currentGrades = allGrades;
+            populateAcademicYearFilter(allGrades);
+
+            const periodHeading = tbody.closest('table')?.querySelector('thead tr');
+            if (periodHeading) {
+                const cells = periodHeading.querySelectorAll('th');
+                if (cells[0]) cells[0].textContent = 'Unit Code';
+                if (cells[1]) cells[1].textContent = 'Unit Name';
+            }
+            const title = document.querySelector('#semester-report h4');
+            if (title) title.innerHTML = '<i class="fas fa-table-list"></i> ' + escapeHtml(selectedPeriod || ('All ' + periodPlural)) + ' Unit Grades';
 
             if (!grades.length) {
-                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:50px;color:#94a3b8;"><i class="fas fa-file-circle-xmark" style="font-size:34px;display:block;margin-bottom:10px;"></i><strong style="display:block;color:#1e293b;">No published academic results</strong><span>Results will appear here after they are published by the academic office.</span></td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:50px;color:#94a3b8;"><i class="fas fa-file-circle-xmark" style="font-size:34px;display:block;margin-bottom:10px;"></i><strong style="display:block;color:#1e293b;">No published results for this ${escapeHtml(periodLabel.toLowerCase())}</strong><span>Results will appear here after they are published by the academic office.</span></td></tr>`;
                 setAcademicSummary(0, '-', 0);
                 return;
             }
 
-            const normalizedStatus = g => {
-                const raw = String(g.status || '').trim().toUpperCase();
+            const normalizedStatus = grade => {
+                const raw = String(grade.status || '').trim().toUpperCase();
                 const allowed = ['DISTINCTION','CREDIT','PASS','FAIL','PENDING','EXCELLENT','GOOD','SATISFACTORY'];
                 if (allowed.includes(raw) && raw !== 'PENDING') return raw;
-                const score = g.final_score;
+                const score = grade.final_score;
                 return score === null || score === undefined || score === '' || !Number.isFinite(Number(score))
                     ? 'PENDING' : getGradingStatus(Number(score), program);
             };
-            const isPublishedPass = g => /^(PASS|DISTINCTION|CREDIT|SATISFACTORY|EXCELLENT|GOOD)$/i.test(normalizedStatus(g));
-            const earnedCredits = grades.filter(isPublishedPass)
-                .reduce((s,g) => s + (Number(g.credits) || 3), 0);
-            const gpa = calculateGPA(grades);
-            // Do not infer a new overall grade from the average of published unit scores.
-            setAcademicSummary(gpa, '-', earnedCredits);
+            const isPublishedPass = grade => /^(PASS|DISTINCTION|CREDIT|SATISFACTORY|EXCELLENT|GOOD)$/i.test(normalizedStatus(grade));
+            const earnedCredits = grades.filter(isPublishedPass).reduce((sum, grade) => sum + (Number(grade.credits) || 3), 0);
+            const periodGpa = calculateGPA(grades);
+            const cumulativeGpa = calculateGPA(allGrades);
+            const set = (id, value) => { const element = document.getElementById(id); if (element) element.textContent = value; };
+            set('semester-gpa', periodGpa.toFixed(2));
+            set('cumulative-gpa', cumulativeGpa.toFixed(2));
+            set('semester-grade', grades.length ? (PROGRAM.isTVET(program) ? getGradeFromGPATVET(periodGpa) : getGradeFromGPA(periodGpa)) : '-');
+            set('cumulative-grade', allGrades.length ? (PROGRAM.isTVET(program) ? getGradeFromGPATVET(cumulativeGpa) : getGradeFromGPA(cumulativeGpa)) : '-');
+            set('total-credits-earned', String(earnedCredits));
+            setAcademicSummary(periodGpa, '-', earnedCredits);
 
-            // Keep the Course Grades table focused on published outcomes, not CAT/exam components.
-            const gradesTable = tbody.closest('table');
-            if (gradesTable) {
-                const header = gradesTable.querySelector('thead tr');
-                if (header) header.innerHTML = '<th>Course Code</th><th>Course Name</th><th>Credits</th><th>Grade</th><th>Rate</th>';
-            }
-            tbody.innerHTML = grades.map(g => {
-                const gradeColor = getGradeColor(g.grade);
-                const score = g.final_score === null || g.final_score === undefined || g.final_score === '' ? null : Number(g.final_score);
-                const status = normalizedStatus(g);
+            tbody.innerHTML = grades.map(grade => {
+                const gradeColor = getGradeColor(grade.grade);
+                const status = normalizedStatus(grade);
                 const passed = /^(PASS|DISTINCTION|CREDIT|SATISFACTORY|EXCELLENT|GOOD)$/i.test(status);
                 const statusColor = status === 'FAIL' ? '#dc2626' : passed ? '#059669' : '#64748b';
+                const score = grade.final_score === null || grade.final_score === undefined || grade.final_score === '' ? null : Number(grade.final_score);
                 return `<tr style="border-bottom:1px solid #e2e8f0;">
-                    <td style="padding:12px;white-space:nowrap;">${escapeHtml(g.unit_code || 'N/A')}</td>
-                    <td style="padding:12px;">${escapeHtml(g.subject_name || 'N/A')}</td>
-                    <td style="padding:12px;text-align:center;">${Number(g.credits) || 3}</td>
-                    <td style="padding:12px;text-align:center;"><span style="background:${gradeColor};color:white;padding:2px 10px;border-radius:12px;font-weight:700;font-size:12px;">${escapeHtml(g.grade || (g.final_score === null ? 'Pending' : '-'))}</span></td>
+                    <td style="padding:12px;white-space:nowrap;">${escapeHtml(grade.unit_code || 'N/A')}</td>
+                    <td style="padding:12px;">${escapeHtml(grade.subject_name || 'N/A')}</td>
+                    <td style="padding:12px;text-align:center;">${Number(grade.credits) || 3}</td>
+                    <td style="padding:12px;text-align:center;">${grade.cat1 === null ? '—' : Number(grade.cat1).toFixed(1)}</td>
+                    <td style="padding:12px;text-align:center;">${grade.cat2 === null ? '—' : Number(grade.cat2).toFixed(1)}</td>
+                    <td style="padding:12px;text-align:center;">${grade.final_exam === null ? '—' : Number(grade.final_exam).toFixed(1)}</td>
+                    <td style="padding:12px;text-align:center;">${score === null ? 'Pending' : score.toFixed(1)}</td>
+                    <td style="padding:12px;text-align:center;"><span style="background:${gradeColor};color:white;padding:2px 10px;border-radius:12px;font-weight:700;font-size:12px;">${escapeHtml(grade.grade || (score === null ? 'Pending' : '-'))}</span></td>
                     <td style="padding:12px;text-align:center;"><span style="background:${statusColor};color:white;padding:3px 8px;border-radius:12px;font-weight:700;font-size:10px;">${escapeHtml(status)}</span></td>
                 </tr>`;
             }).join('');
 
             createGradeChart(grades);
-            window.currentCumulativeGPA = gpa;
-            document.dispatchEvent(new CustomEvent('academicGpaUpdated', {detail:{semesterGPA:gpa,cumulativeGPA:gpa,formatted:gpa.toFixed(2)}}));
+            window.currentCumulativeGPA = cumulativeGpa;
+            document.dispatchEvent(new CustomEvent('academicGpaUpdated', {detail:{semesterGPA:periodGpa,cumulativeGPA:cumulativeGpa,formatted:cumulativeGpa.toFixed(2)}}));
         } catch (error) {
             console.error('Academic Reports semester load failed:', error);
-            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:45px;color:#dc2626;">Unable to load academic results. Please refresh and try again.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:45px;color:#dc2626;">Unable to load academic results. Please refresh and try again.</td></tr>`;
         }
     }
 
