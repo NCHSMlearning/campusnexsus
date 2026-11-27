@@ -1155,7 +1155,8 @@ class Database {
             const { data: logs, error: logsError } = await this.supabase
                 .from('geo_attendance_logs')
                 .select('is_verified')
-                .eq('student_id', userId);
+                .eq('student_id', userId)
+                .eq('institution_id', this.currentUserProfile?.institution_id || window.CURRENT_INSTITUTION_ID);
 
             const totalLogs = logs?.length || 0;
             const verifiedCount = logs?.filter(l => l.is_verified === true).length || 0;
@@ -1425,6 +1426,7 @@ class Database {
                 .from('geo_attendance_logs')
                 .select('check_in_time, session_type, target_name, is_verified')
                 .eq('student_id', this.currentUserId)
+                .eq('institution_id', this.currentUserProfile?.institution_id || window.CURRENT_INSTITUTION_ID)
                 .order('check_in_time', { ascending: false })
                 .limit(100);
 
