@@ -718,7 +718,7 @@ class DashboardModule {
         
         this.userId = userId;
         this.userProfile = userProfile;
-        this.cacheKey = `dashboard_${this.userId}`;
+        this.cacheKey = `dashboard_${this.userProfile?.institution_id || window.CURRENT_INSTITUTION_ID || 'tenant'}_${this.userId}`;
         window.currentUserProfile = userProfile;
 
         const displayName = userProfile?.full_name || 'Student';
@@ -1294,7 +1294,7 @@ class DashboardModule {
             if (sessionData.session.user.id !== this.userId) {
                 console.warn('⚠️ Dashboard user ID changed; synchronizing...');
                 this.userId = sessionData.session.user.id;
-                this.cacheKey = `dashboard_${this.userId}`;
+                this.cacheKey = `dashboard_${this.userProfile?.institution_id || window.CURRENT_INSTITUTION_ID || 'tenant'}_${this.userId}`;
             }
 
             // SINGLE AUTHORITATIVE DASHBOARD RPC:
