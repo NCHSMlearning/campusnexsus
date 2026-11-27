@@ -1488,7 +1488,7 @@ attachCheckboxEvents() {
                     unit_code: unit.unit_code,
                     unit_name: unit.unit_name,
                     program: unit.program || programCode,
-                    block: unit.block || this.userProfile?.block || (isTVET ? 'Year 1 Term 1' : 'Introductory'),
+                    block: unit.block || unit.semester || unit.term || this.userProfile?.current_semester || this.userProfile?.semester || this.userProfile?.current_block || this.userProfile?.block || this.userProfile?.current_term || this.userProfile?.term || (isTVET ? 'Year 1 Term 1' : 'Introductory'),
                     reg_type: regType,
                     status: 'pending',
                     submitted_date: now,
