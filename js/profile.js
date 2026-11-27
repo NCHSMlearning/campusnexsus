@@ -1818,7 +1818,8 @@ class ProfileModule {
     // 🛡️ 2FA FUNCTIONS - STANDALONE (NO NCHSMLOGIN)
     // ============================================================
     
-    async check2FAStatus() {
+    async check2FAStatus()
+        if (window.waitForStudentPortalContext) await window.waitForStudentPortalContext(); {
         try {
             if (!this.userId) return false;
             
@@ -1829,7 +1830,7 @@ class ProfileModule {
                 .from('consolidated_user_profiles_table')
                 .select('two_factor_enabled, two_factor_secret, two_factor_setup_date')
                 .eq('user_id', this.userId)
-                .single();
+                .maybeSingle();
             
             if (error) {
                 console.warn('Error checking 2FA status:', error);
