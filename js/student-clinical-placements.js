@@ -304,9 +304,12 @@
     if (!sb || !id) return renderError('Your authenticated student session is not ready. Please reopen this tab after the portal finishes loading.');
     try {
       const [ballots, placements, attendance] = await Promise.all([
-        sb.from('clinical_rotation_ballots').select('*').in('status', ['open','scheduled']).order('created_at', { ascending:false }).limit(20),
-        sb.from('clinical_placements').select('*').eq('student_id', id).order('start_date', { ascending:false }),
-        sb.from('clinical_hours_logs').select('id,student_id,clinical_area,clinical_shift,hours_completed,hours_required,log_date,verified,verified_by_name,notes').eq('student_id', id).is('deleted_at', null).order('log_date', { ascending:false }).limit(200)
+        sb.from('clinical_rotation_ballots').select('*')
+            .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id).in('status', ['open','scheduled']).order('created_at', { ascending:false }).limit(20),
+        sb.from('clinical_placements').select('*').eq('student_id', id)
+            .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id).order('start_date', { ascending:false }),
+        sb.from('clinical_hours_logs').select('id,student_id,clinical_area,clinical_shift,hours_completed,hours_required,log_date,verified,verified_by_name,notes').eq('student_id', id)
+            .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id).is('deleted_at', null).order('log_date', { ascending:false }).limit(200)
       ]);
       const failed = [ballots, placements, attendance].find(r => r.error);
       if (failed) throw failed.error;
@@ -328,7 +331,8 @@
         if (capacityResult.error) throw capacityResult.error;
         (capacityResult.data || []).forEach(row => { state.capacity[row.department] = row; });
         updateWheelAvailability();
-        const pref = await sb.from('clinical_rotation_preferences').select('*').eq('ballot_id', state.ballot.id).eq('student_id', id).maybeSingle();
+        const pref = await sb.from('clinical_rotation_preferences').select('*').eq('ballot_id', state.ballot.id)
+            .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id).eq('student_id', id).maybeSingle();
         if (pref.error) throw pref.error;
         state.preference = pref.data;
       }
