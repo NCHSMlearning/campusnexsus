@@ -701,7 +701,7 @@ class ProfileModule {
                 let bucket = profilePhotoPath ? 'user-documents' : 'passports';
                 let objectPath = String(photoValue);
                 let resolvedUrl = null;
-                const storageMatch = objectPath.match(/\\/storage\\/v1\\/object\\/(?:public|sign)\\/([^/]+)\\/(.+?)(?:\\?.*)?$/);
+                const storageMatch = objectPath.match(/\/storage\/v1\/object\/(?:public|sign)\/([^/]+)\/(.+?)(?:\?.*)?$/);
 
                 if (storageMatch) {
                     bucket = decodeURIComponent(storageMatch[1]);
@@ -760,7 +760,7 @@ class ProfileModule {
         const supabase = this.getSupabaseClient();
         let bucket = profilePhotoPath ? 'user-documents' : 'passports';
         let objectPath = String(photoValue);
-        const storageMatch = objectPath.match(/\\/storage\\/v1\\/object\\/(?:public|sign)\\/([^/]+)\\/(.+?)(?:\\?.*)?$/);
+        const storageMatch = objectPath.match(/\/storage\/v1\/object\/(?:public|sign)\/([^/]+)\/(.+?)(?:\?.*)?$/);
         if (storageMatch) {
             bucket = decodeURIComponent(storageMatch[1]);
             objectPath = decodeURIComponent(storageMatch[2]);
