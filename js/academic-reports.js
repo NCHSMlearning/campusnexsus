@@ -738,6 +738,10 @@
                         return {
                             ...mark,
                             unit_code: mark.unit_code || getUnitCode(mark.subject_name),
+                            block: getAcademicPeriod(mark),
+                            semester: mark.semester || '',
+                            term: mark.term || '',
+                            academic_period: mark.academic_period || '',
                             grade,
                             points: Number.isFinite(points) ? points : null,
                             status: hasPassedInlineRetake ? 'PASS' : (mark.final_status ?? mark.status ?? ''),
@@ -1011,13 +1015,7 @@
             
             if (typeof Chart !== 'undefined') {
                 const sortedMarks = [...marks].sort((a, b) => {
-                    const blockOrder = {
-                        'Introductory': 0, 'Block 1': 1, 'Block 2': 2, 'Block 3': 3,
-                        'Block 4': 4, 'Block 5': 5, 'Final': 6,
-                        'Term 1': 1, 'Term 2': 2, 'Term 3': 3, 'Term 4': 4,
-                        'Term 5': 5, 'Term 6': 6
-                    };
-                    return (blockOrder[a.block] || 0) - (blockOrder[b.block] || 0);
+                    return getPeriodSequence(a.block) - getPeriodSequence(b.block);
                 });
                 
                 const labels = sortedMarks.map(m => m.unit_code || getUnitCode(m.subject_name) || 'N/A');
@@ -1109,13 +1107,7 @@
             
             if (typeof Chart !== 'undefined') {
                 const sortedMarks = [...marks].sort((a, b) => {
-                    const blockOrder = {
-                        'Introductory': 0, 'Block 1': 1, 'Block 2': 2, 'Block 3': 3,
-                        'Block 4': 4, 'Block 5': 5, 'Final': 6,
-                        'Term 1': 1, 'Term 2': 2, 'Term 3': 3, 'Term 4': 4,
-                        'Term 5': 5, 'Term 6': 6
-                    };
-                    return (blockOrder[a.block] || 0) - (blockOrder[b.block] || 0);
+                    return getPeriodSequence(a.block) - getPeriodSequence(b.block);
                 });
                 
                 const labels = sortedMarks.map(m => m.unit_code || getUnitCode(m.subject_name) || 'N/A');
