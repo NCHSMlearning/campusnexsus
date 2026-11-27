@@ -16,6 +16,7 @@ const ENR_STATE = {
     currentBlock: null,
     currentYear: null,
     currentTerm: null,
+    academicStructure: null,
     programType: null,
     stats: {
         total: 0,
@@ -136,7 +137,7 @@ async function loadStudentInfo() {
             if (previousDisplay) previousDisplay.value = ENR_STATE.currentStudentProgram;
             
             if (safeGetElement('enrSessionReportingTab')) {
-                initializeSessionReporting();
+                await initializeSessionReporting();
             }
             
             console.log('✅ Student info loaded');
@@ -200,89 +201,109 @@ function getProgramDisplayName(programCode) {
 // ============================================================
 // SESSION REPORTING - INITIALIZATION
 // ============================================================
-function initializeSessionReporting() {
+async function initializeSessionReporting() {
     const program = ENR_STATE.currentStudentProgram;
-    const programType = ENR_STATE.programType || detectProgramType(program);
-    const programDisplay = getProgramDisplayName(program);
-
-    console.log('🔄 Initializing Session Reporting');
+    const profile = window.currentUserProfile || window.db?.currentUserProfile || window.currentUser || {};
+    const institutionId = profile.institution_id || window.CURRENT_INSTITUTION_ID;
+    const programCode = profile.program || profile.program_code || program;
+    const sb = getSupabaseClient();
 
     const currentProgramEl = safeGetElement('enrReportCurrentProgram');
     const programTypeEl = safeGetElement('enrReportProgramType');
     const autoDetect = safeGetElement('enrReportAutoDetect');
-
-    if (currentProgramEl) currentProgramEl.textContent = programDisplay;
-    if (programTypeEl) {
-        programTypeEl.textContent = programType;
-        programTypeEl.style.background = programType === 'Nursing' ? '#dbeafe' : '#fef3c7';
-        programTypeEl.style.color = programType === 'Nursing' ? '#1e40af' : '#92400e';
-    }
-
     const sessionSelect = safeGetElement('enrReportSession');
     const sessionLabel = safeGetElement('enrReportSessionLabel');
     const helpText = safeGetElement('enrReportSessionHelpText');
     const instructions = safeGetElement('enrReportInstructions');
+    const yearSelect = safeGetElement('enrReportYear');
 
-    if (!sessionSelect) {
-        console.warn('⚠️ enrReportSession not found');
-        return;
+    if (currentProgramEl) currentProgramEl.textContent = getProgramDisplayName(program);
+    if (!sessionSelect) return;
+
+    const fallbackType = detectProgramType(program) === 'Nursing' ? 'Block' : 'Term';
+    ENR_STATE.academicStructure = null;
+    if (sb && institutionId && programCode && window.CampusAcademicStructure?.resolve) {
+        try {
+            ENR_STATE.academicStructure = await window.CampusAcademicStructure.resolve(
+                sb, institutionId, programCode, { refresh: true }
+            );
+        } catch (error) {
+            console.error('Could not resolve institution academic structure for enrollment reporting:', error);
+        }
     }
 
-    sessionSelect.innerHTML = '<option value="">-- Select --</option>';
+    const structure = ENR_STATE.academicStructure || {
+        type: fallbackType,
+        singular: fallbackType,
+        plural: fallbackType === 'Block' ? 'Blocks' : 'Terms',
+        periods: []
+    };
+    const periodType = structure.type || fallbackType;
+    const periodLabel = structure.singular || periodType;
+    const programType = detectProgramType(program);
 
-    if (programType === 'Nursing') {
-        if (sessionLabel) sessionLabel.textContent = 'Current Block *';
-        if (helpText) helpText.textContent = 'Select your current block in the Nursing program';
-        if (instructions) instructions.textContent = 'Report your current block in the Nursing program.';
+    if (programTypeEl) {
+        programTypeEl.textContent = periodType + ' structure';
+        programTypeEl.style.background = periodType === 'Semester' ? '#dbeafe' : periodType === 'Term' ? '#fef3c7' : '#ede9fe';
+        programTypeEl.style.color = periodType === 'Semester' ? '#1e40af' : periodType === 'Term' ? '#92400e' : '#5b21b6';
+    }
 
-        BLOCK_OPTIONS.forEach(block => {
-            const option = document.createElement('option');
-            option.value = block;
-            option.textContent = block;
-            if (block === ENR_STATE.currentBlock) {
-                option.selected = true;
-            }
-            sessionSelect.appendChild(option);
-        });
+    const academicYear = String(profile.academic_year || profile.current_academic_year || '');
+    const nowYear = new Date().getFullYear();
+    const selectedYear = academicYear || (nowYear + '/' + (nowYear + 1));
+    if (yearSelect) {
+        const years = [...new Set([
+            (nowYear - 1) + '/' + nowYear,
+            nowYear + '/' + (nowYear + 1),
+            (nowYear + 1) + '/' + (nowYear + 2),
+            (nowYear + 2) + '/' + (nowYear + 3),
+            academicYear
+        ].filter(Boolean))];
+        yearSelect.innerHTML = '<option value="">-- Select Academic Year --</option>' +
+            years.map(y => '<option value="' + escapeHtml(y) + '">' + escapeHtml(y) + '</option>').join('');
+        yearSelect.value = years.includes(selectedYear) ? selectedYear : '';
+    }
 
-        if (autoDetect) {
-            autoDetect.textContent = ENR_STATE.currentBlock ? 
-                `✅ Auto-detected: ${ENR_STATE.currentBlock}` : 
-                '⚠️ No block assigned yet';
-            autoDetect.style.color = ENR_STATE.currentBlock ? '#059669' : '#f59e0b';
-        }
+    const currentPeriod = periodType === 'Semester'
+        ? (profile.current_semester || profile.semester || profile.current_block || profile.block)
+        : periodType === 'Term'
+            ? (profile.current_term || profile.term || profile.current_block || profile.block)
+            : (profile.current_block || profile.block || profile.current_semester || profile.semester);
 
-    } else {
-        if (sessionLabel) sessionLabel.textContent = 'Year & Term *';
-        if (helpText) helpText.textContent = 'Select your current year and term in the TVET program';
-        if (instructions) instructions.textContent = 'Report your current year and term in the TVET program.';
+    const configuredPeriods = (structure.periods || []).map(p => typeof p === 'string' ? p : p.name).filter(Boolean);
+    let options = configuredPeriods;
+    if (!options.length && !ENR_STATE.academicStructure) {
+        options = periodType === 'Block' ? BLOCK_OPTIONS :
+            periodType === 'Term' ? TVET_YEARS.flatMap(y => TVET_TERMS.map(t => y + ' - ' + t)) : [];
+    }
 
-        TVET_YEARS.forEach(year => {
-            TVET_TERMS.forEach(term => {
-                const value = `${year} - ${term}`;
-                const option = document.createElement('option');
-                option.value = value;
-                option.textContent = value;
-                const currentCombined = ENR_STATE.currentYear && ENR_STATE.currentTerm ? 
-                    `${ENR_STATE.currentYear} - ${ENR_STATE.currentTerm}` : '';
-                if (value === currentCombined) {
-                    option.selected = true;
-                }
-                sessionSelect.appendChild(option);
-            });
-        });
+    sessionSelect.innerHTML = '<option value="">-- Select ' + escapeHtml(periodLabel) + ' --</option>';
+    options.forEach(value => {
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = value;
+        if (String(value).toLowerCase() === String(currentPeriod || '').toLowerCase()) option.selected = true;
+        sessionSelect.appendChild(option);
+    });
+    if (!options.length) {
+        const option = document.createElement('option');
+        option.value = '';
+        option.disabled = true;
+        option.textContent = 'No active ' + structure.plural?.toLowerCase() + ' configured';
+        sessionSelect.appendChild(option);
+    }
 
-        if (autoDetect) {
-            const currentCombined = ENR_STATE.currentYear && ENR_STATE.currentTerm ? 
-                `${ENR_STATE.currentYear} - ${ENR_STATE.currentTerm}` : '';
-            autoDetect.textContent = currentCombined ? 
-                `✅ Auto-detected: ${currentCombined}` : 
-                '⚠️ No year/term assigned yet';
-            autoDetect.style.color = currentCombined ? '#059669' : '#f59e0b';
-        }
+    if (sessionLabel) sessionLabel.textContent = 'Current ' + periodLabel + ' *';
+    if (helpText) helpText.textContent = 'Select the ' + periodLabel.toLowerCase() + ' configured by your institution.';
+    if (instructions) instructions.textContent = 'Report back to your current ' + periodLabel.toLowerCase() + ' for ' + getProgramDisplayName(program) + '.';
+
+    if (autoDetect) {
+        autoDetect.textContent = currentPeriod
+            ? 'Auto-detected: ' + currentPeriod + ' · ' + periodType + ' structure'
+            : 'No current ' + periodLabel.toLowerCase() + ' assigned yet';
+        autoDetect.style.color = currentPeriod ? '#059669' : '#f59e0b';
     }
 }
-
 // ============================================================
 // SUBMIT SESSION REPORT - WITH DUPLICATE CHECK
 // ============================================================
