@@ -369,9 +369,17 @@ class ProfileModule {
         this.showStatus('Loading profile...', 'info');
 
         try {
-            const supabase = this.getSupabaseClient();
+            let supabase = this.getSupabaseClient();
+
+            // ProfileModule can start before Database finishes initializing.
+            // Wait for the shared database bootstrap instead of using the CDN
+            // namespace or failing the first profile request.
+            if (!supabase && typeof window.db?.initialize === 'function') {
+                await window.db.initialize();
+                supabase = this.getSupabaseClient();
+            }
             if (!supabase) {
-                this.showStatus('Database connection not available. Please refresh and try again.', 'error');
+                this.showStatus('Database connection is not ready. Please wait a moment and retry.', 'error');
                 return null;
             }
 
@@ -451,7 +459,7 @@ class ProfileModule {
         // ============================================
         
         const nameDisplay = document.getElementById('profile-name');
-        if (nameDisplay) nameDisplay.textContent = p.full_name || 'Loading...';
+        if (nameDisplay) nameDisplay.textContent = p.full_name || p.name || 'Student';
         
         const studentIdDisplay = document.getElementById('profile-student-id');
         if (studentIdDisplay) studentIdDisplay.textContent = p.student_id || p.reg_no || '-';
@@ -2467,13 +2475,22 @@ class ProfileModule {
     // ============================================================
     
     getSupabaseClient() {
-        if (window.db && window.db.supabase) {
-            return window.db.supabase;
-        }
-        if (window.supabase) {
-            return window.supabase;
-        }
-        return null;
+        // config.js exposes the ready-to-use client as window.sb.
+        // window.supabase may instead be only the CDN namespace (createClient),
+        // so never return it unless it has the client query/auth methods.
+        const candidates = [
+            window.sb,
+            window.NCHSMLogin?.supabase,
+            window.db?.supabase,
+            window.supabaseClient,
+            window.supabase
+        ];
+        return candidates.find(client =>
+            client &&
+            typeof client.from === 'function' &&
+            client.auth &&
+            typeof client.auth.getUser === 'function'
+        ) || null;
     }
     
     showStatus(message, type = 'info') {
