@@ -943,21 +943,11 @@ async function handleAddExam(e) {
 
         examData.id = insertResult.data?.[0]?.id;
 
-        let emailResult = { sent: 0, total: 0, failed: 0 };
-        if (notifyStudents && recipients.length > 0) {
-            emailResult = await sendExamNotificationEmail(examData, recipients);
-        }
-
+        // New examinations are saved as draft/pending approval. Do not email students
+        // until an authorised administrator publishes the approved examination.
         let feedbackMsg = `✅ "${fields.title}" created successfully!`;
         if (selectedUnit) feedbackMsg += ` 📚 ${selectedUnit.unit_code} — ${selectedUnit.unit_name}`;
-        if (notifyStudents) {
-            if (recipients.length > 0) {
-                feedbackMsg += ` 📧 ${emailResult.sent} emails sent to ${recipients.length} students.`;
-                if (emailResult.failed > 0) feedbackMsg += ` ⚠️ ${emailResult.failed} failed.`;
-            } else {
-                feedbackMsg += ' ⚠️ No students found to notify.';
-            }
-        }
+        if (notifyStudents) feedbackMsg += ' 📧 Student email notices will be sent after approval and publication.';
 
         showFeedback(feedbackMsg, 'success');
 
