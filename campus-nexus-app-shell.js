@@ -103,7 +103,8 @@
       document.body.classList.toggle('nchsm-nav-open',open);
       scrim.classList.toggle('show',open);
     });
-    bar.appendChild(more);
+    if (sidebar) bar.appendChild(more);
+    if (!items.length && !sidebar) return;
     var scrim=document.createElement('div');
     scrim.id='cn-native-menu-scrim';
     scrim.addEventListener('click',function(){
