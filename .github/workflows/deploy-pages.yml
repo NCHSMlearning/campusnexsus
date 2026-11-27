@@ -275,6 +275,7 @@ jobs:
               # Refresh cache keys for the navigation fixes shipped in this release.
               asset_versions = {
                   "/platform/js/student-navigation.js": "20261127-student-nav-v4",
+                  "/platform/js/campus-nexus-institutions.js": "20261127-institution-products-v1",
                   "/platform/js/student-navigation-guard.js": "20261127-student-nav-v3",
                   "/platform/js/lecturer-ui.js": "20261127-lecturer-nav-v2",
                   "/platform/examinations/source/admin.js": "20261127-superadmin-route-v2",
