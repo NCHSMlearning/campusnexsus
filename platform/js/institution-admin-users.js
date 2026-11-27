@@ -619,12 +619,11 @@
       if(!payload.full_name?.trim())throw new Error('Full name is required.');
       if(['blocked','inactive'].includes(payload.status))payload.login_enabled=false;
       const approving = requestedStatus === 'approved' && !['approved','active'].includes(currentStatus);
-      if(['blocked','inactive'].includes(requestedStatus) && requestedStatus!==currentStatus)
-        throw new Error('Account access changes must use the dedicated account access controls. Profile editing cannot change approval or login permissions.');
+      const disablingAccess = ['blocked','inactive'].includes(requestedStatus) && requestedStatus!==currentStatus;
       // Never allow a stale form value (for example, Pending) to undo an
       // approval. Approval state is owned by the review RPC, not profile edits.
-      payload.status=currentAccess.status;
-      payload.login_enabled=currentAccess.login_enabled===true||String(currentAccess.login_enabled).toLowerCase()==='true';
+      payload.status=disablingAccess ? requestedStatus : currentAccess.status;
+      payload.login_enabled=disablingAccess ? false : (currentAccess.login_enabled===true||String(currentAccess.login_enabled).toLowerCase()==='true');
       if(approving){
         const {data:review,error:reviewError}=await api.db.rpc('review_institution_registration',{
           p_user_id:user.user_id,p_decision:'approve',p_reason:null
@@ -635,8 +634,10 @@
           throw new Error(result?.message||'The account approval could not be completed.');
       }
       const profileUpdate={...payload};
-      delete profileUpdate.status;
-      delete profileUpdate.login_enabled;
+      if(!disablingAccess || approving){
+        delete profileUpdate.status;
+        delete profileUpdate.login_enabled;
+      }
       const {data,error}=await api.db.from('consolidated_user_profiles_table').update(profileUpdate)
         .eq('user_id',user.user_id).eq('institution_id',api.institutionId).select('id,user_id');
       if(error)throw new Error([error.message,error.details,error.hint,error.code?'Code: '+error.code:null].filter(Boolean).join(' · '));
