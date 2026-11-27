@@ -3443,7 +3443,7 @@ async function processPayment() {
         const { data: savedPayment, error: saveError } =
             await supabase
                 .from('finance_payments')
-                .insert([{ ...paymentRecord, institution_id: institutionId }])
+                .insert([{ ...paymentRecord, institution_id: window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id }])
                 .select()
                 .maybeSingle();
 
@@ -3604,7 +3604,7 @@ async function pollStudentPaymentStatus(transactionId, amount, period) {
             .from('finance_payments')
             .select('*')
             .eq('id', paymentId)
-                    .eq('institution_id', institutionId)
+            .eq('institution_id', window.CURRENT_INSTITUTION_ID || window.currentUserProfile?.institution_id)
             .maybeSingle();
 
         if (error) throw new Error(error.message || 'Could not check payment status.');
