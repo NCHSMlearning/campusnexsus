@@ -8911,7 +8911,7 @@ body.dark-mode #ol-research-correction-modal .ol-research-editor-page{background
 <div class="enr-report-layout">
 <div class="enr-form-card">
 <form id="enrReportForm" onsubmit="event.preventDefault(); submitSessionReport();">
-<div class="enr-report-title"><div><i class="fas fa-calendar-check"></i></div><div><h4>Report Back to Semester</h4><p id="enrReportInstructions">Select your current academic session.</p></div></div>
+<div class="enr-report-title"><div><i class="fas fa-calendar-check"></i></div><div><h4 id="enrReportTitle">Report Back to Academic Session</h4><p id="enrReportInstructions">Select your current academic session.</p></div></div>
 <div class="enr-field"><label for="enrReportYear"><i class="fas fa-calendar"></i> Academic Year *</label><select id="enrReportYear" required=""><option value="">-- Select Year --</option><option value="2026/2027">2026/2027</option><option selected="" value="2027/2028">2027/2028</option><option value="2029/2030">2029/2030</option></select></div>
 <div class="enr-field"><label for="enrReportSession"><i class="fas fa-layer-group"></i> <span id="enrReportSessionLabel">Session *</span></label><select id="enrReportSession" required=""><option value="">-- Select --</option></select><small id="enrReportSessionHelp"><i class="fas fa-info-circle"></i> <span id="enrReportSessionHelpText">Select your current session</span></small></div>
 <div class="enr-field"><label for="enrReportStatus"><i class="fas fa-user-check"></i> Current Status *</label><select id="enrReportStatus" required=""><option value="Continuing">Continuing</option><option value="Repeating">Repeating</option><option value="Probation">Probation</option></select></div>
@@ -11880,14 +11880,14 @@ body.dark-mode #ol-research-correction-modal .ol-research-editor-page{background
 <script src="/js/messages.js?v=20261127-student-context-gate-v2"></script>
 <script src="/js/student-tickets.js"></script>
 <script src="/js/nurseiq.js?v=20261004-responsive-review"></script>
-<script src="/js/exam-card.js?v=20261127-pending-approval-refresh-v1"></script>
-<script src="/js/lecture-card.js"></script>
+<script src="/js/exam-card.js?v=20261127-academic-structure-v2"></script>
+<script src="/js/lecture-card.js?v=20261127-academic-structure-v2"></script>
 <script src="/js/academic-reports.js?v=20261127-student-context-gate-v2"></script>
 <script src="/js/timetable-manager.js"></script>
 <script src="/js/reviews-newsletter.js?v=20261127-student-context-gate-v2"></script>
 <!-- ===== 5️⃣ FIFTH: Finance and Enrollment ===== -->
 <script src="/js/student-finance.js?v=20261127-notification-rls-fix-v1"></script>
-<script src="/js/enrollment.js"></script>
+<script src="/js/enrollment.js?v=20261127-academic-structure-v2"></script>
 <!-- ===== 6️⃣ SIXTH: Cleanup and Chatbot ===== -->
 <script src="/js/cleanup.js"></script>
 <script src="/js/chatbot.js?v=20261127-client-fix-v1"></script>
