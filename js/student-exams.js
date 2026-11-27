@@ -22,45 +22,60 @@ document.querySelectorAll('.exam-nav a[data-module]').forEach(link=>{const on=li
  if(updateHash&&location.hash!=='#'+active)history.replaceState(null,'','#'+active);
  window.scrollTo({top:0,behavior:'smooth'});
 }
-function renderStudentProfile(){
+async function renderStudentProfile(){
  const p=state.profile||{},user=state.user||{};
  const fullName=val(p.full_name,p.name,p.student_name,user.user_metadata?.full_name,user.email,'Student');
  const email=val(p.email,user.email,'—');
- const periodType=state.academicStructure?.singular||'Current academic period';
- const periodValue=val(p.current_semester,p.semester,p.current_term,p.term,p.current_block,p.block_term,p.block,p.year_of_study);
+ const admission=val(p.admission_number,p.student_id,p.reg_no,'—');
+ const studentId=val(p.student_id,p.reg_no,p.admission_number,'—');
+ const program=val(p.program,p.program_name,p.department,'—');
+ const programType=val(p.program_type,p.course_type,p.category,'—');
+ const periodType=state.academicStructure?.singular||'Academic period';
+ const periodValue=val(p.current_semester,p.semester,p.current_term,p.term,p.current_block,p.block_term,p.block,p.year_of_study,'Not assigned');
  const fields=[
-  ['Full name',fullName],
-  ['Email address',email],
-  ['Admission number',val(p.admission_number,p.student_id,p.reg_no)],
-  ['Student ID',val(p.student_id,p.reg_no,p.admission_number)],
-  ['Programme',val(p.program,p.program_name)],
-  ['Programme type',p.program_type],
+  ['Full name',fullName],['Email address',email],['Admission number',admission],['Student ID',studentId],
+  ['Programme',program],['Programme type',programType],
   ['Intake year',val(p.intake_year,p.year_of_intake,p.intake,p.admission_year)],
-  ['Intake month',p.intake_month],
-  [periodType,periodValue],
-  ['Year of study',p.year_of_study],
+  ['Intake month',p.intake_month], [periodType,periodValue],['Year of study',p.year_of_study],
   ['Phone number',val(p.phone,p.phone_number,p.mobile_number)],
-  ['Alternative phone',p.alt_phone],
-  ['Date of birth',val(p.date_of_birth,p.dob)],
-  ['Gender',p.gender],
-  ['National ID',p.national_id],
-  ['Address',p.address],
-  ['Guardian name',p.guardian_name],
-  ['Guardian phone',p.guardian_phone],
+  ['Alternative phone',val(p.alt_phone,p.alternative_phone,p.secondary_phone)],
+  ['Date of birth',val(p.date_of_birth,p.dob)],['Gender',p.gender],
+  ['National ID',val(p.national_id,p.id_number)],['Address',val(p.address,p.residential_address)],
+  ['Guardian name',val(p.guardian_name,p.next_of_kin_name)],
+  ['Guardian phone',val(p.guardian_phone,p.next_of_kin_phone)],
   ['Account status',p.status],
   ['Login access',p.login_enabled===true?'Enabled':p.login_enabled===false?'Disabled':null]
- ].filter(([,value])=>value!==undefined&&value!==null&&String(value).trim()!=='');
- const initials=fullName.split(/\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase();
+ ].filter(([,v])=>v!==undefined&&v!==null&&String(v).trim()!=='');
+ const initials=fullName.split(/\\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase();
  const set=(id,v)=>{const el=$(id);if(el)el.textContent=String(v??'');};
  set('profile-avatar',initials||'ST');set('profile-full-name',fullName);
- set('profile-subtitle',[val(p.admission_number,p.student_id,'Student account'),val(p.program,p.program_name,'Programme not assigned')].filter(Boolean).join(' · '));
+ set('profile-subtitle',[admission,program].filter(Boolean).join(' · '));
  set('profile-status',val(p.status,'Account active'));
  const avatar=$('profile-avatar');
- const photo=val(p.profile_photo_url,p.passport_url);
- if(avatar&&photo&&/^https:\/\//i.test(String(photo))){
-  avatar.innerHTML='<img src="'+esc(photo)+'" alt="'+esc(fullName)+' profile photo" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">';
-  avatar.style.overflow='hidden';
- }else if(avatar){avatar.textContent=initials||'ST';}
+ if(avatar){
+  avatar.textContent=initials||'ST';
+  const photo=val(p.profile_photo_url,p.passport_url,p.avatar_url);
+  if(photo){
+   try{
+    let src=String(photo),bucket=p.profile_photo_url?'user-documents':'passports',path=src;
+    const match=src.match(/\\/storage\\/v1\\/object\\/(?:public|sign)\\/([^/]+)\\/(.+?)(?:\\?.*)?$/);
+    if(match){bucket=decodeURIComponent(match[1]);path=decodeURIComponent(match[2]);src='';}
+    else if(/^https?:\\/\\//i.test(src)){path='';}
+    else if(path.startsWith('user-documents/')){bucket='user-documents';path=path.slice(14);}
+    else if(path.startsWith('passports/')){bucket='passports';path=path.slice(10);}
+    if(path&&state.client?.storage){
+     const {data,error}=await state.client.storage.from(bucket).createSignedUrl(path,3600);
+     if(error)throw error;src=data?.signedUrl||'';
+    }
+    if(src&&/^https?:\\/\\//i.test(src)){
+     const image=document.createElement('img');image.alt=fullName+' profile photo';image.src=src;
+     image.style.cssText='width:100%;height:100%;object-fit:cover;border-radius:inherit';
+     image.onerror=()=>{avatar.textContent=initials||'ST';};
+     avatar.replaceChildren(image);avatar.style.overflow='hidden';
+    }
+   }catch(photoError){console.warn('[Student Examinations] Profile photo could not be resolved:',photoError.message);}
+  }
+ }
  const content=$('student-profile-content');
  if(content)content.innerHTML='<div class="student-profile-grid">'+fields.map(([label,value])=>'<article class="student-profile-field"><small>'+esc(label)+'</small><strong>'+esc(value)+'</strong></article>').join('')+'</div>';
 }
@@ -585,7 +600,7 @@ $('refresh-timetable')?.addEventListener('click',async()=>{const btn=$('refresh-
 $('refresh-announcements').addEventListener('click',()=>loadAnnouncements().catch(e=>notify(e.message||'Could not load announcements.')));
 $('refresh-history').addEventListener('click',()=>loadHistory().catch(e=>notify(e.message||'Could not load examination history.')));
  $('refresh-tickets')?.addEventListener('click',()=>loadSupportTickets().catch(e=>notify(e.message||'Could not load support tickets.')));
- $('profile-refresh')?.addEventListener('click',async()=>{try{const {data,error}=await state.client.from('consolidated_user_profiles_table').select('*').eq('user_id',state.user.id).maybeSingle();if(error)throw error;if(!data)throw new Error('Your student profile record was not found.');state.profile={...state.profile,...data};renderStudentProfile();notify('Profile refreshed.');}catch(e){notify(e.message||'Could not refresh your profile.');}});
+ $('profile-refresh')?.addEventListener('click',async()=>{const btn=$('profile-refresh');try{if(btn)btn.disabled=true;const query=state.client.from('consolidated_user_profiles_table').select('*').eq('user_id',state.user.id);if(state.profile?.institution_id)query.eq('institution_id',state.profile.institution_id);const {data,error}=await query.maybeSingle();if(error)throw error;if(!data)throw new Error('Your student profile record was not found for this institution.');state.profile=data;try{if(window.CampusAcademicStructure&&data.institution_id)state.academicStructure=await window.CampusAcademicStructure.resolve(state.client,data.institution_id,val(data.program,data.program_name,data.program_type));}catch(e){console.warn('Academic period refresh failed:',e.message);}await renderStudentProfile();notify('Profile refreshed from your institution record.');}catch(e){notify(e.message||'Could not refresh your profile.');}finally{if(btn)btn.disabled=false;}});
  $('profile-back')?.addEventListener('click',()=>activateModule('dashboard'));
 $('exam-support-form').addEventListener('submit',submitSupport);
 $('search-input').addEventListener('input',render);$('status-filter').addEventListener('change',render);
