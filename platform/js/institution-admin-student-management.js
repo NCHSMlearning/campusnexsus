@@ -96,24 +96,46 @@
     if(confirmUser&&!window.confirm((decision==="approved"?"Approve":"Reject")+" this student's session report?"))return false;
     const client=db(), institutionId=tenant();
     if(!client||!institutionId)throw new Error("Institution session is not ready.");
-    const found=state.reports.find(r=>String(r.id)===String(id));
-    const result=await client.from("session_reports").update({approval_status:decision,approved_at:new Date().toISOString(),approved_by:api()?.user?.id||"institution_admin",updated_at:new Date().toISOString()}).eq("id",id).eq("institution_id",institutionId).eq("approval_status","pending").select("id");
-    if(result.error)throw result.error;
-    if(!result.data?.length)throw new Error("The report was not updated. It may already have been reviewed or is outside this institution.");
-    if(decision==="approved"&&found?.student_id&&found?.session) {
-      let profileQuery=client.from("consolidated_user_profiles_table").select("user_id,student_id,program,current_block,block,current_year,current_term,intake_year,admission_year").eq("institution_id",institutionId).eq("student_id",found.student_id);
-      const profile=await profileQuery.maybeSingle();
-      if(profile.error)throw profile.error;
-      if(profile.data) {
-        const patch={current_block:found.session,block:found.session,updated_at:new Date().toISOString()};
-        if(found.academic_year){const start=String(found.academic_year).split("/")[0];if(start&&!profile.data.intake_year)patch.intake_year=start;if(start&&!profile.data.admission_year)patch.admission_year=start;}
-        const upd=await client.from("consolidated_user_profiles_table").update(patch).eq("user_id",profile.data.user_id).eq("institution_id",institutionId);
-        if(upd.error)throw upd.error;
-      } else {
-        notify("Report approved, but no matching student profile was found to synchronize the current session. Please verify the student's profile.", "warning");
-      }
+    const reportResult=await client.from("session_reports").select("*").eq("id",id).eq("institution_id",institutionId).maybeSingle();
+    if(reportResult.error)throw reportResult.error;
+    const report=reportResult.data;
+    if(!report)throw new Error("Session report not found in this institution.");
+    if(String(report.approval_status||"pending").toLowerCase()!=="pending")throw new Error("This report has already been reviewed.");
+    let previousProfile=null, profilePatch=null;
+    if(decision==="approved"&&report.student_id&&report.session) {
+      const profileResult=await client.from("consolidated_user_profiles_table")
+        .select("user_id,student_id,program,current_block,block,current_semester,semester,current_term,term,current_year,year,intake_year,admission_year")
+        .eq("institution_id",institutionId).eq("student_id",report.student_id).maybeSingle();
+      if(profileResult.error)throw profileResult.error;
+      previousProfile=profileResult.data;
+      if(!previousProfile)throw new Error("The matching student profile was not found in this institution. The report remains pending.");
+      const session=String(report.session).trim(), patch={updated_at:new Date().toISOString()};
+      if(/semester/i.test(session)){patch.current_semester=session;patch.semester=session;}
+      else if(/term/i.test(session)){patch.current_term=session;patch.term=session;}
+      else {patch.current_block=session;patch.block=session;}
+      if(report.academic_year){const start=String(report.academic_year).split("/")[0].trim();if(start&&!previousProfile.intake_year)patch.intake_year=start;if(start&&!previousProfile.admission_year)patch.admission_year=start;}
+      const profileUpdate=await client.from("consolidated_user_profiles_table").update(patch)
+        .eq("user_id",previousProfile.user_id).eq("institution_id",institutionId).select("user_id");
+      if(profileUpdate.error)throw profileUpdate.error;
+      if(!profileUpdate.data?.length)throw new Error("Student profile could not be updated. The report remains pending.");
+      profilePatch=patch;
     }
-    await loadSessionReportsAdmin(); notify("Session report "+decision+".");
+    const result=await client.from("session_reports").update({
+      approval_status:decision,approved_at:new Date().toISOString(),
+      approved_by:api()?.user?.id||"institution_admin",updated_at:new Date().toISOString()
+    }).eq("id",id).eq("institution_id",institutionId).eq("approval_status","pending").select("id");
+    if(result.error||!result.data?.length) {
+      if(previousProfile&&profilePatch){
+        const rollback={updated_at:new Date().toISOString()};
+        ["current_block","block","current_semester","semester","current_term","term","intake_year","admission_year"].forEach(k=>{if(Object.prototype.hasOwnProperty.call(profilePatch,k))rollback[k]=previousProfile[k]??null;});
+        const undo=await client.from("consolidated_user_profiles_table").update(rollback).eq("user_id",previousProfile.user_id).eq("institution_id",institutionId);
+        if(undo.error)console.error("[Student Management] Profile rollback failed:",undo.error);
+      }
+      if(result.error)throw result.error;
+      throw new Error("The report was already reviewed or could not be updated. No approval was recorded.");
+    }
+    await loadSessionReportsAdmin();
+    notify("Session report "+decision+(decision==="approved"?" and student academic period updated.":"."),"success");
     return true;
   }
   window.approveSessionReportAdmin=(id)=>decideReport(id,"approved").catch(e=>notify(e.message,"error"));
