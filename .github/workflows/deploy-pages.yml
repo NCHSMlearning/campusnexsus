@@ -179,8 +179,8 @@ jobs:
           import shutil
           import urllib.request
 
-          tag = "campus-nexus-app-v1.2.6"
-          expected_name = "Campus-Nexus-App-1.2.6.apk"
+          tag = "campus-nexus-app-v1.2.8"
+          expected_name = "Campus-Nexus-App-1.2.8.apk"
           api = f"https://api.github.com/repos/NCHSMlearning/campusnexsus/releases/tags/{tag}"
           headers = {"Accept": "application/vnd.github+json", "User-Agent": "CampusNexus-Website-Deployment", "Authorization": "Bearer " + os.environ["GITHUB_TOKEN"]}
           request = urllib.request.Request(api, headers=headers)
@@ -208,7 +208,7 @@ jobs:
           PY
           test -s "$GITHUB_WORKSPACE/downloads/Campus-Nexus-App.apk"
           test "$(stat -c%s "$GITHUB_WORKSPACE/downloads/Campus-Nexus-App.apk")" -gt 1000000
-          echo "Verified the pinned v1.2.6 Campus Nexus APK at the established website download route."
+          echo "Verified the pinned v1.2.8 Campus Nexus APK at the established website download route."
 
       - name: Verify public /app route for GitHub Pages
         run: |
@@ -218,7 +218,7 @@ jobs:
             echo "::error::Public /app route contains a repository reference."
             exit 1
           fi
-          grep -Fq 'href="/downloads/Campus-Nexus-App.apk?v=1.2.6"' app/index.html
+          grep -Fq 'href="/downloads/Campus-Nexus-App.apk?v=1.2.8"' app/index.html
           echo "Public /app route exists, is repository-neutral, and points to the Campus Nexus APK mirror."
 
       - name: Inject native Campus Nexus app navigation
@@ -272,7 +272,7 @@ jobs:
         if: steps.deployment.outcome == 'success' || steps.deployment_retry_1.outcome == 'success' || steps.deployment_retry_2.outcome == 'success'
         run: |
           set -euo pipefail
-          release_url="https://github.com/NCHSMlearning/campusnexsus/releases/download/campus-nexus-app-v1.2.6/Campus-Nexus-App-1.2.6.apk"
+          release_url="https://github.com/NCHSMlearning/campusnexsus/releases/download/campus-nexus-app-v1.2.8/Campus-Nexus-App-1.2.8.apk"
           echo "Checking official signed APK release asset."
           curl --fail --location --silent --show-error --retry 3 "$release_url" -D /tmp/cn-release-headers.txt -o /tmp/Campus-Nexus-App-release.apk
           test -s /tmp/Campus-Nexus-App-release.apk
@@ -289,12 +289,12 @@ jobs:
             echo "::error::Public app-download page exposes a repository reference."
             exit 1
           fi
-          grep -Fq 'href="/downloads/Campus-Nexus-App.apk?v=1.2.6"' /tmp/cn-app-download.html
+          grep -Fq 'href="/downloads/Campus-Nexus-App.apk?v=1.2.8"' /tmp/cn-app-download.html
           echo "PUBLIC DOWNLOAD PAGE VERIFIED: no GitHub/repository references; download points to Campus Nexus domain."
 
           # The custom-domain mirror is optional. A Pages/CDN 404 must not
           # invalidate the known-good signed release asset.
-          mirror_url="https://campusnexus.co.ke/downloads/Campus-Nexus-App.apk?v=1.2.6"
+          mirror_url="https://campusnexus.co.ke/downloads/Campus-Nexus-App.apk?v=1.2.8"
           if curl --fail --location --silent --show-error --retry 2 "$mirror_url" -o /tmp/Campus-Nexus-App-mirror.apk; then
             mirror_size="$(stat -c%s /tmp/Campus-Nexus-App-mirror.apk)"
             test "$mirror_size" -gt 1000000
