@@ -17,8 +17,8 @@ test('Campus Nexus app has a distinct Android identity', () => {
 test('portal app bundles its institution gate and routes to the production portals', () => {
   assert.equal(config.server.url, undefined, 'the app should use its bundled welcome screen');
   assert.match(welcome, /resolve_institution_registration_context/);
-  assert.match(welcome, /https:\/\/campusnexus\.co\.ke\/platform\/login\.html\?school_code=/);
-  assert.match(welcome, /https:\/\/campusnexus\.co\.ke\/examlogin\.html\?school_code=/);
+  assert.match(welcome, /https:\/\/campusnexus\.co\.ke\/platform\/login\.html\?school_code=.*source=android-app/);
+  assert.match(welcome, /https:\/\/campusnexus\.co\.ke\/examlogin\.html\?school_code=.*source=android-app/);
   assert.equal(welcome.includes('secure-exam-browser'), false);
 });
 
