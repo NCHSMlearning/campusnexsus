@@ -1,5 +1,5 @@
 // CampusNexus service worker — network-first navigation and versioned assets.
-const CACHE_NAME = 'campusnexus-v18';
+const CACHE_NAME = 'campusnexus-v19';
 const PRECACHE_URLS = [
   '/',
   '/index.html',
@@ -73,6 +73,23 @@ self.addEventListener('fetch', event => {
   // Student portal, login and database scripts must never be served from a
   // stale cache. These pages authenticate users and depend on tightly-coupled
   // HTML/JS versions, so always let the browser fetch the current deployment.
+  // Profile and other student feature scripts must also be network-first.
+  // They are not all named student-*.js, so explicitly bypass the asset cache.
+  const isStudentFeatureAsset =
+    url.pathname === '/js/profile.js' ||
+    url.pathname === '/js/exam-card.js' ||
+    url.pathname === '/js/dashboard.js' ||
+    url.pathname === '/js/courses.js' ||
+    url.pathname === '/js/resources.js' ||
+    url.pathname === '/js/calendar.js' ||
+    url.pathname === '/js/messages.js' ||
+    url.pathname === '/js/attendance.js' ||
+    url.pathname === '/js/nurseiq.js' ||
+    url.pathname === '/js/online-learning.js' ||
+    url.pathname === '/js/student-finance.js' ||
+    url.pathname === '/js/academic-reports.js';
+  if (isStudentFeatureAsset) return;
+
   const isStudentOrLoginRequest =
     url.pathname === '/platform/student.html' ||
     url.pathname === '/platform/student' ||
