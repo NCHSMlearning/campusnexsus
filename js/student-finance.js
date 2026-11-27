@@ -1280,6 +1280,7 @@ async function fetchFinanceDataFromSupabase(user) {
                     .from('finance_payments')
                     .select('*')
                     .eq('student_id', id)
+                    .eq('institution_id', institutionId)
                     .order('payment_date', { ascending: false });
 
                 if (!error && Array.isArray(data)) {
@@ -3442,7 +3443,7 @@ async function processPayment() {
         const { data: savedPayment, error: saveError } =
             await supabase
                 .from('finance_payments')
-                .insert([paymentRecord])
+                .insert([{ ...paymentRecord, institution_id: institutionId }])
                 .select()
                 .maybeSingle();
 
@@ -3603,6 +3604,7 @@ async function pollStudentPaymentStatus(transactionId, amount, period) {
             .from('finance_payments')
             .select('*')
             .eq('id', paymentId)
+                    .eq('institution_id', institutionId)
             .maybeSingle();
 
         if (error) throw new Error(error.message || 'Could not check payment status.');
