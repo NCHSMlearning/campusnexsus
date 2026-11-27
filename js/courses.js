@@ -241,8 +241,8 @@
         // 📥 LOAD COURSES
         // ============================================
         
-        async loadCourses()
-        if (window.waitForStudentPortalContext) await window.waitForStudentPortalContext(); {
+        async loadCourses() {
+        if (window.waitForStudentPortalContext) await window.waitForStudentPortalContext();
             console.log('📥 Loading approved and completed units...');
             
             if (!this.userProfile) {
