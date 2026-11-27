@@ -600,7 +600,7 @@
                             <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
                                 <div><strong style="font-size: 13px; color: #475569;">Student:</strong> <span style="font-size: 13px; color: #1e293b;">${this.escapeHtml(studentName)}</span></div>
                                 <div><strong style="font-size: 13px; color: #475569;">Reg No:</strong> <span style="font-size: 13px; color: #1e293b;">${this.escapeHtml(studentId)}</span></div>
-                                <div><strong style="font-size: 13px; color: #475569;">Program:</strong> <span style="font-size: 13px; color: #1e293b;">${this.escapeHtml(student.program || this.userProgram || 'KRCHN')}</span></div>
+                                <div><strong style="font-size: 13px; color: #475569;">Program:</strong> <span style="font-size: 13px; color: #1e293b;">${this.escapeHtml(student.program || this.userProgram || 'Not assigned')}</span></div>
                                 <div><strong style="font-size: 13px; color: #475569;">Intake:</strong> <span style="font-size: 13px; color: #1e293b;">${this.escapeHtml(intakeYear)}</span></div>
                                 <div><strong style="font-size: 13px; color: #475569;">${this.escapeHtml(periodLabel)}:</strong> <span style="font-size: 13px; color: #1e293b; font-weight: 600;">${this.escapeHtml(displayBlock)}</span></div>
                                 <div><strong style="font-size: 13px; color: #475569;">Status:</strong> <span style="color: ${statusColor}; font-weight: 600;">${approvalStatus}</span></div>
