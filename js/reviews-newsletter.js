@@ -599,7 +599,8 @@ function refreshReviews() {
 // LOAD REVIEWS WITH AUTO PROGRAM FILTERING
 // ============================================
 
-async function loadReviews() {
+async function loadReviews()
+        if (window.waitForStudentPortalContext) await window.waitForStudentPortalContext(); {
     const grid = document.getElementById('reviewsGrid');
     if (!grid) return;
     
