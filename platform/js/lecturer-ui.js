@@ -384,26 +384,26 @@ const LecturerUI = {
         this._initialized = true;
         console.log('🎨 Initializing Lecturer UI...');
 
-        // ============================================================
-        // REFRESH BEHAVIOUR
-        // Always start on Dashboard after a full page refresh.
-        // Remove the legacy persistence key used by older embedded
-        // showTab code so it cannot reopen Research Papers.
-        // ============================================================
+        // Restore the last valid lecturer workspace after refresh.
+        // A deep-link hash takes precedence over the saved tab.
+        var requestedTab = '';
         try {
-            localStorage.removeItem('lecturerActiveTab');
-            localStorage.setItem('nchsm_current_tab', 'dashboard');
-        } catch (e) {
-            console.warn('Could not reset saved lecturer tab:', e);
+            requestedTab = decodeURIComponent((window.location.hash || '').replace(/^#/, ''));
+        } catch (_) {}
+        if (!requestedTab) {
+            try { requestedTab = localStorage.getItem('nchsm_current_tab') || localStorage.getItem('lecturerActiveTab') || ''; } catch (_) {}
         }
+        var requestedSection = this.tabMapping[requestedTab] || (requestedTab ? requestedTab + '-content' : '');
+        if (!requestedTab || !document.getElementById(requestedSection)) requestedTab = 'dashboard';
 
-        this.currentTab = 'dashboard';
+        this.currentTab = requestedTab;
         this.setupEventListeners();
         this.setupMobileNav();
         this.setupDropdowns();
         this.loadTheme();
         this.updateCurrentDate();
-        console.log('✅ Lecturer UI initialized');
+        this.showTab(requestedTab);
+        console.log('✅ Lecturer UI initialized on:', requestedTab);
     },
     
     // ============================================
