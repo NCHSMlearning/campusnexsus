@@ -595,6 +595,15 @@
       const api=state.api||window.CampusInstitutionAdmin;
       if(!api?.db||!api?.institutionId)throw new Error('Institution session expired. Sign in again.');
       const get=name=>form.elements.namedItem(name)?.value??null;
+      // Read access state from the database, not the possibly stale directory row
+      // or an old value retained in the edit form.
+      const {data:currentAccess,error:accessError}=await api.db.from('consolidated_user_profiles_table')
+        .select('status,login_enabled,role,institution_id')
+        .eq('user_id',user.user_id).eq('institution_id',api.institutionId).maybeSingle();
+      if(accessError)throw accessError;
+      if(!currentAccess)throw new Error('This account could not be verified in your institution.');
+      const currentStatus=norm(currentAccess.status);
+      const requestedStatus=norm(get('status'));
       const payload={
         full_name:get('full_name'),phone:get('phone'),alt_phone:get('alt_phone'),gender:get('gender'),date_of_birth:get('date_of_birth')||null,
         national_id:get('national_id'),address:get('address'),guardian_name:get('guardian_name'),guardian_phone:get('guardian_phone'),
@@ -609,7 +618,13 @@
       };
       if(!payload.full_name?.trim())throw new Error('Full name is required.');
       if(['blocked','inactive'].includes(payload.status))payload.login_enabled=false;
-      const approving = payload.status === 'approved' && !['approved','active'].includes(statusOf(user));
+      const approving = requestedStatus === 'approved' && !['approved','active'].includes(currentStatus);
+      if(['blocked','inactive'].includes(requestedStatus) && requestedStatus!==currentStatus)
+        throw new Error('Account access changes must use the dedicated account access controls. Profile editing cannot change approval or login permissions.');
+      // Never allow a stale form value (for example, Pending) to undo an
+      // approval. Approval state is owned by the review RPC, not profile edits.
+      payload.status=currentAccess.status;
+      payload.login_enabled=currentAccess.login_enabled===true||String(currentAccess.login_enabled).toLowerCase()==='true';
       if(approving){
         const {data:review,error:reviewError}=await api.db.rpc('review_institution_registration',{
           p_user_id:user.user_id,p_decision:'approve',p_reason:null
@@ -620,7 +635,8 @@
           throw new Error(result?.message||'The account approval could not be completed.');
       }
       const profileUpdate={...payload};
-      if(approving){delete profileUpdate.status;delete profileUpdate.login_enabled;}
+      delete profileUpdate.status;
+      delete profileUpdate.login_enabled;
       const {data,error}=await api.db.from('consolidated_user_profiles_table').update(profileUpdate)
         .eq('user_id',user.user_id).eq('institution_id',api.institutionId).select('id,user_id');
       if(error)throw new Error([error.message,error.details,error.hint,error.code?'Code: '+error.code:null].filter(Boolean).join(' · '));
