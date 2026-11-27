@@ -1,5 +1,5 @@
 // CampusNexus service worker — network-first navigation and versioned assets.
-const CACHE_NAME = 'campusnexus-v17';
+const CACHE_NAME = 'campusnexus-v18';
 const PRECACHE_URLS = [
   '/',
   '/index.html',

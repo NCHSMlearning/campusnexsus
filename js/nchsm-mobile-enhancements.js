@@ -9,15 +9,24 @@
       const native = !!(cap && typeof cap.isNativePlatform === 'function' && cap.isNativePlatform());
       const appMode = localStorage.getItem('cn_android_app_mode') === '1' || /(?:^|;\\s*)cn_android_app_mode=1(?:;|$)/.test(document.cookie || '');
       const standalone = !!(window.matchMedia && (window.matchMedia('(display-mode: standalone)').matches || window.matchMedia('(display-mode: fullscreen)').matches)) || window.navigator.standalone === true;
-      return native || appMode || standalone;
+      const appLaunch = new URLSearchParams(window.location.search).get('source') === 'android-app';
+      return native || appMode || standalone || appLaunch;
     } catch (_) { return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()); }
   })();
 
   const style = document.createElement('style');
   style.id = 'nchsm-performance-style';
   style.textContent = `
-    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+    html { scroll-behavior: auto !important; -webkit-text-size-adjust: 100%; }
     body { overscroll-behavior-y: contain; -webkit-tap-highlight-color: transparent; }
+    @media (max-width: 900px) {
+      .main, #main-content, .tab-content, .table-responsive, .table-container,
+      .sidebar, .exam-main, .exam-main-wrap {
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior-y: contain;
+        scroll-behavior: auto !important;
+      }
+    }
     img { height: auto; }
     .nchsm-refresh-indicator {
       position: fixed; z-index: 2147483000; top: max(10px, env(safe-area-inset-top));
@@ -53,6 +62,7 @@
       .nchsm-refresh-spinner { animation-duration: 1.5s; }
     }
   `;
+  document.documentElement.classList.toggle('cn-native-app', isNativeCampusApp);
   (document.head || document.documentElement).appendChild(style);
 
   const indicator = document.createElement('div');
@@ -76,13 +86,29 @@
   });
   if (!isNativeCampusApp) document.body.appendChild(refreshButton);
 
-  let startY = 0, startX = 0, pulling = false, armed = false;
+  let startY = 0, startX = 0, pulling = false, armed = false, activeTarget = null;
   const threshold = 86;
   const isEditable = (node) => !!(node && node.closest && node.closest('input,textarea,select,button,[contenteditable="true"],video,audio,[role="dialog"],.modal,.modal-overlay,.sidebar,.drawer'));
-  const scrollTop = () => Math.max(window.scrollY || 0, document.documentElement.scrollTop || 0, document.body.scrollTop || 0);
+  const canPullRefresh = (target) => {
+    const root = document.scrollingElement || document.documentElement;
+    if ((window.scrollY || root.scrollTop || document.body.scrollTop || 0) > 2) return false;
+    // #main-content is the student portal's primary scroll surface. A nested
+    // table, tab, drawer or card must scroll normally and must never refresh
+    // the entire page while it is being scrolled.
+    const primaryScroller = document.getElementById('main-content') || root;
+    for (let node = target && target.parentElement; node && node !== document.body && node !== document.documentElement; node = node.parentElement) {
+      const css = window.getComputedStyle(node);
+      const scrollable = /(auto|scroll|overlay)/.test(css.overflowY) && node.scrollHeight > node.clientHeight + 1;
+      if (scrollable && (node !== primaryScroller || node.scrollTop > 2)) return false;
+    }
+    return true;
+  };
 
   document.addEventListener('touchstart', function (event) {
-    if (isNativeCampusApp || event.touches.length !== 1 || scrollTop() > 2 || isEditable(event.target)) { pulling = false; return; }
+    activeTarget = event.target;
+    if (isNativeCampusApp || event.touches.length !== 1 || !canPullRefresh(activeTarget) || isEditable(activeTarget)) {
+      pulling = false; armed = false; return;
+    }
     startY = event.touches[0].clientY;
     startX = event.touches[0].clientX;
     pulling = startY < 100;
@@ -90,7 +116,7 @@
   }, { passive: true });
 
   document.addEventListener('touchmove', function (event) {
-    if (!pulling || event.touches.length !== 1 || scrollTop() > 2) return;
+    if (!pulling || event.touches.length !== 1 || !canPullRefresh(activeTarget)) return;
     const dy = event.touches[0].clientY - startY;
     const dx = event.touches[0].clientX - startX;
     if (dy <= 0 || Math.abs(dx) > Math.abs(dy) * .8) { indicator.classList.remove('visible'); return; }
@@ -101,7 +127,7 @@
   }, { passive: true });
 
   document.addEventListener('touchend', function () {
-    if (pulling && armed && scrollTop() <= 2) {
+    if (pulling && armed && canPullRefresh(activeTarget)) {
       const label = indicator.querySelector('span:last-child');
       if (label) label.textContent = 'Refreshing…';
       indicator.classList.add('visible');
@@ -109,7 +135,7 @@
     } else {
       indicator.classList.remove('visible');
     }
-    pulling = false; armed = false;
+    pulling = false; armed = false; activeTarget = null;
   }, { passive: true });
   document.addEventListener('touchcancel', function () {
     pulling = false; armed = false; indicator.classList.remove('visible');

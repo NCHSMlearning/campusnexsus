@@ -90,13 +90,25 @@
       indicator.innerHTML = '<span class="cn-pull-icon" aria-hidden="true">↓</span><span class="cn-pull-label">Pull down to refresh</span>';
       document.body.appendChild(indicator);
 
-      var startX = 0, startY = 0, distance = 0, tracking = false, pulling = false, hapticDone = false, refreshing = false;
+      var startX = 0, startY = 0, distance = 0, tracking = false, pulling = false, hapticDone = false, refreshing = false, activeTarget = null;
       var label = indicator.querySelector('.cn-pull-label');
       var icon = indicator.querySelector('.cn-pull-icon');
       var threshold = 88;
-      function pageAtTop() {
+      function pageAtTop(target) {
         var root = document.scrollingElement || document.documentElement;
-        return (window.scrollY || root.scrollTop || 0) <= 1;
+        if ((window.scrollY || root.scrollTop || 0) > 1) return false;
+
+        // Student dashboards scroll inside #main-content, not window. Check every
+        // scrollable ancestor so a gesture inside a scrolled panel cannot reload
+        // the whole app just because window.scrollY remains zero.
+        var primaryScroller = document.getElementById('main-content') || root;
+        for (var node = target && target.parentElement; node && node !== document.body && node !== document.documentElement; node = node.parentElement) {
+          var css = window.getComputedStyle(node);
+          var scrollable = /(auto|scroll|overlay)/.test(css.overflowY) && node.scrollHeight > node.clientHeight + 1;
+          if (!scrollable) continue;
+          if (node !== primaryScroller || node.scrollTop > 1) return false;
+        }
+        return true;
       }
       function blockedTarget(target) {
         if (!target || !target.closest) return false;
@@ -107,14 +119,15 @@
         indicator.style.transform = '';
         label.textContent = 'Pull down to refresh';
         icon.textContent = '↓';
-        distance = 0; tracking = false; pulling = false; hapticDone = false;
+        distance = 0; tracking = false; pulling = false; hapticDone = false; activeTarget = null;
       }
       function haptic() {
         try { if (navigator.vibrate) navigator.vibrate(22); } catch (_) {}
       }
       window.addEventListener('touchstart', function(e) {
-        if (refreshing || !e.touches || e.touches.length !== 1 || !pageAtTop() || blockedTarget(e.target)) {
-          tracking = false; return;
+        activeTarget = e.target;
+        if (refreshing || !e.touches || e.touches.length !== 1 || !pageAtTop(activeTarget) || blockedTarget(activeTarget)) {
+          tracking = false; pulling = false; return;
         }
         startX = e.touches[0].clientX;
         startY = e.touches[0].clientY;
@@ -128,7 +141,7 @@
           if (Math.abs(dx) > 12 || dy < -8) tracking = false;
           return;
         }
-        if (!pageAtTop() || dy <= 0) { hide(); return; }
+        if (!pageAtTop(activeTarget) || dy <= 0) { hide(); return; }
         if (dy > 8) {
           pulling = true;
           e.preventDefault();
@@ -147,7 +160,7 @@
       }, {passive:false});
       window.addEventListener('touchend', function() {
         if (!tracking && !pulling) return;
-        if (pulling && distance >= threshold * 0.52) {
+        if (pulling && distance >= threshold * 0.52 && pageAtTop(activeTarget)) {
           refreshing = true;
           indicator.classList.add('visible','refreshing');
           indicator.style.transform = 'translate(-50%,0)';
