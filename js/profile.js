@@ -654,6 +654,7 @@ class ProfileModule {
     }
 
     updateDynamicLabels() {
+        const isTVET = this.isTVETStudent();
         const periodType = this.getAcademicPeriodType();
         const plural = periodType === 'Semester' ? 'Semesters' : periodType === 'Term' ? 'Terms' : 'Blocks';
         
