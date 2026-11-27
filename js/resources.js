@@ -2830,8 +2830,18 @@ class ResourcesModule {
         const checkAndInit = async () => {
             attempts++;
             const hasDb = !!this.getSupabaseClient();
-            const hasUserProfile = window.currentUserProfile || this.userProfile;
-            
+            let hasUserProfile = window.currentUserProfile || this.userProfile;
+
+            // Retry profile resolution after the portal's Supabase client becomes available.
+            if (hasDb && !hasUserProfile) {
+                try {
+                    const profile = await this.getUserProfile();
+                    hasUserProfile = !!(profile && Object.keys(profile).length);
+                } catch (profileError) {
+                    console.warn('[Student Resources] Profile is not ready yet:', profileError);
+                }
+            }
+
             if (hasDb && hasUserProfile) {
                 console.log('✅ Database and user ready, loading resources...');
                 await this.loadResources();
