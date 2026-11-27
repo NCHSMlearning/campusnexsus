@@ -204,8 +204,7 @@ async function loadDashboard(){
  let exams=[];try{exams=await loadRows("exams","id,title,exam_name,course_name,target_program,program_type,block,exam_date,approval_status,is_published,status,created_at",6);}catch(e){console.warn("Recent examinations unavailable:",e.message);}
  const recent=$("iaRecentExams");if(!recent)return;recent.replaceChildren();if(!exams.length){const e=document.createElement("div");e.className="ia-empty";e.textContent="No examination records are available yet.";recent.append(e);}else exams.forEach(x=>{const box=document.createElement("div");box.className="ia-list-row";const left=document.createElement("div");const b=document.createElement("b");b.textContent=x.title||x.exam_name||x.course_name||"Examination";const sm=document.createElement("small");sm.textContent=[x.target_program||x.program_type,x.exam_date].filter(Boolean).join(" · ");left.append(b,sm);const tag=document.createElement("span");tag.className="ia-status";tag.textContent=x.is_published?"Published":statusLabel(x.approval_status||x.status);box.append(left,tag);recent.append(box);});
 }
-async function loadStudents(){const data=await loadRows("students","id,full_name,email,admission_number,course,block,current_block,status",500);state.rows.students=data;renderStudents();}
-function renderStudents(){const q=($("iaStudentSearch").value||"").toLowerCase();const data=state.rows.students.filter(x=>[x.full_name,x.email,x.admission_number,x.course].some(v=>String(v||"").toLowerCase().includes(q)));$("iaStudentCount").textContent=data.length+" students";rows("iaStudents",data,5,(tr,x)=>{cell(tr,x.full_name,true);cell(tr,x.admission_number);cell(tr,x.course);cell(tr,x.current_block||x.block);cell(tr,statusLabel(x.status));});}
+// Student directory is owned by User Management > Students; no duplicate loader here.
 async function loadStaff(){const data=await loadRows("lecturers","id,full_name,email,department,staff_id,status,approved",500);state.rows.staff=data;renderStaff();}
 function renderStaff(){const q=($("iaStaffSearch").value||"").toLowerCase();const data=state.rows.staff.filter(x=>[x.full_name,x.email,x.department,x.staff_id].some(v=>String(v||"").toLowerCase().includes(q)));$("iaStaffCount").textContent=data.length+" staff records";rows("iaStaff",data,5,(tr,x)=>{cell(tr,x.full_name,true);cell(tr,x.email);cell(tr,x.department);cell(tr,x.staff_id);cell(tr,statusLabel(x.status));});}
 async function loadAcademic(){const [p,c]=await Promise.all([loadRows("programs","id,program_name,program_code,category,duration_months,status",500),loadRows("courses","id,course_name,name,code,unit_code,target_program,block,status",500)]);rows("iaPrograms",p,5,(tr,x)=>{cell(tr,x.program_name,true);cell(tr,x.program_code);cell(tr,x.category||"—");cell(tr,x.duration_months?x.duration_months+" months":"—");cell(tr,statusLabel(x.status));});rows("iaCourses",c,5,(tr,x)=>{cell(tr,x.course_name||x.name,true);cell(tr,x.unit_code||x.code);cell(tr,x.target_program);cell(tr,x.block);cell(tr,statusLabel(x.status));});}
@@ -286,7 +285,7 @@ async function loadCNSEBInstitutionMonitor(){
   if(body)body.innerHTML='<tr><td colspan="5" class="ia-empty">Unable to load sessions: '+String(error.message||"Access unavailable").replace(/[&<>"]/g," ")+'</td></tr>';
  }
 }
-async function loadView(view){try{if(view==="students"&&!state.rows.students)await loadStudents();if(view==="staff"&&!state.rows.staff)await loadStaff();if(view==="academic")await loadAcademic();if(view==="proctoring")await loadCNSEBInstitutionMonitor();/* Examination records are rendered by institution-admin-modules.js, which supplies tenant-scoped CRUD and the matching action column. *//* Attendance is handled by institution-admin-attendance.js using the verified institution student roster. */if(view==="learning")await loadLearning();}catch(e){message("Unable to load "+view+": "+e.message,true);}}
+async function loadView(view){try{if(view==="staff"&&!state.rows.staff)await loadStaff();if(view==="academic")await loadAcademic();if(view==="proctoring")await loadCNSEBInstitutionMonitor();/* Examination records are rendered by institution-admin-modules.js, which supplies tenant-scoped CRUD and the matching action column. *//* Attendance is handled by institution-admin-attendance.js using the verified institution student roster. */if(view==="learning")await loadLearning();}catch(e){message("Unable to load "+view+": "+e.message,true);}}
 function bind(){
  $("iaCnsebRefresh")?.addEventListener("click",loadCNSEBInstitutionMonitor);
  const menuSearch=$("iaSidebarSearch"),sidebar=$("iaSidebar"),scrim=$("iaScrim"),menuToggle=$("iaMenuToggle"),nav=$("iaNav");
@@ -335,7 +334,7 @@ function bind(){
  menuSearch?.addEventListener("input",runMenuSearch);
  document.querySelectorAll("[data-view]").forEach(el=>el.addEventListener("click",()=>{activate(el.dataset.view);closeMenu();loadView(el.dataset.view);}));
  document.querySelectorAll("[data-open-view]").forEach(el=>el.addEventListener("click",()=>{const v=el.dataset.openView;activate(v);closeMenu();loadView(v);}));
- $("iaStudentSearch")?.addEventListener("input",renderStudents);$("iaStaffSearch")?.addEventListener("input",renderStaff);
+$("iaStaffSearch")?.addEventListener("input",renderStaff);
  menuToggle?.addEventListener("click",()=>{const opening=!sidebar.classList.contains("open");sidebar.classList.toggle("open",opening);scrim?.classList.toggle("show",opening);menuToggle.setAttribute("aria-expanded",String(opening));});
  scrim?.addEventListener("click",closeMenu);
  document.addEventListener("keydown",event=>{
