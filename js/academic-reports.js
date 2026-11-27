@@ -125,13 +125,25 @@
     }
 
     function getAcademicPeriod(mark) {
-        const type = window.currentAcademicStructure?.type || 'Block';
+        const structure = window.currentAcademicStructure || {};
+        const type = structure.type || 'Block';
         const values = type === 'Semester'
             ? [mark?.semester, mark?.academic_period, mark?.block, mark?.block_term, mark?.term]
             : type === 'Term'
                 ? [mark?.term, mark?.academic_period, mark?.block, mark?.block_term, mark?.semester]
                 : [mark?.block, mark?.academic_period, mark?.block_term, mark?.semester, mark?.term];
-        return String(values.find(value => value !== null && value !== undefined && String(value).trim()) || 'General').trim();
+        const raw = String(values.find(value => value !== null && value !== undefined && String(value).trim()) || 'General').trim();
+        const periods = structure.periods || [];
+        const exact = periods.find(period => String(period.name).toLowerCase() === raw.toLowerCase());
+        if (exact) return exact.name;
+        const numeric = raw.match(/^(?:(?:semester|term|block)\\s*)?(\\d+)$/i);
+        if (numeric) {
+            const expected = type.toLowerCase() + ' ' + numeric[1];
+            const configured = periods.find(period => String(period.name).toLowerCase() === expected ||
+                new RegExp('(?:^|\\\\s)' + numeric[1] + '$').test(String(period.name)));
+            if (configured) return configured.name;
+        }
+        return raw;
     }
 
     function getPeriodSequence(periodName) {
