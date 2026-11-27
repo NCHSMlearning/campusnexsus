@@ -46,6 +46,6 @@ test('Android app mode persists across login redirects and student dashboard loa
   const loginPage = fs.readFileSync(path.join(root, '..', 'platform', 'login.html'), 'utf8');
   assert.ok(shell.includes('cn_android_app_mode=1; Max-Age=31536000; Path=/; SameSite=Lax; Secure'));
   assert.ok(shell.includes('cn_android_app_mode=1'));
-  assert.ok(studentPage.includes('campus-nexus-app-shell.js?v=1.2.8'));
-  assert.ok(loginPage.includes('campus-nexus-app-shell.js?v=1.2.8'));
+  assert.ok(studentPage.includes('campus-nexus-app-shell.js?v=1.3.0'));
+  assert.ok(loginPage.includes('campus-nexus-app-shell.js?v=1.3.0'));
 });
