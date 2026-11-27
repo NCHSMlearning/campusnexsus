@@ -1757,6 +1757,7 @@ document.getElementById('register-form').addEventListener('submit', async functi
                 program: program_type,
                 intake_year: intakeData.intake_year,
                 intake_month: intakeData.intake_month,
+                block: defaultBlock,
                 current_block: defaultBlock,
                 guardian_name: guardian_name,
                 guardian_phone: guardian_phone,
@@ -1857,8 +1858,9 @@ document.getElementById('register-form').addEventListener('submit', async functi
                 .then(() => {
                     console.log('✅ Profile photo uploaded');
                     return sb.from('consolidated_user_profiles_table')
-                        .update({ profile_photo_url: photoPath })
-                        .eq('user_id', userId);
+                        .update({ profile_photo_url: photoPath, passport_url: photoPath, updated_at: new Date().toISOString() })
+                        .eq('user_id', userId)
+                        .eq('institution_id', resolvedInstitutionContext.institution_id);
                 })
                 .catch(err => console.error('❌ Failed to upload profile photo:', err));
             uploadPromises.push(uploadPromise);
