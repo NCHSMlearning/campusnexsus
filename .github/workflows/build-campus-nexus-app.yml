@@ -70,7 +70,7 @@ jobs:
           path = matches[0]
           source = path.read_text()
           if 'WindowCompat.setDecorFitsSystemWindows' not in source:
-              source = source.replace('import com.getcapacitor.BridgeActivity;', 'import com.getcapacitor.BridgeActivity;\\nimport android.graphics.Color;\\nimport android.os.Bundle;\\nimport androidx.core.view.WindowCompat;\\nimport androidx.core.view.WindowInsetsControllerCompat;')
+              source = source.replace('import com.getcapacitor.BridgeActivity;', 'import com.getcapacitor.BridgeActivity;\nimport android.graphics.Color;\nimport android.os.Bundle;\nimport androidx.core.view.WindowCompat;\nimport androidx.core.view.WindowInsetsControllerCompat;')
               source = source.rstrip()
               if not source.endswith('}'):
                   raise SystemExit('Unexpected MainActivity.java structure')
