@@ -847,33 +847,52 @@ async loadAvailableUnits(supabase) {
                 const institutionId = this.getInstitutionId();
                 const programCode = String(profile.program || this.programCode || '').trim().toUpperCase();
                 if (!institutionId || !programCode) throw new Error('Institution and programme are required to load your academic periods.');
-                let structure = null;
-                if (window.CampusAcademicStructure && institutionId && programCode) {
-                    structure = await window.CampusAcademicStructure.resolve(supabase, institutionId, programCode);
+                if (!window.CampusAcademicStructure?.resolve) {
+                    throw new Error('The institution academic-structure settings could not be loaded.');
                 }
-                let blocks = (structure?.periods || []).map(x => x.name);
-                if (!blocks.length) {
-                    let query = supabase.from('units_catalog').select('block').eq('status', 'active');
-                    if (institutionId) query = query.eq('institution_id', institutionId);
-                    if (programCode) query = query.eq('program', programCode);
-                    const { data, error } = await query;
-                    if (error) throw error;
-                    blocks = (data || []).map(u => u.block).filter(Boolean);
-                }
-                blocks = [...new Set(blocks.map(String))].sort((a,b) => a.localeCompare(b,undefined,{numeric:true}));
-                const periodType = structure?.type || (this.isTVETStudent ? 'Term' : 'Block');
-                let options = '<option value="">All ' + (structure?.plural || (periodType === 'Term' ? 'Terms' : periodType === 'Semester' ? 'Semesters' : 'Blocks')) + '</option>';
-                blocks.forEach(period => {
-                    options += `<option value="${this.escapeHtml(period)}">${this.escapeHtml(period)}</option>`;
-                });
+
+                // Always refresh the tenant/programme configuration so students see
+                // exactly the active Blocks, Semesters or Terms configured by their institution.
+                const structure = await window.CampusAcademicStructure.resolve(
+                    supabase, institutionId, programCode, { refresh: true }
+                );
+                const periods = Array.isArray(structure?.periods) ? structure.periods : [];
+                const periodType = structure?.type || 'Block';
+                const plural = structure?.plural || (periodType === 'Semester' ? 'Semesters' : periodType === 'Term' ? 'Terms' : 'Blocks');
+
                 if (this.blockFilter) {
-                    this.blockFilter.innerHTML = options;
+                    const previous = this.blockFilter.value;
+                    this.blockFilter.innerHTML = '';
+                    const placeholder = document.createElement('option');
+                    placeholder.value = '';
+                    placeholder.textContent = periods.length ? 'All ' + plural : 'No ' + plural.toLowerCase() + ' configured';
+                    this.blockFilter.appendChild(placeholder);
+                    periods.forEach(period => {
+                        const name = String(period.name || '').trim();
+                        if (!name) return;
+                        const option = document.createElement('option');
+                        option.value = name;
+                        option.textContent = name;
+                        this.blockFilter.appendChild(option);
+                    });
+                    this.blockFilter.disabled = periods.length === 0;
                     this.blockFilter.setAttribute('aria-label', 'Filter by ' + periodType.toLowerCase());
-                    const userBlock = profile.current_block || profile.block || profile.term;
-                    if (userBlock && blocks.includes(userBlock)) this.blockFilter.value = userBlock;
+                    const studentPeriod = String(profile.current_block || profile.block || profile.term || '').trim();
+                    const preferred = periods.some(p => p.name === previous) ? previous : studentPeriod;
+                    if (preferred && periods.some(p => p.name === preferred)) this.blockFilter.value = preferred;
+                    else this.blockFilter.value = '';
+                    this.blockFilter.title = periods.length
+                        ? 'Periods are managed by your institution under Academic Structure.'
+                        : 'Ask your institution administrator to configure active ' + plural.toLowerCase() + ' for this programme.';
                 }
+                this.academicStructure = structure;
             } catch (error) {
-                console.error('Error loading academic periods:', error);
+                console.error('Error loading institution academic periods:', error);
+                if (this.blockFilter) {
+                    this.blockFilter.innerHTML = '<option value="">Academic periods unavailable</option>';
+                    this.blockFilter.disabled = true;
+                    this.blockFilter.title = error.message || 'Institution academic settings are unavailable.';
+                }
             }
         }
 // ============================================================
