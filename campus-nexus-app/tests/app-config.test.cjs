@@ -30,3 +30,12 @@ test('only the required trusted origins are allowed for app navigation', () => {
     'irahplkvocaakjxuisto.supabase.co'
   ]);
 });
+
+test('Android app mode survives the remote portal handoff and enables role-specific navigation', () => {
+  const shell = fs.readFileSync(path.join(root, '..', 'campus-nexus-app-shell.js'), 'utf8');
+  assert.match(welcome, /source=android-app/);
+  assert.match(shell, /cn_android_app_mode/);
+  assert.match(shell, /cn-native-institution-app/);
+  assert.match(shell, /cn-native-lecturer-app/);
+  assert.match(shell, /cn-native-tabbar/);
+});
