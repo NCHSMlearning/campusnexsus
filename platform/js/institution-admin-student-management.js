@@ -197,7 +197,59 @@
   window.bulkRejectSessionReports=async()=>{const ids=selected("session-reports");if(!ids.length)return notify("Select at least one session report.","warning");if(!confirm("Reject "+ids.length+" selected session reports?"))return;let ok=0;for(const id of ids){try{if(await decideReport(id,"rejected",false))ok++;}catch(e){console.error(e);}}notify(ok+" of "+ids.length+" reports rejected.");await loadSessionReportsAdmin();};
   async function setAdmissionStatus(id,status){const r=await db().from("institution_admissions").update({status,updated_at:new Date().toISOString()}).eq("id",id).eq("institution_id",tenant()).select("id");if(r.error)throw r.error;if(!r.data?.length)throw new Error("Admission record not found for this institution.");await loadAdmissions();notify("Admission marked "+status+".");}
   $("smAdmissionsBody")?.addEventListener("click",event=>{const button=event.target.closest("[data-admission-action]");if(button)setAdmissionStatus(button.dataset.id,button.dataset.admissionAction).catch(e=>notify(e.message,"error"));});
-  async function updateSelected(type,status){const ids=selected(type);if(!ids.length)return notify("Select at least one record.","warning");if(!confirm(status.charAt(0).toUpperCase()+status.slice(1)+" "+ids.length+" selected records?"))return;const table=type==="admissions"?"institution_admissions":"student_requests";const r=await db().from(table).update({status,updated_at:new Date().toISOString()}).eq("institution_id",tenant()).in("id",ids).select("id");if(r.error)return notify(r.error.message,"error");notify((r.data||[]).length+" record(s) updated.");if(type==="admissions")await loadAdmissions();else if(type==="change-program")await loadRequests("change_program");else await loadRequests("readmission");}
+  async function updateSelected(type,status){
+    const ids=selected(type);
+    if(!ids.length)return notify("Select at least one record.","warning");
+    if(!["approved","rejected","reviewing"].includes(status))return notify("Unsupported request status.","error");
+    if(!confirm(status.charAt(0).toUpperCase()+status.slice(1)+" "+ids.length+" selected records?"))return;
+    const client=db(),institutionId=tenant(),now=new Date().toISOString();
+    if(!client||!institutionId)return notify("Institution session is not ready.","error");
+    let succeeded=0;const failures=[];
+    for(const id of ids){
+      try{
+        if(type==="admissions"){
+          const patch={status,updated_at:now};
+          if(status==="approved"){patch.approved_at=now;patch.approved_by=api()?.user?.email||api()?.user?.id||"institution_admin";}
+          if(status==="rejected"){patch.rejected_at=now;patch.rejected_by=api()?.user?.email||api()?.user?.id||"institution_admin";}
+          const result=await client.from("institution_admissions").update(patch).eq("id",id).eq("institution_id",institutionId).select("id");
+          if(result.error)throw result.error;
+          if(!result.data?.length)throw new Error("Admission record not found in this institution.");
+        }else{
+          const requestResult=await client.from("student_requests").select("*").eq("id",id).eq("institution_id",institutionId).maybeSingle();
+          if(requestResult.error)throw requestResult.error;
+          const request=requestResult.data;
+          if(!request)throw new Error("Request not found in this institution.");
+          if(["approved","rejected"].includes(String(request.status||"").toLowerCase()))throw new Error("This request has already been decided.");
+          let previousProfile=null;
+          if(status==="approved"&&request.request_type==="change_program"){
+            if(!request.student_id||!request.requested_program)throw new Error("The request is missing its student ID or requested programme.");
+            const profileResult=await client.from("consolidated_user_profiles_table").select("user_id,student_id,program,institution_id").eq("institution_id",institutionId).eq("student_id",request.student_id).maybeSingle();
+            if(profileResult.error)throw profileResult.error;
+            previousProfile=profileResult.data;
+            if(!previousProfile)throw new Error("Matching student profile was not found in this institution; request remains unchanged.");
+            const profileUpdate=await client.from("consolidated_user_profiles_table").update({program:request.requested_program,updated_at:now}).eq("user_id",previousProfile.user_id).eq("institution_id",institutionId).select("user_id");
+            if(profileUpdate.error)throw profileUpdate.error;
+            if(!profileUpdate.data?.length)throw new Error("Student programme was not updated; request remains unchanged.");
+          }
+          const patch={status,updated_at:now};
+          if(status==="approved"){patch.approved_at=now;patch.approved_by=api()?.user?.email||api()?.user?.id||"institution_admin";}
+          if(status==="rejected"){patch.rejected_at=now;patch.rejected_by=api()?.user?.email||api()?.user?.id||"institution_admin";}
+          const result=await client.from("student_requests").update(patch).eq("id",id).eq("institution_id",institutionId).eq("status",request.status).select("id");
+          if(result.error||!result.data?.length){
+            if(previousProfile){
+              const rollback=await client.from("consolidated_user_profiles_table").update({program:previousProfile.program,updated_at:new Date().toISOString()}).eq("user_id",previousProfile.user_id).eq("institution_id",institutionId);
+              if(rollback.error)console.error("[Student Management] Programme rollback failed:",rollback.error);
+            }
+            if(result.error)throw result.error;
+            throw new Error("Request changed while it was being processed; no decision was recorded.");
+          }
+        }
+        succeeded++;
+      }catch(error){failures.push(id+": "+(error.message||"Update failed"));console.error("[Student Management] Request decision failed:",id,error);}
+    }
+    notify(succeeded+" of "+ids.length+" record(s) "+status+"."+(failures.length?" "+failures.length+" failed; see details in console.":""),failures.length?"warning":"success");
+    if(type==="admissions")await loadAdmissions();else if(type==="change-program")await loadRequests("change_program");else await loadRequests("readmission");
+  }
   window.bulkApproveSM=type=>updateSelected(type||"admissions","approved");
   window.bulkRejectSM=type=>updateSelected(type||"admissions","rejected");
   window.bulkReviewSM=type=>updateSelected(type||"admissions","reviewing");
