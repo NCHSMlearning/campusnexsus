@@ -313,8 +313,9 @@ function bind(){
  };
  const entitlementHidden=new WeakMap();
  searchable.forEach(item=>entitlementHidden.set(item,!!item.hidden));
+
  const runMenuSearch=()=>{
-  const q=(menuSearch?.value||"").trim().toLocaleLowerCase(),terms=q.split(/\s+/).filter(Boolean);
+  const q=(menuSearch?.value||"").trim().toLocaleLowerCase(),terms=q.split(/\\s+/).filter(Boolean);
   let count=0;
   searchable.forEach(item=>{
    const key=item.dataset.view||"",module=item.dataset.module||"";
@@ -323,14 +324,26 @@ function bind(){
    item.hidden=!!entitlementHidden.get(item)||!match;
    if(!item.hidden)count++;
   });
-  document.querySelectorAll("#iaNav .ia-nav-label").forEach(label=>{
-   let next=label.nextElementSibling,visible=false;
-   while(next&&!next.classList.contains("ia-nav-label")){if(next.matches("[data-view]")&&!next.hidden){visible=true;break;}next=next.nextElementSibling;}
-   label.hidden=!!q&&!visible;
+  document.querySelectorAll("#iaNav .ia-nav-group").forEach(group=>{
+   const visible=[...group.querySelectorAll("[data-view]")].some(item=>!item.hidden);
+   group.hidden=!!q&&!visible;
+   if(q&&visible)group.classList.add("open");
+   if(!q&&group.dataset.userCollapsed!=="true"&&group.dataset.userOpened!=="false"&&group.dataset.defaultOpen==="true")group.classList.add("open");
+   const toggle=group.querySelector(".ia-nav-group-toggle");
+   toggle?.setAttribute("aria-expanded",String(group.classList.contains("open")));
   });
   if(empty){empty.classList.toggle("show",!!q&&count===0);empty.hidden=!(!!q&&count===0);}
   if(menuSearch)menuSearch.setAttribute("aria-label",count+" menu items match");
  };
+ document.querySelectorAll("#iaNav .ia-nav-group-toggle").forEach(toggle=>{
+  toggle.addEventListener("click",()=>{
+   const group=toggle.closest(".ia-nav-group"),opening=!group.classList.contains("open");
+   group.classList.toggle("open",opening);
+   group.dataset.userCollapsed=opening?"false":"true";
+   group.dataset.userOpened=opening?"true":"false";
+   toggle.setAttribute("aria-expanded",String(opening));
+  });
+ });
  menuSearch?.addEventListener("input",runMenuSearch);
  document.querySelectorAll("[data-view]").forEach(el=>el.addEventListener("click",()=>{activate(el.dataset.view);closeMenu();loadView(el.dataset.view);}));
  document.querySelectorAll("[data-open-view]").forEach(el=>el.addEventListener("click",()=>{const v=el.dataset.openView;activate(v);closeMenu();loadView(v);}));
