@@ -209,8 +209,6 @@
       try{
         if(type==="admissions"){
           const patch={status,updated_at:now};
-          if(status==="approved"){patch.approved_at=now;patch.approved_by=api()?.user?.email||api()?.user?.id||"institution_admin";}
-          if(status==="rejected"){patch.rejected_at=now;patch.rejected_by=api()?.user?.email||api()?.user?.id||"institution_admin";}
           const result=await client.from("institution_admissions").update(patch).eq("id",id).eq("institution_id",institutionId).select("id");
           if(result.error)throw result.error;
           if(!result.data?.length)throw new Error("Admission record not found in this institution.");
