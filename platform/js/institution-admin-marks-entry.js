@@ -137,9 +137,9 @@
   const host=$("me_marks_container"),save=$( "iaMESaveCapture");if(!host)return;
   const dynamic=$("marksEntryDynamicContent"),placeholder=$("marksEntryPlaceholder");
   const hasSelection=!!($("iaMEProgramSelect")?.value&&$("iaMEBlockSelect")?.value&&$("iaMEUnitSelect")?.value&&$("iaMEYearSelect")?.value);if(dynamic)dynamic.style.display=hasSelection?"block":"none";if(placeholder)placeholder.style.display=hasSelection?"none":"block";
-  const program=$( "iaMEProgramSelect")?.value||"",type=$( "iaMEAssessmentType")?.value||"full",unit=$( "iaMEUnitSelect")?.value||"";
-  const nursing=!isTVET(program),examMax=nursing?(type==="full"?70:100):100;
-  const showCat1=type!=="exam_only",showCat2=type==="full"||type==="cats_only",showExam=type!=="cats_only"&&type!=="cat_only";
+  const program=$( "iaMEProgramSelect")?.value||"",effectiveType=currentAssessmentType(),unit=$( "iaMEUnitSelect")?.value||"";
+  const nursing=!isTVET(program),examMax=nursing?(effectiveType==="full"?70:100):100;
+  const showCat1=meColumnPrefs.cat1!==false,showCat2=meColumnPrefs.cat2!==false,showExam=meColumnPrefs.exam!==false;
   const q=($( "meMarksSearch")?.value||"").trim().toLowerCase();
   const filtered=rows.map((r,index)=>({r,index})).filter(({r})=>!q||[r.student_name,r.admission_number].some(v=>String(v??"").toLowerCase().includes(q)));
   const totalPages=Math.max(1,Math.ceil(filtered.length/pageSize));page=Math.min(page,totalPages);
