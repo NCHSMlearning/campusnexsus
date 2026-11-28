@@ -239,7 +239,7 @@ document.querySelectorAll("[data-view='timetable']").forEach(b=>b.addEventListen
 document.querySelectorAll("[data-view='placements']").forEach(b=>b.addEventListener("click",()=>setTimeout(()=>load("placements"),100)));
 document.querySelectorAll("[data-view='research']").forEach(b=>b.addEventListener("click",()=>setTimeout(()=>load("research"),100)));
 document.querySelectorAll("[data-view='welfare']").forEach(b=>b.addEventListener("click",()=>setTimeout(()=>load("welfare"),100)));
-document.querySelectorAll("[data-view='learning']").forEach(b=>b.addEventListener("click",()=>setTimeout(()=>load("resources"),100)));
+// Learning resources are rendered by institution-admin.js; avoid a second legacy renderer on the same table.
 }
 function wait(){api=window.CampusInstitutionAdmin;if(!api?.db||!api?.institutionId){setTimeout(wait,150);return;}setup();const original=api.refresh;api.refresh=async()=>{await original();for(const k of Object.keys(config))if(cache[k]){await fetchRows(k);draw(k);}};}
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",wait,{once:true});else wait();
