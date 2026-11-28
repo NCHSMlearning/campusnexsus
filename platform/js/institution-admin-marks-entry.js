@@ -329,7 +329,7 @@
  }
  function unavailable(name){return ()=>say(name+" is not yet connected to the institution-scoped workflow.",true);}
  window.publishCurrentUnitMarks=()=>say("Marks cannot be published from entry. Submit them for approval, then publish approved marks in Marks Approval.");
- window.openStudentPublishModal=unavailable("Student selection");
+ window.openStudentPublishModal=openMarksStudentManager;
  window.showLecturerAssignmentModal=showLecturerAssignmentModal;
  window.refreshAssignmentHistory=refreshAssignmentHistory;
  window.clearAllAssignments=clearAllAssignments;
