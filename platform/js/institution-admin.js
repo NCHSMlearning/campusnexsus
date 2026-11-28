@@ -126,7 +126,7 @@ function applyIdentity(){
  const list=$("iaModuleList");if(list){list.replaceChildren();const keys=[...state.modules].filter(k=>MODULES[k]);if(!keys.length){const s=document.createElement("p");s.className="ia-empty";s.textContent="No module entitlements were returned.";list.append(s);}keys.forEach(k=>{const row=document.createElement("div");row.className="ia-module-row";const ic=document.createElement("i");ic.className="fa-solid fa-circle-check";const label=document.createElement("b");label.textContent=MODULES[k];const stateEl=document.createElement("span");stateEl.className="ia-module-state";stateEl.textContent="Enabled";row.append(ic,label,stateEl);list.append(row);});}
  document.querySelectorAll("[data-module]").forEach(el=>{const key=el.dataset.module;const allowed=key==="administrator_portal"||state.modules.has(key)||(key==="admin_exams"&&state.modules.has("examinations"));el.hidden=!allowed;});
 }
-function activate(view){if(!$("view-"+view))return;document.querySelectorAll(".ia-view").forEach(x=>x.classList.toggle("active",x.id==="view-"+view));document.querySelectorAll(".ia-nav-item").forEach(x=>x.classList.toggle("active",x.dataset.view===view));$("iaSidebar")?.classList.remove("open");$("iaScrim")?.classList.remove("show");}
+function activate(view){if(!$("view-"+view))return;document.querySelectorAll(".ia-view").forEach(x=>x.classList.toggle("active",x.id==="view-"+view));document.querySelectorAll(".ia-nav-item").forEach(x=>x.classList.toggle("active",x.dataset.view===view));const selected=document.querySelector("#iaNav [data-view=\""+view+"\"]");const group=selected?.closest(".ia-nav-group");if(group){group.classList.add("open");group.dataset.userOpened="true";group.dataset.userCollapsed="false";group.querySelector(".ia-nav-group-toggle")?.setAttribute("aria-expanded","true");} $("iaSidebar")?.classList.remove("open");$("iaScrim")?.classList.remove("show");}
 const studentCharts={};
 function chartEmpty(id,text){const canvas=$(id);if(!canvas)return;const wrap=canvas.parentElement;wrap.innerHTML='<div class="ia-chart-empty">'+text+'</div>';}
 function drawStudentChart(id,type,labels,data,label){const canvas=$(id);if(!canvas||!window.Chart)return;if(studentCharts[id])studentCharts[id].destroy();const colors=['#2563eb','#0d9488','#f59e0b','#8b5cf6','#ec4899','#0891b2','#65a30d','#ea580c','#64748b','#be123c'];studentCharts[id]=new Chart(canvas,{type,data:{labels,datasets:[{label,data,backgroundColor:type==='line'?'rgba(13,148,136,.14)':colors,borderColor:type==='line'?'#0d9488':colors,borderWidth:type==='line'?3:1,fill:type==='line',tension:.35,pointRadius:type==='line'?3:0,pointHoverRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:type==='doughnut',position:'bottom',labels:{usePointStyle:true,boxWidth:8,padding:14}},tooltip:{enabled:true}},scales:type==='doughnut'?{}:{y:{beginAtZero:true,ticks:{precision:0},grid:{color:'rgba(148,163,184,.16)'}},x:{grid:{display:false}}}}});}
@@ -315,7 +315,7 @@ function bind(){
  searchable.forEach(item=>entitlementHidden.set(item,!!item.hidden));
 
  const runMenuSearch=()=>{
-  const q=(menuSearch?.value||"").trim().toLocaleLowerCase(),terms=q.split(/\\s+/).filter(Boolean);
+  const q=(menuSearch?.value||"").trim().toLocaleLowerCase(),terms=q.split(/\s+/).filter(Boolean);
   let count=0;
   searchable.forEach(item=>{
    const key=item.dataset.view||"",module=item.dataset.module||"";
@@ -328,7 +328,7 @@ function bind(){
    const visible=[...group.querySelectorAll("[data-view]")].some(item=>!item.hidden);
    group.hidden=!!q&&!visible;
    if(q&&visible)group.classList.add("open");
-   if(!q&&group.dataset.userCollapsed!=="true"&&group.dataset.userOpened!=="false"&&group.dataset.defaultOpen==="true")group.classList.add("open");
+   if(!q){const shouldOpen=group.dataset.userCollapsed==="true"?false:group.dataset.userOpened==="true"?true:group.dataset.defaultOpen==="true";group.classList.toggle("open",shouldOpen);}
    const toggle=group.querySelector(".ia-nav-group-toggle");
    toggle?.setAttribute("aria-expanded",String(group.classList.contains("open")));
   });
