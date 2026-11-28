@@ -5,12 +5,20 @@
 (() => {
  "use strict";
  const aliases={"iaMECaptureNotice":"iaMECaptureNotice","iaMEProgramSelect":"me_program_select","iaMEBlockSelect":"me_block_select","iaMEUnitSelect":"me_subject_select","iaMEAssessmentType":"me_assessment_type","iaMEYearSelect":"me_year_select"}; const $=id=>document.getElementById(id)||document.getElementById(aliases[id]||"");
- let api=null,units=[],rows=[],programsLoading=false,marksLoading=false,marksLoadRequest=0,saving=false,page=1,pageSize=30,academicStructure=null,lastNotice="",lastNoticeBad=false;
+ let api=null,units=[],rows=[],programTypes=new Map(),programsLoading=false,marksLoading=false,marksLoadRequest=0,saving=false,page=1,pageSize=30,academicStructure=null,lastNotice="",lastNoticeBad=false;
  const db=()=>{if(!api?.db||!api?.institutionId||!api?.user?.id)throw new Error("Your institution administrator session is not ready.");return api.db;};
  const tenant=()=>api.institutionId;
  const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
  const say=(message,bad=false)=>{lastNotice=String(message||"");lastNoticeBad=!!bad;const el=$("iaMECaptureNotice");if(el){el.textContent=lastNotice;el.style.color=bad?"#a12b2b":"#16634a";}const visible=$("meMarksStatus");if(visible){visible.textContent=lastNotice;visible.style.color=bad?"#991b1b":"#16634a";}};
- const isTVET=program=>String(program||"").trim().toUpperCase()!=="KRCHN";
+ const programKey=program=>String(program||"").trim().toUpperCase();
+  const isTVET=program=>{
+   const key=programKey(program),meta=programTypes.get(key)||{};
+   const category=String(meta.category||"").trim().toLowerCase(),type=String(meta.program_type||"").trim().toLowerCase(),name=String(meta.program_name||"").trim().toLowerCase();
+   if(["KRCHN","DCHN"].includes(key)||category.includes("nursing")||type.includes("nursing")||name.includes("nursing"))return false;
+   if(category==="tvet"||category.includes("technical and vocational"))return true;
+   if(["tvet","competency","cbt"].includes(type))return true;
+   return key!=="";
+  };
  const passThreshold=program=>isTVET(program)?50:60;
  const gradeFor=(score,program)=>{const n=Number(score);if(!Number.isFinite(n))return "PENDING";if(isTVET(program)){if(n>=80)return "A";if(n>=65)return "B";if(n>=50)return "C";return "E";}if(n>=75)return "A";if(n>=65)return "B";if(n>=60)return "C";return "D";};
  function calculate(cat1,cat2,exam,type,program){
@@ -29,7 +37,7 @@
   if(programsLoading)return;programsLoading=true;
   try{
    const [catalog,legacy]=await Promise.all([
-    db().from("programs").select("program_code,program_name,status").eq("institution_id",tenant()).order("program_code"),
+    db().from("programs").select("program_code,program_name,status,category,program_type").eq("institution_id",tenant()).order("program_code"),
     db().from("units_catalog").select("program").eq("institution_id",tenant()).eq("status","active").limit(5000)
    ]);
    if(catalog.error)throw catalog.error;if(legacy.error)throw legacy.error;
@@ -48,7 +56,7 @@
   if(!program)return;
   try{
    if(window.CampusAcademicStructure)academicStructure=await window.CampusAcademicStructure.resolve(db(),tenant(),program);
-   const {data:programRow,error:programError}=await db().from("programs").select("id,structure_type").eq("program_code",program).eq("institution_id",tenant()).maybeSingle();if(programError)throw programError;
+   const {data:programRow,error:programError}=await db().from("programs").select("id,structure_type,category,program_type,program_name").eq("program_code",program).eq("institution_id",tenant()).maybeSingle();if(programError)throw programError;
    let periodNames=academicStructure?.periods?.map(x=>x.name)||[];
    if(!periodNames.length&&programRow?.id){const canonical=await db().from("program_blocks").select("block_name").eq("program_id",programRow.id).eq("institution_id",tenant()).eq("status","active").order("block_sequence");if(canonical.error)throw canonical.error;periodNames=(canonical.data||[]).map(x=>x.block_name);}
    if(!periodNames.length){const legacy=await db().from("units_catalog").select("block").eq("program",program).eq("institution_id",tenant()).eq("status","active").limit(5000);if(legacy.error)throw legacy.error;periodNames=(legacy.data||[]).map(x=>x.block);}
@@ -64,7 +72,7 @@
   fill("iaMEUnitSelect",[],"Select unit");units=[];
   if(!program||!block)return;
   try{
-   const {data:programRow,error:programError}=await db().from("programs").select("id").eq("program_code",program).eq("institution_id",tenant()).maybeSingle();if(programError)throw programError;
+   const {data:programRow,error:programError}=await db().from("programs").select("id,category,program_type,program_name").eq("program_code",program).eq("institution_id",tenant()).maybeSingle();if(programError)throw programError;
    let mappedIds=[];
    if(programRow?.id){const mapped=await db().from("program_courses").select("unit_catalog_id,block_name").eq("program_id",programRow.id).not("unit_catalog_id","is",null);if(mapped.error)throw mapped.error;mappedIds=(mapped.data||[]).filter(x=>!x.block_name||x.block_name===block).map(x=>x.unit_catalog_id).filter(Boolean);// A mapping can use a legacy block label. Do not hide valid catalogue units merely because its block_name differs from the selected label.
    if((mapped.data||[]).length&&!mappedIds.length)console.warn("[Institution marks capture] No exact program-course block mapping; using institution unit catalogue.");}
