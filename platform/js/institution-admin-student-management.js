@@ -220,7 +220,7 @@
       const kind=$("smHistoryType")?.value||"all",status=$("smHistoryStatus")?.value||"all",from=$("smHistoryDateFrom")?.value||"",to=$("smHistoryDateTo")?.value||"";
       const filtered=entries.filter(r=>{
         const k=r.kind.toLowerCase().replace(/\s+/g,"-");
-        const matchesKind=kind==="all"||kind==="all_requests"||k.includes(String(kind).toLowerCase().replace(/_/g,"-"))||(kind==="requests"&&k!=="admission");
+        const requested=String(kind).toLowerCase().replace(/_/g,"-");const matchesKind=kind==="all"||k===requested||(requested==="admissions"&&k==="admission")||(kind==="requests"&&k!=="admission");
         const st=String(r.status).toLowerCase();
         const d=r.created?new Date(r.created):null,day=d&&!Number.isNaN(d.getTime())?d.toISOString().slice(0,10):"";
         return matchesKind&&(status==="all"||st===String(status).toLowerCase())&&(!from||day>=from)&&(!to||day<=to);
