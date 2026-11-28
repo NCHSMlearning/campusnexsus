@@ -25,7 +25,7 @@
   const c1=Math.min(Math.max(Number(cat1)||0,0),30),c2=Math.min(Math.max(Number(cat2)||0,0),30),e=Math.min(Math.max(Number(exam)||0,0),100);
   let total=0;
   if(isTVET(program)){
-   switch(type){case "single_cat":total=((c1+e)/130)*100;break;case "exam_only":total=e;break;case "cats_only":total=((c1+c2)/60)*100;break;case "cat_only":total=(c1/30)*100;break;default:total=((c1+c2+e)/160)*100;}
+   switch(type){case "single_cat":total=(((c1||c2)+e)/130)*100;break;case "exam_only":total=e;break;case "cats_only":total=((c1+c2)/60)*100;break;case "cat_only":total=((c1||c2)/30)*100;break;default:total=((c1+c2+e)/160)*100;}
   }else{
    switch(type){case "single_cat":total=((c1||c2)+e);break;case "exam_only":total=e;break;case "cats_only":total=((c1+c2)/60)*100;break;case "cat_only":total=((c1||c2)/30)*100;break;default:total=((c1+c2)/60*30)+Math.min(e,70);}
   }
