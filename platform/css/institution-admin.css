@@ -2132,3 +2132,25 @@ body>#iaApp .ia-user{min-width:170px!important;justify-content:flex-start!import
  #iaApp .ia-view:not(#view-user-management) .ia-stat-card .ia-stat-icon{width:32px;height:32px}
  #iaApp .ia-view:not(#view-user-management) #programs>.cards{gap:8px}
 }
+
+/* Institution administrator sidebar dropdown redesign */
+#iaApp .ia-sidebar{display:flex;flex-direction:column;min-height:100dvh;overflow:hidden}
+#iaApp .ia-sidebar-search{flex:0 0 auto}
+#iaApp .ia-nav{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;padding:3px 12px 18px;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:rgba(170,205,220,.35) transparent;-webkit-overflow-scrolling:touch}
+#iaApp .ia-nav::-webkit-scrollbar{width:5px}#iaApp .ia-nav::-webkit-scrollbar-thumb{background:rgba(170,205,220,.3);border-radius:10px}
+#iaApp .ia-nav-group{margin:4px 0 7px}
+#iaApp .ia-nav-group-toggle{width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:15px 10px 7px;border:0;background:transparent;color:rgba(221,241,246,.66);font:800 10px Inter,system-ui,sans-serif;letter-spacing:.13em;text-align:left;cursor:pointer}
+#iaApp .ia-nav-group-toggle i{font-size:10px;transition:transform .2s ease;color:#91b4c4}
+#iaApp .ia-nav-group.open>.ia-nav-group-toggle i{transform:rotate(180deg)}
+#iaApp .ia-nav-group-items{display:none}
+#iaApp .ia-nav-group.open>.ia-nav-group-items{display:block;animation:iaNavReveal .18s ease}
+@keyframes iaNavReveal{from{opacity:.3;transform:translateY(-3px)}to{opacity:1;transform:translateY(0)}}
+#iaApp .ia-nav-group .ia-nav-item{min-height:43px;padding:10px 12px;margin:2px 0;border:1px solid transparent;border-radius:10px;font-size:12px}
+#iaApp .ia-nav-group .ia-nav-item i{flex:0 0 18px}
+#iaApp .ia-nav-group .ia-nav-item.active{background:linear-gradient(100deg,rgba(20,184,166,.25),rgba(255,255,255,.09));border-color:rgba(94,234,212,.24);box-shadow:inset 3px 0 #5eead4}
+#iaApp .ia-nav-group[hidden],#iaApp .ia-nav-group-items [hidden]{display:none!important}
+#iaApp .ia-nav-group-toggle[aria-expanded=true]{color:#d9f1f3}
+#iaApp .ia-sidebar-bottom{flex:0 0 auto;margin-top:0;background:linear-gradient(180deg,rgba(8,47,73,0),rgba(8,47,73,.98) 14%);padding-top:14px}
+#iaApp .ia-nav>.ia-nav-item[data-view=overview]{min-height:46px;margin:4px 0 10px;padding:12px;border-radius:11px;font-size:13px}
+#iaApp .ia-nav>.ia-nav-item[data-view=overview].active{background:linear-gradient(100deg,#087f9f,#0785a7);box-shadow:inset 4px 0 #e2b84b,0 8px 18px rgba(0,0,0,.12)}
+@media(max-width:760px){#iaApp .ia-sidebar{height:100dvh;max-height:100dvh;padding-top:max(18px,env(safe-area-inset-top));padding-bottom:env(safe-area-inset-bottom)}#iaApp .ia-nav{min-height:0;max-height:none;padding-bottom:16px;touch-action:pan-y}#iaApp .ia-nav-group-toggle{min-height:42px;padding-top:13px}#iaApp .ia-nav-group .ia-nav-item{min-height:45px}#iaApp .ia-sidebar-bottom{padding-bottom:calc(14px + env(safe-area-inset-bottom))}}
