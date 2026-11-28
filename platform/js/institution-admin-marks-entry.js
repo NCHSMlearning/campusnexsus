@@ -249,7 +249,88 @@
  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",wait,{once:true});else wait();
  window.InstitutionAdminMarksEntry={load:loadStudents,refresh:async()=>{if($("iaMEProgramSelect")?.value&&$("iaMEBlockSelect")?.value&&$("iaMEUnitSelect")?.value)return loadStudents();return loadPrograms();},loadBlocks,loadUnits,save:saveMarks,export:exportCaptureCsv};
  window.loadMEBlocks=loadBlocks;window.loadMEUnits=loadUnits;window.loadMarksEntry=loadStudents;window.saveMarksEntry=saveMarks;window.exportMarksEntry=exportCaptureCsv;
- const unavailable=name=>()=>say(name+" is not yet connected to the institution-scoped workflow.",true);
+
+ function assignmentContext(){
+  const program=$("iaMEProgramSelect")?.value||"",block=$("iaMEBlockSelect")?.value||"",unit=$("iaMEUnitSelect")?.value||"",year=$("iaMEYearSelect")?.value||"";
+  if(!program||!block||!unit||!year)throw new Error("Select programme, academic period, unit and academic year first.");
+  return {program,block,unit,year:String(year)};
+ }
+ function ensureLecturerAssignmentModal(){
+  let modal=$("iaLecturerAssignmentModal");if(modal)return modal;
+  modal=document.createElement("div");modal.id="iaLecturerAssignmentModal";
+  modal.style.cssText="position:fixed;inset:0;z-index:100510;background:rgba(15,23,42,.62);display:none;align-items:center;justify-content:center;padding:16px";
+  modal.innerHTML='<section style="width:min(1050px,98vw);max-height:92vh;overflow:auto;background:#fff;border-radius:16px;box-shadow:0 25px 80px #0f172a55"><header style="position:sticky;top:0;z-index:2;background:#fff;border-bottom:1px solid #e2e8f0;padding:18px 20px;display:flex;justify-content:space-between;align-items:center;gap:12px"><div><div style="font-size:10px;font-weight:800;letter-spacing:.12em;color:#64748b">INSTITUTION-SCOPED WORKFLOW</div><h2 style="margin:4px 0;color:#0f172a;font-size:20px">Assign lecturers to this unit</h2><p id="iaLecturerAssignmentContext" style="margin:4px 0 0;color:#64748b;font-size:12px"></p></div><button type="button" id="iaLecturerAssignmentClose" style="border:0;background:#f1f5f9;border-radius:9px;padding:9px 12px;cursor:pointer">Close ✕</button></header><div style="padding:18px 20px"><div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px"><input id="iaLecturerAssignmentSearch" type="search" placeholder="Search lecturer name, email or staff ID…" style="flex:1;min-width:230px;padding:11px;border:1px solid #cbd5e1;border-radius:9px"><button type="button" id="iaLecturerAssignmentRefresh" style="padding:10px 14px;border:1px solid #cbd5e1;background:#fff;border-radius:9px;cursor:pointer">Refresh history</button><button type="button" id="iaLecturerAssignmentClear" style="padding:10px 14px;border:1px solid #fecaca;background:#fff1f2;color:#be123c;border-radius:9px;cursor:pointer">Clear this unit</button></div><div id="iaLecturerAssignmentStatus" role="status" style="font-size:12px;color:#475569;margin:8px 0 12px"></div><div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:16px"><section style="min-width:0"><h3 style="font-size:14px;margin:0 0 8px;color:#0f172a">Available lecturers</h3><div id="iaLecturerAssignmentCandidates" style="max-height:48vh;overflow:auto;border:1px solid #e2e8f0;border-radius:10px"><p style="padding:16px;color:#64748b">Loading lecturers…</p></div><button type="button" id="iaLecturerAssignmentSave" style="margin-top:12px;width:100%;padding:11px 14px;background:#0f766e;color:white;border:0;border-radius:9px;font-weight:700;cursor:pointer">Assign selected lecturers</button></section><section style="min-width:0"><h3 style="font-size:14px;margin:0 0 8px;color:#0f172a">Current assignment history</h3><div id="iaLecturerAssignmentHistory" style="max-height:48vh;overflow:auto;border:1px solid #e2e8f0;border-radius:10px"><p style="padding:16px;color:#64748b">Loading assignments…</p></div></section></div></div></section>';
+  modal.addEventListener("click",e=>{if(e.target===modal)modal.style.display="none";});
+  modal.querySelector("#iaLecturerAssignmentClose").addEventListener("click",()=>modal.style.display="none");
+  modal.querySelector("#iaLecturerAssignmentRefresh").addEventListener("click",refreshAssignmentHistory);
+  modal.querySelector("#iaLecturerAssignmentClear").addEventListener("click",clearAllAssignments);
+  modal.querySelector("#iaLecturerAssignmentSave").addEventListener("click",saveLecturerAssignments);
+  modal.querySelector("#iaLecturerAssignmentSearch").addEventListener("input",renderLecturerCandidates);
+  document.body.append(modal);return modal;
+ }
+ let assignmentLecturers=[],assignmentRows=[];
+ async function refreshAssignmentHistory(){
+  try{
+   const ctx=assignmentContext(),host=$("iaLecturerAssignmentHistory");if(host)host.innerHTML='<p style="padding:16px;color:#64748b">Refreshing…</p>';
+   const {data,error}=await db().from("lecturer_subject_assignments").select("id,lecturer_id,lecturer_name,program,block,subject_name,subject_code,academic_year,institution_id,created_at").eq("institution_id",tenant()).eq("program",ctx.program).eq("block",ctx.block).eq("subject_name",ctx.unit).eq("academic_year",ctx.year).order("created_at",{ascending:false}).limit(500);
+   if(error)throw error;assignmentRows=data||[];renderAssignmentHistory();
+   const status=$("iaLecturerAssignmentStatus");if(status)status.textContent=assignmentRows.length+" lecturer assignment(s) for this unit.";
+  }catch(e){const host=$("iaLecturerAssignmentHistory");if(host)host.innerHTML='<p style="padding:16px;color:#b91c1c">Could not load assignment history: '+esc(e.message)+'</p>';say("Assignment history could not be loaded: "+e.message,true);}
+ }
+ function renderAssignmentHistory(){
+  const host=$("iaLecturerAssignmentHistory");if(!host)return;
+  if(!assignmentRows.length){host.innerHTML='<p style="padding:18px;color:#64748b;text-align:center">No lecturers assigned to this unit yet.</p>';return;}
+  host.innerHTML='<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#f8fafc;text-align:left"><th style="padding:9px">Lecturer</th><th style="padding:9px">Assigned</th><th style="padding:9px">Action</th></tr></thead><tbody>'+assignmentRows.map(a=>'<tr style="border-top:1px solid #e2e8f0"><td style="padding:9px"><b>'+esc(a.lecturer_name||"Lecturer")+'</b><div style="color:#64748b">'+esc(a.lecturer_id)+'</div></td><td style="padding:9px">'+esc(a.created_at?new Date(a.created_at).toLocaleDateString():"—")+'</td><td style="padding:9px"><button type="button" data-remove-assignment="'+esc(a.id)+'" style="padding:6px 9px;border:1px solid #fecaca;background:#fff1f2;color:#be123c;border-radius:7px;cursor:pointer">Remove</button></td></tr>').join("")+'</tbody></table>';
+  host.querySelectorAll("[data-remove-assignment]").forEach(btn=>btn.addEventListener("click",()=>removeLecturerAssignment(btn.dataset.removeAssignment)));
+ }
+ function renderLecturerCandidates(){
+  const host=$("iaLecturerAssignmentCandidates");if(!host)return;
+  const existing=new Set(assignmentRows.map(a=>String(a.lecturer_id)));
+  const q=($("iaLecturerAssignmentSearch")?.value||"").trim().toLowerCase();
+  const filtered=assignmentLecturers.filter(p=>[p.full_name,p.email,p.staff_id].some(v=>String(v||"").toLowerCase().includes(q)));
+  if(!filtered.length){host.innerHTML='<p style="padding:18px;color:#64748b;text-align:center">No active lecturer profiles match this search.</p>';return;}
+  host.innerHTML=filtered.map(p=>{const id=String(p.user_id||"");const assigned=existing.has(id);return '<label style="display:flex;align-items:center;gap:10px;padding:11px;border-bottom:1px solid #e2e8f0;cursor:'+(assigned?'default':'pointer')+';opacity:'+(assigned?'.65':'1')+'"><input type="checkbox" class="iaLecturerAssignmentPick" value="'+esc(id)+'" '+(assigned?'checked disabled':'')+'><span style="min-width:0"><b style="display:block;color:#0f172a">'+esc(p.full_name||"Lecturer")+'</b><small style="color:#64748b">'+esc(p.staff_id||p.email||"")+' · '+esc(p.program||p.department||"")+'</small></span><span style="margin-left:auto;font-size:10px;color:'+(assigned?'#0f766e':'#64748b')+'">'+(assigned?'Assigned':'Available')+'</span></label>';}).join("");
+ }
+ async function showLecturerAssignmentModal(){
+  try{
+   const ctx=assignmentContext(),modal=ensureLecturerAssignmentModal();modal.style.display="flex";
+   $("iaLecturerAssignmentContext").textContent=ctx.program+" · "+ctx.block+" · "+ctx.unit+" · "+ctx.year;
+   $("iaLecturerAssignmentCandidates").innerHTML='<p style="padding:16px;color:#64748b">Loading active lecturers…</p>';
+   const {data,error}=await db().from("consolidated_user_profiles_table").select("user_id,full_name,email,staff_id,program,department,status,login_enabled,institution_id").eq("institution_id",tenant()).eq("role","lecturer").in("status",["active","approved"]).eq("login_enabled",true).order("full_name",{ascending:true}).limit(1000);
+   if(error)throw error;assignmentLecturers=data||[];
+   await refreshAssignmentHistory();renderLecturerCandidates();
+  }catch(e){say("Lecturers could not be loaded: "+e.message,true);}
+ }
+ async function saveLecturerAssignments(){
+  try{
+   const ctx=assignmentContext(),selected=[...document.querySelectorAll(".iaLecturerAssignmentPick:checked:not(:disabled)")].map(x=>x.value);
+   if(!selected.length){$("iaLecturerAssignmentStatus").textContent="Select at least one lecturer.";return;}
+   const chosen=assignmentLecturers.filter(p=>selected.includes(String(p.user_id)));
+   const existing=new Set(assignmentRows.map(a=>String(a.lecturer_id)));
+   const inserts=chosen.filter(p=>!existing.has(String(p.user_id))).map(p=>({institution_id:tenant(),lecturer_id:String(p.user_id),lecturer_name:p.full_name||"Lecturer",program:ctx.program,block:ctx.block,subject_name:ctx.unit,subject_code:units.find(u=>u.unit_name===ctx.unit)?.unit_code||null,academic_year:ctx.year,department:p.department||null}));
+   if(!inserts.length){$("iaLecturerAssignmentStatus").textContent="All selected lecturers are already assigned.";return;}
+   const button=$("iaLecturerAssignmentSave");if(button){button.disabled=true;button.textContent="Saving…";}
+   const {data,error}=await db().from("lecturer_subject_assignments").insert(inserts).select("id,lecturer_id,lecturer_name,program,block,subject_name,subject_code,academic_year,institution_id,created_at");
+   if(error)throw error;assignmentRows.push(...(data||[]));renderAssignmentHistory();renderLecturerCandidates();
+   $("iaLecturerAssignmentStatus").textContent=(data||[]).length+" lecturer(s) assigned successfully.";
+   if(window.showNotification)window.showNotification("Lecturer assignments saved.","success");
+  }catch(e){$("iaLecturerAssignmentStatus").textContent="Could not save assignments: "+e.message;say("Could not save lecturer assignments: "+e.message,true);}
+  finally{const button=$("iaLecturerAssignmentSave");if(button){button.disabled=false;button.textContent="Assign selected lecturers";}}
+ }
+ async function removeLecturerAssignment(id){
+  if(!confirm("Remove this lecturer from the selected unit?"))return;
+  try{const {data,error}=await db().from("lecturer_subject_assignments").delete().eq("id",id).eq("institution_id",tenant()).select("id").maybeSingle();if(error)throw error;if(!data)throw new Error("Assignment not found in this institution.");assignmentRows=assignmentRows.filter(a=>a.id!==id);renderAssignmentHistory();renderLecturerCandidates();}catch(e){say("Could not remove assignment: "+e.message,true);}
+ }
+ async function clearAllAssignments(){
+  const ctx=assignmentContext();if(!assignmentRows.length){say("There are no assignments to clear for this unit.",true);return;}
+  if(!confirm("Remove all "+assignmentRows.length+" lecturer assignment(s) for "+ctx.unit+" in "+ctx.program+" · "+ctx.block+"? This will not affect other units or institutions."))return;
+  try{const ids=assignmentRows.map(a=>a.id);const {data,error}=await db().from("lecturer_subject_assignments").delete().eq("institution_id",tenant()).eq("program",ctx.program).eq("block",ctx.block).eq("subject_name",ctx.unit).eq("academic_year",ctx.year).in("id",ids).select("id");if(error)throw error;assignmentRows=[];renderAssignmentHistory();renderLecturerCandidates();$("iaLecturerAssignmentStatus").textContent=(data||[]).length+" assignment(s) cleared for this unit.";}catch(e){say("Could not clear assignments: "+e.message,true);}
+ }
+ function unavailable(name){return ()=>say(name+" is not yet connected to the institution-scoped workflow.",true);}
  window.publishCurrentUnitMarks=()=>say("Marks cannot be published from entry. Submit them for approval, then publish approved marks in Marks Approval.");
- window.openStudentPublishModal=unavailable("Student selection");window.showLecturerAssignmentModal=unavailable("Lecturer unit assignment");window.refreshAssignmentHistory=unavailable("Assignment history");window.clearAllAssignments=unavailable("Assignment clearing");window.updateSelectedProgramDisplay=()=>{const p=$("iaMEProgramSelect")?.value||"";const n=$("selectedProgramName");if(n)n.textContent=p||"None selected";const t=$("selectedProgramType");if(t)t.textContent=p?(isTVET(p)?"TVET programme":"Nursing programme"):"None selected";};
+ window.openStudentPublishModal=unavailable("Student selection");
+ window.showLecturerAssignmentModal=showLecturerAssignmentModal;
+ window.refreshAssignmentHistory=refreshAssignmentHistory;
+ window.clearAllAssignments=clearAllAssignments;
+ window.updateSelectedProgramDisplay=()=>{const p=$("iaMEProgramSelect")?.value||"";const n=$("selectedProgramName");if(n)n.textContent=p||"None selected";const t=$("selectedProgramType");if(t)t.textContent=p?(isTVET(p)?"TVET programme":"Nursing programme"):"None selected";};
 })();
