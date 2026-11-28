@@ -222,7 +222,7 @@ async function loadLearning(){
  try{
   // Select available row fields without relying on optional legacy columns.
   const result=await state.db.from("resources").select("*")
-   .eq("institution_id",state.institutionId).order("created_at",{ascending:false}).limit(500);
+   .eq("institution_id",state.institutionId).eq("approval_status","approved").order("created_at",{ascending:false}).limit(500);
   if(result.error)throw result.error;
   const data=result.data||[];
   if(!data.length){empty("iaResources",8,"No learning resources have been uploaded for Nakuru College.");return;}
