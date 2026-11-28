@@ -19,7 +19,7 @@
   window.loadMarksApprovals = () => window.InstitutionAdminResults?.refresh?.();
   window.approveAllPendingMarks = () => window.InstitutionAdminResults?.approveAll?.();
   window.rejectAllPendingMarks = () => window.InstitutionAdminResults?.rejectAll?.();
-  window.filterMarksApprovals = () => {};
+  window.filterMarksApprovals = () => window.InstitutionAdminResults?.refresh?.();
   window.refreshAnalytics = window.loadAnalyticsData = () => window.InstitutionAdminAnalytics?.refresh?.();
   window.exportAnalyticsReport = window.exportConsolidatedMarksheet = () => window.InstitutionAdminAnalytics?.export?.();
   window.printConsolidatedMarksheet = () => window.InstitutionAdminAnalytics?.print?.();
@@ -30,7 +30,7 @@
   window.refreshAttendance = () => window.InstitutionAdminAttendance?.refresh?.();
   window.exportAllAttendance = () => window.InstitutionAdminAttendance?.export?.();
   window.resetAttendanceFilters = () => window.InstitutionAdminAttendance?.reset?.();
-  window.filterAttendance = () => {};
+  window.filterAttendance = () => window.InstitutionAdminAttendance?.refresh?.();
   window.adminCheckIn = event => { if(event) event.preventDefault(); return false; };
   window.toggleAttendanceFields = () => {};
   window.exportTableToCSV = () => window.InstitutionAdminAttendance?.export?.();
