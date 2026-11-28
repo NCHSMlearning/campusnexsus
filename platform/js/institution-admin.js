@@ -214,7 +214,7 @@ async function loadLearning(){
  body.replaceChildren();
  // Resource management rollout currently covers Nakuru College (institution 101) only.
  // Do not expose or imply resource support for institution 102 until its rollout is approved.
- if(String(state.institutionId)!=="101"){
+ if(String(state.institution?.school_code||state.institution?.short_code||"")!=="101"){
   empty("iaResources",8,"Institutional resource management is not yet enabled for this institution. Current rollout: Nakuru College (ID 101).");
   return;
  }
@@ -222,7 +222,7 @@ async function loadLearning(){
  try{
   // Select available row fields without relying on optional legacy columns.
   const result=await state.db.from("resources").select("*")
-   .eq("institution_id",101).order("created_at",{ascending:false}).limit(500);
+   .eq("institution_id",state.institutionId).order("created_at",{ascending:false}).limit(500);
   if(result.error)throw result.error;
   const data=result.data||[];
   if(!data.length){empty("iaResources",8,"No learning resources have been uploaded for Nakuru College.");return;}
