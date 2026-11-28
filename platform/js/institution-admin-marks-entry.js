@@ -180,8 +180,6 @@
   if(saving)return;const editable=rows.filter(r=>!r.published);if(!editable.length){say("There are no editable marks to save.",true);return;}
   if(!confirm("Save "+editable.length+" marks and submit them for approval? They will remain unpublished."))return;
   saving=true;const button=$("iaMESaveCapture");const originalButtonHtml=button?.innerHTML;if(button)button.disabled=true;const type=$("iaMEAssessmentType")?.value||"full";const now=new Date().toISOString();
-  document.addEventListener("input",e=>{if(e.target.id==="meMarksSearch"){page=1;renderRows();}});
-  document.addEventListener("click",e=>{if(e.target.id==="meMarksPrevPage"){page=Math.max(1,page-1);renderRows();}if(e.target.id==="meMarksNextPage"){page++;renderRows();}if(e.target.closest("#iaNav [data-view=marks-entry]")){if(!$("iaMEProgramSelect")?.options?.length||$("iaMEProgramSelect")?.options?.length<=1)loadPrograms();}});
   $("iaMEAssessmentType")?.value||"full";let saved=0,errors=[];
   try{
    for(let i=0;i<editable.length;i+=8){
@@ -243,8 +241,8 @@
   $("iaMELoadStudents")?.addEventListener("click",loadStudents);
   $("iaMESaveCapture")?.addEventListener("click",saveMarks);$("iaMEExportCapture")?.addEventListener("click",exportCaptureCsv);$("iaMECaptureSearch")?.addEventListener("input",()=>{page=1;renderRows();});$("iaMEPrevPage")?.addEventListener("click",()=>{page=Math.max(1,page-1);renderRows();});$("iaMENextPage")?.addEventListener("click",()=>{page++;renderRows();});
   $("iaMEAssessmentType")?.addEventListener("change",()=>rows.forEach((r,i)=>updatePreview(i)));
-  document.addEventListener("input",e=>{if(e.target.id==="iaMarksManagerSearch")renderMarksStudentManager();});
-  document.addEventListener("click",e=>{if(e.target.closest('#iaNav [data-view="marks-entry"]')){if(!$("iaMEProgramSelect")?.options?.length||$("iaMEProgramSelect")?.options?.length<=1)loadPrograms();}});
+  document.addEventListener("input",e=>{if(e.target.id==="iaMarksManagerSearch")renderMarksStudentManager();if(e.target.id==="meMarksSearch"){page=1;renderRows();}});
+  document.addEventListener("click",e=>{if(e.target.closest("#meMarksPrevPage")){page=Math.max(1,page-1);renderRows();}else if(e.target.closest("#meMarksNextPage")){page++;renderRows();}if(e.target.closest('#iaNav [data-view="marks-entry"]')){if(!$("iaMEProgramSelect")?.options?.length||$("iaMEProgramSelect")?.options?.length<=1)loadPrograms();}});
  }
  function wait(){api=window.CampusInstitutionAdmin;if(!api?.db||!api?.institutionId||!api?.user){setTimeout(wait,150);return;}bind();loadPrograms();}
  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",wait,{once:true});else wait();
