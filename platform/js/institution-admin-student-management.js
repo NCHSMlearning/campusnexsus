@@ -205,7 +205,31 @@
   window.loadChangeProgramRequests=()=>loadRequests("change_program");
   window.loadReadmissionRequests=()=>loadRequests("readmission");
   window.loadSessionReportsAdmin=loadSessionReportsAdmin;
-  window.loadSMHistory=async()=>{const body=$("smHistoryBody");if(body)body.innerHTML='<tr><td colspan="8" style="padding:30px;text-align:center">History is available through the institution request and session-report tabs.</td></tr>';};
+  async function loadSMHistory(){
+    const body=$("smHistoryBody");if(!body)return;
+    body.innerHTML='<tr><td colspan="8" style="padding:30px;text-align:center">Loading institution request history…</td></tr>';
+    try{
+      const [admissions,requests,reports]=await Promise.all([
+        rows("institution_admissions"),rows("student_requests"),rows("session_reports","submitted_at")
+      ]);
+      const entries=[
+        ...admissions.map(r=>({id:r.id,kind:"Admission",person:r.applicant_name||r.student_name||r.email||"Applicant",reference:r.application_number||r.admission_number||"—",detail:r.programme||r.program||"Admission application",status:r.status||"received",created:r.updated_at||r.created_at,reason:r.notes||r.reason||"—"})),
+        ...requests.map(r=>({id:r.id,kind:String(r.request_type||"Student request").replace(/_/g," ").replace(/\b\w/g,c=>c.toUpperCase()),person:r.student_name||r.full_name||r.student_id||"Student",reference:r.student_id||"—",detail:r.requested_program||r.current_program||r.program||r.session||"Student request",status:r.status||"pending",created:r.updated_at||r.created_at,reason:r.reason||r.remarks||"—"})),
+        ...reports.map(r=>({id:r.id,kind:"Session report",person:r.student_name||r.student_id||"Student",reference:r.student_id||"—",detail:r.session||r.program||"Academic period",status:r.approval_status||"pending",created:r.updated_at||r.submitted_at||r.created_at,reason:r.remarks||r.comments||"—"}))
+      ];
+      const kind=$("smHistoryType")?.value||"all",status=$("smHistoryStatus")?.value||"all",from=$("smHistoryDateFrom")?.value||"",to=$("smHistoryDateTo")?.value||"";
+      const filtered=entries.filter(r=>{
+        const k=r.kind.toLowerCase().replace(/\s+/g,"-");
+        const matchesKind=kind==="all"||kind==="all_requests"||k.includes(String(kind).toLowerCase().replace(/_/g,"-"))||(kind==="requests"&&k!=="admission");
+        const st=String(r.status).toLowerCase();
+        const d=r.created?new Date(r.created):null,day=d&&!Number.isNaN(d.getTime())?d.toISOString().slice(0,10):"";
+        return matchesKind&&(status==="all"||st===String(status).toLowerCase())&&(!from||day>=from)&&(!to||day<=to);
+      }).sort((a,b)=>new Date(b.created||0)-new Date(a.created||0));
+      state.history=filtered;
+      body.innerHTML=filtered.length?filtered.map(r=>'<tr><td>'+esc(r.kind)+'</td><td><strong>'+esc(r.person)+'</strong></td><td>'+esc(r.reference)+'</td><td>'+esc(r.detail)+'</td><td>'+statusPill(r.status)+'</td><td>'+date(r.created)+'</td><td>'+esc(r.reason)+'</td><td>'+esc(String(r.id).slice(0,8))+'</td></tr>').join(""):'<tr><td colspan="8" style="padding:40px;text-align:center;color:#64748b">No institution request history matches these filters.</td></tr>';
+    }catch(e){console.error("[Institution Student Management] History:",e);body.innerHTML='<tr><td colspan="8" style="padding:35px;text-align:center;color:#b91c1c">Could not load institution history: '+esc(e.message)+'</td></tr>';}
+  }
+  window.loadSMHistory=loadSMHistory;
   window.refreshStudentManagement=async()=>{await Promise.all([loadAdmissions(),loadRequests("change_program"),loadRequests("readmission"),loadSessionReportsAdmin()]);};
   window.exportStudentRequests=()=>{const table=$("view-students")?.querySelector(".sm-tab-content:not([style*='display: none']) table");if(!table)return notify("Open a Student Management tab before exporting.","warning");const csv=[...table.querySelectorAll("tr")].map(tr=>[...tr.children].map(td=>'"'+(td.innerText||"").replace(/"/g,'""').replace(/\s+/g," ").trim()+'"').join(",")).join("\r\n");const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});const url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="institution-student-management.csv";a.click();URL.revokeObjectURL(url);};
   window.showSMSubTab=id=>{
