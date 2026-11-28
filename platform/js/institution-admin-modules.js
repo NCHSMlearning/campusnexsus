@@ -230,9 +230,9 @@ document.addEventListener("click",e=>{const exp=e.target.closest("[data-export]"
 document.querySelectorAll("[data-view]").forEach(b=>b.addEventListener("click",()=>{active=b.dataset.view;const key=active==="academic"?"programs":active;if(key==="academic")load("courses").then(()=>{});if(config[key])setTimeout(()=>load(key),80);}));
 document.querySelectorAll("[data-view='academic']").forEach(b=>b.addEventListener("click",()=>{setTimeout(()=>load("courses"),160);}));
 document.querySelectorAll("[data-view='exams']").forEach(b=>b.addEventListener("click",()=>{setTimeout(()=>load("exams"),100);}));
-document.querySelectorAll("[data-view='students']").forEach(b=>b.addEventListener("click",()=>setTimeout(()=>load("students"),100)));
-document.querySelectorAll("[data-view='staff']").forEach(b=>b.addEventListener("click",()=>setTimeout(()=>load("staff"),100)));
-document.querySelectorAll("[data-view='attendance']").forEach(b=>b.addEventListener("click",()=>setTimeout(()=>load("attendance"),100)));
+
+
+
 document.querySelectorAll("[data-view='admissions']").forEach(b=>b.addEventListener("click",()=>setTimeout(()=>load("admissions"),100)));
 document.querySelectorAll("[data-view='hr']").forEach(b=>b.addEventListener("click",()=>setTimeout(()=>load("hr"),100)));
 document.querySelectorAll("[data-view='timetable']").forEach(b=>b.addEventListener("click",()=>setTimeout(()=>load("timetable"),100)));
