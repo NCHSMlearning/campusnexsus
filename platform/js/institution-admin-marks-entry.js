@@ -120,6 +120,7 @@
    (marks||[]).forEach(m=>{const keys=[m.student_id,m.admission_number].filter(Boolean).map(String);if(!keys.some(k=>present.has(k))){rows.push({...m,student_name:m.student_name||"Student"});keys.forEach(k=>present.add(k));}});
    if(requestId!==marksLoadRequest)return;
    renderRows();
+   refreshAssignmentHistory().catch(e=>console.warn("[Institution lecturer assignments]",e.message));
    say(rows.length+" students loaded from this institution's approved registrations. "+rows.filter(r=>r.published).length+" already published (locked)."+(missingIdentityCount?" "+missingIdentityCount+" registration(s) skipped because admission/profile details are missing.":""));
   }catch(e){if(requestId!==marksLoadRequest)return;console.error("[Institution marks capture]",e);say("Marks could not be loaded: "+e.message,true);const host=$("me_marks_container");if(host)host.innerHTML='<div style="padding:32px;text-align:center;color:#991b1b"><i class="fas fa-triangle-exclamation" style="font-size:30px"></i><h3>Unable to load marks</h3><p>'+esc(e.message)+'</p><button type="button" onclick="loadMarksEntry()" style="padding:9px 16px;background:#4C1D95;color:#fff;border:0;border-radius:7px">Retry</button></div>';const dynamic=$("marksEntryDynamicContent");if(dynamic)dynamic.style.display="block";const placeholder=$("marksEntryPlaceholder");if(placeholder)placeholder.style.display="none";}
   finally{if(requestId===marksLoadRequest)marksLoading=false;}
